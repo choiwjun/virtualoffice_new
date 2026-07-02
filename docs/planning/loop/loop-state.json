@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "mode": "standard",
+  "started_at": "2026-07-02 12:50 KST",
+  "document_map": {
+    "Decisions(정본)": "docs/planning/00-decisions.md",
+    "PRD": "docs/planning/01-prd.md",
+    "TRD": "docs/planning/02-trd-architecture.md + docs/planning/11-tech-stack.md",
+    "UserFlow": null,
+    "DB": "docs/planning/04-data-model.md + specs/domain/resources.yaml",
+    "DesignSystem": null,
+    "Screens": "docs/planning/06-screens.md + specs/screens/*.yaml(7)",
+    "Tasks": "docs/planning/12-tasks.md",
+    "CodingConvention": null,
+    "Domain-ERP": "docs/planning/03-erp-integration.md",
+    "Domain-Layout": "docs/planning/05-office-layout-schema.md",
+    "Domain-3D": "docs/planning/07-3d-visual-asset-pipeline.md",
+    "Domain-KPI": "docs/planning/08-kpi-logic.md",
+    "Domain-Realtime": "docs/planning/09-realtime-collaboration.md",
+    "Roadmap": "docs/planning/10-roadmap.md",
+    "Risks": "docs/planning/13-risks-open-questions.md",
+    "Deployment(신규정본)": "docs/deployment/onprem-docker.md"
+  },
+  "missing_roles": [
+    "UserFlow(독립 문서 없음 — 06-screens 내 부분 포함, 커버리지 검증 중)",
+    "DesignSystem(웹 콘솔용 — components.yaml이 대체하는지 검증 중)",
+    "CodingConvention"
+  ],
+  "planning_line": "unknown (사용자 v3.2 개발기획서 기반 커스텀 라인 + 3렌즈 교차검증 이력)",
+  "iteration": 1,
+  "max_iterations": 3,
+  "scores": {
+    "product_clarity": 4,
+    "requirement_completeness": 3,
+    "technical_feasibility": 4,
+    "user_flow_coverage": 3,
+    "data_model_fit": 2,
+    "ui_screen_completeness": 3,
+    "design_system_applicability": 2,
+    "task_executability": 3,
+    "testability": 3,
+    "traceability": 3,
+    "consistency": 2,
+    "scope_control": 4,
+    "implementation_readiness": 3
+  },
+  "hard_fails": [
+    "PRD 핵심 기능(클라이언트 네트워킹 A5-01, 인증 구현 A5-02)이 Tasks에 없음",
+    "Screens 데이터(STT A4-15, objection D16 A2-10, doors A2-12)가 DB 설계에 없음"
+  ],
+  "findings_total": 139,
+  "findings_p0": 8,
+  "clusters": ["C1 배포드리프트(D21폐기)", "C2 보안요구부재", "C3 태스크P0갭", "C4 정본충돌4건", "C5 STT스키마갭", "C6 resources.yaml노후", "C7 화면YAML6종부재", "C8 KPI산식충돌", "C9 코드수정8건", "C10 로드맵스테일", "C11 태스크품질/상태동기화"],
+  "canonical_decisions_needed": {
+    "C4-a 좌석배정": "추천: 04/코드(seat.assigned_user_id+history) 정본",
+    "C4-b 좌표계": "추천: 05(D25 2D) 정본 — 04 수정",
+    "C4-c asset": "추천: 07 v1.1 정본 — 04+코드 갱신",
+    "C4-d 이의신청어휘": "추천: 04/08(D15) 정본 — 06/10/12 치환"
+  },
+  "missing_documents": [],
+  "gates_derived": false,
+  "gate_pass": false,
+  "readiness": "Not Ready",
+  "build": {
+    "round": 0,
+    "max_rounds": 3,
+    "dispatched_to": null,
+    "gate_results": [],
+    "verdict": null
+  },
+  "notes": "LOOP 1~4를 6개 병렬 검사 에이전트(A1 PRD/결정/로드맵, A2 화면/흐름, A3 데이터, A4 기술/3D/KPI, A5 태스크, A6 신규결정 드리프트)로 수행 중. 사전 이력: 기획시점 3렌즈 교차검증(41지적/32조치), ERP 라이브 스키마 검증(2026-07-02, attendances 드리프트 수정 완료), 배포 확정(Linux/VPN없음/고정IP).",
+  "updated_marker": "loop-00"
+}
