@@ -14,8 +14,10 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
-# 앱 소스
+# 앱 소스 + 마이그레이션 (운영: docker compose exec backend alembic upgrade head)
 COPY app ./app
+COPY alembic.ini ./
+COPY alembic ./alembic
 
 EXPOSE 8000
 

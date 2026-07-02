@@ -115,9 +115,17 @@ docker exec vo_db pg_dump -U postgres virtualoffice | gzip > /backup/vo_$(date +
 ### 재부팅 내성
 - 모든 서비스 `restart: unless-stopped` (구성됨) + Docker 서비스 부팅 자동시작(Linux: `systemctl enable docker`).
 
-### 마이그레이션 (운영 전환 시)
-- 지금: `AUTO_CREATE_TABLES=true` (dev 편의).
-- 운영: `false` + 우리 DB용 **Alembic** 도입(예정) → 배포 절차가 `git pull → alembic upgrade head → compose up -d --build`로 확장.
+### 마이그레이션 (Alembic 도입 완료, 2026-07-02)
+- 위치: `backend/alembic/` (루트 `migrations/alembic/`은 ERP 브랜치용 — 별개).
+- dev/도그푸딩 초기: `AUTO_CREATE_TABLES=true` 유지 가능.
+- **운영 전환 시**: `.env`에서 `AUTO_CREATE_TABLES=false` 후 배포 절차:
+  ```bash
+  git pull
+  docker compose up -d --build
+  docker compose exec backend alembic upgrade head
+  ```
+- 스키마 변경 워크플로: 모델 수정 → `alembic revision --autogenerate -m "..."` → 리뷰 → 커밋.
+- 규약: 운영 첫 배포 전에는 0001이 최신 모델 반영(create_all 참조 방식). 첫 배포 후 0001 불변, 이후 신규 리비전만.
 
 ## 5. 리소스 계획 (동시 20명 검증 기준, D22)
 
