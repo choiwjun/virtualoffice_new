@@ -27,26 +27,27 @@
     "CodingConvention"
   ],
   "planning_line": "unknown (사용자 v3.2 개발기획서 기반 커스텀 라인 + 3렌즈 교차검증 이력)",
-  "iteration": 1,
+  "iteration": 2,
   "max_iterations": 3,
   "scores": {
     "product_clarity": 4,
-    "requirement_completeness": 3,
+    "requirement_completeness": 4,
     "technical_feasibility": 4,
-    "user_flow_coverage": 3,
-    "data_model_fit": 2,
-    "ui_screen_completeness": 3,
-    "design_system_applicability": 2,
-    "task_executability": 3,
-    "testability": 3,
-    "traceability": 3,
-    "consistency": 2,
+    "user_flow_coverage": 4,
+    "data_model_fit": 4,
+    "ui_screen_completeness": 4,
+    "design_system_applicability": 3,
+    "task_executability": 4,
+    "testability": 4,
+    "traceability": 4,
+    "consistency": 4,
     "scope_control": 4,
-    "implementation_readiness": 3
+    "implementation_readiness": 4
   },
-  "hard_fails": [
-    "PRD 핵심 기능(클라이언트 네트워킹 A5-01, 인증 구현 A5-02)이 Tasks에 없음",
-    "Screens 데이터(STT A4-15, objection D16 A2-10, doors A2-12)가 DB 설계에 없음"
+  "hard_fails": [],
+  "round1_hard_fails_resolved": [
+    "태스크 갭 → P4-R1-T3(클라이언트 네트워킹)·P2-R2-T0(인증) 신설 (grep 검증)",
+    "스키마 갭 → meeting_minute stt 필드(04+코드+yaml)·kpi D16·room.doors 반영 (pytest 32 passed)"
   ],
   "findings_total": 139,
   "findings_p0": 8,
@@ -58,9 +59,16 @@
     "C4-d 이의신청어휘": "추천: 04/08(D15) 정본 — 06/10/12 치환"
   },
   "missing_documents": [],
-  "gates_derived": false,
-  "gate_pass": false,
-  "readiness": "Not Ready",
+  "gates_derived": true,
+  "gate_pass": true,
+  "readiness": "Ready with Risks",
+  "remaining_risks": [
+    "R-a 스파이크 S1~S4 미실행(실환경 필요)",
+    "R-b OQ13 ERP 회의실 관계 — Phase 5 전 결정",
+    "R-c OQ10 ERP DB 계정 대기",
+    "R-d 도메인 미구매(외부 오픈 전)",
+    "R-e 에셋 라이선스·ERP 브랜치 병합 일정"
+  ],
   "build": {
     "round": 0,
     "max_rounds": 3,
