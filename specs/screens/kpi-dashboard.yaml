@@ -1,0 +1,176 @@
+version: "2.0"
+
+screen:
+  name: KPI 대시보드
+  route: /admin/kpi
+  platform: web
+  layout: sidebar-main
+
+data_requirements:
+  - resource: kpi_result
+    needs: [id, user_id, period, kpi_date, metric, value, ai_draft, ai_draft_generated_at, admin_reviewed, admin_adjusted, admin_adjusted_value, admin_review_note, admin_reviewed_at, pushed_to_erp, pushed_at, source, unit]
+    filters:
+      period: "?period"
+      user_id: "?user_id"
+    mutations: [update]
+    access: read-write
+
+  - resource: work_log
+    needs: [id, user_id, work_date, status, result_url, result_description, category, title]
+    filters:
+      user_id: "?user_id"
+      work_date: "?date_range"
+    access: read-only
+
+  - resource: meeting
+    needs: [id, host_user_id, started_at, ended_at, title, status]
+    filters:
+      host_user_id: "?user_id"
+    access: read-only
+
+  - resource: meeting_minute
+    needs: [id, meeting_id, decisions, action_items_summary, created_at]
+    access: read-only
+
+  - resource: action_item
+    needs: [id, meeting_id, assignee_user_id, status, completed_at, due_date]
+    access: read-only
+
+  - resource: erp_user
+    needs: [id, name, email, position, erp_team_id]
+    filters:
+      id: "?user_id"
+    access: read-only
+
+  - resource: daily_status_push
+    needs: [id, user_id, push_date, target, payload, status, pushed_at, retry_count]
+    mutations: [create]
+    access: read-write
+
+components:
+  - id: header-controls
+    type: toolbar
+    position: top
+    function: 기간 선택(월/주별), 팀 필터, 비교 보기, 내보내기 버튼
+
+  - id: period-selector
+    type: panel
+    position: top
+    function: 기간 선택 (월별/주별 선택기, 날짜 range picker)
+
+  - id: my-kpi-section
+    type: panel
+    position: main
+    function: 개인 KPI 카드 (지표 종합, AI 초안, 관리자 검토)
+    data_source:
+      resource: kpi_result
+
+  - id: metric-progress-bars
+    type: chart
+    position: main
+    function: 지표별 진행도 바 (업무완료도, 회의생산성, 협업점수, 품질도, 종합점수)
+    data_source:
+      resource: kpi_result
+
+  - id: ai-draft-display
+    type: panel
+    position: main
+    function: AI 평가 초안 (강점, 개선점, 액션 제안)
+    data_source:
+      resource: kpi_result
+
+  - id: admin-review-controls
+    type: form
+    position: main
+    function: 관리자 검토 및 조정 (상태선택, 조정값입력, 의견작성, 버튼[검토중][승인][조정][확정])
+
+  - id: team-summary-section
+    type: panel
+    position: main
+    function: 팀 종합 KPI (평균점수, 팀 구성원 순위, 상위 5명 리스트)
+    data_source:
+      resource: kpi_result
+
+  - id: tab-navigation
+    type: toolbar
+    position: main
+    function: 탭 네비게이션 ([추이][비교][팀랭킹][개선액션])
+
+  - id: status-badge
+    type: badge
+    position: main
+    function: 검토 상태 배지 (checked: admin_reviewed boolean)
+
+  - id: erp-push-indicator
+    type: badge
+    position: main
+    function: ERP 동기화 상태 (pushed_to_erp, pushed_at timestamp 표시)
+
+events:
+  - on: period_selected
+    do: 필터링 조건 변경, kpi_result 재로드
+
+  - on: admin_review_submitted
+    do: kpi_result.admin_adjusted, admin_adjusted_value, admin_review_note, admin_reviewed_at 업데이트
+
+  - on: ai_draft_not_found
+    do: 에러 모달 표시 (재시도/수동입력 옵션)
+
+  - on: erp_push_initiated
+    do: daily_status_push 레코드 생성 (target=erp_kpi_results, status=pending)
+
+tests:
+  - name: "정상 흐름 - KPI 조회 및 AI 초안 표시"
+    when: "사용자가 기간을 선택하고 대시보드 로드"
+    then:
+      - "kpi_result 데이터가 로드됨 (선택한 period로 필터링)"
+      - "metric 별 진행도 바가 value를 반영하여 표시 (색상: 초록/노랑/빨강)"
+      - "ai_draft가 표시되고 ai_draft_generated_at 타임스탐프 표시"
+      - "admin_reviewed=false이면 [검토중] 배지, true이면 [확정] 배지"
+
+  - name: "관리자 검토 및 조정 - 값 수정"
+    when: "관리자가 admin-review-form에서 조정값을 입력하고 저장"
+    then:
+      - "admin_adjusted=true, admin_adjusted_value 저장"
+      - "admin_review_note 필드에 의견 저장"
+      - "admin_reviewed=true, admin_reviewed_at 타임스탐프 기록"
+      - "상태 배지가 [승인] 또는 [조정]으로 업데이트"
+
+  - name: "AI 평가 실패 - 에러 상태 및 복구"
+    when: "ai_draft_generated_at가 null이고 화면 로드 시"
+    then:
+      - "에러 모달 표시: '❌ AI 평가를 생성할 수 없었습니다'"
+      - "가능한 원인 및 해결 옵션 표시 ([재시도][수동입력][관리자][취소])"
+      - "[수동입력] 선택 시 ai_draft 텍스트 에리어 활성화"
+      - "[재시도] 클릭 시 API 호출 재시도"
+
+  - name: "ERP 동기화 상태 추적"
+    when: "관리자가 [내보내기] 버튼 클릭하여 ERP 푸시 초기화"
+    then:
+      - "daily_status_push 레코드 생성 (user_id, push_date, target=erp_kpi_results, status=pending)"
+      - "kpi_result.pushed_to_erp=true, pushed_at 타임스탐프 설정"
+      - "erp-push-indicator에 상태 표시 (pending → sent, 또는 failed 시 에러 메시지)"
+      - "EOD 배치 실행 후 상태 업데이트 (retry_count 추적)"
+
+  - name: "팀 KPI 종합 및 순위 조회"
+    when: "사용자가 팀 필터를 선택하고 [팀랭킹] 탭 클릭"
+    then:
+      - "같은 team_zone의 모든 유저 kpi_result 로드"
+      - "팀 평균 종합점수 계산 및 team-summary-section에 표시"
+      - "상위 5명을 순위순으로 리스트 (이름, 종합점수, 주요 지표)"
+      - "각 지표별 팀 평균값과 개인값 비교 차트 표시"
+
+notes:
+  - "KPI 지표 계산: 매일 18:00 배치로 자동 수행, 데이터 소스 = work_log, meeting, meeting_minute, action_item"
+  - "결과중심 원칙: 협업점수·회의생산성 지표는 회의록(decisions)·액션아이템 이행률·완료 업무 기반으로 산출. meeting.started_at/ended_at은 표시·맥락용이며 접속시간·참석횟수를 KPI 산식에 반영하지 않음(반감시)."
+  - "AI 초안 생성: Claude API 호출, ai_draft_generated_at 기록, 실패 시 ai_draft=null"
+  - "Admin 검토: admin_reviewed=true, admin_adjusted=false 또는 true로 구분"
+  - "ERP 푸시: 매일 근무 종료 후 EOD 배치로 자동 수행, daily_status_push 로그 생성"
+  - "지표 정의 문서: 06-screens.md §3.4의 지표 상세 참조"
+
+open_questions:
+  - "팀 필터 기준: org_group (상위 조직)을 사용할지, team_zone (물리적 구역)을 사용할지?"
+  - "기간(period) 포맷 명확화: 분기(2026-Q3) vs 월(2026-07) vs 일(2026-07-01)?"
+  - "AI 초안 재시도 정책: 몇 초 후 몇 회까지 자동 재시도할지?"
+  - "복수 관리자인 경우 검토 workflow: sequential vs parallel?"
+  - "메트릭 weight 변경: hardcoded(완료도×30%...)인지 UI에서 조정 가능한지?"

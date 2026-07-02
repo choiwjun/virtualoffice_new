@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case 1 · 신규 프로젝트 (귀납) — Pipeline Map</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <div class="brand"><span class="dot"></span> Claude Labs · Pipeline Map</div>
+    <nav>
+      <a href="index.html">조감도</a>
+      <a href="case-1-greenfield.html" class="active">① 신규·귀납</a>
+      <a href="case-2-doubt.html">② 검증·연역</a>
+      <a href="case-3-brownfield.html">③ 기존 통합</a>
+      <a href="case-4-build.html">④ 빌드 4종</a>
+      <a href="case-5-quality.html">⑤ 검증·개선</a>
+      <a href="case-6-stargate.html">⑥ 통합 진입</a>
+      <a href="skills.html">스킬 58</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <div class="eyebrow" style="color:var(--c-plan)">CASE 01 · Socrates 라인 · 귀납</div>
+    <h1>신규 프로젝트 — 백지에서 풀스택까지</h1>
+    <p>아이디어를 21문항으로 구체화하고("X란 무엇인가"), 화면 명세 → 태스크 → 자동 개발로 흐르는 가장 표준적인 정방향 경로입니다.
+       시장 가설이 아직 막연할 때 적합합니다. 각 단계는 핸드오프 파일로 세션을 분리할 수 있습니다.</p>
+  </div>
+
+  <div class="callout info">
+    <b>체인.</b>
+    <code>/neurion·/eureka</code> (선택) → <code>/socrates</code> → <code>/screen-spec</code> → <code>/tasks-generator</code> → <code>/project-bootstrap</code> → <code>/auto-orchestrate</code> → <code>/evaluation·/trinity</code> → <code>/code-review·/chrome-browser</code>
+  </div>
+
+  <div class="flow">
+
+    <div class="node cat-plan optional">
+      <div class="nm"><span class="cmd">/neurion</span> 또는 <span class="cmd">/eureka</span> · 발상</div>
+      <div class="role">아이디어가 막연할 때만. neurion = 4 페르소나 공동 브레인스토밍(Osborn 4원칙), eureka = 추상 → 3~4 MVP 제안.</div>
+      <div class="opts"><span class="badge out">neurion-proposal.md</span><span class="badge opt">--deep</span><span class="badge opt">--fast</span></div>
+    </div>
+    <div class="arrow cat-plan"><span class="line"></span><span class="lbl">기획안 자동 감지</span><span class="tip">▼</span></div>
+
+    <div class="node cat-plan">
+      <div class="nm"><span class="cmd">/socrates</span> · 심층 기획 (귀납)</div>
+      <div class="role">1:1 대화로 핵심 기능·화면 도출. Problem Framing → 경쟁분석(0.7) → JTBD 페르소나(0.8) → 비즈니스 모델(0.9) → MoSCoW 핵심기능(1) → 화면 매핑(2) → 기술 스택(3). 사용자 레벨(L1~L4)에 톤 자동 조절.</div>
+      <div class="opts"><span class="badge req">10개 기획 문서</span><span class="badge out">docs/planning/01-prd ~ 10-desire-map</span></div>
+    </div>
+    <div class="arrow cat-spec"><span class="line"></span><span class="lbl">🔴 핸드오프 체크포인트 → 새 세션 권장</span><span class="tip">▼</span></div>
+
+    <div class="node cat-spec">
+      <div class="nm"><span class="cmd">/screen-spec</span> · 화면 명세 (YAML v2.0)</div>
+      <div class="role">06-screens.md 기반으로 화면별 상세 명세 생성. "화면이 주도하되 도메인이 방어한다" — 화면은 <code>data_requirements</code>(무엇이 필요한지)만 선언, 백엔드는 <code>resources.yaml</code>로 독립 결정.</div>
+      <div class="opts"><span class="badge out">specs/screens/*.yaml</span><span class="badge out">specs/domain/resources.yaml</span><span class="badge opt">Stitch MCP → design/*.png</span></div>
+    </div>
+    <div class="arrow cat-spec"><span class="line"></span><span class="lbl">🔴 핸드오프 체크포인트</span><span class="tip">▼</span></div>
+
+    <div class="node cat-spec">
+      <div class="nm"><span class="cmd">/tasks-generator</span> · Domain-Guarded 태스크</div>
+      <div class="role">화면 needs vs 리소스 fields를 <b>Interface Contract Validation</b>으로 대조(불일치 시 중단). Resource 태스크(P-R)와 Screen 태스크(P-S) 분리 + 연결점 검증(P-S-V) 생성.</div>
+      <div class="opts"><span class="badge out">docs/planning/06-tasks.md</span><span class="badge opt">from-screens</span><span class="badge opt">from-docs</span><span class="badge opt">analyze</span></div>
+    </div>
+    <div class="arrow cat-spec"><span class="line"></span><span class="lbl">빌드 전 검증 게이트 · Phase 3.7</span><span class="tip">▼</span></div>
+
+    <div class="node cat-spec">
+      <div class="nm"><span class="cmd">/planning-loop-supervisor</span> · 설계문서 감독관 <span class="badge new">NEW</span></div>
+      <div class="role">빌드 진입 전, 설계문서 간 일관성·추적성(PRD→Flow→Screen→Data→Task→Test)·갭·13항목 품질을 검증하고 미달 시 해당 스킬 patch 모드로 되돌려 반자동 루프(≤3회). 설계서에서 <b>프로젝트별 세부 게이트를 파생</b> → 이후 완료 판정의 기준.</div>
+      <div class="opts"><span class="badge out">08-derived-gates.md</span><span class="badge out">00-loop.md</span><span class="badge">stargate Phase 3.7</span></div>
+    </div>
+    <div class="arrow cat-build"><span class="line"></span><span class="lbl">Ready → 셋업·빌드 · AskUserQuestion</span><span class="tip">▼</span></div>
+
+    <div class="node cat-build optional">
+      <div class="nm"><span class="cmd">/project-bootstrap</span> · 환경 셋업</div>
+      <div class="role">AI 에이전트 팀(.claude/agents/) 자동 생성 + 선택적 풀스택 환경(백엔드/프론트엔드/Docker/CI). Supabase 조합 시 <code>/project-bootstrap-supabase</code> 자동 위임.</div>
+      <div class="opts"><span class="badge out">.claude/agents/</span><span class="badge out">backend/ · frontend/ · docker-compose.yml</span></div>
+    </div>
+    <div class="arrow cat-build"><span class="line"></span><span class="lbl">/cost-router 자동 적용 — 태스크별 최적 모델</span><span class="tip">▼</span></div>
+
+    <div class="node cat-build">
+      <div class="nm"><span class="cmd">/auto-orchestrate</span> · 자동 개발</div>
+      <div class="role">06-tasks.md 의존성 분석 → Phase별 Git Worktree → 전문가 에이전트(backend/frontend/test-specialist 등)를 Task 도구로 호출 → TDD(RED→GREEN→REFACTOR). <b>오케스트레이터는 코드를 직접 작성하지 않음</b> — 조율·병합만.</div>
+      <div class="opts"><span class="badge">병렬: Resource 간 ✅ / Screen은 Resource 후</span><span class="badge out">소스 + 테스트</span></div>
+    </div>
+    <div class="arrow cat-verify"><span class="line"></span><span class="lbl">Phase 완료마다 품질 체인</span><span class="tip">▼</span></div>
+
+    <div class="band cat-verify"><span class="num">━</span><span class="t">품질 체인 (Phase 완료마다)</span><span class="s">통과 → main 병합 → 다음 Phase</span></div>
+    <div class="lane cols-3">
+      <div class="node cat-verify"><div class="nm"><span class="cmd">verification-before-completion</span></div><div class="role">테스트/린트/빌드/타입 — 증거 없이 "완료" 금지</div></div>
+      <div class="node cat-verify"><div class="nm"><span class="cmd">/evaluation</span></div><div class="role">커버리지 ≥70%, 복잡도 ≤10, 린트 0</div></div>
+      <div class="node cat-verify"><div class="nm"><span class="cmd">/code-review</span></div><div class="role">Spec Compliance → Code Quality 2단계</div></div>
+      <div class="node cat-verify"><div class="nm"><span class="cmd">/trinity</span></div><div class="role">五柱 점수 90+ 자동승인 / 70~89 리뷰 / &lt;70 차단</div></div>
+      <div class="node cat-verify optional"><div class="nm"><span class="cmd">security-review</span></div><div class="role">backend/auth/payment 변경 시 조건부</div></div>
+      <div class="node cat-verify optional"><div class="nm"><span class="cmd">/vercel-review</span></div><div class="role">프론트 성능·접근성·스크린샷</div></div>
+    </div>
+    <div class="callout warn">
+      <b>실패 시 복구.</b> 검증 실패 → <code>/powerqa</code> 자동 수정(최대 5사이클) → 동일 에러 3회면 <code>/systematic-debugging</code>(4단계 근본원인)으로 전환.
+      자세한 루프는 <a href="case-5-quality.html" style="color:var(--c-verify)">Case 05</a>.
+    </div>
+    <div class="arrow cat-deploy"><span class="line"></span><span class="tip">▼</span></div>
+
+    <div class="node cat-deploy">
+      <div class="nm"><span class="cmd">/chrome-browser</span> → <span class="cmd">/session-report</span> · 완성</div>
+      <div class="role">완성된 앱을 브라우저로 실제 클릭 테스트 → 세션 리포트(변경 분석 + 메트릭). 배포는 <code>/packaging</code> + install.sh.</div>
+    </div>
+
+  </div>
+
+  <!-- socrates 10문서 -->
+  <div class="section-title"><span class="tick" style="background:var(--c-plan)"></span> /socrates 산출물 — 10개 기획 문서</div>
+  <table class="tbl">
+    <thead><tr><th>파일</th><th>내용</th><th>다음 단계 입력</th></tr></thead>
+    <tbody>
+      <tr><td><span class="cmd">01-prd.md</span></td><td>제품 요구사항</td><td></td></tr>
+      <tr><td><span class="cmd">02-trd.md</span></td><td>기술 요구사항</td><td></td></tr>
+      <tr><td><span class="cmd">03-user-flow.md</span></td><td>사용자 흐름</td><td></td></tr>
+      <tr><td><span class="cmd">04-database-design.md</span></td><td>DB 설계</td><td>→ resources.yaml 근거</td></tr>
+      <tr><td><span class="cmd">05-design-system.md</span></td><td>디자인 시스템</td><td>→ design-discovery</td></tr>
+      <tr><td><span class="cmd">06-screens.md</span></td><td>화면 목록</td><td><b>→ /screen-spec 입력</b></td></tr>
+      <tr><td><span class="cmd">07-coding-convention.md</span></td><td>코딩 규칙</td><td></td></tr>
+      <tr><td><span class="cmd">08-flow-architecture.md</span></td><td>흐름 아키텍처</td><td></td></tr>
+      <tr><td><span class="cmd">09-personas.md</span></td><td>JTBD 페르소나</td><td></td></tr>
+      <tr><td><span class="cmd">10-desire-map.md</span></td><td>욕구 지도</td><td></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <b>언제 이 케이스인가.</b> 새 아이디어인데 시장 가설이 막연하고, 경쟁사 비교·페르소나·JTBD를 채워가며 형상화하고 싶을 때.
+    이미 "이거 될 거야"라는 확신이 선 가정을 <i>의심으로 검증</i>하고 싶다면 → <a href="case-2-doubt.html" style="color:var(--c-improve)">Case 02 (연역)</a>.
+  </div>
+
+</main>
+
+<footer><div class="wrap" style="padding-top:0;padding-bottom:0">Case 01 · Socrates 라인 · SSOT: docs/PIPELINES.md · v1.22.0</div></footer>
+</body>
+</html>

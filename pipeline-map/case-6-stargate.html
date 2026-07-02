@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case 6 · 통합 진입 (stargate) — Pipeline Map</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <div class="brand"><span class="dot"></span> Claude Labs · Pipeline Map</div>
+    <nav>
+      <a href="index.html">조감도</a>
+      <a href="case-1-greenfield.html">① 신규·귀납</a>
+      <a href="case-2-doubt.html">② 검증·연역</a>
+      <a href="case-3-brownfield.html">③ 기존 통합</a>
+      <a href="case-4-build.html">④ 빌드 4종</a>
+      <a href="case-5-quality.html">⑤ 검증·개선</a>
+      <a href="case-6-stargate.html" class="active">⑥ 통합 진입</a>
+      <a href="skills.html">스킬 58</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <div class="eyebrow" style="color:var(--c-meta)">CASE 06 · 통합 진입점</div>
+    <h1>/stargate — 모든 케이스를 묶는 상태머신</h1>
+    <p>"어디서부터 시작할지 모르겠다"의 기본 답. 아이디어부터 출시까지 매 단계 <b>AskUserQuestion으로 자동 분기</b>하고,
+       <code>.stargate/state.json</code> 체크포인트로 언제든 멈췄다 이어서 진행합니다. 앞의 5개 케이스가 이 상태머신의 경로들입니다.</p>
+  </div>
+
+  <div class="callout info">
+    <b>명시적 옵션.</b>
+    <code>/stargate</code> (무인자 — 체크포인트 있으면 4선택 질문) ·
+    <code>/stargate resume</code> (강제 재개) ·
+    <code>/stargate restart</code> (체크포인트 삭제 후 처음부터). &nbsp; <code>.stargate/</code>는 .gitignore — 사용자별 진행상태는 git 추적 X.
+  </div>
+
+  <!-- 상태머신 -->
+  <div class="flow">
+
+    <div class="node cat-meta">
+      <div class="nm">Phase −1 · 체크포인트 진입 <span class="badge">항상 첫 단계</span></div>
+      <div class="role"><code>.stargate/state.json</code> 있나? → "이어서 / Phase 점프 / 처음부터 / 상태만 보기" · 없으면 새 사이클(Phase 0)</div>
+    </div>
+    <div class="arrow cat-meta"><span class="line"></span><span class="tip">▼</span></div>
+
+    <div class="node cat-meta">
+      <div class="nm">Phase 0 · 시작 지점?</div>
+      <div class="role">브레인스토밍부터(eureka/neurion) / 기획부터(P1) / 명세부터(P3, docs/planning 필요) / 빌드부터(P4, 06-tasks.md 필요)</div>
+    </div>
+    <div class="arrow cat-plan"><span class="line"></span><span class="tip">▼</span></div>
+
+    <div class="node cat-plan">
+      <div class="nm">Phase 1 · 기획 접근 방식?</div>
+      <div class="role">"심층 합의" → <a href="case-1-greenfield.html" style="color:var(--c-plan)">/socrates (귀납 10문서)</a> · "의심·검증" → <a href="case-2-doubt.html" style="color:var(--c-improve)">/doubt (연역 12문서)</a> · "아이디어 폭발" → eureka/neurion · "비대화 자동" → /auto-planner → P3 직행</div>
+    </div>
+    <div class="arrow cat-plan"><span class="line"></span><span class="lbl">[state 저장]</span><span class="tip">▼</span></div>
+
+    <div class="node cat-plan optional">
+      <div class="nm">Phase 2 · 기획 리뷰?</div>
+      <div class="role">리뷰 받기 → <code>/council</code> 3 AI 리뷰어(CTO/UX/Security) · 건너뛰기 → P3</div>
+    </div>
+    <div class="arrow cat-spec"><span class="line"></span><span class="tip">▼</span></div>
+
+    <div class="node cat-spec">
+      <div class="nm">Phase 3 · 명세 생성</div>
+      <div class="role"><code>/screen-spec</code> → <code>/tasks-generator</code>. 종료 분기: 디자인 연결(/design-discovery + /design-linker) / 바로 빌드 / 멈춤</div>
+    </div>
+    <div class="arrow cat-improve"><span class="line"></span><span class="lbl">[doubt 라인만]</span><span class="tip">▼</span></div>
+
+    <div class="node cat-improve optional">
+      <div class="nm">Phase 3.5 · Validation 실험 <span class="loop">doubt 전용</span></div>
+      <div class="role"><code>11-validation-plan.md</code>의 Critical 가정 검증 → 결과를 09-doubt-audit에 기록 · 건너뛰기(위험 감수)</div>
+    </div>
+    <div class="arrow cat-spec"><span class="line"></span><span class="tip">▼</span></div>
+
+    <div class="node cat-spec">
+      <div class="nm">Phase 3.7 · 기획 검증 루프 게이트 <span class="badge new">NEW</span></div>
+      <div class="role"><code>/planning-loop-supervisor</code> 자동 호출(양 라인 공통). 설계문서 일관성·추적성·갭·품질 검증 → 미달 시 해당 스킬 patch(≤3회) → 프로젝트별 게이트 파생(<code>08-derived-gates.md</code>). gate_pass(Ready) → Phase 4. Not Ready → 수정/위험감수/멈춤 분기.</div>
+    </div>
+    <div class="arrow cat-build"><span class="line"></span><span class="tip">▼</span></div>
+
+    <div class="node cat-build">
+      <div class="nm">Phase 4 · 빌드 (환경 감지 후 4종 추천)</div>
+      <div class="role"><a href="case-4-build.html" style="color:var(--c-build)">/cmux-harness · /harness-forge · /auto-orchestrate · /harness</a>. 종료 분기: 검증으로 / 자가개선으로 / 멈춤</div>
+    </div>
+    <div class="arrow cat-verify"><span class="line"></span><span class="tip">▼</span></div>
+
+    <div class="node cat-verify">
+      <div class="nm">검증 단계</div>
+      <div class="role"><a href="case-5-quality.html" style="color:var(--c-verify)">/code-review · /vercel-review · /audit · /sync · /evaluation</a> · [doubt만] 12-impact-trace 재확인 → 실패 가정 발견 시 회귀</div>
+    </div>
+    <div class="arrow cat-improve"><span class="line"></span><span class="tip">▼</span></div>
+
+    <div class="node cat-improve optional">
+      <div class="nm">Phase 5 · 자가개선</div>
+      <div class="role"><code>/autoresearch:fix</code> · <code>:security</code> · <code>/autoresearch-frontend</code> · 건너뛰기. 종료 분기: 다른 모드 추가 / 리포트로 / 멈춤</div>
+    </div>
+    <div class="arrow cat-deploy"><span class="line"></span><span class="tip">▼</span></div>
+
+    <div class="node cat-deploy">
+      <div class="nm">Phase 6 · 최종 리포트</div>
+      <div class="role"><code>docs/stargate-report.md</code> 생성. 종료 분기: /session-report / /packaging / 종료(state.current_phase = "done")</div>
+    </div>
+
+  </div>
+
+  <!-- 결정점 표 -->
+  <div class="section-title"><span class="tick" style="background:var(--c-meta)"></span> 주요 결정점 (모든 AskUserQuestion 위치)</div>
+  <table class="tbl">
+    <thead><tr><th>#</th><th>Phase</th><th>질문</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>−1</td><td>이전 체크포인트 처리 (이어서 / 점프 / 처음 / 상태)</td></tr>
+      <tr><td>2</td><td>0</td><td>시작 지점 (브레인스토밍 / 기획 / 명세 / 빌드)</td></tr>
+      <tr><td>3</td><td>0</td><td>(브레인스토밍 선택 시) eureka vs neurion</td></tr>
+      <tr><td>4</td><td>1</td><td>기획 접근 (socrates / doubt / eureka·neurion / auto-planner)</td></tr>
+      <tr><td>5</td><td>2</td><td>기획 리뷰 받기 / 건너뛰기</td></tr>
+      <tr><td>6</td><td>3 종료</td><td>디자인 연결 / 바로 빌드 / 멈춤</td></tr>
+      <tr><td>7</td><td>3.5</td><td>(doubt 라인) Validation 실행 / 건너뛰기</td></tr>
+      <tr><td>7b</td><td>3.7</td><td>기획 검증 게이트 — Not Ready 시: 수정 더 / 위험 감수 빌드 / 멈춤</td></tr>
+      <tr><td>8</td><td>4</td><td>빌드 방식 4종 (환경 감지 추천 표시)</td></tr>
+      <tr><td>9</td><td>4 종료</td><td>검증 / 자가개선 / 멈춤</td></tr>
+      <tr><td>10</td><td>5</td><td>자가개선 모드 4종</td></tr>
+      <tr><td>11</td><td>5 종료</td><td>다른 모드 추가 / 리포트로 / 멈춤</td></tr>
+      <tr><td>12</td><td>6 종료</td><td>session-report / packaging / 종료</td></tr>
+    </tbody>
+  </table>
+  <div class="note">질문 4·8은 doubt 라인 / cmux 환경 같은 컨텍스트에 따라 추천 옵션이 자동 표시됩니다. <b>모든 질문에 "여기서 멈춤" 옵션이 보장</b>됩니다.</div>
+
+  <!-- state.json -->
+  <div class="section-title"><span class="tick" style="background:var(--c-meta)"></span> .stargate/state.json 스키마</div>
+  <pre class="mono" style="background:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:16px;overflow:auto;font-size:12.5px;color:var(--fg-2);line-height:1.6"><code>{
+  "version": 1,
+  "idea_prompt": "원본 아이디어 1문장",
+  "planning_line": "socrates" | "doubt" | null,
+  "current_phase": "1" | "2" | "3" | "3.5" | "3.7" | "4" | "5" | "6" | "done",
+  "completed_phases": ["0", "1", "2"],
+  "artifacts": { "planning_docs": "...", "tasks": "...", "planning_loop": "docs/planning/loop/", "derived_gates": "docs/planning/loop/08-derived-gates.md", "build_mode": "..." }
+}</code></pre>
+
+  <div class="callout">
+    <b>요약.</b> stargate는 새 스킬이 아니라 <b>앞 5개 케이스를 상태와 분기로 묶는 얇은 오케스트레이터</b>입니다.
+    단일 단계만 원하면 각 스킬을 직접 호출하고, 전체 흐름을 모르면 <code>/stargate</code>로 진입하세요.
+  </div>
+
+</main>
+
+<footer><div class="wrap" style="padding-top:0;padding-bottom:0">Case 06 · 통합 진입 · stargate/SKILL.md + docs/PIPELINES.md · v1.22.0</div></footer>
+</body>
+</html>

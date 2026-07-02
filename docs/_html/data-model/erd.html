@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>erd.md: 엔티티 관계도 (ERD)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">erd.md: 엔티티 관계도 (ERD)</div><div class="sub">erd.md</div><a class="lvl1" href="#erdmd-엔티티-관계도-erd">erd.md: 엔티티 관계도 (ERD)</a><a class="lvl2" href="#전체-er-다이어그램-mermaid">전체 ER 다이어그램 (Mermaid)</a><a class="lvl2" href="#다이어그램-범례">다이어그램 범례</a><a class="lvl2" href="#13개-주요-테이블-개요">13개 주요 테이블 개요</a><a class="lvl3" href="#a-erp-미러-계층-1개">A. ERP 미러 계층 (1개)</a><a class="lvl3" href="#b-조직구역공간-계층-6개">B. 조직·구역·공간 계층 (6개)</a><a class="lvl3" href="#c-좌석현위치-계층-5개">C. 좌석·현위치 계층 (5개)</a><a class="lvl3" href="#d-협업회의-계층-4개">D. 협업·회의 계층 (4개)</a><a class="lvl3" href="#e-업무kpi연동-계층-3개">E. 업무·KPI·연동 계층 (3개)</a><a class="lvl3" href="#f-자산감시감사-계층-2개">F. 자산·감시·감사 계층 (2개)</a><a class="lvl2" href="#핵심-설계-결정사항">핵심 설계 결정사항</a><a class="lvl3" href="#1-erp-동기화-d18">1. ERP 동기화 (D18)</a><a class="lvl3" href="#2-presence-상태-7종-d13">2. Presence 상태 7종 (D13)</a><a class="lvl3" href="#3-좌석-배정-분리-d10">3. 좌석 배정 분리 (D10)</a><a class="lvl3" href="#4-kpi-스키마-정본-d16">4. KPI 스키마 정본 (D16)</a><a class="lvl3" href="#5-회의-회의록-단방향-fk">5. 회의 &amp; 회의록 (단방향 FK)</a><a class="lvl3" href="#6-soft-delete-restrict-d18">6. Soft-Delete &amp; RESTRICT (D18)</a><a class="lvl3" href="#7-타임존-d19">7. 타임존 (D19)</a><a class="lvl3" href="#8-컴플라이언스-d20">8. 컴플라이언스 (D20)</a><a class="lvl2" href="#주요-인덱스-전략">주요 인덱스 전략</a><a class="lvl2" href="#13개-테이블-필드-매핑-요약">13개 테이블 필드 매핑 요약</a><a class="lvl3" href="#1-erp_user-erp-동기화">1. erp_user (ERP 동기화)</a><a class="lvl3" href="#2-org_group-조직-계층">2. org_group (조직 계층)</a><a class="lvl3" href="#3-team_zone-팀구역-매핑">3. team_zone (팀↔구역 매핑)</a><a class="lvl3" href="#4-office-사무실">4. office (사무실)</a><a class="lvl3" href="#5-floor-층">5. floor (층)</a><a class="lvl3" href="#6-office_layout-레이아웃-버전">6. office_layout (레이아웃 버전)</a><a class="lvl3" href="#7-room-회의실라운지-등">7. room (회의실·라운지 등)</a><a class="lvl3" href="#8-seat-좌석">8. seat (좌석)</a><a class="lvl3" href="#9-seat_assignment_history-좌석-배정-이력">9. seat_assignment_history (좌석 배정 이력)</a><a class="lvl3" href="#10-user_team_history-팀-이동-이력-new">10. user_team_history (팀 이동 이력) — NEW</a><a class="lvl3" href="#11-presence-실시간-상태">11. presence (실시간 상태)</a><a class="lvl3" href="#12-meeting-회의">12. meeting (회의)</a><a class="lvl3" href="#12a-meeting_participant-회의-참석자">12a. meeting_participant (회의 참석자)</a><a class="lvl3" href="#12b-meeting_minute-회의록">12b. meeting_minute (회의록)</a><a class="lvl3" href="#12c-action_item-액션아이템">12c. action_item (액션아이템)</a><a class="lvl3" href="#13-work_log-업무-기록">13. work_log (업무 기록)</a><a class="lvl3" href="#14-kpi_result-kpi-평가-결과-정본">14. kpi_result (KPI 평가 결과 — 정본)</a><a class="lvl3" href="#15-daily_status_push-배치-로그">15. daily_status_push (배치 로그)</a><a class="lvl3" href="#16-asset-3d-에셋">16. asset (3D 에셋)</a><a class="lvl3" href="#17-audit_log-감사">17. audit_log (감사)</a><a class="lvl2" href="#14개-enum-타입">14개 Enum 타입</a><a class="lvl2" href="#다음-단계">다음 단계</a></nav>
+<main><h1 id="erdmd-엔티티-관계도-erd">erd.md: 엔티티 관계도 (ERD)</h1>
+<p><strong>작성일</strong>: 2026-07-02 <strong>상태</strong>: 확정 (Phase 0, P0-T0.3) <strong>정본 참조</strong>: <code>04-data-model.md</code> §1</p>
+<blockquote><strong>ERD 주석</strong>:  - <code>ERP_TEAMS</code>는 ERP 원본 테이블(우리 DB 아님, read-only 참조)이며 <code>team_zone.erp_team_id</code>가 이를 가리킨다. - <code>MEETING ↔ MEETING_MINUTE</code>는 <strong>단방향</strong>(meeting<em>minute.meeting</em>id → meeting.id)만 유지한다 — meeting.meeting<em>minute</em>id 역방향 FK는 폐기(순환 참조 방지). - <code>USER_TEAM_HISTORY</code>는 분기 중 팀 이동자의 KPI 벤치마크 왜곡을 막기 위해 신설한다(D18). - 모든 timestamp 컬럼은 <strong>UTC 저장, 표시 시 KST 변환</strong>(D19).</blockquote>
+<hr>
+<h2 id="전체-er-다이어그램-mermaid">전체 ER 다이어그램 (Mermaid)</h2>
+<div class="mermaid">erDiagram
+    ERP_USER ||--o{ ORG_GROUP : &quot;소속(직원→팀→org_group)&quot;
+    ORG_GROUP ||--o{ ORG_GROUP : &quot;self_parent(계층)&quot;
+    ORG_GROUP ||--o{ TEAM_ZONE : &quot;매핑&quot;
+    TEAM_ZONE }o--|| ERP_TEAMS : &quot;erp_team_id(ERP 원본)&quot;
+    TEAM_ZONE }o--|| OFFICE : &quot;배치&quot;
+    TEAM_ZONE }o--|| FLOOR : &quot;배치&quot;
+    ERP_USER ||--o{ USER_TEAM_HISTORY : &quot;팀이동이력&quot;
+    OFFICE ||--o{ FLOOR : &quot;포함&quot;
+    OFFICE ||--o{ OFFICE_LAYOUT : &quot;레이아웃버전&quot;
+    FLOOR ||--o{ OFFICE_LAYOUT : &quot;버전&quot;
+    FLOOR ||--o{ ROOM : &quot;포함&quot;
+    FLOOR ||--o{ SEAT : &quot;배치&quot;
+    ROOM }o--|| FLOOR : &quot;위치&quot;
+    SEAT }o--|| TEAM_ZONE : &quot;구역할당&quot;
+    SEAT }o--|| ERP_USER : &quot;assigned_user&quot;
+    SEAT ||--o{ SEAT_ASSIGNMENT_HISTORY : &quot;변경이력&quot;
+    SEAT_ASSIGNMENT_HISTORY }o--|| ERP_USER : &quot;user&quot;
+    ERP_USER ||--o{ PRESENCE : &quot;실시간상태&quot;
+    PRESENCE }o--|| OFFICE : &quot;현위치&quot;
+    PRESENCE }o--|| FLOOR : &quot;현위치&quot;
+    ROOM ||--o{ MEETING : &quot;개최&quot;
+    ERP_USER ||--o{ MEETING : &quot;host&quot;
+    MEETING ||--o{ MEETING_PARTICIPANT : &quot;참석자&quot;
+    MEETING_PARTICIPANT }o--|| ERP_USER : &quot;user&quot;
+    MEETING ||--o{ MEETING_MINUTE : &quot;기록(단방향 FK)&quot;
+    MEETING_MINUTE }o--|| ERP_USER : &quot;created_by&quot;
+    MEETING ||--o{ ACTION_ITEM : &quot;액션아이템&quot;
+    ACTION_ITEM }o--|| ERP_USER : &quot;assignee&quot;
+    ERP_USER ||--o{ WORK_LOG : &quot;업무기록&quot;
+    ERP_USER ||--o{ KPI_RESULT : &quot;KPI평가&quot;
+    ERP_USER ||--o{ DAILY_STATUS_PUSH : &quot;EOD푸시&quot;
+    ERP_USER ||--o{ AUDIT_LOG : &quot;감사&quot;
+    AUDIT_LOG }o--|| ERP_USER : &quot;created_by&quot;
+    ASSET ||--o| ERP_USER : &quot;modified_by&quot;</div>
+<hr>
+<h2 id="다이어그램-범례">다이어그램 범례</h2>
+<div class="table-wrap"><table><thead><tr><th>기호</th><th>의미</th><th>예시</th></tr></thead><tbody><tr><td><code>||--o{</code></td><td>1:N 관계 (1개가 여러 개를 소유)</td><td>office(1) : floor(N)</td></tr><tr><td><code>}o--||</code></td><td>N:1 관계 (FK 방향)</td><td>floor : office(1)</td></tr><tr><td><code>||--o|</code></td><td>1:0..1 관계 (nullable FK)</td><td>meeting : meeting_minute(optional)</td></tr><tr><td><code>}o--o{</code></td><td>N:M 관계 (mapping table)</td><td>(본 설계에는 미사용)</td></tr></tbody></table></div>
+<hr>
+<h2 id="13개-주요-테이블-개요">13개 주요 테이블 개요</h2>
+<h3 id="a-erp-미러-계층-1개">A. ERP 미러 계층 (1개)</h3>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>테이블명</th><th>용도</th><th>주요 필드</th></tr></thead><tbody><tr><td>1</td><td><strong>erp_user</strong></td><td>직원 정보 Source of Truth (읽기 전용 동기화)</td><td>id(PK), company<em>id, email, name, erp</em>team<em>id, role, is</em>active(soft-delete)</td></tr></tbody></table></div>
+<h3 id="b-조직구역공간-계층-6개">B. 조직·구역·공간 계층 (6개)</h3>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>테이블명</th><th>용도</th><th>주요 필드</th></tr></thead><tbody><tr><td>2</td><td><strong>org_group</strong></td><td>사내 조직 계층(본부/부서/파트)</td><td>id(PK, UUID), parent_id(self), name, type(division/department/part)</td></tr><tr><td>3</td><td><strong>team_zone</strong></td><td>ERP 팀 ↔ 3D 구역 매핑</td><td>id(PK), erp<em>team</em>id(FK to ERP), office<em>id, floor</em>id, zone_label</td></tr><tr><td>4</td><td><strong>office</strong></td><td>물리 사무실 단위</td><td>id(PK), company_id, name, address</td></tr><tr><td>5</td><td><strong>floor</strong></td><td>office 내 층(1층, 2층, B1 등)</td><td>id(PK), office_id(FK), level(INT), name</td></tr><tr><td>6</td><td><strong>office_layout</strong></td><td>레이아웃 버전 관리 (JSON 구조, draft→validated→deployed)</td><td>id(PK), office<em>id, floor</em>id, version, status, json(JSONB), created_by</td></tr><tr><td>7</td><td><strong>room</strong></td><td>회의실·라운지·집중실·폰부스 등 공간</td><td>id(PK), floor_id(FK), type(meeting/lounge/focus/phonebooth), name, capacity</td></tr></tbody></table></div>
+<h3 id="c-좌석현위치-계층-5개">C. 좌석·현위치 계층 (5개)</h3>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>테이블명</th><th>용도</th><th>주요 필드</th></tr></thead><tbody><tr><td>8</td><td><strong>seat</strong></td><td>개별 좌석</td><td>id(PK), floor<em>id, team</em>zone<em>id, assigned</em>user_id(FK), type(fixed/free/temp/partner), status(available/occupied/disabled/reserved)</td></tr><tr><td>9</td><td><strong>seat<em>assignment</em>history</strong></td><td>좌석 배정 변경 이력</td><td>id(PK), seat<em>id, user</em>id, assigned<em>at, unassigned</em>at</td></tr><tr><td>10</td><td><strong>user<em>team</em>history</strong></td><td>직원 팀 이동 이력 (<strong>NEW</strong>, D18)</td><td>id(PK), user<em>id(FK), erp</em>team<em>id, valid</em>from, valid_to(NULL=현재)</td></tr><tr><td>11</td><td><strong>presence</strong></td><td>직원 실시간 상태·위치</td><td>user<em>id(PK, FK), office</em>id, floor_id, x/y/z(좌표), status(7종: offline/online/working/meeting/focus/away/external)</td></tr></tbody></table></div>
+<h3 id="d-협업회의-계층-4개">D. 협업·회의 계층 (4개)</h3>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>테이블명</th><th>용도</th><th>주요 필드</th></tr></thead><tbody><tr><td>12</td><td><strong>meeting</strong></td><td>회의 메타데이터</td><td>id(PK), room<em>id, host</em>user<em>id, title, scheduled</em>at, started<em>at, ended</em>at, status(scheduled/in<em>progress/completed/cancelled), livekit</em>room, recording_url</td></tr><tr><td>12a</td><td><strong>meeting_participant</strong></td><td>회의 참석자 관리</td><td>id(PK), meeting<em>id, user</em>id, invited<em>at, joined</em>at, left_at, role</td></tr><tr><td>12b</td><td><strong>meeting_minute</strong></td><td>회의록 (STT 초안 + 검토)</td><td>id(PK), meeting<em>id(unique FK), title, summary, decisions, action</em>items<em>summary, created</em>by, status(draft/finalized)</td></tr><tr><td>12c</td><td><strong>action_item</strong></td><td>회의에서 나온 할일</td><td>id(PK), meeting<em>id, assignee</em>user<em>id, due</em>date, priority, status(open/in<em>progress/completed/cancelled), completed</em>at</td></tr></tbody></table></div>
+<h3 id="e-업무kpi연동-계층-3개">E. 업무·KPI·연동 계층 (3개)</h3>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>테이블명</th><th>용도</th><th>주요 필드</th></tr></thead><tbody><tr><td>13</td><td><strong>work_log</strong></td><td>업무 기록</td><td>id(PK), user<em>id, work</em>date, title, goal, status(started/completed), result<em>url, next</em>action</td></tr><tr><td>14</td><td><strong>kpi_result</strong></td><td><strong>KPI 평가 결과 (정본 스키마, D16)</strong></td><td>id(PK), user<em>id, period</em>type(daily/quarterly), period<em>key('2026-07-01'/'2026-Q3'), metric(8가지), value, ai</em>draft(JSONB), admin<em>adjusted</em>score, objection<em>status(none/submitted/reviewing/resolved), final</em>score, finalized_at</td></tr><tr><td>15</td><td><strong>daily<em>status</em>push</strong></td><td>ERP 연동 배치 로그</td><td>id(PK), user<em>id, push</em>date, target(erp<em>daily</em>reports/erp<em>kpi</em>results), status(pending/sent/failed), pushed<em>at, run</em>id</td></tr></tbody></table></div>
+<h3 id="f-자산감시감사-계층-2개">F. 자산·감시·감사 계층 (2개)</h3>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>테이블명</th><th>용도</th><th>주요 필드</th></tr></thead><tbody><tr><td>16</td><td><strong>asset</strong></td><td>3D 에셋 메타 (Blender→GLB→Godot)</td><td>asset<em>id(PK), asset</em>name, asset<em>type, license, modified</em>by, downloaded_at</td></tr><tr><td>17</td><td><strong>audit_log</strong></td><td>감사 로그 (좌석배정, 회의, KPI, 배포)</td><td>id(PK), user<em>id(nullable), action, entity</em>type, entity<em>id, old</em>value(JSONB), new<em>value(JSONB), created</em>at(UTC), 5년 보존 정책(D20-e)</td></tr></tbody></table></div>
+<hr>
+<h2 id="핵심-설계-결정사항">핵심 설계 결정사항</h2>
+<h3 id="1-erp-동기화-d18">1. ERP 동기화 (D18)</h3>
+<ul><li><strong>매시간 증분</strong>: ERP users/teams의 updated_at 기준 upsert</li><li><strong>매일 00:00 KST 전체 대사</strong>: 하드 삭제 감지 → soft-delete (물리 삭제 금지)</li><li><strong>화이트리스트 VIEW</strong>: ERP 원본 읽기 시 불필요 컬럼 제외(slack<em>user</em>id, github<em>username, jira</em>email, lat, lng, radius — D20-f)</li><li><strong>user<em>team</em>history</strong>: 팀 이동 감지 시 이력 자동 생성 (분기 KPI 벤치마크 정합성)</li></ul>
+<h3 id="2-presence-상태-7종-d13">2. Presence 상태 7종 (D13)</h3>
+<pre class="code"><code>offline → online(로그인)
+  ├→ working(좌석 착석)
+  ├→ meeting(회의실 입장) → 퇴장 시 이전 상태 복귀
+  ├→ focus(집중실)
+  ├→ away(무활동 5분 자동)
+  └→ external(외근/출장/재택 — 수동 전환)</code></pre>
+<h3 id="3-좌석-배정-분리-d10">3. 좌석 배정 분리 (D10)</h3>
+<ul><li><strong>layout JSON</strong>: 공간 구조(좌석 위치·타입·방향·furniture 참조)만</li><li><strong>DB(seat 테이블)</strong>: 배정 정보(assigned<em>user</em>id) 소유</li><li><strong>seat<em>assignment</em>history</strong>: 배정 변경 이력 추적</li><li><strong>배정 변경 시 레이아웃 재배포 불필요</strong></li></ul>
+<h3 id="4-kpi-스키마-정본-d16">4. KPI 스키마 정본 (D16)</h3>
+<ul><li><strong>메트릭별 롱포맷</strong>: 1행 = 1 user + 1 기간 + 1 metric</li><li><strong>period 컬럼 폐기</strong> → <code>period_type</code>(daily/quarterly) + <code>period_key</code>('2026-07-01'/'2026-Q3')</li><li><strong>정량 값 계산</strong>: 결정론적 코드 (D14-e)</li><li><strong>AI 서술</strong>: ai_draft JSONB(정량 점수 미포함)</li><li><strong>이의신청 상태머신</strong>: none → submitted → reviewing → resolved (D15)</li><li><strong>ERP 푸시</strong>: final_score만 전송, 관리자 확정 이벤트 + 분기 마감 배치(D17)</li></ul>
+<h3 id="5-회의-회의록-단방향-fk">5. 회의 &amp; 회의록 (단방향 FK)</h3>
+<ul><li><strong>meeting ↔ meeting<em>minute</strong>: 단방향(meeting</em>minute.meeting_id → meeting.id)만</li><li><strong>meeting.meeting<em>minute</em>id 역방향 FK 폐기</strong> (순환 참조 방지)</li><li><strong>회의록 조회</strong>: <code>SELECT * FROM meeting_minute WHERE meeting_id = :id</code></li></ul>
+<h3 id="6-soft-delete-restrict-d18">6. Soft-Delete &amp; RESTRICT (D18)</h3>
+<ul><li><strong>erp<em>user</strong>: ERP 하드 삭제 감지 시 is</em>active=FALSE (물리 삭제 금지, 평가 기록 영구성)</li><li><strong>FK ON DELETE</strong>: <ul><li>seat<em>assignment</em>history.user_id: ON DELETE RESTRICT (배정 이력 보존)</li><li>kpi<em>result.user</em>id: ON DELETE RESTRICT (평가 기록 보존)</li><li>daily<em>status</em>push.user_id: ON DELETE RESTRICT (전송 이력 보존)</li><li>user<em>team</em>history.user_id: ON DELETE RESTRICT (팀 이동 이력 보존)</li></ul></li></ul>
+<h3 id="7-타임존-d19">7. 타임존 (D19)</h3>
+<ul><li><strong>저장</strong>: UTC</li><li><strong>표시</strong>: KST (애플리케이션 계층에서 변환)</li><li><strong>배치 경계</strong>: KST로 계산하되 저장은 UTC (18:00 KST = 09:00 UTC)</li></ul>
+<h3 id="8-컴플라이언스-d20">8. 컴플라이언스 (D20)</h3>
+<ul><li><strong>근로자 모니터링</strong>: 도입 시 서면 고지 및 동의 필수</li><li><strong>presence 좌표(x,y)</strong>: 보존 30일 후 삭제</li><li><strong>회의 녹음</strong>: 시작 시 전원 고지 + 참여 의사 확인<ul><li>녹화 원본: 보존 90일 후 자동 파기</li><li>회의록 텍스트: 평가 데이터로 관리(5년 보존)</li></ul></li><li><strong>GPS 수집 기능</strong>: 삭제 (데스크톱 클라이언트에 GPS 없음)</li><li><strong>ERP 미러링 최소수집</strong>: 화이트리스트 VIEW 경유 (slack<em>user</em>id, github_username 등 제외)</li><li><strong>보존 기한</strong>:<ul><li>kpi<em>result, work</em>log: 5년 보존 후 파기/익명화</li><li>audit_log: 5년 보존 후 파기/익명화</li><li>회의 녹화: 90일 후 자동 파기</li></ul></li></ul>
+<hr>
+<h2 id="주요-인덱스-전략">주요 인덱스 전략</h2>
+<pre class="code lang-sql"><code>-- ERP 동기화 &amp; 조인
+CREATE INDEX idx_erp_user_company_email ON erp_user(company_id, email);
+CREATE INDEX idx_erp_user_team ON erp_user(erp_team_id);
+CREATE INDEX idx_erp_user_role ON erp_user(role);
+CREATE INDEX idx_erp_user_is_active ON erp_user(is_active);
+
+-- 실시간 조회 (Godot 서버)
+CREATE INDEX idx_presence_office_floor ON presence(office_id, floor_id);
+CREATE INDEX idx_presence_status ON presence(status);
+CREATE INDEX idx_presence_updated_at ON presence(updated_at DESC);
+
+-- 좌석 배정
+CREATE INDEX idx_seat_assigned_user ON seat(assigned_user_id);
+CREATE INDEX idx_seat_floor_type ON seat(floor_id, type);
+CREATE UNIQUE INDEX idx_seat_number_unique ON seat(floor_id, seat_number) WHERE seat_number IS NOT NULL;
+
+-- 회의 &amp; 업무 조회
+CREATE INDEX idx_meeting_room_scheduled ON meeting(room_id, scheduled_at DESC);
+CREATE INDEX idx_meeting_host ON meeting(host_user_id);
+CREATE INDEX idx_meeting_participant_user ON meeting_participant(user_id, invited_at DESC);
+CREATE INDEX idx_work_log_user_date ON work_log(user_id, work_date DESC);
+
+-- KPI &amp; EOD 배치
+CREATE UNIQUE INDEX uq_kpi_result_metric ON kpi_result(user_id, period_type, period_key, metric);
+CREATE INDEX idx_kpi_result_objection ON kpi_result(objection_status);
+CREATE INDEX idx_kpi_result_pushed ON kpi_result(pushed_to_erp, pushed_at);
+CREATE INDEX idx_kpi_result_finalized ON kpi_result(finalized_at);
+CREATE INDEX idx_daily_status_push_status ON daily_status_push(status, target, created_at);
+CREATE INDEX idx_daily_status_push_user_date ON daily_status_push(user_id, push_date DESC);
+
+-- 감사
+CREATE INDEX idx_audit_log_entity ON audit_log(entity_type, entity_id);
+CREATE INDEX idx_audit_log_action_time ON audit_log(action, created_at DESC);
+CREATE INDEX idx_audit_log_user_time ON audit_log(user_id, created_at DESC);
+
+-- 팀 이동 이력
+CREATE INDEX idx_user_team_history_user ON user_team_history(user_id, valid_from DESC);
+CREATE INDEX idx_user_team_history_team ON user_team_history(erp_team_id, valid_from);
+
+-- 좌석 배정 이력
+CREATE INDEX idx_seat_assignment_history_seat ON seat_assignment_history(seat_id, assigned_at DESC);
+CREATE INDEX idx_seat_assignment_history_user ON seat_assignment_history(user_id, assigned_at DESC);</code></pre>
+<hr>
+<h2 id="13개-테이블-필드-매핑-요약">13개 테이블 필드 매핑 요약</h2>
+<p>(상세는 <code>04-data-model.md</code> §2 참조)</p>
+<h3 id="1-erp_user-erp-동기화">1. erp_user (ERP 동기화)</h3>
+<ul><li>id, company<em>id, email, name, erp</em>team<em>id, role, is</em>active(soft-delete)</li><li>FK: manager_id(self)</li></ul>
+<h3 id="2-org_group-조직-계층">2. org_group (조직 계층)</h3>
+<ul><li>id, company<em>id, name, type(division/department/part), parent</em>id(self)</li></ul>
+<h3 id="3-team_zone-팀구역-매핑">3. team_zone (팀↔구역 매핑)</h3>
+<ul><li>id, erp<em>team</em>id(FK to ERP), org<em>group</em>id, office<em>id, floor</em>id, zone_label</li></ul>
+<h3 id="4-office-사무실">4. office (사무실)</h3>
+<ul><li>id, company_id, name, address</li></ul>
+<h3 id="5-floor-층">5. floor (층)</h3>
+<ul><li>id, office<em>id(FK), level(INT), name, minimap</em>config(JSON)</li></ul>
+<h3 id="6-office_layout-레이아웃-버전">6. office_layout (레이아웃 버전)</h3>
+<ul><li>id, office<em>id, floor</em>id, version, status(draft/validated/deployed), json(JSONB), created<em>by, validated</em>by, deployed_at</li></ul>
+<h3 id="7-room-회의실라운지-등">7. room (회의실·라운지 등)</h3>
+<ul><li>id, floor<em>id, type(meeting/lounge/focus/phonebooth), name, capacity, coords(JSON), livekit</em>room</li></ul>
+<h3 id="8-seat-좌석">8. seat (좌석)</h3>
+<ul><li>id, floor<em>id, team</em>zone<em>id(nullable), assigned</em>user_id(nullable), type(fixed/free/temp/partner), status(available/occupied/disabled/reserved), coords(JSON)</li></ul>
+<h3 id="9-seat_assignment_history-좌석-배정-이력">9. seat<em>assignment</em>history (좌석 배정 이력)</h3>
+<ul><li>id, seat<em>id, user</em>id, assigned<em>at, unassigned</em>at, assigned_by, reason</li></ul>
+<h3 id="10-user_team_history-팀-이동-이력-new">10. user<em>team</em>history (팀 이동 이력) — NEW</h3>
+<ul><li>id, user<em>id, erp</em>team<em>id, valid</em>from, valid_to(NULL=현재)</li></ul>
+<h3 id="11-presence-실시간-상태">11. presence (실시간 상태)</h3>
+<ul><li>user<em>id(PK), office</em>id, floor<em>id, x/y/z, status(7종), updated</em>at(UTC)</li></ul>
+<h3 id="12-meeting-회의">12. meeting (회의)</h3>
+<ul><li>id, room<em>id, host</em>user<em>id, title, scheduled</em>at, started<em>at, ended</em>at, status, livekit<em>room, recording</em>url(90일 보존)</li></ul>
+<h3 id="12a-meeting_participant-회의-참석자">12a. meeting_participant (회의 참석자)</h3>
+<ul><li>id, meeting<em>id, user</em>id, invited<em>at, joined</em>at, left_at, role</li></ul>
+<h3 id="12b-meeting_minute-회의록">12b. meeting_minute (회의록)</h3>
+<ul><li>id, meeting<em>id(unique FK), title, summary, decisions, created</em>by, reviewed_by, status(draft/finalized)</li></ul>
+<h3 id="12c-action_item-액션아이템">12c. action_item (액션아이템)</h3>
+<ul><li>id, meeting<em>id, assignee</em>user<em>id, due</em>date, priority, status(open/in_progress/completed/cancelled)</li></ul>
+<h3 id="13-work_log-업무-기록">13. work_log (업무 기록)</h3>
+<ul><li>id, user<em>id, work</em>date, title, goal, status(started/completed), result<em>url, next</em>action</li></ul>
+<h3 id="14-kpi_result-kpi-평가-결과-정본">14. kpi_result (KPI 평가 결과 — 정본)</h3>
+<ul><li>id, user<em>id, period</em>type(daily/quarterly), period_key, metric(8가지), value</li><li>AI: ai<em>draft(JSONB), ai</em>draft<em>generated</em>at</li><li>관리: admin<em>adjusted</em>score, admin<em>note, admin</em>reviewed_at</li><li>이의신청: objection<em>status, objection</em>detail, objection<em>submitted</em>at, objection<em>resolved</em>at</li><li>확정: final<em>score, finalized</em>at</li><li>ERP 푸시: pushed<em>to</em>erp, pushed_at</li></ul>
+<h3 id="15-daily_status_push-배치-로그">15. daily<em>status</em>push (배치 로그)</h3>
+<ul><li>id, user<em>id, push</em>date, target(erp<em>daily</em>reports/erp<em>kpi</em>results), status(pending/sent/failed), payload(JSONB), run_id</li></ul>
+<h3 id="16-asset-3d-에셋">16. asset (3D 에셋)</h3>
+<ul><li>asset<em>id, asset</em>name, asset<em>type, license, downloaded</em>at, modified_by</li></ul>
+<h3 id="17-audit_log-감사">17. audit_log (감사)</h3>
+<ul><li>id, user<em>id(nullable), action, entity</em>type, entity<em>id, old</em>value(JSONB), new<em>value(JSONB), created</em>at(UTC, 5년 보존)</li></ul>
+<hr>
+<h2 id="14개-enum-타입">14개 Enum 타입</h2>
+<pre class="code lang-sql"><code>CREATE TYPE presence_status AS ENUM (
+  'offline', 'online', 'working', 'meeting', 'focus', 'away', 'external'
+);
+
+CREATE TYPE seat_type AS ENUM ('fixed', 'free', 'temp', 'partner');
+CREATE TYPE seat_status AS ENUM ('available', 'occupied', 'disabled', 'reserved');
+
+CREATE TYPE meeting_status AS ENUM (
+  'scheduled', 'in_progress', 'completed', 'cancelled'
+);
+
+CREATE TYPE office_layout_status AS ENUM (
+  'draft', 'validated', 'deployed', 'archived'
+);
+
+CREATE TYPE kpi_period_type AS ENUM ('daily', 'quarterly');
+CREATE TYPE kpi_objection_status AS ENUM (
+  'none', 'submitted', 'reviewing', 'resolved'
+);
+CREATE TYPE kpi_source AS ENUM ('virtual_office');
+
+CREATE TYPE erp_role AS ENUM (
+  'employee', 'leader', 'admin', 'super_admin'
+);
+
+CREATE TYPE org_group_type AS ENUM (
+  'division', 'department', 'part'
+);
+
+CREATE TYPE room_type AS ENUM (
+  'lobby', 'meeting', 'lounge', 'focus', 'phonebooth'
+);
+
+CREATE TYPE daily_status_push_target AS ENUM (
+  'erp_daily_reports', 'erp_kpi_results'
+);
+
+CREATE TYPE action_item_status AS ENUM (
+  'open', 'in_progress', 'completed', 'cancelled'
+);
+
+CREATE TYPE work_log_status AS ENUM (
+  'started', 'completed'
+);
+
+CREATE TYPE meeting_minute_status AS ENUM (
+  'draft', 'finalized'
+);</code></pre>
+<hr>
+<h2 id="다음-단계">다음 단계</h2>
+<ul><li class="task"><input type="checkbox" disabled> SQLAlchemy 모델 스켈레톤 작성 (<code>backend/app/models/tables.py</code>)</li><li class="task"><input type="checkbox" disabled> 마이그레이션 전략 정의 (<code>docs/data-model/migration-strategy.md</code>)</li><li class="task"><input type="checkbox" disabled> Alembic 초기 마이그레이션 생성 (<code>alembic/versions/001_init.py</code>)</li><li class="task"><input type="checkbox" disabled> 초기 fixtures 준비 (office/floor/room/샘플 레이아웃/테스트 직원 20명)</li><li class="task"><input type="checkbox" disabled> P0-T0.4 (API 계약 검증) 진행</li></ul>
+<div class="meta-foot">원본: <code>erd.md</code> · 자동 생성 2026-07-02 · md-to-html</div>
+</main>
+</div>
+
+<script type="module">
+try{
+  const m = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  m.default.initialize({startOnLoad:true, theme: dark?'dark':'default', securityLevel:'loose'});
+}catch(e){
+  document.querySelectorAll('.mermaid').forEach(el=>{
+    const pre=document.createElement('pre');pre.className='code';
+    pre.textContent=el.textContent;el.replaceWith(pre);
+  });
+}
+</script>
+</body></html>

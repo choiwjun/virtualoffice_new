@@ -1,0 +1,385 @@
+version: "2.0"
+
+# 공통 컴포넌트 정의
+# 2개 이상의 화면에서 반복되는 UI 컴포넌트
+# 작성일: 2026-07-02
+
+shared_components:
+  # ============================================================
+  # 1. 네비게이션 & 제어 컴포넌트
+  # ============================================================
+
+  - id: component-toolbar
+    type: toolbar
+    category: navigation
+    description: |
+      상단/하단 액션 바. 버튼, 드롭다운, 토글 조합.
+      예: [+ 추가], [배포], [검색], [내보내기], Undo/Redo 등.
+    properties:
+      position: [top, bottom, inline]
+      actions_type: [buttons, dropdowns, toggles, mixed]
+    used_by:
+      - screen-virtual-office-3d (header-toolbar: office/floor/search)
+      - screen-org-chart-editor (toolbar: add_dept, deploy, preview)
+      - screen-employee-directory (filter-toolbar: team, status, search, csv)
+      - screen-seat-layout-editor (toolbar: undo/redo, 3d-preview, save)
+      - screen-kpi-dashboard (header-controls: period, team, export)
+      - screen-meetings (date-selector: add meeting, view tabs)
+      - screen-work-log (date-tabs: period selection)
+    count: 7
+
+  - id: component-selector-dropdown
+    type: form
+    category: navigation
+    description: |
+      옵션 선택 드롭다운. 계층적 필터(office, floor, team, period 등).
+      단일선택, 다중선택 지원.
+    properties:
+      selection_type: [single, multiple]
+      data_source: [office, floor, team, status, period]
+    used_by:
+      - screen-virtual-office-3d (office/floor selector)
+      - screen-seat-layout-editor (office/floor selector)
+      - screen-employee-directory (team-filter, status-filter)
+      - screen-kpi-dashboard (period-selector, team-filter)
+      - screen-meetings (date-selector)
+    count: 5
+
+  - id: component-search-input
+    type: form
+    category: navigation
+    description: |
+      검색 입력 필드. 실시간 또는 엔터 기반 필터.
+      직원명, 이메일, 조직, 캘린더 검색 지원.
+    properties:
+      search_targets: [name, email, team, role, content]
+      trigger: [realtime, enter, button_click]
+    used_by:
+      - screen-virtual-office-3d (header search bar: 직원명/팀)
+      - screen-employee-directory (search input: name/email)
+      - screen-meetings (calendar search)
+    count: 3
+
+  # ============================================================
+  # 2. 데이터 표시 컴포넌트
+  # ============================================================
+
+  - id: component-table
+    type: table
+    category: data-display
+    description: |
+      구조화된 데이터 표시. 정렬, 필터, 페이지네이션, 선택 지원.
+      행 클릭 시 상세 패널/모달 열기.
+    properties:
+      features: [sortable, filterable, paginated, selectable]
+      row_action: [detail-panel, modal, navigate]
+    used_by:
+      - screen-employee-directory (employee-table)
+      - screen-work-log (work-list)
+    count: 2
+
+  - id: component-list
+    type: list
+    category: data-display
+    description: |
+      선형 데이터 표시. 팀, 구역, 참석자, 회의, 액션아이템 등.
+      체크박스, 드래그, 우클릭 메뉴 지원.
+    properties:
+      features: [selectable, draggable, contextMenu, filtered]
+    used_by:
+      - screen-org-chart-editor (react-flow-graph: 조직 노드)
+      - screen-seat-layout-editor (team-zones-list, layers-panel)
+      - screen-employee-directory (team-filter-dropdown, status-filter)
+      - screen-meetings (participant-list, action-item list)
+      - screen-work-log (work-list, action-item dashboard)
+    count: 5
+
+  - id: component-card
+    type: panel
+    category: data-display
+    description: |
+      카드형 데이터 요약. 정보 + 액션 버튼.
+      확장/축소, 클릭 시 상세 정보 표시.
+    properties:
+      content: [title, description, metadata, actions]
+      expandable: true
+    used_by:
+      - screen-virtual-office-3d (meeting-card summary)
+      - screen-meetings (meeting-card, action-item cards)
+      - screen-work-log (work-log-card, work-summary-card, report-summary-card)
+    count: 3
+
+  - id: component-badge
+    type: badge
+    category: data-display
+    description: |
+      상태/레이블 표시. presence status, meeting status, work status 등.
+      색상 및 아이콘으로 시각화.
+    properties:
+      badge_type: [status, label, counter, validation]
+      colors: [online-green, meeting-blue, focus-yellow, away-gray, offline-black]
+    used_by:
+      - screen-virtual-office-3d (avatar-hud-overlay: status badge)
+      - screen-employee-directory (status-badge: presence.status)
+      - screen-org-chart-editor (validation-banner: error/warning count)
+      - screen-meetings (participant-list: status icons)
+      - screen-work-log (status-badge: work status)
+      - screen-kpi-dashboard (status-badge: admin review status, erp-push-indicator)
+    count: 6
+
+  # ============================================================
+  # 3. 폼 & 입력 컴포넌트
+  # ============================================================
+
+  - id: component-form-modal
+    type: modal
+    category: input
+    description: |
+      모달 폼. 생성/수정/삭제 액션. 검증 메시지 포함.
+      [저장], [취소] 버튼.
+    properties:
+      actions: [create, update, delete, validate]
+      validation: [inline_errors, banner_messages]
+    used_by:
+      - screen-org-chart-editor (org_group 생성, team_zone 매핑)
+      - screen-seat-layout-editor (요소 편집)
+      - screen-meetings (meeting 생성, participant 추가)
+      - screen-work-log (work_log 생성/수정)
+    count: 4
+
+  - id: component-textarea
+    type: form
+    category: input
+    description: |
+      다중 라인 텍스트 입력. 마크다운 지원 옵션.
+      자동 저장, 문자수 제한.
+    used_by:
+      - screen-meetings (decisions-section, notes-section, review notes)
+      - screen-work-log (daily-status-form: 4개 텍스트 필드)
+      - screen-kpi-dashboard (ai-draft, admin-review notes)
+    count: 3
+
+  - id: component-date-picker
+    type: form
+    category: input
+    description: |
+      날짜 또는 기간 선택. 캘린더 또는 input type=date.
+    properties:
+      mode: [single, range, period]
+    used_by:
+      - screen-seat-layout-editor (filter by floor_id, created_at)
+      - screen-kpi-dashboard (period-selector)
+      - screen-meetings (calendar date selector)
+      - screen-work-log (date-tabs: date range)
+    count: 4
+
+  # ============================================================
+  # 4. 레이아웃 & 패널 컴포넌트
+  # ============================================================
+
+  - id: component-sidebar-panel
+    type: panel
+    category: layout
+    description: |
+      좌측/우측 사이드 패널. 네비게이션, 필터, 상세정보 표시.
+      접을 수 있는(collapsible) 구조.
+    properties:
+      position: [left, right]
+      content: [navigation, filters, details, palette]
+    used_by:
+      - screen-virtual-office-3d (sidebar-left: floor/zone/rooms/people)
+      - screen-virtual-office-3d (panel-right-people: 참석자 리스트)
+      - screen-org-chart-editor (detail_panel: node 상세정보)
+      - screen-seat-layout-editor (palette panels: 도구 모음)
+      - screen-seat-layout-editor (layers-panel, team-zones-list)
+      - screen-seat-layout-editor (properties-panel: 요소 속성)
+      - screen-employee-directory (detail-panel: 직원 상세정보)
+    count: 7
+
+  - id: component-split-view
+    type: layout
+    category: layout
+    description: |
+      화면을 2개 이상 구역으로 분할. 3D viewport + 2D panel 조합.
+      드래그로 크기 조절 가능(resizable).
+    properties:
+      split: [horizontal, vertical]
+      panels: [3d_viewport, 2d_canvas, form, preview]
+    used_by:
+      - screen-virtual-office-3d (viewport-3d-main + sidebar + right-panel + footer)
+      - screen-seat-layout-editor (canvas-2d + viewport-3d-preview + properties)
+    count: 2
+
+  - id: component-details-panel
+    type: panel
+    category: layout
+    description: |
+      오른쪽 슬라이드 인 패널. 테이블/리스트 행 선택 시 상세정보 표시.
+      읽기전용 표시 지원.
+    properties:
+      animation: slide_in
+      readonly_indicator: "🔒"
+    used_by:
+      - screen-employee-directory (detail-panel)
+      - screen-org-chart-editor (detail_panel)
+      - screen-meetings (meeting-details-panel)
+    count: 3
+
+  # ============================================================
+  # 5. 3D & 캔버스 컴포넌트
+  # ============================================================
+
+  - id: component-viewport-3d
+    type: viewport-3d
+    category: rendering
+    description: |
+      Godot 기반 3D 렌더링. 아바타, 가구, 구조 시각화.
+      WebSocket 실시간 동기화, 카메라 제어.
+    properties:
+      engine: godot-4
+      sync: websocket
+      interactive: [movement, camera_control, room_entry]
+    used_by:
+      - screen-virtual-office-3d (viewport-3d-main: 메인 3D 공간)
+      - screen-seat-layout-editor (viewport-3d-preview: 배치 검증)
+    count: 2
+
+  - id: component-canvas-2d
+    type: canvas
+    category: rendering
+    description: |
+      Konva.js 기반 2D 캔버스. 좌석, 벽, 구역 배치 편집.
+      드래그, 회전, 도구 기반 그리기.
+    properties:
+      library: konva-js
+      tools: [desk, wall, zone_paint, delete]
+      features: [drag, rotate, zoom, undo_redo]
+    used_by:
+      - screen-seat-layout-editor (canvas-2d)
+    count: 1
+
+  # ============================================================
+  # 6. 상태 표시 컴포넌트
+  # ============================================================
+
+  - id: component-empty-state
+    type: panel
+    category: feedback
+    description: |
+      데이터 없음 상태. 메시지 + 액션 버튼.
+      아이콘/일러스트 포함.
+    properties:
+      triggers: [no_data, no_results, first_load]
+      actions: [add_button, search_change, filter_reset]
+    used_by:
+      - screen-employee-directory (empty state: 검색 결과 0개)
+      - screen-org-chart-editor (빈 조직도)
+      - screen-meetings (빈 회의 목록)
+      - screen-work-log (empty-state: 업무 없음)
+    count: 4
+
+  - id: component-error-state
+    type: panel
+    category: feedback
+    description: |
+      에러 상태. 에러 메시지 + 원인 + 복구 액션.
+      [재시도], [로그 확인], [관리자 연락] 버튼.
+    properties:
+      triggers: [api_failure, network_error, validation_failure]
+      actions: [retry, view_logs, contact_support, dismiss]
+    used_by:
+      - screen-virtual-office-3d (meeting 입장 실패)
+      - screen-employee-directory (erp-sync failure)
+      - screen-seat-layout-editor (3d-preview load fail)
+      - screen-kpi-dashboard (ai-draft generation fail)
+      - screen-work-log (eod-batch failure)
+    count: 5
+
+  - id: component-validation-banner
+    type: badge
+    category: feedback
+    description: |
+      검증 결과 배너. 에러/경고/성공 메시지.
+      타입별 아이콘(❌ ⚠️ ✓).
+    properties:
+      status: [error, warning, success]
+      icons: ["❌", "⚠️", "✓"]
+    used_by:
+      - screen-org-chart-editor (validation-banner: circular ref, unmapped teams)
+      - screen-seat-layout-editor (validation-checklist)
+    count: 2
+
+  - id: component-loading-indicator
+    type: panel
+    category: feedback
+    description: |
+      로딩 상태 표시. 스피너, 진행바, 스켈레톤 UI.
+    properties:
+      variants: [spinner, progress_bar, skeleton]
+    used_by:
+      - screen-org-chart-editor (배포 진행바)
+      - screen-seat-layout-editor (3d 렌더링 로딩)
+      - screen-employee-directory (목록 로딩)
+    count: 3
+
+  # ============================================================
+  # 7. 고급 컴포넌트
+  # ============================================================
+
+  - id: component-chart-progress-bar
+    type: chart
+    category: visualization
+    description: |
+      진행도 바. 비율, 색상 표시(초록/노랑/빨강).
+      라벨, 값 포함.
+    used_by:
+      - screen-work-log (progress-bar: 완료도)
+      - screen-kpi-dashboard (metric-progress-bars: 지표별 진행도)
+    count: 2
+
+  - id: component-calendar-grid
+    type: grid
+    category: visualization
+    description: |
+      캘린더 뷰. 일간/주간/월간 회의 일정 표시.
+      Google Calendar 유사 UI.
+    used_by:
+      - screen-meetings (calendar-view)
+    count: 1
+
+  - id: component-timeline-history
+    type: list
+    category: visualization
+    description: |
+      버전/히스토리 타임라인. 상태(draft/validated/deployed) 표시.
+      배포/롤백 액션 포함.
+    used_by:
+      - screen-seat-layout-editor (version-history)
+    count: 1
+
+metadata:
+  total_shared_components: 29
+  categories:
+    navigation: 3
+    data_display: 5
+    input: 4
+    layout: 3
+    rendering: 2
+    feedback: 4
+    visualization: 3
+    advanced: 2
+
+component_usage_summary:
+  most_used:
+    - component-toolbar (7 screens)
+    - component-selector-dropdown (5 screens)
+    - component-sidebar-panel (7 screens)
+    - component-badge (6 screens)
+    - component-empty-state (4 screens)
+    - component-error-state (5 screens)
+  essential:
+    - component-toolbar
+    - component-sidebar-panel
+    - component-badge
+    - component-details-panel
+    - component-form-modal

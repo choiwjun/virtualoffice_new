@@ -1,0 +1,190 @@
+version: "2.0"
+screen:
+  name: "회의 & 회의록 관리"
+  route: "/meetings"
+  platform: web
+  layout: sidebar-main
+
+data_requirements:
+  - resource: meeting
+    needs: [id, room_id, title, description, scheduled_at, started_at, ended_at, host_user_id, status, livekit_room, recording_url, meeting_minute_id]
+    filters:
+      scheduled_at: "?date"
+      status: "?status"
+    mutations: [create, update, delete]
+    access: read-write
+
+  - resource: meeting_participant
+    needs: [id, meeting_id, user_id, invited_at, joined_at, left_at, role]
+    mutations: [create, update]
+    access: read-write
+
+  - resource: meeting_minute
+    needs: [id, meeting_id, title, summary, decisions, action_items_summary, notes, attachments, created_by, reviewed_by, status, created_at, updated_at]
+    mutations: [create, update]
+    access: read-write
+
+  - resource: action_item
+    needs: [id, meeting_id, title, description, assignee_user_id, due_date, priority, status, related_ref, completed_at]
+    mutations: [create, update]
+    access: read-write
+
+  - resource: room
+    needs: [id, floor_id, type, name, capacity, livekit_room, status]
+    mutations: []
+    access: read-only
+
+  - resource: erp_user
+    needs: [id, name, email, position, erp_team_id]
+    mutations: []
+    access: read-only
+
+components:
+  - id: calendar-view
+    type: grid
+    position: main
+    function: "일간/주간/월간 회의 일정 표시 (Google Calendar 유사)"
+    data_source:
+      resource: meeting
+
+  - id: date-selector
+    type: toolbar
+    position: top
+    function: "[+ 회의 예약] [오늘] [주간] [월간] [검색] 탭"
+
+  - id: meeting-card
+    type: panel
+    position: main
+    function: "회의 카드: 시간, 제목, 방, 참석자 상태(✓/X/O/?) 표시"
+    data_source:
+      resource: meeting
+
+  - id: meeting-card-actions
+    type: toolbar
+    position: main
+    function: "[입장하기] [취소] (scheduled), [나가기] [녹화중] [공유] (in_progress), [회의록 작성] [조회] (completed)"
+
+  - id: meeting-details-panel
+    type: panel
+    position: right
+    function: "회의 세부정보: 호스트, 방, 예정시간, 실제 시간, LiveKit room ID 표시"
+    data_source:
+      resource: meeting
+
+  - id: participant-list
+    type: list
+    position: right
+    function: "참석자 목록: 이름, 상태(온라인/미응답/초대됨), 입장/퇴장 시각"
+    data_source:
+      resource: meeting_participant
+
+  - id: participant-actions
+    type: toolbar
+    position: right
+    function: "[참석자 추가] [공유 화면] [녹화] [채팅] [회의록 편집] [종료]"
+
+  - id: meeting-minute-form
+    type: form
+    position: main
+    function: "회의록 편집: 주요 결정사항, 액션아이템, 자유 노트 입력"
+    data_source:
+      resource: meeting_minute
+
+  - id: decisions-section
+    type: panel
+    position: main
+    function: "📝 주요 결정사항: 텍스트 리스트 입력, [+ 추가] 버튼"
+
+  - id: action-items-section
+    type: panel
+    position: main
+    function: "📋 액션아이템: 담당자, 제목, 기한(Due), 상태 입력, [+ 새 액션] 버튼"
+    data_source:
+      resource: action_item
+
+  - id: notes-section
+    type: panel
+    position: main
+    function: "📄 자유 노트: 마크다운 텍스트 편집 (Whisper 자동 전사 선택)"
+
+  - id: minute-metadata
+    type: panel
+    position: main
+    function: "참석자, 작성자, 작성일시, 버튼: [저장] [공개] [초안] [휴지통]"
+
+  - id: action-item-dashboard
+    type: grid
+    position: main
+    function: "나의 액션아이템 대시보드: 필터[진행중] [완료] [기한임박], 카드형 표시(회의명, 기한, 상태)"
+    data_source:
+      resource: action_item
+
+events:
+  - on: "click-meeting-card"
+    do: "show-meeting-details-panel"
+
+  - on: "meeting-status-change-to-completed"
+    do: "show-meeting-minute-form-auto"
+
+  - on: "click-enter-room"
+    do: "generate-livekit-token-and-launch-video"
+
+  - on: "submit-meeting-minute"
+    do: "create-or-update-meeting_minute + notify-participants"
+
+  - on: "add-action-item"
+    do: "create-action_item + notify-assignee"
+
+  - on: "update-action-item-status"
+    do: "update-action_item.status"
+
+tests:
+  - name: "회의 목록 정상 표시"
+    when: "사용자가 /meetings 페이지 접속, 당일 회의 3개 존재 (Standup, Q3Planning, CodeReview)"
+    then:
+      - "캘린더에 2026-07-01 회의 3개 표시"
+      - "각 회의 카드에 시간, 제목, 방, 참석자 상태 아이콘 표시"
+      - "진행중 회의는 [나가기] [녹화중] [공유] 버튼 활성화"
+      - "예정 회의는 [입장하기] [취소] 버튼 활성화"
+
+  - name: "회의록 작성 및 액션아이템 추가"
+    when: "회의 종료 후 meeting_minute_form 자동 표시, 사용자가 결정사항/액션아이템 3개 입력 후 저장"
+    then:
+      - "meeting_minute (id, decisions, notes, created_by, status=draft) 저장"
+      - "action_item 3개 (title, assignee_user_id, due_date, status=open) 생성"
+      - "관련 참석자 & 담당자에 알림 발송"
+      - "회의록 상태가 draft → finalized로 변경 가능"
+
+  - name: "액션아이템 대시보드 필터링"
+    when: "사용자가 아이템 12개(진행중 3, 완료 9) 보유 중 [진행중] 필터 클릭"
+    then:
+      - "진행중(open) 아이템 3개만 표시"
+      - "각 아이템 카드에 회의명, 기한, 남은 날수 표시"
+      - "[완료] 필터 클릭 시 완료된 아이템 9개 표시"
+
+  - name: "회의 입장 실패 오류 처리"
+    when: "사용자가 회의실 입장 시도, 용량 초과 또는 LiveKit 연결 실패"
+    then:
+      - "오류 모달: ❌ 회의실에 입장할 수 없습니다"
+      - "원인 표시: 용량 초과 또는 네트워크 연결 실패"
+      - "[재시도] [처음으로] [고객지원] 버튼 제공"
+
+  - name: "회의 목록 빈 상태"
+    when: "사용자가 미래 날짜 선택 시 회의 없음"
+    then:
+      - "빈 상태 메시지: '오늘 예정된 회의가 없습니다'"
+      - "[회의 예약하기] [다른 날짜 보기] 버튼 표시"
+
+notes:
+  - "LiveKit 토큰 생성은 /api/meetings/{id}/livekit-token 엔드포인트에서 처리"
+  - "실시간 presence 업데이트: WebSocket으로 meeting_participant.joined_at/left_at 동기화"
+  - "회의록 Whisper 자동 전사: 백엔드 비동기 작업, 선택 기능"
+  - "액션아이템 추적: action_item.status (open/in_progress/completed/cancelled) 상태 관리"
+  - "기한 임박 표시: 현재일 기준 due_date ≤ N일 남음 (N=2로 계획)"
+  - "권한: host_user_id만 회의록/액션아이템 수정 가능, assignee는 status만 업데이트"
+
+open_questions:
+  - "Whisper API 호출 타이밍: 회의 종료 직후 vs 수동 트리거?"
+  - "액션아이템 completed_evidence_url 필드 입력 방식 (모달? 인라인?)"
+  - "회의 녹화(recording_url) 저장소: S3 기본값?"
+  - "참석자 초대 알림 채널: Slack 통합? 우리 앱 푸시?"

@@ -1,0 +1,145 @@
+version: "2.0"
+
+screen:
+  name: 조직도 편집기
+  route: /admin/org-chart
+  platform: web
+  layout: sidebar-main
+  description: ERP teams + org_group 계층 시각화 및 편집. React Flow 노드 그래프로 본부/부서/파트/팀 구조 관리.
+
+data_requirements:
+  - resource: org_group
+    needs: [id, name, type, parent_id, color, sort_order, company_id, created_at, updated_at]
+    filters:
+      company_id: "?company_id"
+    mutations: [create, update, delete]
+    access: read-write
+    note: 조직 계층 구조. type={division|department|part}. parent_id는 self-reference(nullable).
+
+  - resource: team_zone
+    needs: [id, erp_team_id, org_group_id, office_id, floor_id, zone_label, color, polygon, created_at, updated_at]
+    filters:
+      org_group_id: "?org_group_id"
+      office_id: "?office_id"
+    mutations: [update]
+    access: read-write
+    note: ERP 팀 ↔ org_group 매핑. 그래프 엣지로 표현.
+
+  - resource: erp_user
+    needs: [id, name, email, erp_team_id, position, role]
+    filters:
+      company_id: "?company_id"
+    mutations: []
+    access: read-only
+    note: 각 팀의 인원수 표시용. 팀 노드에 "현재 인원: N" 표기.
+
+components:
+  - id: toolbar
+    type: toolbar
+    position: top
+    function: 조직 및 매핑 관리 액션 바
+    events:
+      - on: click_add_dept
+        do: org_group 생성 모달 열기
+      - on: click_add_mapping
+        do: team_zone 매핑 모달 열기
+      - on: click_deploy
+        do: 검증 후 배포 진행
+      - on: click_preview
+        do: 3D 오피스에서 구역 미리보기
+      - on: click_help
+        do: 도움말 패널 표시
+
+  - id: react_flow_graph
+    type: canvas
+    position: main
+    function: React Flow 노드/에지 기반 그래프. 노드 유형={Division(직사각형,색상)|Department(약간작은)|Part(원형)|Team(사각형,직원수)}. 노드 드래그 재배열, 우클릭 메뉴 {Edit|Delete|Recolor}. Undo/Redo 지원.
+    data_source:
+      resource: org_group
+    note: company_id 범위 내의 모든 org_group을 트리 구조로 렌더링. team_zone의 erp_team_id를 노드에 연결.
+
+  - id: detail_panel
+    type: panel
+    position: right
+    function: 선택된 노드의 상세 정보 표시. org_group 속성(이름/타입/색상) + 연결된 team_zone 목록 + 직원 정보 요약.
+    events:
+      - on: select_node
+        do: 해당 노드의 상세 정보 로드
+      - on: click_edit_detail
+        do: 인라인 편집 폼 활성화
+      - on: click_delete_detail
+        do: 삭제 확인 모달
+
+  - id: validation_banner
+    type: badge
+    position: top
+    function: 검증 상태 표시. 배포 전 오류/경고 요약(순환참조, 미매핑 팀, 고아 노드).
+    note: 오류 수 클릭 시 상세 패널 열림.
+
+  - id: undo_redo
+    type: toolbar
+    position: top
+    function: Undo/Redo 버튼(또는 Ctrl+Z/Ctrl+Shift+Z)
+
+  - id: error_detail_modal
+    type: modal
+    position: overlay
+    function: 검증 실패 시 오류 목록과 수정 가이드 제시. "❌ {오류명}" 형식.
+    events:
+      - on: click_fix
+        do: 문제 노드로 자동 스크롤
+
+tests:
+  - name: 빈 조직도 상태 - 첫 로드
+    when: 조직도 편집기 첫 접근, org_group 0개
+    then:
+      - 빈 그래프 캔버스 표시
+      - "[+ 부서 추가] [+ 팀 매핑] [배포] [미리보기] [도움말]" 버튼 모두 표시되지만 [배포]는 비활성화
+      - 우측 패널에 "아직 조직 구조가 없습니다. [부서 추가] 버튼으로 시작하세요." 메시지
+      - validation_banner는 표시 안 함
+
+  - name: 정상 조직 구조 편집 - 트리 표시 및 드래그
+    when: org_group 3개(Division 1 → Department 1 → Part 1), team_zone 1개 존재. 사용자가 노드를 드래그해서 순서 변경.
+    then:
+      - React Flow 그래프에 트리 구조 계층적 표시(부모→자식 엣지)
+      - 노드 우클릭 시 {Edit|Delete|Recolor} 메뉴 표시
+      - 드래그 후 sort_order 자동 갱신
+      - Undo/Redo로 드래그 전 상태 복구 가능
+      - 우측 패널에 선택 노드의 상세정보(이름, 타입, 색상, 연결된 팀 수) 표시
+
+  - name: 검증 실패 - 순환참조 감지
+    when: Part A의 parent_id를 Part A의 자식으로 설정 후 [배포] 클릭
+    then:
+      - validation_banner에 "❌ 순환참조 감지 (1개)" 표시
+      - error_detail_modal 열림: "Part A → Part B → Part A 순환 감지"
+      - [수정하기] 버튼으로 Part A 자동 선택 및 스크롤
+      - [무시하고 배포] 버튼은 비활성화(강제 수정)
+
+  - name: 검증 실패 - ERP 팀 미매핑
+    when: ERP teams 10개 중 team_zone 매핑 7개만 존재. [배포] 클릭.
+    then:
+      - validation_banner에 "⚠️ 미매핑된 팀 (3개)" 경고 표시
+      - error_detail_modal: 미매핑 팀 목록(예: team_1 인사팀, team_5 재무팀)
+      - [팀 매핑] 버튼 클릭 시 team_zone 생성 모달 열림(ERP 팀 선택→org_group 할당)
+      - [무시하고 배포]로 진행 가능(경고이지만 배포 허용)
+
+  - name: 정상 배포 - 검증 통과 후 배포
+    when: 순환참조 없음 + 모든 ERP 팀 매핑 + [배포] 클릭
+    then:
+      - "배포 중..." 진행바 표시
+      - office_layout 재계산 배치 트리거(백엔드)
+      - 완료 후 "배포 완료 (2026-07-02 14:30)" 토스트 메시지
+      - 그래프는 잠시 readonly 전환 후 다시 활성화(또는 새로고침)
+      - audit_log에 action=org_group_deployed 기록
+
+notes:
+  - React Flow는 노드 위치(x, y)를 브라우저 localStorage에 캐시해 재방문 시 원래 위치 복구
+  - team_zone의 polygon 필드는 좌석배치 2D 편집기와 별도(하단 시각화 용도)
+  - ERP 팀과의 양방향 동기화는 없음(읽기 전용)
+  - Division은 color 필드로 3D 구역에 표시되므로 색상 선택 필수
+  - 배포 시 audit_log(action=org_group_deployed) 기록은 서버측 교차관심사(자동)로 처리
+
+open_questions:
+  - org_group 삭제 시 하위 자식도 삭제할지, 고아 처리할지?
+  - team_zone 재매핑 시 기존 team_zone.polygon(좌석 배치)은 어떻게 할지?
+  - 다중 office 지원 시 office_id 필터링은 조직도 편집기에서 필요한가?

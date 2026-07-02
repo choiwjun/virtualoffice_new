@@ -1,0 +1,199 @@
+version: "2.0"
+
+screen:
+  name: 직원명부 (Employee Directory)
+  route: /admin/employees
+  platform: web
+  layout: sidebar-main
+
+data_requirements:
+  - resource: erp_user
+    needs: [id, name, erp_team_id, position, position_id, role, email, work_type, work_hours, last_synced_at]
+    filters:
+      team: "?team_id"
+      name_or_email: "?search"
+    access: read-only
+
+  - resource: presence
+    needs: [user_id, status, updated_at]
+    filters:
+      user_id: "?erp_user.id"
+    access: read-only
+
+  - resource: seat
+    needs: [assigned_user_id, seat_number, floor_id]
+    filters:
+      assigned_user_id: "?erp_user.id"
+    access: read-only
+
+  - resource: team_zone
+    needs: [erp_team_id, zone_label]
+    filters:
+      erp_team_id: "?erp_user.erp_team_id"
+    access: read-only
+
+  - resource: job_position
+    needs: [id, name]
+    filters:
+      id: "?erp_user.position_id"
+    access: read-only
+
+components:
+  - id: filter-toolbar
+    type: toolbar
+    position: top
+    function: 팀 선택, 상태 필터, 직원 검색, 추가 액션(CSV, 새로고침)
+    data_source: null
+
+  - id: team-filter-dropdown
+    type: list
+    position: top
+    function: 팀 목록 필터 (team_zone.erp_team_id 기준)
+    data_source:
+      resource: team_zone
+
+  - id: status-filter-dropdown
+    type: list
+    position: top
+    function: 상태 필터 (온라인|회의중|오프라인|집중 등 presence.status)
+    data_source:
+      resource: presence
+
+  - id: search-input
+    type: form
+    position: top
+    function: 직원명 또는 이메일 검색
+    data_source: null
+
+  - id: csv-export-button
+    type: toolbar
+    position: top
+    function: CSV 다운로드 (현재 필터 결과)
+    data_source: null
+
+  - id: refresh-button
+    type: toolbar
+    position: top
+    function: 목록 새로고침
+    data_source: null
+
+  - id: employee-table
+    type: table
+    position: main
+    function: 직원 목록 표시 (페이지네이션 포함)
+    data_source:
+      resource: erp_user
+    columns:
+      - field: name
+        label: 이름
+        width: "20%"
+      - field: erp_team_id
+        label: 팀
+        width: "20%"
+        reference: team_zone.zone_label
+      - field: position
+        label: 직급
+        width: "15%"
+        reference: job_position.name
+      - field: seat.seat_number
+        label: 좌석
+        width: "15%"
+        reference: seat.seat_number
+      - field: presence.status
+        label: 상태
+        width: "15%"
+        badge: true
+        reference: presence.status
+      - field: last_synced_at
+        label: 마지막 갱신
+        width: "15%"
+    sortable: [name, position, last_synced_at]
+    readonly_indicator: "🔒 ERP 동기화 데이터"
+
+  - id: pagination
+    type: toolbar
+    position: bottom
+    function: 페이지네이션 (1, 2, 3, ..., 다음, 이전)
+    data_source:
+      resource: erp_user
+
+  - id: detail-panel
+    type: panel
+    position: right
+    function: 행 클릭 시 직원 상세정보 슬라이드패널
+    data_source:
+      resource: erp_user
+    readonly_indicator: "🔒 읽기 전용: ERP에서 자동 동기화됨. 편집은 ERP 관리자만."
+
+events:
+  - on: team-filter-dropdown-change
+    do: table-refilter-by-erp_team_id
+
+  - on: status-filter-dropdown-change
+    do: table-refilter-by-presence_status
+
+  - on: search-input-change
+    do: table-filter-by-name-or-email
+
+  - on: csv-export-button-click
+    do: export-filtered-results-as-csv
+
+  - on: refresh-button-click
+    do: reload-employee-list-from-api
+
+  - on: table-row-click
+    do: open-detail-panel-with-employee-data
+
+  - on: detail-panel-close
+    do: refresh-table-if-data-updated
+
+tests:
+  - name: 직원 목록 조회 (정상)
+    when: 페이지 로드 시 모든 직원 데이터 조회
+    then:
+      - 테이블에 최소 1명 이상의 직원이 표시됨
+      - 각 행: 이름, 팀, 직급, 좌석, 상태, 마지막 갱신 열 표시
+      - 읽기전용 표시(🔒) 또는 회색 배경 확인
+      - 페이지네이션 활성화 (10명 이상)
+
+  - name: 팀 필터링
+    when: 팀 필터드롭다운에서 "웹팀" 선택
+    then:
+      - 테이블이 해당 team_zone.erp_team_id만 표시
+      - 필터 상태가 URL(?team_id=...) 반영
+      - 행 수 감소 확인
+
+  - name: 이름 검색
+    when: 검색창에 "Kim" 입력
+    then:
+      - 테이블에 이름 또는 이메일에 "Kim" 포함된 직원만 표시
+      - 실시간 필터 또는 엔터 후 필터 적용
+      - 검색 결과 개수 표시
+
+  - name: 빈 상태 (직원 없음)
+    when: 팀 필터가 없는 팀 또는 검색 결과 0개인 경우
+    then:
+      - 테이블 대신 메시지: "조회 결과가 없습니다. [필터 초기화] [검색 변경]"
+      - 아이콘: 📭 또는 빈 상태 일러스트레이션 표시
+
+  - name: ERP 동기화 오류
+    when: API 호출 실패(401, 500, timeout) 시
+    then:
+      - 오류 패널: "❌ ERP 동기화 실패"
+      - 오류 원인: "서비스 계정 JWT 만료" 또는 "네트워크 오류"
+      - 액션 버튼: [관리자에게 알림] [재시도] [로그 확인] [닫기]
+      - 마지막 성공 시간 표시
+
+open_questions:
+  - team_zone과 erp_team 엔티티의 정확한 조인 관계 확인 필요 (erp_team 직접 정의 부족?)
+  - erp_user.erp_team_id vs position_id 필드 명칭 일관성 (리소스명에서 position_id 확인됨)
+  - presence.status 상태값 전체 목록 (online|working|meeting|focus|away|trip_moving|trip_arrived|external|returning|offline 중 화면에 표시할 상태)
+  - CSV 다운로드 데이터 포맷 및 열 순서 확인
+  - 상세패널의 추가 정보 (보고대상, Slack, GitHub, 근무 설정, 좌석 할당일, 층 정보) 표시 여부
+  - 관리자 권한(role=admin|leader) 확인 로직
+
+notes:
+  - 모든 데이터는 ERP read-only로 표시 필수
+  - 직원 구체적 편집은 불가 (ERP에서만 가능)
+  - 상세패널에서 슬라이드인 애니메이션 추천
+  - 모바일 레스폰시브: 테이블 → 카드 리스트 변환 고려

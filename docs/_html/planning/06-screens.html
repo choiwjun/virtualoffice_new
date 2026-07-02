@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06-screens.md: 화면 명세</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">06-screens.md: 화면 명세</div><div class="sub">06-screens.md</div><a class="lvl1" href="#06-screensmd-화면-명세">06-screens.md: 화면 명세</a><a class="lvl2" href="#메타-정보">메타 정보</a><a class="lvl3" href="#작성열람-경계-원칙-godot-웹">작성/열람 경계 원칙 (Godot ↔ 웹)</a><a class="lvl2" href="#1-3d-메인-오피스-화면-godot-4-native-desktop">1. 3D 메인 오피스 화면 (Godot 4 Native Desktop)</a><a class="lvl3" href="#11-전체-레이아웃-구조">1.1 전체 레이아웃 구조</a><a class="lvl3" href="#12-각-영역-상세">1.2 각 영역 상세</a><a class="lvl3" href="#13-상호작용-플로우-godot-헤드리스-서버-기반">1.3 상호작용 플로우 (Godot 헤드리스 서버 기반)</a><a class="lvl2" href="#2-웹-관리업무-콘솔-nextjs-tailwindcss">2. 웹 관리·업무 콘솔 (Next.js + TailwindCSS)</a><a class="lvl3" href="#21-화면-목록-및-계층">2.1 화면 목록 및 계층</a><a class="lvl3" href="#22-각-화면-상세-명세">2.2 각 화면 상세 명세</a><a class="lvl2" href="#3-개별-화면-상세-정의">3. 개별 화면 상세 정의</a><a class="lvl3" href="#31-조직도-편집기-organization-chart-editor">3.1 조직도 편집기 (Organization Chart Editor)</a><a class="lvl3" href="#32-직원명부-employee-directory">3.2 직원명부 (Employee Directory)</a><a class="lvl3" href="#33-좌석-배치-편집기-seat-assignment-layout-manager">3.3 좌석 배치 편집기 (Seat Assignment &amp; Layout Manager)</a><a class="lvl3" href="#34-kpi-대시보드-kpi-dashboard">3.4 KPI 대시보드 (KPI Dashboard)</a><a class="lvl3" href="#35-회의회의록-meeting-meeting-minutes">3.5 회의/회의록 (Meeting &amp; Meeting Minutes)</a><a class="lvl3" href="#36-업무기록-work-log-reports">3.6 업무기록 (Work Log &amp; Reports)</a><a class="lvl3" href="#37-이의신청-kpi-objection">3.7 이의신청 (KPI Objection)</a><a class="lvl3" href="#38-로그인-세션-만료-auth">3.8 로그인 / 세션 만료 (Auth)</a><a class="lvl3" href="#39-아바타-커스터마이징-avatar">3.9 아바타 커스터마이징 (Avatar)</a><a class="lvl3" href="#310-권한-규칙-접근-매트릭스-rbac">3.10 권한 규칙 &amp; 접근 매트릭스 (RBAC)</a><a class="lvl3" href="#311-자율좌석free-seat-점유-반납">3.11 자율좌석(Free Seat) 점유 / 반납</a><a class="lvl3" href="#312-관리자-동기화-모니터링-콘솔">3.12 관리자 동기화 모니터링 콘솔</a><a class="lvl2" href="#4-화면-전체-흐름도">4. 화면 전체 흐름도</a><a class="lvl2" href="#5-주요-화면의-상태-정의">5. 주요 화면의 상태 정의</a><a class="lvl3" href="#51-빈-상태-empty-states">5.1 빈 상태 (Empty States)</a><a class="lvl3" href="#52-오류실패-상태-error-states">5.2 오류/실패 상태 (Error States)</a><a class="lvl2" href="#6-각-화면의-주요-컴포넌트-의존성">6. 각 화면의 주요 컴포넌트 &amp; 의존성</a><a class="lvl3" href="#61-컴포넌트-레이어-구조">6.1 컴포넌트 레이어 구조</a><a class="lvl3" href="#62-화면별-의존-엔티티">6.2 화면별 의존 엔티티</a><a class="lvl2" href="#7-배포-렌더링-전략">7. 배포 &amp; 렌더링 전략</a><a class="lvl3" href="#71-3d-클라이언트-godot-native">7.1 3D 클라이언트 (Godot Native)</a><a class="lvl3" href="#72-웹-콘솔-nextjs">7.2 웹 콘솔 (Next.js)</a><a class="lvl3" href="#73-성능-목표-d22">7.3 성능 목표 (D22)</a><a class="lvl2" href="#loop-metadata">Loop Metadata</a><a class="lvl3" href="#upstream-documents-referenced">Upstream documents referenced</a><a class="lvl3" href="#downstream-documents-affected">Downstream documents affected</a><a class="lvl3" href="#open-questions">Open questions</a><a class="lvl3" href="#assumptions">Assumptions</a><a class="lvl3" href="#validation-criteria">Validation criteria</a><a class="lvl3" href="#risks">Risks</a><a class="lvl2" href="#8-변경-이력">8. 변경 이력</a></nav>
+<main><h1 id="06-screensmd-화면-명세">06-screens.md: 화면 명세</h1>
+<h2 id="메타-정보">메타 정보</h2>
+<ul><li><strong>프로젝트</strong>: vituraloffice_new (가상오피스 운영 플랫폼)</li><li><strong>작성일</strong>: 2026-07-01</li><li><strong>최종 갱신</strong>: 2026-07-02</li><li><strong>버전</strong>: 1.1</li><li><strong>대상</strong>: 개발/기획 경험 있는 실무자 (L3)</li><li><strong>목적</strong>: screen-spec 입력 문서. 3D 오피스 + 웹 관리 콘솔의 모든 화면 정의</li><li><strong>참조</strong>: 00-decisions.md(정본 결정, 특히 D5·D11·D12·D15·D20·D22), 05-office-layout-schema.md(레이아웃 스키마 정본)</li></ul>
+<blockquote>이 문서는 00-decisions.md의 정본 결정을 따른다. 충돌 시 00-decisions.md가 이긴다.</blockquote>
+<h3 id="작성열람-경계-원칙-godot-웹">작성/열람 경계 원칙 (Godot ↔ 웹)</h3>
+<ul><li><strong>Godot 데스크톱 클라이언트 = 보기/입장/상태</strong>: 3D 오피스 탐색, 회의실 입장, 프레즌스 표시, 좌석 점유/반납 같은 실시간 상호작용만 담당한다. <strong>문서 작성 폼(회의록·업무기록 등)을 Godot 안에 두지 않는다.</strong></li><li><strong>웹 관리·업무 콘솔 = 모든 작성</strong>: 회의록·업무기록·KPI 검토·이의신청·조직도/좌석 편집 등 모든 데이터 입력·편집은 웹에서 한다.</li><li>Godot의 하단 패널 등에서 작성이 필요하면 &quot;웹 콘솔로 이동&quot; 링크로 단일화한다(중복 폼 금지).</li></ul>
+<hr>
+<h2 id="1-3d-메인-오피스-화면-godot-4-native-desktop">1. 3D 메인 오피스 화면 (Godot 4 Native Desktop)</h2>
+<h3 id="11-전체-레이아웃-구조">1.1 전체 레이아웃 구조</h3>
+<pre class="code"><code>┌─────────────────────────────────────────────────────────────────────┐
+│                         Header (상단)                               │
+│  [Company Logo] [Office/Floor 선택] [Search] [User Profile] [Help]  │
+├─────────┬──────────────────────────────────────────────┬────────────┤
+│         │                                              │            │
+│ Left    │                                              │  Right     │
+│ Sidebar │         3D Main Viewport                     │  Panel     │
+│ (Sidecar)│                                              │ (People)   │
+│         │  - 로비, 브랜드월, 오픈좌석,                 │            │
+│         │  - 유리 회의실, 라운지, 집중실              │ - 현재 참석│
+│         │  - 폰부스, 아바타×5~10                       │ - 상태별   │
+│         │  - 이름/상태 HUD, 우측 직원패널             │ - 조직도   │
+│         │  - 하단 회의/업무 패널                       │ - 검색     │
+│         │  - 미니맵                                    │            │
+│         │                                              │            │
+├─────────┼──────────────────────────────────────────────┼────────────┤
+│                    Footer (하단)                                    │
+│  [Meeting Controls] [Work Panel] [Chat Notify] [Time] [Status]      │
+└─────────────────────────────────────────────────────────────────────┘</code></pre>
+<h3 id="12-각-영역-상세">1.2 각 영역 상세</h3>
+<h4 id="header-상단"><strong>Header (상단)</strong></h4>
+<ul><li><strong>로고 + 회사명</strong>: 클릭 시 대시보드 이동</li><li><strong>Office/Floor 선택 드롭다운</strong>: 사용자가 다중 office 구성 시 전환</li><li><strong>Search Bar</strong>: 직원 이름/팀 검색 → 아바타 강조 + 카메라 이동</li><li><strong>User Profile</strong>: 내 아바타 상태(online/meeting/focus/away) 표시 + 드롭다운 (마이페이지/로그아웃)</li><li><strong>Help</strong>: 단축키, 튜토리얼 링크</li></ul>
+<h4 id="left-sidebar-좌측-사이드바-보조-내비게이션"><strong>Left Sidebar (좌측 사이드바 — 보조 내비게이션)</strong></h4>
+<ul><li><strong>Office Navigation</strong>: 층(floor) 선택, 구역(zone) 필터</li><li><strong>Rooms</strong>: 이용 가능한 회의실 목록 (점유 여부, 예약 시간), 클릭 → 회의실 카메라 이동</li><li><strong>People</strong>: 현재 온라인 직원 목록 (팀별 그룹), 클릭 → 아바타 추적</li><li><strong>Chat</strong>: 미니 채팅 인터페이스 (회의 중 메모/근접 DM만, KPI 반감시 원칙 준수). <strong>본격 채팅은 Phase 7 고도화</strong> — MVP는 회의 메모·근접 DM 수준으로 한정</li><li><strong>Settings</strong>: 아바타 커스터마이징, 알림, 접근성</li></ul>
+<h4 id="3d-main-viewport-중앙-메인-렌더링-영역"><strong>3D Main Viewport (중앙 — 메인 렌더링 영역)</strong></h4>
+<p><strong>기하학적 요소:</strong></p>
+<ul><li><strong>로비 (Lobby)</strong>: 입장 포인트, 수직 레이아웃 (스탠딩 바 + 공동 공간)</li><li><strong>브랜드월 (Brand Wall)</strong>: 회사 미션/비전 스크린, 회의 시 이미지 디스플레이</li><li><strong>오픈좌석 (Open Seating)</strong>: 팀별 구역으로 배열, desk/monitor/chair 에셋, seat.coords 기반 배치</li><li><strong>회의실 (Meeting Rooms)</strong>: 투명 유리벽, 내부 테이블/의자, 문 트리거, livekit_room 연결</li><li><strong>라운지 (Lounge)</strong>: 소파/커피테이블, 비포멀 미팅 공간</li><li><strong>집중실 (Focus Room)</strong>: 소음 차단, 좁은 데스크, 진입 제한(자리만큼만)</li><li><strong>폰부스 (Phone Booth)</strong>: 독립 칸막이, 영상통화용</li><li><strong>미니맵 (Minimap)</strong>: 우측 하단 코너, 현재 층 조감도, 아바타 위치, 회의실 점유 표시</li></ul>
+<p><strong>아바타 시스템:</strong></p>
+<ul><li>로그인 직원 = erp_user.id → 좌석(seat) 배정 또는 로비 시작</li><li>아바타 스타일: 본인 선택(5~10 가지 템플릿) + 이름/직급 텍스트 HUD 위에 표시</li><li>상태: online(이동 중) → working(자리에서 작업) → meeting(회의실) → focus(집중모드) → away(자리 비움) → offline</li><li>이동: WASD/마우스 드래그, 회의실/focus 구역 진입 시 서버 검증 (좌석 확보/시간 기한)</li></ul>
+<p><strong>상호작용 트리거:</strong></p>
+<ul><li>회의실 입장: 문 근처(2m 거리) → &quot;Enter Meeting&quot; 프롬프트 → 클릭 → LiveKit 방 생성/진입, presence 업데이트, 참석자 기록</li><li>협업 제스처: 근접(1m) 시 &quot;+1 nearby&quot; 표시, 더블탭 → 협력 카운트 증가</li><li>채팅 팝업: 직원 우클릭 → DM 시작 (실시간 채팅, 회의 중 메모)</li></ul>
+<h4 id="right-panel-우측-사람상태-패널"><strong>Right Panel (우측 — 사람/상태 패널)</strong></h4>
+<ul><li><strong>현재 참석자 리스트</strong>: 층/구역별 필터, 아바타 선택 시 카메라 추적</li><li><strong>팀별 그룹</strong>: 팀 이름 + 현재 온라인 인원 수</li><li><strong>상태별 필터</strong>: all / online / meeting / focus / away</li><li><strong>검색 바</strong>: 이름/팀 입력 → 실시간 필터</li><li><strong>상세 정보</strong>: 선택한 직원 → 이름, 직급, 팀, 현재 상태, 마지막 상태 변경 시간</li></ul>
+<h4 id="footer-하단-회의업무-패널"><strong>Footer (하단 — 회의/업무 패널)</strong></h4>
+<pre class="code"><code>[◄ 이전] [▶ 다음] Meeting: &quot;Q4 Planning&quot; (Host: Kim, 14:00-15:00)
+[▲ 펼치기] → 회의 참석자, 회의록, 액션아이템 확장 보기
+
+Work Log: &quot;API 개발&quot; (2.5h est, started) [상세보기]
+Chat Notifications: +3 (회의 채팅), [닫기]</code></pre>
+<ul><li><strong>회의 컨트롤</strong>: 현재 진행 중인 회의 요약, 나가기(Leave), 화면 공유(Share), 녹화(Record). 회의록 <strong>작성</strong>은 여기서 하지 않고 종료 후 웹 콘솔에서 STT 초안을 검토·확정한다(D5)</li><li><strong>업무 패널</strong>: 오늘의 work_log 요약, 예상 시간/진행도. 작성·수정은 <strong>&quot;웹 콘솔로 이동&quot;</strong> 링크로 단일화(Godot 내 입력 폼 없음 — 작성/열람 경계 원칙)</li><li><strong>알림</strong>: 채팅/회의 초대/결정사항 발생 시 팝업</li></ul>
+<h3 id="13-상호작용-플로우-godot-헤드리스-서버-기반">1.3 상호작용 플로우 (Godot 헤드리스 서버 기반)</h3>
+<div class="mermaid">sequenceDiagram
+    participant User as 사용자 (Godot Client)
+    participant Server as Godot Server (권위)
+    participant ERP as ERP API
+    participant LiveKit as LiveKit
+
+    User-&gt;&gt;Server: 로그인 (JWT token)
+    Server-&gt;&gt;ERP: erp_user 동기화
+    Server-&gt;&gt;Server: presence 생성 (office_id, floor_id, x, y)
+    Server-&gt;&gt;User: 아바타 로드 + 좌석 위치 반환
+
+    User-&gt;&gt;User: WASD 입력 (x, y 이동)
+    User-&gt;&gt;Server: 이동 상태 전송
+    Server-&gt;&gt;Server: 충돌 검사 (office_layout), 근접 감지
+    Server-&gt;&gt;User: 다른 아바타 위치 업데이트 (broadcast)
+
+    User-&gt;&gt;Server: 회의실 입장 (room_id, user_id)
+    Server-&gt;&gt;Server: seat 할당 검증, room.capacity 확인
+    Server-&gt;&gt;LiveKit: room 생성 또는 기존 room token 발급
+    Server-&gt;&gt;Server: meeting 레코드 생성, meeting_participant 추가
+    Server-&gt;&gt;User: LiveKit token + 참석자 목록
+    User-&gt;&gt;LiveKit: 카메라/마이크 연결
+
+    User-&gt;&gt;User: 회의 중 채팅/화이트보드
+    User-&gt;&gt;Server: 회의 종료
+    Server-&gt;&gt;Server: meeting.ended_at 업데이트
+    Server-&gt;&gt;Server: LiveKit Egress 오디오 → STT(화자분리) → 회의록 초안 생성(D5)
+    Server-&gt;&gt;User: &quot;회의록 초안이 웹 콘솔에 준비됨&quot; 알림 (작성은 웹에서)</div>
+<hr>
+<h2 id="2-웹-관리업무-콘솔-nextjs-tailwindcss">2. 웹 관리·업무 콘솔 (Next.js + TailwindCSS)</h2>
+<h3 id="21-화면-목록-및-계층">2.1 화면 목록 및 계층</h3>
+<pre class="code"><code>Dashboard
+├── 조직도 편집기 (Organization Chart Editor)
+├── 직원명부 (Employee Directory)
+├── 좌석 배치 편집기 (Seat Assignment &amp; Layout Manager)
+│   ├── 2D 편집 (Konva.js 전용)
+│   ├── 저장 후 데스크톱 클라이언트 draft 모드 열람 (웹 3D 미리보기 없음 — D11)
+│   ├── 검증 &amp; 배포 (층 단위)
+│   └── 롤백 이력 (층 단위)
+├── KPI 대시보드 (KPI Dashboard)
+├── 이의신청 (KPI Objection, §3.7)
+├── 회의/회의록 (Meeting &amp; Meeting Minutes)
+│   ├── 회의 일정 + 참석자
+│   ├── 회의록 STT 초안 검토/확정 (D5)
+│   └── 액션아이템 추적
+├── 업무기록 (Work Log &amp; Reports)
+│   ├── 일일/주간 업무보고
+│   ├── 결과물 등록
+│   └── EOD 상태 동기화
+├── 로그인/세션 (Auth, §3.8)
+├── 아바타 커스터마이징 (§3.9)
+├── 권한 규칙 &amp; 접근 매트릭스 (RBAC, §3.10)
+├── 자율좌석 점유/반납 (3D 상호작용, §3.11)
+└── 관리자 동기화 모니터링 콘솔 (§3.12)</code></pre>
+<blockquote>조직도 편집기(§3.1)는 <strong>P3/고도화</strong>로 마킹(MVP 범위 밖). 자율좌석 점유/반납(§3.11)은 3D 오피스 내 상호작용이나 배정 로직상 여기 함께 표기.</blockquote>
+<h3 id="22-각-화면-상세-명세">2.2 각 화면 상세 명세</h3>
+<hr>
+<h2 id="3-개별-화면-상세-정의">3. 개별 화면 상세 정의</h2>
+<h3 id="31-조직도-편집기-organization-chart-editor">3.1 조직도 편집기 (Organization Chart Editor)</h3>
+<blockquote><strong>우선순위: P3 / 고도화 (MVP 범위 밖)</strong> — PRD의 SHOULD/P3 분류에 맞춰 확정. MVP에서는 ERP 동기화된 조직 계층을 읽기 전용으로 표시하고, 편집 기능은 Phase 후반 고도화로 미룬다. 관리자 전용(§3.10).</blockquote>
+<h4 id="목적">목적</h4>
+<ul><li>ERP teams + 우리 org_group 계층 시각화 및 편집</li><li>본부(division), 부서(department), 파트(part) 추가/삭제</li><li>각 org<em>group ↔ team</em>zone 매핑</li></ul>
+<h4 id="레이아웃">레이아웃</h4>
+<pre class="code"><code>┌─────────────────────────────────────────────────────────┐
+│ 조직도 편집기                                           │
+├─────────────────────────────────────────────────────────┤
+│ [+ 부서 추가] [+ 팀 매핑] [배포] [미리보기] [도움말]    │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌─ Company                                            │
+│  │  ├─ 경영진 (Division) [color: 파랑]                │
+│  │  │  ├─ 인사 (Team, ERP: team_5) [Edit] [Delete]   │
+│  │  │  └─ 재무 (Team, ERP: team_3)                    │
+│  │  ├─ 개발 (Division)                                │
+│  │  │  ├─ 백엔드 (Part)                              │
+│  │  │  │  └─ 인프라팀 (Team, ERP: team_1) [Edit]    │
+│  │  │  └─ 프론트엔드 (Part)                          │
+│  │  │     └─ 웹팀 (Team, ERP: team_2)               │
+│  │  └─ 운영 (Division)                               │
+│  │
+│  우측 패널:
+│  ┌─────────────────────────┐
+│  │ 선택: 웹팀              │
+│  │ ERP Team ID: team_2     │
+│  │ 현재 인원: 6            │
+│  │ 3D Zone: floor_1_zone_A │
+│  │ Color: #FF6B9D         │
+│  │ [편집] [삭제]           │
+│  └─────────────────────────┘
+│
+└─────────────────────────────────────────────────────────┘</code></pre>
+<h4 id="컴포넌트">컴포넌트</h4>
+<ul><li><strong>React Flow 그래프</strong>: org<em>group (노드) → team</em>zone 엣지</li><li><strong>노드 유형</strong>: <ul><li>Division (직사각형, 색상)</li><li>Department (약간 작은 직사각형)</li><li>Part (동그라미)</li><li>Team (ERP 직원 수 표시)</li></ul></li><li><strong>에디팅</strong>: 노드 우클릭 → 색상/이름 수정, 드래그로 재배열</li><li><strong>Undo/Redo</strong>: 변경 이력 저장</li></ul>
+<h4 id="data-requirements">Data Requirements</h4>
+<ul><li><strong>입력</strong>: org<em>group (id, name, type, parent</em>id, color, sort<em>order), team</em>zone (id, erp<em>team</em>id, org<em>group</em>id, office<em>id, floor</em>id, color)</li><li><strong>출력</strong>: org<em>group CRUD, team</em>zone 매핑 업데이트</li><li><strong>참조</strong>: 01-prd.md (조직 구조), 04-data-model.md (DB 스키마)</li></ul>
+<h4 id="상태-관리">상태 관리</h4>
+<ul><li><strong>저장 전 검증</strong>: 순환 참조 없음, 모든 팀이 매핑됨</li><li><strong>배포</strong>: 즉시 반영 (office_layout 재계산 트리거 필요 시)</li></ul>
+<hr>
+<h3 id="32-직원명부-employee-directory">3.2 직원명부 (Employee Directory)</h3>
+<h4 id="목적-2">목적</h4>
+<ul><li>ERP users 동기화 상태 조회 (읽기 전용 표시)</li><li>직원 기본정보 (이름, 팀, 직급, 상태)</li><li>좌석 배정 현황</li></ul>
+<h4 id="레이아웃-2">레이아웃</h4>
+<pre class="code"><code>┌─────────────────────────────────────────────────────────┐
+│ 직원명부                                               │
+├─────────────────────────────────────────────────────────┤
+│ [팀 필터] [상태 필터] [검색] [CSV 다운로드] [새로고침] │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│ 테이블:                                                │
+│ ┌───────────────────────────────────────────────────┐  │
+│ │ 이름    │ 팀      │ 직급    │ 좌석   │ 상태      │ │
+│ ├───────────────────────────────────────────────────┤  │
+│ │ Kim     │ 웹팀    │ Senior │ A-105 │ 온라인    │ │
+│ │ Lee     │ 웹팀    │ Junior │ A-106 │ 회의중    │ │
+│ │ Park    │ 백엔드팀│ Lead   │ B-201 │ 오프라인  │ │
+│ │ …                                                 │  │
+│ └───────────────────────────────────────────────────┘  │
+│ [1] [2] [3] ... (페이지네이션)                         │
+│ 읽기전용: ERP에서 매일 동기화됨. 편집은 ERP 관리자만. │
+│
+└─────────────────────────────────────────────────────────┘</code></pre>
+<h4 id="컴포넌트-2">컴포넌트</h4>
+<ul><li><strong>다중 필터</strong>: 팀(team_id), 상태(presence.status)</li><li><strong>검색</strong>: 이름/이메일 입력</li><li><strong>테이블 열</strong>: id(ERP), 이름, 팀, 직급, position_id, 좌석, 상태, 마지막 갱신</li><li><strong>행 클릭</strong>: 상세보기 사이드패널 (슬라이드인)</li></ul>
+<h4 id="상세보기-패널">상세보기 패널</h4>
+<pre class="code"><code>┌────────────────────────────┐
+│ Kim Jin (Senior)           │
+│ 🔒 ERP 데이터 (읽기전용)  │
+│                            │
+│ 팀: 웹팀                   │
+│ 직급: Senior               │
+│ 보고대상: Park (리드)      │
+│ Slack: @kim_jin            │
+│ GitHub: kim-github         │
+│ 이메일: kim@company.com    │
+│                            │
+│ 근무 설정:                 │
+│ ├─ 근무 형태: 전일        │
+│ ├─ 근무 시간: 09:00-18:00│
+│ └─ 근무지: 서울 강남구    │
+│   (GPS 수집 없음 — D13)   │
+│                            │
+│ 좌석 배정:                 │
+│ ├─ 현재: A-105            │
+│ ├─ 할당일: 2026-06-15    │
+│ └─ 층: Floor 1            │
+│                            │
+│ [닫기]                     │
+└────────────────────────────┘</code></pre>
+<h4 id="data-requirements-2">Data Requirements</h4>
+<ul><li><strong>입력</strong>: erp<em>user (id, company</em>id, email, name, team<em>id, role, position, position</em>id, manager<em>id, slack</em>user<em>id, github</em>username, work<em>type, work</em>hours), presence (user<em>id, status), seat + seat</em>assignment (좌석 배정은 seat_assignment 조회 — D10)</li><li><strong>참조</strong>: 01-prd.md (ERP 사용자 구조)</li></ul>
+<h4 id="읽기전용-표시">읽기전용 표시</h4>
+<ul><li>모든 필드에 🔒 아이콘 또는 회색 배경</li><li>수정 버튼 없음</li><li>도움말: &quot;이 정보는 ERP에서 자동 동기화됩니다.&quot;</li></ul>
+<hr>
+<h3 id="33-좌석-배치-편집기-seat-assignment-layout-manager">3.3 좌석 배치 편집기 (Seat Assignment &amp; Layout Manager)</h3>
+<h4 id="목적-3단계">목적 (3단계)</h4>
+<ol><li><strong>2D 편집</strong> (Konva.js 전용): floor 평면도 + 좌석/구역/문 개구부 그리기</li><li><strong>저장 후 데스크톱 클라이언트 draft 모드 열람</strong>: 웹 3D 미리보기는 제거(D11). 정밀 확인은 저장 후 Godot 데스크톱 클라이언트를 draft 모드로 열어 실제 렌더링으로 확인</li><li><strong>검증 &amp; 배포</strong>: office_layout JSON 생성 → <strong>층(floor) 단위</strong> version 관리 → 배포/롤백. 검증은 서버(FastAPI) 단독 정밀 검증(D12)</li></ol>
+<h4 id="331-2d-편집기-konvajs">3.3.1 2D 편집기 (Konva.js)</h4>
+<p><strong>레이아웃:</strong></p>
+<pre class="code"><code>┌─────────────────────────────────────────────────────────┐
+│ 좌석 배치 편집기 - 2D 평면도                           │
+├─────────────────────────────────────────────────────────┤
+│ [Office] [Floor 1] [Undo] [Redo] [데스크톱 draft] [저장]│
+├────────────────┬──────────────────────────────────────┤
+│ 왼쪽 Palette:  │                                     │  │
+│                 │  Floor 1 (1024×768)                │  │
+│ [Desk]          │                                     │  │
+│ [Table]         │  ┌──────────────────────────────┐ │  │
+│ [Chair]         │  │ 브랜드월          Lobby     │ │  │
+│ [Wall]          │  │                              │ │  │
+│ [Door]          │  │ ┌──────┐  ┌──────────────┐ │ │  │
+│ [Focus Zone]    │  │ │ 회의실  │  │ 오픈좌석   │ │ │  │
+│ [Zone Paint]    │  │ │        │  │  □ □ □   │ │ │  │
+│ [Delete]        │  │ │ (M-1) │  │  □ □ □   │ │ │  │
+│                 │  │ └──────┘  │             │ │ │  │
+│ Layers:        │  │ ┌──────┐  │             │ │ │  │
+│ ☑ Walls        │  │ │ 회의실  │  │ 팀2 구역  │ │ │  │
+│ ☑ Zones        │  │ │(M-2)  │  └─────────────┘ │ │  │
+│ ☑ Seats        │  │ └──────┘                  │ │  │
+│ ☑ Rooms        │  │                          │ │  │
+│                 │  └──────────────────────────────┘ │  │
+│ [+ 새로운      │  [좌표 정보 표시] [확대축소]      │  │
+│  구역 그룹]    │                                     │  │
+│                │  우측 패널 (선택된 요소):          │  │
+│ Team Zones:   │  [이름] [색상] [유형] [삭제]       │  │
+│ ☑ 팀1         │                                     │  │
+│ ☑ 팀2         │                                     │  │
+│                │                                     │  │
+└────────────────┴──────────────────────────────────────┴─┘</code></pre>
+<p><strong>기능:</strong></p>
+<ul><li><strong>팔레트 도구</strong>: Desk(+좌석), Table, Wall, <strong>Door(문 개구부)</strong>, Focus Zone, Zone Paint(폴리곤), <strong>Glass Wall(유리벽)</strong>, <strong>Spawn Point(스폰)</strong>, <strong>Entrance Trigger(입장 트리거)</strong>, <strong>Marker(화이트보드/프로젝터 등)</strong>, <strong>Exit Point(층 이동 출구)</strong>, Delete<ul><li>05 스키마의 필수/주요 필드(spawn<em>points, entrance, glass</em>walls, doors, markers, connections.exit_points)를 저작할 UI가 모두 제공되어야 함</li></ul></li><li><strong>그리기</strong>: 도구 선택 → 캔버스 드래그/클릭<ul><li>Desk: 마우스 드래그로 위치 설정, 회전(도) 가능. Desk 배치 시 딸린 seat이 함께 생성되며 seat.furniture_id로 상호 참조(05 §1.2.6 desync 방지)</li><li>Wall: 라인 드래그 (구조 벽 = collider, shape=box/polygon로 저장)</li><li><strong>Door</strong>: 방 벽 위 클릭 → 그 벽에 개구부(<code>{wall, offset, width, door_type}</code>) 생성. 방은 벽 자동 생성 + 문 위치만 구멍(05 D9). 개구부 없는 방은 검증 ERROR</li><li><strong>Entrance Trigger</strong>: 방 경계 <strong>내부</strong>에만 배치 가능(경계 밖이면 편집기가 즉시 경고)</li><li><strong>Spawn Point / Exit Point</strong>: 위치 + facing(도, 시계방향, 기준축 +X) 지정</li><li>Zone Paint: 폴리곤 도구 (좌표 여러 개 클릭 → 폐곡선)</li></ul></li><li><strong>선택 &amp; 편집</strong>: 요소 클릭 → 하이라이트 + 우측 패널에 상세 정보<ul><li>이름, 유형, 팀 할당(zone만), 색상, 좌표 수정</li></ul></li><li><strong>레이어</strong>: 벽/구역/좌석/회의실 별 On/Off</li><li><strong>Undo/Redo</strong>: 모든 변경 이력</li><li><strong>미니 속성 패널</strong>: 선택 요소의 id, name, coords[], metadata</li></ul>
+<p><strong>컴포넌트 데이터 구조:</strong></p>
+<blockquote><strong>단위 규약</strong>: 캔버스 렌더링은 픽셀이지만 <strong>저장 좌표는 미터(원점 top<em>left)</strong>로 변환한다(05 정본과 동일 단위). 아래 예시는 저장 직전의 미터 좌표 기준이며, 필드명·타입도 05 스키마(seat</em>id, seat<em>type, lifecycle</em>status, erp<em>team</em>id 정수, doors[], shape 등)와 일치시킨다. 좌석-직원 배정 필드는 여기 없다(배정은 <code>seat_assignment</code> DB — 05 D10).</blockquote>
+<pre class="code lang-json"><code>{
+  &quot;floor_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440020&quot;,
+  &quot;coordinate_origin&quot;: &quot;top_left&quot;,
+  &quot;unit&quot;: &quot;meter&quot;,
+  &quot;canvas_px&quot;: { &quot;width&quot;: 1024, &quot;height&quot;: 768, &quot;pixels_per_meter&quot;: 12.8 },
+  &quot;elements&quot;: [
+    {
+      &quot;kind&quot;: &quot;collider&quot;,
+      &quot;collider_id&quot;: &quot;C_EXT_WALL_N&quot;,
+      &quot;shape&quot;: &quot;box&quot;,
+      &quot;box&quot;: { &quot;x&quot;: 0.0, &quot;y&quot;: 0.0, &quot;width&quot;: 80.0, &quot;height&quot;: 0.3, &quot;rotation&quot;: 0 }
+    },
+    {
+      &quot;kind&quot;: &quot;seat&quot;,
+      &quot;seat_id&quot;: &quot;S_105&quot;,
+      &quot;seat_type&quot;: &quot;free&quot;,
+      &quot;coords&quot;: { &quot;x&quot;: 8.0, &quot;y&quot;: 12.0 },
+      &quot;facing&quot;: 180,
+      &quot;furniture_id&quot;: &quot;F_105&quot;,
+      &quot;team_zone_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440030&quot;,
+      &quot;lifecycle_status&quot;: &quot;deployed&quot;
+    },
+    {
+      &quot;kind&quot;: &quot;zone&quot;,
+      &quot;zone_id&quot;: &quot;Z_web&quot;,
+      &quot;label&quot;: &quot;웹팀 구역&quot;,
+      &quot;type&quot;: &quot;team&quot;,
+      &quot;color&quot;: &quot;#FF6B9D&quot;,
+      &quot;erp_team_id&quot;: 202,
+      &quot;polygon&quot;: [
+        { &quot;x&quot;: 8.0, &quot;y&quot;: 8.0 }, { &quot;x&quot;: 24.0, &quot;y&quot;: 8.0 },
+        { &quot;x&quot;: 24.0, &quot;y&quot;: 20.0 }, { &quot;x&quot;: 8.0, &quot;y&quot;: 20.0 }
+      ]
+    },
+    {
+      &quot;kind&quot;: &quot;room&quot;,
+      &quot;room_id&quot;: &quot;R_M1&quot;,
+      &quot;name&quot;: &quot;회의실 1호&quot;,
+      &quot;type&quot;: &quot;meeting&quot;,
+      &quot;capacity&quot;: 8,
+      &quot;capacity_mode&quot;: &quot;by_room&quot;,
+      &quot;coords&quot;: { &quot;x&quot;: 4.0, &quot;y&quot;: 20.0, &quot;width&quot;: 12.0, &quot;height&quot;: 8.0 },
+      &quot;doors&quot;: [
+        { &quot;door_id&quot;: &quot;D_R_M1_S&quot;, &quot;wall&quot;: &quot;south&quot;, &quot;offset&quot;: 6.0, &quot;width&quot;: 1.2, &quot;door_type&quot;: &quot;glass_single&quot; }
+      ]
+    }
+  ]
+}</code></pre>
+<ul><li><code>kind</code>는 편집기 요소 구분자(오브젝트 종류)이며, <code>type</code>은 05 스키마의 세부 유형(zone type=team, room type=meeting 등)이다. 종전처럼 한 객체에 <code>type</code>을 두 번 쓰지 않는다.</li><li>저장 시 편집기는 이 요소들을 05 루트 스키마(zones/rooms/seats/furniture/colliders/spawn_points/…)로 재조립해 FastAPI에 제출한다.</li></ul>
+<h4 id="332-저장-후-데스크톱-클라이언트-draft-모드-열람-웹-3d-미리보기-없음-d11">3.3.2 저장 후 데스크톱 클라이언트 draft 모드 열람 (웹 3D 미리보기 없음 — D11)</h4>
+<p><strong>목적:</strong> 웹에서의 실시간 3D 미리보기(WebSocket 픽셀 스트리밍/HTML5 export)는 <strong>전면 제거</strong>한다(D11, PRD WON'T 준수). 정밀한 3D 확인은 저장 후 <strong>Godot 데스크톱 클라이언트를 draft 모드로 열어</strong> 실제 렌더러(Forward+)로 확인한다.</p>
+<p><strong>흐름:</strong></p>
+<ul><li>편집기에서 <code>[저장]</code> → 서버가 draft 상태로 layout 저장(status=draft) + 서버 정밀 검증 결과 반환</li><li>편집기 <code>[데스크톱에서 열기]</code> 버튼 → 데스크톱 클라이언트가 해당 draft layout_id를 draft 모드로 로드(실서비스 배포와 격리, 본인만 열람)</li><li>확인 후 문제 없으면 편집기로 돌아와 <code>[배포]</code></li></ul>
+<p><strong>웹에서 제공하는 것:</strong> Konva.js 2D 평면 뷰 + 서버 검증 결과 목록(아래). 3D 렌더링 캔버스는 웹에 없음.</p>
+<pre class="code"><code>┌──────────────────────────────────────┐
+│ 저장 &amp; 검증 결과 (2D 전용)           │
+├──────────────────────────────────────┤
+│ [◄ 2D 편집] [데스크톱에서 열기(draft)]│
+├──────────────────────────────────────┤
+│ 서버 검증 결과 (FastAPI 정밀 검증):  │
+│ ✓ 구조/좌표 범위 정상                │
+│ ✓ 모든 좌석 유효(furniture 정합)     │
+│ ✓ 모든 방 문 개구부(doors) 존재      │
+│ ⚠ 회의실 A 입장 트리거-문 근접 경고  │
+│ ✗ 좌석 3개가 콜리전과 겹침 (오류)    │
+│                                      │
+│ ※ 3D 확인은 [데스크톱에서 열기]로    │
+└──────────────────────────────────────┘</code></pre>
+<p><strong>검증 책임(D12):</strong> 웹 편집기는 <strong>경량 체크(좌표 범위/겹침)만</strong> 즉시 표시하고, **도달성(A<em>) 포함 정밀 검증은 서버(FastAPI)가 단독</em>* 수행한다. Godot 클라이언트는 검증하지 않고 배포본을 신뢰한다.</p>
+<div class="mermaid">graph TD
+    A[&quot;2D Layout (편집기)&quot;] --&gt;|경량 체크| B[&quot;범위/겹침 즉시 피드백&quot;]
+    A --&gt;|저장 제출| C[&quot;FastAPI 정밀 검증&quot;]
+    C --&gt; D[&quot;JSON Schema + 구조/공간&quot;]
+    C --&gt; E[&quot;도달성 A* (서버 전용)&quot;]
+    C --&gt; F[&quot;문 개구부/좌석-가구 정합&quot;]
+    D &amp; E &amp; F --&gt; G{&quot;ERROR 있음?&quot;}
+    G --&gt;|Yes| H[&quot;❌ 배포 불가 — 2D로 수정&quot;]
+    G --&gt;|No| I[&quot;✓ draft 저장 → 데스크톱 열람 → 배포&quot;]</div>
+<h4 id="333-검증-배포">3.3.3 검증 &amp; 배포</h4>
+<p><strong>검증 체크리스트:</strong></p>
+<ol><li>모든 좌석이 zone 내에 있는가?</li><li>모든 zone이 team과 매핑되었는가?</li><li>회의실이 floor 내 유효한 위치인가?</li><li>충돌, 통로 너비 문제 없는가?</li><li>접근성 요구사항(휠체어 경로) 충족?</li></ol>
+<p><strong>배포 플로우:</strong> (05 §2.2 상태 전이와 정합)</p>
+<div class="mermaid">graph LR
+    A[&quot;draft&quot;] --&gt;|Validate(서버)| B{&quot;ERROR 없음?&quot;}
+    B --&gt;|Yes| C[&quot;validated&quot;]
+    B --&gt;|No| D[&quot;오류 수정&quot;]
+    D --&gt;A
+    C --&gt;|Deploy| E[&quot;deployed&quot;]
+    E --&gt;|롤백| R[&quot;rolled_back → 이전 버전 re-deployed&quot;]
+    E --&gt;|신버전 배포| G[&quot;이전 deployed → archived&quot;]</div>
+<p><strong>배포 단계:</strong></p>
+<ol><li><strong>Draft</strong>: 편집 중 (자동저장). 데스크톱 draft 모드로 열람 가능</li><li><strong>Validated</strong>: 서버 검증 통과(ERROR 0건)</li><li><strong>Deployed</strong>: 운영 중 (배포/롤백 시 라이브 클라이언트 강제 동기화 — 05 §2.2)</li><li><strong>Archived / Rolled_back</strong>: 이전 버전 (언제든 롤백 가능)</li></ol>
+<p><strong>버전 관리 (층 단위 — 05 &quot;1 floor = 1 layout&quot;과 정합):</strong></p>
+<p>버전·롤백은 <strong>층(floor)별</strong>로 관리한다. office 전체를 한 번에 버전/롤백하지 않는다.</p>
+<pre class="code"><code>[Floor 1 (3F)]  ← 층 선택
+  v1.0 (2026-06-15, archived)  : 12 seats, 2 meetings, 3 zones
+  v1.1 (2026-06-20, deployed)  : 12 seats, 3 meetings, 4 zones
+  v1.2 (2026-06-25, draft)     : 12 seats, 3 meetings, 5 zones
+                                 ✗ ERROR: 좌석 2개 콜리전 겹침 → 배포 불가
+  [Deploy v1.2] [Rollback to v1.0]
+
+[Floor 2 (4F)]  ← 다른 층은 독립적으로 버전 관리
+  v1.0 (2026-06-18, deployed)  : 8 seats, 1 meeting</code></pre>
+<blockquote>좌석-직원 <strong>배정 변경</strong>은 <code>seat_assignment</code>만 갱신하므로 층 버전을 올리지 않는다(05 D10). 공간 구조 변경만 버전을 올린다.</blockquote>
+<h4 id="data-requirements-3">Data Requirements</h4>
+<ul><li><strong>입력</strong>: office<em>layout (id, office</em>id, floor<em>id, version, status, json — <strong>층 단위</strong>), room (id, floor</em>id, type, name, capacity, coords, doors), seat (id, floor<em>id, team</em>zone<em>id, seat</em>type, coords, facing, furniture<em>id, lifecycle</em>status — <strong>직원 배정 없음</strong>), seat<em>assignment (seat</em>id, erp<em>user</em>id, assigned<em>at, released</em>at), team<em>zone (id, erp</em>team<em>id, org</em>group_id, color)</li><li><strong>출력</strong>: office_layout 생성/수정(층 단위), 서버 검증 결과(ERROR/WARNING)</li><li><strong>참조</strong>: 05-office-layout-schema.md (JSON 스키마 정본), 04-data-model.md (데이터 모델)</li></ul>
+<hr>
+<h3 id="34-kpi-대시보드-kpi-dashboard">3.4 KPI 대시보드 (KPI Dashboard)</h3>
+<h4 id="목적-3">목적</h4>
+<ul><li>사용자의 일별/주별/월별 KPI 조회 및 추이</li><li>AI 초안 검토, 관리자 조정, 최종 확정</li></ul>
+<h4 id="레이아웃-3">레이아웃</h4>
+<pre class="code"><code>┌─────────────────────────────────────────────────────────┐
+│ KPI 대시보드 - Q3 2026                                 │
+├─────────────────────────────────────────────────────────┤
+│ [기간 선택: 월별/주별] [팀 필터] [비교 보기] [내보내기]│
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│ ▶ 내 KPI (Kim Jin, 웹팀)                               │
+│ ┌────────────────────────────────────────┐             │
+│ │ 기간: 2026-07-01 ~ 2026-07-31          │             │
+│ │                                        │             │
+│ │ 업무 완료도: ████████░░ 78%          │             │
+│ │ 회의 생산성: ██████░░░░ 64%          │             │
+│ │ 협업점수: ███████░░░ 72%              │             │
+│ │ 품질도: ████████░░ 80%               │             │
+│ │ 종합점수: ██████░░░░ 74%             │             │
+│ │                                        │             │
+│ │ AI 초안: &quot;일관된 기여, 회의 참여 증가│             │
+│ │ 필요. 품질 우수.&quot;                     │             │
+│ │                                        │             │
+│ │ 관리자 검토 (Park, Lead):             │             │
+│ │ [검토 중] [승인] [조정]               │             │
+│ │ 조정 사항: &quot;회의 참여는 팀 역할이므로│             │
+│ │           KPI에서 감점하지 않음&quot;       │             │
+│ │                                        │             │
+│ │ [의견 제시] [확정]                    │             │
+│ └────────────────────────────────────────┘             │
+│                                                         │
+│ ▼ 팀 종합 (웹팀)  🔒 관리자/팀리더만 열람               │
+│ ┌────────────────────────────────────────┐             │
+│ │ 인원 6명, 평균 종합점수: 73%          │             │
+│ │                                        │             │
+│ │ 순위:                                  │             │
+│ │  1. Kim (74%) - 회의 초청 많음       │             │
+│ │  2. Lee (71%) - 협업 활동 증가       │             │
+│ │  3. Park (68%) - 업무 복잡도 높음   │             │
+│ │  ...                                   │             │
+│ └────────────────────────────────────────┘             │
+│ ※ 일반 직원은 본인 KPI만 열람. 팀 순위/타인 점수는     │
+│   관리자·팀리더 전용(§3.10 접근 매트릭스)              │
+│                                                         │
+│ [추이] [비교] [팀 랭킹(관리자/팀리더)] [개선액션]        │
+│
+└─────────────────────────────────────────────────────────┘</code></pre>
+<h4 id="지표-상세">지표 상세</h4>
+<div class="table-wrap"><table><thead><tr><th>지표</th><th>계산식</th><th>데이터 소스</th><th>범위</th></tr></thead><tbody><tr><td><strong>업무 완료도</strong></td><td>완료한 work_log 수 / 계획한 수</td><td>work_log(status=completed)</td><td>0-100%</td></tr><tr><td><strong>회의 생산성</strong></td><td>(결정사항 수 + 액션아이템 수) / 참석 회의 수</td><td>meeting, meeting<em>minute, action</em>item</td><td>0-10점</td></tr><tr><td><strong>협업점수</strong></td><td>(액션아이템 이행률 + 회의록 기여도 + work_log 산출물 관련성) / 3</td><td>meeting<em>minute(decisions), action</em>item(status), work<em>log(related</em>project, result_url)</td><td>0-100</td></tr><tr><td><strong>품질도</strong></td><td>완료 업무의 완료도(result_url 첨부율)</td><td>work<em>log(result</em>url)</td><td>0-100%</td></tr><tr><td><strong>종합점수</strong></td><td>(완료도×30% + 생산성×25% + 협업×25% + 품질×20%)</td><td>종합</td><td>0-100점</td></tr></tbody></table></div>
+<h4 id="ai-초안-플로우">AI 초안 플로우</h4>
+<div class="mermaid">graph LR
+    A[&quot;KPI 지표 수집&quot;] --&gt;|21:00 야간 배치(D17)| B[&quot;Claude AI 서술 초안(강점/개선/근거)&quot;]
+    B --&gt;|1. 강점, 2. 개선점, 3. 액션| C[&quot;ai_draft (kpi_result)&quot;]
+    C --&gt;|관리자 열람| D[&quot;관리자 조정&quot;]
+    D --&gt;|최종값 저장| E[&quot;admin_adjusted (kpi_result)&quot;]
+    E --&gt;|ERP push| F[&quot;kpi_results (ERP)&quot;]
+    F --&gt;|분기별 인사평가| G[&quot;HR System&quot;]</div>
+<h4 id="컴포넌트-3">컴포넌트</h4>
+<ul><li><strong>기간 필터</strong>: 월/주 선택, 날짜 range picker</li><li><strong>팀 필터</strong>: 드롭다운 또는 체크박스</li><li><strong>진행도 바</strong>: ProgressBar 컴포넌트 (색상: 초록/노랑/빨강)</li><li><strong>텍스트 에리어</strong>: AI 초안, 관리자 의견 편집 가능</li><li><strong>상태 배지</strong>: [검토 중] [승인] [조정] [확정]</li></ul>
+<h4 id="data-requirements-4">Data Requirements</h4>
+<ul><li><strong>입력</strong>: kpi<em>result (id, user</em>id, period<em>type, period</em>key, metric, value, source, ai<em>draft, admin</em>adjusted<em>score, objection</em>status, final<em>score — D16 스키마), work</em>log (user<em>id, work</em>date, status, result<em>url), meeting (user</em>id, started<em>at, ended</em>at), meeting<em>minute (meeting</em>id, decisions, notes), action<em>item (meeting</em>id, assignee<em>user</em>id)</li><li><strong>출력</strong>: kpi<em>result.admin</em>adjusted<em>score/final</em>score (관리자 검토·확정 결과). ERP 푸시는 <strong>관리자 확정 이벤트 + 분기 마감 배치</strong>(D15·D17)</li><li><strong>참조</strong>: 03-erp-integration.md (KPI 연동), 01-prd.md (KPI 원칙)</li></ul>
+<hr>
+<h3 id="35-회의회의록-meeting-meeting-minutes">3.5 회의/회의록 (Meeting &amp; Meeting Minutes)</h3>
+<h4 id="351-회의-일정-참석자">3.5.1 회의 일정 &amp; 참석자</h4>
+<p><strong>목적:</strong> LiveKit 기반 회의 예약, 참석자 관리, 히스토리</p>
+<p><strong>레이아웃:</strong></p>
+<pre class="code"><code>┌─────────────────────────────────────────────────────────┐
+│ 회의 일정                                              │
+├─────────────────────────────────────────────────────────┤
+│ [+ 회의 예약] [오늘] [주간] [월간] [검색]              │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│ 2026-07-01 (화)                                         │
+│                                                         │
+│ 10:00-11:00  Daily Standup (회의실 1호)               │
+│              참석자: Kim(O), Lee(O), Park(O), ?(대기)  │
+│              상태: [시작 전] [입장하기] [취소]         │
+│                                                         │
+│ 14:00-15:00  Q3 Planning (회의실 2호)                 │
+│              참석자: Kim(✓), Lee(X), Park(✓), John(?)│
+│              상태: [진행중] [나가기] [녹화중] [공유]   │
+│              회의록: [작성] [조회]                     │
+│                                                         │
+│ 16:00-17:00  코드리뷰 (Teams 온라인)                  │
+│              참석자: Lee(✓), John(O)                  │
+│              상태: [예정] [30분 전] [시작]            │
+│                                                         │
+│ ┌──────────────────────────────────────┐              │
+│ │ 세부: Daily Standup                 │              │
+│ │ 호스트: Kim Jin (웹팀)              │              │
+│ │ 방: 회의실 1호 (capacity 8)         │              │
+│ │ 예정 시간: 10:00-11:00              │              │
+│ │ LiveKit Room: room_M1_20260701_10   │              │
+│ │ 참석자:                             │              │
+│ │  ✓ Kim (온라인, 09:55 입장)        │              │
+│ │  ✓ Lee (온라인, 10:02 입장)        │              │
+│ │  ✓ Park (온라인, 10:05 입장)       │              │
+│ │  ? John (초대됨, 미응답)            │              │
+│ │                                      │              │
+│ │ [참석자 추가] [공유 화면] [녹화] [채팅]│              │
+│ │ [회의록 편집] [종료]                │              │
+│ └──────────────────────────────────────┘              │
+│
+└─────────────────────────────────────────────────────────┘</code></pre>
+<p><strong>컴포넌트:</strong></p>
+<ul><li><strong>캘린더 뷰</strong>: 일간/주간/월간 (Google Calendar 유사)</li><li><strong>회의 카드</strong>: 시간, 제목, 방, 참석자 상태 표시</li><li><strong>상태 아이콘</strong>: ✓ 참석, X 불참, O 초대, ? 대기</li><li><strong>Quick Action</strong>: 입장하기, 취소, 공유, 녹화</li></ul>
+<h4 id="352-회의록-작성-조회-stt-자동-초안-d5">3.5.2 회의록 작성 &amp; 조회 (STT 자동 초안 — D5)</h4>
+<p><strong>목적:</strong> 회의록은 <strong>STT 자동 초안 생성 → 검토·수정 → 확정</strong> 흐름으로 작성한다(D5). 수동 입력은 폴백. <strong>작성은 웹 콘솔에서만</strong> 한다(Godot 내 작성 폼 없음 — 작성/열람 경계 원칙).</p>
+<p><strong>회의 시작 시 고지·동의(D20(b)):</strong> 회의 입장 시 <strong>녹음·STT 고지 배너</strong>를 표시하고 <strong>참여 의사 확인</strong>을 받는다. 거부하면 해당 참석자 오디오는 수집하지 않는다(STT 대상 제외). 녹음 원본 90일 보존, 회의록 텍스트는 평가 데이터로 관리.</p>
+<pre class="code"><code>┌──────────────────────────────────────────────────────┐
+│ 🔴 이 회의는 회의록 자동 작성을 위해 녹음·전사됩니다.  │
+│    수집: 오디오(화자분리). 원본 90일 보존.            │
+│    [동의하고 참여]   [오디오 없이 참여(전사 제외)]     │
+└──────────────────────────────────────────────────────┘</code></pre>
+<p><strong>플로우:</strong></p>
+<div class="mermaid">graph TD
+    A[&quot;회의 종료&quot;] --&gt; B[&quot;LiveKit Egress: 트랙별 오디오 추출&quot;]
+    B --&gt; C[&quot;STT (화자분리) — 서버 배치&quot;]
+    C --&gt; D[&quot;회의록 초안 자동 생성 (decisions·notes·액션아이템 후보)&quot;]
+    D --&gt; E[&quot;웹 콘솔: 참석자/호스트 검토·수정&quot;]
+    E --&gt; F[&quot;확정 → meeting_minute 저장&quot;]
+    F --&gt;|생성| G[&quot;알림: 참석자 + 관련자&quot;]
+    G --&gt;|추적| H[&quot;액션아이템 대시보드&quot;]
+    C -.STT 실패.-&gt; M[&quot;수동 입력 폴백 (+AI 요약)&quot;]
+    M --&gt; E</div>
+<p><strong>회의록 편집 폼 (웹 콘솔 — STT 초안 검토·수정):</strong></p>
+<pre class="code"><code>┌──────────────────────────────────────────────────────┐
+│ 회의록: Daily Standup (2026-07-01 10:00-11:00)      │
+│ 🤖 STT 자동 초안 (검토 후 확정) · [원본 오디오 듣기] │
+├──────────────────────────────────────────────────────┤
+│                                                      │
+│ 📝 주요 결정사항: (STT 초안 — 수정 가능)            │
+│ ┌────────────────────────────────────────────────┐ │
+│ │ • API 버전 1.5 예정대로 배포                   │ │
+│ │ • 프론트엔드 테스트 커버리지 80% 달성        │ │
+│ │ • 다음 주 목요일 성능 리뷰                     │ │
+│ │                                              │ │
+│ │ [+ 추가]                                      │ │
+│ └────────────────────────────────────────────────┘ │
+│                                                      │
+│ 📋 액션아이템:                                      │
+│ ┌────────────────────────────────────────────────┐ │
+│ │ □ Lee: DB 마이그레이션 검증          Due 7/3 │ │
+│ │ □ Park: 보안 감사 리포트 제출        Due 7/5 │ │
+│ │ □ Kim: Slack 채널 정리              Due 7/2 │ │
+│ │                                              │ │
+│ │ [+ 새 액션]                                  │ │
+│ └────────────────────────────────────────────────┘ │
+│                                                      │
+│ 📄 자유 노트:                                       │
+│ ┌────────────────────────────────────────────────┐ │
+│ │ 이번 회의는 Q3 목표 달성 현황을 점검했다.   │ │
+│ │ 전반적으로 일정대로 진행 중이며, 한 가지  │ │
+│ │ 리스크는 인프라 팀의 병목이 있을 수 있다는 │ │
+│ │ 점. 다음 주에 전담 지원을 논의하기로 함.   │ │
+│ └────────────────────────────────────────────────┘ │
+│                                                      │
+│ 참석자: Kim(✓), Lee(✓), Park(✓)                  │
+│ 초안: STT 자동 | 검토·확정: Kim | 2026-07-01 11:15│
+│                                                      │
+│ [초안 저장] [확정(공개)] [수동 재작성] [휴지통]     │
+│
+└──────────────────────────────────────────────────────┘</code></pre>
+<p><strong>데이터 구조:</strong></p>
+<pre class="code lang-json"><code>{
+  &quot;meeting_minute&quot;: {
+    &quot;id&quot;: &quot;mm_123&quot;,
+    &quot;meeting_id&quot;: &quot;meeting_456&quot;,
+    &quot;decisions&quot;: [&quot;결정사항 1&quot;, &quot;결정사항 2&quot;],
+    &quot;notes&quot;: &quot;자유 텍스트 노트&quot;,
+    &quot;created_by&quot;: &quot;erp_user_1&quot;,
+    &quot;created_at&quot;: &quot;2026-07-01T11:15:00Z&quot;
+  },
+  &quot;action_items&quot;: [
+    {
+      &quot;id&quot;: &quot;ai_1&quot;,
+      &quot;meeting_id&quot;: &quot;meeting_456&quot;,
+      &quot;title&quot;: &quot;DB 마이그레이션 검증&quot;,
+      &quot;assignee_user_id&quot;: &quot;erp_user_2&quot;,
+      &quot;due_date&quot;: &quot;2026-07-03&quot;,
+      &quot;related_ref&quot;: &quot;github#issue-456&quot;,
+      &quot;status&quot;: &quot;open&quot;
+    }
+  ]
+}</code></pre>
+<h4 id="data-requirements-5">Data Requirements</h4>
+<ul><li><strong>입력</strong>: meeting (id, room<em>id, scheduled</em>at, started<em>at, ended</em>at, host<em>user</em>id, status, livekit<em>room), meeting</em>participant (meeting<em>id, user</em>id, joined<em>at, left</em>at), meeting<em>minute (id, meeting</em>id, decisions, notes, created<em>by, created</em>at), action<em>item (id, meeting</em>id, title, assignee<em>user</em>id, due<em>date, related</em>ref, status)</li><li><strong>출력</strong>: meeting<em>minute 생성/수정, action</em>item 생성/상태 업데이트</li><li><strong>참조</strong>: 04-data-model.md (회의 엔티티)</li></ul>
+<h4 id="액션아이템-추적-대시보드">액션아이템 추적 대시보드</h4>
+<pre class="code"><code>┌──────────────────────────────────────┐
+│ 나의 액션아이템                     │
+├──────────────────────────────────────┤
+│ 필터: [진행중] [완료] [기한임박]    │
+│                                      │
+│ 진행중 (3):                         │
+│ ☐ DB 마이그레이션 검증             │
+│   회의: Daily Standup (7/1)         │
+│   기한: 7/3 (2일 남음)             │
+│   상태: [진행중]                   │
+│                                      │
+│ ☐ Slack 채널 정리                  │
+│   회의: Daily Standup (7/1)         │
+│   기한: 7/2 (내일)                 │
+│   상태: [완료 확인 필요]           │
+│                                      │
+│ 완료 (12):                         │
+│ ☑ API 문서 작성                     │
+│   기한: 6/28 (완료)                │
+│   조회: [세부]                      │
+│
+└──────────────────────────────────────┘</code></pre>
+<hr>
+<h3 id="36-업무기록-work-log-reports">3.6 업무기록 (Work Log &amp; Reports)</h3>
+<h4 id="목적-4">목적</h4>
+<ul><li>일별 업무 기록 (work_log), 결과물 첨부, 진행도 기록</li><li>일일/주간 상태 리포트 (ERP와 동기화)</li><li>EOD 배치로 자동 ERP 푸시</li></ul>
+<h4 id="레이아웃-4">레이아웃</h4>
+<pre class="code"><code>┌─────────────────────────────────────────────────────────┐
+│ 업무기록                                               │
+├─────────────────────────────────────────────────────────┤
+│ [오늘] [이번주] [지난주] [월간] [연간 리뷰]           │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│ 2026-07-01 (화) - 화창한 날씨 🌤                       │
+│                                                         │
+│ ▶ 업무 요약:                                          │
+│   예상 시간: 8h | 실제: 7.5h | 회의: 1h             │
+│   목표 진행도: ████░░░░░░ 38% (3/8 완료)             │
+│                                                         │
+│ ▼ 업무 목록:                                          │
+│                                                         │
+│ 업무 1: API 엔드포인트 개발                           │
+│ ├─ 카테고리: 개발                                     │
+│ ├─ 예상 시간: 3h                                      │
+│ ├─ 상태: [진행중] (1.5h)                            │
+│ ├─ 관련 프로젝트: Q3-API-v1.5                       │
+│ ├─ 링크: github.com/project/pull/123                │
+│ ├─ 결과물: (없음 - 진행 중)                         │
+│ ├─ 이슈: (없음)                                      │
+│ └─ [상세] [완료] [중단]                             │
+│                                                         │
+│ 업무 2: 테스트 코드 작성                              │
+│ ├─ 카테고리: 테스트                                  │
+│ ├─ 예상 시간: 2h                                      │
+│ ├─ 상태: [완료] (1.2h)                              │
+│ ├─ 관련 프로젝트: Q3-API-v1.5                       │
+│ ├─ 링크: github.com/project/pull/124                │
+│ ├─ 결과물: ✓ PR 링크, coverage report (PDF)         │
+│ ├─ 이슈: (없음)                                      │
+│ └─ [상세] [재개] [삭제]                             │
+│                                                         │
+│ [+ 업무 추가]                                          │
+│                                                         │
+│ ▼ 일일 상태 (ERP daily_reports로 동기화):            │
+│ ┌─────────────────────────────────────┐              │
+│ │ 오늘 할 일:                         │              │
+│ │ &quot;API 개발 완료, 테스트 커버리지    │              │
+│ │  80% 달성, Q3 마일스톤 예정대로&quot;  │              │
+│ │ [편집]                             │              │
+│ │                                    │              │
+│ │ 진행 중인 업무:                     │              │
+│ │ &quot;API 엔드포인트 개발 진행 중,     │              │
+│ │  테스트 코드 추가 작성 중&quot;         │              │
+│ │ [편집]                             │              │
+│ │                                    │              │
+│ │ 블로커/이슈:                       │              │
+│ │ &quot;DB 스키마 변경 대기 (Lee 담당)&quot;  │              │
+│ │ [편집]                             │              │
+│ │                                    │              │
+│ │ 내일 계획:                         │              │
+│ │ &quot;API 테스트 완료, 코드리뷰 신청, │              │
+│ │  Q3 성능 최적화 시작&quot;             │              │
+│ │ [편집]                             │              │
+│ │                                    │              │
+│ │ 상태: [진행중] [완료]              │              │
+│ │ [저장] [ERP 동기화 확인]           │              │
+│ └─────────────────────────────────────┘              │
+│                                                         │
+│ [기간별 리포트] [통계] [내보내기]                      │
+│
+└─────────────────────────────────────────────────────────┘</code></pre>
+<p><strong>업무 상세 폼 (모달):</strong></p>
+<pre class="code"><code>┌──────────────────────────────────────────────────────┐
+│ 업무: API 엔드포인트 개발                            │
+├──────────────────────────────────────────────────────┤
+│                                                      │
+│ 기본 정보:                                          │
+│ 제목: [API 엔드포인트 개발]                         │
+│ 카테고리: [개발]                                    │
+│ 상태: [진행중] [완료] [중단]                       │
+│                                                      │
+│ 시간 기록:                                         │
+│ 예상 시간: [3] 시간                                │
+│ 실제 시간: [1.5] 시간                             │
+│                                                      │
+│ 목표:                                              │
+│ [POST /api/users 엔드포인트 구현, 요청검증 포함]  │
+│                                                      │
+│ 프로젝트 연결:                                     │
+│ [Q3-API-v1.5] (선택: 프로젝트 목록)               │
+│                                                      │
+│ 외부 링크:                                         │
+│ [https://github.com/.../pull/123]                 │
+│                                                      │
+│ 결과물 (작업 완료 시):                             │
+│ [파일 첨부] 또는 [URL 입력]                        │
+│ • coverage_report.pdf (123KB)                      │
+│ • performance_metrics.xlsx (45KB)                  │
+│ [파일 제거]                                        │
+│                                                      │
+│ 이슈/블로커:                                       │
+│ [DB 스키마 변경 대기]                             │
+│                                                      │
+│ 노트:                                              │
+│ [구현 과정에서 인증 로직 추가로 시간 소요,        │
+│  다음 업무 계획 시 고려 필요]                      │
+│                                                      │
+│ [저장] [취소]                                      │
+│
+└──────────────────────────────────────────────────────┘</code></pre>
+<h4 id="data-requirements-6">Data Requirements</h4>
+<ul><li><strong>입력</strong>: work<em>log (id, user</em>id, work<em>date, category, title, goal, related</em>project, url, est<em>minutes, status[started|completed|aborted], result</em>url, attachments, issues, next<em>action), erp</em>user (user_id, email)</li><li><strong>출력</strong>: work<em>log CRUD, 일일 상태 → ERP daily</em>reports 푸시 (daily<em>status</em>push 로그)</li><li><strong>참조</strong>: 03-erp-integration.md (ERP 동기화), 01-prd.md (KPI 원칙 — 결과물 기반 평가)</li><li><strong>주의</strong>: work_log.status enum에 'aborted'(중단) 추가 필요 — 04-data-model.md와 동기화</li></ul>
+<h4 id="주간월간-리포트">주간/월간 리포트</h4>
+<pre class="code"><code>┌──────────────────────────────────────────┐
+│ 주간 리포트: 2026-06-24 ~ 2026-06-30   │
+├──────────────────────────────────────────┤
+│                                          │
+│ 총 업무: 18개                           │
+│ 완료: 15개 (83%)                        │
+│ 진행중: 2개                             │
+│ 중단: 1개                               │
+│                                          │
+│ 시간 기록:                              │
+│ 예상: 40h                               │
+│ 실제: 38.5h                            │
+│ 회의: 5h                                │
+│                                          │
+│ 카테고리별 분포:                        │
+│ • 개발: 22h (57%)                      │
+│ • 회의: 5h (13%)                       │
+│ • 테스트: 8.5h (22%)                   │
+│ • 기타: 3h (8%)                        │
+│                                          │
+│ 상태 요약:                              │
+│ &quot;Q3 목표 진행도 80%. 다음 주 릴리스  │
+│  예정. 백엔드 팀과 협업 원활.&quot;        │
+│ [편집]                                 │
+│                                          │
+│ [CSV 다운로드] [공유]                   │
+│
+└──────────────────────────────────────────┘</code></pre>
+<hr>
+<h3 id="37-이의신청-kpi-objection">3.7 이의신청 (KPI Objection)</h3>
+<h4 id="목적-5">목적</h4>
+<ul><li>평가 공개 후 직원이 결과에 이의를 제기하고, 관리자가 재검토·확정하는 흐름(D15).</li><li>상태머신: <strong>공개 → 이의접수(7일 창) → 재검토 → 확정 → ERP push</strong>.</li></ul>
+<h4 id="직원-화면">직원 화면</h4>
+<pre class="code"><code>┌──────────────────────────────────────────┐
+│ 내 평가 (2026-Q2)  상태: 공개됨           │
+├──────────────────────────────────────────┤
+│ 종합점수: 74%   [상세 근거 보기]          │
+│                                          │
+│ 이의신청 가능 기한: 2026-07-08 (D-6)     │
+│ [이의신청]                               │
+│  └─ 사유 입력(필수), 근거 링크(선택)     │
+│                                          │
+│ 진행 상태: 접수 → 재검토중 → 확정        │
+│  현재: ● 접수완료 (2026-07-02)           │
+└──────────────────────────────────────────┘</code></pre>
+<h4 id="관리자-화면">관리자 화면</h4>
+<pre class="code"><code>┌──────────────────────────────────────────┐
+│ 이의신청 접수 목록                       │
+├──────────────────────────────────────────┤
+│ Kim / Q2 / 접수 2026-07-02 / D-5         │
+│  사유: &quot;회의 참여를 팀 역할로 감점 반영&quot; │
+│  [재검토] → [점수 유지] / [조정: __]     │
+│  결과 입력 + 코멘트 → [확정]             │
+│                                          │
+│ 확정 시: kpi_result.final_score 갱신 →   │
+│ ERP 재push(upsert) (D15)                 │
+└──────────────────────────────────────────┘</code></pre>
+<h4 id="data-requirements-7">Data Requirements</h4>
+<ul><li><strong>입력</strong>: kpi<em>result (id, user</em>id, period<em>type, period</em>key, metric, ai<em>draft, admin</em>adjusted<em>score, objection</em>status, final<em>score, finalized</em>at)</li><li><strong>상태값</strong>: objection<em>status = published → objection</em>filed → under_review → finalized</li><li><strong>참조</strong>: 00-decisions.md D15, 03-erp-integration.md, 08-kpi-logic.md</li></ul>
+<hr>
+<h3 id="38-로그인-세션-만료-auth">3.8 로그인 / 세션 만료 (Auth)</h3>
+<h4 id="목적-6">목적</h4>
+<ul><li>FastAPI 발급 자체 JWT(HS256) 로그인, 인증 실패·세션 만료 처리(D4).</li></ul>
+<pre class="code"><code>┌──────────────────────────────┐   ┌──────────────────────────────┐
+│ 로그인                       │   │ 세션이 만료되었습니다        │
+│ 이메일 [___________]         │   │ 보안을 위해 다시 로그인하세요.│
+│ 비밀번호 [___________]       │   │ [다시 로그인]                │
+│ [로그인]                     │   │                              │
+│ ✗ 이메일 또는 비밀번호 오류  │   │ (진행 중 작업은 임시 저장됨) │
+└──────────────────────────────┘   └──────────────────────────────┘</code></pre>
+<ul><li><strong>성공</strong>: FastAPI가 JWT 발급 → 웹 콘솔/데스크톱 클라이언트 공용. 데스크톱은 WSS 핸드셰이크에서 JWT + protocol<em>version/schema</em>version 협상(D4·05 §2.2).</li><li><strong>실패</strong>: 401 표시, 평문 비밀번호를 게임서버로 전송하지 않음(D4).</li><li><strong>만료</strong>: JWT 만료 시 재로그인 유도. 미저장 입력은 로컬 임시 저장 후 복구.</li></ul>
+<h4 id="data-requirements-8">Data Requirements</h4>
+<ul><li><strong>입력</strong>: erp_user(email), FastAPI /auth (JWT 발급/검증)</li><li><strong>참조</strong>: 00-decisions.md D4, 03-erp-integration.md(인증)</li></ul>
+<hr>
+<h3 id="39-아바타-커스터마이징-avatar">3.9 아바타 커스터마이징 (Avatar)</h3>
+<h4 id="목적-7">목적</h4>
+<ul><li>기본 휴머노이드 아바타 + 색상 선택(경량). 3D 오피스 Settings에서 진입(§1.2 Left Sidebar).</li></ul>
+<pre class="code"><code>┌──────────────────────────────────────────┐
+│ 아바타 설정                              │
+├──────────────────────────────────────────┤
+│ 프리셋: (●) 기본 휴머노이드 A            │
+│          ( ) 기본 휴머노이드 B            │
+│ 상의 색상: [■][■][■][■][■]              │
+│ 하의 색상: [■][■][■][■][■]              │
+│ 이름표 표시: [본인 이름/직급]            │
+│ [미리보기]  [저장]                       │
+└──────────────────────────────────────────┘</code></pre>
+<ul><li>리깅은 Mixamo/기성 휴머노이드 리그 기반(07 참조). 커스터마이징은 프리셋 + 색상 팔레트 수준(고도화 시 확장).</li></ul>
+<h4 id="data-requirements-9">Data Requirements</h4>
+<ul><li><strong>입력/출력</strong>: user<em>avatar (user</em>id, preset_id, colors) — 로컬/서버 저장</li><li><strong>참조</strong>: 07-3d-visual-asset-pipeline.md(아바타)</li></ul>
+<hr>
+<h3 id="310-권한-규칙-접근-매트릭스-rbac">3.10 권한 규칙 &amp; 접근 매트릭스 (RBAC)</h3>
+<h4 id="목적-8">목적</h4>
+<ul><li>역할(직원/팀리더/관리자)별 화면·기능 접근 규칙 단일 정의. 권한 없는 접근 시 <strong>권한 없음 화면</strong> 표시.</li></ul>
+<h4 id="접근-매트릭스">접근 매트릭스</h4>
+<div class="table-wrap"><table><thead><tr><th>화면 / 기능</th><th style="text-align:center">직원</th><th style="text-align:center">팀리더</th><th style="text-align:center">관리자</th></tr></thead><tbody><tr><td>3D 오피스(입장·이동·프레즌스)</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td></tr><tr><td>본인 KPI 조회</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td></tr><tr><td>팀 KPI 순위/타인 점수 열람</td><td style="text-align:center">✗</td><td style="text-align:center">✓(팀 한정)</td><td style="text-align:center">✓</td></tr><tr><td>KPI 점수 조정·확정</td><td style="text-align:center">✗</td><td style="text-align:center">✗</td><td style="text-align:center">✓</td></tr><tr><td>이의신청 제출</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td></tr><tr><td>이의신청 재검토·확정</td><td style="text-align:center">✗</td><td style="text-align:center">✗</td><td style="text-align:center">✓</td></tr><tr><td>좌석 배치 편집기(구조 편집·배포)</td><td style="text-align:center">✗</td><td style="text-align:center">✗</td><td style="text-align:center">✓</td></tr><tr><td>조직도 편집</td><td style="text-align:center">✗</td><td style="text-align:center">✗</td><td style="text-align:center">✓</td></tr><tr><td>직원명부 조회</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td><td style="text-align:center">✓</td></tr><tr><td>동기화 모니터링 콘솔</td><td style="text-align:center">✗</td><td style="text-align:center">✗</td><td style="text-align:center">✓</td></tr></tbody></table></div>
+<h4 id="권한-없음-화면">권한 없음 화면</h4>
+<pre class="code"><code>┌──────────────────────────────────────────┐
+│ 🔒 접근 권한이 없습니다                  │
+│ 이 화면은 관리자 전용입니다.             │
+│ [이전으로]  [권한 요청]                  │
+└──────────────────────────────────────────┘</code></pre>
+<h4 id="data-requirements-10">Data Requirements</h4>
+<ul><li><strong>입력</strong>: erp<em>user.role(employee/leader/admin), team</em>id(팀리더 범위 판정)</li><li><strong>참조</strong>: 00-decisions.md D15·D20, 04-data-model.md(role)</li></ul>
+<hr>
+<h3 id="311-자율좌석free-seat-점유-반납">3.11 자율좌석(Free Seat) 점유 / 반납</h3>
+<h4 id="목적-9">목적</h4>
+<ul><li>3D 오피스에서 빈 자율좌석(seat_type=free)을 클릭해 점유하고, 퇴근 시 자동 반납. <strong>layout 재배포 없이 <code>seat_assignment</code>만 갱신</strong>(05 D10).</li></ul>
+<pre class="code"><code>[3D] 빈 자율좌석 클릭
+  → &quot;이 자리에 앉기&quot; 프롬프트 → 클릭
+  → 서버: seat_assignment INSERT (seat_id, erp_user_id, assigned_at)
+  → 아바타 착석(seat.facing 방향), 좌석에 이름표 표시
+
+퇴근/오프라인 전이(away 장기화 등)
+  → 서버: seat_assignment.released_at 갱신(자동 반납)
+  → 좌석 다시 free 표시</code></pre>
+<ul><li>이미 점유된 자율좌석은 클릭 시 &quot;사용 중&quot; 표시. 고정좌석(fixed)은 배정자 외 점유 불가.</li></ul>
+<h4 id="data-requirements-11">Data Requirements</h4>
+<ul><li><strong>입력/출력</strong>: seat(seat<em>type, coords, facing), seat</em>assignment(seat<em>id, erp</em>user<em>id, assigned</em>at, released_at), presence</li><li><strong>참조</strong>: 05-office-layout-schema.md(§2.4 좌석 배정 분리), 04-data-model.md</li></ul>
+<hr>
+<h3 id="312-관리자-동기화-모니터링-콘솔">3.12 관리자 동기화 모니터링 콘솔</h3>
+<h4 id="목적-10">목적</h4>
+<ul><li>ERP 동기화·EOD/ERP push·KPI 배치의 상태·실패 이력을 관리자가 모니터링하고 <strong>수동 재시도</strong>(1047~1066행 오류 알림의 수신처).</li></ul>
+<pre class="code"><code>┌──────────────────────────────────────────────────────┐
+│ 동기화 모니터링 콘솔  (관리자 전용)                  │
+├──────────────────────────────────────────────────────┤
+│ 작업              최근 실행       상태     [액션]     │
+│ ERP 증분(매시간)  15:00 성공      ● OK                │
+│ ERP 전체대사(00시) 00:00 성공     ● OK                │
+│ daily_reports push 18:00 실패     ✗ 401   [재시도]    │
+│ KPI AI 초안(21시)  대기중         ○ 예정               │
+│ kpi_results push   14:20 성공     ● OK                │
+│                                                      │
+│ 실패 이력:                                           │
+│  2026-07-01 18:30  daily_reports  401 JWT 만료 [로그] │
+│                                                      │
+│ [전체 로그]  [feature flag: ERP kpi_results = ON]     │
+└──────────────────────────────────────────────────────┘</code></pre>
+<ul><li>실패 시 알림 채널로 통지되며, 이 콘솔에서 상태 확인·수동 재시도·백필 트리거.</li></ul>
+<h4 id="data-requirements-12">Data Requirements</h4>
+<ul><li><strong>입력</strong>: erp<em>sync</em>log, daily<em>status</em>push, kpi push 로그, 배치 run_id/advisory lock 상태</li><li><strong>참조</strong>: 00-decisions.md D17·D18·D21, 03-erp-integration.md</li></ul>
+<hr>
+<h2 id="4-화면-전체-흐름도">4. 화면 전체 흐름도</h2>
+<div class="mermaid">graph TD
+    A[&quot;로그인&quot;] --&gt;|JWT| B[&quot;3D 오피스 메인&quot;]
+    B --&gt;|사이드바| C[&quot;회의실 보기&quot;]
+    B --&gt;|사이드바| D[&quot;직원 검색&quot;]
+    B --&gt;|하단 패널| E[&quot;회의 입장&quot;]
+    B --&gt;|헤더| F[&quot;웹 콘솔 대시보드&quot;]
+    
+    F --&gt;|메뉴| G[&quot;조직도 편집&quot;]
+    F --&gt;|메뉴| H[&quot;직원명부&quot;]
+    F --&gt;|메뉴| I[&quot;좌석 배치 편집(2D)&quot;]
+    I --&gt;|저장| J[&quot;데스크톱 draft 열람&quot;]
+    J --&gt;|서버 검증| K[&quot;배포(층 단위) 또는 수정&quot;]
+    
+    F --&gt;|메뉴| L[&quot;KPI 대시보드&quot;]
+    L --&gt;|조회| M[&quot;AI 초안 검토&quot;]
+    M --&gt;|관리자 조정| N[&quot;최종 확정&quot;]
+    N --&gt;|EOD 배치| O[&quot;ERP 푸시&quot;]
+    
+    F --&gt;|메뉴| P[&quot;회의 관리&quot;]
+    E --&gt;|회의 중| Q[&quot;LiveKit 연결&quot;]
+    E --&gt;|회의 종료| R[&quot;회의록 작성&quot;]
+    R --&gt;|액션아이템| S[&quot;액션 추적&quot;]
+    
+    F --&gt;|메뉴| T[&quot;업무기록&quot;]
+    T --&gt;|매일| U[&quot;일일 상태 기록&quot;]
+    U --&gt;|EOD| V[&quot;ERP daily_reports 동기화&quot;]
+    
+    style A fill:#FFE5B4
+    style B fill:#B4D7FF
+    style E fill:#D4FFB4
+    style G fill:#FFD4B4
+    style L fill:#FFB4D4
+    style P fill:#D4B4FF
+    style T fill:#B4FFD4</div>
+<hr>
+<h2 id="5-주요-화면의-상태-정의">5. 주요 화면의 상태 정의</h2>
+<h3 id="51-빈-상태-empty-states">5.1 빈 상태 (Empty States)</h3>
+<h4 id="3d-오피스-첫-로그인">3D 오피스 - 첫 로그인</h4>
+<pre class="code"><code>┌─────────────────────────────────────────────────────────┐
+│                  3D Main Viewport                       │
+│                                                         │
+│                   🎯 가상오피스에 오신 걸 환영합니다   │
+│                                                         │
+│                [게임처럼 시작하기] [튜토리얼]          │
+│                                                         │
+│                아바타를 설정하고 오피스를 둘러보세요.  │
+│                W/A/S/D로 이동, 마우스로 회전합니다.   │
+│                                                         │
+│                근처 직원을 클릭하면 채팅할 수 있습니다 │
+│
+└─────────────────────────────────────────────────────────┘</code></pre>
+<h4 id="회의-목록-오늘-회의-없음">회의 목록 - 오늘 회의 없음</h4>
+<pre class="code"><code>┌──────────────────────────────────────────┐
+│ 회의 일정                                │
+├──────────────────────────────────────────┤
+│                                          │
+│           오늘 예정된 회의가 없습니다    │
+│                                          │
+│      [회의 예약하기] [다른 날짜 보기]   │
+│
+└──────────────────────────────────────────┘</code></pre>
+<h4 id="업무기록-업무-없음">업무기록 - 업무 없음</h4>
+<pre class="code"><code>┌──────────────────────────────────────────┐
+│ 업무기록 (2026-07-01)                   │
+├──────────────────────────────────────────┤
+│                                          │
+│         아직 등록된 업무가 없습니다      │
+│                                          │
+│      [업무 추가하기] [어제 복사하기]   │
+│
+└──────────────────────────────────────────┘</code></pre>
+<h3 id="52-오류실패-상태-error-states">5.2 오류/실패 상태 (Error States)</h3>
+<h4 id="3d-오피스-회의실-입장-실패">3D 오피스 - 회의실 입장 실패</h4>
+<pre class="code"><code>┌──────────────────────────────────────────┐
+│ ❌ 회의실에 입장할 수 없습니다           │
+│                                          │
+│ 가능한 원인:                             │
+│ • 회의실 용량이 가득 찼습니다            │
+│ • 회의가 종료되었습니다                  │
+│ • 네트워크 연결이 불안정합니다          │
+│                                          │
+│ [재시도] [처음으로] [고객지원]          │
+│
+└──────────────────────────────────────────┘</code></pre>
+<h4 id="좌석-배치-편집-검증-실패-d12">좌석 배치 편집 - 검증 실패 (D12)</h4>
+<pre class="code"><code>┌──────────────────────────────────────────┐
+│ ⚠️ 배포 전 오류 수정이 필요합니다        │
+├──────────────────────────────────────────┤
+│                                          │
+│ ERROR (3) — 배포 불가:                  │
+│ ❌ 좌석 3개가 콜리전과 겹침 (S_105 등) │
+│ ❌ 회의실 B 문 개구부(doors) 없음       │
+│ ❌ 팀 구역이 floor 범위를 벗어남        │
+│                                          │
+│ WARNING (1):                            │
+│ ⚠️ 휠체어 경로 1개 차단됨               │
+│                                          │
+│ ERROR가 하나라도 있으면 배포할 수 없습니다.│
+│ [상세] [2D로 수정]                      │
+│
+└──────────────────────────────────────────┘</code></pre>
+<blockquote><strong>정책(D12)</strong>: ERROR가 0건이어야 배포 버튼이 활성화된다. <code>[무시하고 배포]</code> 버튼은 없다. <strong>WARNING만</strong> 있는 경우에 한해 배포 화면에서 <code>[경고 무시하고 배포]</code>를 제공한다:  ``<code> ┌──────────────────────────────────────────┐ │ 검증 결과: ERROR 0 · WARNING 2           │ │ ⚠️ 휠체어 경로 우회 필요 / 미니맵 여백 좁음 │ │ [2D로 수정]   [경고 무시하고 배포]        │ └──────────────────────────────────────────┘ </code>``</blockquote>
+<h4 id="kpi-대시보드-ai-평가-실패">KPI 대시보드 - AI 평가 실패</h4>
+<pre class="code"><code>┌──────────────────────────────────────────┐
+│ ❌ AI 평가를 생성할 수 없었습니다        │
+├──────────────────────────────────────────┤
+│                                          │
+│ Claude API 호출 오류: timeout           │
+│ 마지막 시도: 2026-07-01 18:15          │
+│                                          │
+│ 수동 입력으로 계속하시겠습니까?         │
+│                                          │
+│ [재시도] [수동입력] [관리자] [취소]    │
+│
+└──────────────────────────────────────────┘</code></pre>
+<h4 id="erp-동기화-실패">ERP 동기화 실패</h4>
+<pre class="code"><code>┌──────────────────────────────────────────┐
+│ ❌ ERP 동기화 실패                       │
+├──────────────────────────────────────────┤
+│                                          │
+│ 상태: POST /api/reports (daily_reports)│
+│ 오류: 401 Unauthorized                  │
+│ 시간: 2026-07-01 18:30                 │
+│                                          │
+│ 원인: 서비스 계정 JWT 만료              │
+│       (관리자만 재설정 가능)             │
+│                                          │
+│ 영향: 오늘 업무 상태가 ERP에 기록되지  │
+│      않음. 내일 재시도됩니다.           │
+│                                          │
+│ [관리자에게 알림] [로그 확인] [닫기]   │
+│
+└──────────────────────────────────────────┘</code></pre>
+<hr>
+<h2 id="6-각-화면의-주요-컴포넌트-의존성">6. 각 화면의 주요 컴포넌트 &amp; 의존성</h2>
+<h3 id="61-컴포넌트-레이어-구조">6.1 컴포넌트 레이어 구조</h3>
+<pre class="code"><code>Frontend (Next.js + React)
+├── 레이아웃 / 라우팅
+├── 화면 컴포넌트
+│   ├── OrganizationChart (React Flow)
+│   ├── EmployeeDirectory (Table)
+│   ├── SeatLayoutEditor (Konva.js 2D 전용 — 웹 3D 미리보기 없음, D11)
+│   ├── KPIDashboard (Charts, Editor)
+│   ├── MeetingManager (Calendar, Forms)
+│   └── WorkLogRecorder (Forms, List)
+├── 공용 컴포넌트
+│   ├── Header / Navigation
+│   ├── Sidebar
+│   ├── Modal / Dialog
+│   ├── ProgressBar / Chart
+│   └── StatusBadge
+└── API 클라이언트 (fetch, WebSocket)
+
+3D Client (Godot 4 Native)
+├── Scene (Main Office, Rooms, Zones)
+├── Avatar System (Movement, HUD, State)
+├── UI Overlay (Header, Right Panel, Footer)
+├── LiveKit Integration
+└── Server Sync (Godot HeadlessServer via WebSocket/WSS — D1)
+
+Backend (FastAPI)
+├── Auth (JWT)
+├── API Routes
+│   ├── /orgs (org_group CRUD)
+│   ├── /teams (team_zone CRUD)
+│   ├── /layouts (office_layout CRUD + validation)
+│   ├── /seats (seat CRUD + assignment)
+│   ├── /meetings (meeting CRUD + minutes)
+│   ├── /work-logs (work_log CRUD)
+│   ├── /kpi-results (kpi_result CRUD + AI draft)
+│   ├── /erp (ERP sync endpoints)
+│   └── /3d-server (Godot server communication)
+├── Background Jobs
+│   ├── ERP Sync Worker (users, teams, attendances, leaves)
+│   ├── KPI AI Draft Worker (21:00 야간 배치 — D17)
+│   └── EOD Push Worker (매일 근무 종료 후)
+└── Database (PostgreSQL)
+
+Godot Headless Server
+├── Authority (Movement, Collision, Rooms)
+├── WebSocket(WSS) Sync — D1
+├── Room Management (LiveKit)
+└── Logging</code></pre>
+<h3 id="62-화면별-의존-엔티티">6.2 화면별 의존 엔티티</h3>
+<div class="table-wrap"><table><thead><tr><th>화면</th><th>필수 엔티티</th><th>참조 문서</th></tr></thead><tbody><tr><td><strong>3D 오피스 메인</strong></td><td>erp<em>user, presence, office, floor, office</em>layout, seat, room, meeting, meeting_participant</td><td>04-data-model.md</td></tr><tr><td><strong>조직도 편집</strong></td><td>org<em>group, team</em>zone, erp_user (teams)</td><td>04-data-model.md, 01-prd.md</td></tr><tr><td><strong>직원명부</strong></td><td>erp<em>user, presence, seat, team</em>zone</td><td>04-data-model.md</td></tr><tr><td><strong>좌석 배치 편집</strong></td><td>office, floor, office<em>layout(층 단위), seat, seat</em>assignment, room(doors), team_zone</td><td>05-office-layout-schema.md, 04-data-model.md</td></tr><tr><td><strong>KPI 대시보드</strong></td><td>kpi<em>result, work</em>log, meeting, meeting<em>minute, action</em>item</td><td>03-erp-integration.md, 01-prd.md</td></tr><tr><td><strong>이의신청(§3.7)</strong></td><td>kpi<em>result(objection</em>status, final<em>score), erp</em>user</td><td>03-erp-integration.md(D15)</td></tr><tr><td><strong>회의/회의록</strong></td><td>meeting, room, meeting<em>participant, meeting</em>minute, action<em>item, erp</em>user</td><td>04-data-model.md</td></tr><tr><td><strong>업무기록</strong></td><td>work<em>log, erp</em>user, daily<em>status</em>push</td><td>03-erp-integration.md, 01-prd.md</td></tr><tr><td><strong>로그인/세션(§3.8)</strong></td><td>erp_user, JWT(FastAPI /auth)</td><td>03-erp-integration.md(D4)</td></tr><tr><td><strong>아바타(§3.9)</strong></td><td>user_avatar</td><td>07-3d-visual-asset-pipeline.md</td></tr><tr><td><strong>권한 매트릭스(§3.10)</strong></td><td>erp<em>user(role, team</em>id)</td><td>04-data-model.md</td></tr><tr><td><strong>자율좌석 점유/반납(§3.11)</strong></td><td>seat(seat<em>type), seat</em>assignment, presence</td><td>05-office-layout-schema.md, 04-data-model.md</td></tr><tr><td><strong>동기화 모니터링(§3.12)</strong></td><td>erp<em>sync</em>log, daily<em>status</em>push, kpi push 로그</td><td>03-erp-integration.md(D17·D18)</td></tr></tbody></table></div>
+<hr>
+<h2 id="7-배포-렌더링-전략">7. 배포 &amp; 렌더링 전략</h2>
+<h3 id="71-3d-클라이언트-godot-native">7.1 3D 클라이언트 (Godot Native)</h3>
+<ul><li><strong>OS</strong>: Windows, macOS, Linux (Desktop 우선)</li><li><strong>렌더러</strong>: Forward+ (최고 품질)</li><li><strong>배포</strong>: 독립형 exe/dmg/deb + 자동 업데이트</li><li><strong>해상도</strong>: 1920×1080 권장, 최소 1280×720</li></ul>
+<h3 id="72-웹-콘솔-nextjs">7.2 웹 콘솔 (Next.js)</h3>
+<ul><li><strong>OS</strong>: 모든 OS (브라우저)</li><li><strong>렌더</strong>: Server-Side Rendering (SSR) / Static Generation (SSG) 혼합</li><li><strong>배포</strong>: <strong>사내 VM 단일화</strong>(웹 프론트 포함 전부 사내 VM, 사내 PKI TLS — D21). Vercel/외부 배포는 폐기</li><li><strong>브라우저 지원</strong>: Chrome/Edge 90+, Safari 14+, Firefox 88+</li></ul>
+<h3 id="73-성능-목표-d22">7.3 성능 목표 (D22)</h3>
+<ul><li><strong>3D 프레임율</strong>: <strong>60fps@GTX1650급 / 최소 30fps@내장그래픽(Iris Xe급)</strong></li><li><strong>웹 페이지 로딩</strong>: &lt; 3초 (First Contentful Paint)</li><li><strong>실시간 업데이트</strong>: 아바타 E2E p95 &lt; 500ms, 화상 음성 &lt; 200ms(사내망)</li><li><strong>규모</strong>: <strong>동시접속 설계 100명 / 도그푸딩 검증 20명</strong>(500·1000명 표기 폐기). 로딩 &lt; 5초</li></ul>
+<hr>
+<h2 id="loop-metadata">Loop Metadata</h2>
+<h3 id="upstream-documents-referenced">Upstream documents referenced</h3>
+<ul><li>01-prd.md (제품 스펙, KPI 원칙, 조직 구조)</li><li>03-erp-integration.md (ERP 동기화, KPI 연동, 인증)</li><li>04-data-model.md (DB 스키마, 엔티티 정의)</li><li>05-office-layout-schema.md (office_layout JSON 스키마)</li></ul>
+<h3 id="downstream-documents-affected">Downstream documents affected</h3>
+<ul><li><strong>screen-spec</strong> (이 문서를 입력으로 사용하여 화면별 세부 사양 생성)</li><li><strong>API 명세</strong> (각 화면 데이터 요구사항 → API 엔드포인트 설계)</li><li><strong>개발 태스크 분해</strong> (화면별 → 컴포넌트 → 구현 태스크)</li></ul>
+<h3 id="open-questions">Open questions</h3>
+<ul><li><strong>조직도 편집기 우선순위</strong>: <strong>P3/고도화로 확정</strong>(§3.1). MVP 범위 밖이며 Phase 후반 고도화로 마킹. PRD/TRD/tasks에도 P3로 통일.</li><li><strong>직원명부 구현 태스크</strong>: §3.2 직원명부 화면의 전용 프론트엔드 태스크를 12-tasks에 추가 필요.</li><li><strong>Whisper 자동 전사</strong>: <strong>해소됨</strong> — 회의록은 STT 자동 초안(D5, §3.5.2)으로 확정. 실시간 전사 여부는 S2 스파이크(품질 측정)에서 결정.</li><li><strong>채팅 기능</strong>: §1.2 사이드바에 언급된 채팅은 <strong>간단한 DM/회의 메모 수준으로 명세하되 Phase 7(고도화) 마킹</strong>. MVP는 회의 중 메모·근접 DM만.</li><li><strong>모바일 지원</strong>: 웹 콘솔이 태블릿에서도 작동하는가? (사내 설치라 우선순위 낮음)</li><li><strong>3D 웹뷰어</strong>: B2B 후 Three.js 경량 웹뷰어 추가 시 현재 설계와 호환성? (D11로 웹 3D는 현재 범위 밖)</li></ul>
+<h3 id="assumptions">Assumptions</h3>
+<ul><li>ERP API와 DB direct access 모두 안정적이며, 사내 네트워크 보안이 보장됨</li><li>LiveKit self-host는 ERP와 동일 인프라에서 운영 가능</li><li>daily_reports push는 매일 18:00 KST 배치(D17)</li><li><strong>직원 수는 설계 100명 / 도그푸딩 20명 범위</strong>(D22, 500명 이상 표기 폐기)</li><li>Godot 4 native desktop deployment가 사내 보안 정책과 호환</li></ul>
+<h3 id="validation-criteria">Validation criteria</h3>
+<ol><li><strong>3D 메인 화면</strong>: 로비 진입 → 아바타 로드 → 회의실 입장 → (종료 후) STT 회의록 초안 생성 전체 플로우 동작 ✓</li><li><strong>웹 콘솔</strong>: 조직도 편집 → 좌석 배치 2D → 저장·서버 검증 → 데스크톱 draft 열람 → 배포(층 단위) 전체 플로우 동작 ✓</li><li><strong>KPI</strong>: AI 서술 초안 → 관리자 검토·확정 → 이의신청 처리 → ERP 푸시 전체 파이프라인 동작 ✓</li><li><strong>회의</strong>: 예약 → 입장(녹음 고지·동의) → STT 회의록 검토·확정 → 액션아이템 추적 전체 플로우 동작 ✓</li><li><strong>업무</strong>: 기록 → 일일 상태 → EOD 동기화 전체 플로우 동작 ✓</li><li><strong>권한</strong>: 역할별 접근 매트릭스(§3.10) — 직원/팀리더/관리자 권한 경계 동작 ✓</li></ol>
+<h3 id="risks">Risks</h3>
+<ul><li><strong>ERP 동기화 지연</strong>: 사내 ERP가 다운될 경우 KPI/업무 리포트가 적시에 반영되지 않음 → Fallback 큐 + 동기화 모니터링 콘솔(§3.12)</li><li><strong>Live Kit 비용</strong>: 참석자 수 증가 시 비용 급증 → 사전 용량 계획 필수</li><li><strong>3D 렌더링 성능</strong>: GPU 사양에 따른 편차 → 기준 사양 명시(GTX 1650급 60fps / 내장 30fps, D22)</li><li><strong>웹 콘솔 복잡도</strong>: 좌석/조직도 편집기 자체로 개발 리스크 높음 → 조직도 편집기는 P3로 후순위, 좌석 편집기 MVP/고도화 분리</li></ul>
+<hr>
+<h2 id="8-변경-이력">8. 변경 이력</h2>
+<div class="table-wrap"><table><thead><tr><th>버전</th><th>일자</th><th>변경 내용</th></tr></thead><tbody><tr><td>1.0</td><td>2026-07-01</td><td>초안</td></tr><tr><td>1.1</td><td>2026-07-02</td><td>00-decisions 반영: D11 웹 3D 미리보기 전면 제거(데스크톱 draft 열람으로 대체), D12 검증 아키텍처(서버 단일 정밀검증·ERROR 배포차단·[무시하고 배포] 제거), 편집기 JSON을 05 스키마와 정합(미터·필드명·doors[]·shape·중복 type 키 수정)·팔레트에 spawn/entrance/glass_wall/door/marker/exit 추가, D5 회의록 STT 초안 흐름·녹음 고지/동의 배너·Godot 작성폼 제거, Godot=보기/웹=작성 경계 원칙 명시, 신규 화면 6종(이의신청·로그인/세션·아바타·권한 매트릭스·자율좌석 점유/반납·동기화 모니터링 콘솔), D22 성능·규모 통일(60fps@GTX1650/100명), 층 단위 버전·롤백(05 정합), 조직도 편집기 P3·채팅 Phase 7 마킹, GPS 표기 제거(D13), Vercel→사내 VM(D21), ENet→WSS(D1)</td></tr></tbody></table></div>
+<div class="meta-foot">원본: <code>06-screens.md</code> · 자동 생성 2026-07-02 · md-to-html</div>
+</main>
+</div>
+
+<script type="module">
+try{
+  const m = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  m.default.initialize({startOnLoad:true, theme: dark?'dark':'default', securityLevel:'loose'});
+}catch(e){
+  document.querySelectorAll('.mermaid').forEach(el=>{
+    const pre=document.createElement('pre');pre.className='code';
+    pre.textContent=el.textContent;el.replaceWith(pre);
+  });
+}
+</script>
+</body></html>

@@ -1,0 +1,1100 @@
+version: "2.0"
+resources:
+  # ==================================================
+  # 1. ERP 읽기 전용 리소스 (Source of Truth)
+  # ==================================================
+
+  - name: erp_user
+    source: erp-read-only
+    description: ERP 직원 정보의 읽기전용 동기화. 모든 참조의 단일 진실 공급처(PK=users.id).
+    fields:
+      - name: id
+        type: UUID or BIGINT
+        note: ERP users.id (조인 키)
+      - name: company_id
+        type: UUID
+        note: ERP company 스코프(사내 단일값)
+      - name: email
+        type: VARCHAR(255)
+        note: ERP와 동일, company_id 내 unique
+      - name: name
+        type: VARCHAR(255)
+        note: 직원명
+      - name: erp_team_id
+        type: BIGINT
+        note: ERP teams.id
+      - name: role
+        type: ENUM
+        note: employee | leader | admin | super_admin
+      - name: position
+        type: VARCHAR(255)
+        note: 자유텍스트 직책(예:선임, 팀장)
+      - name: position_id
+        type: BIGINT
+        note: ERP job_positions.id (FK, nullable)
+      - name: manager_id
+        type: BIGINT
+        note: ERP users.id (보고라인, nullable, self)
+      - name: slack_user_id
+        type: VARCHAR(255)
+        note: ERP slack_user_id
+      - name: github_username
+        type: VARCHAR(255)
+        note: ERP github_username
+      - name: jira_email
+        type: VARCHAR(255)
+        note: ERP jira_email
+      - name: work_type
+        type: VARCHAR(50)
+        note: ERP work_type
+      - name: work_hours
+        type: INT
+        note: 일일 근무시간
+      - name: last_synced_at
+        type: TIMESTAMP
+        note: 마지막 ERP 동기화 시각(KST)
+      - name: created_at
+        type: TIMESTAMP
+        note: 우리 DB 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 우리 DB 수정 시각
+    relations:
+      - to: erp_team
+        kind: many-to-one
+        note: erp_team_id → ERP teams(직접 읽기)
+      - to: job_position
+        kind: many-to-one
+        note: position_id → job_position.id
+      - to: erp_user
+        kind: many-to-one
+        note: manager_id → erp_user.id (self)
+      - to: seat
+        kind: one-to-many
+        note: assigned_user_id
+      - to: presence
+        kind: one-to-one
+        note: user_id (PK)
+      - to: meeting
+        kind: one-to-many
+        note: host_user_id
+      - to: work_log
+        kind: one-to-many
+        note: user_id
+      - to: kpi_result
+        kind: one-to-many
+        note: user_id
+
+  - name: job_position
+    source: erp-read-only
+    description: ERP 직급 정보. erp_user.position_id 참조.
+    fields:
+      - name: id
+        type: BIGINT
+        note: PK
+      - name: company_id
+        type: UUID
+        note: FK
+      - name: name
+        type: VARCHAR(255)
+        note: 직급명(선임, 팀장 등)
+      - name: level
+        type: INT
+        note: 서열 정렬용
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+
+  - name: attendance
+    source: erp-read-only
+    description: ERP 근태 기록. 공식 출퇴근 시각 및 근무형태.
+    fields:
+      - name: id
+        type: BIGINT
+        note: PK
+      - name: company_id
+        type: UUID
+        note: FK
+      - name: user_id
+        type: BIGINT
+        note: FK(erp_user.id)
+      - name: date
+        type: DATE
+        note: 근무 날짜(work_date)
+      - name: check_in_at
+        type: TIMESTAMP
+        note: 출근 시각(UTC)
+      - name: check_out_at
+        type: TIMESTAMP
+        note: 퇴근 시각(UTC, nullable)
+      - name: work_type
+        type: ENUM
+        note: office | remote
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+
+  - name: leave
+    source: erp-read-only
+    description: ERP 휴가 기록. 예정 및 이력 포함.
+    fields:
+      - name: id
+        type: BIGINT
+        note: PK
+      - name: company_id
+        type: UUID
+        note: FK
+      - name: user_id
+        type: BIGINT
+        note: FK(erp_user.id)
+      - name: start_date
+        type: DATE
+        note: 휴가 시작일
+      - name: end_date
+        type: DATE
+        note: 휴가 종료일
+      - name: leave_type
+        type: ENUM
+        note: annual | sick | emergency | unpaid | ...
+      - name: reason
+        type: TEXT
+        note: 휴가 사유
+      - name: approved_at
+        type: TIMESTAMP
+        note: 승인 시각
+      - name: approved_by_id
+        type: BIGINT
+        note: 승인자(erp_user.id, nullable)
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+
+  - name: daily_report
+    source: erp-read-only
+    description: ERP 일일 업무 보고. 우리 플랫폼이 EOD 배치로 역전송.
+    fields:
+      - name: id
+        type: BIGINT
+        note: PK
+      - name: company_id
+        type: UUID
+        note: FK
+      - name: user_id
+        type: BIGINT
+        note: FK(erp_user.id)
+      - name: date
+        type: DATE
+        note: 보고 날짜(report_date)
+      - name: today_work
+        type: TEXT
+        note: 오늘의 업무
+      - name: current_tasks
+        type: JSON array
+        note: 진행 중인 작업 목록
+      - name: blockers
+        type: TEXT
+        note: 장애 요소
+      - name: tomorrow_plan
+        type: TEXT
+        note: 내일 계획
+      - name: status
+        type: ENUM
+        note: draft | submitted | checked | blocker | missing
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+
+  # ==================================================
+  # 2. 조직·구역·공간 계층
+  # ==================================================
+
+  - name: org_group
+    source: our-db
+    description: 우리 플랫폼 상위 조직. ERP teams를 묶어서 본부/부서/파트 계층 구성.
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: company_id
+        type: UUID
+        note: FK(미래 멀티테넌트용)
+      - name: name
+        type: VARCHAR(255)
+        note: 예: 엔지니어링 본부, 마케팅 팀
+      - name: type
+        type: ENUM
+        note: division | department | part
+      - name: parent_id
+        type: UUID
+        note: FK(self, nullable, 상위 그룹)
+      - name: color
+        type: VARCHAR(7)
+        note: HEX 컬러(3D 구역 시각화)
+      - name: sort_order
+        type: INT
+        note: UI 정렬 순서
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+    relations:
+      - to: org_group
+        kind: many-to-one
+        note: parent_id → org_group.id (self)
+      - to: team_zone
+        kind: one-to-many
+        note: org_group_id
+
+  - name: team_zone
+    source: our-db
+    description: ERP 팀 ↔ 3D 구역 매핑. 팀의 물리적 오피스 구역 배치.
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: erp_team_id
+        type: BIGINT
+        note: FK(ERP teams.id)
+      - name: org_group_id
+        type: UUID
+        note: FK(org_group, 상위 그룹)
+      - name: office_id
+        type: UUID
+        note: FK(office)
+      - name: floor_id
+        type: UUID
+        note: FK(floor)
+      - name: zone_label
+        type: VARCHAR(255)
+        note: 예: 백엔드팀 구역, 마케팅 존
+      - name: color
+        type: VARCHAR(7)
+        note: HEX(3D 구역 강조색)
+      - name: polygon
+        type: JSON
+        note: 2D 좌표 배열(Konva 좌석편집기용)
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+    relations:
+      - to: org_group
+        kind: many-to-one
+        note: org_group_id
+      - to: office
+        kind: many-to-one
+        note: office_id
+      - to: floor
+        kind: many-to-one
+        note: floor_id
+      - to: seat
+        kind: one-to-many
+        note: team_zone_id
+
+  - name: office
+    source: our-db
+    description: 사무실(회사의 물리적 오피스 단위).
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: company_id
+        type: UUID
+        note: FK(사내 단일, 미래 멀티테넌트)
+      - name: name
+        type: VARCHAR(255)
+        note: 예: 본사, 판교
+      - name: description
+        type: TEXT
+        note: 사무실 설명
+      - name: address
+        type: VARCHAR(500)
+        note: 사무실 주소
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+    relations:
+      - to: floor
+        kind: one-to-many
+        note: office_id
+      - to: office_layout
+        kind: one-to-many
+        note: office_id
+      - to: presence
+        kind: one-to-many
+        note: office_id
+
+  - name: floor
+    source: our-db
+    description: 오피스 내 층(1층, 2층, B1 등).
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: office_id
+        type: UUID
+        note: FK(office)
+      - name: level
+        type: INT
+        note: 1, 2, 3... (B1=-1)
+      - name: name
+        type: VARCHAR(255)
+        note: 예: 1층 오픈좌석, 2층 회의실
+      - name: minimap_config
+        type: JSON
+        note: 미니맵 2D 레이아웃(캐시용)
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+    relations:
+      - to: office
+        kind: many-to-one
+        note: office_id
+      - to: room
+        kind: one-to-many
+        note: floor_id
+      - to: seat
+        kind: one-to-many
+        note: floor_id
+      - to: office_layout
+        kind: one-to-many
+        note: floor_id
+      - to: presence
+        kind: one-to-many
+        note: floor_id
+
+  # ==================================================
+  # 3. 공간 설계·배치
+  # ==================================================
+
+  - name: office_layout
+    source: our-db
+    description: 사무실 배치 버전 관리. 좌석·회의실·구역 정보를 모듈형 JSON으로 저장.
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: office_id
+        type: UUID
+        note: FK(office)
+      - name: floor_id
+        type: UUID
+        note: FK(floor)
+      - name: version
+        type: INT
+        note: 1, 2, 3...(증분)
+      - name: status
+        type: ENUM
+        note: draft | validated | deployed | archived
+      - name: json
+        type: JSONB
+        note: 구조 정의(05-office-layout-schema.md 참조)
+      - name: created_by
+        type: BIGINT
+        note: FK(erp_user.id, 배치 설계자)
+      - name: validated_by
+        type: BIGINT
+        note: FK(erp_user.id, 검증자, nullable)
+      - name: deployed_at
+        type: TIMESTAMP
+        note: 배포 시각(KST, nullable)
+      - name: deployment_notes
+        type: TEXT
+        note: 배포 메모
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+
+  - name: room
+    source: our-db
+    description: 회의실/라운지/집중실/폰부스 등 공간.
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: floor_id
+        type: UUID
+        note: FK(floor)
+      - name: type
+        type: ENUM
+        note: lobby | meeting | lounge | focus | phonebooth
+      - name: name
+        type: VARCHAR(255)
+        note: 예: 컨퍼런스룸 A, 집중실
+      - name: capacity
+        type: INT
+        note: 수용인원
+      - name: coords
+        type: JSON
+        note: "{x, y, z} 3D 위치(Godot 월드좌표)"
+      - name: enter_trigger
+        type: JSON
+        note: "{x, y, z, radius} 진입 감지 영역"
+      - name: livekit_room
+        type: VARCHAR(255)
+        note: LiveKit room ID(회의 이용 시)
+      - name: status
+        type: ENUM
+        note: active | inactive | maintenance
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+    relations:
+      - to: floor
+        kind: many-to-one
+        note: floor_id
+      - to: meeting
+        kind: one-to-many
+        note: room_id
+
+  - name: seat
+    source: our-db
+    description: 개별 좌석. 직원 할당, 타입(고정/자율/임시/협력사), 상태 관리.
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: floor_id
+        type: UUID
+        note: FK(floor)
+      - name: team_zone_id
+        type: UUID
+        note: FK(team_zone, nullable, null=공용)
+      - name: type
+        type: ENUM
+        note: fixed | free | temp | partner
+      - name: assigned_user_id
+        type: BIGINT
+        note: FK(erp_user.id, nullable)
+      - name: coords
+        type: JSON
+        note: "{x, y, z} 3D 위치"
+      - name: status
+        type: ENUM
+        note: available | occupied | disabled | reserved
+      - name: seat_number
+        type: VARCHAR(50)
+        note: 예: 1-A-01(선택)
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+    relations:
+      - to: floor
+        kind: many-to-one
+        note: floor_id
+      - to: team_zone
+        kind: many-to-one
+        note: team_zone_id (nullable)
+      - to: erp_user
+        kind: many-to-one
+        note: assigned_user_id (nullable)
+      - to: seat_assignment_history
+        kind: one-to-many
+        note: seat_id
+
+  - name: seat_assignment_history
+    source: our-db
+    description: 좌석 배정 변경이력. 감사 및 UI 타임라인용.
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: seat_id
+        type: UUID
+        note: FK(seat)
+      - name: user_id
+        type: BIGINT
+        note: FK(erp_user.id)
+      - name: assigned_at
+        type: TIMESTAMP
+        note: 배정 시각
+      - name: unassigned_at
+        type: TIMESTAMP
+        note: 해제 시각(nullable)
+      - name: assigned_by
+        type: BIGINT
+        note: FK(erp_user.id, 배정 담당자, nullable)
+      - name: reason
+        type: VARCHAR(255)
+        note: 예: 팀 재구성, 퇴사, 출장
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+    relations:
+      - to: seat
+        kind: many-to-one
+        note: seat_id
+      - to: erp_user
+        kind: many-to-one
+        note: user_id
+
+  # ==================================================
+  # 4. 실시간·협업 계층
+  # ==================================================
+
+  - name: presence
+    source: our-db
+    description: 직원 실시간 상태. 아바타 위치, 상태(온라인/회의/집중/외근).
+    fields:
+      - name: user_id
+        type: BIGINT
+        note: PK, FK(erp_user.id)
+      - name: office_id
+        type: UUID
+        note: FK(office, 현재 오피스)
+      - name: floor_id
+        type: UUID
+        note: FK(floor, 현재 층)
+      - name: x
+        type: FLOAT
+        note: 3D 위치(월드좌표)
+      - name: y
+        type: FLOAT
+        note: 3D 위치(월드좌표)
+      - name: z
+        type: FLOAT
+        note: 3D 위치(월드좌표)
+      - name: status
+        type: ENUM
+        note: "online | working | meeting | focus | away | trip_moving | trip_arrived | external | returning | offline"
+      - name: last_activity_at
+        type: TIMESTAMP
+        note: 마지막 활동 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 상태 업데이트 시각(KST)
+    relations:
+      - to: erp_user
+        kind: many-to-one
+        note: user_id (ON DELETE CASCADE)
+      - to: office
+        kind: many-to-one
+        note: office_id
+      - to: floor
+        kind: many-to-one
+        note: floor_id
+
+  - name: meeting
+    source: our-db
+    description: 회의. 화상(LiveKit), 회의록, 결정사항, 액션아이템 추적.
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: room_id
+        type: UUID
+        note: FK(room)
+      - name: title
+        type: VARCHAR(255)
+        note: 예: Q2 계획 회의
+      - name: description
+        type: TEXT
+        note: 회의 설명
+      - name: scheduled_at
+        type: TIMESTAMP
+        note: 예정 시각
+      - name: started_at
+        type: TIMESTAMP
+        note: 실제 시작 시각(nullable)
+      - name: ended_at
+        type: TIMESTAMP
+        note: 실제 종료 시각(nullable)
+      - name: host_user_id
+        type: BIGINT
+        note: FK(erp_user.id, 주최자)
+      - name: status
+        type: ENUM
+        note: scheduled | in_progress | completed | cancelled
+      - name: livekit_room
+        type: VARCHAR(255)
+        note: LiveKit room ID
+      - name: recording_url
+        type: VARCHAR(1000)
+        note: 화상 녹화 URL(선택)
+      - name: meeting_minute_id
+        type: UUID
+        note: FK(meeting_minute, nullable, 1:1)
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+    relations:
+      - to: room
+        kind: many-to-one
+        note: room_id
+      - to: erp_user
+        kind: many-to-one
+        note: host_user_id
+      - to: meeting_participant
+        kind: one-to-many
+        note: meeting_id
+      - to: meeting_minute
+        kind: one-to-one
+        note: meeting_minute_id (nullable)
+      - to: action_item
+        kind: one-to-many
+        note: meeting_id
+
+  - name: meeting_participant
+    source: our-db
+    description: 회의 참석자. joined_at/left_at로 실제 참석 추적.
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: meeting_id
+        type: UUID
+        note: FK(meeting)
+      - name: user_id
+        type: BIGINT
+        note: FK(erp_user.id)
+      - name: invited_at
+        type: TIMESTAMP
+        note: 초대 시각
+      - name: joined_at
+        type: TIMESTAMP
+        note: 실제 입장 시각(nullable)
+      - name: left_at
+        type: TIMESTAMP
+        note: 퇴장 시각(nullable)
+      - name: role
+        type: ENUM
+        note: organizer | presenter | participant
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+    relations:
+      - to: meeting
+        kind: many-to-one
+        note: meeting_id (ON DELETE CASCADE)
+      - to: erp_user
+        kind: many-to-one
+        note: user_id
+
+  - name: meeting_minute
+    source: our-db
+    description: 회의록. 회의 결과 기록(논의, 결정사항, 액션아이템).
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: meeting_id
+        type: UUID
+        note: FK(meeting)
+      - name: title
+        type: VARCHAR(255)
+        note: 회의록 제목
+      - name: summary
+        type: TEXT
+        note: 논의 요약
+      - name: decisions
+        type: TEXT
+        note: 결정사항(마크다운)
+      - name: action_items_summary
+        type: TEXT
+        note: 액션아이템 요약
+      - name: notes
+        type: TEXT
+        note: 추가 노트
+      - name: attachments
+        type: JSON
+        note: "[{filename, url, mime_type}]"
+      - name: created_by
+        type: BIGINT
+        note: FK(erp_user.id, 기록자)
+      - name: reviewed_by
+        type: BIGINT
+        note: FK(erp_user.id, 검토자, nullable)
+      - name: status
+        type: ENUM
+        note: draft | finalized
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+    relations:
+      - to: meeting
+        kind: many-to-one
+        note: meeting_id (ON DELETE CASCADE)
+      - to: erp_user
+        kind: many-to-one
+        note: created_by
+      - to: erp_user
+        kind: many-to-one
+        note: reviewed_by (nullable)
+
+  - name: action_item
+    source: our-db
+    description: 액션아이템. 회의에서 나온 할일. 담당자, 기한, 진행상태 추적.
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: meeting_id
+        type: UUID
+        note: FK(meeting)
+      - name: title
+        type: VARCHAR(255)
+        note: 예: 프로토타입 설계 완료
+      - name: description
+        type: TEXT
+        note: 상세 설명
+      - name: assignee_user_id
+        type: BIGINT
+        note: FK(erp_user.id, 담당자)
+      - name: due_date
+        type: DATE
+        note: 기한(KST)
+      - name: priority
+        type: ENUM
+        note: high | medium | low
+      - name: status
+        type: ENUM
+        note: open | in_progress | completed | cancelled
+      - name: related_ref
+        type: VARCHAR(500)
+        note: 외부 참조(Jira issue URL, GitHub PR 등)
+      - name: completed_at
+        type: TIMESTAMP
+        note: 완료 시각(nullable)
+      - name: completed_evidence_url
+        type: VARCHAR(1000)
+        note: 완료 증거(결과물 링크)
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+    relations:
+      - to: meeting
+        kind: many-to-one
+        note: meeting_id (ON DELETE CASCADE)
+      - to: erp_user
+        kind: many-to-one
+        note: assignee_user_id
+
+  # ==================================================
+  # 5. 업무·KPI·연동 계층
+  # ==================================================
+
+  - name: work_log
+    source: our-db
+    description: 업무 기록. 목표, 소요시간, 결과물 추적. 업무결과 집계→KPI 산출 기초.
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: user_id
+        type: BIGINT
+        note: FK(erp_user.id)
+      - name: work_date
+        type: DATE
+        note: 업무 날짜(KST)
+      - name: category
+        type: VARCHAR(50)
+        note: 예: 개발, 리뷰, 회의, 설계
+      - name: title
+        type: VARCHAR(255)
+        note: 예: API 엔드포인트 개발
+      - name: goal
+        type: TEXT
+        note: 이번 업무의 목표
+      - name: related_project
+        type: VARCHAR(255)
+        note: 프로젝트명(Jira Project key?)
+      - name: url
+        type: VARCHAR(1000)
+        note: 관련 URL(PR, Issue, Confluence)
+      - name: est_minutes
+        type: INT
+        note: 예상 소요시간
+      - name: actual_minutes
+        type: INT
+        note: 실제 소요시간
+      - name: status
+        type: ENUM
+        note: started | completed
+      - name: result_url
+        type: VARCHAR(1000)
+        note: 결과물 URL(코드, 문서)
+      - name: result_description
+        type: TEXT
+        note: 결과 설명
+      - name: attachments
+        type: JSON
+        note: "[{filename, url, mime_type}]"
+      - name: issues
+        type: JSON
+        note: 발생한 이슈(자유텍스트 배열)
+      - name: next_action
+        type: TEXT
+        note: 다음 액션(follow-up)
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+    relations:
+      - to: erp_user
+        kind: many-to-one
+        note: user_id (ON DELETE CASCADE)
+
+  - name: kpi_result
+    source: our-db
+    description: KPI 평가 결과. AI 초안 + 관리자 검토 + 최종 조정. EOD 배치로 ERP로 push.
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: user_id
+        type: BIGINT
+        note: FK(erp_user.id)
+      - name: period
+        type: VARCHAR(20)
+        note: 예: 2026-Q3(분기) 또는 2026-06(월)
+      - name: kpi_date
+        type: DATE
+        note: 평가 날짜
+      - name: metric
+        type: VARCHAR(100)
+        note: 예: completed_work_count, meetings_attended
+      - name: value
+        type: FLOAT
+        note: 메트릭 값
+      - name: source
+        type: ENUM
+        note: virtual_office(우리만 해당)
+      - name: unit
+        type: VARCHAR(50)
+        note: 예: %, 건수, 점수
+      - name: ai_draft
+        type: TEXT
+        note: AI 평가 초안(사유, 개선 제안)
+      - name: ai_draft_generated_at
+        type: TIMESTAMP
+        note: AI 생성 시각
+      - name: admin_reviewed
+        type: BOOLEAN
+        note: 관리자 검토 완료 여부
+      - name: admin_adjusted
+        type: BOOLEAN
+        note: 관리자 조정 여부
+      - name: admin_adjusted_value
+        type: FLOAT
+        note: 관리자 조정 값(nullable)
+      - name: admin_review_note
+        type: TEXT
+        note: 관리자 검토 의견
+      - name: admin_reviewed_at
+        type: TIMESTAMP
+        note: 검토 시각(nullable)
+      - name: note
+        type: TEXT
+        note: 추가 노트
+      - name: pushed_to_erp
+        type: BOOLEAN
+        note: ERP로 전송됨 여부
+      - name: pushed_at
+        type: TIMESTAMP
+        note: ERP 전송 시각(nullable)
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+    relations:
+      - to: erp_user
+        kind: many-to-one
+        note: user_id (ON DELETE CASCADE)
+
+  - name: daily_status_push
+    source: our-db
+    description: 일일 상태 푸시 로그. 우리→ERP 연동의 배치 로그. work_log + kpi_result 푸시.
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: user_id
+        type: BIGINT
+        note: FK(erp_user.id)
+      - name: push_date
+        type: DATE
+        note: 푸시 대상 날짜(KST)
+      - name: target
+        type: ENUM
+        note: erp_daily_reports | erp_kpi_results
+      - name: payload
+        type: JSONB
+        note: 전송 페이로드(일일리포트 or KPI)
+      - name: status
+        type: ENUM
+        note: pending | sent | failed
+      - name: pushed_at
+        type: TIMESTAMP
+        note: 실제 전송 시각(nullable)
+      - name: erp_response
+        type: JSON
+        note: ERP 응답 or 에러 메시지(nullable)
+      - name: retry_count
+        type: INT
+        note: 재시도 횟수
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+    relations:
+      - to: erp_user
+        kind: many-to-one
+        note: user_id (ON DELETE CASCADE)
+
+  # ==================================================
+  # 6. 자산·감시·감사 계층
+  # ==================================================
+
+  - name: asset
+    source: our-db
+    description: "3D 에셋 레지스트리. 모델, 텍스처 메타데이터. Blender→GLB→Godot 변환 파이프라인."
+    fields:
+      - name: asset_id
+        type: UUID
+        note: PK
+      - name: asset_name
+        type: VARCHAR(255)
+        note: 예: oak_desk, leather_chair
+      - name: asset_type
+        type: ENUM
+        note: model | texture | material | animation
+      - name: asset_category
+        type: VARCHAR(100)
+        note: 예: furniture, lighting, decor
+      - name: source_url
+        type: VARCHAR(1000)
+        note: 원본 다운로드 URL(ambientCG, Poly Haven)
+      - name: author
+        type: VARCHAR(255)
+        note: 에셋 제작자
+      - name: license
+        type: VARCHAR(50)
+        note: CC0, CC-BY, MIT, Commercial 등
+      - name: license_url
+        type: VARCHAR(1000)
+        note: 라이선스 텍스트 URL
+      - name: downloaded_at
+        type: TIMESTAMP
+        note: 다운로드 시각
+      - name: modified_by
+        type: BIGINT
+        note: FK(erp_user.id, 최종 수정자, nullable)
+      - name: commercial_allowed
+        type: BOOLEAN
+        note: 상용 이용 가능 여부
+      - name: attribution_required
+        type: BOOLEAN
+        note: 저작권 표시 필수 여부
+      - name: redistribution_allowed
+        type: BOOLEAN
+        note: 재배포 허용 여부
+      - name: original_file_hash
+        type: VARCHAR(64)
+        note: 원본 파일 SHA256(변조 감지)
+      - name: optimized_file_hash
+        type: VARCHAR(64)
+        note: 최적화 후 GLB SHA256
+      - name: file_size_mb
+        type: FLOAT
+        note: 파일 크기(MB)
+      - name: used_in_scene
+        type: JSON
+        note: "[office_layout_1, office_layout_2](사용 장면)"
+      - name: notes
+        type: TEXT
+        note: 비고
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각
+    relations:
+      - to: erp_user
+        kind: many-to-one
+        note: modified_by (nullable)
+
+  - name: audit_log
+    source: our-db
+    description: 감사 로그. 중요 엔티티 변경(좌석배정, 회의, KPI, 배포)의 감시. 컴플라이언스.
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: user_id
+        type: BIGINT
+        note: FK(erp_user.id, 행위자, nullable)
+      - name: action
+        type: VARCHAR(100)
+        note: 예: seat_assigned, meeting_created, kpi_adjusted, layout_deployed
+      - name: entity_type
+        type: VARCHAR(50)
+        note: seat, meeting, kpi_result, office_layout
+      - name: entity_id
+        type: VARCHAR(255)
+        note: 대상 엔티티 ID
+      - name: old_value
+        type: JSONB
+        note: 변경 전 값(nullable)
+      - name: new_value
+        type: JSONB
+        note: 변경 후 값(nullable)
+      - name: ip_address
+        type: VARCHAR(45)
+        note: 요청 IP(IPv4/IPv6)
+      - name: user_agent
+        type: VARCHAR(500)
+        note: 클라이언트 user-agent
+      - name: created_at
+        type: TIMESTAMP
+        note: 행위 시각(KST)
+    relations:
+      - to: erp_user
+        kind: many-to-one
+        note: user_id (nullable, ON DELETE SET NULL)

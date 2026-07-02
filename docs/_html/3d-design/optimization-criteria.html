@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>리소스 최적화 기준 (optimization-criteria.md)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">리소스 최적화 기준 (optimization-criteria.md)</div><div class="sub">optimization-criteria.md</div><a class="lvl1" href="#리소스-최적화-기준-optimization-criteriamd">리소스 최적화 기준 (optimization-criteria.md)</a><a class="lvl2" href="#1-기준-사양-및-성능-목표-d22">1. 기준 사양 및 성능 목표 (D22)</a><a class="lvl3" href="#11-기준-사양">1.1 기준 사양</a><a class="lvl3" href="#12-핵심-성능-예산">1.2 핵심 성능 예산</a><a class="lvl2" href="#2-드로우콜-예산-100200회-이내">2. 드로우콜 예산 (100~200회 이내)</a><a class="lvl3" href="#21-집행-규칙-multimesh-그룹핑">2.1 집행 규칙 — MultiMesh 그룹핑</a><a class="lvl3" href="#22-드로우콜-구성-예시-표준-오피스-1층">2.2 드로우콜 구성 예시 (표준 오피스 1층)</a><a class="lvl3" href="#23-개수-프록시-폐기-d7d12-정합">2.3 개수 프록시 폐기 (D7·D12 정합)</a><a class="lvl2" href="#3-폴리곤-예산">3. 폴리곤 예산</a><a class="lvl3" href="#31-카테고리별-폴리곤-할당">3.1 카테고리별 폴리곤 할당</a><a class="lvl3" href="#32-lod-레벨-규칙">3.2 LOD 레벨 규칙</a><a class="lvl2" href="#4-텍스처-예산">4. 텍스처 예산</a><a class="lvl3" href="#41-텍스처-해상도-계층">4.1 텍스처 해상도 계층</a><a class="lvl3" href="#42-pbr-채널-구성">4.2 PBR 채널 구성</a><a class="lvl2" href="#5-vram-압축-bc-압축-설정">5. VRAM 압축 (BC 압축) 설정</a><a class="lvl3" href="#51-godot-임포트-설정">5.1 Godot 임포트 설정</a><a class="lvl3" href="#52-vram-사용-추정">5.2 VRAM 사용 추정</a><a class="lvl2" href="#6-서버-파생-성능-검증-05-121334-정합">6. 서버 파생 성능 검증 (05 §1.2.13·§3.4 정합)</a><a class="lvl3" href="#61-파생-계산-주체">6.1 파생 계산 주체</a><a class="lvl3" href="#62-성능-검증-임계값">6.2 성능 검증 임계값</a><a class="lvl2" href="#7-occlusion-culling-전략">7. Occlusion Culling 전략</a><a class="lvl3" href="#71-동적-씬-제약-d7">7.1 동적 씬 제약 (D7)</a><a class="lvl3" href="#72-런타임-occluder-부착">7.2 런타임 Occluder 부착</a><a class="lvl3" href="#73-frustum-culling">7.3 Frustum Culling</a><a class="lvl2" href="#8-자동-lod-godot-4-임포트-설정">8. 자동 LOD (Godot 4 임포트 설정)</a><a class="lvl3" href="#81-임포트-설정">8.1 임포트 설정</a><a class="lvl3" href="#82-lod-gdscript-설정-예시">8.2 LOD GDScript 설정 예시</a><a class="lvl2" href="#9-품질-프리셋-기준-사양별-d7d22">9. 품질 프리셋 (기준 사양별, D7·D22)</a><a class="lvl2" href="#10-gtx-1650-60fps-내장-30fps-측정-절차-s4-스파이크-연계">10. GTX 1650 60fps / 내장 30fps 측정 절차 (S4 스파이크 연계)</a><a class="lvl3" href="#101-측정-환경">10.1 측정 환경</a><a class="lvl3" href="#102-측정-시나리오">10.2 측정 시나리오</a><a class="lvl3" href="#103-측정-방법">10.3 측정 방법</a><a class="lvl3" href="#104-측정-도구">10.4 측정 도구</a><a class="lvl3" href="#105-s4-스파이크와의-연계">10.5 S4 스파이크와의 연계</a><a class="lvl2" href="#11-메모리-관리-dispose-패턴">11. 메모리 관리 (dispose 패턴)</a><a class="lvl2" href="#12-변경-이력">12. 변경 이력</a></nav>
+<main><h1 id="리소스-최적화-기준-optimization-criteriamd">리소스 최적화 기준 (optimization-criteria.md)</h1>
+<p><strong>문서 버전</strong>: 1.0 <strong>작성일</strong>: 2026-07-02 <strong>담당</strong>: 3d-engine-specialist <strong>태스크</strong>: P0-T0.5 — 3D 씬 구조 및 asset 레지스트리 설계 <strong>참조</strong>: 00-decisions.md(D7·D22), 07-3d-visual-asset-pipeline.md(§1.2·§6), 05-office-layout-schema.md(§1.2.13·§3.4)</p>
+<blockquote>이 문서는 00-decisions.md의 정본 결정을 따른다. 충돌 시 00-decisions.md가 이긴다.</blockquote>
+<hr>
+<h2 id="1-기준-사양-및-성능-목표-d22">1. 기준 사양 및 성능 목표 (D22)</h2>
+<h3 id="11-기준-사양">1.1 기준 사양</h3>
+<div class="table-wrap"><table><thead><tr><th>등급</th><th>GPU</th><th>목표 FPS</th><th>해상도</th></tr></thead><tbody><tr><td><strong>기준 사양</strong></td><td>GTX 1650급</td><td><strong>60 fps</strong></td><td>Full HD (1920×1080)</td></tr><tr><td><strong>내장 그래픽</strong></td><td>Intel Iris Xe급</td><td><strong>30 fps</strong></td><td>Full HD</td></tr></tbody></table></div>
+<blockquote>&quot;RTX 4060 이상&quot; 요구는 폐기됨(D22). 기준 사양은 GTX 1650급 60fps다.</blockquote>
+<h3 id="12-핵심-성능-예산">1.2 핵심 성능 예산</h3>
+<div class="table-wrap"><table><thead><tr><th>항목</th><th>예산</th><th>비고</th></tr></thead><tbody><tr><td><strong>드로우콜</strong></td><td>100~200회</td><td>동일 asset_id → MultiMesh 1드로우콜 계상</td></tr><tr><td><strong>폴리곤</strong></td><td>500K~1M 삼각형 (LOD 포함)</td><td>전체 씬</td></tr><tr><td><strong>VRAM</strong></td><td>BC 압축 후 예산 이내</td><td>GTX 1650: 4GB VRAM 내</td></tr><tr><td><strong>시스템 메모리</strong></td><td>2GB 이하</td><td>Godot 엔진 포함</td></tr><tr><td><strong>초기 씬 로딩</strong></td><td>3초 이내</td><td>클라이언트 시작 후 첫 오피스 씬</td></tr><tr><td><strong>구역 전환</strong></td><td>1초 이내</td><td>층 간 이동 등</td></tr></tbody></table></div>
+<hr>
+<h2 id="2-드로우콜-예산-100200회-이내">2. 드로우콜 예산 (100~200회 이내)</h2>
+<h3 id="21-집행-규칙-multimesh-그룹핑">2.1 집행 규칙 — MultiMesh 그룹핑</h3>
+<p>드로우콜 예산의 집행 주체는 <strong>씬 빌더(<code>furniture_builder.gd</code>)의 MultiMesh 그룹핑 로직</strong>이다(05 §5.1, 07 §6.2).</p>
+<pre class="code"><code>동일 asset_id 가구 N개 → MultiMesh 1드로우콜
+서로 다른 asset_id M개 → M드로우콜</code></pre>
+<p>따라서 <strong>같은 책상 100개는 드로우콜 1회</strong>이고, 서로 다른 종류의 가구 100개는 드로우콜 100회다. 배치 계획 시 에셋 종류의 수(distinct asset_id 수)를 드로우콜 기준으로 관리한다.</p>
+<h3 id="22-드로우콜-구성-예시-표준-오피스-1층">2.2 드로우콜 구성 예시 (표준 오피스 1층)</h3>
+<div class="table-wrap"><table><thead><tr><th>그룹</th><th>distinct asset_id 수</th><th>예상 드로우콜</th></tr></thead><tbody><tr><td>책상(desk_standard)</td><td>1</td><td>1</td></tr><tr><td>회의실 가구 세트</td><td>3~5</td><td>3~5</td></tr><tr><td>라운지 가구</td><td>3~4</td><td>3~4</td></tr><tr><td>소품(캐비닛, 프린터 등)</td><td>4~6</td><td>4~6</td></tr><tr><td>구조물(브랜드월, 파티션)</td><td>3~5</td><td>3~5</td></tr><tr><td>UI 3D(상태뱃지, 라벨)</td><td>2~3</td><td>2~3</td></tr><tr><td>아바타 (10명)</td><td>1~3 (variant)</td><td>2~6</td></tr><tr><td>조명·환경</td><td>—</td><td>5~15</td></tr><tr><td>충돌체·파라메트릭 벽</td><td>—</td><td>10~20</td></tr><tr><td><strong>합계</strong></td><td></td><td><strong>33~65 (여유 있음)</strong></td></tr></tbody></table></div>
+<p>200드로우콜 한도는 <code>estimated_draw_calls</code>(서버 파생값)가 넘으면 FastAPI 검증에서 <strong>ERROR</strong>로 배포 차단된다(05 §3.4).</p>
+<h3 id="23-개수-프록시-폐기-d7d12-정합">2.3 개수 프록시 폐기 (D7·D12 정합)</h3>
+<p>종전의 &quot;furniture_count &gt; 500 거부&quot; 같은 <strong>개수 기반 성능 프록시는 폐기</strong>한다. 성능 한도는 asset 테이블 <code>polygon_count</code>에서 파생한 <strong>폴리곤/드로우콜 실측 기반값</strong>으로 판정한다(05 §3.4).</p>
+<hr>
+<h2 id="3-폴리곤-예산">3. 폴리곤 예산</h2>
+<h3 id="31-카테고리별-폴리곤-할당">3.1 카테고리별 폴리곤 할당</h3>
+<div class="table-wrap"><table><thead><tr><th>카테고리</th><th>LOD 0 삼각형</th><th>LOD 2 삼각형</th><th>비고</th></tr></thead><tbody><tr><td>아바타 (10명)</td><td>10K × 10 = 100K</td><td>2.5K × 10 = 25K</td><td>LOD 2 기준</td></tr><tr><td>대형 가구 (데스크 블록, 소파)</td><td>15K~40K/개</td><td>4K~10K/개</td><td></td></tr><tr><td>소형 가구 (의자, 캐비닛)</td><td>5K~15K/개</td><td>1.5K~4K/개</td><td></td></tr><tr><td>구조물 (브랜드월, 파티션)</td><td>2K~8K/개</td><td>0.5K~2K/개</td><td></td></tr><tr><td>파라메트릭 벽 (room 경계)</td><td>~1K/세그먼트</td><td>~0.2K/세그먼트</td><td>런타임 생성</td></tr><tr><td>바닥·천장 메시</td><td>2K~4K/층</td><td>0.5K~1K/층</td><td></td></tr><tr><td>UI 3D (뱃지, 라벨)</td><td>0.1K~0.5K/개</td><td>동일</td><td>극소 폴리곤</td></tr><tr><td><strong>전체 목표</strong></td><td><strong>500K~1M</strong></td><td><strong>100K~300K (LOD 적용 후)</strong></td><td></td></tr></tbody></table></div>
+<h3 id="32-lod-레벨-규칙">3.2 LOD 레벨 규칙</h3>
+<p>Godot 4 <code>GeometryInstance3D.visibility_range_begin/end</code> 사용.</p>
+<div class="table-wrap"><table><thead><tr><th>LOD 레벨</th><th>폴리곤 비율</th><th>거리 범위</th><th>적용 조건</th></tr></thead><tbody><tr><td>LOD 0 (Full)</td><td>100%</td><td>0~10m</td><td>근거리 상세</td></tr><tr><td>LOD 1 (High)</td><td>50%</td><td>10~20m</td><td>중거리</td></tr><tr><td>LOD 2 (Medium)</td><td>25%</td><td>20~50m</td><td>원거리</td></tr><tr><td>LOD 3 (Low)</td><td>10%</td><td>50m 이상</td><td>매우 먼 거리</td></tr></tbody></table></div>
+<ul><li>Godot 4 임포트 설정의 <strong>자동 LOD 생성</strong>을 기본으로 활성화한다.</li><li>수동 생성이 필요한 경우 Blender Decimate modifier 사용.</li></ul>
+<hr>
+<h2 id="4-텍스처-예산">4. 텍스처 예산</h2>
+<h3 id="41-텍스처-해상도-계층">4.1 텍스처 해상도 계층</h3>
+<div class="table-wrap"><table><thead><tr><th>거리</th><th>해상도</th><th>적용 대상</th></tr></thead><tbody><tr><td>근거리 (&lt; 5m)</td><td>2K (2048×2048)</td><td>벽·바닥·천장·대형 구조물</td></tr><tr><td>중거리 (5~20m)</td><td>1K (1024×1024)</td><td>데스크·파티션·가구</td></tr><tr><td>원거리 (&gt; 20m)</td><td>512×512</td><td>소형 악세서리·전자기기</td></tr></tbody></table></div>
+<h3 id="42-pbr-채널-구성">4.2 PBR 채널 구성</h3>
+<p>각 에셋은 최소 다음 텍스처 채널을 포함한다(glTF 2.0 Metallic-Roughness 기준):</p>
+<div class="table-wrap"><table><thead><tr><th>채널</th><th>파일명 패턴</th><th>필수 여부</th></tr></thead><tbody><tr><td>Base Color (Albedo)</td><td><code>{slug}_albedo.png</code></td><td>필수</td></tr><tr><td>Normal Map</td><td><code>{slug}_normal.png</code></td><td>필수</td></tr><tr><td>Roughness</td><td><code>{slug}_roughness.png</code></td><td>필수</td></tr><tr><td>Metallic</td><td><code>{slug}_metallic.png</code></td><td>필수 (값이 0이면 단색 허용)</td></tr><tr><td>AO (Ambient Occlusion)</td><td><code>{slug}_ao.png</code></td><td>선택</td></tr><tr><td>Emission</td><td><code>{slug}_emission.png</code></td><td>LED·발광체만</td></tr></tbody></table></div>
+<hr>
+<h2 id="5-vram-압축-bc-압축-설정">5. VRAM 압축 (BC 압축) 설정</h2>
+<h3 id="51-godot-임포트-설정">5.1 Godot 임포트 설정</h3>
+<p><strong>데스크톱 네이티브 배포</strong>이므로 BC(Block Compression) 방식만 사용한다.</p>
+<div class="table-wrap"><table><thead><tr><th>포맷</th><th>적용 텍스처</th><th>압축율</th></tr></thead><tbody><tr><td>BC1 (DXT1)</td><td>Opaque RGB (Base Color)</td><td>~6:1</td></tr><tr><td>BC3 (DXT5)</td><td>RGBA (투명도 포함 텍스처)</td><td>~4:1</td></tr><tr><td>BC5</td><td>Normal Map (RG 채널)</td><td>~4:1</td></tr></tbody></table></div>
+<p>설정 경로: <code>Import &gt; Compress &gt; Mode = VRAM Compressed</code> GPU에서 자동 디코드 → VRAM 절약.</p>
+<p><strong>미사용 형식</strong>:</p>
+<ul><li>WebP, Basis Universal, ASTC — WASM export 미사용(D11), 모바일 미지원</li><li>Draco / meshopt — Godot 4 임포트 실패(D8)</li></ul>
+<h3 id="52-vram-사용-추정">5.2 VRAM 사용 추정</h3>
+<div class="table-wrap"><table><thead><tr><th>텍스처</th><th>소스 크기</th><th>BC 압축 후</th></tr></thead><tbody><tr><td>2K (2048×2048) RGBA</td><td>16 MB</td><td>~4 MB</td></tr><tr><td>1K (1024×1024) RGBA</td><td>4 MB</td><td>~1 MB</td></tr><tr><td>512×512 RGBA</td><td>1 MB</td><td>~0.25 MB</td></tr></tbody></table></div>
+<p>표준 오피스 1층 기준 텍스처 총 VRAM:</p>
+<pre class="code"><code>2K 텍스처 10개: 40 MB
+1K 텍스처 20개: 20 MB
+512 텍스처 30개: 7.5 MB
+아바타 텍스처 10명×2개: 20 MB
+────────────────────────
+합계: ~87.5 MB (GTX 1650 4GB 대비 여유 있음)</code></pre>
+<hr>
+<h2 id="6-서버-파생-성능-검증-05-121334-정합">6. 서버 파생 성능 검증 (05 §1.2.13·§3.4 정합)</h2>
+<h3 id="61-파생-계산-주체">6.1 파생 계산 주체</h3>
+<p><code>performance</code> 블록의 수치는 <strong>FastAPI 서버가 asset 테이블에서 파생 계산</strong>한다. 편집기(클라이언트)가 자기신고한 값은 무시하고 서버 계산값으로 덮어쓴다.</p>
+<pre class="code"><code>estimated_polygon_count
+  = Σ (furniture[i].asset.polygon_count × instance_count[i])
+  (동일 asset_id 반복은 인스턴스 수 그대로 합산)
+
+estimated_draw_calls
+  = distinct(asset_id 수) + 외벽·파라메트릭 벽·기타 개별 드로우콜
+  (동일 asset_id 그룹 = MultiMesh → 1드로우콜)
+
+estimated_memory_mb
+  = Σ (asset.file_size_bytes) / 1024 / 1024 (중복 asset_id는 1회만 계산)</code></pre>
+<h3 id="62-성능-검증-임계값">6.2 성능 검증 임계값</h3>
+<div class="table-wrap"><table><thead><tr><th>항목</th><th>ERROR (배포 불가)</th><th>WARNING (배포 가능)</th></tr></thead><tbody><tr><td>드로우콜</td><td>&gt; 200</td><td>180~200</td></tr><tr><td>폴리곤</td><td>&gt; 1.5M (LOD 0 기준)</td><td>1M~1.5M</td></tr><tr><td>VRAM (추정)</td><td>&gt; 3.5GB</td><td>2.5GB~3.5GB</td></tr></tbody></table></div>
+<blockquote>ERROR가 1개라도 있으면 <code>[무시하고 배포]</code> 버튼이 없으며 배포 불가(D12).   WARNING은 <code>[경고 무시하고 배포]</code>로 진행 가능.</blockquote>
+<hr>
+<h2 id="7-occlusion-culling-전략">7. Occlusion Culling 전략</h2>
+<h3 id="71-동적-씬-제약-d7">7.1 동적 씬 제약 (D7)</h3>
+<p>office_layout JSON으로 씬이 <strong>런타임에 동적 생성</strong>되므로 <strong>에디터에서 전체 씬 Occluder를 사전 베이크할 수 없다</strong>. 방·벽 배치가 배포 때마다 달라지기 때문이다.</p>
+<h3 id="72-런타임-occluder-부착">7.2 런타임 Occluder 부착</h3>
+<p>두 가지 방식을 병행한다:</p>
+<p><strong>방식 A — 런타임 벽 단위 Occluder</strong> <code>room_builder.gd</code>가 파라메트릭 벽 세그먼트를 생성할 때 단순 박스 <code>BoxOccluder3D</code>를 함께 부착한다.</p>
+<pre class="code lang-gdscript"><code># wall_segment.gd — 개별 벽 세그먼트에 부착
+func _ready() -&gt; void:
+    var occ_inst := OccluderInstance3D.new()
+    var box := BoxOccluder3D.new()
+    box.size = $WallMesh.mesh.get_aabb().size
+    occ_inst.occluder = box
+    add_child(occ_inst)</code></pre>
+<p><strong>방식 B — 고정 외벽 Occluder 동봉</strong> 배치가 고정된 외벽·기둥은 프리팹(.tscn)에 <code>OccluderInstance3D</code>를 미리 포함시킨다.</p>
+<h3 id="73-frustum-culling">7.3 Frustum Culling</h3>
+<p>Godot 4의 기본 Frustum Culling이 항상 활성화된다. 카메라 절두체(FOV 60°) 밖의 노드는 자동으로 렌더링 제외된다.</p>
+<hr>
+<h2 id="8-자동-lod-godot-4-임포트-설정">8. 자동 LOD (Godot 4 임포트 설정)</h2>
+<h3 id="81-임포트-설정">8.1 임포트 설정</h3>
+<p>Godot 4 에디터의 <code>Import</code> 탭에서 메시별로 다음을 설정한다:</p>
+<pre class="code"><code>Meshes &gt; Generate LODs = true
+Meshes &gt; LOD Bias = 1.0    (기본값)</code></pre>
+<p>자동 LOD 생성이 불충분한 경우 Blender Decimate modifier로 수동 LOD 메시를 제작해 <code>.tscn</code>에 포함시킨다.</p>
+<h3 id="82-lod-gdscript-설정-예시">8.2 LOD GDScript 설정 예시</h3>
+<pre class="code lang-gdscript"><code># furniture_desk.gd — LOD 거리 명시적 설정
+# @TASK P0-T0.5
+# @SPEC docs/planning/07-3d-visual-asset-pipeline.md#6.1
+func _ready() -&gt; void:
+    $MeshLOD0.visibility_range_begin = 0.0
+    $MeshLOD0.visibility_range_end   = 10.0
+
+    $MeshLOD1.visibility_range_begin = 10.0
+    $MeshLOD1.visibility_range_end   = 20.0
+
+    $MeshLOD2.visibility_range_begin = 20.0
+    $MeshLOD2.visibility_range_end   = 50.0
+
+    $MeshLOD3.visibility_range_begin = 50.0
+    $MeshLOD3.visibility_range_end   = 100.0</code></pre>
+<hr>
+<h2 id="9-품질-프리셋-기준-사양별-d7d22">9. 품질 프리셋 (기준 사양별, D7·D22)</h2>
+<div class="table-wrap"><table><thead><tr><th>프리셋</th><th>대상 사양</th><th>목표 FPS</th><th>설정</th></tr></thead><tbody><tr><td><strong>High</strong> (기본)</td><td>GTX 1650급</td><td>60 fps</td><td>직접광 + ReflectionProbe + SSAO. SDFGI OFF. 2K 텍스처. LOD 2까지</td></tr><tr><td><strong>Ultra</strong> (고사양 옵션)</td><td>RTX 계열</td><td>60+ fps</td><td>High + SDFGI ON. 모든 LOD.</td></tr><tr><td><strong>Medium</strong></td><td>중형 내장</td><td>45 fps</td><td>LOD 2까지, 1K 텍스처, 파티클 감소</td></tr><tr><td><strong>Low</strong></td><td>Iris Xe 등 내장</td><td>30 fps</td><td>LOD 1만, 512 텍스처, 그림자 축소, SSAO 경량화</td></tr></tbody></table></div>
+<p><code>lighting_manager.gd</code>의 <code>apply_preset()</code>이 프리셋 전환을 담당한다.</p>
+<hr>
+<h2 id="10-gtx-1650-60fps-내장-30fps-측정-절차-s4-스파이크-연계">10. GTX 1650 60fps / 내장 30fps 측정 절차 (S4 스파이크 연계)</h2>
+<h3 id="101-측정-환경">10.1 측정 환경</h3>
+<ul><li><strong>기준 사양 PC</strong>: GTX 1650, 16GB RAM, Full HD 1920×1080</li><li><strong>내장 그래픽 PC</strong>: Intel Iris Xe급, 16GB RAM (공유 메모리), Full HD</li><li><strong>Godot 버전</strong>: 4.x 최신 안정 버전 (Godot 4.x에 별도 LTS 채널 없음)</li><li><strong>렌더러</strong>: Forward+</li></ul>
+<h3 id="102-측정-시나리오">10.2 측정 시나리오</h3>
+<div class="table-wrap"><table><thead><tr><th>시나리오</th><th>내용</th><th>합격 기준</th></tr></thead><tbody><tr><td>S1. 빈 씬</td><td>office_layout 로드, 아바타 없음</td><td>GTX1650 &gt; 120fps / 내장 &gt; 60fps</td></tr><tr><td>S2. 기본 씬</td><td>아바타 10명 + 가구 50개 + 조명</td><td>GTX1650 ≥ 60fps / 내장 ≥ 30fps</td></tr><tr><td>S3. 스트레스 씬</td><td>아바타 20명 + 가구 200개 (설계 100명 중 도그푸딩 20명 기준)</td><td>GTX1650 ≥ 60fps / 내장 ≥ 30fps</td></tr><tr><td>S4. MultiMesh 효과</td><td>동일 desk 100개 (1드로우콜)</td><td>S2 대비 드로우콜 50% 이상 감소 확인</td></tr></tbody></table></div>
+<h3 id="103-측정-방법">10.3 측정 방법</h3>
+<pre class="code"><code>1. Godot 에디터 &gt; Project &gt; Project Settings &gt; Debug &gt; GDScript Profiler 활성화
+2. 씬 실행 (--debug-collisions 옵션 제거 후 측정)
+3. Godot 우상단 Debugger &gt; Monitor 탭:
+   - FPS (초당 프레임)
+   - Memory Used (시스템 메모리)
+   - Video Mem Used (VRAM)
+   - Draw Calls (드로우콜)
+   - Objects Rendered (렌더링 객체 수)
+4. 5분 연속 측정, p5 (하위 5%) FPS 값을 기록
+5. 합격: p5 FPS ≥ 60 (GTX1650) / ≥ 30 (내장)</code></pre>
+<h3 id="104-측정-도구">10.4 측정 도구</h3>
+<div class="table-wrap"><table><thead><tr><th>도구</th><th>용도</th></tr></thead><tbody><tr><td>Godot Debugger Monitor</td><td>FPS·메모리·드로우콜 실시간</td></tr><tr><td>GPU-Z (Windows)</td><td>VRAM 사용량 독립 측정</td></tr><tr><td>MSI Afterburner</td><td>GPU 클럭·온도·프레임 오버레이</td></tr></tbody></table></div>
+<h3 id="105-s4-스파이크와의-연계">10.5 S4 스파이크와의 연계</h3>
+<p>P0-T0.11(S4 스파이크)에서 골든 샘플 씬으로 이 절차를 실행한다. 실패 시 폴백: SDFGI 옵션 기본화 + 기준 사양 상향 재협의(00-decisions.md F절 S4).</p>
+<hr>
+<h2 id="11-메모리-관리-dispose-패턴">11. 메모리 관리 (dispose 패턴)</h2>
+<p>씬 전환 또는 에셋 제거 시 <strong>메모리 누수 방지</strong>를 위해 dispose 패턴을 적용한다.</p>
+<pre class="code lang-gdscript"><code># office.gd — 씬 교체 시
+func _dispose_current_scene() -&gt; void:
+    if _current_floor_node:
+        _current_floor_node.queue_free()
+        _current_floor_node = null
+    # MultiMesh 리소스 해제
+    for mm in _active_multimeshes:
+        mm.mesh = null
+    _active_multimeshes.clear()</code></pre>
+<ul><li><code>queue_free()</code>: Godot 프레임 끝에서 안전하게 해제</li><li><code>ResourceLoader</code> 캐시: 동일 <code>.tscn</code>은 캐시에서 재사용, 명시적 해제 불필요</li><li>ReflectionProbe: 씬 교체 시 자동 해제 (<code>queue_free()</code> 연쇄)</li></ul>
+<hr>
+<h2 id="12-변경-이력">12. 변경 이력</h2>
+<div class="table-wrap"><table><thead><tr><th>버전</th><th>일자</th><th>변경 내용</th></tr></thead><tbody><tr><td>1.0</td><td>2026-07-02</td><td>P0-T0.5 초안 — D7·D22 성능 기준, BC 압축, MultiMesh 집행 규칙, 서버 파생 검증(05 §3.4 정합), GTX1650/내장 측정 절차</td></tr></tbody></table></div>
+<div class="meta-foot">원본: <code>optimization-criteria.md</code> · 자동 생성 2026-07-02 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

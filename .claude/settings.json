@@ -1,0 +1,122 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(require('os').homedir(),'.claude','hooks','session-memory-loader.js'))}catch(e){process.exit(0)}\" || bash -c '\"$HOME/.claude/hooks/hook-runner.sh\" session-memory-loader.js' || exit 0",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(require('os').homedir(),'.claude','hooks','skill-router.js'))}catch(e){process.exit(0)}\" || bash -c '\"$HOME/.claude/hooks/hook-runner.sh\" skill-router.js' || exit 0",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(require('os').homedir(),'.claude','hooks','context-guide-loader.js'))}catch(e){process.exit(0)}\" || bash -c '\"$HOME/.claude/hooks/hook-runner.sh\" context-guide-loader.js' || exit 0",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(require('os').homedir(),'.claude','hooks','fix-blocker.js'))}catch(e){process.exit(0)}\" || exit 0",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(require('os').homedir(),'.claude','hooks','agent-context-injector.js'))}catch(e){process.exit(0)}\" || bash -c '\"$HOME/.claude/hooks/hook-runner.sh\" agent-context-injector.js' || exit 0",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(require('os').homedir(),'.claude','hooks','git-commit-checker.js'))}catch(e){process.exit(0)}\" || bash -c '\"$HOME/.claude/hooks/hook-runner.sh\" git-commit-checker.js' || exit 0",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(require('os').homedir(),'.claude','hooks','post-edit-analyzer.js'))}catch(e){process.exit(0)}\" || bash -c '\"$HOME/.claude/hooks/hook-runner.sh\" post-edit-analyzer.js' || exit 0",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(require('os').homedir(),'.claude','hooks','docs-html-renderer.js'))}catch(e){process.exit(0)}\" || bash -c '\"$HOME/.claude/hooks/hook-runner.sh\" docs-html-renderer.js' || exit 0",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(require('os').homedir(),'.claude','hooks','fix-learner.js'))}catch(e){process.exit(0)}\" || exit 0",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(require('os').homedir(),'.claude','hooks','output-optimizer.js'))}catch(e){process.exit(0)}\" || bash -c '\"$HOME/.claude/hooks/hook-runner.sh\" output-optimizer.js' || exit 0",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(require('os').homedir(),'.claude','hooks','error-recovery-advisor.js'))}catch(e){process.exit(0)}\" || bash -c '\"$HOME/.claude/hooks/hook-runner.sh\" error-recovery-advisor.js' || exit 0",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"try{require(require('path').join(require('os').homedir(),'.claude','hooks','session-summary-saver.js'))}catch(e){process.exit(0)}\" || bash -c '\"$HOME/.claude/hooks/hook-runner.sh\" session-summary-saver.js' || exit 0",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

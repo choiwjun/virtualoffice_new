@@ -1,0 +1,574 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spacecl.com/schemas/office-layout-schema.json",
+  "title": "office_layout",
+  "description": "가상오피스 층(floor) 공간 구조 원본(Source of Truth) JSON. 정본 문서: docs/planning/05-office-layout-schema.md v1.1. 1 floor = 1 layout(D25). 좌표계는 top_left 단일·미터·2D(x,y)이며 도(degree)·시계방향·기준축 +X 회전(D25). 좌석-직원 배정은 이 JSON에 포함하지 않음(D10 — seat_assignment DB 소유). 에셋은 asset_id 참조만(D8). 정밀 검증은 FastAPI 서버 1곳(D12 — ERROR 존재 시 배포 불가).",
+  "type": "object",
+  "required": ["metadata", "floor", "dimensions", "zones", "rooms", "seats", "colliders"],
+  "additionalProperties": true,
+  "properties": {
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "floor": { "$ref": "#/$defs/floor" },
+    "dimensions": { "$ref": "#/$defs/dimensions" },
+    "zones": {
+      "type": "array",
+      "description": "팀/부서 구역 목록. 각 zone은 폐쇄형 다각형(polygon)으로 정의(단위 m).",
+      "items": { "$ref": "#/$defs/zone" }
+    },
+    "rooms": {
+      "type": "array",
+      "description": "회의실·라운지·집중실·폰부스 등 방 목록. 방 벽은 경계(coords)에서 자동 생성되고 doors[] 개구부가 뚫림(D9).",
+      "items": { "$ref": "#/$defs/room" }
+    },
+    "seats": {
+      "type": "array",
+      "description": "좌석 목록. 공간 구조(위치·타입·방향·가구 참조)만 담고 직원 배정 필드는 금지(D10).",
+      "items": { "$ref": "#/$defs/seat" }
+    },
+    "furniture": {
+      "type": "array",
+      "description": "일반 가구 목록. asset_id로 클라이언트 동봉 에셋 카탈로그 참조(D8).",
+      "items": { "$ref": "#/$defs/furniture" }
+    },
+    "colliders": {
+      "type": "array",
+      "description": "정적 충돌 영역(외벽·기둥·개구부 없는 구조 벽). room 벽은 자동 생성되므로 여기에 통짜 box로 다시 넣지 않음(D9).",
+      "items": { "$ref": "#/$defs/collider" }
+    },
+    "spawn_points": {
+      "type": "array",
+      "description": "층 진입 시 아바타 스폰 위치 목록(권한 기반으로 다를 수 있음).",
+      "items": { "$ref": "#/$defs/spawn_point" }
+    },
+    "spawn_default": { "$ref": "#/$defs/spawn_default" },
+    "minimap": { "$ref": "#/$defs/minimap" },
+    "connections": { "$ref": "#/$defs/connections" },
+    "performance": { "$ref": "#/$defs/performance" },
+    "changelog": {
+      "type": "array",
+      "description": "변경 이력 배열(누적). 05 §2.3 형식. DB office_layouts.changelog 컬럼과 정합(선택 필드).",
+      "items": { "$ref": "#/$defs/changelog_entry" }
+    }
+  },
+  "$defs": {
+    "point": {
+      "type": "object",
+      "description": "2D 좌표(단위 m, 원점 top_left, +x 동/+y 남 — D25).",
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number", "description": "X 좌표(m). +x = 동쪽." },
+        "y": { "type": "number", "description": "Y 좌표(m). +y = 남쪽(top_left 원점)." }
+      },
+      "additionalProperties": false
+    },
+    "hex_color": {
+      "type": "string",
+      "description": "HEX 색상 코드(#RRGGBB).",
+      "pattern": "^#[0-9A-Fa-f]{6}$"
+    },
+    "uuid": {
+      "type": "string",
+      "description": "UUID(DB PK/FK).",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+
+    "metadata": {
+      "type": "object",
+      "description": "레이아웃 메타데이터(버전·DB 식별자·감사 정보).",
+      "required": ["version", "schema_version", "layout_id", "office_id", "floor_id", "floor_name", "created_at", "updated_at", "created_by", "updated_by", "language"],
+      "additionalProperties": true,
+      "properties": {
+        "version": { "type": "string", "description": "JSON 스키마 버전(semantic, 예: '1.1')." },
+        "schema_version": { "type": "integer", "description": "브레이킹 체인지 감지용 정수. 지원 범위 밖이면 클라이언트 로드 거부.", "minimum": 1 },
+        "layout_id": { "$ref": "#/$defs/uuid", "description": "office_layout.id (DB PK)." },
+        "office_id": { "$ref": "#/$defs/uuid", "description": "office.id." },
+        "floor_id": { "$ref": "#/$defs/uuid", "description": "floor.id." },
+        "floor_name": { "type": "string", "description": "표시용 층 이름(예: '3F', 'B1')." },
+        "created_at": { "type": "string", "format": "date-time", "description": "생성 시각(ISO8601 UTC 저장)." },
+        "updated_at": { "type": "string", "format": "date-time", "description": "수정 시각(ISO8601 UTC 저장)." },
+        "created_by": { "type": "integer", "description": "생성자 erp_user.id." },
+        "updated_by": { "type": "integer", "description": "수정자 erp_user.id." },
+        "description": { "type": "string", "description": "변경사항 메모(선택)." },
+        "language": { "type": "string", "description": "로케일 기본값(현재 'ko-KR')." }
+      }
+    },
+
+    "floor": {
+      "type": "object",
+      "description": "층 기본 속성. coordinate_origin/unit_system은 D25에 따라 단일 값만 허용.",
+      "required": ["id", "level", "name", "coordinate_origin", "floor_height_m", "unit_system"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid", "description": "floor.id (UUID)." },
+        "level": { "type": "integer", "description": "실제 층수(지상 3층=3, B1=-1)." },
+        "name": { "type": "string", "description": "표시명." },
+        "total_area_m2": { "type": "number", "description": "층 전체 면적(m², 정보용).", "minimum": 0 },
+        "coordinate_origin": { "const": "top_left", "description": "좌표계 원점. top_left 하나만 허용(D25). center/bottom_left 폐기." },
+        "floor_height_m": { "type": "number", "description": "이 층 바닥의 Godot 월드 Y 오프셋(m). (level-1)*story_height. 다층 매핑용(§5.3)." },
+        "grid_snap_unit_cm": { "type": "number", "description": "편집기 그리드 스냅 단위(cm).", "exclusiveMinimum": 0 },
+        "unit_system": { "const": "metric", "description": "측정 단위. metric(미터) 고정(D25)." }
+      }
+    },
+
+    "dimensions": {
+      "type": "object",
+      "description": "층 전체 바운드박스(편집기 캔버스 크기와 동일). 모든 오브젝트 좌표는 이 범위 내에 있어야 함(§3.1 좌표 범위 — ERROR).",
+      "required": ["width_m", "height_m", "min_x", "max_x", "min_y", "max_y"],
+      "additionalProperties": true,
+      "properties": {
+        "width_m": { "type": "number", "description": "층 폭(m).", "exclusiveMinimum": 0 },
+        "height_m": { "type": "number", "description": "층 높이(세로, m).", "exclusiveMinimum": 0 },
+        "min_x": { "type": "number", "description": "X 최소 경계(m)." },
+        "max_x": { "type": "number", "description": "X 최대 경계(m)." },
+        "min_y": { "type": "number", "description": "Y 최소 경계(m)." },
+        "max_y": { "type": "number", "description": "Y 최대 경계(m)." },
+        "unit": { "type": "string", "description": "단위 표기(예: 'meter')." }
+      }
+    },
+
+    "zone": {
+      "type": "object",
+      "description": "팀/부서 구역.",
+      "required": ["zone_id", "label", "polygon"],
+      "additionalProperties": true,
+      "properties": {
+        "zone_id": { "type": "string", "description": "JSON 내 임시 고유 ID(예: 'Z_001'). floor 내 중복 금지(§3.1)." },
+        "team_zone_db_id": { "$ref": "#/$defs/uuid", "description": "team_zone.id (DB FK)." },
+        "org_group_id": { "$ref": "#/$defs/uuid", "description": "org_group.id (상위 부서). 누락 시 WARNING(§3.3)." },
+        "erp_team_id": { "type": "integer", "description": "ERP teams.id. 유효성 검증 대상(§3.3)." },
+        "label": { "type": "string", "description": "팀명." },
+        "type": { "type": "string", "description": "구역 타입(team/department/meeting_hub 등)." },
+        "color": { "$ref": "#/$defs/hex_color", "description": "UI 표시 색상." },
+        "polygon": {
+          "type": "array",
+          "description": "폐쇄형 다각형 좌표 배열(단위 m).",
+          "minItems": 3,
+          "items": { "$ref": "#/$defs/point" }
+        },
+        "access_control": {
+          "type": "object",
+          "description": "접근권한 정의.",
+          "additionalProperties": true,
+          "properties": {
+            "allowed_roles": { "type": "array", "description": "허용 역할 목록.", "items": { "type": "string" } },
+            "restricted": { "type": "boolean", "description": "제한 구역 여부." }
+          }
+        },
+        "visual": {
+          "type": "object",
+          "description": "경계 표시 옵션.",
+          "additionalProperties": true,
+          "properties": {
+            "show_boundary": { "type": "boolean", "description": "경계 표시 여부." },
+            "boundary_style": { "type": "string", "enum": ["dashed", "solid"], "description": "경계 스타일." },
+            "boundary_width_cm": { "type": "number", "description": "경계 선 두께(cm).", "minimum": 0 }
+          }
+        }
+      }
+    },
+
+    "room": {
+      "type": "object",
+      "description": "방(회의실/라운지/집중실/폰부스 등). 진입 가능하려면 doors[] 개구부가 최소 1개 필요(D9·§3.2).",
+      "required": ["room_id", "name", "type", "capacity", "coords", "entrance", "doors"],
+      "additionalProperties": true,
+      "properties": {
+        "room_id": { "type": "string", "description": "JSON 내 임시 고유 ID(예: 'R_001'). floor 내 중복 금지." },
+        "room_db_id": { "$ref": "#/$defs/uuid", "description": "room.id (DB FK)." },
+        "name": { "type": "string", "description": "방 이름." },
+        "type": { "type": "string", "enum": ["meeting", "lobby", "lounge", "focus", "phonebooth"], "description": "방 타입." },
+        "capacity": { "type": "integer", "description": "수용 인원.", "minimum": 0 },
+        "floor_id": { "$ref": "#/$defs/uuid", "description": "floor.id (DB FK)." },
+        "coords": {
+          "type": "object",
+          "description": "방 위치(좌상단 x,y) + 크기(width,height). 단위 m.",
+          "required": ["x", "y", "width", "height"],
+          "additionalProperties": false,
+          "properties": {
+            "x": { "type": "number", "description": "좌상단 X(m)." },
+            "y": { "type": "number", "description": "좌상단 Y(m)." },
+            "width": { "type": "number", "description": "방 폭(m).", "exclusiveMinimum": 0 },
+            "height": { "type": "number", "description": "방 세로 길이(m).", "exclusiveMinimum": 0 }
+          }
+        },
+        "entrance": {
+          "type": "object",
+          "description": "입장 트리거(콜리전 박스 + 진입 방향). 트리거 박스 전체가 room coords 경계 내부에 있어야 함(§3.2 — ERROR).",
+          "required": ["trigger_x", "trigger_y", "trigger_width", "trigger_height"],
+          "additionalProperties": true,
+          "properties": {
+            "trigger_x": { "type": "number", "description": "트리거 박스 좌상단 X(m)." },
+            "trigger_y": { "type": "number", "description": "트리거 박스 좌상단 Y(m)." },
+            "trigger_width": { "type": "number", "description": "트리거 박스 폭(m).", "exclusiveMinimum": 0 },
+            "trigger_height": { "type": "number", "description": "트리거 박스 세로(m).", "exclusiveMinimum": 0 },
+            "entry_direction": { "type": "string", "enum": ["north", "south", "east", "west"], "description": "진입 방향." }
+          }
+        },
+        "livekit_room": { "type": ["string", "null"], "description": "LiveKit room ID(화상회의 연결). type=meeting인데 null이면 WARNING(§3.4)." },
+        "capacity_mode": { "type": "string", "enum": ["by_seats", "by_room"], "description": "by_seats=경계 내 좌석 수로 판정, by_room=max_concurrent_users로 판정(§3.2)." },
+        "max_concurrent_users": { "type": "integer", "description": "동시 입장 상한.", "minimum": 0 },
+        "doors": {
+          "type": "array",
+          "description": "문 개구부 목록(D9). 벽 세그먼트에 뚫린 출입구 구멍. 최소 1개 필요(§3.2 — ERROR).",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/door" }
+        },
+        "glass_walls": {
+          "type": "array",
+          "description": "유리벽 목록.",
+          "items": { "$ref": "#/$defs/glass_wall" }
+        },
+        "climate": {
+          "type": "object",
+          "description": "공조 관련(예: ac_outlet 위치).",
+          "additionalProperties": true
+        },
+        "markers": {
+          "type": "object",
+          "description": "랜드마크(화이트보드·프로젝터 등). 키→2D 좌표.",
+          "additionalProperties": { "$ref": "#/$defs/point" }
+        }
+      }
+    },
+
+    "door": {
+      "type": "object",
+      "description": "문 개구부(D9). room 벽 세그먼트에서 (wall, offset, width) 구간이 제외되어 개구부가 됨. offset±width/2가 해당 벽 길이 범위 내에 완전히 들어가야 함(§3.2 — ERROR).",
+      "required": ["door_id", "wall", "offset", "width", "door_type"],
+      "additionalProperties": true,
+      "properties": {
+        "door_id": { "type": "string", "description": "JSON 내 임시 고유 ID." },
+        "wall": { "type": "string", "enum": ["north", "south", "east", "west"], "description": "개구부가 뚫릴 벽(room coords 기준 변)." },
+        "offset": { "type": "number", "description": "벽 시작 모서리에서 개구부 중심까지의 거리(m). west/east 벽은 위쪽 y 기준, north/south 벽은 왼쪽 x 기준.", "minimum": 0 },
+        "width": { "type": "number", "description": "개구부 폭(m). 0.9~1.2m 권장(07 §1.2).", "exclusiveMinimum": 0 },
+        "door_type": { "type": "string", "enum": ["glass_single", "glass_double", "wooden_single", "wooden_double", "open"], "description": "문 스타일. open=문짝 없는 개방 통로." }
+      }
+    },
+
+    "glass_wall": {
+      "type": "object",
+      "description": "유리벽 세그먼트.",
+      "required": ["wall_id", "start", "end"],
+      "additionalProperties": true,
+      "properties": {
+        "wall_id": { "type": "string", "description": "JSON 내 임시 고유 ID." },
+        "edge": { "type": "string", "enum": ["north", "south", "east", "west"], "description": "유리벽이 위치한 변." },
+        "start": { "$ref": "#/$defs/point", "description": "시작 좌표(m)." },
+        "end": { "$ref": "#/$defs/point", "description": "끝 좌표(m)." },
+        "transparency": { "type": "number", "description": "투명도(0~1).", "minimum": 0, "maximum": 1 },
+        "frame_color": { "$ref": "#/$defs/hex_color", "description": "프레임 색상." }
+      }
+    },
+
+    "seat": {
+      "type": "object",
+      "description": "좌석(공간 구조 전용). 직원 배정 필드(assigned_user_id 등) 금지(D10) — additionalProperties:false로 강제. 착석자는 런타임에 seat_db_id로 seat_assignment 조회.",
+      "required": ["seat_id", "seat_type", "coords", "facing", "furniture_id"],
+      "additionalProperties": false,
+      "properties": {
+        "seat_id": { "type": "string", "description": "JSON 내 임시 고유 ID(예: 'S_001'). floor 내 중복 금지." },
+        "seat_db_id": { "$ref": "#/$defs/uuid", "description": "seat.id (DB FK). 착석자 조회 키." },
+        "team_zone_id": { "$ref": "#/$defs/uuid", "description": "team_zone.id(공간 소속. 직원 배정과 무관)." },
+        "seat_type": { "type": "string", "enum": ["fixed", "free", "temp", "partner"], "description": "좌석 타입." },
+        "coords": {
+          "type": "object",
+          "description": "좌석 중심 좌표(x,y). furniture_id가 가리키는 가구 coords(x,y)와 일치해야 함(§3.2 — ERROR).",
+          "required": ["x", "y"],
+          "additionalProperties": false,
+          "properties": {
+            "x": { "type": "number", "description": "좌석 중심 X(m)." },
+            "y": { "type": "number", "description": "좌석 중심 Y(m)." }
+          }
+        },
+        "facing": { "type": "number", "description": "착석 방향(도, 시계방향, 기준축 +X — D25/§5.3). 예: 180=남향(+Y). [0,360) 범위 권장(§3.2 — WARNING)." },
+        "furniture_id": { "type": "string", "description": "이 좌석에 딸린 furniture[] 항목의 furniture_id(D10 상호 참조). 유효해야 함(§3.2 — ERROR)." },
+        "desk_dimension": {
+          "type": "object",
+          "description": "책상 크기(m, 정보용). 실제 3D 배치는 furniture_id 에셋을 따름.",
+          "additionalProperties": true,
+          "properties": {
+            "width": { "type": "number", "description": "폭(m).", "exclusiveMinimum": 0 },
+            "depth": { "type": "number", "description": "깊이(m).", "exclusiveMinimum": 0 },
+            "height": { "type": "number", "description": "높이(m).", "exclusiveMinimum": 0 }
+          }
+        },
+        "lifecycle_status": { "type": "string", "enum": ["deployed", "archived", "removed"], "description": "좌석 생애주기 상태." },
+        "accessibility": {
+          "type": "object",
+          "description": "접근성 정보.",
+          "additionalProperties": true,
+          "properties": {
+            "wheelchair_accessible": { "type": "boolean", "description": "휠체어 접근 가능 여부." },
+            "ergonomic_type": { "type": "string", "description": "인체공학 타입." }
+          }
+        },
+        "nearby_amenities": {
+          "type": "object",
+          "description": "주변 설비.",
+          "additionalProperties": true,
+          "properties": {
+            "has_monitor_stand": { "type": "boolean", "description": "모니터 스탠드 유무." },
+            "has_keyboard": { "type": "boolean", "description": "키보드 유무." },
+            "has_phone": { "type": "boolean", "description": "전화 유무." }
+          }
+        }
+      }
+    },
+
+    "furniture": {
+      "type": "object",
+      "description": "일반 가구. asset_id로 클라이언트 동봉 카탈로그 조회(D8). dimension/type은 표시·검증용 캐시이며 정본은 asset 테이블.",
+      "required": ["furniture_id", "asset_id", "type", "coords"],
+      "additionalProperties": true,
+      "properties": {
+        "furniture_id": { "type": "string", "description": "JSON 내 고유 ID(예: 'F_001'). floor 내 중복 금지." },
+        "asset_id": { "type": "string", "description": "에셋 카탈로그 조회 키(D8). asset 테이블에 존재해야 함(§3.4 — ERROR)." },
+        "type": { "type": "string", "description": "가구 타입(desk/cabinet/shelf/plant/sofa/printer 등)." },
+        "category": { "type": "string", "description": "가구 분류(workspace/storage/lounge 등)." },
+        "coords": {
+          "type": "object",
+          "description": "2D 좌표(x,y) + rotation(도, 시계방향, 기준축 +X). 3D 변환은 §5.3.",
+          "required": ["x", "y"],
+          "additionalProperties": false,
+          "properties": {
+            "x": { "type": "number", "description": "X(m)." },
+            "y": { "type": "number", "description": "Y(m)." },
+            "rotation": { "type": "number", "description": "회전(도, 시계방향, 기준축 +X)." }
+          }
+        },
+        "dimension": {
+          "type": "object",
+          "description": "가구 크기(m, 표시·검증용 캐시).",
+          "additionalProperties": true,
+          "properties": {
+            "width": { "type": "number", "description": "폭(m).", "exclusiveMinimum": 0 },
+            "depth": { "type": "number", "description": "깊이(m).", "exclusiveMinimum": 0 },
+            "height": { "type": "number", "description": "높이(m).", "exclusiveMinimum": 0 }
+          }
+        },
+        "collision": { "type": "boolean", "description": "콜리전 활성화 여부." },
+        "physics": {
+          "type": "object",
+          "description": "물리 속성.",
+          "additionalProperties": true,
+          "properties": {
+            "type": { "type": "string", "enum": ["static", "dynamic"], "description": "static=고정, dynamic=움직임." },
+            "mass": { "type": "number", "description": "질량(kg).", "minimum": 0 }
+          }
+        },
+        "visual": {
+          "type": "object",
+          "description": "표시용 색상·재질.",
+          "additionalProperties": true,
+          "properties": {
+            "color": { "$ref": "#/$defs/hex_color", "description": "색상." },
+            "material": { "type": "string", "description": "재질(wood/metal/fabric 등)." }
+          }
+        },
+        "interactive": { "type": "boolean", "description": "상호작용 가능 여부." }
+      }
+    },
+
+    "collider": {
+      "type": "object",
+      "description": "정적 충돌 영역. shape로 box/polygon 분리(다형성 제거, D12 정합). shape=box면 box 객체, shape=polygon이면 polygon 배열 사용.",
+      "required": ["collider_id", "shape"],
+      "additionalProperties": true,
+      "properties": {
+        "collider_id": { "type": "string", "description": "JSON 내 고유 ID. floor 내 중복 금지." },
+        "shape": { "type": "string", "enum": ["box", "polygon"], "description": "형상 종류." },
+        "box": {
+          "type": "object",
+          "description": "shape=box일 때 사용. 좌상단(x,y)+크기(width,height)+회전.",
+          "required": ["x", "y", "width", "height"],
+          "additionalProperties": false,
+          "properties": {
+            "x": { "type": "number", "description": "좌상단 X(m)." },
+            "y": { "type": "number", "description": "좌상단 Y(m)." },
+            "width": { "type": "number", "description": "폭(m).", "exclusiveMinimum": 0 },
+            "height": { "type": "number", "description": "세로(m).", "exclusiveMinimum": 0 },
+            "rotation": { "type": "number", "description": "회전(도, 시계방향, 기준축 +X)." }
+          }
+        },
+        "polygon": {
+          "type": "array",
+          "description": "shape=polygon일 때 사용. 꼭짓점 좌표 배열(단위 m).",
+          "minItems": 3,
+          "items": { "$ref": "#/$defs/point" }
+        },
+        "physics": {
+          "type": "object",
+          "description": "충돌 물리 속성.",
+          "additionalProperties": true,
+          "properties": {
+            "is_kinematic": { "type": "boolean", "description": "키네마틱 여부." },
+            "block_avatar": { "type": "boolean", "description": "아바타 이동 차단 여부(A* 통행 불가)." },
+            "block_interaction": { "type": "boolean", "description": "상호작용 차단 여부." }
+          }
+        },
+        "layer": { "type": "integer", "description": "물리 레이어." },
+        "description": { "type": "string", "description": "설명(예: '북쪽 외벽')." }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "shape": { "const": "box" } } },
+          "then": { "required": ["box"] }
+        },
+        {
+          "if": { "properties": { "shape": { "const": "polygon" } } },
+          "then": { "required": ["polygon"] }
+        }
+      ]
+    },
+
+    "spawn_point": {
+      "type": "object",
+      "description": "아바타 시작 위치.",
+      "required": ["spawn_id", "coords"],
+      "additionalProperties": true,
+      "properties": {
+        "spawn_id": { "type": "string", "description": "JSON 내 고유 ID(예: 'SP_LOBBY')." },
+        "type": { "type": "string", "description": "스폰 타입(lobby/team_zone 등)." },
+        "zone_id": { "type": "string", "description": "team_zone 타입일 때 소속 zone_id." },
+        "coords": { "$ref": "#/$defs/point", "description": "스폰 좌표(m)." },
+        "facing": { "type": "number", "description": "스폰 방향(도, 시계방향, 기준축 +X). [0,360) 권장(§3.2 — WARNING)." },
+        "description": { "type": "string", "description": "설명." }
+      }
+    },
+
+    "spawn_default": {
+      "type": "object",
+      "description": "기본 스폰 위치(권한 매칭 실패 시 사용).",
+      "required": ["spawn_id"],
+      "additionalProperties": true,
+      "properties": {
+        "spawn_id": { "type": "string", "description": "기본 스폰 ID." },
+        "fallback_spawn_id": { "type": "string", "description": "폴백 스폰 ID." },
+        "facing_default": { "type": "number", "description": "기본 방향(도)." }
+      }
+    },
+
+    "minimap": {
+      "type": "object",
+      "description": "클라이언트 미니맵 렌더링 설정. viewport_*는 dimensions 범위 내여야 함(§3.5 — ERROR).",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean", "description": "미니맵 사용 여부." },
+        "viewport_x": { "type": "number", "description": "뷰포트 시작 X(m)." },
+        "viewport_y": { "type": "number", "description": "뷰포트 시작 Y(m)." },
+        "viewport_width": { "type": "number", "description": "뷰포트 폭(m).", "exclusiveMinimum": 0 },
+        "viewport_height": { "type": "number", "description": "뷰포트 세로(m).", "exclusiveMinimum": 0 },
+        "pixel_width": { "type": "integer", "description": "픽셀 폭.", "minimum": 1 },
+        "pixel_height": { "type": "integer", "description": "픽셀 세로.", "minimum": 1 },
+        "pixels_per_meter": { "type": "number", "description": "미터당 픽셀 밀도.", "exclusiveMinimum": 0 },
+        "show_zones": { "type": "boolean", "description": "구역 표시." },
+        "show_seats": { "type": "boolean", "description": "좌석 표시." },
+        "show_rooms": { "type": "boolean", "description": "방 표시." },
+        "show_avatars": { "type": "boolean", "description": "아바타 표시." },
+        "show_grid": { "type": "boolean", "description": "그리드 표시." },
+        "layers": {
+          "type": "array",
+          "description": "미니맵 레이어 목록.",
+          "items": {
+            "type": "object",
+            "required": ["layer_id", "type"],
+            "additionalProperties": true,
+            "properties": {
+              "layer_id": { "type": "string", "description": "레이어 ID." },
+              "type": { "type": "string", "description": "레이어 타입(background/vector/raster 등)." },
+              "color": { "$ref": "#/$defs/hex_color", "description": "배경 색상(background 타입)." },
+              "visible": { "type": "boolean", "description": "표시 여부." }
+            }
+          }
+        }
+      }
+    },
+
+    "connections": {
+      "type": "object",
+      "description": "층 간 이동·회의실 바로가기 등 내비게이션 설정.",
+      "additionalProperties": true,
+      "properties": {
+        "floor_adjacencies": {
+          "type": "array",
+          "description": "인접 층 연결(계단·엘리베이터).",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "floor_id": { "type": ["string", "integer"], "description": "대상 층 식별자(UUID 또는 level 정수 — 05 내 표기 혼용)." },
+              "exit_id": { "type": "string", "description": "출발 지점 ID." },
+              "entry_id": { "type": "string", "description": "도착 스폰 ID." },
+              "description": { "type": "string", "description": "설명." }
+            }
+          }
+        },
+        "exit_points": {
+          "type": "array",
+          "description": "층 이탈 지점.",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "exit_id": { "type": "string", "description": "출발 지점 ID." },
+              "coords": { "$ref": "#/$defs/point", "description": "이탈 좌표(m)." },
+              "target_floor_id": { "type": ["string", "integer"], "description": "대상 층 식별자(UUID 또는 level 정수)." }
+            }
+          }
+        },
+        "zone_to_room_shortcuts": {
+          "type": "array",
+          "description": "구역→방 바로가기 관계.",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "zone_id": { "type": "string", "description": "구역 ID." },
+              "room_id": { "type": "string", "description": "방 ID." },
+              "relation": { "type": "string", "description": "관계 유형(예: 'primary_meeting_room')." }
+            }
+          }
+        }
+      }
+    },
+
+    "performance": {
+      "type": "object",
+      "description": "성능 예측·최적화 힌트. [서버 파생·읽기전용] 편집기 자기신고 금지 — FastAPI가 저장 시 asset 테이블에서 파생 계산해 채우고 편집기가 보낸 값은 무시·덮어씀(D12/§1.2.13). 동일 asset_id 그룹은 MultiMesh 1드로우콜로 계산.",
+      "readOnly": true,
+      "additionalProperties": true,
+      "properties": {
+        "total_furniture_count": { "type": "integer", "description": "[서버 파생] 총 가구 인스턴스 수.", "minimum": 0, "readOnly": true },
+        "total_colliders": { "type": "integer", "description": "[서버 파생] 총 콜리전 수.", "minimum": 0, "readOnly": true },
+        "total_assets": { "type": "integer", "description": "[서버 파생] 서로 다른 asset_id 수.", "minimum": 0, "readOnly": true },
+        "estimated_polygon_count": { "type": "integer", "description": "[서버 파생] 폴리곤 합(asset polygon_count 인스턴스별 합산). 예산 초과 시 WARNING(§3.4).", "minimum": 0, "readOnly": true },
+        "estimated_draw_calls": { "type": "integer", "description": "[서버 파생] 드로우콜(동일 asset_id는 MultiMesh 1콜). 예산 200 초과 시 ERROR(§3.4).", "minimum": 0, "readOnly": true },
+        "estimated_memory_mb": { "type": "number", "description": "[서버 파생] 예상 메모리(MB). 기준 VRAM 초과 시 WARNING(§3.4).", "minimum": 0, "readOnly": true },
+        "recommended_device_tier": { "type": "string", "enum": ["low", "mid", "high"], "description": "[서버 파생] 권장 기기 등급.", "readOnly": true },
+        "optimization_notes": { "type": "string", "description": "[서버 파생] 최적화 힌트 문구.", "readOnly": true }
+      }
+    },
+
+    "changelog_entry": {
+      "type": "object",
+      "description": "변경 이력 1건(05 §2.3).",
+      "additionalProperties": true,
+      "properties": {
+        "changed_by": { "type": "integer", "description": "변경자 erp_user.id." },
+        "changed_at": { "type": "string", "format": "date-time", "description": "변경 시각(ISO8601 UTC)." },
+        "changes": {
+          "type": "array",
+          "description": "변경 항목 목록.",
+          "items": {
+            "type": "object",
+            "required": ["type"],
+            "additionalProperties": true,
+            "properties": {
+              "type": { "type": "string", "description": "변경 종류(added_seat/updated_room/added_door 등)." }
+            }
+          }
+        }
+      }
+    }
+  }
+}

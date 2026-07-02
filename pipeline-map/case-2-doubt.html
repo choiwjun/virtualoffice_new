@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case 2 · 가정 검증 (연역) — Pipeline Map</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <div class="brand"><span class="dot"></span> Claude Labs · Pipeline Map</div>
+    <nav>
+      <a href="index.html">조감도</a>
+      <a href="case-1-greenfield.html">① 신규·귀납</a>
+      <a href="case-2-doubt.html" class="active">② 검증·연역</a>
+      <a href="case-3-brownfield.html">③ 기존 통합</a>
+      <a href="case-4-build.html">④ 빌드 4종</a>
+      <a href="case-5-quality.html">⑤ 검증·개선</a>
+      <a href="case-6-stargate.html">⑥ 통합 진입</a>
+      <a href="skills.html">스킬 58</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <div class="eyebrow" style="color:var(--c-improve)">CASE 02 · Descartes 라인 · 연역</div>
+    <h1>가정 검증 — "이건 정말 확실한가"</h1>
+    <p>이미 누군가 "이거 될 거야"라고 결정한 상태에서, 그 가정을 데카르트식 방법적 회의로 풀어내는 라인입니다.
+       Socrates 라인과 달리 <b style="color:var(--c-improve)">명세 후 Validation 실험(3.5)</b>과 <b style="color:var(--c-improve)">검증 후 Impact Trace 회귀</b>라는 두 개의 추가 루프를 갖습니다.</p>
+  </div>
+
+  <div class="callout info">
+    <b>체인.</b>
+    <code>/doubt</code> → <code>/screen-spec</code> → <code>/tasks-generator</code> → <code>★ Validation 실험</code> → 빌드 → 검증 → <code>★ Impact Trace 회귀</code>
+    &nbsp;·&nbsp; 보조 철학 도구: <code>/cogito</code> <code>/poietes</code> <code>/eros</code> <code>/odysseus</code>
+  </div>
+
+  <div class="flow">
+
+    <div class="node cat-improve">
+      <div class="nm"><span class="cmd">/doubt</span> · 가정 검증 기획 (연역)</div>
+      <div class="role">데카르트 방법적 회의 × Critical Assumption Planning. 가정을 <b>Assumption Ledger</b>로 관리하고 Dream/Demon/Illusion 테스트로 공격 → Indubitable/Provisional Core 분리 → Validation 실험 설계 → 설계 영향(Impact Trace) 추적.</div>
+      <div class="opts"><span class="badge req">12개 문서</span><span class="badge out">+ 10-ledger · 11-validation · 12-impact</span></div>
+    </div>
+
+    <!-- doubt 내부 Phase -->
+    <div class="band cat-improve"><span class="num">내부</span><span class="t">/doubt 8단계</span><span class="s">Praeparatio → Meditatio</span></div>
+    <div class="lane cols-4">
+      <div class="node cat-improve"><div class="nm">0.5 Genius Malignus</div><div class="role">악마가 모든 가정을 공격</div></div>
+      <div class="node cat-improve"><div class="nm">1 Dubito</div><div class="role">체계적 해체</div></div>
+      <div class="node cat-improve"><div class="nm">1.5 Ledger ★</div><div class="role">가정의 생사 기록부</div></div>
+      <div class="node cat-improve"><div class="nm">2 Cogito</div><div class="role">불가의 핵심 분리</div></div>
+      <div class="node cat-improve"><div class="nm">3 Clara et Distincta</div><div class="role">원자화</div></div>
+      <div class="node cat-improve"><div class="nm">3.5 Validation Design ★</div><div class="role">검증 실험 설계</div></div>
+      <div class="node cat-improve"><div class="nm">4 Reconstructio</div><div class="role">종합</div></div>
+      <div class="node cat-improve"><div class="nm">5 Meditatio + Impact ★</div><div class="role">영향 추적</div></div>
+    </div>
+    <div class="arrow cat-plan"><span class="line"></span><span class="lbl">(선택) /council 3 AI 리뷰</span><span class="tip">▼</span></div>
+
+    <div class="band cat-spec"><span class="num">━</span><span class="t">합류점 — 명세 (Socrates 라인과 공통)</span><span class="s">specs/ + 06-tasks.md</span></div>
+    <div class="lane cols-2">
+      <div class="node cat-spec"><div class="nm"><span class="cmd">/screen-spec</span></div><div class="role">화면 YAML + 도메인 리소스</div><div class="opts"><span class="badge out">specs/</span></div></div>
+      <div class="node cat-spec"><div class="nm"><span class="cmd">/tasks-generator</span></div><div class="role">ICV 검증 → 06-tasks.md</div><div class="opts"><span class="badge out">06-tasks.md</span></div></div>
+    </div>
+
+    <!-- ★ Validation 루프 -->
+    <div class="arrow cat-improve"><span class="line"></span><span class="tip">▼</span></div>
+    <div class="node cat-improve" style="max-width:680px;align-self:center;border-style:dashed">
+      <div class="nm">★ Phase 3.5 — Validation 실험 <span class="loop">doubt 전용 루프</span></div>
+      <div class="role"><b>빌드 전에</b> <code>11-validation-plan.md</code>의 Critical 가정을 실제 실험으로 검증. 시장·기술·사용자 가정을 1차 테스트하는 게이트.
+        통과 못 한 가정 → <code>09-doubt-audit.md</code>에 기록 + <b>빌드 보류</b>. MVP를 헛짓에 쏟기 전에 위험을 사전 차단.</div>
+    </div>
+    <div class="arrow cat-spec"><span class="line"></span><span class="lbl">Critical 가정 통과 → 검증 게이트 Phase 3.7</span><span class="tip">▼</span></div>
+
+    <div class="node cat-spec">
+      <div class="nm"><span class="cmd">/planning-loop-supervisor</span> · 설계문서 감독관 <span class="badge new">NEW</span></div>
+      <div class="role">양 라인 공통. 설계문서 간 일관성·추적성·갭·13항목 품질 검증 → 미달 시 patch 모드 되돌림(≤3회) → 프로젝트별 게이트 파생. doubt 라인은 Assumption Ledger의 <code>linked_artifacts</code> 추적성도 함께 점검.</div>
+      <div class="opts"><span class="badge out">08-derived-gates.md</span><span class="badge out">00-loop.md</span><span class="badge">stargate Phase 3.7</span></div>
+    </div>
+    <div class="arrow cat-build"><span class="line"></span><span class="lbl">Ready → 빌드 진입</span><span class="tip">▼</span></div>
+
+    <div class="node cat-build">
+      <div class="nm">빌드 — <span class="cmd">/auto-orchestrate</span> 등 4종</div>
+      <div class="role">명세 통과 + Validation 통과 후 빌드. 빌드 실행기 선택은 <a href="case-4-build.html" style="color:var(--c-build)">Case 04</a>.</div>
+    </div>
+    <div class="arrow cat-verify"><span class="line"></span><span class="tip">▼</span></div>
+
+    <div class="band cat-verify"><span class="num">━</span><span class="t">검증 (다층)</span><span class="s">code-review / audit / sync / evaluation</span></div>
+    <div class="lane cols-4">
+      <div class="node cat-verify"><div class="nm"><span class="cmd">/code-review</span></div><div class="role">Spec + Quality</div></div>
+      <div class="node cat-verify"><div class="nm"><span class="cmd">/audit</span></div><div class="role">OWASP/SPDX/GDPR</div></div>
+      <div class="node cat-verify"><div class="nm"><span class="cmd">/sync</span></div><div class="role">명세–코드 드리프트</div></div>
+      <div class="node cat-verify"><div class="nm"><span class="cmd">/evaluation</span></div><div class="role">품질 게이트</div></div>
+    </div>
+
+    <!-- ★ Impact Trace 회귀 루프 -->
+    <div class="arrow cat-improve"><span class="line"></span><span class="tip">▼</span></div>
+    <div class="node cat-improve" style="max-width:680px;align-self:center;border-style:dashed">
+      <div class="nm">★ Impact Trace 재확인 <span class="loop">doubt 전용 회귀</span></div>
+      <div class="role">검증 후 <code>12-impact-trace.md</code>의 영향 노드를 다시 검토: "이 코드에 박힌 가정이 깨졌나? 깨졌으면 영향 받는 다른 노드도 회귀해야 하나?" — <b>양방향 추적</b>.
+        실패 가정 발견 시 빌드 중단하고 <b>Phase 1.5(Ledger)로 회귀</b>해 재평가.</div>
+    </div>
+
+  </div>
+
+  <!-- 두 라인 비교 -->
+  <div class="section-title"><span class="tick" style="background:var(--c-improve)"></span> Socrates(귀납) vs Descartes(연역) 비교</div>
+  <table class="tbl">
+    <thead><tr><th>구분</th><th style="color:var(--c-plan)">Socrates 라인 (Case 01)</th><th style="color:var(--c-improve)">Descartes 라인 (Case 02)</th></tr></thead>
+    <tbody>
+      <tr><td>철학</td><td>"X란 무엇인가" — 귀납적 탐색</td><td>"이건 정말 확실한가" — 연역적 검증</td></tr>
+      <tr><td>시작점</td><td>아이디어가 막연 → 21문항 구체화</td><td>이미 선 가정 → 의심으로 정련</td></tr>
+      <tr><td>출력 문서</td><td><b>10개</b> (01~09 + 10-desire-map)</td><td><b>12개</b> (+ ledger / validation / impact)</td></tr>
+      <tr><td>명세 후 루프</td><td>없음 (바로 빌드)</td><td><b>★ Validation 실험</b> (Phase 3.5)</td></tr>
+      <tr><td>검증 후 루프</td><td>없음 (단방향)</td><td><b>★ Impact Trace 회귀</b> (양방향)</td></tr>
+      <tr><td>적합 상황</td><td>신규 아이디어, 시장 가설 미정, 경쟁분석·페르소나 우선</td><td>가정의 위험 검증, MVP 사전 차단, 자금/시간 압박</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 철학 이데이션 -->
+  <div class="section-title"><span class="tick" style="background:var(--c-plan)"></span> 철학 계열 보조 이데이션</div>
+  <div class="lane cols-4">
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/cogito</span></div><div class="role">방법적 의심으로 모든 기술 전제 해체 → 의도만 남기고 연역. "Cogito, ergo codo". 메타 도구.</div></div>
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/poietes</span></div><div class="role">에로스 사이클 기획. 결핍→욕망→다이몬→출산. 소크라테스 21문항을 향연 구조로 재배열.</div></div>
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/eros</span></div><div class="role">플라톤 향연 알고리즘. 결핍 인식 → 디오티마 사다리 → 창작 → 불사 보존.</div></div>
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/odysseus</span></div><div class="role">전략 오케스트레이터. 정찰→신뢰→결정적 순간→전투→검증. "Metis over Bia".</div></div>
+  </div>
+
+  <div class="callout warn" style="margin-top:24px">
+    <b>하이브리드 팁.</b> 확실하지 않으면 <b>Socrates 먼저</b> 돌려 산출물을 만들고, 그것을 <code>/doubt</code>에 입력으로 넘겨
+    <i>의심 단계만</i> 진행할 수 있습니다. 귀납으로 형상화 + 연역으로 위험 차단.
+  </div>
+
+</main>
+
+<footer><div class="wrap" style="padding-top:0;padding-bottom:0">Case 02 · Descartes 라인 · SSOT: docs/PIPELINES.md · v1.22.0</div></footer>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case 5 · 검증 · 자가개선 — Pipeline Map</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <div class="brand"><span class="dot"></span> Claude Labs · Pipeline Map</div>
+    <nav>
+      <a href="index.html">조감도</a>
+      <a href="case-1-greenfield.html">① 신규·귀납</a>
+      <a href="case-2-doubt.html">② 검증·연역</a>
+      <a href="case-3-brownfield.html">③ 기존 통합</a>
+      <a href="case-4-build.html">④ 빌드 4종</a>
+      <a href="case-5-quality.html" class="active">⑤ 검증·개선</a>
+      <a href="case-6-stargate.html">⑥ 통합 진입</a>
+      <a href="skills.html">스킬 58</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <div class="eyebrow" style="color:var(--c-verify)">CASE 05 · 검증 → 복구 → 자가개선</div>
+    <h1>품질 게이트와 자가개선 루프</h1>
+    <p>빌드된 코드를 다층으로 검증하고, 실패하면 자동 복구하고, 더 나아가 스스로 개선하는 단계입니다.
+       검증·복구는 spec이 없어도 코드만으로 바로 돌릴 수 있어, <b>기존 프로젝트 품질 진단</b>의 진입점이기도 합니다.</p>
+  </div>
+
+  <!-- 다층 검증 -->
+  <div class="section-title"><span class="tick"></span> ① 다층 검증 (Phase 완료마다)</div>
+  <div class="lane cols-3">
+    <div class="node cat-verify"><div class="nm"><span class="cmd">verification-before-completion</span></div><div class="role">"완료/통과" 주장 전 필수. 테스트·린트·빌드 실행하고 <b>증거</b> 확인</div></div>
+    <div class="node cat-verify"><div class="nm"><span class="cmd">/code-review</span></div><div class="role">Stage 1 Spec Compliance → Stage 2 Code Quality</div></div>
+    <div class="node cat-verify"><div class="nm"><span class="cmd">/evaluation</span></div><div class="role">커버리지 ≥70% · 복잡도 ≤10 · 린트 0 · 보안 critical 0</div></div>
+    <div class="node cat-verify"><div class="nm"><span class="cmd">/trinity</span></div><div class="role">五柱(眞善美孝永) 점수. 90+ 자동승인 / 70~89 리뷰 / &lt;70 차단</div></div>
+    <div class="node cat-verify"><div class="nm"><span class="cmd">/audit</span></div><div class="role">OWASP Top 10 · SPDX 라이선스 · GDPR 3모듈 감사</div></div>
+    <div class="node cat-verify"><div class="nm"><span class="cmd">/sync</span></div><div class="role">명세–코드 드리프트 감지 + 자동 수정 제안</div></div>
+    <div class="node cat-verify"><div class="nm"><span class="cmd">/vercel-review</span></div><div class="role">React/Next 성능·접근성·디자인 패턴</div></div>
+    <div class="node cat-verify"><div class="nm"><span class="cmd">/security-review</span></div><div class="role">backend/auth/payment 변경 시 조건부</div></div>
+    <div class="node cat-verify"><div class="nm"><span class="cmd">/chrome-browser</span></div><div class="role">실제 브라우저 클릭 테스트</div></div>
+  </div>
+
+  <!-- 실패 복구 루프 -->
+  <div class="section-title"><span class="tick" style="background:var(--c-improve)"></span> ② 실패 복구 루프 <span class="loop">검증 실패 시 자동</span></div>
+  <div class="flow">
+    <div class="node cat-verify"><div class="nm">검증 실패</div><div class="role">테스트/린트/빌드/타입 중 하나라도 실패</div></div>
+    <div class="arrow cat-improve"><span class="line"></span><span class="tip">▼</span></div>
+    <div class="node cat-improve"><div class="nm"><span class="cmd">/powerqa</span> · 자동 QA 사이클링</div>
+      <div class="role">테스트 → 검증 → 수정을 목표 달성까지 반복. <b>최대 5사이클</b>, 동일 실패 3회 시 조기 종료.</div>
+      <div class="opts"><span class="badge">최대 5사이클</span><span class="badge">동일 3회 → 중단</span></div></div>
+    <div class="arrow cat-improve"><span class="line"></span><span class="lbl">동일 에러 3회 이상 = 아키텍처 문제</span><span class="tip">▼</span></div>
+    <div class="node cat-improve"><div class="nm"><span class="cmd">/systematic-debugging</span> · 4단계 근본원인</div>
+      <div class="role">단순 재시도로 안 풀리는 문제. 가설을 세우고 검증.</div>
+      <div class="opts"><span class="badge">① 근본원인 조사</span><span class="badge">② 패턴 분석</span><span class="badge">③ 가설 검증</span><span class="badge">④ 구현+회귀</span></div></div>
+  </div>
+
+  <!-- 자율개선 RSI -->
+  <div class="section-title"><span class="tick" style="background:var(--c-improve)"></span> ③ 자가개선 — autoresearch RSI (선택)</div>
+  <p style="color:var(--fg-2);font-size:13.5px;max-width:780px">
+    Karpathy autoresearch 패턴의 자율 개선 엔진. 3파일 구조 + Frozen Metric + <b>2계층 RSI</b>(Inner: 코드 개선, Outer: 전략 개선).
+    코드를 수정 → 테스트 → keep/revert하는 자율 실험 루프를 돌립니다. 8개 서브커맨드로 목적이 갈립니다.
+  </p>
+  <div class="lane cols-4">
+    <div class="node cat-improve"><div class="nm"><span class="cmd">:fix</span></div><div class="role">우선순위 자동 수정 — Build > Type > Test > Lint</div></div>
+    <div class="node cat-improve"><div class="nm"><span class="cmd">:debug</span></div><div class="role">과학적 버그 헌팅 — 가설→실험→증명/반증</div></div>
+    <div class="node cat-improve"><div class="nm"><span class="cmd">:security</span></div><div class="role">OWASP 자율 점검</div></div>
+    <div class="node cat-improve"><div class="nm"><span class="cmd">:ship</span></div><div class="role">출시 준비 자동화</div></div>
+    <div class="node cat-improve"><div class="nm"><span class="cmd">:learn</span></div><div class="role">학습·패턴 추출</div></div>
+    <div class="node cat-improve"><div class="nm"><span class="cmd">:plan</span></div><div class="role">실험 계획 수립</div></div>
+    <div class="node cat-improve"><div class="nm"><span class="cmd">:predict</span></div><div class="role">결과 예측</div></div>
+    <div class="node cat-improve"><div class="nm"><span class="cmd">:scenario</span></div><div class="role">시나리오 탐색</div></div>
+  </div>
+  <div class="lane cols-2" style="margin-top:14px">
+    <div class="node cat-improve"><div class="nm"><span class="cmd">/autoresearch-frontend</span></div><div class="role">프론트 전용. agent-browser(Chrome MCP)로 DOM + 스크린샷 + 콘솔 에러를 Frozen Metric으로 구성 → 코드 수정 → keep/revert</div></div>
+    <div class="node cat-improve"><div class="nm"><span class="cmd">/autoresearch-skills</span></div><div class="role">스킬 자체 개선. 대상 SKILL.md를 수정 → 테스트 케이스 실행 → 메트릭 측정 → keep/revert</div></div>
+  </div>
+
+  <!-- 보조 탐색 -->
+  <div class="section-title"><span class="tick" style="background:var(--c-plan)"></span> 보조 · 탐색/사고 도구</div>
+  <div class="lane cols-3">
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/spike</span></div><div class="role">불확실 영역 탐색 전용. 품질 게이트 완화 + 빠른 프로토타이핑 → 결과 리포트</div></div>
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/reflection</span></div><div class="role">에이전트가 자기 출력을 비판적으로 검토하고 반복 개선하는 자기 성찰</div></div>
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/reasoning</span></div><div class="role">Chain/Tree of Thought, ReAct 등 복잡 문제 추론 기법</div></div>
+  </div>
+
+  <div class="callout info" style="margin-top:24px">
+    <b>독립 진입.</b> 이 케이스의 검증·복구·자가개선은 <b>spec이 없어도 코드만으로</b> 바로 실행됩니다.
+    그래서 "이미 있는 코드의 품질만 진단하고 싶다"면 <code>/reverse</code> 없이 <code>/code-review · /audit · /trinity · /autoresearch:fix</code>를 곧장 돌려도 됩니다.
+  </div>
+
+</main>
+
+<footer><div class="wrap" style="padding-top:0;padding-bottom:0">Case 05 · 검증·자가개선 · master-pipeline.md 품질 체인</div></footer>
+</body>
+</html>

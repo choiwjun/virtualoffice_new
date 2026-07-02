@@ -1,0 +1,96 @@
+version: "2.0"
+
+# 화면 인덱스
+# 가상오피스 플랫폼의 모든 화면 목록 및 메타데이터
+# 작성일: 2026-07-02
+
+screens:
+  - id: screen-virtual-office-3d
+    file: virtual-office-3d.yaml
+    name: 3D Main Office
+    route: "/" # 기본 진입점 (Godot 데스크톱)
+    platform: godot-native
+    layout: split-3d-hud
+    description: |
+      가상오피스 3D 공간. 실시간 아바타 이동, 회의실 입장, 팀 구역 시각화, 좌측 사이드바(층/구역/사람),
+      우측 참석자 패널, 하단 회의/업무 제어. Godot 4 네이티브 데스크톱 앱.
+
+  - id: screen-org-chart-editor
+    file: org-chart-editor.yaml
+    name: 조직도 편집기
+    route: /admin/org-chart
+    platform: web
+    layout: sidebar-main
+    description: |
+      ERP teams + org_group 계층 시각화 및 편집. React Flow 노드 그래프로 본부/부서/파트/팀 구조 관리.
+      검증(순환참조, 미매핑), 배포, 미리보기 기능.
+
+  - id: screen-employee-directory
+    file: employee-directory.yaml
+    name: 직원명부
+    route: /admin/employees
+    platform: web
+    layout: sidebar-main
+    description: |
+      ERP 직원 정보의 읽기전용 목록. 팀/상태 필터, 검색, CSV 내보내기, 상세 슬라이드 패널.
+      마지막 동기화 시각 표시. 모바일 대응 카드 레이아웃.
+
+  - id: screen-seat-layout-editor
+    file: seat-layout-editor.yaml
+    name: 좌석 배치 편집기
+    route: /admin/office-layout
+    platform: web
+    layout: split-3d-hud
+    description: |
+      2D Konva.js 평면도 + 3D Godot 미리보기. 벽, 좌석, 회의실, 구역 배치.
+      Undo/Redo, 검증 체크리스트, 버전 관리, 배포/롤백.
+
+  - id: screen-kpi-dashboard
+    file: kpi-dashboard.yaml
+    name: KPI 대시보드
+    route: /admin/kpi
+    platform: web
+    layout: sidebar-main
+    description: |
+      KPI 평가 결과 조회/검토. AI 초안 표시, 관리자 조정, ERP 푸시 상태 추적.
+      기간별 필터, 팀 종합, 개인 지표, 추이/비교/순위 탭.
+
+  - id: screen-meetings
+    file: meetings.yaml
+    name: 회의 & 회의록 관리
+    route: /meetings
+    platform: web
+    layout: sidebar-main
+    description: |
+      회의 일정(일간/주간/월간 캘린더), 회의 상세정보, 참석자 목록.
+      회의록(결정사항/액션아이템/노트) 작성, 액션아이템 대시보드.
+
+  - id: screen-work-log
+    file: work-log.yaml
+    name: 업무기록
+    route: /work-log
+    platform: web
+    layout: sidebar-main
+    description: |
+      일별 업무 기록, 범주/시간/결과물/이슈 추적. 일일 상태 리포트 작성.
+      기간별 요약(일간/주간/월간/연간), 카테고리 분포, ERP 동기화.
+
+metadata:
+  total_screens: 7
+  web_screens: 6
+  native_screens: 1
+  admin_routes: 4 # org-chart, employees, office-layout, kpi
+  user_routes: 2 # meetings, work-log
+  godot_routes: 1 # 3d-office
+
+grouping:
+  admin:
+    - screen-org-chart-editor
+    - screen-employee-directory
+    - screen-seat-layout-editor
+    - screen-kpi-dashboard
+  user:
+    - screen-meetings
+    - screen-work-log
+  immersive:
+    - screen-virtual-office-3d

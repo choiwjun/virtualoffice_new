@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전체 스킬 58종 카탈로그 — Pipeline Map</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <div class="brand"><span class="dot"></span> Claude Labs · Pipeline Map</div>
+    <nav>
+      <a href="index.html">조감도</a>
+      <a href="case-1-greenfield.html">① 신규·귀납</a>
+      <a href="case-2-doubt.html">② 검증·연역</a>
+      <a href="case-3-brownfield.html">③ 기존 통합</a>
+      <a href="case-4-build.html">④ 빌드 4종</a>
+      <a href="case-5-quality.html">⑤ 검증·개선</a>
+      <a href="case-6-stargate.html">⑥ 통합 진입</a>
+      <a href="skills.html" class="active">스킬 58</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <div class="eyebrow">Skill Catalog · 8 categories · 59 skills</div>
+    <h1>전체 스킬 카탈로그</h1>
+    <p>이 스킬팩의 59개 스킬을 역할 카테고리로 묶었습니다. 각 노드의 <span class="badge opt" style="vertical-align:middle">mono 배지</span>는 주요 CLI 옵션,
+       <span class="badge out" style="vertical-align:middle">파란 배지</span>는 산출물입니다. 파이프라인 위치는 상단 케이스 다이어그램을 참고하세요.</p>
+  </div>
+
+  <!-- 1. 기획·이데이션 -->
+  <div class="band cat-plan"><span class="num">01</span><span class="t">기획 · 이데이션</span><span class="s">11종 · 아이디어 → 기획 문서</span></div>
+  <div class="lane cols-3">
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/socrates</span></div><div class="role">21문항 심층 기획(귀납). Problem Framing → JTBD → MoSCoW → 화면 매핑. 레벨별 톤 조절</div><div class="opts"><span class="badge out">10개 문서</span></div></div>
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/maieutics</span><span class="badge new">NEW</span></div><div class="role">소크라테스↔영혼 두 cmux 페인이 cmux send로 자율 심층 인터뷰(human-out-of-loop) → 기획서. socrates 목적을 사람 개입 없이 달성</div><div class="opts"><span class="badge out">기획서</span></div></div>
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/doubt</span></div><div class="role">가정 검증 기획(연역). Assumption Ledger + Dream/Demon/Illusion 테스트 + Validation + Impact Trace</div><div class="opts"><span class="badge out">12개 문서</span></div></div>
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/eureka</span></div><div class="role">추상 아이디어 → 3~4개 구체 MVP 제안(재귀 사고)</div><div class="opts"><span class="badge opt">--deep</span><span class="badge opt">--fast</span><span class="badge opt">--ko/--en</span></div></div>
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/neurion</span></div><div class="role">4 페르소나 공동 브레인스토밍. Osborn 4원칙(비판 금지). 15~20 아이디어 폭발</div><div class="opts"><span class="badge out">neurion-proposal.md</span></div></div>
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/auto-planner</span></div><div class="role">비대화형. 1~4문장 → 5분 내 풀 spec 자동 확장. 빠른 프로토타입 시작</div></div>
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/cogito</span></div><div class="role">방법적 의심으로 모든 기술 전제 해체 → 의도만 남기고 연역. "Cogito ergo codo"</div></div>
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/poietes</span></div><div class="role">에로스 사이클 기획. 결핍→욕망→다이몬→출산. 향연 구조 재배열</div></div>
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/eros</span></div><div class="role">플라톤 향연 알고리즘. 결핍 인식 → 디오티마 사다리 → 창작 → 불사 보존</div></div>
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/odysseus</span></div><div class="role">전략 오케스트레이터. 정찰→신뢰→결정적 순간→전투→검증. "Metis over Bia"</div></div>
+    <div class="node cat-plan"><div class="nm"><span class="cmd">/council</span></div><div class="role">멀티 에이전트 기획 리뷰 위원회(CTO/UX/Security). 분산/단일세션 자동 감지</div></div>
+  </div>
+
+  <!-- 2. 명세·디자인 -->
+  <div class="band cat-spec"><span class="num">02</span><span class="t">명세 · 디자인</span><span class="s">7종 · 기획 → specs/ → 태스크 → 검증 게이트</span></div>
+  <div class="lane cols-3">
+    <div class="node cat-spec"><div class="nm"><span class="cmd">/screen-spec</span></div><div class="role">화면별 YAML v2.0 명세 + 도메인 리소스. data_requirements로 화면-백엔드 느슨 결합</div><div class="opts"><span class="badge out">specs/</span></div></div>
+    <div class="node cat-spec"><div class="nm"><span class="cmd">/tasks-generator</span></div><div class="role">Domain-Guarded 태스크. ICV(화면 needs vs 리소스 fields) 검증</div><div class="opts"><span class="badge opt">from-screens</span><span class="badge opt">from-docs</span><span class="badge opt">analyze</span></div></div>
+    <div class="node cat-spec"><div class="nm"><span class="cmd">/reverse</span></div><div class="role">기존 코드 → 명세 역추출(읽기 전용). confidence 점수 부여</div><div class="opts"><span class="badge opt">scan</span><span class="badge opt">extract</span><span class="badge opt">review</span><span class="badge opt">finalize</span></div></div>
+    <div class="node cat-spec"><div class="nm"><span class="cmd">/sync</span></div><div class="role">명세–코드 동기화 검증. 드리프트 감지 + 불일치 리포트 + 자동 수정 제안</div></div>
+    <div class="node cat-spec"><div class="nm"><span class="cmd">/design-discovery</span></div><div class="role">Open Design discovery 7문항 → DESIGN.md + theme.ts + 단일 HTML artifact</div></div>
+    <div class="node cat-spec"><div class="nm"><span class="cmd">/design-linker</span></div><div class="role">design/ 목업 이미지·HTML을 06-tasks.md의 Phase/Task에 자동 연결</div></div>
+    <div class="node cat-spec"><div class="nm"><span class="cmd">/planning-loop-supervisor</span><span class="badge new">NEW</span></div><div class="role">설계문서 상위 루프 감독관. 문서 간 일관성·추적성·갭·13항목 품질 검증 → 미달 시 해당 스킬 patch 모드 되돌림(≤3회) → 프로젝트별 게이트 파생. stargate Phase 3.7 게이트</div><div class="opts"><span class="badge out">08-derived-gates.md</span><span class="badge out">00-loop.md</span></div></div>
+  </div>
+
+  <!-- 3. 빌드 오케스트레이션 -->
+  <div class="band cat-build"><span class="num">03</span><span class="t">빌드 오케스트레이션</span><span class="s">8종 · 태스크 → 코드</span></div>
+  <div class="lane cols-3">
+    <div class="node cat-build"><div class="nm"><span class="cmd">/auto-orchestrate</span></div><div class="role">06-tasks.md 의존성 자동 직렬/병렬. Phase 병합까지 완전 자동화. 단일 워커</div><div class="opts"><span class="badge opt">--workflow</span></div></div>
+    <div class="node cat-build"><div class="nm"><span class="cmd">/harness</span></div><div class="role">Socrates→Builder→Evaluator 3-에이전트. spec만으로 Build–Eval 루프(최대 3회)</div><div class="opts"><span class="badge opt">workflow</span></div></div>
+    <div class="node cat-build"><div class="nm"><span class="cmd">/harness-forge</span></div><div class="role">cmux 미세팅이어도 외부 6-페인 자동 배치(Planner/Reviewer/BE/FE/QA)</div></div>
+    <div class="node cat-build"><div class="nm"><span class="cmd">/cmux-harness</span></div><div class="role">cmux sub-agent role 분산 + 컨텍스트 라이프사이클. BE=Kimi/FE=Sonnet/검증·Test·E2E=Codex/리뷰=Reviewer</div><div class="opts"><span class="badge opt">setup</span><span class="badge opt">build</span><span class="badge opt">debate</span><span class="badge opt">full/slim</span></div></div>
+    <div class="node cat-build"><div class="nm"><span class="cmd">/project-bootstrap</span></div><div class="role">AI 에이전트 팀(.claude/agents/) 자동 생성 + 선택적 풀스택 환경 셋업</div></div>
+    <div class="node cat-build"><div class="nm"><span class="cmd">/project-bootstrap-supabase</span></div><div class="role">Next.js + Supabase + Vercel CI/CD 풀스택 원커맨드 셋업</div></div>
+    <div class="node cat-build"><div class="nm"><span class="cmd">harness-builder</span></div><div class="role">harness의 Builder 에이전트 — spec 기반 연속 빌드(내부)</div></div>
+    <div class="node cat-build"><div class="nm"><span class="cmd">harness-evaluator</span></div><div class="role">harness의 Evaluator 에이전트 — 브라우저 QA + rubric 채점(내부)</div></div>
+  </div>
+
+  <!-- 4. 검증·품질 -->
+  <div class="band cat-verify"><span class="num">04</span><span class="t">검증 · 품질</span><span class="s">8종 · 품질 게이트</span></div>
+  <div class="lane cols-3">
+    <div class="node cat-verify"><div class="nm"><span class="cmd">/code-review</span></div><div class="role">2단계 — Stage 1 Spec Compliance → Stage 2 Code Quality. workflow 0순위 모드</div></div>
+    <div class="node cat-verify"><div class="nm"><span class="cmd">/evaluation</span></div><div class="role">Phase 완료 후 품질 게이트(커버리지 ≥70%, 복잡도 ≤10, 린트 0)</div></div>
+    <div class="node cat-verify"><div class="nm"><span class="cmd">/trinity</span></div><div class="role">五柱(眞善美孝永) 품질 점수. 90+ 자동승인 / 70~89 리뷰 / &lt;70 차단</div></div>
+    <div class="node cat-verify"><div class="nm"><span class="cmd">/audit</span></div><div class="role">OWASP Top 10 / SPDX 라이선스 / GDPR 3모듈 감사 + 리포트</div></div>
+    <div class="node cat-verify"><div class="nm"><span class="cmd">/vercel-review</span></div><div class="role">Vercel 엔지니어링 기반 React/Next 성능·접근성·디자인 패턴 리뷰</div></div>
+    <div class="node cat-verify"><div class="nm"><span class="cmd">verification-before-completion</span></div><div class="role">"완료/통과" 주장 전 필수. 검증 명령 실행 + 증거 확인</div></div>
+    <div class="node cat-verify"><div class="nm"><span class="cmd">/powerqa</span></div><div class="role">자동 QA 사이클링. 테스트→검증→수정 반복(최대 5, 동일 3회 중단)</div></div>
+    <div class="node cat-verify"><div class="nm"><span class="cmd">/systematic-debugging</span></div><div class="role">4단계 근본원인 분석. 동일 에러 3회 시 전환</div></div>
+  </div>
+
+  <!-- 5. 자가개선·디버깅 -->
+  <div class="band cat-improve"><span class="num">05</span><span class="t">자가개선 · 사고</span><span class="s">6종 · RSI 루프 + 탐색</span></div>
+  <div class="lane cols-3">
+    <div class="node cat-improve"><div class="nm"><span class="cmd">/autoresearch</span></div><div class="role">Karpathy autoresearch RSI 엔진. 3파일 + Frozen Metric + 2계층 RSI. 8 서브커맨드</div><div class="opts"><span class="badge opt">:fix</span><span class="badge opt">:debug</span><span class="badge opt">:security</span><span class="badge opt">:ship</span></div></div>
+    <div class="node cat-improve"><div class="nm"><span class="cmd">/autoresearch-frontend</span></div><div class="role">Chrome MCP로 DOM+스크린샷+콘솔을 Frozen Metric화 → 코드 수정 → keep/revert</div></div>
+    <div class="node cat-improve"><div class="nm"><span class="cmd">/autoresearch-skills</span></div><div class="role">스킬 자체 개선. SKILL.md 수정 → 테스트 → 메트릭 → keep/revert</div></div>
+    <div class="node cat-improve"><div class="nm"><span class="cmd">/spike</span></div><div class="role">불확실 영역 탐색. 품질 게이트 완화 + 빠른 프로토타이핑 → 리포트</div></div>
+    <div class="node cat-improve"><div class="nm"><span class="cmd">/reflection</span></div><div class="role">에이전트가 자기 출력을 비판적으로 검토하고 반복 개선</div></div>
+    <div class="node cat-improve"><div class="nm"><span class="cmd">/reasoning</span></div><div class="role">Chain/Tree of Thought, ReAct 등 복잡 문제 추론 기법</div></div>
+  </div>
+
+  <!-- 6. 리서치·지식 -->
+  <div class="band cat-research"><span class="num">06</span><span class="t">리서치 · 지식</span><span class="s">4종 · 외부 지식 + 기억</span></div>
+  <div class="lane cols-2">
+    <div class="node cat-research"><div class="nm"><span class="cmd">/deep-research</span></div><div class="role">5개 검색 API 병렬(Brave/Tavily/Perplexity/Naver/YouTube). quarantine 가드레일</div></div>
+    <div class="node cat-research"><div class="nm"><span class="cmd">/rag</span></div><div class="role">Context7 MCP로 최신 라이브러리 문서 검색 후 정확 코드 생성. 전문가 에이전트 자동 활용</div></div>
+    <div class="node cat-research"><div class="nm"><span class="cmd">/memory</span></div><div class="role">세션 간 학습 지속. .claude/memory/에 구조화 메모리 저장</div></div>
+    <div class="node cat-research"><div class="nm"><span class="cmd">/chrome-browser</span></div><div class="role">Chrome 제어. 로컬 웹앱 테스트·UI 디버깅·폼 자동화</div></div>
+  </div>
+
+  <!-- 7. 전문가 에이전트 -->
+  <div class="band cat-expert"><span class="num">07</span><span class="t">전문가 에이전트 (언어·인프라)</span><span class="s">8종 · 빌드 중 호출되는 스페셜리스트</span></div>
+  <div class="lane cols-4">
+    <div class="node cat-expert"><div class="nm"><span class="cmd">python-pro</span></div><div class="role">Python 3.11+ 타입 안전·async·프로덕션 품질</div></div>
+    <div class="node cat-expert"><div class="nm"><span class="cmd">typescript-pro</span></div><div class="role">TypeScript 5.x 타입 안전·성능·유지보수</div></div>
+    <div class="node cat-expert"><div class="nm"><span class="cmd">golang-pro</span></div><div class="role">Go 1.22+ 동시성·시스템 프로그래밍·클린 아키텍처</div></div>
+    <div class="node cat-expert"><div class="nm"><span class="cmd">react-19</span></div><div class="role">React 19 컴포넌트·훅 기반 UI</div></div>
+    <div class="node cat-expert"><div class="nm"><span class="cmd">fastapi-latest</span></div><div class="role">FastAPI — 자동 OpenAPI 문서 API</div></div>
+    <div class="node cat-expert"><div class="nm"><span class="cmd">database-optimizer</span></div><div class="role">MySQL/PostgreSQL 쿼리·인덱스·성능 튜닝</div></div>
+    <div class="node cat-expert"><div class="nm"><span class="cmd">kubernetes-specialist</span></div><div class="role">K8s 클러스터·매니페스트·배포 전략</div></div>
+    <div class="node cat-expert"><div class="nm"><span class="cmd">terraform-engineer</span></div><div class="role">IaC — 멀티클라우드 Terraform</div></div>
+  </div>
+
+  <!-- 8. 메타·유틸·배포 -->
+  <div class="band cat-deploy"><span class="num">08</span><span class="t">메타 · 유틸 · 배포</span><span class="s">7종 · 진입·비용·출시</span></div>
+  <div class="lane cols-3">
+    <div class="node cat-meta"><div class="nm"><span class="cmd">/stargate</span></div><div class="role">풀 파이프라인 통합 진입점. 체크포인트 + 결정점 14개 자동 분기</div><div class="opts"><span class="badge opt">resume</span><span class="badge opt">restart</span></div></div>
+    <div class="node cat-deploy"><div class="nm"><span class="cmd">/cost-router</span></div><div class="role">태스크 복잡도 → 모델 라우팅(40~70% 절감). classify-and-act workflow</div></div>
+    <div class="node cat-deploy"><div class="nm"><span class="cmd">/token-optimizer</span></div><div class="role">출력 압축 + 에이전트 도구 제한 + 세션 학습 훅</div></div>
+    <div class="node cat-deploy"><div class="nm"><span class="cmd">/desktop-bridge</span></div><div class="role">Desktop(설계) ↔ CLI(구현)를 GitHub Issue로 연결. publish/implement</div></div>
+    <div class="node cat-deploy"><div class="nm"><span class="cmd">/session-report</span></div><div class="role">세션 종료 구조화 리포트. git log/diff → 변경 분석 → 메트릭</div></div>
+    <div class="node cat-deploy"><div class="nm"><span class="cmd">/packaging</span></div><div class="role">배포용 8개 MD + 단일 ZIP 생성("패키징해줘")</div></div>
+    <div class="node cat-deploy"><div class="nm"><span class="cmd">/skill-installer</span></div><div class="role">Claude Labs 레지스트리에서 스킬팩 설치. 프로젝트 타입 자동 감지</div></div>
+  </div>
+
+  <div class="callout info" style="margin-top:28px">
+    <b>총 58종.</b> 기획 10 · 명세 7 · 빌드 8 · 검증 8 · 자가개선 6 · 리서치 4 · 전문가 8 · 메타/배포 7.
+    전문가 에이전트(07)는 단독 호출보다 <code>/auto-orchestrate</code>·<code>/cmux-harness</code> 빌드 중 태스크 <code>담당</code>으로 자동 호출됩니다.
+  </div>
+
+</main>
+
+<footer><div class="wrap" style="padding-top:0;padding-bottom:0">Skill Catalog · 59 skills · v1.22.0 · .claude/skills/ frontmatter</div></footer>
+</body>
+</html>

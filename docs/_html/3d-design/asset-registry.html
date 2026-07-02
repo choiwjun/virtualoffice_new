@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asset 레지스트리 명세 (asset-registry.md)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">Asset 레지스트리 명세 (asset-registry.md)</div><div class="sub">asset-registry.md</div><a class="lvl1" href="#asset-레지스트리-명세-asset-registrymd">Asset 레지스트리 명세 (asset-registry.md)</a><a class="lvl2" href="#1-asset-테이블-스키마-07-53-정본-기준">1. asset 테이블 스키마 (07 §5.3 정본 기준)</a><a class="lvl3" href="#11-ddl">1.1 DDL</a><a class="lvl3" href="#12-주요-컬럼-설명-요약">1.2 주요 컬럼 설명 요약</a><a class="lvl2" href="#2-에셋-id-명명-규칙">2. 에셋 ID 명명 규칙</a><a class="lvl3" href="#21-형식">2.1 형식</a><a class="lvl3" href="#22-예시">2.2 예시</a><a class="lvl3" href="#23-버전-관리-규칙">2.3 버전 관리 규칙</a><a class="lvl2" href="#3-에셋-전달-파이프라인-d8">3. 에셋 전달 파이프라인 (D8)</a><a class="lvl3" href="#31-파이프라인-요약-d8-기준">3.1 파이프라인 요약 (D8 기준)</a><a class="lvl3" href="#32-파일-구조-규약">3.2 파일 구조 규약</a><a class="lvl2" href="#4-카탈로그-버저닝-및-배포-채널-d8">4. 카탈로그 버저닝 및 배포 채널 (D8)</a><a class="lvl3" href="#41-클라이언트-pak-동봉">4.1 클라이언트 pak 동봉</a><a class="lvl3" href="#42-자동-업데이트-채널">4.2 자동 업데이트 채널</a><a class="lvl3" href="#43-schema_version-호환성">4.3 schema_version 호환성</a><a class="lvl2" href="#5-라이선스-정책">5. 라이선스 정책</a><a class="lvl3" href="#51-허용금지-등급">5.1 허용/금지 등급</a><a class="lvl3" href="#52-cc-by-에셋-검수-프로세스">5.2 CC-BY 에셋 검수 프로세스</a><a class="lvl3" href="#53-third_party_licensesmd-포맷">5.3 THIRD_PARTY_LICENSES.md 포맷</a><a class="lvl2" href="#6-예시-레코드">6. 예시 레코드</a><a class="lvl3" href="#61-표준-책상-cc0">6.1 표준 책상 (CC0)</a><a class="lvl3" href="#62-브랜드월-자체-제작">6.2 브랜드월 (자체 제작)</a><a class="lvl2" href="#7-dimension-일치-검증-규칙">7. dimension 일치 검증 규칙</a><a class="lvl2" href="#8-변경-이력">8. 변경 이력</a></nav>
+<main><h1 id="asset-레지스트리-명세-asset-registrymd">Asset 레지스트리 명세 (asset-registry.md)</h1>
+<p><strong>문서 버전</strong>: 1.0 <strong>작성일</strong>: 2026-07-02 <strong>담당</strong>: 3d-engine-specialist <strong>태스크</strong>: P0-T0.5 — 3D 씬 구조 및 asset 레지스트리 설계 <strong>참조</strong>: 00-decisions.md(D8), 07-3d-visual-asset-pipeline.md(§5.3 정본), 05-office-layout-schema.md(§5.1·§3.4)</p>
+<blockquote>이 문서는 00-decisions.md의 정본 결정을 따른다. 충돌 시 00-decisions.md가 이긴다.   asset 테이블 스키마의 정본은 <strong>07-3d-visual-asset-pipeline.md §5.3</strong>이다. 이 문서는 그 정본을 기반으로 운영 규칙을 보완한다.</blockquote>
+<hr>
+<h2 id="1-asset-테이블-스키마-07-53-정본-기준">1. asset 테이블 스키마 (07 §5.3 정본 기준)</h2>
+<h3 id="11-ddl">1.1 DDL</h3>
+<pre class="code lang-sql"><code>-- @TASK P0-T0.5
+-- @SPEC docs/planning/07-3d-visual-asset-pipeline.md#5.3
+CREATE TABLE asset (
+  -- ===== 식별자 =====
+  asset_id          VARCHAR(64)  PRIMARY KEY,
+    -- 형식: {type}-{name}-v{major}.{minor} (§2 명명 규칙 참조)
+    -- 예: &quot;furniture-desk-standard-v1.0&quot;, &quot;structure-brand-wall-v1.0&quot;
+
+  asset_name        VARCHAR(256) NOT NULL,
+    -- 사람이 읽을 수 있는 표시명. 예: &quot;Standard Desk&quot;
+
+  asset_type        VARCHAR(50)  NOT NULL,
+    -- &quot;furniture&quot; | &quot;structure&quot; | &quot;material&quot; | &quot;ui3d&quot; | &quot;character&quot; | &quot;environment&quot;
+
+  category          VARCHAR(100),
+    -- 공간 카테고리. &quot;lobby&quot; | &quot;office&quot; | &quot;meeting-room&quot; | &quot;lounge&quot; | &quot;focus&quot; | &quot;phonebooth&quot; | &quot;avatar&quot; | &quot;ui&quot;
+
+  -- ===== 출처 &amp; 라이선스 =====
+  source_url        TEXT,
+    -- 원본 다운로드 URL. CC0/CC-BY 소스 기록용
+
+  author            VARCHAR(256),
+    -- 제작자/출처. 예: &quot;Poly Haven&quot;, &quot;ambientCG&quot;, &quot;in-house&quot;
+
+  license           VARCHAR(100) NOT NULL,
+    -- &quot;CC0&quot; | &quot;CC-BY-4.0&quot; | &quot;custom&quot; | &quot;proprietary&quot;
+
+  license_url       TEXT,
+    -- 라이선스 문서 URL
+
+  downloaded_at     TIMESTAMPTZ,
+    -- 최초 취득 일시 (UTC 저장, D19)
+
+  modified_by       VARCHAR(256),
+    -- 가공/적용 담당자
+
+  -- ===== 상업적 사용 정책 =====
+  commercial_allowed     BOOLEAN NOT NULL DEFAULT TRUE,
+    -- 상업 프로젝트 사용 가능 여부 (CC-NC 사용 시 FALSE)
+
+  attribution_required   BOOLEAN NOT NULL DEFAULT FALSE,
+    -- 저작자 표시 필수 여부 (CC-BY 계열은 TRUE)
+
+  redistribution_allowed BOOLEAN NOT NULL DEFAULT TRUE,
+    -- 수정 후 재배포 가능 여부 (CC-ND는 FALSE)
+
+  -- ===== 파일 해시 (무결성 검증) =====
+  original_file_hash     VARCHAR(64),
+    -- SHA-256 of raw download (소스 .blend/.fbx/.glb)
+
+  optimized_file_hash    VARCHAR(64),
+    -- SHA-256 of 임포트 소스 .glb (Draco 없는 원본)
+
+  -- ===== 배포 경로 (D8) =====
+  tscn_path         VARCHAR(256) NOT NULL,
+    -- 클라이언트 pak 동봉 경로 (배포 산출물)
+    -- 규약: res://assets/3d/models/{slug}/{slug}.tscn
+    -- 05 ASSET_CATALOG의 값과 동일해야 함
+
+  source_glb_path   VARCHAR(256),
+    -- 임포트 소스 glb 저장소 경로 (pak 미포함)
+    -- 규약: assets/3d/models/{slug}/raw/{slug}_v{major}.{minor}.glb
+
+  file_size_bytes   BIGINT,
+    -- 임포트 산출물(.tscn + 캐시) 크기. CDN 없음(D8), 성능 예산 참고용
+
+  -- ===== 기하학 정보 =====
+  polygon_count     INTEGER,
+    -- LOD 0 삼각형 수 (정본). 05 §1.2.13 성능 파생 계산의 소스
+
+  texture_resolution VARCHAR(20),
+    -- 예: &quot;2048x2048&quot;, &quot;1024x1024&quot;, &quot;512x512&quot;
+
+  -- ===== 편집기·배치 메타 (05 §3.4 정합) =====
+  dimension         JSONB,
+    -- 실측 크기 {&quot;width&quot;: float, &quot;depth&quot;: float, &quot;height&quot;: float} (미터 단위)
+    -- 정본. layout JSON furniture.dimension은 표시용 캐시이며 불일치 시 이 값이 우선
+    -- 허용 오차 ±1cm (임포트 AABB 측정값 일치 검증 필수)
+
+  footprint_2d      JSONB,
+    -- 편집기 도면용 2D 풋프린트 {&quot;width&quot;: float, &quot;depth&quot;: float} (미터)
+    -- 웹 편집기 Konva.js에서 가구 배치 시 사용
+
+  thumbnail_url     TEXT,
+    -- 편집기 팔레트 썸네일 경로
+    -- 규약: res://assets/3d/models/{slug}/thumb.png
+
+  -- ===== 씬 사용 현황 =====
+  used_in_scene     JSONB,
+    -- 배치된 씬 목록. 예: [&quot;stage1_lobby&quot;, &quot;stage1_office&quot;]
+
+  -- ===== 의존성 =====
+  external_dependencies TEXT,
+    -- 이 에셋이 의존하는 다른 asset_id 또는 머티리얼 경로
+
+  -- ===== 메모 =====
+  notes             TEXT,
+    -- 커스텀 메타데이터, 사용 주의사항
+
+  -- ===== 타임스탬프 =====
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at        TIMESTAMPTZ            -- Soft delete
+);
+
+-- 인덱스
+CREATE INDEX idx_asset_type     ON asset(asset_type);
+CREATE INDEX idx_asset_category ON asset(category);
+CREATE INDEX idx_asset_license  ON asset(license);
+CREATE INDEX idx_asset_deleted  ON asset(deleted_at) WHERE deleted_at IS NULL;</code></pre>
+<h3 id="12-주요-컬럼-설명-요약">1.2 주요 컬럼 설명 요약</h3>
+<div class="table-wrap"><table><thead><tr><th>컬럼</th><th>타입</th><th>역할</th></tr></thead><tbody><tr><td><code>asset_id</code></td><td>VARCHAR(64) PK</td><td>고유 식별자, layout JSON <code>furniture.asset_id</code>와 1:1 대응</td></tr><tr><td><code>tscn_path</code></td><td>VARCHAR(256)</td><td>클라이언트 pak 내 <code>.tscn</code> 경로(05 ASSET_CATALOG 값)</td></tr><tr><td><code>source_glb_path</code></td><td>VARCHAR(256)</td><td>저장소 보관 소스 glb (pak 미포함, D8)</td></tr><tr><td><code>polygon_count</code></td><td>INTEGER</td><td>LOD 0 삼각형 수, 성능 파생 계산의 정본(05 §1.2.13)</td></tr><tr><td><code>dimension</code></td><td>JSONB</td><td>실측 AABB 크기, 좌석↔가구 좌표 정합의 정본(05 §3.2)</td></tr><tr><td><code>footprint_2d</code></td><td>JSONB</td><td>편집기 Konva.js 가구 배치용 2D 크기</td></tr><tr><td><code>thumbnail_url</code></td><td>TEXT</td><td>편집기 팔레트 썸네일</td></tr><tr><td><code>commercial_allowed</code></td><td>BOOLEAN</td><td>CC-NC 등 비상업 에셋 필터링</td></tr><tr><td><code>attribution_required</code></td><td>BOOLEAN</td><td>CC-BY 표기 의무 여부</td></tr></tbody></table></div>
+<hr>
+<h2 id="2-에셋-id-명명-규칙">2. 에셋 ID 명명 규칙</h2>
+<h3 id="21-형식">2.1 형식</h3>
+<pre class="code"><code>{type}-{name}-v{major}.{minor}</code></pre>
+<div class="table-wrap"><table><thead><tr><th>세그먼트</th><th>규칙</th><th>예시</th></tr></thead><tbody><tr><td><code>type</code></td><td>asset_type의 약칭(소문자)</td><td><code>furniture</code>, <code>structure</code>, <code>char</code>, <code>ui3d</code>, <code>mat</code>, <code>env</code></td></tr><tr><td><code>name</code></td><td>에셋 식별 이름(소문자, 하이픈 구분자)</td><td><code>desk-standard</code>, <code>brand-wall</code>, <code>sofa-3seat</code></td></tr><tr><td><code>v{major}.{minor}</code></td><td>시맨틱 버전. 외형·크기 변경 시 올림</td><td><code>v1.0</code>, <code>v1.1</code>, <code>v2.0</code></td></tr></tbody></table></div>
+<h3 id="22-예시">2.2 예시</h3>
+<div class="table-wrap"><table><thead><tr><th>asset_id</th><th>설명</th></tr></thead><tbody><tr><td><code>furniture-desk-standard-v1.0</code></td><td>표준 업무용 책상 초판</td></tr><tr><td><code>furniture-desk-standard-v1.1</code></td><td>텍스처 업데이트(경미한 변경)</td></tr><tr><td><code>furniture-desk-standard-v2.0</code></td><td>형상 변경(layout 마이그레이션 필요)</td></tr><tr><td><code>structure-brand-wall-v1.0</code></td><td>로비 브랜드월</td></tr><tr><td><code>structure-meeting-glass-set-v1.0</code></td><td>회의실 유리재질·문짝·화이트보드 세트</td></tr><tr><td><code>furniture-sofa-3seat-v1.0</code></td><td>라운지 3인 소파</td></tr><tr><td><code>char-avatar-base-male-v1.0</code></td><td>남성 기본 아바타</td></tr><tr><td><code>ui3d-status-badge-v1.0</code></td><td>아바타 상태 뱃지</td></tr><tr><td><code>env-hdri-indoor-office-v1.0</code></td><td>실내 HDRI 스카이박스</td></tr><tr><td><code>mat-wood-floor-006-v1.0</code></td><td>ambientCG 목재 바닥 PBR 재질</td></tr></tbody></table></div>
+<h3 id="23-버전-관리-규칙">2.3 버전 관리 규칙</h3>
+<ul><li><strong>minor 업데이트</strong> (<code>v1.0 → v1.1</code>): 텍스처 교체, 폴리곤 최적화. <code>tscn_path</code> 파일명 불변, 내용만 교체. layout 수정 불필요.</li><li><strong>major 업데이트</strong> (<code>v1.0 → v2.0</code>): 형상 변경, dimension 변경(±1cm 초과). 새 <code>asset_id</code> 부여. layout의 <code>furniture.asset_id</code> 마이그레이션 필요.</li><li><strong>파일명은 고정</strong>: <code>.tscn</code> 파일명은 slug 기준 고정(<code>desk_standard.tscn</code>). 버전은 <code>asset</code> 테이블과 <code>CHANGELOG.md</code>로만 관리한다(07 §5.1 §14 규약).</li></ul>
+<hr>
+<h2 id="3-에셋-전달-파이프라인-d8">3. 에셋 전달 파이프라인 (D8)</h2>
+<h3 id="31-파이프라인-요약-d8-기준">3.1 파이프라인 요약 (D8 기준)</h3>
+<pre class="code"><code>1. 소스 취득 (CC0/CC-BY 검수)
+        ↓
+2. Blender 가공 → raw/*.glb 저장 (Draco 압축 없음)
+        ↓
+3. Godot 임포트 최적화
+   - VRAM BC 압축 (BC1/BC3/BC5)
+   - 자동 LOD 생성
+        ↓
+4. 임포트 완료본 .tscn 생성
+        ↓
+5. asset 테이블 등록 (dimension AABB 검증 필수)
+        ↓
+6. 클라이언트 빌드(pak) 동봉 → 배포
+        ↓
+7. 신규/갱신 에셋 → 클라이언트 자동 업데이트 채널</code></pre>
+<p><strong>금지 사항 (D8)</strong></p>
+<ul><li>Draco 압축 glb 사용 — Godot 4 임포트 실패</li><li>gltfpack/meshopt 압축 — 동일 이유</li><li>런타임 glb CDN 다운로드 — pak 동봉만 허용</li><li>WebP/Basis Universal — WASM export 미사용(D11)으로 불필요</li></ul>
+<h3 id="32-파일-구조-규약">3.2 파일 구조 규약</h3>
+<pre class="code"><code>assets/3d/models/{slug}/
+  ├── {slug}.tscn          # 배포 산출물 (pak 동봉). 파일명 고정
+  ├── raw/
+  │   └── {slug}_v1.0.glb  # 임포트 소스 (저장소 보관, pak 미포함)
+  ├── thumb.png             # 편집기 팔레트 썸네일 (128×128px 이상)
+  ├── textures/
+  │   ├── {slug}_albedo.png
+  │   ├── {slug}_normal.png
+  │   └── {slug}_roughness.png
+  ├── METADATA.json         # asset 테이블 레코드 미러 (CI 동기화용)
+  └── CHANGELOG.md</code></pre>
+<hr>
+<h2 id="4-카탈로그-버저닝-및-배포-채널-d8">4. 카탈로그 버저닝 및 배포 채널 (D8)</h2>
+<h3 id="41-클라이언트-pak-동봉">4.1 클라이언트 pak 동봉</h3>
+<ul><li>에셋 카탈로그는 <strong>클라이언트 빌드에 포함</strong>된다. 런타임에 서버에서 다운로드하지 않는다.</li><li>layout JSON은 <code>asset_id</code>만 참조한다. 클라이언트의 <code>ASSET_CATALOG</code> 딕셔너리가 <code>asset_id → tscn_path</code>를 매핑한다.</li></ul>
+<pre class="code lang-gdscript"><code># 05 §5.1 — 클라이언트 동봉 카탈로그
+const ASSET_CATALOG := {
+  &quot;furniture-desk-standard-v1.0&quot;:  &quot;res://assets/3d/models/desk_standard/desk_standard.tscn&quot;,
+  &quot;furniture-sofa-3seat-v1.0&quot;:     &quot;res://assets/3d/models/sofa_3seat/sofa_3seat.tscn&quot;,
+  &quot;structure-brand-wall-v1.0&quot;:     &quot;res://assets/3d/models/brand_wall/brand_wall.tscn&quot;,
+  # ...
+}</code></pre>
+<h3 id="42-자동-업데이트-채널">4.2 자동 업데이트 채널</h3>
+<p>신규 에셋 추가 또는 기존 에셋 갱신(minor 업데이트) 시:</p>
+<ol><li>Git 태그 <code>asset/{slug}-v{major}.{minor}</code> 발행</li><li>클라이언트 자동 업데이트 채널(Godot 내장 업데이터)이 신규 빌드 감지</li><li>클라이언트 재시작 시 새 pak 적용</li></ol>
+<p>major 업데이트(asset_id 신규 발행)는 관리자가 해당 layout의 <code>furniture.asset_id</code>를 업데이트 후 재배포한다.</p>
+<h3 id="43-schema_version-호환성">4.3 schema_version 호환성</h3>
+<p>layout <code>schema_version</code>과 마찬가지로, 클라이언트 <code>ASSET_CATALOG</code>에 없는 <code>asset_id</code>를 layout이 참조하면:</p>
+<ul><li>FastAPI 서버 검증 단계(05 §3.4 에셋 존재 검증)에서 <strong>ERROR</strong>로 차단 — 배포 불가</li><li>해결책: 클라이언트 자동 업데이트 채널로 신규 에셋을 먼저 배포 후 layout 배포</li></ul>
+<hr>
+<h2 id="5-라이선스-정책">5. 라이선스 정책</h2>
+<h3 id="51-허용금지-등급">5.1 허용/금지 등급</h3>
+<pre class="code"><code>CC0 (최우선) &gt; CC-BY (제한적) &gt;&gt; [금지선] &gt;&gt; CC-NC / CC-SA / CC-ND / All Rights Reserved</code></pre>
+<div class="table-wrap"><table><thead><tr><th>라이선스</th><th>허용 여부</th><th>근거</th></tr></thead><tbody><tr><td><strong>CC0</strong> (퍼블릭 도메인)</td><td>허용</td><td>제약 없음. ambientCG, Poly Haven, Kenney</td></tr><tr><td><strong>CC-BY 4.0</strong> (저작자 표시)</td><td>제한적 허용</td><td>Sketchfab 등 개별 검수 후. THIRD<em>PARTY</em>LICENSES.md 기재 필수</td></tr><tr><td><strong>Proprietary (구매)</strong></td><td>허용</td><td>라이선스 범위 문서화 필수</td></tr><tr><td><strong>CC-BY-SA</strong> (ShareAlike)</td><td><strong>금지</strong></td><td>파생물 전체에 동일 라이선스 전염(카피레프트). pak 배포 오염</td></tr><tr><td><strong>CC-NC</strong> (비상업)</td><td><strong>금지</strong></td><td>사내 운영이라도 상업 해석 모호, 리스크</td></tr><tr><td><strong>CC-ND</strong> (수정금지)</td><td><strong>금지</strong></td><td>Godot 임포트(VRAM 압축·LOD) 자체가 수정에 해당</td></tr><tr><td><strong>Editorial Only</strong></td><td><strong>금지</strong></td><td>B2B 확장 시 위험</td></tr><tr><td><strong>All Rights Reserved</strong></td><td><strong>금지</strong></td><td>라이선스 불명확, 검수 불가</td></tr></tbody></table></div>
+<blockquote><strong>D8 추가 제약</strong>: CC-SA/ShareAlike는 클라이언트 pak 동봉 배포 시 전체 에셋에 동일 라이선스를 요구하므로 <strong>원칙상 배제</strong>한다(07 §2.1과 정합).</blockquote>
+<h3 id="52-cc-by-에셋-검수-프로세스">5.2 CC-BY 에셋 검수 프로세스</h3>
+<pre class="code"><code>1. 모델 선정 → 라이선스 문서 URL 기록
+2. commercial_allowed / attribution_required / redistribution_allowed 확인
+3. THIRD_PARTY_LICENSES.md에 추가 (포맷: §5.3)
+4. asset 테이블 license* 컬럼 기입
+5. 저자에게 이메일 확인 필요 시 진행
+6. 로컬 테스트 후 등록 확정</code></pre>
+<h3 id="53-third_party_licensesmd-포맷">5.3 THIRD<em>PARTY</em>LICENSES.md 포맷</h3>
+<pre class="code lang-markdown"><code># Third-Party Licenses
+
+## CC0 (Public Domain)
+
+### ambientCG
+- Material: Wood_Floor_006 (https://ambientcg.com/...)
+- License: CC0 1.0 Public Domain
+
+### Poly Haven
+- HDRI: kloppenheim_06_puresky_4k (https://polyhaven.com/...)
+- License: CC0 1.0 Public Domain
+
+## CC-BY (Attribution Required)
+
+### Sketchfab
+- Model: &quot;Office Chair&quot; by John Doe (https://sketchfab.com/...)
+- License: CC-BY 4.0
+- Attribution: &quot;Office Chair&quot; by John Doe, licensed under CC-BY 4.0
+  Changes: Exported to .glb, VRAM BC 압축, LOD 생성
+
+## Excluded
+- CC-SA / CC-BY-SA: 미사용 (카피레프트 전염)
+- CC-NC: 미사용 (상업 해석 모호)</code></pre>
+<hr>
+<h2 id="6-예시-레코드">6. 예시 레코드</h2>
+<h3 id="61-표준-책상-cc0">6.1 표준 책상 (CC0)</h3>
+<pre class="code lang-json"><code>{
+  &quot;asset_id&quot;: &quot;furniture-desk-standard-v1.0&quot;,
+  &quot;asset_name&quot;: &quot;Standard Desk&quot;,
+  &quot;asset_type&quot;: &quot;furniture&quot;,
+  &quot;category&quot;: &quot;office&quot;,
+  &quot;source_url&quot;: &quot;https://polyhaven.com/a/office_desk&quot;,
+  &quot;author&quot;: &quot;Poly Haven&quot;,
+  &quot;license&quot;: &quot;CC0&quot;,
+  &quot;license_url&quot;: &quot;https://polyhaven.com/license&quot;,
+  &quot;downloaded_at&quot;: &quot;2026-07-02T09:00:00Z&quot;,
+  &quot;modified_by&quot;: &quot;3d-engine-specialist&quot;,
+  &quot;commercial_allowed&quot;: true,
+  &quot;attribution_required&quot;: false,
+  &quot;redistribution_allowed&quot;: true,
+  &quot;original_file_hash&quot;: &quot;a1b2c3d4...&quot;,
+  &quot;optimized_file_hash&quot;: &quot;f6e5d4c3...&quot;,
+  &quot;tscn_path&quot;: &quot;res://assets/3d/models/desk_standard/desk_standard.tscn&quot;,
+  &quot;source_glb_path&quot;: &quot;assets/3d/models/desk_standard/raw/desk_standard_v1.0.glb&quot;,
+  &quot;file_size_bytes&quot;: 2621440,
+  &quot;polygon_count&quot;: 18000,
+  &quot;texture_resolution&quot;: &quot;1024x1024&quot;,
+  &quot;dimension&quot;: { &quot;width&quot;: 1.5, &quot;depth&quot;: 0.8, &quot;height&quot;: 0.75 },
+  &quot;footprint_2d&quot;: { &quot;width&quot;: 1.5, &quot;depth&quot;: 0.8 },
+  &quot;thumbnail_url&quot;: &quot;res://assets/3d/models/desk_standard/thumb.png&quot;,
+  &quot;used_in_scene&quot;: [&quot;stage1_office&quot;],
+  &quot;external_dependencies&quot;: &quot;mat-wood-floor-006-v1.0&quot;,
+  &quot;notes&quot;: &quot;표준 오피스 책상. 좌석(S_*)의 furniture_id가 참조함.&quot;,
+  &quot;created_at&quot;: &quot;2026-07-02T10:00:00Z&quot;,
+  &quot;updated_at&quot;: &quot;2026-07-02T10:00:00Z&quot;,
+  &quot;deleted_at&quot;: null
+}</code></pre>
+<h3 id="62-브랜드월-자체-제작">6.2 브랜드월 (자체 제작)</h3>
+<pre class="code lang-json"><code>{
+  &quot;asset_id&quot;: &quot;structure-brand-wall-v1.0&quot;,
+  &quot;asset_name&quot;: &quot;Brand Wall&quot;,
+  &quot;asset_type&quot;: &quot;structure&quot;,
+  &quot;category&quot;: &quot;lobby&quot;,
+  &quot;source_url&quot;: null,
+  &quot;author&quot;: &quot;in-house&quot;,
+  &quot;license&quot;: &quot;proprietary&quot;,
+  &quot;license_url&quot;: null,
+  &quot;downloaded_at&quot;: null,
+  &quot;modified_by&quot;: &quot;3d-engine-specialist&quot;,
+  &quot;commercial_allowed&quot;: true,
+  &quot;attribution_required&quot;: false,
+  &quot;redistribution_allowed&quot;: false,
+  &quot;tscn_path&quot;: &quot;res://assets/3d/models/brand_wall/brand_wall.tscn&quot;,
+  &quot;source_glb_path&quot;: &quot;assets/3d/models/brand_wall/raw/brand_wall_v1.0.glb&quot;,
+  &quot;file_size_bytes&quot;: 5242880,
+  &quot;polygon_count&quot;: 4200,
+  &quot;texture_resolution&quot;: &quot;2048x2048&quot;,
+  &quot;dimension&quot;: { &quot;width&quot;: 4.0, &quot;depth&quot;: 0.2, &quot;height&quot;: 2.5 },
+  &quot;footprint_2d&quot;: { &quot;width&quot;: 4.0, &quot;depth&quot;: 0.2 },
+  &quot;thumbnail_url&quot;: &quot;res://assets/3d/models/brand_wall/thumb.png&quot;,
+  &quot;used_in_scene&quot;: [&quot;stage1_lobby&quot;],
+  &quot;notes&quot;: &quot;회사 로고 텍스처 포함. 자체 제작.&quot;
+}</code></pre>
+<hr>
+<h2 id="7-dimension-일치-검증-규칙">7. dimension 일치 검증 규칙</h2>
+<p>임포트 시 Godot이 측정한 <strong>AABB</strong>(축정렬 바운딩 박스) 크기와 asset 테이블 <code>dimension</code>이 <strong>±1cm 이내</strong>여야 한다.</p>
+<div class="mermaid">flowchart LR
+    A[&quot;Blender .glb 내보내기&quot;] --&gt; B[&quot;Godot 임포트&quot;]
+    B --&gt; C[&quot;AABB 자동 측정
+    MeshInstance3D.get_aabb().size&quot;]
+    C --&gt; D{&quot;dimension 레코드와 비교
+    |AABB - dimension| ≤ 0.01m&quot;}
+    D -- &quot;불일치&quot; --&gt; E[&quot;등록 거부
+    (CI 스크립트 오류)&quot;]
+    D -- &quot;일치&quot; --&gt; F[&quot;asset 테이블 INSERT/UPDATE&quot;]
+    F --&gt; G[&quot;layout.furniture.dimension
+    불일치 시 서버가 이 값으로 덮어씀&quot;]</div>
+<hr>
+<h2 id="8-변경-이력">8. 변경 이력</h2>
+<div class="table-wrap"><table><thead><tr><th>버전</th><th>일자</th><th>변경 내용</th></tr></thead><tbody><tr><td>1.0</td><td>2026-07-02</td><td>P0-T0.5 초안 — 07 §5.3 정본 기준, D8 파이프라인 명시, CC-SA 배제, 명명 규칙</td></tr></tbody></table></div>
+<div class="meta-foot">원본: <code>asset-registry.md</code> · 자동 생성 2026-07-02 · md-to-html</div>
+</main>
+</div>
+
+<script type="module">
+try{
+  const m = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  m.default.initialize({startOnLoad:true, theme: dark?'dark':'default', securityLevel:'loose'});
+}catch(e){
+  document.querySelectorAll('.mermaid').forEach(el=>{
+    const pre=document.createElement('pre');pre.className='code';
+    pre.textContent=el.textContent;el.replaceWith(pre);
+  });
+}
+</script>
+</body></html>

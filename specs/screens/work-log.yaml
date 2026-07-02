@@ -1,0 +1,211 @@
+version: "2.0"
+
+screen:
+  name: 업무기록 (Work Log)
+  route: /work-log
+  platform: web
+  layout: sidebar-main
+  description: 일별 업무 기록, 결과물 첨부, 일일 상태 보고 및 ERP 동기화
+
+data_requirements:
+  - resource: work_log
+    needs:
+      - id
+      - user_id
+      - work_date
+      - category
+      - title
+      - goal
+      - related_project
+      - url
+      - est_minutes
+      - actual_minutes
+      - status
+      - result_url
+      - result_description
+      - attachments
+      - issues
+      - next_action
+    filters:
+      work_date: "?date"
+      user_id: current_user
+    mutations:
+      - create
+      - update
+      - delete
+    access: read-write
+
+  - resource: erp_user
+    needs:
+      - id
+      - email
+      - name
+    filters:
+      id: current_user
+    access: read-only
+
+  - resource: daily_status_push
+    needs:
+      - id
+      - user_id
+      - push_date
+      - target
+      - payload
+      - status
+      - pushed_at
+    filters:
+      user_id: current_user
+      push_date: "?date"
+    mutations:
+      - create
+    access: read-write
+
+components:
+  - id: date-tabs
+    type: toolbar
+    position: top
+    function: 날짜 범위 선택 탭 (오늘/이번주/지난주/월간/연간리뷰)
+    data_source: null
+
+  - id: work-summary-card
+    type: panel
+    position: main
+    function: 선택 기간의 업무 요약 (예상/실제 시간, 회의시간, 완료도)
+    data_source:
+      resource: work_log
+      aggregate: [est_minutes, actual_minutes, status_count, category_distribution]
+
+  - id: work-list
+    type: table
+    position: main
+    function: 업무 목록 표시 (카테고리, 제목, 상태, 예상/실제시간, 결과물여부)
+    data_source:
+      resource: work_log
+
+  - id: work-log-card
+    type: panel
+    position: main
+    function: 각 업무 항목 요약 카드 (접을 수 있음)
+    data_source:
+      resource: work_log
+
+  - id: work-form-modal
+    type: modal
+    position: overlay
+    function: 업무 생성/수정 폼 (제목, 카테고리, 시간, 목표, 프로젝트, URL, 결과물, 이슈, 노트)
+    data_source:
+      resource: work_log
+
+  - id: status-badge
+    type: badge
+    position: main
+    function: 업무 상태 표시 (진행중/완료/중단)
+    data_source: null
+
+  - id: progress-bar
+    type: chart
+    position: main
+    function: 업무 완료도 진행도 바 (비율 표시)
+    data_source:
+      resource: work_log
+      aggregate: completion_percentage
+
+  - id: daily-status-form
+    type: form
+    position: main
+    function: 일일 상태 리포트 (오늘할일, 진행중업무, 블로커, 내일계획 4개 텍스트 영역)
+    data_source:
+      resource: daily_status_push
+
+  - id: empty-state
+    type: panel
+    position: main
+    function: 업무 없음 상태 (메시지 + [업무추가] [어제복사] 버튼)
+    data_source: null
+
+  - id: error-state
+    type: panel
+    position: main
+    function: ERP 동기화 실패 상태 (에러메시지 + [재시도] [로그확인] [닫기] 버튼)
+    data_source: null
+
+  - id: report-summary-card
+    type: panel
+    position: main
+    function: 주간/월간 리포트 요약 (총업무, 완료율, 시간기록, 카테고리분포, 상태요약)
+    data_source:
+      resource: work_log
+      aggregate: [total_count, completion_rate, total_hours, category_breakdown]
+
+events:
+  - on: click_add-work-button
+    do: open-work-form-modal (mode=create)
+
+  - on: click_work-item
+    do: open-work-form-modal (mode=edit, work_log_id)
+
+  - on: change_date-tabs
+    do: reload-work-list (filter_by_date_range)
+
+  - on: submit_work-form
+    do: [validate-form, call-api-POST /work-logs or PATCH /work-logs/{id}, reload-list]
+
+  - on: click_status-badge
+    do: update-work_log.status (toggle between started|completed|aborted)
+
+  - on: click_complete-button
+    do: [update-status to completed, reload-list]
+
+  - on: click_delete-button
+    do: [confirm-delete, call-api-DELETE /work-logs/{id}, reload-list]
+
+  - on: submit_daily-status-form
+    do: [call-api-POST /daily-status-push, show-success-message]
+
+  - on: click_erp-sync-confirm
+    do: [reload-daily-status-push, show-sync-status-modal]
+
+  - on: click_past-date-copy
+    do: [fetch-work-logs from previous date, duplicate-items to current-date]
+
+  - on: eod-batch-job
+    do: [auto-sync daily-status-push to ERP, log-result in daily-status-push]
+
+tests:
+  - name: 정상 케이스 - 업무 생성 후 완료
+    when: 사용자가 [업무 추가] 클릭 → 폼 작성 (제목, 카테고리, 예상시간, 목표, 프로젝트, 외부링크, 결과물 URL 입력) → [저장] 클릭
+    then:
+      - work_log 신규 레코드 생성됨
+      - 업무 목록에 진행중 상태로 표시됨
+      - 일일 요약에 예상시간이 추가됨
+
+  - name: 빈 상태 - 첫 로그인 또는 업무 없는 날
+    when: 새 사용자가 /work-log 접속하거나, 업무가 없는 날짜 선택
+    then:
+      - EmptyState 컴포넌트 표시 (아직 등록된 업무가 없습니다)
+      - [업무 추가하기] [어제 복사하기] 버튼 표시
+      - 일일 요약, 업무 목록 숨김
+
+  - name: 오류 상태 - ERP 동기화 실패
+    when: EOD 배치 시간(근무 종료 후)에 ERP API 호출 실패 (401 Unauthorized 등)
+    then:
+      - ErrorState 컴포넌트 표시 (오류 상태, 원인, 영향 설명)
+      - daily_status_push.status = failed로 기록됨
+      - [관리자에게 알림] [로그 확인] 버튼 제공
+      - 다음 EOD에 자동 재시도됨
+
+  - name: 기간별 리포트 - 주간 통계
+    when: [이번주] 탭 선택 또는 [기간별 리포트] 클릭
+    then:
+      - 총 업무 개수, 완료/진행중/중단 개수 표시
+      - 예상/실제/회의 시간 표시
+      - 카테고리별 분포 차트 표시
+      - 상태 요약 자유텍스트 표시
+
+  - name: 결과물 및 첨부 - 파일 및 URL 추가
+    when: 업무 상세 폼에서 [파일 첨부] 클릭 또는 [URL 입력] 입력 후 [저장]
+    then:
+      - result_url 필드 저장됨
+      - attachments JSON 배열에 파일 메타데이터 저장됨
+      - 업무 목록에 결과물 여부(✓) 표시됨
+      - KPI 계산 시 result_url 존재 여부 반영됨

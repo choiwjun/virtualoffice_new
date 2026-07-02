@@ -1,0 +1,945 @@
+# AsyncAPI 3.0: 3D 클라이언트-서버 실시간 API 계약
+# 참조: 00-decisions.md (D1=WebSocket(WSS), D4=JWT 인증+protocol_version, D13=프레즌스 7종, D22=성능수치 설계100명/검증20명, D24=명시적 회의 입장)
+# 참조: 09-realtime-collaboration.md (메시지 프로토콜, 상태 전이, 재접속 규칙)
+# 참조: 02-trd-architecture.md (WSS 핸드셰이크, 게임서버 아키텍처)
+
+asyncapi: 3.0.0
+info:
+  title: "가상오피스 3D 실시간 서버 API"
+  version: 1.0.0
+  description: |
+    WebSocket(WSS) 기반 아바타 동기화, 회의실 점유, 근접 상호작용 실시간 프로토콜
+
+    **핵심 결정:**
+    - 프로토콜: WebSocket(WSS, TLS 내장) — D1 확정
+    - 인증: FastAPI 발급 JWT(HS256, 자체 시크릿) + protocol_version 협상 — D4 확정
+    - 프레즌스 상태: 7종(offline/online/working/meeting/focus/away/external) — D13 확정
+    - 동시성 설계: 100명(도그푸딩 검증: 20명) — D22 확정
+    - 성능: 서버 tick 20Hz, E2E p95 <500ms, 근접 메뉴 <200ms — D22 확정
+    - 회의실 입장: 명시적 확인 필수(자동 연결 금지) — D24 확정
+
+  contact:
+    name: "가상오피스 팀"
+    email: "admin@spacecl.com"
+  license:
+    name: "사내 전용"
+
+servers:
+  wss:
+    host: "wss://gameserver.internal:443/game"
+    protocol: wss
+    description: |
+      3D 게임서버 WebSocket 엔드포인트
+      - 재택/외근: 사내 VPN 또는 공개 WSS(443)
+      - 사무실 내: 사내 LAN 직접 접속
+      - TLS: 사내 PKI 자체 인증서
+
+channels:
+  /game:
+    address: "/game"
+    description: "Godot 4 헤드리스 서버 웹소켓 채널"
+
+    parameters:
+      jwt:
+        description: |
+          FastAPI 발급 JWT 토큰
+          형식: Authorization 헤더가 아닌 hello 메시지 페이로드에 포함
+        schema:
+          type: string
+
+    messages:
+      # ========== 핸드셰이크 & 인증 (D1/D4) ==========
+      hello:
+        name: "hello"
+        title: "WSS 핸드셰이크 요청"
+        description: |
+          클라이언트가 WSS 연결 후 첫 메시지로 전송
+          서버가 protocol_version을 협상하고 JWT를 검증 (자체 시크릿으로)
+          미지원 버전은 reject 후 소켓 종료
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["hello"]
+              description: "메시지 타입"
+            protocol_version:
+              type: integer
+              minimum: 1
+              maximum: 3
+              description: "클라이언트가 지원하는 프로토콜 버전 (현재 v3)"
+            jwt:
+              type: string
+              description: |
+                FastAPI 로그인(POST /api/auth/login) 후 발급받은 JWT
+                HS256 서명, 자체 시크릿, 8h 만료
+                구성: header.payload.signature
+          required:
+            - type
+            - protocol_version
+            - jwt
+          example:
+            type: "hello"
+            protocol_version: 3
+            jwt: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+      reject:
+        name: "reject"
+        title: "프로토콜 미지원 거부"
+        description: |
+          서버가 클라이언트의 protocol_version을 지원하지 않을 때 응답
+          클라이언트는 이를 받으면 즉시 소켓 종료 후 사용자에게 업데이트 안내
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["reject"]
+            reason:
+              type: string
+              enum: ["protocol_mismatch"]
+              description: "거부 이유"
+            min:
+              type: integer
+              description: "서버가 지원하는 최소 프로토콜 버전"
+            max:
+              type: integer
+              description: "서버가 지원하는 최대 프로토콜 버전"
+            message:
+              type: string
+              description: "사용자 안내 메시지(한국어)"
+          required:
+            - type
+            - reason
+            - min
+            - max
+          example:
+            type: "reject"
+            reason: "protocol_mismatch"
+            min: 2
+            max: 3
+            message: "클라이언트를 최신 버전으로 업데이트하세요"
+
+      # ========== 재접속 & 토큰 갱신 ==========
+      resume:
+        name: "resume"
+        title: "재접속 요청"
+        description: |
+          네트워크 일시 단절 후 재접속 시 전송
+          마지막으로 수신한 server_seq를 기반으로 델타 또는 전체 스냅샷 재수신
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["resume"]
+            last_server_seq:
+              type: integer
+              description: "마지막으로 수신한 서버 시퀀스 번호"
+            jwt:
+              type: string
+              description: "현재 유효한 JWT(갱신되었을 수 있음)"
+          required:
+            - type
+            - last_server_seq
+            - jwt
+          example:
+            type: "resume"
+            last_server_seq: 88012
+            jwt: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+      reauth:
+        name: "reauth"
+        title: "토큰 갱신(인밴드)"
+        description: |
+          JWT 만료 임박(예: 잔여 15분)시 클라이언트가 전송
+          FastAPI refresh 엔드포인트로 신규 JWT 받은 후 WSS상에서 전달
+          서버가 재검증하여 세션 유효기간 갱신
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["reauth"]
+            jwt:
+              type: string
+              description: "FastAPI로부터 갱신받은 새 JWT"
+          required:
+            - type
+            - jwt
+          example:
+            type: "reauth"
+            jwt: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+      # ========== 아바타 이동 ==========
+      move_request:
+        name: "move_request"
+        title: "아바타 이동 요청"
+        description: |
+          클라이언트 → 서버: 사용자가 WASD 키를 눌러 이동을 요청
+          서버는 충돌/경계/권한/상태를 검증 후 수락 또는 거절
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["move_request"]
+            player_id:
+              type: integer
+              description: "사용자 ID (erp_user.id)"
+            target_pos:
+              type: array
+              items:
+                type: number
+              minItems: 3
+              maxItems: 3
+              description: "[x, y, z] Godot 월드 좌표(미터 단위)"
+            floor_id:
+              type: integer
+              description: "목표 층(floor.id)"
+            sequence_num:
+              type: integer
+              description: "클라이언트 로컬 시퀀스 번호(서버 검증 시 이용)"
+          required:
+            - type
+            - player_id
+            - target_pos
+            - floor_id
+            - sequence_num
+          example:
+            type: "move_request"
+            player_id: 42
+            target_pos: [10.5, 0.0, 20.3]
+            floor_id: 1
+            sequence_num: 1234
+
+      player_update:
+        name: "player_update"
+        title: "아바타 위치 브로드캐스트"
+        description: |
+          서버 → 모든 클라이언트: 20Hz 틱(50ms 간격)마다 모든 플레이어 상태 브로드캐스트
+          각 플레이어의 위치, 회전, 애니메이션, 프레즌스 상태 포함
+          클라이언트는 이를 수신하여 화면에 렌더링
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["player_update"]
+            protocol_version:
+              type: integer
+              description: "현재 프로토콜 버전"
+            server_seq:
+              type: integer
+              description: "서버 시퀀스 번호(재접속 시 이용)"
+            updates:
+              type: array
+              items:
+                type: object
+                properties:
+                  player_id:
+                    type: integer
+                  pos:
+                    type: array
+                    items:
+                      type: number
+                    minItems: 3
+                    maxItems: 3
+                    description: "[x, y, z] 현재 위치"
+                  rotation:
+                    type: array
+                    items:
+                      type: number
+                    minItems: 4
+                    maxItems: 4
+                    description: "[qx, qy, qz, qw] 쿼터니언"
+                  animation:
+                    type: string
+                    enum: ["idle", "walk", "run", "sit", "emote"]
+                    description: "현재 애니메이션 상태"
+                  status:
+                    type: string
+                    enum: ["offline", "online", "working", "meeting", "focus", "away", "external"]
+                    description: "프레즌스 상태(D13)"
+                required:
+                  - player_id
+                  - pos
+                  - rotation
+                  - animation
+                  - status
+              description: "모든 플레이어의 상태 스냅샷"
+            timestamp:
+              type: integer
+              format: int64
+              description: "서버 타임스탐프(ms)"
+          required:
+            - type
+            - protocol_version
+            - server_seq
+            - updates
+            - timestamp
+          example:
+            type: "player_update"
+            protocol_version: 3
+            server_seq: 88012
+            updates:
+              - player_id: 42
+                pos: [10.5, 0.1, 20.3]
+                rotation: [0, 0.7071, 0, 0.7071]
+                animation: "walk"
+                status: "online"
+              - player_id: 43
+                pos: [12.0, 0.0, 22.1]
+                rotation: [0, 0, 0, 1]
+                animation: "idle"
+                status: "meeting"
+            timestamp: 1719850000123
+
+      snapshot_request:
+        name: "snapshot_request"
+        title: "스냅샷 요청"
+        description: |
+          클라이언트 → 서버: 재접속 후 전체 상태 스냅샷 요청
+          서버가 현재 모든 플레이어 위치 및 회의실 상태를 반환
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["snapshot_request"]
+            last_server_seq:
+              type: integer
+              description: "마지막 수신 서버 시퀀스"
+          required:
+            - type
+            - last_server_seq
+          example:
+            type: "snapshot_request"
+            last_server_seq: 88012
+
+      snapshot_response:
+        name: "snapshot_response"
+        title: "스냅샷 응답"
+        description: |
+          서버 → 클라이언트: 재접속 후 전체 상태 스냅샷
+          게임서버 크래시 등으로 델타 불가능하면 전체 스냅샷 전송
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["snapshot_response"]
+            server_seq:
+              type: integer
+              description: "현재 서버 시퀀스"
+            players:
+              type: array
+              items:
+                type: object
+                properties:
+                  player_id:
+                    type: integer
+                  pos:
+                    type: array
+                    items:
+                      type: number
+                    minItems: 3
+                    maxItems: 3
+                  rotation:
+                    type: array
+                    items:
+                      type: number
+                    minItems: 4
+                    maxItems: 4
+                  animation:
+                    type: string
+                  status:
+                    type: string
+                  floor_id:
+                    type: integer
+              description: "모든 플레이어 상태"
+            rooms:
+              type: array
+              items:
+                type: object
+                properties:
+                  room_id:
+                    type: integer
+                  occupied_count:
+                    type: integer
+                  current_meeting_id:
+                    type: integer
+                    nullable: true
+              description: "회의실 점유 현황"
+          required:
+            - type
+            - server_seq
+            - players
+            - rooms
+          example:
+            type: "snapshot_response"
+            server_seq: 88012
+            players:
+              - player_id: 42
+                pos: [10.5, 0.1, 20.3]
+                rotation: [0, 0.7071, 0, 0.7071]
+                animation: "walk"
+                status: "online"
+                floor_id: 1
+            rooms:
+              - room_id: 101
+                occupied_count: 2
+                current_meeting_id: 5001
+
+      # ========== 프레즌스 상태 (D13: 7종) ==========
+      presence_update:
+        name: "presence_update"
+        title: "프레즌스 상태 갱신"
+        description: |
+          서버 → 클라이언트: 사용자의 프레즌스 상태가 변경되었을 때 브로드캐스트
+          상태 종류: offline, online, working, meeting, focus, away, external
+          원인: 로그인/로그아웃, 좌석 도착, 회의실 입장, 5분 무입력 자동 away, 수동 상태 변경
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["presence_update"]
+            player_id:
+              type: integer
+            status:
+              type: string
+              enum: ["offline", "online", "working", "meeting", "focus", "away", "external"]
+              description: |
+                - offline: 로그아웃 또는 연결 끊김
+                - online: 3D 클라이언트 로그인(아바타 입장)
+                - working: 지정 좌석/팀 구역 도착
+                - meeting: 회의실 입장(자동)
+                - focus: 집중모드 토글(수동)
+                - away: 5분 무입력 자동(설정 기본값 — D13)
+                - external: 출장/외근(수동 전환 — D13)
+            triggered_by:
+              type: string
+              enum: ["login", "logout", "seat_arrival", "meeting_enter", "meeting_exit", "auto_away", "manual_toggle", "external_toggle"]
+              description: "상태 변경 원인"
+            timestamp:
+              type: integer
+              format: int64
+          required:
+            - type
+            - player_id
+            - status
+            - triggered_by
+            - timestamp
+          example:
+            type: "presence_update"
+            player_id: 42
+            status: "working"
+            triggered_by: "seat_arrival"
+            timestamp: 1719850000123
+
+      # ========== 회의실 관리 (D24: 명시적 입장) ==========
+      meeting_room_enter:
+        name: "meeting_room_enter"
+        title: "회의실 입장 요청"
+        description: |
+          클라이언트 → 서버: 사용자가 [입장하기] 버튼 명시적 클릭 후 전송
+          자동 연결 금지 원칙(D24) — 회의실 바운드 진입만으로는 입장 안함
+          서버가 정원, 권한, 회의 상태를 검증 후 LiveKit 토큰 발급
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["meeting_room_enter"]
+            player_id:
+              type: integer
+            room_id:
+              type: integer
+              description: "room.id"
+            meeting_id:
+              type: integer
+              description: "meeting.id (회의 시작 전이면 null 가능)"
+              nullable: true
+          required:
+            - type
+            - player_id
+            - room_id
+          example:
+            type: "meeting_room_enter"
+            player_id: 42
+            room_id: 101
+            meeting_id: 5001
+
+      meeting_room_leave:
+        name: "meeting_room_leave"
+        title: "회의실 퇴장 요청"
+        description: |
+          클라이언트 → 서버: 사용자가 회의실 [나가기] 클릭 또는 물리적 퇴실
+          서버가 presence.status를 이전 상태(working 등)로 복구
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["meeting_room_leave"]
+            player_id:
+              type: integer
+            room_id:
+              type: integer
+            meeting_id:
+              type: integer
+              nullable: true
+          required:
+            - type
+            - player_id
+            - room_id
+          example:
+            type: "meeting_room_leave"
+            player_id: 42
+            room_id: 101
+            meeting_id: 5001
+
+      # ========== 자율 좌석 점유 ==========
+      seat_occupy:
+        name: "seat_occupy"
+        title: "좌석 점유 요청"
+        description: |
+          클라이언트 → 서버: 사용자가 임시/자율 좌석을 점유하려고 시도
+          서버가 배타성을 검증(다른 사용자가 이미 점유했나)
+          성공하면 자동으로 working 상태로 전환
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["seat_occupy"]
+            player_id:
+              type: integer
+            seat_id:
+              type: integer
+              description: "seat.id (자율좌석)"
+          required:
+            - type
+            - player_id
+            - seat_id
+          example:
+            type: "seat_occupy"
+            player_id: 42
+            seat_id: 2001
+
+      seat_release:
+        name: "seat_release"
+        title: "좌석 해제 요청"
+        description: |
+          클라이언트 → 서버: 사용자가 임시/자율 좌석을 해제
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["seat_release"]
+            player_id:
+              type: integer
+            seat_id:
+              type: integer
+          required:
+            - type
+            - player_id
+            - seat_id
+          example:
+            type: "seat_release"
+            player_id: 42
+            seat_id: 2001
+
+      # ========== 근접 상호작용 ==========
+      proximity_event:
+        name: "proximity_event"
+        title: "근접 상호작용 이벤트"
+        description: |
+          서버 → 클라이언트: 두 사용자가 가까워졌거나 멀어졌을 때 브로드캐스트
+          8항목 검증(거리, 벽, LOS, 상태, 권한, 스팸 방지 등) 통과 시 메뉴 활성화
+          E2E p95 <200ms 목표(D22)
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["proximity_event"]
+            player_id:
+              type: integer
+              description: "이벤트 대상 플레이어"
+            nearby_player_id:
+              type: integer
+              description: "근처 플레이어"
+            event:
+              type: string
+              enum: ["proximity_in_range", "proximity_out_of_range", "line_of_sight_lost"]
+              description: |
+                - proximity_in_range: 5m 이내, 벽 없음, 상호작용 메뉴 활성화
+                - proximity_out_of_range: 5m 초과
+                - line_of_sight_lost: 벽/유리벽 발생
+            distance:
+              type: number
+              description: "거리(미터)"
+            menu_items:
+              type: array
+              items:
+                type: string
+                enum: ["chat", "voice_call", "public_voice", "profile", "memo"]
+              description: "활성화된 상호작용 메뉴 항목"
+          required:
+            - type
+            - player_id
+            - event
+          example:
+            type: "proximity_event"
+            player_id: 42
+            nearby_player_id: 43
+            event: "proximity_in_range"
+            distance: 3.5
+            menu_items: ["chat", "voice_call", "public_voice", "profile"]
+
+      # ========== 채팅 & 음성 ==========
+      chat_message:
+        name: "chat_message"
+        title: "텍스트 채팅 메시지"
+        description: |
+          클라이언트 ↔ 서버 ↔ 클라이언트: 근접 사용자 간 텍스트 채팅
+          히스토리 저장 안함(KPI 미반영)
+          양방향 양방향
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["chat_message"]
+            from_player_id:
+              type: integer
+            to_player_id:
+              type: integer
+            message:
+              type: string
+              maxLength: 1024
+            timestamp:
+              type: integer
+              format: int64
+          required:
+            - type
+            - from_player_id
+            - to_player_id
+            - message
+            - timestamp
+          example:
+            type: "chat_message"
+            from_player_id: 42
+            to_player_id: 43
+            message: "회의실에서 만날까?"
+            timestamp: 1719850000123
+
+      # ========== 레이아웃 배포 ==========
+      layout_reload:
+        name: "layout_reload"
+        title: "레이아웃 배포 알림"
+        description: |
+          서버 → 모든 클라이언트: 관리자가 office_layout을 배포했을 때 브로드캐스트
+          클라이언트가 수신하면 FastAPI에서 신규 layout JSON을 다시로드
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["layout_reload"]
+            office_id:
+              type: integer
+            version:
+              type: integer
+              description: "layout 버전 번호(증분)"
+            timestamp:
+              type: integer
+              format: int64
+          required:
+            - type
+            - office_id
+            - version
+            - timestamp
+          example:
+            type: "layout_reload"
+            office_id: 1
+            version: 3
+            timestamp: 1719850000123
+
+      # ========== 헬스체크 & 핑-퐁 ==========
+      heartbeat:
+        name: "heartbeat"
+        title: "하트비트/핑"
+        description: |
+          클라이언트 → 서버: 주기적(예: 30초)으로 전송하여 연결 유지
+          서버가 pong으로 응답
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["heartbeat"]
+            client_seq:
+              type: integer
+              description: "클라이언트 시퀀스(pong에서 에코백)"
+          required:
+            - type
+            - client_seq
+          example:
+            type: "heartbeat"
+            client_seq: 9999
+
+      pong:
+        name: "pong"
+        title: "핑 응답"
+        description: |
+          서버 → 클라이언트: heartbeat에 대한 응답
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["pong"]
+            client_seq:
+              type: integer
+              description: "클라이언트 시퀀스(에코백)"
+          required:
+            - type
+            - client_seq
+          example:
+            type: "pong"
+            client_seq: 9999
+
+      # ========== 에러 응답 ==========
+      error:
+        name: "error"
+        title: "에러 응답"
+        description: |
+          서버 → 클라이언트: 요청 처리 중 오류 발생
+          에러 코드 체계 참조(아래 components.schemas.ErrorCode)
+        contentType: application/json
+        payload:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: ["error"]
+            error_code:
+              type: string
+              enum:
+                - "INVALID_MOVE"
+                - "SEAT_OCCUPIED"
+                - "ROOM_FULL"
+                - "PERMISSION_DENIED"
+                - "MEETING_NOT_FOUND"
+                - "INVALID_PROTOCOL_VERSION"
+                - "AUTH_FAILED"
+                - "TOKEN_EXPIRED"
+                - "TIMEOUT"
+                - "INTERNAL_ERROR"
+              description: "에러 코드"
+            message:
+              type: string
+              description: "에러 메시지(한국어)"
+            details:
+              type: object
+              nullable: true
+              description: "추가 세부정보"
+          required:
+            - type
+            - error_code
+            - message
+          example:
+            type: "error"
+            error_code: "SEAT_OCCUPIED"
+            message: "이미 다른 사용자가 점유한 좌석입니다"
+            details:
+              occupied_by_player_id: 43
+              until: 1719850060000
+
+components:
+  schemas:
+    ErrorCode:
+      type: string
+      enum:
+        - "INVALID_MOVE"
+        - "SEAT_OCCUPIED"
+        - "ROOM_FULL"
+        - "PERMISSION_DENIED"
+        - "MEETING_NOT_FOUND"
+        - "INVALID_PROTOCOL_VERSION"
+        - "AUTH_FAILED"
+        - "TOKEN_EXPIRED"
+        - "TIMEOUT"
+        - "INTERNAL_ERROR"
+      description: |
+        **에러 코드 체계**:
+        - `INVALID_MOVE`: 이동이 충돌/경계/권한 검증에 실패
+        - `SEAT_OCCUPIED`: 좌석 점유 배타성 위반(다른 사용자가 이미 점유)
+        - `ROOM_FULL`: 회의실 정원 초과
+        - `PERMISSION_DENIED`: 권한 부족(비공개 구역 접근 등)
+        - `MEETING_NOT_FOUND`: 회의를 찾을 수 없음
+        - `INVALID_PROTOCOL_VERSION`: 지원되지 않는 protocol_version(D4)
+        - `AUTH_FAILED`: JWT 검증 실패 또는 서명 오류
+        - `TOKEN_EXPIRED`: JWT 만료(재인증 필요)
+        - `TIMEOUT`: 요청 처리 시간 초과
+        - `INTERNAL_ERROR`: 서버 내부 오류
+
+    PresenceStatus:
+      type: string
+      enum:
+        - "offline"
+        - "online"
+        - "working"
+        - "meeting"
+        - "focus"
+        - "away"
+        - "external"
+      description: |
+        **프레즌스 상태(D13: 7종)**
+        - offline: 로그아웃/연결 끊김
+        - online: 3D 로그인
+        - working: 지정 좌석/팀 구역 도착
+        - meeting: 회의실 입장
+        - focus: 집중모드(수동)
+        - away: 5분 무입력 자동(설정 기본값)
+        - external: 출장/외근(수동)
+
+---
+
+## REST Fallback 엔드포인트
+
+WebSocket 폴링용 REST API 정의(선택적, 네트워크 제약 환경용).
+
+### GET /api/presence
+현재 모든 플레이어의 위치 및 상태 조회
+
+**Response**:
+```json
+{
+  "server_seq": 88012,
+  "players": [
+    {
+      "player_id": 42,
+      "pos": [10.5, 0.1, 20.3],
+      "rotation": [0, 0.7071, 0, 0.7071],
+      "animation": "walk",
+      "status": "online",
+      "floor_id": 1
+    }
+  ],
+  "timestamp": 1719850000123
+}
+```
+
+### POST /api/presence/move
+아바타 이동 요청(REST 대체)
+
+**Request**:
+```json
+{
+  "player_id": 42,
+  "target_pos": [10.5, 0.0, 20.3],
+  "floor_id": 1,
+  "sequence_num": 1234
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "player_id": 42,
+  "actual_pos": [10.5, 0.1, 20.3],
+  "server_seq": 88013
+}
+```
+
+### GET /api/meetings/{room_id}
+회의실 현황 조회
+
+**Response**:
+```json
+{
+  "room_id": 101,
+  "capacity": 10,
+  "occupied_count": 2,
+  "current_meeting_id": 5001,
+  "current_occupants": [42, 43],
+  "timestamp": 1719850000123
+}
+```
+
+### POST /api/meetings/{room_id}/enter
+회의실 입장 요청(REST 대체, 명시적 확인)
+
+**Request**:
+```json
+{
+  "player_id": 42,
+  "meeting_id": 5001
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "room_id": 101,
+  "livekit_room_url": "wss://livekit.internal/room/meeting_5001",
+  "livekit_token": "...",
+  "timestamp": 1719850000123
+}
+```
+
+---
+
+## 동시성 제약 명시 (D22)
+
+| 항목 | 설계 | 도그푸딩 검증 | 비고 |
+|------|------|---------|------|
+| **동시 접속자** | 100명 | 20명 | 500명 표기 폐기 |
+| **좌석 배타성** | 1 seat ↔ 1 player 최대 1명 | 자율좌석 5개 × 20명 테스트 | 동시 점유 거절 |
+| **회의실 정원** | 게임서버 메모리 권위 | 1 room × 10명 | capacity 초과 시 입장 거절 |
+| **서버 tick** | 20Hz (50ms) | 동일 | E2E p95 <500ms 측정 근거 |
+| **근접 메뉴 지연** | <200ms | p95 기준 | Raycast(LOS) 계산 <5ms 포함 |
+
+---
+
+## 성능 수치 및 검증 (D22)
+
+| 메트릭 | 목표 | 측정 방법 | 비고 |
+|--------|------|---------|------|
+| **아바타 동기화 E2E** | p95 < 500ms | 입력→원격 화면 표시 지연 | WSS + 20Hz tick |
+| **근접 메뉴 활성화** | <200ms | 거리 진입→메뉴 표시 | 8항목 검증 포함 |
+| **서버 CPU/메모리** | 20명 안정 | Spike S3: GDScript 헤드리스 20명 부하 | PhysicsServer3D 포함 |
+| **네트워크 지연** | <50ms | 사내망 가정 | VPN 재택자는 추가 지연 |
+
+---
+
+## 변경 이력
+
+| 버전 | 일자 | 변경 내용 |
+|------|------|-----------|
+| 1.0 | 2026-07-02 | 최초 작성 — AsyncAPI 3.0 형식, 메시지 타입 16개(핸드셰이크 3+아바타 4+프레즌스 1+회의 2+좌석 2+근접 1+채팅 1+레이아웃 1+헬스 2+에러 1), 에러 코드 10개, REST fallback 4개 엔드포인트, 동시성 제약 4항목, 성능 수치 4개 |

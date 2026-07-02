@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01-prd.md: 제품 요구사항(PRD)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">01-prd.md: 제품 요구사항(PRD)</div><div class="sub">01-prd.md</div><a class="lvl1" href="#01-prdmd-제품-요구사항prd">01-prd.md: 제품 요구사항(PRD)</a><a class="lvl2" href="#1-표면-요청-재정의된-문제-정의">1. 표면 요청 → 재정의된 문제 정의</a><a class="lvl3" href="#사용자-초기-요청">사용자 초기 요청</a><a class="lvl3" href="#재정의된-한-줄-정의">재정의된 한 줄 정의</a><a class="lvl2" href="#2-제품-정의-핵심-원칙">2. 제품 정의 &amp; 핵심 원칙</a><a class="lvl3" href="#핵심-통찰-예쁜-3d가-아니라-운영-허브">핵심 통찰: &quot;예쁜 3D&quot;가 아니라 &quot;운영 허브&quot;</a><a class="lvl3" href="#장점우리만-할-수-있는-것">장점(우리만 할 수 있는 것)</a><a class="lvl2" href="#3-범위-정의표-mustshouldcouldwont">3. 범위 정의표 (Must/Should/Could/Won't)</a><a class="lvl2" href="#4-사용자-페르소나-jtbd-job-to-be-done">4. 사용자 페르소나 &amp; JTBD (Job To Be Done)</a><a class="lvl3" href="#페르소나-1-일반-직원-individual-contributor">페르소나 1: 일반 직원 (Individual Contributor)</a><a class="lvl3" href="#페르소나-2-팀리더-team-lead">페르소나 2: 팀리더 (Team Lead)</a><a class="lvl3" href="#페르소나-3-관리자-managerhr">페르소나 3: 관리자 (Manager/HR)</a><a class="lvl2" href="#5-경쟁-포지셔닝">5. 경쟁 포지셔닝</a><a class="lvl3" href="#기존-대안들과의-비교">기존 대안들과의 비교</a><a class="lvl3" href="#우리의-차별점-1줄">우리의 차별점 (1줄)</a><a class="lvl2" href="#6-kpi-평가-원칙">6. KPI &amp; 평가 원칙</a><a class="lvl3" href="#핵심-결과물-중심-평가-과정-반감시-제거">핵심: 결과물 중심 평가 (과정 반감시 제거)</a><a class="lvl3" href="#ai-평가-프로세스">AI 평가 프로세스</a><a class="lvl2" href="#7-성공-기준-수용-조건">7. 성공 기준 &amp; 수용 조건</a><a class="lvl3" href="#기술적-성공-기준">기술적 성공 기준</a><a class="lvl3" href="#사용성-성공-기준">사용성 성공 기준</a><a class="lvl3" href="#품질-수용-기준-측정-방법-병기-d22">품질 수용 기준 (측정 방법 병기, D22)</a><a class="lvl3" href="#운영-수용-기준">운영 수용 기준</a><a class="lvl2" href="#8-개발-로드맵-개요-phase-0-7단계-세부-구현은-10-roadmapmd-12-tasksmd">8. 개발 로드맵 개요 (Phase 0 + 7단계 → 세부 구현은 10-roadmap.md / 12-tasks.md)</a><a class="lvl2" href="#loop-metadata">Loop Metadata</a><a class="lvl3" href="#upstream-documents-referenced">Upstream documents referenced</a><a class="lvl3" href="#downstream-documents-affected">Downstream documents affected</a><a class="lvl3" href="#확정-기존-open-question-종결">확정 (기존 Open question 종결)</a><a class="lvl3" href="#open-questions">Open questions</a><a class="lvl3" href="#assumptions">Assumptions</a><a class="lvl3" href="#validation-criteria">Validation criteria</a><a class="lvl3" href="#risks">Risks</a></nav>
+<main><h1 id="01-prdmd-제품-요구사항prd">01-prd.md: 제품 요구사항(PRD)</h1>
+<p><strong>프로젝트</strong>: vituraloffice_new (가상오피스 운영 플랫폼) <strong>버전</strong>: v3.3 <strong>작성일</strong>: 2026-07-02 <strong>상태</strong>: 확정(사용자 인터뷰 기반 + 00-decisions.md 정합) <strong>정본 기준</strong>: <code>00-decisions.md</code> (D1~D25, F절) — 충돌 시 정본이 우선</p>
+<blockquote><strong>변경 요약 (v3.3, 2026-07-02)</strong>: 회의록 STT 자동 초안을 정식 MUST 범위로 명시(D5), 성공/품질 수용 기준에 측정 방법 병기(수동 전사 대조, p95, 측정 구간, 기준 하드웨어 GTX 1650급, D22), 범위표의 P0~P3 컬럼을 단계(#1~#7)로 변경(MoSCoW와 표기 충돌 해소), 일정 개요에 58주·완성 2027년 하반기 명시(D6), 확정된 Open question 정리, 리스크 3건(Godot-LiveKit 통합·STT 정확도·개인정보/노동법) 추가(D20/F).</blockquote>
+<hr>
+<h2 id="1-표면-요청-재정의된-문제-정의">1. 표면 요청 → 재정의된 문제 정의</h2>
+<h3 id="사용자-초기-요청">사용자 초기 요청</h3>
+<p>&quot;3D 가상오피스로 원격 협업을 하면서 회의·업무를 기록하고, 그걸 분기 인사평가에 반영하는 시스템을 만들고 싶어요.&quot;</p>
+<h3 id="재정의된-한-줄-정의">재정의된 한 줄 정의</h3>
+<p><strong>기존 DailyLog ERP 위에 얹는 3D 프레즌스 + 협업 계층</strong></p>
+<p>즉, 우리는:</p>
+<ul><li>HR/근태/리포트/역량평가 시스템을 재구축하지 않는다</li><li>기존 사내 ERP(Space-Daily)를 Source of Truth로 유지한다 (조직·직원·근태·휴가·일일리포트)</li><li>3D 가상오피스(아바타·좌석·회의실) + 실시간 프레즌스 + LiveKit 화상회의 + 회의록/협업 기록을 위에 추가한다</li><li>그 협업 산출물(회의록·액션아이템·업무결과)을 배치(daily_reports 18:00) 및 관리자 확정 KPI push로 ERP에 전달해서, ERP가 분기별 인사평가 자료로 활용하게 한다 (회의 시간 등 시간 신호는 반감시·이중반영 방지로 KPI 미반영, D14)</li></ul>
+<hr>
+<h2 id="2-제품-정의-핵심-원칙">2. 제품 정의 &amp; 핵심 원칙</h2>
+<h3 id="핵심-통찰-예쁜-3d가-아니라-운영-허브">핵심 통찰: &quot;예쁜 3D&quot;가 아니라 &quot;운영 허브&quot;</h3>
+<p>오피스 경험은 미학이 아니라 <strong>업무·회의·KPI가 자연스럽게 쌓이는 구조</strong>가 핵심이다.</p>
+<pre class="code"><code>조직도(ERP) 
+  ↓ [읽기 동기화]
+우리 org_group (상위 그룹: 본부/부서) + 팀(ERP teams)
+  ↓ [직원배정]
+좌석 배치 (seat 배정, office_layout JSON 구동)
+  ↓ [3D 시각화]
+Godot 4 네이티브 3D 클라이언트 (아바타 · 좌석 · 회의실 · 상태)
+  ↓ [아바타 출근/상태 변화]
+실시간 Presence (Godot 헤드리스 서버 권위)
+  ↓ [회의/협업]
+회의 시작 → LiveKit 화상 → 회의록 + 액션아이템 생성
+  ↓ [업무 기록]
+work_log (결과물·완료도) + daily_status
+  ↓ [KPI 산출]
+협업 산출물 기반 KPI_result (AI 초안 → 관리자 검토 → 조정)
+  ↓ [EOD Push]
+ERP daily_reports + (신규) kpi_results 테이블로 전송
+  ↓ [기말 평가]
+ERP가 분기별 인사평가 자료 수집</code></pre>
+<h3 id="장점우리만-할-수-있는-것">장점(우리만 할 수 있는 것)</h3>
+<ol><li><strong>ERP 완전 통합</strong>: 직원·조직·근태·휴가는 항상 fresh (read-only DB 직접 접근)</li><li><strong>공간 기반 협업 추적</strong>: 근접·회의실 점유·화상 참여를 자동으로 기록</li><li><strong>결과물 중심 평가</strong>: 접속시간이 아니라 회의록·액션·완료도로 평가 (반감시 제거)</li><li><strong>운영 가시성</strong>: 관리자가 3D맵에서 실시간으로 팀 상태·회의 현황 파악</li><li><strong>사무실 구조 코드화</strong>: office_layout JSON으로 구동하므로 좌석·구역·회의실을 앱 빌드 없이 배포/롤백 가능</li></ol>
+<hr>
+<h2 id="3-범위-정의표-mustshouldcouldwont">3. 범위 정의표 (Must/Should/Could/Won't)</h2>
+<blockquote><strong>표기 주의(D 정합)</strong>: 아래 &quot;단계&quot; 컬럼은 12-tasks.md의 Phase(#1~#7)를 가리키며, MoSCoW(MUST/SHOULD/…) 우선순위와는 별개 축이다. (이전 P0~P3 표기는 &quot;MUST인데 P3&quot; 같은 의미 충돌이 있어 단계 접두어로 교체.)</blockquote>
+<div class="table-wrap"><table><thead><tr><th>카테고리</th><th>항목</th><th>단계</th><th>근거</th></tr></thead><tbody><tr><td><strong>MUST</strong></td><td>3D 클라이언트 (Godot 4 Forward+)</td><td>#1</td><td>스펙 #1: 품질 기준 샘플</td></tr><tr><td><strong>MUST</strong></td><td>ERP 동기화 (직원·조직·근태)</td><td>#2</td><td>스펙 #2: 기초 데이터</td></tr><tr><td><strong>MUST</strong></td><td>좌석/office_layout 편집기</td><td>#3</td><td>스펙 #3: 운영 가편성</td></tr><tr><td><strong>MUST</strong></td><td>실시간 서버 (Godot 헤드리스)</td><td>#4</td><td>스펙 #4: 아바타·프레즌스</td></tr><tr><td><strong>MUST</strong></td><td>회의/화상회의 (LiveKit)</td><td>#5</td><td>스펙 #5: 협업 기록</td></tr><tr><td><strong>MUST</strong></td><td><strong>회의록 STT 자동 초안</strong> (LiveKit Egress→STT→화자분리→검토·확정)</td><td>#5</td><td>스펙 #5: 회의록 자동화 (D5 확정)</td></tr><tr><td><strong>MUST</strong></td><td>KPI 산출 + AI 서술 초안 + 관리자 검토·이의신청</td><td>#6</td><td>스펙 #6: ERP 연동 결과</td></tr><tr><td><strong>MUST</strong></td><td>배치 (daily_reports 18:00 / KPI 확정 시 ERP push)</td><td>#6</td><td>스펙 #7: 폐쇄 루프 (D17)</td></tr><tr><td><strong>SHOULD</strong></td><td>층 추가·구역별 권한</td><td>#7</td><td>고도화 (스펙 #7)</td></tr><tr><td><strong>SHOULD</strong></td><td>회의록 AI 요약</td><td>#7</td><td>고도화 부가가치 (STT 초안과 별개)</td></tr><tr><td><strong>SHOULD</strong></td><td>조직도 실시간 에디터</td><td>#7</td><td>고도화 운영편의</td></tr><tr><td><strong>COULD</strong></td><td>모바일 알림 (사내 웹 추가)</td><td>추후</td><td>고도화 #7의 일부</td></tr><tr><td><strong>COULD</strong></td><td>자동 일일보고 생성 (기술적 도전)</td><td>추후</td><td>스펙 범위 검토 중</td></tr><tr><td><strong>WON'T</strong></td><td>B2B SaaS 멀티테넌트 전환</td><td>완성 이후</td><td>첫 사용=사내 도그푸딩</td></tr><tr><td><strong>WON'T</strong></td><td>결제/라이선싱</td><td>완성 이후</td><td>GTM은 완성 후</td></tr><tr><td><strong>WON'T</strong></td><td>대규모 조직 확장 (성능 최적화)</td><td>완성 이후</td><td>현재 스코프 = 단일 조직</td></tr><tr><td><strong>WON'T</strong></td><td>HR 재구축 (급여·휴가·근태 시스템)</td><td>삭제됨</td><td>ERP가 Source of Truth</td></tr><tr><td><strong>WON'T</strong></td><td>자체 리포트/역량평가 시스템</td><td>삭제됨</td><td>ERP developer_evaluations와 역할 분담</td></tr><tr><td><strong>WON'T</strong></td><td>웹 3D WASM export (품질 한계)</td><td>배제됨</td><td>최고품질 = Godot Forward+ 필수 → 데스크톱 설치형만</td></tr></tbody></table></div>
+<hr>
+<h2 id="4-사용자-페르소나-jtbd-job-to-be-done">4. 사용자 페르소나 &amp; JTBD (Job To Be Done)</h2>
+<h3 id="페르소나-1-일반-직원-individual-contributor">페르소나 1: 일반 직원 (Individual Contributor)</h3>
+<p><strong>특성</strong>: 팀 소속, 일일 업무 진행, 회의 참여, 결과물 산출 <strong>JTBD</strong>:</p>
+<ul><li><em>When</em> 오전에 출근할 때</li><li><em>I want</em> 아바타로 사무실에 입장해서 팀과 나란히 앉아 협업하고</li><li><em>So I can</em> 회의·업무를 자연스럽게 진행하고 진행률·결과를 기록해서, 분기 평가 때 내 성과가 공정하게 인정받을 수 있다</li></ul>
+<p><strong>필요 기능</strong>: 아바타 조작, 좌석 배정, 근처 동료 시각화, 회의 참여, work_log 작성</p>
+<h3 id="페르소나-2-팀리더-team-lead">페르소나 2: 팀리더 (Team Lead)</h3>
+<p><strong>특성</strong>: 팀 5-20명 관리, 일일 상태 파악, 회의 주관, 성과 추적 <strong>JTBD</strong>:</p>
+<ul><li><em>When</em> 아침 스탠드업이나 주간 리뷰를 할 때</li><li><em>I want</em> 3D맵에서 우리 팀 구성원들의 출석·업무 상태·진행 중인 회의를 한눈에 보고</li><li><em>So I can</em> 누가 온라인인지, 회의실 예약이 이루어졌는지 파악해서 팀을 효율적으로 리드하고, 문제 상황을 빠르게 감지할 수 있다</li></ul>
+<p><strong>필요 기능</strong>: 팀 시각화, presence 실시간, 회의실 상태, 팀별 KPI 대시보드</p>
+<h3 id="페르소나-3-관리자-managerhr">페르소나 3: 관리자 (Manager/HR)</h3>
+<p><strong>특성</strong>: 조직 전체 관리, 인사평가, KPI 검토, 정책 수립 <strong>JTBD</strong>:</p>
+<ul><li><em>When</em> 분기 인사평가를 준비할 때</li><li><em>I want</em> 직원·팀별로 (1) 협업 참여도(회의·회의록), (2) 업무 완료도(work_log), (3) 액션아이템 이행률을 수집하고, 이를 기반으로 AI가 작성한 평가 초안을 검토해서</li><li><em>So I can</em> 접속시간이 아니라 실제 협업 성과와 결과물을 기준으로 공정한 평가를 내릴 수 있다</li></ul>
+<p><strong>필요 기능</strong>: 조직 전체 KPI 대시보드, 개인별 협업 기록 조회, AI 평가 초안 검토·조정, ERP 연동 (결과 저장)</p>
+<hr>
+<h2 id="5-경쟁-포지셔닝">5. 경쟁 포지셔닝</h2>
+<h3 id="기존-대안들과의-비교">기존 대안들과의 비교</h3>
+<div class="table-wrap"><table><thead><tr><th>측면</th><th>gather.town</th><th>Microsoft Teams</th><th>기존 ERP (DailyLog)</th><th>우리 (Virtual Office)</th></tr></thead><tbody><tr><td><strong>3D 공간</strong></td><td>경량 카주얼</td><td>없음</td><td>없음</td><td>고품질(Forward+)</td></tr><tr><td><strong>실시간 화상</strong></td><td>제한적</td><td>강력함</td><td>없음</td><td>LiveKit 통합</td></tr><tr><td><strong>ERP 통합</strong></td><td>불가능</td><td>Office365 계정만</td><td>자체 시스템</td><td>DailyLog 100% 통합</td></tr><tr><td><strong>회의록/협업 추적</strong></td><td>미흡</td><td>메시지만</td><td>일일보고만</td><td>회의록+액션+KPI 자동화</td></tr><tr><td><strong>조직 구조</strong></td><td>없음</td><td>팀 기반</td><td>다단계(부서/팀)</td><td>우리 추가(본부/파트)</td></tr><tr><td><strong>좌석 배치</strong></td><td>고정 디자인</td><td>없음</td><td>없음</td><td>office_layout JSON 구동</td></tr><tr><td><strong>KPI 평가 유기성</strong></td><td>없음</td><td>없음</td><td>HR 중심</td><td>협업→ERP→분기평가 폐쇄루프</td></tr></tbody></table></div>
+<h3 id="우리의-차별점-1줄">우리의 차별점 (1줄)</h3>
+<p><strong>기존 ERP의 모든 데이터를 활용하면서 3D 가상오피스로 협업을 자동 추적해, 회의·업무·결과물을 ERP 평가에 유기적으로 연결하는 통합 운영 허브.</strong></p>
+<hr>
+<h2 id="6-kpi-평가-원칙">6. KPI &amp; 평가 원칙</h2>
+<h3 id="핵심-결과물-중심-평가-과정-반감시-제거">핵심: 결과물 중심 평가 (과정 반감시 제거)</h3>
+<p><strong>반영되지 않는 신호</strong> (반감시 방지):</p>
+<ul><li>접속 시간 (몇 시간 했는가)</li><li>채팅/메시지 빈도 (얼마나 말했는가)</li><li>근접 상호작용 빈도 (몇 번 만났는가)</li><li>화상요청 수신/거절 (얼마나 응했는가)</li></ul>
+<p><strong>반영되는 협업 신호</strong> (결과물 중심):</p>
+<ol><li><strong>업무 결과물</strong> (work_log)<ul><li>완료도: started/completed</li><li>품질: result_url, issues 기록</li><li>충실도: goal·category·next_action 작성 정도</li></ul></li><li><strong>회의 기여도</strong> (meeting<em>minute + action</em>item)<ul><li>회의 참여 횟수 × 회의록 충실도</li><li>자신이 담당한 액션아이템 이행률</li><li>회의에서 나온 결정사항 영향도</li></ul></li><li><strong>업무 기록 충실도</strong> (daily_reports)<ul><li>today<em>work·tomorrow</em>plan 작성 완성도</li><li>blockers 해결을 위한 주도성</li></ul></li><li><strong>보조</strong>: 근태·출퇴근 (기초 근무조건) — <strong>KPI 점수에는 직접 반영하지 않음</strong>(ERP가 attendance 별도 반영, 이중 반영 금지, D14)<ul><li>출석률, 휴가 사용 패턴은 ERP 소관 (참고 지표)</li><li><code>external</code>(외근/출장)은 수동 전환. <strong>GPS 수집 기능 삭제</strong>(데스크톱에 GPS 없음, D13/D20)</li></ul></li></ol>
+<h3 id="ai-평가-프로세스">AI 평가 프로세스</h3>
+<ol><li><strong>정량 점수 = 결정론적 코드로 계산</strong> (D14)<ul><li>완료 work_log 건수·충실도, 액션아이템 완료·기한준수 이행률, 회의록 작성 기여 등을 코드가 산출</li><li>시간 비례 점수·회의 참석 기본점·생성 가점·근태 보정은 제거(반감시·이중반영 방지)</li></ul></li><li><strong>AI 초안은 서술만</strong> (Claude — 확정 기본)<ul><li>AI는 강점/개선/근거를 <strong>서술</strong>하며 정량 점수를 산출하지 않음</li><li>외부 AI 전송 시 실명→사번 가명화(D20)</li></ul></li><li><strong>관리자 검토 &amp; 조정</strong><ul><li>AI 서술은 근거 자료, 최종 판단은 관리자. 정성적 맥락(팀 상황, 조직 변화, 개인 발전) 반영</li></ul></li><li><strong>직원 이의신청 (상태머신, D15)</strong><ul><li>평가 공개 → 이의접수(7일) → 재검토 → 확정 → ERP push(final_score)</li><li>기록 기반 재검토 가능</li></ul></li></ol>
+<hr>
+<h2 id="7-성공-기준-수용-조건">7. 성공 기준 &amp; 수용 조건</h2>
+<h3 id="기술적-성공-기준">기술적 성공 기준</h3>
+<ul><li class="task"><input type="checkbox" disabled> 3D 클라이언트가 Godot 4 Forward+ 렌더러로 구현되고, 설정된 품질 기준(로비·회의실·아바타·HUD) 샘플 완성</li><li class="task"><input type="checkbox" disabled> ERP 직원·조직·근태 읽기 동기화 완전 자동화 (<strong>매시간 증분 + 매일 00:00 KST 전체 대사</strong>, D18)</li><li class="task"><input type="checkbox" disabled> office_layout JSON 기반 좌석·회의실 배치가 앱 빌드 없이 배포/롤백 가능</li><li class="task"><input type="checkbox" disabled> 실시간 서버(Godot 헤드리스)에서 <strong>도그푸딩 검증 20명(설계 100명)</strong>의 동시 접속·아바타 이동·프레즌스 동기화 검증 (D22)</li><li class="task"><input type="checkbox" disabled> LiveKit 화상회의 통합 및 <strong>회의록 STT 자동 초안 생성</strong>(Egress→STT→화자분리→검토·확정) 테스트 완료 (D5)</li><li class="task"><input type="checkbox" disabled> 관리자 확정 KPI(final_score)가 ERP로 push되고(관리자 확정 이벤트 + 분기 마감), ERP 분기평가에 반영되는 엔드-투-엔드 검증 (D15/D17)</li></ul>
+<h3 id="사용성-성공-기준">사용성 성공 기준</h3>
+<ul><li class="task"><input type="checkbox" disabled> 사내 직원 20명 이상이 1주일 이상 도그푸딩하고 일일 업무를 기록</li><li class="task"><input type="checkbox" disabled> 팀리더가 3D맵만으로 팀 상태를 이해할 수 있다는 피드백</li><li class="task"><input type="checkbox" disabled> 관리자가 KPI 대시보드에서 평가 자료를 자신감 있게 수집 가능</li></ul>
+<h3 id="품질-수용-기준-측정-방법-병기-d22">품질 수용 기준 (측정 방법 병기, D22)</h3>
+<ul><li class="task"><input type="checkbox" disabled> Godot 클라이언트: <strong>기준 하드웨어 GTX 1650급에서 60fps</strong>(내장그래픽 Iris Xe급 최소 30fps), 로딩 &lt; 5초 — 골든 샘플 씬 기준</li><li class="task"><input type="checkbox" disabled> 아바타 동기화: <strong>E2E(입력→원격 표시) p95 &lt; 500ms</strong>, 서버 tick 20Hz — 측정 구간 명시</li><li class="task"><input type="checkbox" disabled> 화상회의 음성 지연: <strong>&lt; 200ms (사내망 기준)</strong></li><li class="task"><input type="checkbox" disabled> 회의록 STT 자동 초안 정확도: 주요 발화자·액션아이템 <strong>누락률 &lt; 5%</strong> — 측정 방법: <strong>테스트 회의 N회의 수동 전사와 대조</strong></li><li class="task"><input type="checkbox" disabled> 브로드캐스트 팬아웃은 O(N²)로 명시, 설계 100명 초과 시 AOI 필터링 + 바이너리 직렬화 도입 검토</li></ul>
+<h3 id="운영-수용-기준">운영 수용 기준</h3>
+<ul><li class="task"><input type="checkbox" disabled> ERP와의 데이터 동기화 실패 시 자동 알림 및 재시도 로직 (관리자 콘솔 + 알림 채널, D18)</li><li class="task"><input type="checkbox" disabled> 사용자 행동 데이터 (아바타·회의·협업) 감사 로그(audit_log) 남김, 5년 보존 (D20)</li><li class="task"><input type="checkbox" disabled> <strong>GPS 수집 기능 없음</strong>(데스크톱 무관, D13/D20). <code>external</code>(외근/출장)은 수동 전환. presence 좌표(x,y)는 KPI 미사용·30일 후 삭제</li><li class="task"><input type="checkbox" disabled> 분기 인사평가 프로세스가 ERP와의 연동으로 자동화되고, 수동 개입 줄어듦</li></ul>
+<hr>
+<h2 id="8-개발-로드맵-개요-phase-0-7단계-세부-구현은-10-roadmapmd-12-tasksmd">8. 개발 로드맵 개요 (Phase 0 + 7단계 → 세부 구현은 10-roadmap.md / 12-tasks.md)</h2>
+<p><strong>총 기간(D6)</strong>: <strong>58주</strong> — 시작 2026-07-06 → 완성 <strong>2027-08-16 (2027년 하반기)</strong>. 13-risks 검증 간트를 기준선으로 재산정, 15% 버퍼 포함. Phase 5의 회의록 STT 파이프라인(+3주) 반영. (&quot;26주&quot; 표기 폐기)</p>
+<div class="table-wrap"><table><thead><tr><th>단계</th><th>이름</th><th>목표</th><th>주요 결과물</th></tr></thead><tbody><tr><td><strong>#0</strong></td><td>계약 &amp; 스파이크</td><td>계약 확정 + 기술 리스크 검증</td><td>API/데이터/ERP 계약, 스파이크 S1~S4(F절)</td></tr><tr><td><strong>#1</strong></td><td>프리미엄 골든 샘플 3D</td><td>품질 기준 확정</td><td>로비·회의실·아바타·HUD</td></tr><tr><td><strong>#2</strong></td><td>ERP 동기화 + 좌석 연결</td><td>기초 데이터 플로우</td><td>직원·조직 미러, 아바타 시작위치</td></tr><tr><td><strong>#3</strong></td><td>사무실 배치 편집기</td><td>운영 자동화</td><td>office_layout JSON 편집·배포(데스크톱 draft 열람)</td></tr><tr><td><strong>#4</strong></td><td>실시간 가상오피스</td><td>협업 핵심</td><td>아바타 이동·프레즌스(7종)·회의실 (WSS)</td></tr><tr><td><strong>#5</strong></td><td>회의/화상회의 + 회의록 STT</td><td>기록 자동화</td><td>LiveKit·STT 회의록·액션아이템</td></tr><tr><td><strong>#6</strong></td><td>KPI 산출 + AI 서술 초안</td><td>평가 폐쇄루프</td><td>KPI 대시보드·이의신청·ERP 연동 쓰기</td></tr><tr><td><strong>#7</strong></td><td>고도화</td><td>운영 완성도</td><td>층·권한·요약·감사로그·자동업데이트</td></tr></tbody></table></div>
+<hr>
+<h2 id="loop-metadata">Loop Metadata</h2>
+<h3 id="upstream-documents-referenced">Upstream documents referenced</h3>
+<ul><li><strong>00-decisions.md (정본 결정 로그 D1~D25, F절 — 최우선 기준)</strong></li><li>사용자 v3.2 개발기획서 (2026-07-01 인터뷰 기록)</li><li>03-erp-integration.md (ERP 연동 설계)</li></ul>
+<h3 id="downstream-documents-affected">Downstream documents affected</h3>
+<ul><li>06-screens.md (페르소나별 화면 흐름)</li><li>03-erp-integration.md (KPI 연동 스펙 영향)</li><li>10-roadmap.md (7단계 상세) / 12-tasks.md (기능 태스크 분해)</li><li>05-office-layout-schema.md (office_layout JSON 스키마)</li></ul>
+<h3 id="확정-기존-open-question-종결">확정 (기존 Open question 종결)</h3>
+<ul><li><strong>KPI AI 엔진 = Claude 확정(기본)</strong>, Gemini는 필요 시 대안 (낮은 우선순위)</li><li><strong>회의록 저장소 = 우리 DB(meeting<em>minute)</strong> — ERP에는 daily</em>reports 및 확정 KPI(kpi_results)만 전송. 녹음 원본 90일·회의록 텍스트는 평가 데이터로 관리(D20)</li><li><strong>실시간 프로토콜 = WebSocket(WSS)</strong>(D1), <strong>회의실 예약 = 예약 + FCFS 병행</strong>(D23), <strong>회의 입장 = 명시적 확인</strong>(D24)</li></ul>
+<h3 id="open-questions">Open questions</h3>
+<ul><li>아바타 외형: 사내 규칙이 있는지? (현재 가정: 기본 휴머노이드 + 색상 커스터마이즈)</li><li>STT 엔진 선정: 사내 자체 호스팅 vs 외부 API (S2 PoC 결과에 따라 결정, 외부 전송 시 D20 가명화·위탁 고지)</li></ul>
+<h3 id="assumptions">Assumptions</h3>
+<ol><li>첫 배포는 사내 단일 조직(company_id 고정)이므로, 멀티테넌트 설계는 불필요.</li><li>ERP (Space-Daily) DB는 read-only 직접 접근 가능하고, 쓰기는 API 또는 신설 테이블.</li><li>사내 네트워크에서 Godot 데스크톱 설치 → 웹 WASM export는 품질 한계로 배제.</li><li>3D 사무실 구조는 office_layout JSON으로 동적 로드되므로, 매번 클라이언트 빌드할 필요 없음.</li><li>정량 KPI 점수는 결정론적 코드가 산출하고, AI는 서술(강점/개선/근거)만 생성하며, 관리자가 항상 최종 검토(D14).</li><li>직원의 도메인 이메일과 ERP users.id 매핑은 동기화 시 자동 수립.</li></ol>
+<h3 id="validation-criteria">Validation criteria</h3>
+<ul><li class="task"><input type="checkbox" disabled> 페르소나 3종의 JTBD가 모두 구현된 기능으로 충족되는가?</li><li class="task"><input type="checkbox" disabled> KPI 반영 신호들(work<em>log, meeting</em>minute, action_item)이 모두 수집 가능한가?</li><li class="task"><input type="checkbox" disabled> 관리자 확정 KPI(final<em>score) → ERP kpi</em>results → 분기평가 전체 루프가 폐쇄되는가? (D15/D17)</li><li class="task"><input type="checkbox" disabled> Godot 클라이언트 품질(Forward+, 60fps, 동기화 레이턴시)이 기준을 만족하는가?</li></ul>
+<h3 id="risks">Risks</h3>
+<ol><li><strong>ERP 브랜치 전환 지연</strong>: ERP kpi<em>results 테이블 추가가 지연되면, 우리의 KPI push 쓰기가 블로킹됨 → <strong>완화</strong>: 초기 kpi</em>results를 우리 DB에만 쌓고(feature flag OFF), ERP 준비 후 backfill (D17)</li><li><strong>3D 성능 (설계 100명)</strong>: Godot 네트워크 동기화 성능 미검증 → <strong>완화</strong>: Phase 0 스파이크 S3(헤드리스 부하) + Phase 4 부하 테스트, tick 20Hz, 100명 초과 시 AOI 필터링 (D22)</li><li><strong>AI 평가 정확도</strong>: 서술 초안 품질이 예상 수준 미만 → <strong>완화</strong>: 정량은 결정론적 코드로 고정(D14), AI 서술은 사용자 피드백으로 프롬프트 반복 개선</li><li><strong>사용자 피드백 곡선</strong>: 사내 도그푸딩 중 UX 이슈 발견 시 개발 일정 슬립 → <strong>완화</strong>: Phase 4부터 <strong>주 1회 이상 피드백 수집 체계</strong></li><li><strong>Godot ↔ LiveKit 통합</strong> (신규, D20/F): 공식 SDK 부재, WebRTC GDExtension 자체 개발 필요 → <strong>완화</strong>: Phase 0 스파이크 S1 PoC, 실패 시 회의 화면만 임베디드 브라우저/외부 창 폴백</li><li><strong>STT 정확도 / 한국어 화자분리</strong> (신규, D5/F): 회의록 자동 초안 품질·화자분리 정확도 미달 위험 → <strong>완화</strong>: Phase 0 스파이크 S2 PoC, 누락률 &lt;5% 미달 시 수동 회의록 + AI 요약으로 격하(기준 하향 재협의)</li><li><strong>개인정보 / 노동법 컴플라이언스</strong> (신규, D20): 평가 목적 행동 데이터 수집 동의, 회의 녹음·STT 동의, 외부 LLM 전송 → <strong>완화</strong>: D20 컴플라이언스 원칙(고지·동의 절차, 사번 가명화, 보존기한, 최소수집 VIEW) 도입 전 이행</li></ol>
+<hr>
+<p><strong>다음 문서</strong>: <a href="02-trd-architecture.md">02-trd-architecture.md</a> (기술 아키텍처)</p>
+<div class="meta-foot">원본: <code>01-prd.md</code> · 자동 생성 2026-07-02 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

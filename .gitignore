@@ -1,0 +1,74 @@
+# ===== Python (backend / spikes) =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# ===== Node / Next.js (web console) =====
+node_modules/
+.next/
+out/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== Godot =====
+.godot/
+.import/
+export.cfg
+export_presets.cfg
+*.translation
+
+# ===== 3D assets (대용량 바이너리 — LFS 미도입 시 제외) =====
+# 필요 시 아래 주석 해제하여 추적 제외
+# *.blend
+# *.blend1
+# *.fbx
+
+# ===== Secrets / env =====
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+service-account*.json
+credentials*.json
+
+# ===== OS / Editor =====
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ===== Logs / temp =====
+*.log
+tmp/
+temp/
+
+# ===== .claude — 프로젝트 설정만 추적, 전역사본·로컬·런타임 산출물 제외 =====
+.claude/skills/
+.claude/settings.local.json
+.claude/memory/
+.claude/goals/
+.claude/metrics/
+.claude/handoffs/
+.claude/analysis/
+.claude/docs/

@@ -1,0 +1,491 @@
+version: "2.0"
+
+# 공통 열거형 & 타입 정의
+# 전체 플랫폼에서 사용되는 정본 값들
+# 작성일: 2026-07-02
+
+enums:
+  # ============================================================
+  # 1. 사용자 & 조직 타입
+  # ============================================================
+
+  role:
+    description: "사용자 역할. ERP 연동."
+    values:
+      - value: employee
+        description: 일반 직원
+      - value: leader
+        description: 팀/부서 리더
+      - value: admin
+        description: 회사 관리자
+      - value: super_admin
+        description: 시스템 최고 관리자
+    used_in:
+      - erp_user.role
+      - meeting_participant.role (organizer/presenter/participant 별도)
+
+  org_group_type:
+    description: "조직 계층 타입."
+    values:
+      - value: division
+        description: 본부(최상위)
+      - value: department
+        description: 부서
+      - value: part
+        description: 파트/팀
+    used_in:
+      - org_group.type
+
+  job_position_level:
+    description: "직급 서열. ERP 동기화."
+    values:
+      - value: intern
+      - value: junior
+      - value: senior
+      - value: lead
+      - value: manager
+      - value: director
+      - value: vp
+    used_in:
+      - job_position.level
+
+  # ============================================================
+  # 2. 실시간 상태 타입
+  # ============================================================
+
+  presence_status:
+    description: |
+      사용자 실시간 상태. 3D 아바타 상태 + 프레즌스 인디케이터.
+      공식 출퇴근(ERP attendance) 과 분리.
+    values:
+      - value: online
+        icon: 🟢
+        description: 온라인, 자리 없음
+        color: "#10B981"
+      - value: working
+        icon: 🟡
+        description: 자리에 앉아 업무 중
+        color: "#FBBF24"
+      - value: meeting
+        icon: 🔵
+        description: 회의 중
+        color: "#3B82F6"
+      - value: focus
+        icon: 🟣
+        description: 집중 모드
+        color: "#A855F7"
+      - value: away
+        icon: ⚪
+        description: 자리 비움 (오래 무입력)
+        color: "#D1D5DB"
+      - value: trip_moving
+        icon: 🚗
+        description: 외근 중 이동
+        color: "#F97316"
+      - value: trip_arrived
+        icon: 📍
+        description: 외근 목적지 도착
+        color: "#06B6D4"
+      - value: external
+        icon: 🌐
+        description: 외부 네트워크
+        color: "#8B5CF6"
+      - value: returning
+        icon: ➡️
+        description: 복귀 중
+        color: "#14B8A6"
+      - value: offline
+        icon: ⭕
+        description: 오프라인 / 로그아웃
+        color: "#6B7280"
+    used_in:
+      - presence.status
+      - 3D avatar HUD, right-panel, minimap
+
+  work_type:
+    description: "근무 형태. ERP 동기화."
+    values:
+      - value: office
+        description: 사무실 근무
+      - value: remote
+        description: 원격 근무
+      - value: hybrid
+        description: 혼합 근무
+    used_in:
+      - erp_user.work_type
+      - attendance.work_type
+
+  # ============================================================
+  # 3. 공간 & 좌석 타입
+  # ============================================================
+
+  seat_type:
+    description: "좌석 할당 타입."
+    values:
+      - value: fixed
+        description: 고정 배정 (개인)
+      - value: free
+        description: 자율 좌석
+      - value: temp
+        description: 임시 (방문자, 인턴)
+      - value: partner
+        description: 파트너사/협력사
+    used_in:
+      - seat.type
+
+  seat_status:
+    description: "좌석 상태."
+    values:
+      - value: available
+        icon: ✓
+        description: 사용 가능
+        color: "#10B981"
+      - value: occupied
+        icon: ✗
+        description: 사용 중
+        color: "#EF4444"
+      - value: disabled
+        icon: ⛔
+        description: 사용 불가 (수리 중, 회수 등)
+        color: "#6B7280"
+      - value: reserved
+        icon: 🔒
+        description: 예약됨
+        color: "#F59E0B"
+    used_in:
+      - seat.status
+
+  room_type:
+    description: "회의실/공간 타입."
+    values:
+      - value: lobby
+        description: 로비
+      - value: meeting
+        description: 회의실
+      - value: lounge
+        description: 라운지/휴게실
+      - value: focus
+        description: 집중실
+      - value: phonebooth
+        description: 폰부스/개인용 통화실
+    used_in:
+      - room.type
+
+  office_layout_status:
+    description: "사무실 배치 버전 상태. 배포 워크플로우."
+    values:
+      - value: draft
+        icon: 📝
+        description: 초안 (편집 중)
+        color: "#93C5FD"
+      - value: validated
+        icon: ✓
+        description: 검증 통과 (배포 가능)
+        color: "#86EFAC"
+      - value: deployed
+        icon: 🚀
+        description: 배포됨 (운영 중)
+        color: "#10B981"
+      - value: archived
+        icon: 📦
+        description: 아카이브됨 (과거 버전)
+        color: "#9CA3AF"
+    used_in:
+      - office_layout.status
+      - version-history in seat-layout-editor
+
+  # ============================================================
+  # 4. 회의 & 협업 타입
+  # ============================================================
+
+  meeting_status:
+    description: "회의 상태 라이프사이클."
+    values:
+      - value: scheduled
+        icon: 📅
+        description: 예약됨
+        color: "#3B82F6"
+      - value: in_progress
+        icon: 🟢
+        description: 진행 중
+        color: "#10B981"
+      - value: completed
+        icon: ✓
+        description: 완료
+        color: "#6B7280"
+      - value: cancelled
+        icon: ✗
+        description: 취소됨
+        color: "#EF4444"
+    used_in:
+      - meeting.status
+
+  meeting_participant_role:
+    description: "회의 참석자 역할."
+    values:
+      - value: organizer
+        description: 주최자 / 호스트
+      - value: presenter
+        description: 발표자 / 주도자
+      - value: participant
+        description: 일반 참석자
+    used_in:
+      - meeting_participant.role
+
+  meeting_minute_status:
+    description: "회의록 작성 상태."
+    values:
+      - value: draft
+        description: 작성 중
+      - value: finalized
+        description: 최종 확정
+    used_in:
+      - meeting_minute.status
+
+  action_item_status:
+    description: "액션아이템 진행 상태."
+    values:
+      - value: open
+        icon: 🔴
+        description: 미시작
+        color: "#EF4444"
+      - value: in_progress
+        icon: 🟡
+        description: 진행 중
+        color: "#FBBF24"
+      - value: completed
+        icon: 🟢
+        description: 완료
+        color: "#10B981"
+      - value: cancelled
+        icon: ⚫
+        description: 취소됨
+        color: "#6B7280"
+    used_in:
+      - action_item.status
+
+  action_item_priority:
+    description: "액션아이템 우선순위."
+    values:
+      - value: high
+        icon: 🔴
+        description: 높음
+        color: "#EF4444"
+      - value: medium
+        icon: 🟡
+        description: 중간
+        color: "#FBBF24"
+      - value: low
+        icon: 🟢
+        description: 낮음
+        color: "#10B981"
+    used_in:
+      - action_item.priority
+
+  # ============================================================
+  # 5. 업무 & KPI 타입
+  # ============================================================
+
+  work_log_status:
+    description: "업무 기록 상태."
+    values:
+      - value: started
+        icon: 🟡
+        description: 진행 중
+        color: "#FBBF24"
+      - value: completed
+        icon: 🟢
+        description: 완료
+        color: "#10B981"
+      - value: aborted
+        icon: ⚫
+        description: 중단 (선택사항)
+        color: "#6B7280"
+    used_in:
+      - work_log.status
+
+  work_log_category:
+    description: "업무 카테고리. 관례적 분류."
+    values:
+      - value: development
+        description: 개발
+      - value: code_review
+        description: 코드 리뷰
+      - value: meeting
+        description: 회의
+      - value: design
+        description: 설계 / UX/UI
+      - value: documentation
+        description: 문서 작성
+      - value: testing
+        description: 테스트 / QA
+      - value: maintenance
+        description: 유지보수 / 버그 수정
+      - value: research
+        description: 리서치 / 학습
+      - value: admin
+        description: 행정 / 협력
+      - value: other
+        description: 기타
+    used_in:
+      - work_log.category (recommend)
+
+  kpi_source:
+    description: "KPI 지표 출처."
+    values:
+      - value: virtual_office
+        description: 가상오피스 플랫폼(우리만 사용)
+    used_in:
+      - kpi_result.source
+    note: "현재 virtual_office만 지원. 미래: erp_direct 추가 예상"
+
+  leave_type:
+    description: "휴가 타입. ERP 동기화."
+    values:
+      - value: annual
+        description: 연차
+      - value: sick
+        description: 병가
+      - value: emergency
+        description: 특별휴가
+      - value: unpaid
+        description: 무급휴가
+      - value: maternity
+        description: 출산휴가
+    used_in:
+      - leave.leave_type
+
+  daily_report_status:
+    description: "일일 업무 보고 상태. ERP 동기화."
+    values:
+      - value: draft
+        description: 작성 중
+      - value: submitted
+        description: 제출됨
+      - value: checked
+        description: 검토됨
+      - value: blocker
+        description: 장애 있음
+      - value: missing
+        description: 미제출
+    used_in:
+      - daily_report.status
+
+  # ============================================================
+  # 6. 동기화 & 시스템 타입
+  # ============================================================
+
+  daily_status_push_target:
+    description: "일일 상태 푸시 대상. EOD 배치."
+    values:
+      - value: erp_daily_reports
+        description: ERP 일일보고
+      - value: erp_kpi_results
+        description: ERP KPI 결과
+    used_in:
+      - daily_status_push.target
+
+  daily_status_push_status:
+    description: "푸시 전송 상태."
+    values:
+      - value: pending
+        icon: ⏳
+        description: 대기 중
+        color: "#93C5FD"
+      - value: sent
+        icon: ✓
+        description: 전송됨
+        color: "#86EFAC"
+      - value: failed
+        icon: ✗
+        description: 실패
+        color: "#FCA5A5"
+    used_in:
+      - daily_status_push.status
+
+  asset_type:
+    description: "3D 에셋 타입."
+    values:
+      - value: model
+        description: 3D 모델 (GLB)
+      - value: texture
+        description: 텍스처 맵
+      - value: material
+        description: 머티리얼 정의
+      - value: animation
+        description: 애니메이션 클립
+    used_in:
+      - asset.asset_type
+
+  asset_license:
+    description: "에셋 라이선스 타입."
+    values:
+      - value: CC0
+        description: 퍼블릭 도메인
+      - value: CC-BY
+        description: 저작권 표시 필수
+      - value: MIT
+        description: MIT 라이선스
+      - value: Commercial
+        description: 상용 라이선스
+    used_in:
+      - asset.license
+
+  # ============================================================
+  # 7. 감시 & 감사
+  # ============================================================
+
+  audit_action:
+    description: "감사 로그 액션 타입."
+    values:
+      - value: seat_assigned
+        description: 좌석 배정
+      - value: seat_unassigned
+        description: 좌석 해제
+      - value: meeting_created
+        description: 회의 생성
+      - value: meeting_cancelled
+        description: 회의 취소
+      - value: meeting_minute_finalized
+        description: 회의록 확정
+      - value: action_item_created
+        description: 액션아이템 생성
+      - value: action_item_completed
+        description: 액션아이템 완료
+      - value: kpi_adjusted
+        description: KPI 조정
+      - value: layout_deployed
+        description: 배치 배포
+      - value: org_group_deployed
+        description: 조직 배포
+    used_in:
+      - audit_log.action
+
+metadata:
+  total_enums: 27
+  total_values: 180+
+  categories:
+    user_org: 3
+    realtime: 3
+    space: 5
+    meeting_collab: 5
+    work_kpi: 6
+    sync_system: 4
+    audit: 1
+
+design_notes:
+  presence_status:
+    - "icon은 Slack/Discord 스타일 참고"
+    - "color는 Tailwind 팔레트 기반"
+    - "3D HUD와 2D 패널에서 일관성 유지"
+  office_layout_status:
+    - "배포 파이프라인: draft → validated → deployed → archived"
+    - "롤백 시: deployed → archived, previous → deployed"
+  meeting_participant_role:
+    - "organizer는 host_user_id와 별도"
+    - "presenter는 화면 공유 권한"
+  work_log_category:
+    - "recommend 목록이지만, custom 카테고리 추가 가능"
+  kpi_source:
+    - "현재 virtual_office만 지원"
+    - "미래 멀티테넌트 확장 시 erp_direct, external_system 추가 예상"

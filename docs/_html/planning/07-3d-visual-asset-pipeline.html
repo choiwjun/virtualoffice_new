@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07-3D 비주얼 &amp; 오픈에셋 파이프라인</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">07-3D 비주얼 &amp;amp; 오픈에셋 파이프라인</div><div class="sub">07-3d-visual-asset-pipeline.md</div><a class="lvl1" href="#07-3d-비주얼-오픈에셋-파이프라인">07-3D 비주얼 &amp; 오픈에셋 파이프라인</a><a class="lvl2" href="#메타-정보">메타 정보</a><a class="lvl2" href="#1-골든-샘플-범위-품질-기준">1. 골든 샘플 범위 &amp; 품질 기준</a><a class="lvl3" href="#11-골든-샘플-정의-stage-1">1.1 골든 샘플 정의 (Stage 1)</a><a class="lvl3" href="#12-품질-기준">1.2 품질 기준</a><a class="lvl2" href="#2-오픈에셋-소스-커뮤니티">2. 오픈에셋 소스 &amp; 커뮤니티</a><a class="lvl3" href="#21-승인된-오픈에셋-저장소">2.1 승인된 오픈에셋 저장소</a><a class="lvl3" href="#22-tier-2-모델-검수-프로세스">2.2 Tier 2 모델 검수 프로세스</a><a class="lvl2" href="#3-라이선스-정책-규정">3. 라이선스 정책 &amp; 규정</a><a class="lvl3" href="#31-원칙">3.1 원칙</a><a class="lvl3" href="#32-저장소별-정책">3.2 저장소별 정책</a><a class="lvl3" href="#33-납품-체크리스트">3.3 납품 체크리스트</a><a class="lvl2" href="#4-자체-제작-핵심-에셋-목록">4. 자체 제작 핵심 에셋 목록</a><a class="lvl3" href="#41-우선순위-및-제작-계획">4.1 우선순위 및 제작 계획</a><a class="lvl3" href="#42-자체-제작-가이드라인">4.2 자체 제작 가이드라인</a><a class="lvl2" href="#5-에셋-파이프라인-14단계-레지스트리-스키마">5. 에셋 파이프라인 14단계 &amp; 레지스트리 스키마</a><a class="lvl3" href="#51-에셋-파이프라인-14단계">5.1 에셋 파이프라인 14단계</a><a class="lvl3" href="#52-각-단계-상세">5.2 각 단계 상세</a><a class="lvl3" href="#53-asset-registry-스키마">5.3 Asset Registry 스키마</a><a class="lvl2" href="#6-최적화-전략">6. 최적화 전략</a><a class="lvl3" href="#61-lodlevel-of-detail-시스템">6.1 LOD(Level of Detail) 시스템</a><a class="lvl3" href="#62-인스턴싱-배치-처리">6.2 인스턴싱 &amp; 배치 처리</a><a class="lvl3" href="#63-텍스처-압축-메모리">6.3 텍스처 압축 &amp; 메모리</a><a class="lvl3" href="#64-오클루전-컬링occlusion-culling">6.4 오클루전 컬링(Occlusion Culling)</a><a class="lvl3" href="#65-저사양-모드">6.5 저사양 모드</a><a class="lvl2" href="#7-일정-마일스톤">7. 일정 &amp; 마일스톤</a><a class="lvl3" href="#71-stage-1-골든-샘플-소요-시간">7.1 Stage 1 (골든 샘플) 소요 시간</a><a class="lvl3" href="#72-stage-2-통합-일정">7.2 Stage 2 (통합) 일정</a><a class="lvl2" href="#8-파일-구조-저장소-레이아웃">8. 파일 구조 &amp; 저장소 레이아웃</a><a class="lvl2" href="#9-qa-체크리스트-stage-1-완료-기준">9. QA 체크리스트 (Stage 1 완료 기준)</a><a class="lvl2" href="#loop-metadata">Loop Metadata</a><a class="lvl3" href="#upstream-documents-referenced">Upstream Documents Referenced</a><a class="lvl3" href="#downstream-documents-affected">Downstream Documents Affected</a><a class="lvl3" href="#open-questions">Open Questions</a><a class="lvl3" href="#assumptions">Assumptions</a><a class="lvl3" href="#validation-criteria">Validation Criteria</a><a class="lvl3" href="#risks">Risks</a><a class="lvl2" href="#변경-이력">변경 이력</a></nav>
+<main><h1 id="07-3d-비주얼-오픈에셋-파이프라인">07-3D 비주얼 &amp; 오픈에셋 파이프라인</h1>
+<h2 id="메타-정보">메타 정보</h2>
+<ul><li><strong>문서명</strong>: 3D 비주얼 &amp; 오픈에셋 파이프라인</li><li><strong>버전</strong>: 1.1</li><li><strong>작성일</strong>: 2026-07-01</li><li><strong>최종 갱신</strong>: 2026-07-02</li><li><strong>담당자</strong>: 3d-engine-specialist</li><li><strong>범위</strong>: 로드맵 Stage 1(골든 샘플) ~ Stage 2(에셋 통합)</li><li><strong>참조</strong>: 00-decisions.md(정본, D7·D8·D9·D22), 05-office-layout-schema.md(씬빌더·경로 규약·성능 파생)</li></ul>
+<blockquote>이 문서는 00-decisions.md의 정본 결정을 따른다. 충돌 시 00-decisions.md가 이긴다.</blockquote>
+<hr>
+<h2 id="1-골든-샘플-범위-품질-기준">1. 골든 샘플 범위 &amp; 품질 기준</h2>
+<h3 id="11-골든-샘플-정의-stage-1">1.1 골든 샘플 정의 (Stage 1)</h3>
+<p><strong>목적</strong>: Godot 4 Forward+ 렌더러에서 가상오피스의 최고 품질 기준을 시각적·성능적으로 확정하고, 향후 모든 씬·에셋의 벤치마크로 삼는다.</p>
+<p><strong>포함 공간</strong>:</p>
+<ul><li><strong>로비</strong>: 엔트리홀 + 브랜드월 + 리셉션 데스크 + 신발장/보관소 + 직원 안내 패널</li><li><strong>오피스 에어리어</strong>: 오픈데스크 5~8석(팀별 구분) + 중앙 네트워킹 테이블 + 캐비닛/프린터</li><li><strong>회의실</strong>: 파라메트릭 생성 유리 회의실 2개(4인, 8인 규모) + 화이트보드 스크린 — 골조(벽·문 개구부)는 05 office_layout의 room 스키마(<code>doors[]</code> 포함)로 런타임 생성하고, 07은 유리 재질·화이트보드·가구만 에셋으로 공급(고정 크기 골조 프리팹 아님, D9)</li><li><strong>라운지</strong>: 휴식 소파 + 커피머신 + 냉장고 + TV 스크린</li><li><strong>집중실</strong>: 방음 포드 2개 + 개별 조명</li><li><strong>전화부스</strong>: 소형 방음 폰부스</li><li><strong>복도 및 미니맵</strong>: 층간 계단/엘리베이터, 방향 사인, 미니맵 3D 오버레이</li></ul>
+<p><strong>플로어 스펙</strong>:</p>
+<ul><li>정면 가로 약 30m, 깊이 약 15m (표준 중형 오피스)</li><li>천고 2.8m, 각 공간 면적 비율은 현실 오피스 기준</li></ul>
+<h3 id="12-품질-기준">1.2 품질 기준</h3>
+<h4 id="공간-비율-배치">공간 비율 &amp; 배치</h4>
+<ul><li>실측 데이터 또는 표준 오피스 설계 가이드(사무공간 1인당 면적·통로 폭 등 일반 기준) 참고</li><li>좌석 간 간격 최소 1.5m, 회의실 천고 최소 2.4m</li><li>도어 폭 0.9~1.2m(05 문 개구부 <code>doors[].width</code> 규약과 정합), 복도 폭 1.5m 이상</li></ul>
+<h4 id="pbr-재질-텍스처">PBR 재질 &amp; 텍스처</h4>
+<ul><li><strong>표준</strong>: Metallic-Roughness (glTF 2.0 호환)</li><li><strong>텍스처 해상도</strong>: <ul><li>대형 면(벽·바닥·천장): 2K(2048×2048)</li><li>중형(데스크·파티션·가구): 1K(1024×1024)</li><li>소형 객체(악세서리·전자기기): 512×512 이상</li></ul></li><li><strong>맵 포함</strong>: Base Color + Normal + Roughness + Metallic (선택: AO)</li><li><strong>소재 정확도</strong>: 나무는 목재 텍스처, 유리는 반투명+프레넬, 금속은 산화 표현</li></ul>
+<h4 id="간접광-조명-gi-d7-확정">간접광 조명 &amp; GI (D7 확정)</h4>
+<ul><li><strong>Godot 4 Forward+ 기본 조합</strong>: <strong>실시간 직접광(DirectionalLight3D/OmniLight3D/SpotLight3D) + ReflectionProbe + SSAO</strong>. 이것을 모든 사양의 기본 렌더 경로로 확정한다.</li><li><strong>라이트맵 베이킹 배제</strong>: office_layout JSON으로 씬이 런타임에 동적 생성되므로(05 참조), 사전 UV·라이트맵 베이크가 성립하지 않는다(방·가구 배치가 배포 때마다 달라짐 → 베이크한 라이트맵이 무효화). 따라서 GPU 라이트매핑은 사용하지 않는다.</li><li><strong>SDFGI는 고사양 옵션 토글</strong>: SDFGI(Signed Distance Field GI)는 동적 씬과 호환되지만 비용이 크므로, 고사양 PC 전용 옵션으로만 제공하고 기본값은 OFF(직접광+ReflectionProbe+SSAO). 기준 사양(GTX 1650급)에서는 SDFGI 없이 60fps를 목표로 한다.</li><li>브루탈리스트 조명 금지: 각 공간에 간접광 근사(ReflectionProbe + 스카이박스 앰비언트) + 국소 조명(스팟/포인트 라이트) 혼합</li><li>실내 조명: 천장 LED 패널/스팟라이트, 따뜻한 색온도(3500K~4000K)</li><li>외부 자연광: 스카이박스 + 창 유리를 통한 광선 투과 표현</li></ul>
+<h4 id="제한-카메라-fov">제한 카메라 &amp; FOV</h4>
+<ul><li>FOV: 60° (데스크톱 게이밍 표준)</li><li>오버헤드 뷰(미니맵): isometric 또는 top-down, 시야 각도 설정 고정</li><li>1인칭 아바타 카메라: 아이레벨(약 1.6m), 회전 속도 제한(모션 멀미 방지)</li></ul>
+<h4 id="hud-오버레이-ui">HUD &amp; 오버레이 UI</h4>
+<ul><li><strong>직원 이름 태그</strong>: 아바타 머리 위 텍스트, 거리별 페이드(20m 이상 숨김)</li><li><strong>상태 뱃지</strong>: 온라인/작업중/회의중/집중중/이동중/외출 아이콘, 색상 코드</li><li><strong>우측 직원 패널</strong>: 현재 시각 + 출근한 직원 목록(팀별) + 실시간 프레즌스 표시</li><li><strong>하단 회의 패널</strong>: 진행 중인 회의실 목록 + 참가자 얼굴 + 입장 버튼</li><li><strong>미니맵</strong>: 우측 하단 고정(05·06과 통일), 층/구역 토글, 아바타·회의실·클릭 네비게이션</li><li><strong>폰트</strong>: 가독성 최우선(고대비, 안티에일리어싱 적용)</li></ul>
+<h4 id="성능-기준-d22">성능 기준 (D22)</h4>
+<ul><li><strong>FPS</strong>: <strong>GTX 1650급 60fps / 내장그래픽(Iris Xe급) 30fps</strong>, Full HD 기준. (종전 &quot;RTX 4060 이상&quot; 요구는 폐기)</li><li><strong>메모리</strong>: 로드 후 <strong>2GB 이하</strong>(Godot 엔진 포함)</li><li><strong>폴리곤</strong>: 전체 씬 약 500K~1M 삼각형(LOD 포함)</li><li><strong>드로우콜</strong>: 배치 처리로 100~200회 이내. <strong>동일 asset_id는 MultiMesh로 1드로우콜에 계상</strong>(§6.2, 05 씬빌더·performance 파생 연동)</li><li><strong>로드 시간</strong>: 초기 씬 &lt; 3초, 구역 전환 &lt; 1초</li></ul>
+<hr>
+<h2 id="2-오픈에셋-소스-커뮤니티">2. 오픈에셋 소스 &amp; 커뮤니티</h2>
+<h3 id="21-승인된-오픈에셋-저장소">2.1 승인된 오픈에셋 저장소</h3>
+<h4 id="tier-1-cc0공개-도메인-최우선">Tier 1: CC0(공개 도메인, 최우선)</h4>
+<div class="table-wrap"><table><thead><tr><th>플랫폼</th><th>URL</th><th>특징</th><th>사용처</th></tr></thead><tbody><tr><td><strong>ambientCG</strong></td><td>https://ambientcg.com</td><td>PBR 재질 + 큐브맵 라이브러리, 산업 표준</td><td>벽·바닥·천장·금속 마감재</td></tr><tr><td><strong>Poly Haven</strong> (구 HDRI Haven/Texture Haven)</td><td>https://polyhaven.com</td><td>3D 모델(무료) + 재질 + HDRI, CC0 라이선스 명확</td><td>가구, 조명, 악세서리, HDRI 스카이박스</td></tr><tr><td><strong>Kenney</strong></td><td>https://kenney.nl</td><td>2D/3D 게임 에셋, 배치 일관된 스타일</td><td>버튼·아이콘·UI 요소, 단순 객체</td></tr><tr><td><strong>Quaternius</strong></td><td>https://quaternius.com</td><td>저폴리 3D 모델(무료 카테고리), 명확 라이선스</td><td>보조 가구, 보충 모델</td></tr><tr><td><strong>Blender eevee-next-samples</strong> (공식)</td><td>https://projects.blender.org</td><td>일부 에셋 CC0, Blender 최적화</td><td>참고 씬·라이팅 설정</td></tr></tbody></table></div>
+<h4 id="tier-2-cc-by저작자-표시-필수-제한적-사용">Tier 2: CC-BY(저작자 표시 필수, 제한적 사용)</h4>
+<div class="table-wrap"><table><thead><tr><th>플랫폼</th><th>URL</th><th>조건</th><th>검토 프로세스</th></tr></thead><tbody><tr><td><strong>Sketchfab</strong></td><td>https://sketchfab.com</td><td>개별 모델 라이선스 확인 필수</td><td>각 모델마다 법무 검수 후 add to asset registry</td></tr><tr><td><strong>BlenderKit</strong> (유료 옵션)</td><td>https://www.blenderkit.com</td><td>CC0/CC-BY 혼합, 유료는 회사 라이선스</td><td>필요시 업체에 라이선스 확인</td></tr><tr><td><strong>TurboSquid Free</strong></td><td>https://www.turbosquid.com</td><td>개별 라이선스 확인, 일부 CC 라이선스</td><td>검수 후 사용 가능</td></tr></tbody></table></div>
+<h4 id="금지-저장소-라이선스">금지 저장소 &amp; 라이선스</h4>
+<p>❌ <strong>사용 불가</strong>:</p>
+<ul><li><strong>CC-NC</strong>(비상업), <strong>CC-ND</strong>(수정금지), <strong>CC-SA / CC-BY-SA</strong>(동일조건변경허락, ShareAlike) — NC는 사내 운영이라도 상업 해석이 모호하고, ND는 최적화·변환(.tscn 임포트) 자체가 불가하며, SA는 파생물 전체에 동일 라이선스를 전염시켜(카피레프트) 클라이언트 pak 배포 라이선스를 오염시키므로 → 원칙상 피함</li><li><strong>Editorial Only</strong>(에디토리얼 용도만 허용) → B2B 장기 고려 시 위험</li><li><strong>All Rights Reserved</strong>(명시 없음) — 라이선스 불명확 → 검수 불가 수용</li><li><strong>브랜드 로고·실제 가구 외형</strong>(예: Herman Miller, Steelcase 로고 포함 모델) → 지식재산권 침해 위험</li><li><strong>교육용 전용</strong>(학교·대학만 허용)</li></ul>
+<h3 id="22-tier-2-모델-검수-프로세스">2.2 Tier 2 모델 검수 프로세스</h3>
+<pre class="code"><code>1. 모델 선정 → 라이선스 문서 다운로드
+2. 저자명 확인 + 라이선스 URL 기록
+3. 상업/파생물/재배포 명시 검토
+4. 필요시 저자에게 문의 (이메일)
+5. THIRD_PARTY_LICENSES.md 추가
+6. asset registry에 metadata 기록
+7. 로컬 테스트 + 검증 후 확정</code></pre>
+<hr>
+<h2 id="3-라이선스-정책-규정">3. 라이선스 정책 &amp; 규정</h2>
+<h3 id="31-원칙">3.1 원칙</h3>
+<pre class="code"><code>CC0 &gt; CC-BY &gt; (금지) &gt; 구매/자체제작</code></pre>
+<ol><li><strong>CC0 우선</strong>: 제약 무시하고 최고 자유도 → ambientCG, Poly Haven, Kenney 최우선</li><li><strong>CC-BY 제한적</strong>: 저작자 표시만 가능하면 사용 (Sketchfab, TurboSquid 개별 검수)</li><li><strong>명확하지 않으면 사용 금지</strong> → Blender Startup File, 개인 블로거 에셋 등</li><li><strong>B2B 멀티테넌트 고려</strong>: 현 단계는 단일 회사(사내 도그푸딩)이므로 관대한 해석 가능하나, 향후 배포 시 재검수 필수</li></ol>
+<h3 id="32-저장소별-정책">3.2 저장소별 정책</h3>
+<h4 id="ambientcg">ambientCG</h4>
+<ul><li><strong>라이선스</strong>: CC0 완전 공개</li><li><strong>정책</strong>: 모든 자료 제약 없이 사용 가능, 저작자 표시 선택</li><li><strong>납품</strong>: THIRD<em>PARTY</em>LICENSES.md에 &quot;ambientCG, Public Domain&quot;으로 기재</li></ul>
+<h4 id="poly-haven">Poly Haven</h4>
+<ul><li><strong>라이선스</strong>: CC0 (일부 3D 모델은 저자가 개별 공개)</li><li><strong>정책</strong>: HDRI, 재질, 모델 모두 CC0, 다운로드 시 &quot;License&quot; 항목 확인</li><li><strong>납품</strong>: &quot;Poly Haven, CC0&quot; 기재</li></ul>
+<h4 id="kenney">Kenney</h4>
+<ul><li><strong>라이선스</strong>: 저작권 명시(다만 게임·상업 사용 허용)</li><li><strong>정책</strong>: &quot;You are free to use these assets in both personal and commercial projects&quot;</li><li><strong>납품</strong>: &quot;Kenney.nl, License: Free for personal and commercial use&quot;</li></ul>
+<h4 id="sketchfab-cc-by-모델">Sketchfab (CC-BY 모델)</h4>
+<ul><li><strong>검수</strong>: 각 모델 페이지 하단 &quot;License&quot; 항목 확인</li><li><strong>저작자</strong>: 저자명 전체 기록</li><li><strong>표기 방식</strong>: &quot;Model Name by Author Name (CC-BY 4.0)&quot; 또는 모델 URL 기재</li><li><strong>파생물</strong>: 수정 후 재배포 시 라이선스 유지 필수</li></ul>
+<h3 id="33-납품-체크리스트">3.3 납품 체크리스트</h3>
+<h4 id="third_party_licensesmd-포함-항목">THIRD<em>PARTY</em>LICENSES.md 포함 항목</h4>
+<pre class="code lang-markdown"><code># Third-Party Licenses
+
+## Assets by Source
+
+### CC0 (Public Domain)
+- ambientCG
+  - Material: Wood_Floor_006 (https://ambientcg.com/...)
+  - License: CC0 1.0 Public Domain
+  
+- Poly Haven
+  - HDRI: kloppenheim_06_puresky_4k (https://polyhaven.com/...)
+  - License: CC0 1.0 Public Domain
+
+### CC-BY (Attribution Required)
+- Sketchfab
+  - Model: &quot;Office Chair&quot; by John Doe (https://sketchfab.com/...)
+  - License: CC-BY 4.0
+  - Attribution: &quot;Office Chair&quot; by John Doe, licensed under CC-BY 4.0
+    - Changes: Exported to .glb, texture optimization
+
+## Excluded Sources
+- (금지된 라이선스는 포함하지 않음)</code></pre>
+<h4 id="asset-registry-연동">Asset Registry 연동</h4>
+<ul><li>모든 에셋은 <code>asset</code> 테이블에 저장 (4.5 참조)</li><li>license, license<em>url, commercial</em>allowed, attribution<em>required, redistribution</em>allowed 필드 명시</li></ul>
+<hr>
+<h2 id="4-자체-제작-핵심-에셋-목록">4. 자체 제작 핵심 에셋 목록</h2>
+<h3 id="41-우선순위-및-제작-계획">4.1 우선순위 및 제작 계획</h3>
+<div class="table-wrap"><table><thead><tr><th>에셋 이름</th><th>분류</th><th>주요 용도</th><th>복잡도</th><th>예상 시간</th><th>제작 도구</th><th>참고</th></tr></thead><tbody><tr><td><strong>브랜드월</strong></td><td>구조</td><td>로비 - 회사 아이덴티티</td><td>중간</td><td>8h</td><td>Blender</td><td>회사 로고·색상 활용</td></tr><tr><td><strong>리셉션 데스크</strong></td><td>가구</td><td>로비 - 엔트리 포인트</td><td>중간</td><td>10h</td><td>Blender</td><td>모듈형, 재질 고급</td></tr><tr><td><strong>회의실 유리 재질·문짝·화이트보드 세트</strong></td><td>가구/소품</td><td>Stage 1 핵심 - 파라메트릭 회의실용 부속</td><td>중간</td><td>10h</td><td>Blender + Godot 셰이더</td><td>골조(벽·개구부)는 05 room 스키마로 파라메트릭 생성(D9). 07은 유리 셰이더 파라미터·문짝·화이트보드만 공급</td></tr><tr><td><strong>오픈데스크 블록</strong></td><td>가구</td><td>오피스 에어리어 - 팀별 구분</td><td>중간</td><td>12h</td><td>Blender</td><td>모듈식, 의자·조명 포함</td></tr><tr><td><strong>팀구역 파티션</strong></td><td>구조</td><td>시각적 경계 - 단색/패턴</td><td>낮음</td><td>6h</td><td>Blender</td><td>흰색/색상 변형 버전</td></tr><tr><td><strong>집중실/폰부스</strong></td><td>구조</td><td>집중·통화 공간 - 방음 표현</td><td>중간</td><td>12h</td><td>Blender</td><td>투광성 합성수지, 내부 조명</td></tr><tr><td><strong>라운지 소파</strong></td><td>가구</td><td>라운지 - 편의성 &amp; 스타일</td><td>낮음</td><td>6h</td><td>모델링 또는 Poly Haven</td><td>패브릭 텍스처</td></tr><tr><td><strong>회의 테이블</strong></td><td>가구</td><td>회의실 - 실사적 반사</td><td>중간</td><td>8h</td><td>Blender</td><td>목재/화강암, 재질 고급</td></tr><tr><td><strong>모니터 스크린</strong></td><td>장비</td><td>회의·라운지·데스크</td><td>낮음</td><td>4h</td><td>Blender 또는 Quaternius</td><td>디스플레이 표면 UV 매핑</td></tr><tr><td><strong>LED 라인조명</strong></td><td>구조</td><td>천장·벽 - 간접광 원천</td><td>낮음</td><td>5h</td><td>Blender</td><td>이미시브 재질, 색온도 변형</td></tr><tr><td><strong>미니맵 구조물</strong></td><td>UI 3D</td><td>HUD - 평면도 기준</td><td>낮음</td><td>4h</td><td>Blender</td><td>투명도 조정</td></tr><tr><td><strong>상태 뱃지 UI</strong></td><td>UI 3D</td><td>아바타 상태 표시</td><td>낮음</td><td>3h</td><td>Blender + UI 설정</td><td>빌보드, 6가지 상태 아이콘</td></tr><tr><td><strong>회의실 플로팅 라벨</strong></td><td>UI 3D</td><td>회의실 이름·점유 상태</td><td>낮음</td><td>3h</td><td>Blender + shader</td><td>거리별 페이드, 항상 정면 향</td></tr><tr><td><strong>아바타 변형 5~10명</strong></td><td>캐릭터</td><td>Stage 1 - 기본 휴머노이드 + 색상 변형</td><td>높음</td><td>40h (베이스 리깅 + 변형, 2배 버퍼 포함)</td><td><strong>Mixamo/기성 리그 활용(정식 계획)</strong> + Blender</td><td>자동 리깅(Mixamo) 후 색상·프로포션 변형. 커스텀 리깅은 최소 2배 버퍼. 상세 08 문서 참조</td></tr></tbody></table></div>
+<h3 id="42-자체-제작-가이드라인">4.2 자체 제작 가이드라인</h3>
+<h4 id="목재마감재">목재·마감재</h4>
+<ul><li><strong>참고 HDRI</strong>: Poly Haven HDRI 라이브러리 중 실내 조명 환경 다운로드</li><li><strong>텍스처 베이스</strong>: ambientCG 목재/콘크리트/석재 재질 다운로드 후 Blender Shader Editor에서 커스텀</li><li><strong>색상 팔레트</strong>: 회사 브랜드 컬러 가이드라인 준수</li></ul>
+<h4 id="유리-투명도">유리 &amp; 투명도</h4>
+<ul><li><strong>Shader</strong>: Godot 4 Standard Material + Glass BRDF</li><li><strong>Roughness</strong>: 0.0~0.1 (맑은 유리), 0.2~0.3 (스리드 글래스)</li><li><strong>IOR</strong>: 1.5 (표준 소다석회유리)</li><li><strong>내부 벽</strong>: 화이트보드 재질(Roughness 0.4, Metallic 0.0) + 텍스트 쓰기 가능 설정</li></ul>
+<h4 id="모듈형-설계">모듈형 설계</h4>
+<ul><li><strong>데스크 블록</strong>: 1.2m × 0.6m 단위, 네스팅 배치 가능</li><li><strong>파티션</strong>: 1.2m 높이, 다양한 길이 변형(1.2/2.4/3.6m)</li><li><strong>회의실</strong>: 골조(벽·문 개구부)는 05 room 스키마로 <strong>파라메트릭 생성</strong>하고, 내부 가구(테이블/의자)·유리 재질만 에셋으로 분리 공급(고정 크기 골조 프리팹 없음, D9)</li></ul>
+<hr>
+<h2 id="5-에셋-파이프라인-14단계-레지스트리-스키마">5. 에셋 파이프라인 14단계 &amp; 레지스트리 스키마</h2>
+<h3 id="51-에셋-파이프라인-14단계">5.1 에셋 파이프라인 14단계</h3>
+<div class="mermaid">graph LR
+    A[&quot;1. 요구사항 정의&lt;br/&gt;(도면, 용도, 스펙)&quot;] --&gt; B[&quot;2. 소스 선정&lt;br/&gt;(CC0/검수)&quot;]
+    B --&gt; C[&quot;3. 다운로드&lt;br/&gt;&amp; 파일 정리&quot;]
+    C --&gt; D[&quot;4. 분석 &amp; 측정&lt;br/&gt;(비율, 폴리곤, 재질)&quot;]
+    D --&gt; E[&quot;5. 포맷 변환&lt;br/&gt;(Blender: FBX→GLB)&quot;]
+    E --&gt; F[&quot;6. 자체 제작/조정&lt;br/&gt;(모델링, 구조 통합)&quot;]
+    F --&gt; G[&quot;7. PBR 재질 적용&lt;br/&gt;(텍스처, Shader)&quot;]
+    G --&gt; H[&quot;8. 최적화 &amp; 압축&lt;br/&gt;(Godot 임포트: VRAM BC, 자동 LOD)&quot;]
+    H --&gt; I[&quot;9. LOD 생성&lt;br/&gt;(3~5 레벨)&quot;]
+    I --&gt; J[&quot;10. 충돌 &amp; 트리거&lt;br/&gt;(Shape3D, trigger zone)&quot;]
+    J --&gt; K[&quot;11. 씬 배치 &amp; 프리팹&lt;br/&gt;(Godot 씬, 재사용성)&quot;]
+    K --&gt; L[&quot;12. Asset Registry 등록&lt;br/&gt;(메타데이터, 라이선스)&quot;]
+    L --&gt; M[&quot;13. 성능 검증&lt;br/&gt;(FPS, 메모리, 드로우콜)&quot;]
+    M --&gt; N[&quot;14. 배포 &amp; 버저닝&lt;br/&gt;(파일명, commit, release tag)&quot;]
+    
+    style A fill:#e1f5ff
+    style N fill:#c8e6c9</div>
+<h3 id="52-각-단계-상세">5.2 각 단계 상세</h3>
+<h4 id="1-요구사항-정의"><strong>1. 요구사항 정의</strong></h4>
+<ul><li>도면 또는 텍스트 명세 작성: &quot;로비 브랜드월, 가로 4m × 높이 2.5m, 회사 로고 3개, 라이팅&quot;</li><li>목표 폴리곤 수 지정 (예: 50K 이하)</li><li>참고 이미지/영상 수집</li></ul>
+<h4 id="2-소스-선정"><strong>2. 소스 선정</strong></h4>
+<ul><li>위 2절 저장소 검색, CC0 우선</li><li>라이선스 URL 기록</li><li>대체 소스 2개 이상 확보(조달 실패 대비)</li></ul>
+<h4 id="3-다운로드-파일-정리"><strong>3. 다운로드 &amp; 파일 정리</strong></h4>
+<pre class="code"><code>assets/
+  ├── 3d_models/
+  │   ├── raw/
+  │   │   └── reception_desk_cc0_polyhaven.blend
+  │   └── processed/
+  │       └── reception_desk_v1.glb
+  ├── textures/
+  │   └── wood_floor_006_ambientcg/
+  │       ├── normal.png
+  │       ├── roughness.png
+  │       └── basecolor.png
+  └── LICENSE/
+      └── reception_desk.txt</code></pre>
+<h4 id="4-분석-측정"><strong>4. 분석 &amp; 측정</strong></h4>
+<ul><li>Blender에서 열기, 단위 확인(cm, m)</li><li>폴리곤 수 확인 (Shift+Ctrl+Alt+I)</li><li>텍스처 해상도 기록</li><li>PBR 채널 명칭 확인(Roughness/Metallic 정의에 따라 다름)</li><li>크기 재조정 필요 여부 판단</li></ul>
+<h4 id="5-포맷-변환-blender-glb-godot-임포트"><strong>5. 포맷 변환 (Blender → glb → Godot 임포트)</strong></h4>
+<ul><li>Blender에서 &quot;Export as .glTF 2.0 (.glb/.gltf)&quot; 선택</li><li>설정:<ul><li>Include Animations: 필요시만 O</li><li>Include Deformation Bones: O (리깅 있을 시)</li><li>Format: .glb (단일 파일, Godot 임포트 소스)</li><li><strong>Draco Compression: 사용 안 함</strong> — Godot 4는 Draco/meshopt 압축 glTF를 임포트하지 못해 로드가 실패한다(D8). 압축은 아래 8단계의 Godot 임포트 최적화(VRAM BC 압축)로 처리한다.</li></ul></li><li>glb는 <strong>중간 산출물</strong>일 뿐이다. 최종 배포 산출물은 Godot 프로젝트에 임포트된 <code>.tscn</code>(임포트 완료본)이며, 클라이언트 pak에 동봉된다(런타임 glb 다운로드 없음).</li></ul>
+<h4 id="6-자체-제작조정"><strong>6. 자체 제작/조정</strong></h4>
+<ul><li>회사 로고 텍스처 추가, 색상 변경</li><li>부품 추가(가구, 조명)</li><li>크기 및 배치 조정</li><li>불필요한 지오메트리 정리</li></ul>
+<h4 id="7-pbr-재질-적용"><strong>7. PBR 재질 적용</strong></h4>
+<p>Godot 4 Standard Material 설정:</p>
+<pre class="code"><code>Material:
+  - Albedo: Base color texture
+  - Normal Map: Normal texture
+  - Roughness: roughness.png or value 0.5
+  - Metallic: metallic.png or value 0.0
+  - AO Map: 선택 (baking 필요)
+  - Emission: 발광 필요시만</code></pre>
+<h4 id="8-최적화-압축-godot-임포트-파이프라인"><strong>8. 최적화 &amp; 압축 (Godot 임포트 파이프라인)</strong></h4>
+<ul><li><strong>gltfpack/meshopt·Draco 사용 금지</strong>: Godot 4가 임포트하지 못해 로드 실패(D8). 대신 <strong>Godot 임포트 설정</strong>으로 최적화한다.</li><li><strong>VRAM 텍스처 압축</strong>: 임포트 시 Compress Mode = VRAM Compressed(BC1/BC3/BC5). GPU에서 자동 디코드되어 VRAM을 절약(§6.3).</li><li><strong>자동 LOD</strong>: Godot 4의 메시 임포트 옵션에서 자동 LOD 생성 활성화(또는 §9단계 수동 LOD).</li><li>텍스처 8bit PNG 소스(16bit는 필요한 경우만), 임포트 후 VRAM 압축본으로 대체.</li><li>산출물 목표: <code>.tscn</code> + 임포트 캐시. 소스 glb는 저장소에 보관하되 pak에는 임포트 완료본만 포함.</li></ul>
+<h4 id="9-lod-생성"><strong>9. LOD 생성</strong></h4>
+<pre class="code"><code>LOD 0 (Full):     100% 폴리곤  (근거리)
+LOD 1 (High):     50% 폴리곤   (10m 이내)
+LOD 2 (Medium):   25% 폴리곤   (20m 이내)
+LOD 3 (Low):      10% 폴리곤   (50m 이상)</code></pre>
+<p>Godot 4에서 자동 LOD 생성 또는 Blender Decimate modifier로 수동 생성.</p>
+<h4 id="10-충돌-트리거"><strong>10. 충돌 &amp; 트리거</strong></h4>
+<ul><li><strong>충돌 메시 생성</strong>: 간단한 박스/캡슐(성능 중심)</li><li><strong>트리거 존</strong>: 회의실 입장, 라운지 좌석 등 → Area3D</li><li><strong>물리</strong>: RigidBody3D (필요시) 또는 StaticBody3D</li></ul>
+<h4 id="11-씬-배치-프리팹"><strong>11. 씬 배치 &amp; 프리팹</strong></h4>
+<pre class="code"><code>reception_desk.tscn
+├─ Node3D (Root)
+├─ MeshInstance3D
+│  └─ Material (PBR)
+├─ CollisionShape3D (벽/데스크)
+└─ Area3D (트리거: &quot;desk_greeting&quot;)</code></pre>
+<p>재사용 가능하도록 다른 씬에 인스턴스화.</p>
+<h4 id="12-asset-registry-등록"><strong>12. Asset Registry 등록</strong></h4>
+<p><code>asset</code> 테이블에 메타데이터 기록 (5.3 참조).</p>
+<h4 id="13-성능-검증"><strong>13. 성능 검증</strong></h4>
+<ul><li>전체 씬에 배치 후 FPS 측정</li><li>메모리 사용량 (Godot Monitor 탭)</li><li>드로우콜 수 (gizmo 해제 후 측정)</li><li>목표: 60 FPS 유지</li></ul>
+<h4 id="14-배포-버저닝"><strong>14. 배포 &amp; 버저닝</strong></h4>
+<pre class="code"><code>assets/
+  ├── 3d/
+  │   ├── models/
+  │   │   ├── reception_desk/
+  │   │   │   ├── reception_desk.tscn      # 배포 산출물(pak 동봉, 파일명 고정)
+  │   │   │   ├── raw/
+  │   │   │   │   └── reception_desk_v1.0.glb  # 임포트 소스(pak 미포함)
+  │   │   │   └── CHANGELOG.md
+  │   │   └── ...
+  │   └── materials/
+  │       └── pbr/</code></pre>
+<ul><li>Git tag: <code>asset/reception-desk-v1.0</code></li><li>버전은 asset 테이블·CHANGELOG로 관리(<code>.tscn</code> 파일명은 고정)</li><li>변경 사항 문서화</li><li>QA 체크리스트 완료</li></ul>
+<h3 id="53-asset-registry-스키마">5.3 Asset Registry 스키마</h3>
+<h4 id="테이블-asset">테이블: asset</h4>
+<pre class="code lang-sql"><code>CREATE TABLE asset (
+  asset_id          VARCHAR(64) PRIMARY KEY, -- e.g., &quot;reception-desk-v1.0&quot;
+  asset_name        VARCHAR(256) NOT NULL,   -- &quot;Reception Desk&quot;
+  asset_type        VARCHAR(50) NOT NULL,    -- &quot;furniture&quot; | &quot;structure&quot; | &quot;material&quot; | &quot;ui3d&quot; | &quot;character&quot; | &quot;environment&quot;
+  category          VARCHAR(100),             -- &quot;office&quot; | &quot;meeting-room&quot; | &quot;lounge&quot; | &quot;lobby&quot;
+  source_url        TEXT,                     -- Original download URL (CC0 sources)
+  author            VARCHAR(256),             -- Creator name (ambientCG, Poly Haven, or custom)
+  license           VARCHAR(100) NOT NULL,   -- &quot;CC0&quot; | &quot;CC-BY&quot; | &quot;custom&quot; | &quot;proprietary&quot;
+  license_url       TEXT,                     -- License document link
+  
+  downloaded_at     TIMESTAMP,                -- When first acquired
+  modified_by       VARCHAR(256),             -- Person who adapted/modified
+  
+  commercial_allowed        BOOLEAN DEFAULT TRUE,   -- Can be used commercially
+  attribution_required      BOOLEAN,                 -- Must credit author
+  redistribution_allowed    BOOLEAN,                 -- Can share modified version
+  
+  original_file_hash     VARCHAR(64),         -- SHA-256 of raw download
+  optimized_file_hash    VARCHAR(64),         -- SHA-256 of optimized .glb
+  
+  tscn_path          VARCHAR(256) NOT NULL,   -- res://assets/3d/models/&lt;name&gt;/&lt;name&gt;.tscn (배포 산출물, 05 ASSET_CATALOG 조회 대상)
+  source_glb_path    VARCHAR(256),            -- 임포트 소스 glb(저장소 보관, pak 미포함)
+  file_size_bytes    BIGINT,                  -- 산출물 크기(성능 예산 참고용, CDN 아님 — 런타임 다운로드 없음/D8)
+  
+  polygon_count      INT,                     -- Triangle count (LOD 0). 05 performance 파생 계산의 정본 소스
+  texture_resolution VARCHAR(20),             -- e.g., &quot;2048x2048&quot;
+  
+  dimension          JSONB,                   -- 실측 크기 {&quot;width&quot;:1.5,&quot;depth&quot;:0.8,&quot;height&quot;:0.75}(m). 05 좌석↔가구 정합·검증의 정본
+  footprint_2d       JSONB,                   -- 편집기 도면용 2D 풋프린트 {&quot;width&quot;:1.5,&quot;depth&quot;:0.8}(m)
+  thumbnail_url      TEXT,                    -- 편집기 팔레트 썸네일
+  
+  used_in_scene      JSONB,                   -- [&quot;stage1_lobby&quot;, &quot;stage1_office&quot;]
+  
+  external_dependencies TEXT,                 -- Other assets this requires (e.g., materials/wood_floor_006)
+  
+  notes              TEXT,                    -- Custom metadata, usage notes
+  
+  created_at         TIMESTAMP DEFAULT NOW(),
+  updated_at         TIMESTAMP DEFAULT NOW(),
+  deleted_at         TIMESTAMP                -- Soft delete
+);</code></pre>
+<h4 id="예시-레코드">예시 레코드</h4>
+<pre class="code lang-json"><code>{
+  &quot;asset_id&quot;: &quot;reception-desk-v1.0&quot;,
+  &quot;asset_name&quot;: &quot;Reception Desk&quot;,
+  &quot;asset_type&quot;: &quot;furniture&quot;,
+  &quot;category&quot;: &quot;lobby&quot;,
+  &quot;source_url&quot;: &quot;https://polyhaven.com/a/reception_desk&quot;,
+  &quot;author&quot;: &quot;Poly Haven&quot;,
+  &quot;license&quot;: &quot;CC0&quot;,
+  &quot;license_url&quot;: &quot;https://polyhaven.com/license&quot;,
+  &quot;downloaded_at&quot;: &quot;2026-07-01T10:00:00Z&quot;,
+  &quot;modified_by&quot;: &quot;3d-engine-specialist&quot;,
+  &quot;commercial_allowed&quot;: true,
+  &quot;attribution_required&quot;: false,
+  &quot;redistribution_allowed&quot;: true,
+  &quot;original_file_hash&quot;: &quot;a1b2c3d4e5f6...&quot;,
+  &quot;optimized_file_hash&quot;: &quot;f6e5d4c3b2a1...&quot;,
+  &quot;tscn_path&quot;: &quot;res://assets/3d/models/reception_desk/reception_desk.tscn&quot;,
+  &quot;source_glb_path&quot;: &quot;assets/3d/models/reception_desk/raw/reception_desk_v1.0.glb&quot;,
+  &quot;file_size_bytes&quot;: 5242880,
+  &quot;polygon_count&quot;: 42000,
+  &quot;texture_resolution&quot;: &quot;2048x2048&quot;,
+  &quot;dimension&quot;: { &quot;width&quot;: 2.4, &quot;depth&quot;: 0.8, &quot;height&quot;: 1.05 },
+  &quot;footprint_2d&quot;: { &quot;width&quot;: 2.4, &quot;depth&quot;: 0.8 },
+  &quot;thumbnail_url&quot;: &quot;res://assets/3d/models/reception_desk/thumb.png&quot;,
+  &quot;used_in_scene&quot;: [&quot;stage1_lobby&quot;],
+  &quot;external_dependencies&quot;: &quot;material/wood_floor_006&quot;,
+  &quot;notes&quot;: &quot;Adapted with company logo texture. UV unwrap optimized for LOD.&quot;,
+  &quot;created_at&quot;: &quot;2026-07-01T10:30:00Z&quot;,
+  &quot;updated_at&quot;: &quot;2026-07-01T10:30:00Z&quot;,
+  &quot;deleted_at&quot;: null
+}</code></pre>
+<blockquote><strong>dimension 일치 검증 규칙</strong>: <code>dimension</code>(및 <code>footprint_2d</code>)은 임포트된 <code>.tscn</code> 메시의 AABB 실측 크기와 일치해야 한다(허용 오차 ±1cm). 임포트 시 자동 측정한 AABB와 등록값이 어긋나면 등록을 거부한다. 이 <code>dimension</code>이 05의 좌석↔가구 좌표 정합·성능 파생 계산·편집기 도면 배치의 <strong>정본</strong>이므로, layout JSON의 <code>furniture.dimension</code>은 표시용 캐시일 뿐 이 값과 불일치하면 서버가 이 값으로 덮어쓴다.</blockquote>
+<hr>
+<h2 id="6-최적화-전략">6. 최적화 전략</h2>
+<h3 id="61-lodlevel-of-detail-시스템">6.1 LOD(Level of Detail) 시스템</h3>
+<p><strong>Godot 4 GeometryInstance3D.visibility<em>range</em>begin/end 사용</strong>:</p>
+<pre class="code lang-gdscript"><code># furniture_desk.gd
+extends Node3D
+
+func _ready():
+    # LOD 0 (Full detail, 0-10m)
+    $MeshInstance3D_LOD0.visibility_range_begin = 0.0
+    $MeshInstance3D_LOD0.visibility_range_end = 10.0
+    
+    # LOD 1 (50% detail, 10-20m)
+    $MeshInstance3D_LOD1.visibility_range_begin = 10.0
+    $MeshInstance3D_LOD1.visibility_range_end = 20.0
+    
+    # LOD 2 (25% detail, 20m+)
+    $MeshInstance3D_LOD2.visibility_range_begin = 20.0
+    $MeshInstance3D_LOD2.visibility_range_end = 100.0</code></pre>
+<p><strong>폴리곤 감소 목표</strong>:</p>
+<pre class="code"><code>LOD 0: 100% (42K triangles)
+LOD 1: 50%  (21K triangles)
+LOD 2: 25%  (10.5K triangles)
+LOD 3: 10%  (4.2K triangles, 매우 먼 거리)</code></pre>
+<h3 id="62-인스턴싱-배치-처리">6.2 인스턴싱 &amp; 배치 처리</h3>
+<p><strong>동일 자산 다중 배치</strong> (예: 오피스 데스크 5개):</p>
+<ul><li>Godot MultiMesh 사용 → 드로우콜 1회로 통합</li><li>트랜스폼만 변경, 메시 데이터는 공유</li></ul>
+<pre class="code lang-gdscript"><code>var multimesh = MultiMesh.new()
+multimesh.mesh = desk_mesh
+multimesh.instance_count = 5
+
+var multimesh_instance = MultiMeshInstance3D.new()
+multimesh_instance.multimesh = multimesh</code></pre>
+<p><strong>드로우콜 예산 집행 주체 (D7 · 05 연동):</strong></p>
+<ul><li>씬 빌더(05 §5.1 <code>build_scene</code>)가 layout의 furniture를 <strong>동일 <code>asset_id</code>끼리 그룹핑</strong>해 2개 이상이면 MultiMesh 1드로우콜로 병합한다. 이 규칙이 100~200 드로우콜 예산(§1.2)의 집행 주체다.</li><li>05의 성능 검증은 <strong>가구 개수 프록시(&quot;furniture<em>count &gt; 500 거부&quot;)를 폐기</strong>하고, asset 테이블 <code>polygon_count</code>에서 파생한 <strong>폴리곤/드로우콜 실측 기반값</strong>으로 판정한다(05 §1.2.13·§3.4). 따라서 같은 asset</em>id 500개는 서로 다른 500개보다 훨씬 저렴하며, 개수 자체는 한도가 아니다.</li></ul>
+<h3 id="63-텍스처-압축-메모리">6.3 텍스처 압축 &amp; 메모리</h3>
+<p><strong>압축 형식</strong>:</p>
+<ul><li><strong>VRAM 압축</strong>: BC1(Opaque RGB), BC3(RGBA), BC5(Normal maps) → GPU에서 자동 디코드. 데스크톱 네이티브 배포이므로 이 경로만 사용한다.</li><li><strong>파일 크기</strong>: PNG/JPEG 소스 → Godot 임포트 시 VRAM BC로 대체. WebP/Basis Universal·WASM용 경로는 미사용(웹 3D 미리보기 제거·WASM export 미사용, D11).</li></ul>
+<p><strong>텍스처 해상도 계층</strong>:</p>
+<div class="table-wrap"><table><thead><tr><th>거리</th><th>해상도</th><th>용도</th></tr></thead><tbody><tr><td>&lt; 5m</td><td>2K</td><td>근거리 상세</td></tr><tr><td>5-20m</td><td>1K</td><td>중거리</td></tr><tr><td>&gt; 20m</td><td>512</td><td>원거리</td></tr></tbody></table></div>
+<p><strong>메모리 계산</strong> (대략):</p>
+<pre class="code"><code>2K 이미지: 2048×2048 × 4채널 = 16 MB (압축 없음)
+Godot에서 VRAM 압축 적용 시: ~4 MB
+1K 이미지: ~1 MB (압축 후)</code></pre>
+<h3 id="64-오클루전-컬링occlusion-culling">6.4 오클루전 컬링(Occlusion Culling)</h3>
+<p><strong>Godot 4 OccluderInstance3D</strong>:</p>
+<ul><li>벽·파티션으로 인한 불가시 객체 자동 제거</li><li>Stage 2 이후 고도화</li></ul>
+<blockquote><strong>동적 씬 제약 (D7)</strong>: 라이트맵과 마찬가지로, office_layout JSON으로 씬이 런타임 생성되므로 <strong>에디터에서 전체 씬 Occluder를 사전 베이크할 수 없다</strong>(배포 때마다 방·벽 배치가 달라짐). 대안: (a) <strong>룸/벽 단위로 Occluder 지오메트리를 런타임에 부착</strong>(05 room 경계·collider에서 단순 박스 Occluder 생성), (b) 정적 외벽 등 배치가 고정된 요소만 프리팹에 Occluder 동봉. 아래 코드는 개별 벽 프리팹에 부착하는 방식의 예시다.</blockquote>
+<pre class="code lang-gdscript"><code># wall_occluder.gd — 개별 벽/파티션 프리팹에 부착(전체 씬 사전 베이크가 아님)
+extends OccluderInstance3D
+
+func _ready():
+    # 런타임 생성된 벽 메시의 단순 박스 형상으로 Occluder 구성
+    var box := BoxOccluder3D.new()
+    box.size = $Wall.mesh.get_aabb().size
+    occluder = box</code></pre>
+<h3 id="65-저사양-모드">6.5 저사양 모드</h3>
+<p><strong>품질 설정</strong> (기준 사양 = GTX 1650급 60fps / 내장그래픽 30fps, D22):</p>
+<ul><li><strong>Ultra</strong>(고사양 옵션): 모든 LOD, <strong>SDFGI 토글 ON</strong>, 고해상도 텍스처. 기본값 아님(고사양 PC에서만 권장)</li><li><strong>High</strong>(기준 사양 기본): LOD 2까지, <strong>직접광 + ReflectionProbe + SSAO</strong>(SDFGI OFF), 2K 텍스처 → GTX 1650급 60fps 목표</li><li><strong>Medium</strong>: LOD 2까지, 1K 텍스처, 파티클 감소</li><li><strong>Low</strong>(내장그래픽): LOD 1만, 512 텍스처, 그림자 축소, SSAO 경량화 → 내장그래픽 30fps 목표</li></ul>
+<hr>
+<h2 id="7-일정-마일스톤">7. 일정 &amp; 마일스톤</h2>
+<h3 id="71-stage-1-골든-샘플-소요-시간">7.1 Stage 1 (골든 샘플) 소요 시간</h3>
+<div class="table-wrap"><table><thead><tr><th>항목</th><th>시간</th><th>진행 상황</th></tr></thead><tbody><tr><td>브랜드월</td><td>8h</td><td>Ready to start</td></tr><tr><td>리셉션 데스크</td><td>10h</td><td>Ready to start</td></tr><tr><td>회의실 유리·문짝·화이트보드 세트(골조는 파라메트릭 생성, D9)</td><td>10h</td><td>Ready to start</td></tr><tr><td>오픈데스크 블록</td><td>12h</td><td>Ready to start</td></tr><tr><td>파티션·집중실·라운지</td><td>24h</td><td>Ready to start</td></tr><tr><td>모니터·LED·테이블</td><td>17h</td><td>Ready to start</td></tr><tr><td>미니맵·UI 뱃지·라벨</td><td>10h</td><td>Ready to start</td></tr><tr><td>아바타 5~10명 (Mixamo/기성 리그 활용, 2배 버퍼)</td><td>40h</td><td>별도 문서(08)</td></tr><tr><td>텍스처 수집 &amp; 최적화(Godot 임포트)</td><td>20h</td><td>Ready to start</td></tr><tr><td>씬 통합 &amp; 성능 검증</td><td>16h</td><td>Ready to start</td></tr><tr><td><strong>소계</strong></td><td><strong>~167h</strong></td><td><strong>~4주 (1인 풀타임)</strong></td></tr></tbody></table></div>
+<h3 id="72-stage-2-통합-일정">7.2 Stage 2 (통합) 일정</h3>
+<ul><li>ERP 동기화 모듈 추가: +40h</li><li>좌석 배정 시스템(05 <code>seat_assignment</code> 연동, D10): +24h</li><li><strong>총 Stage 1+2: ~231h (~6주)</strong></li></ul>
+<blockquote>위 시간은 3D/에셋 작업만의 추정이며, 전체 프로젝트 기준선은 <strong>58주(D6)</strong>다(10-roadmap.md). Stage 1+2(~6주)는 그 기준선 안의 3D 파이프라인 몫으로, D6과 모순되지 않는다. 아바타·커스텀 제작 시간은 최소 2배 버퍼를 반영했다.</blockquote>
+<hr>
+<h2 id="8-파일-구조-저장소-레이아웃">8. 파일 구조 &amp; 저장소 레이아웃</h2>
+<blockquote><strong>경로 규약(05와 통일, D8)</strong>: 배포 산출물은 각 모델 폴더의 <code>&lt;name&gt;.tscn</code>이며, 클라이언트 pak 경로는 <code>res://assets/3d/models/&lt;name&gt;/&lt;name&gt;.tscn</code>다. 이 경로가 05 씬빌더의 <code>ASSET_CATALOG[asset_id]</code> 값이다. 임포트 소스 glb는 <code>raw/</code>에 보관하되 pak에는 포함하지 않는다(런타임 glb 다운로드 없음). 버전은 파일명이 아니라 asset 테이블·CHANGELOG로 관리하고, <code>.tscn</code> 파일명은 고정한다.</blockquote>
+<pre class="code"><code>vituraloffice_new/
+├── assets/
+│   ├── 3d/
+│   │   ├── models/
+│   │   │   ├── brand_wall/
+│   │   │   │   ├── brand_wall.tscn         # 배포 산출물(pak 동봉). 05 ASSET_CATALOG 조회 대상
+│   │   │   │   ├── raw/
+│   │   │   │   │   └── brand_wall_v1.0.glb # 임포트 소스(저장소 보관, pak 미포함)
+│   │   │   │   ├── thumb.png               # 편집기 팔레트 썸네일
+│   │   │   │   ├── textures/
+│   │   │   │   │   ├── logo_albedo.png (2K)
+│   │   │   │   │   ├── wall_normal.png
+│   │   │   │   │   └── wall_roughness.png
+│   │   │   │   └── METADATA.json
+│   │   │   ├── reception_desk/
+│   │   │   ├── meeting_room_glass/
+│   │   │   ├── open_desk/
+│   │   │   └── ...
+│   │   ├── materials/
+│   │   │   ├── pbr/
+│   │   │   │   ├── wood_floor_006/ (from ambientCG)
+│   │   │   │   ├── concrete_wall/
+│   │   │   │   └── metal_frame/
+│   │   │   └── shaders/
+│   │   │       ├── glass.gdshader
+│   │   │       ├── emissive_led.gdshader
+│   │   │       └── billboard_ui.gdshader
+│   │   ├── hdri/
+│   │   │   └── kloppenheim_06_puresky_4k.exr (from Poly Haven)
+│   │   └── avatars/
+│   │       ├── base_male/
+│   │       └── base_female/
+│   ├── ui/
+│   │   ├── icons/
+│   │   │   ├── status_online.png
+│   │   │   ├── status_meeting.png
+│   │   │   └── ...
+│   │   └── fonts/
+│   │       └── roboto_mono_nerd.otf
+│   └── LICENSE/
+│       ├── THIRD_PARTY_LICENSES.md
+│       ├── brand_wall.txt (라이선스 명시)
+│       └── ...
+├── docs/
+│   ├── planning/
+│   │   ├── 07-3d-visual-asset-pipeline.md (이 문서)
+│   │   └── ASSET_REGISTRY.md (레지스트리 쿼리 예시)
+│   └── 3d/
+│       ├── GODOT_SETUP.md (엔진 설정)
+│       ├── SHADER_LIBRARY.md (커스텀 셰이더)
+│       └── SCENE_STRUCTURE.md (씬 구조)
+├── godot/
+│   ├── project.godot
+│   ├── scenes/
+│   │   ├── stage1_lobby.tscn
+│   │   ├── stage1_office.tscn
+│   │   ├── ui/
+│   │   │   ├── employee_panel.tscn
+│   │   │   ├── meeting_panel.tscn
+│   │   │   └── minimap.tscn
+│   │   └── ...
+│   ├── scripts/
+│   │   ├── player/
+│   │   ├── world/
+│   │   └── ui/
+│   └── addons/ (필요시)
+└── backend/
+    ├── app/
+    │   ├── models/
+    │   │   └── asset.py (Asset ORM)
+    │   ├── schemas/
+    │   │   └── asset.py
+    │   └── routers/
+    │       └── assets.py
+    └── migrations/
+        └── assets_table.sql</code></pre>
+<hr>
+<h2 id="9-qa-체크리스트-stage-1-완료-기준">9. QA 체크리스트 (Stage 1 완료 기준)</h2>
+<ul><li class="task"><input type="checkbox" disabled> <strong>라이선스</strong>: THIRD<em>PARTY</em>LICENSES.md 완료, 모든 CC0/CC-BY 출처 기록</li><li class="task"><input type="checkbox" disabled> <strong>성능</strong>: GTX 1650급 60fps / 내장그래픽 30fps 유지, 메모리 &lt; 2GB, 드로우콜 &lt; 200(동일 asset_id MultiMesh 병합)</li><li class="task"><input type="checkbox" disabled> <strong>시각 품질</strong>: Forward+ 실시간 직접광 + ReflectionProbe + SSAO 적용(SDFGI는 고사양 옵션), 모든 PBR 재질 적용</li><li class="task"><input type="checkbox" disabled> <strong>기능</strong>:<ul><li class="task"><input type="checkbox" disabled> 아바타 5~10명 로드 가능</li><li class="task"><input type="checkbox" disabled> 이름 태그 및 상태 뱃지 표시</li><li class="task"><input type="checkbox" disabled> 우측 직원 패널 업데이트</li><li class="task"><input type="checkbox" disabled> 하단 회의 패널 표시</li><li class="task"><input type="checkbox" disabled> 미니맵 네비게이션</li></ul></li><li class="task"><input type="checkbox" disabled> <strong>파일</strong>: Asset Registry 기입, 메타데이터 기록</li><li class="task"><input type="checkbox" disabled> <strong>문서</strong>: GODOT<em>SETUP.md, SCENE</em>STRUCTURE.md 완료</li></ul>
+<hr>
+<h2 id="loop-metadata">Loop Metadata</h2>
+<h3 id="upstream-documents-referenced">Upstream Documents Referenced</h3>
+<ul><li>01-prd.md (제품 비전 및 7단계 로드맵)</li><li>03-erp-integration.md (ERP 동기화, 단일 조직 스코프)</li><li>04-data-model.md (asset 테이블 정의)</li><li>12-tasks.md (Stage 1 태스크 분배)</li></ul>
+<h3 id="downstream-documents-affected">Downstream Documents Affected</h3>
+<ul><li>09-realtime-collaboration.md (실시간 협업 기능, Godot 헤드리스 서버)</li><li>docs/3d/GODOT_SETUP.md (신규 작성, 엔진 설정)</li><li>docs/3d/SCENE_STRUCTURE.md (신규 작성, 씬 조직)</li></ul>
+<h3 id="open-questions">Open Questions</h3>
+<ul><li><strong>아바타 리깅</strong>: Humanoid 기본 구조인지 사내 고유 스키마인지? → 08 문서에서 정의</li><li><strong>HDRI 교체</strong>: 사계절·날씨 표현 필요한가? (현재 기획: X)</li><li><strong>모바일 대응</strong>: WASM 배포 시 텍스처 해상도 재조정 필요 범위는? → 로드맵 &quot;완성 이후&quot; 결정</li></ul>
+<h3 id="assumptions">Assumptions</h3>
+<ol><li>사내 인트라넷 환경이라 CC0/CC-BY 에셋 사용 가능 (SA/NC/ND 배제, B2B 시 재검수 필수)</li><li>Forward+ 렌더러가 <strong>GTX 1650급에서 60fps / 내장그래픽에서 30fps</strong>로 작동한다고 가정(D22). 라이트맵·전체 씬 Occluder 사전 베이크는 동적 씬이라 불가(D7)</li><li><strong>Godot 4.x 안정 버전</strong> 사용(Godot 4에는 별도 LTS 채널이 없음)</li><li>아바타는 <strong>Mixamo/기성 리그를 정식 활용</strong>하고, 사내 리깅 표준은 그 위에 정의(§4.1·08 문서)</li><li>배포 산출물은 <code>.tscn</code>(클라이언트 pak 동봉), 런타임 glb 다운로드/CDN 없음(D8)</li></ol>
+<h3 id="validation-criteria">Validation Criteria</h3>
+<ul><li class="task"><input type="checkbox" disabled> Stage 1 완료 후 3D 클라이언트 데모 실행 가능</li><li class="task"><input type="checkbox" disabled> Asset Registry DB에 모든 모델 메타데이터 저장(tscn<em>path·dimension·footprint</em>2d·thumbnail_url 포함)</li><li class="task"><input type="checkbox" disabled> GTX 1650급 60fps / 내장그래픽 30fps 성능 벤치마크 통과(D22)</li><li class="task"><input type="checkbox" disabled> 라이선스 규정 준수 검증 완료(SA/NC/ND 미포함)</li></ul>
+<h3 id="risks">Risks</h3>
+<ul><li><strong>라이선스 검수 지연</strong>: CC-BY 모델 선택 시 저자 확인 소요 → 사전에 백업 CC0 모델 확보</li><li><strong>성능 저하</strong>: 폴리곤 수 과다 → LOD 적극 활용, 경계 드로우콜 모니터링</li><li><strong>에셋 조달 실패</strong>: 특정 모델 삭제/변경 → 다중 소스 확보, 자체 제작 계획 유연성</li></ul>
+<hr>
+<h2 id="변경-이력">변경 이력</h2>
+<div class="table-wrap"><table><thead><tr><th>버전</th><th>일자</th><th>변경 내용</th></tr></thead><tbody><tr><td>1.0</td><td>2026-07-01</td><td>초안</td></tr><tr><td>1.1</td><td>2026-07-02</td><td>00-decisions 반영: D7 라이팅(실시간 직접광+ReflectionProbe+SSAO 기본·SDFGI 고사양 옵션, 라이트맵/Occluder 사전 베이크 배제 사유), D8 에셋 전달(.tscn pak 동봉·런타임 다운로드/CDN 배제·Draco/gltfpack 제거·Godot 임포트 최적화·경로 규약 05 통일), D9(회의실 골조 프리팹 제거→파라메트릭, 가구/소품만), 시간 재추정(Mixamo 정식 승격·§7.1 167h·§7.2 231h·D6 정합), asset 테이블 편집기 메타(footprint<em>2d·thumbnail</em>url·dimension·tscn_path) 및 dimension 일치 검증, 드로우콜 예산 MultiMesh 집행 규칙(개수 프록시 폐기), 사실 오류 정정(Poly Haven 연혁·ISO 14644 제거·CC-SA ShareAlike·Godot 4.x 안정판·메모리 2GB·미니맵 우측 하단), 성능 기준 D22(GTX 1650/내장) 통일</td></tr></tbody></table></div>
+<hr>
+<p><strong>작성일</strong>: 2026-07-01 <strong>최종 수정</strong>: 2026-07-02 <strong>담당</strong>: 3d-engine-specialist <strong>검수 예정</strong>: 완료 후 orchestrator 병합</p>
+<div class="meta-foot">원본: <code>07-3d-visual-asset-pipeline.md</code> · 자동 생성 2026-07-02 · md-to-html</div>
+</main>
+</div>
+
+<script type="module">
+try{
+  const m = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  m.default.initialize({startOnLoad:true, theme: dark?'dark':'default', securityLevel:'loose'});
+}catch(e){
+  document.querySelectorAll('.mermaid').forEach(el=>{
+    const pre=document.createElement('pre');pre.className='code';
+    pre.textContent=el.textContent;el.replaceWith(pre);
+  });
+}
+</script>
+</body></html>

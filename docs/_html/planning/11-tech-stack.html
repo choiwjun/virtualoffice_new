@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11. 기술 스택 결정</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">11. 기술 스택 결정</div><div class="sub">11-tech-stack.md</div><a class="lvl1" href="#11-기술-스택-결정">11. 기술 스택 결정</a><a class="lvl2" href="#문서-개요">문서 개요</a><a class="lvl2" href="#1-기술-스택-선택-기준">1. 기술 스택 선택 기준</a><a class="lvl3" href="#11-의사결정-원칙">1.1 의사결정 원칙</a><a class="lvl3" href="#12-선택-카테고리-구분">1.2 선택 카테고리 구분</a><a class="lvl2" href="#2-기술-스택-상세">2. 기술 스택 상세</a><a class="lvl3" href="#21-3d-클라이언트-데스크톱">2.1 3D 클라이언트 (데스크톱)</a><a class="lvl3" href="#22-실시간-서버-가상오피스-권위">2.2 실시간 서버 (가상오피스 권위)</a><a class="lvl3" href="#23-백엔드-api-업무kpi연동">2.3 백엔드 API (업무/KPI/연동)</a><a class="lvl3" href="#24-데이터베이스">2.4 데이터베이스</a><a class="lvl3" href="#25-웹-관리업무-콘솔">2.5 웹 관리/업무 콘솔</a><a class="lvl3" href="#26-화상회의-livekit">2.6 화상회의 (LiveKit)</a><a class="lvl3" href="#261-stt-회의록-스택-d5-정식-포함">2.6.1 STT 회의록 스택 (D5, 정식 포함)</a><a class="lvl3" href="#27-3d-에셋-모델텍스처오디오">2.7 3D 에셋 (모델·텍스처·오디오)</a><a class="lvl3" href="#28-인공지능-kpi-초안">2.8 인공지능 (KPI 초안)</a><a class="lvl3" href="#29-편집-레이아웃-도구-웹-ui">2.9 편집 &amp; 레이아웃 도구 (웹 UI)</a><a class="lvl2" href="#3-mechanical-vs-taste-매트릭스">3. Mechanical vs Taste 매트릭스</a><a class="lvl3" href="#31-강제-사항-기술적-필연">3.1 강제 사항 (기술적 필연)</a><a class="lvl3" href="#32-선택-사항-조직-취향">3.2 선택 사항 (조직 취향)</a><a class="lvl2" href="#4-개발-환경-툴체인">4. 개발 환경 &amp; 툴체인</a><a class="lvl3" href="#41-로컬-개발-환경">4.1 로컬 개발 환경</a><a class="lvl3" href="#42-빌드-배포-파이프라인">4.2 빌드 &amp; 배포 파이프라인</a><a class="lvl3" href="#43-자동-업데이트-버전-관리">4.3 자동 업데이트 &amp; 버전 관리</a><a class="lvl3" href="#44-로깅-모니터링">4.4 로깅 &amp; 모니터링</a><a class="lvl2" href="#5-라이선스-요약">5. 라이선스 요약</a><a class="lvl2" href="#6-기술-리스크-완화">6. 기술 리스크 &amp; 완화</a><a class="lvl2" href="#7-차기-단계별-기술-결정">7. 차기 단계별 기술 결정</a><a class="lvl3" href="#71-현재-단일-조직-도그푸딩">7.1 현재 (단일 조직, 도그푸딩)</a><a class="lvl3" href="#72-이후-phase-b2b-멀티테넌트">7.2 이후 Phase (B2B, 멀티테넌트)</a><a class="lvl2" href="#8-기술-스택-체크리스트">8. 기술 스택 체크리스트</a><a class="lvl3" href="#마이그레이션-또는-변경-불가-항목">마이그레이션 또는 변경 불가 항목</a><a class="lvl3" href="#검증-항목">검증 항목</a><a class="lvl3" href="#문서화-항목">문서화 항목</a><a class="lvl2" href="#9-참고-문서-및-외부-자료">9. 참고 문서 및 외부 자료</a><a class="lvl3" href="#공식-문서">공식 문서</a><a class="lvl3" href="#사내-참고">사내 참고</a><a class="lvl2" href="#loop-metadata">Loop Metadata</a><a class="lvl3" href="#upstream-documents-referenced">Upstream Documents Referenced</a><a class="lvl3" href="#downstream-documents-affected">Downstream Documents Affected</a><a class="lvl3" href="#open-questions">Open Questions</a><a class="lvl3" href="#assumptions">Assumptions</a><a class="lvl3" href="#validation-criteria">Validation Criteria</a><a class="lvl3" href="#risks-mitigation">Risks &amp; Mitigation</a><a class="lvl2" href="#변경-이력">변경 이력</a></nav>
+<main><h1 id="11-기술-스택-결정">11. 기술 스택 결정</h1>
+<h2 id="문서-개요">문서 개요</h2>
+<ul><li><strong>대상</strong>: 개발팀(L3+), 아키텍처 리뷰어</li><li><strong>목적</strong>: 가상오피스 플랫폼 기술 스택 확정 및 근거 문서화</li><li><strong>유효 범위</strong>: 단일 조직(단일 company_id) 도그푸딩 버전</li><li><strong>버전</strong>: v1.1</li><li><strong>마지막 갱신</strong>: 2026-07-02 (00-decisions.md v1.0 정합 반영)</li></ul>
+<blockquote>본 문서의 모든 결정은 <strong>00-decisions.md(정본)</strong> 를 따른다. 충돌 시 정본이 이긴다. 변경 이력은 하단 참조.</blockquote>
+<hr>
+<h2 id="1-기술-스택-선택-기준">1. 기술 스택 선택 기준</h2>
+<h3 id="11-의사결정-원칙">1.1 의사결정 원칙</h3>
+<div class="table-wrap"><table><thead><tr><th>원칙</th><th>설명</th></tr></thead><tbody><tr><td><strong>품질 최우선</strong></td><td>완성된 MVP가 아닌 스펙 전체를 제대로 구현</td></tr><tr><td><strong>도그푸딩 최적화</strong></td><td>사내(단일조직) 설치/운영 기준. B2B·멀티테넌트는 이후</td></tr><tr><td><strong>기존 ERP 통합</strong></td><td>Space-Daily(FastAPI + SQLAlchemy + PostgreSQL)와 무결한 양방향 연동</td></tr><tr><td><strong>3D 품질 기준</strong></td><td>Godot 4 Forward+ 렌더러 → 최고품질 네이티브 데스크톱</td></tr><tr><td><strong>1인 개발 + AI 협업</strong></td><td>최소한의 팀 규모. 자동화·코드생성·문서화 수용적</td></tr></tbody></table></div>
+<h3 id="12-선택-카테고리-구분">1.2 선택 카테고리 구분</h3>
+<p><strong>Mechanical (기술적 필연)</strong></p>
+<ul><li>ERP 통합을 위해 FastAPI 선택 (언어·ORM·비동기 통일)</li><li>PostgreSQL (ERP와 동일 DB)</li><li>Godot 4 (3D 품질 요건의 유일한 선택지)</li><li>LiveKit (WebRTC 자체호스팅, Apache-2.0 라이선스)</li></ul>
+<p><strong>Taste (조직 선호)</strong></p>
+<ul><li>Next.js + TailwindCSS (사내 웹 도구, TDS 불필요)</li><li>Claude / Gemini (AI KPI 초안. Claude = Anthropic 직원 선호, Gemini = ERP와 통일)</li></ul>
+<hr>
+<h2 id="2-기술-스택-상세">2. 기술 스택 상세</h2>
+<h3 id="21-3d-클라이언트-데스크톱">2.1 3D 클라이언트 (데스크톱)</h3>
+<pre class="code"><code>Layer        | Component              | Version | License | Why
+-------------|------------------------|---------|---------|-------------------------------------------
+3D Runtime   | Godot (네이티브)      | 4.3+    | MIT     | Forward+ 렌더러 품질, 자체호스팅 서버 가능
+Language     | GDScript (확정, D2)    | -       | MIT     | 클라이언트·헤드리스 서버 모두 GDScript. 산출물 .gd
+Physics/Nav | Godot 내장             | -       | MIT     | 충돌검증, 회의실 점유, 근접상호작용
+UI/HUD      | Godot Control          | -       | MIT     | 이름/상태 HUD, 직원패널, 회의패널
+Networking  | Godot Multiplayer      | -       | MIT     | WebSocket(WSS) 단일 기반 동기화 (D1)
+Rendering   | Forward+               | -       | MIT     | 광원·그림자·후처리. Deferred 대비 품질↑</code></pre>
+<p><strong>근거</strong>:</p>
+<ul><li>Unreal Engine: C++ 컴파일 → 도그푸딩 리스테 시간↑, 팀 규모 오버</li><li>Unity: 유니버설 라이선스 → 비즈니스 복잡성</li><li>Three.js(웹): WASM export 시 렌더러 성능 저하 → 최고품질 목표 위배</li><li><strong>결정</strong>: Godot 4 Forward+ 네이티브 데스크톱 <strong>확정</strong></li></ul>
+<hr>
+<h3 id="22-실시간-서버-가상오피스-권위">2.2 실시간 서버 (가상오피스 권위)</h3>
+<pre class="code"><code>Layer        | Component              | Role          | Language | Why
+-------------|------------------------|---------------|----------|-------------------
+Server App   | Godot 4 헤드리스       | 게임 월드     | GDScript | 동일 엔진, 오피스 씬 재사용(렌더러 미로드)
+Networking   | WebSocket(WSS)         | 동기화 프로토 | -        | TLS 내장, 재택 접속성, 순서·신뢰성 (D1)
+Authority    | 서버 Side (메모리 권위)| 검증          | -        | 아바타 이동, 충돌, 회의실 점유
+State        | 메모리 권위 + 1~5초 배치 push(FastAPI 경유) | 근접·상태 | - | DB 직접 접근 금지, FastAPI 단일화 (D3)</code></pre>
+<p><strong>근거</strong>:</p>
+<ul><li>Node.js: 게임 물리·3D 공간 검증 로직 → 결국 GDScript와 중복개발</li><li><strong>Presence vs Attendance 분리</strong>: 공식 출퇴근(ERP read-only) ≠ 3D 프레즌스(우리 소유, 로그인·위치·회의실 등 트리거). 가상오피스 장애가 근태에 영향 없음(격리 원칙), 근태는 ERP 원본 명확화.<ul><li>3D 프레즌스 = <strong>7종(D13)</strong>: <code>offline / online / working / meeting / focus / away / external</code>. 트리거: 로그인→online, 좌석/팀 구역 도착→working, 회의실 입장→meeting, <strong>5분</strong> 무입력→away, 집중모드 토글→focus, 외근/출장 수동→external, 로그아웃→offline. GPS 기반 trip_*·returning은 폐기</li><li>3D 화면: &quot;ERP상 오늘 check_in된 직원&quot; 읽기 병기 표시</li><li>옵션(v1.x): &quot;3D 로그인 시 ERP check_in 자동&quot; 훅 가능하되 ERP 원본·수동 폴백 유지</li></ul></li><li><strong>결정</strong>: Godot 4 헤드리스 서버 <strong>확정</strong>, 동기화는 <strong>WebSocket(WSS) 단일</strong>(D1)</li></ul>
+<hr>
+<h3 id="23-백엔드-api-업무kpi연동">2.3 백엔드 API (업무/KPI/연동)</h3>
+<pre class="code"><code>Framework    | FastAPI
+Version      | 0.115+
+Language     | Python 3.11+
+Async        | asyncio + uvicorn
+ORM          | SQLAlchemy async (SQLModel)
+DB           | PostgreSQL 17.5+
+Auth         | PyJWT (HS256, 자체 시크릿) — D4
+Task Queue   | APScheduler + DB 영속 재시도 큐 (D21)
+Monitoring   | Prometheus + Grafana + Loki + Uptime Kuma (D21)</code></pre>
+<p><strong>근거</strong>:</p>
+<ul><li><strong>ERP 통일</strong>: Space-Daily는 FastAPI + SQLAlchemy async + PostgreSQL → 동일 스택으로 직접 읽기·쓰기·브랜치 작업 효율↑</li><li>Python 강점: 데이터 파이프라인, AI(Claude/Gemini SDK), 비동기 DB 읽기</li><li>대안(Rust/Go): 성능 이득 &lt; ERP 통일 비용</li><li><strong>결정</strong>: FastAPI + SQLAlchemy async <strong>확정</strong></li></ul>
+<hr>
+<h3 id="24-데이터베이스">2.4 데이터베이스</h3>
+<div class="table-wrap"><table><thead><tr><th>역할</th><th>DB</th><th>버전</th><th>근거</th></tr></thead><tbody><tr><td><strong>Primary (우리)</strong></td><td>PostgreSQL</td><td>17.5+</td><td>JSON/JSONB(office_layout), 비동기, ERP와 동일</td></tr><tr><td><strong>Cache (선택)</strong></td><td>Redis</td><td>7.0+</td><td>캐시용. <strong>배치 재시도 큐는 Redis가 아닌 PostgreSQL 영속 테이블 사용</strong>(D21)</td></tr><tr><td><strong>Search</strong></td><td>PostgreSQL fulltext</td><td>17.5+</td><td><strong>PG fulltext 확정</strong>(D21). Elasticsearch/ELK 배제(1인 운영 규모 초과, B2B 확대 시 재검토)</td></tr></tbody></table></div>
+<p><strong>근거</strong>:</p>
+<ul><li>MySQL: JSON 문법 차이, 비동기 드라이버 성숙도↓</li><li>단일 조직 도그푸딩이므로 샤딩/다중 인스턴스 불필요</li><li><strong>결정</strong>: PostgreSQL 17.5+ <strong>확정</strong></li></ul>
+<hr>
+<h3 id="25-웹-관리업무-콘솔">2.5 웹 관리/업무 콘솔</h3>
+<pre class="code"><code>Framework    | Next.js (App Router)
+Language     | TypeScript
+CSS          | TailwindCSS
+Version      | Node.js 20+
+Hosting      | 사내 VM (도그푸딩)</code></pre>
+<p><strong>기능 범위</strong>:</p>
+<ul><li>대시보드(KPI, 통계)</li><li>사무실 배치 편집기(Konva.js 2D, 3D 미리보기)</li><li>조직도 편집(React Flow)</li><li>회의록/액션아이템 관리</li><li>근태/휴가 조회(ERP read-only)</li><li>KPI 검토 &amp; 조정(관리자)</li></ul>
+<p><strong>근거</strong>:</p>
+<ul><li>사내 도구 → TDS(Toss Design System) 불필요</li><li>React Flow: 조직도 드래그·레이아웃 자동화 → 수동 SVG 편집보다 생산성↑</li><li>Konva.js: 좌석 배치 2D 편집, 다중 선택·변형 지원</li><li><strong>결정</strong>: Next.js + TailwindCSS <strong>확정</strong></li></ul>
+<hr>
+<h3 id="26-화상회의-livekit">2.6 화상회의 (LiveKit)</h3>
+<pre class="code"><code>Component     | LiveKit
+Deployment    | Self-hosted (사내 VM)
+License       | Apache-2.0
+Protocol      | WebRTC (STUN/TURN)
+Capacity      | 최대 100명(1회의실) 이상 확장 가능</code></pre>
+<p><strong>기능</strong>:</p>
+<ul><li>회의실 스트리밍(카메라·마이크)</li><li>스크린 공유</li><li>녹화(선택)</li><li>회의 메타데이터(참석자, 시간, 상태)</li></ul>
+<p><strong>근거</strong>:</p>
+<ul><li>Jitsi: 경량이나 LiveKit 대비 메타데이터 API↓</li><li>Zoom/Teams: 클라우드 종속, 용역 복잡성</li><li><strong>자체호스팅(On-Premise)</strong>: 미디어 데이터 주권(회의가 인사평가 근거), ERP·백엔드과 동일 사내망 지연 이점, 단일 SFU 노드로 충분(오토스케일 불필요→1인 운영 부담 경감)</li><li><strong>LiveKit Cloud 배제</strong>: 민감 미디어 외부 경유, SaaS 구독비, B2B 이후 우선순위</li><li><strong>신규 AWS 배제</strong>: 데이터 주권, 사내 우선 고려</li><li><strong>접속 경로</strong>: 재택·하이브리드·외근자는 사내 VPN 또는 TURN-over-TLS(443 공개 엔드포인트) 접속</li><li><strong>결정</strong>: 사내 self-host(LiveKit+coturn Docker), 단일 SFU 확정. LiveKit Cloud·신규 AWS 배제.</li></ul>
+<hr>
+<h3 id="261-stt-회의록-스택-d5-정식-포함">2.6.1 STT 회의록 스택 (D5, 정식 포함)</h3>
+<pre class="code"><code>Component     | 역할                        | 후보 / 비고
+--------------|-----------------------------|------------------------------------------
+LiveKit Egress| 회의 트랙별 오디오 추출     | 화자별 분리 저장(원본 90일 보존, D20(b))
+STT 엔진      | 한국어 화자분리 음성→텍스트 | 후보: (a) OpenAI Whisper + pyannote 화자분리(self-host), (b) 클라우드 STT(국외이전 고지 필요), (c) 상용 한국어 STT API
+후처리(AI)    | 요약·결정사항·액션아이템    | Claude(기본)/Gemini(대안). 실명→사번 가명화 후 전송(D20(d))</code></pre>
+<ul><li><strong>흐름</strong>: LiveKit Egress → STT(화자분리) → 회의록 초안 자동 생성 → 호스트/참석자 검토·확정(수동 입력은 폴백).</li><li><strong>컴플라이언스</strong>: 회의 시작 시 전원 고지+동의(D20(b)). 누락률 &lt; 5% 목표(수동 전사 대조 측정, D22).</li><li><strong>검증</strong>: 스파이크 S2(STT 파이프라인 PoC, 한국어 화자분리 품질 측정)에서 후보 확정.</li><li><strong>결정</strong>: STT 정식 포함 확정. 엔진 후보는 S2에서 품질·비용·데이터 주권 기준으로 선정.</li></ul>
+<hr>
+<h3 id="27-3d-에셋-모델텍스처오디오">2.7 3D 에셋 (모델·텍스처·오디오)</h3>
+<div class="table-wrap"><table><thead><tr><th>에셋 유형</th><th>도구</th><th>형식</th><th>최적화</th></tr></thead><tbody><tr><td><strong>모델(가구/건축)</strong></td><td>Blender</td><td>glTF 2.0 / GLB</td><td>gltfpack, glTF-Transform</td></tr><tr><td><strong>텍스처</strong></td><td>Blender + CC0 라이브러리</td><td>PNG/WebP</td><td>압축(tinypng, webp)</td></tr><tr><td><strong>소스(외부)</strong></td><td>ambientCG, Poly Haven, Kenney, Quaternius</td><td>glTF / OBJ</td><td>원본 저장, CC0 확인</td></tr><tr><td><strong>레지스트리</strong></td><td>asset 테이블(우리 DB)</td><td>JSON 메타</td><td>author, license, hash, modified_by</td></tr></tbody></table></div>
+<p><strong>근거</strong>:</p>
+<ul><li>자체 오피스 키트(로비, 회의실, 라운지, 집중실 모듈)로 맞춤 어셈블리 → 번들 크기 최소</li><li>CC0 우선 → 상업 이용/재배포 자유, 귀속표시 간소화</li><li>glTF-Transform: 메시 최적화, 드레이닝, 컬러공간 정규화 → 로딩시간↓</li><li><strong>결정</strong>: Blender + glTF + CC0 <strong>확정</strong></li></ul>
+<hr>
+<h3 id="28-인공지능-kpi-초안">2.8 인공지능 (KPI 초안)</h3>
+<div class="table-wrap"><table><thead><tr><th>용도</th><th>선택</th><th>근거</th></tr></thead><tbody><tr><td><strong>KPI 평가 초안</strong></td><td>Claude(Anthropic)</td><td>추론 품질, 1인 개발 친화적</td></tr><tr><td><strong>대안</strong></td><td>Gemini</td><td>ERP Space-Daily와 통일(현재 사용 중)</td></tr></tbody></table></div>
+<p><strong>역할</strong>:</p>
+<ul><li>업무결과(work<em>log) + 회의록(meeting</em>minute) + 외부활동(external_activities) 수집</li><li>프롬프트: 성과도·협업품질·책임감·지속성 정량화</li><li>출력: ai<em>draft(텍스트) → kpi</em>result 저장 → 관리자 검토 &amp; 조정</li><li><strong>최종이 아닌 초안</strong>: 사유+개선액션 함께 제시, 관리자 개입 필수</li></ul>
+<p><strong>근거</strong>:</p>
+<ul><li>로컬 LLM(Ollama): 초안 품질 저하, 추론 시간↑ → EOD 배치 33시간 한계</li><li><strong>결정</strong>: Claude(기본) + Gemini(대안) <strong>확정</strong></li></ul>
+<hr>
+<h3 id="29-편집-레이아웃-도구-웹-ui">2.9 편집 &amp; 레이아웃 도구 (웹 UI)</h3>
+<div class="table-wrap"><table><thead><tr><th>도구</th><th>용도</th><th>라이선스</th><th>선택 이유</th></tr></thead><tbody><tr><td><strong>Konva.js</strong></td><td>좌석 배치 2D 편집(드래그, 회전, 다중선택)</td><td>MIT</td><td>캔버스 추상화, 이벤트 처리↑</td></tr><tr><td><strong>React Flow</strong></td><td>조직도 편집(계층, 라인, 색, 레이아웃 자동화)</td><td>MIT</td><td>그래프 레이아웃 라이브러리 내장</td></tr><tr><td><strong>Mermaid</strong></td><td>다이어그램 프리뷰(플로우, ER, 간트)</td><td>MIT</td><td>문서 포함 용이</td></tr></tbody></table></div>
+<p><strong>근거</strong>:</p>
+<ul><li>Canvas 직접 작성: 이벤트 처리·변형·대칭이동 번거로움</li><li><strong>결정</strong>: Konva.js + React Flow <strong>확정</strong></li></ul>
+<hr>
+<h2 id="3-mechanical-vs-taste-매트릭스">3. Mechanical vs Taste 매트릭스</h2>
+<h3 id="31-강제-사항-기술적-필연">3.1 강제 사항 (기술적 필연)</h3>
+<div class="mermaid">graph TD
+    A[&quot;필연&quot;] --&gt; B[&quot;FastAPI (ERP 통합)&quot;]
+    A --&gt; C[&quot;PostgreSQL (ERP 일치)&quot;]
+    A --&gt; D[&quot;Godot 4 (3D 품질)&quot;]
+    A --&gt; E[&quot;LiveKit (WebRTC 자체호스팅)&quot;]
+    A --&gt; F[&quot;Godot 헤드리스 (권위서버)&quot;]
+    
+    B --&gt; B1[&quot;asyncio, SQLAlchemy, uvicorn&quot;]
+    C --&gt; C1[&quot;JSON/JSONB 컬럼(office_layout)&quot;]
+    D --&gt; D1[&quot;Forward+ 렌더러, GDScript&quot;]
+    
+    style A fill:#ffcccc
+    style B fill:#ffdddd
+    style C fill:#ffdddd
+    style D fill:#ffdddd
+    style E fill:#ffdddd
+    style F fill:#ffdddd</div>
+<h3 id="32-선택-사항-조직-취향">3.2 선택 사항 (조직 취향)</h3>
+<pre class="code"><code>조직 선호도 | 선택       | 대안              | 결정
+-----------|-----------|------------------|--------
+높음       | Next.js    | SvelteKit, Remix  | ✓ Next.js
+높음       | TailwindCSS| Bootstrap, Pico   | ✓ Tailwind
+중간       | Claude     | Gemini, GPT-4     | ✓ Claude(기본)
+낮음(선택) | Redis      | Memcached, DragonflyDB | ✓ 선택사항</code></pre>
+<hr>
+<h2 id="4-개발-환경-툴체인">4. 개발 환경 &amp; 툴체인</h2>
+<h3 id="41-로컬-개발-환경">4.1 로컬 개발 환경</h3>
+<h4 id="411-필수-설치">4.1.1 필수 설치</h4>
+<pre class="code lang-bash"><code># 3D 클라이언트
+Godot 4.3+ (네이티브 + 헤드리스)
+Git LFS (대용량 에셋: .blend, .glb)
+
+# 백엔드
+Python 3.11+
+pip, venv
+PostgreSQL 17.5+ (로컬 또는 Docker)
+Redis 7.0+ (선택)
+
+# 웹 프론트엔드
+Node.js 20+ (npm/pnpm)
+
+# 3D 에셋 제작
+Blender 4.0+ (GLB export)
+
+# 공통
+Docker / Docker Compose
+Git (GitHub private)</code></pre>
+<h4 id="412-ide-확장">4.1.2 IDE &amp; 확장</h4>
+<div class="table-wrap"><table><thead><tr><th>역할</th><th>IDE</th><th>확장/플러그인</th></tr></thead><tbody><tr><td><strong>GDScript</strong></td><td>Godot Editor</td><td>내장 + LSP</td></tr><tr><td><strong>Python</strong></td><td>VS Code / PyCharm</td><td>Pylance, FastAPI, SQLAlchemy</td></tr><tr><td><strong>TypeScript</strong></td><td>VS Code</td><td>TypeScript LSP, ESLint, Prettier</td></tr><tr><td><strong>SQL</strong></td><td>pgAdmin / DBeaver</td><td>PostgreSQL 드라이버</td></tr><tr><td><strong>3D</strong></td><td>Blender</td><td>glTF-Transform addon</td></tr></tbody></table></div>
+<hr>
+<h3 id="42-빌드-배포-파이프라인">4.2 빌드 &amp; 배포 파이프라인</h3>
+<h4 id="421-자동화-도구">4.2.1 자동화 도구</h4>
+<pre class="code lang-yaml"><code>CI/CD:
+  Platform: GitHub Actions (또는 GitLab CI)
+  Trigger:
+    - 각 단계(Phase) 브랜치 push
+    - PR 병합 시 통합 테스트
+  
+  Job:
+    - Python 린트/타입 체크 (ruff, mypy)
+    - TypeScript 컴파일 (tsc)
+    - 유닛테스트 (pytest, vitest)
+    - 통합테스트 (API + DB)
+    - Godot 빌드 (headless 서버, 클라이언트)
+    - 에셋 최적화 체크 (gltfpack 결과)
+
+Deployment:
+  개발: 사내 VM (수동 또는 cron)
+  테스트: GitHub Actions 아티팩트
+  프로덕션(도그푸딩): 사내 배포 스크립트</code></pre>
+<h4 id="422-fastapi-빌드">4.2.2 FastAPI 빌드</h4>
+<pre class="code lang-bash"><code># requirements.txt 의존성
+fastapi==0.115+
+uvicorn[standard]==0.27+
+sqlalchemy==2.0+
+sqlmodel==0.0.14+
+psycopg[binary]==3.2+
+pydantic==2.0+
+alembic==1.13+      # DB 마이그레이션
+PyJWT==2.9+         # JWT (HS256, 자체 시크릿). python-jose는 유지보수 중단·CVE로 폐기 (D4)
+apscheduler==3.10+  # 배치 스케줄 (Celery 미사용, DB 영속 재시도 큐 병행) — D21
+anthropic==0.20+    # Claude SDK
+google-generativeai==0.3+  # Gemini SDK (대안)
+aiosqlite==0.19+    # async SQLite (테스트용)
+
+# 빌드
+pip install -r requirements.txt
+alembic upgrade head  # DB 마이그레이션
+uvicorn app.main:app --host 0.0.0.0 --port 8000</code></pre>
+<h4 id="423-nextjs-빌드">4.2.3 Next.js 빌드</h4>
+<pre class="code lang-bash"><code>npm install
+npm run build
+npm run start      # 프로덕션 서버
+# 또는 PM2로 관리
+pm2 start &quot;npm run start&quot; --name &quot;voffice-web&quot;</code></pre>
+<h4 id="424-godot-빌드">4.2.4 Godot 빌드</h4>
+<pre class="code lang-bash"><code># 클라이언트 (데스크톱) — Godot 4 export 형식
+godot --headless --export-release &quot;Windows Desktop&quot; build/windows/voffice.exe
+
+# 헤드리스 서버 (동일 프로젝트, 서버 export 프리셋)
+# 존재하지 않는 --standalone-mode 플래그는 제거
+godot --headless --export-release &quot;Linux/X11&quot; build/server/voffice-server
+
+# 에셋 최적화
+gltfpack -i model.gltf -o model-opt.glb</code></pre>
+<h4 id="425-데이터베이스-마이그레이션">4.2.5 데이터베이스 마이그레이션</h4>
+<pre class="code lang-bash"><code># Alembic 초기화 (이미 완료)
+# alembic init alembic
+
+# 마이그레이션 생성
+alembic revision --autogenerate -m &quot;Add kpi_results table&quot;
+
+# 적용
+alembic upgrade head
+
+# 롤백
+alembic downgrade -1</code></pre>
+<hr>
+<h3 id="43-자동-업데이트-버전-관리">4.3 자동 업데이트 &amp; 버전 관리</h3>
+<h4 id="431-클라이언트-자동-업데이트-godot">4.3.1 클라이언트 자동 업데이트 (Godot)</h4>
+<pre class="code lang-gdscript"><code># 실시간 체크 (백그라운드)
+func check_for_update():
+    var http = HTTPRequest.new()
+    add_child(http)
+    var response = await http.request_completed
+    # 파일 다운로드 → 압축해제 → 재시작
+    if newer_version:
+        download_and_apply_patch()</code></pre>
+<p><strong>규칙</strong>:</p>
+<ul><li>서버에서 최신 버전 메타(버전, 체크섬, 다운로드 URL) 배포</li><li>클라이언트 기동 시 버전 체크</li><li>바이너리 델타(diff)로 다운로드 용량↓(선택)</li></ul>
+<h4 id="432-서버-무중단-업데이트">4.3.2 서버 무중단 업데이트</h4>
+<pre class="code lang-bash"><code># Blue-Green 배포
+1. 신 서버(Green) 기동
+2. 로드밸런서(Nginx) 라우팅 전환
+3. 구 서버(Blue) 종료
+
+# 또는 롤링 업데이트 (Kubernetes 없이)
+1. API 게이트웨이: 신규 연결만 Green으로
+2. 기존 연결 drain (timeout 60초)
+3. Blue 배포 완료 → 상태 동기화</code></pre>
+<h4 id="433-의존성-업데이트">4.3.3 의존성 업데이트</h4>
+<div class="table-wrap"><table><thead><tr><th>주기</th><th>항목</th><th>전략</th></tr></thead><tbody><tr><td><strong>주 1회</strong></td><td>Python 보안 패치</td><td>dependabot 또는 pip-audit</td></tr><tr><td><strong>월 1회</strong></td><td>FastAPI, SQLAlchemy, Godot minor</td><td>호환성 테스트 후 적용</td></tr><tr><td><strong>분기 1회</strong></td><td>Node.js, Next.js, Tailwind</td><td>브랜치별 테스트</td></tr><tr><td><strong>긴급</strong></td><td>보안 취약점</td><td>즉시 패치 후 재배포</td></tr></tbody></table></div>
+<hr>
+<h3 id="44-로깅-모니터링">4.4 로깅 &amp; 모니터링</h3>
+<h4 id="441-애플리케이션-로그">4.4.1 애플리케이션 로그</h4>
+<pre class="code lang-python"><code># FastAPI
+import logging
+logger = logging.getLogger(&quot;voffice&quot;)
+logger.info(&quot;User connected&quot;, extra={&quot;user_id&quot;: uid})
+logger.error(&quot;DB sync failed&quot;, exc_info=True)
+
+# 구조화 로그 (JSON)
+import structlog
+structlog.configure(...)
+logger = structlog.get_logger()</code></pre>
+<p><strong>수집</strong>:</p>
+<ul><li>로컬 파일 → rsyslog → <strong>Loki</strong> 중앙화 (D21). ELK는 폐기(1인 운영 규모 초과)</li></ul>
+<h4 id="442-메트릭-prometheus-선택">4.4.2 메트릭 (Prometheus 선택)</h4>
+<pre class="code"><code>voffice_api_requests_total{endpoint, method, status}
+voffice_db_query_duration_seconds
+voffice_presence_active_users
+voffice_meeting_concurrent_count
+voffice_kpi_generation_duration_seconds</code></pre>
+<h4 id="443-godot-클라이언트-로그">4.4.3 Godot 클라이언트 로그</h4>
+<pre class="code lang-gdscript"><code># 원격 로깅 (선택)
+func report_error(error_msg: String):
+    var payload = {
+        &quot;user_id&quot;: current_user_id,
+        &quot;error&quot;: error_msg,
+        &quot;version&quot;: VERSION,
+        &quot;os&quot;: OS.get_name(),
+        &quot;timestamp&quot;: Time.get_ticks_msec()
+    }
+    # POST /api/client-logs</code></pre>
+<hr>
+<h2 id="5-라이선스-요약">5. 라이선스 요약</h2>
+<div class="table-wrap"><table><thead><tr><th>컴포넌트</th><th>라이선스</th><th>커머셜 사용</th><th>귀속표시</th><th>수정 재배포</th></tr></thead><tbody><tr><td>Godot</td><td>MIT</td><td>✓</td><td>✓ (권장)</td><td>✓</td></tr><tr><td>FastAPI</td><td>MIT</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>SQLAlchemy</td><td>MIT</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>PostgreSQL</td><td>PostgreSQL License</td><td>✓</td><td>✓ (문서)</td><td>✓</td></tr><tr><td>Next.js</td><td>MIT</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>TailwindCSS</td><td>MIT</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>LiveKit</td><td>Apache-2.0</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>Konva.js</td><td>MIT</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>React Flow</td><td>MIT</td><td>✓</td><td>✓</td><td>✓</td></tr><tr><td>Blender</td><td>GPL-3.0</td><td>✓</td><td>✓ (수정건)</td><td>✓ (GPL 준수)</td></tr><tr><td>Claude API</td><td>Anthropic ToS</td><td>✓</td><td>✓ (계약)</td><td>N/A</td></tr><tr><td>Gemini API</td><td>Google ToS</td><td>✓</td><td>✓ (계약)</td><td>N/A</td></tr></tbody></table></div>
+<p><strong>주의</strong>:</p>
+<ul><li>Blender는 GPL-3.0 → 에셋 자체는 라이선스 불리지 않음(Blender 소스 수정 시만)</li><li>Claude/Gemini는 API 계약상 사용료 발생 가능 (도그푸딩 시점에는 내부 협상)</li></ul>
+<hr>
+<h2 id="6-기술-리스크-완화">6. 기술 리스크 &amp; 완화</h2>
+<div class="table-wrap"><table><thead><tr><th>리스크</th><th>영향도</th><th>완화 방안</th></tr></thead><tbody><tr><td><strong>Godot 엔진 버그</strong></td><td>높음</td><td>정기 업데이트 추적, 커뮤니티 수렴 확인, fallback 계획</td></tr><tr><td><strong>PostgreSQL 성능 (&gt;1M presence 업데이트/초)</strong></td><td>중간</td><td>Redis 캐시, 배치 쓰기, 파티셔닝(필요시)</td></tr><tr><td><strong>ERP 의존 (direct DB 접근)</strong></td><td>높음</td><td>read-only 계정, 브랜치·마이그레이션 검증, 테스트 DB 사본</td></tr><tr><td><strong>LiveKit 확장성 (회의 참석 100명+)</strong></td><td>낮음(도그푸딩)</td><td>스트리밍 프로토콜 선택, 사내 인프라 여유</td></tr><tr><td><strong>AI KPI 평가 편향</strong></td><td>중간</td><td>프롬프트 검증, 관리자 검토 필수, 이의신청 절차</td></tr><tr><td><strong>클라이언트 바이너리 배포 (설치형)</strong></td><td>낮음</td><td>자동 업데이트 기능, 버전 체크, 체크섬 검증</td></tr></tbody></table></div>
+<hr>
+<h2 id="7-차기-단계별-기술-결정">7. 차기 단계별 기술 결정</h2>
+<h3 id="71-현재-단일-조직-도그푸딩">7.1 현재 (단일 조직, 도그푸딩)</h3>
+<ul><li><strong>선택 확정</strong>: 위 섹션 1~4 참조</li><li><strong>우선순위</strong>: 품질, 속도(1인 개발)</li></ul>
+<h3 id="72-이후-phase-b2b-멀티테넌트">7.2 이후 Phase (B2B, 멀티테넌트)</h3>
+<div class="table-wrap"><table><thead><tr><th>Phase</th><th>추가 기술</th><th>이유</th></tr></thead><tbody><tr><td><strong>Phase 8 (B2B 준비)</strong></td><td>Kubernetes(도커 오케스트레이션)</td><td>멀티테넌트 격리, 자동 스케일링</td></tr><tr><td></td><td>Stripe / Toss Payments API</td><td>결제 처리</td></tr><tr><td></td><td>Datadog / NewRelic</td><td>대규모 모니터링</td></tr><tr><td><strong>Phase 9 (B2B 배포)</strong></td><td>Three.js(웹 경량 뷰어)</td><td>브라우저에서 3D 미리보기(낮은 그래픽</td></tr><tr><td></td><td>WebSocket 게이트웨이(Centrifugo)</td><td>멀티테넌트 메시지 라우팅</td></tr><tr><td></td><td>S3 / GCS</td><td>에셋 및 회의 녹화 저장</td></tr></tbody></table></div>
+<hr>
+<h2 id="8-기술-스택-체크리스트">8. 기술 스택 체크리스트</h2>
+<h3 id="마이그레이션-또는-변경-불가-항목">마이그레이션 또는 변경 불가 항목</h3>
+<ul><li class="task"><input type="checkbox" disabled> Godot 4 → Unreal / Unity로 변경 안 함 (렌더러 재작업 비용 &gt; 이득)</li><li class="task"><input type="checkbox" disabled> FastAPI → Node.js로 변경 안 함 (ERP 통합 장점 상실)</li><li class="task"><input type="checkbox" disabled> PostgreSQL → MySQL로 변경 안 함 (JSON 문법, 비동기 지원)</li></ul>
+<h3 id="검증-항목">검증 항목</h3>
+<ul><li class="task"><input type="checkbox" disabled> ERP private repo 브랜치(<code>feature/virtual-office-integration</code>) 신설 및 kpi_results 테이블·Alembic 마이그레이션·KPI 수신 엔드포인트·연동용 서비스계정 작업 (사내 저장소 접근권 확보, 직접 작업 수행)</li><li class="task"><input type="checkbox" disabled> Godot 4.3 forward+ 렌더러 테스트 완료 (로비 샘플)</li><li class="task"><input type="checkbox" disabled> FastAPI + PostgreSQL + asyncio 프로토타입 테스트 완료</li><li class="task"><input type="checkbox" disabled> Next.js + Konva.js 좌석편집 UI 프로토타입 완료</li><li class="task"><input type="checkbox" disabled> LiveKit self-host 배포 가능성 확인 (사내 네트워크)</li><li class="task"><input type="checkbox" disabled> <strong>Godot 클라이언트에서 LiveKit 수신 PoC (스파이크 S1, 최우선)</strong> — GDScript + WebRTC GDExtension으로 룸 접속·오디오/비디오 수신 검증. 실패 시 회의 화면만 임베디드 브라우저/외부 창 분리</li><li class="task"><input type="checkbox" disabled> <strong>STT 파이프라인 PoC (스파이크 S2, D5)</strong> — LiveKit Egress → STT(한국어 화자분리) → 회의록 초안 품질 측정. 엔진 후보 선정</li><li class="task"><input type="checkbox" disabled> <strong>헤드리스 서버 부하 (스파이크 S3)</strong> — GDScript 헤드리스 + PhysicsServer3D, 20명 시뮬레이션 CPU/메모리 측정</li><li class="task"><input type="checkbox" disabled> Claude / Gemini API 접근 권한 확보 (내부 계약)</li></ul>
+<h3 id="문서화-항목">문서화 항목</h3>
+<ul><li class="task"><input type="checkbox" disabled> 각 컴포넌트별 설정 가이드 작성 (docs/setup/)</li><li class="task"><input type="checkbox" disabled> 의존성 버전 호환성 매트릭스 작성</li><li class="task"><input type="checkbox" disabled> 개발 환경 Docker Compose 배포 파일 작성</li><li class="task"><input type="checkbox" disabled> GitHub Actions 워크플로우 정의 (.github/workflows/)</li></ul>
+<hr>
+<h2 id="9-참고-문서-및-외부-자료">9. 참고 문서 및 외부 자료</h2>
+<h3 id="공식-문서">공식 문서</h3>
+<ul><li>Godot 4 Docs: https://docs.godotengine.org/</li><li>FastAPI: https://fastapi.tiangolo.com/</li><li>SQLAlchemy: https://www.sqlalchemy.org/</li><li>PostgreSQL: https://www.postgresql.org/docs/</li><li>Next.js: https://nextjs.org/docs</li><li>TailwindCSS: https://tailwindcss.com/docs</li><li>LiveKit: https://docs.livekit.io/</li><li>Konva.js: https://konvajs.org/</li><li>React Flow: https://reactflow.dev/</li></ul>
+<h3 id="사내-참고">사내 참고</h3>
+<ul><li><strong>ERP (Space-Daily)</strong>: https://github.com/project-space-daily/space-daily (private)<ul><li>동기화 소스 테이블: users, teams, job_positions, attendances, leaves</li><li>쓰기 엔드포인트: POST /api/reports (daily_reports)</li><li>신규 엔드포인트: POST /api/kpi-results (dev 브랜치에서 구현 예정)</li></ul></li><li><strong>가상오피스 기획</strong>: docs/planning/01-prd.md (PRD) + v3.2 개발기획서(사용자 제공)</li></ul>
+<hr>
+<h2 id="loop-metadata">Loop Metadata</h2>
+<h3 id="upstream-documents-referenced">Upstream Documents Referenced</h3>
+<ul><li><strong>v3.2 개발기획서</strong> (사용자 제공)</li><li><strong>01-prd.md</strong> (프로젝트 개요)</li><li><strong>10-roadmap.md</strong> (로드맵·목표)</li><li><strong>03-erp-integration.md</strong> (ERP 연동 설계)</li><li><strong>04-data-model.md</strong> (스키마 정의)</li></ul>
+<h3 id="downstream-documents-affected">Downstream Documents Affected</h3>
+<ul><li><strong>10-roadmap.md</strong> (각 Phase 기술 결정 반영)</li><li><strong>12-tasks.md</strong> (개발 환경 구성·셋업 태스크)</li><li><strong>03-erp-integration.md</strong> (FastAPI 엔드포인트·연동 계약)</li><li><strong>02-trd-architecture.md</strong> (빌드·배포·전체 아키텍처)</li></ul>
+<h3 id="open-questions">Open Questions</h3>
+<ul><li>Q1: Elasticsearch 도입 필요성? (<strong>확정: 배제</strong>, D21)<ul><li>A: <strong>PostgreSQL fulltext search 확정</strong>. ELK/Elasticsearch는 1인 운영 규모 초과로 배제. B2B 확대 시 재검토.</li></ul></li><li>Q2: Redis vs DragonflyDB vs Memcached?<ul><li>A: Redis 7.0+ 표준. DragonflyDB 성능 이득 미미, Memcached는 persistence 부족.</li></ul></li><li>Q3: 클라이언트 자동 업데이트 구현 일정?<ul><li>A: Phase 4(실시간 가상오피스) 이후 선택사항.</li></ul></li></ul>
+<h3 id="assumptions">Assumptions</h3>
+<ol><li>ERP(Space-Daily) private repo에 접근 가능하며, dev 브랜치 권한 있음</li><li>사내 네트워크에서 PostgreSQL, Redis, LiveKit 자체호스팅 가능</li><li>Godot 4.3 이상 무료 라이선스(MIT) 지속 → 비용 없음</li><li>Claude / Gemini API는 내부 계약으로 접근 가능 (요청 시 협상)</li><li>1인 개발 + AI 협업 환경 지속 (정규 팀 증원 없음)</li></ol>
+<h3 id="validation-criteria">Validation Criteria</h3>
+<ul><li class="task"><input type="checkbox" disabled> 모든 컴포넌트 라이선스 호환성 법무 검수 완료</li><li class="task"><input type="checkbox" disabled> Godot 4.3 Forward+ 렌더러로 로비 샘플 구현 가능 확인</li><li class="task"><input type="checkbox" disabled> FastAPI + PostgreSQL async 성능 벤치마크(&gt;100 동시 presence)</li><li class="task"><input type="checkbox" disabled> Next.js + Konva.js 좌석 편집 UI 반응속도 &lt; 100ms</li><li class="task"><input type="checkbox" disabled> LiveKit self-host 100명 회의 용량 확인(사내 테스트)</li><li class="task"><input type="checkbox" disabled> ERP 읽기(read-only DB) + 쓰기(API + 신규 테이블) 통합 테스트 완료</li></ul>
+<h3 id="risks-mitigation">Risks &amp; Mitigation</h3>
+<div class="table-wrap"><table><thead><tr><th>Risk</th><th>Probability</th><th>Impact</th><th>Mitigation</th></tr></thead><tbody><tr><td>Godot 4.3 렌더러 버그 발생</td><td>Low</td><td>High</td><td>커뮤니티 수렴 확인, fallback 렌더러(Mobile/Compatibility) 검토</td></tr><tr><td>PostgreSQL 성능 저하(&gt;10M 행)</td><td>Medium</td><td>Medium</td><td>인덱싱, 쿼리 최적화, 파티셔닝(필요시)</td></tr><tr><td>ERP 브랜치 병합 지연</td><td>Low</td><td>High</td><td>미리 검증, 문서화, 담당자 공조</td></tr><tr><td>Claude API 비용 초과</td><td>Low</td><td>Medium</td><td>쿼터 설정, 모니터링, Gemini 대안 사용</td></tr><tr><td>LiveKit 자체호스팅 장애</td><td>Low</td><td>High</td><td>이중화 구성(선택), 모니터링 알림</td></tr></tbody></table></div>
+<hr>
+<h2 id="변경-이력">변경 이력</h2>
+<div class="table-wrap"><table><thead><tr><th>버전</th><th>일자</th><th>변경 내용</th></tr></thead><tbody><tr><td>v1.0</td><td>2026-07-01</td><td>최초 작성</td></tr><tr><td>v1.1</td><td>2026-07-02</td><td>00-decisions.md v1.0 정합 반영 — D1(ENet/WebSocket→WSS 확정), D2(GDScript 확정·C# 표기 제거), D3(게임서버 메모리 권위+FastAPI 경유 배치 push), D4(PyJWT·자체 시크릿 HS256), D5(STT 회의록 스택 §2.6.1 신설), D13(프레즌스 6종→7종·external 추가), D21(사내 VM·관측 Grafana/Prometheus/Loki/Uptime Kuma·APScheduler+DB 영속 재시도 큐·검색 PG fulltext 확정/ELK 배제), 버전 정정(FastAPI 3.0+→0.115+, python-jose→PyJWT), Godot 4 export 명령 정정(--export-release, --standalone-mode 제거), 검증 항목에 스파이크 S1(Godot↔LiveKit 수신 PoC)·S2(STT)·S3(헤드리스 부하) 추가</td></tr></tbody></table></div>
+<hr>
+<p><strong>Document Version</strong>: 1.1 <strong>Last Updated</strong>: 2026-07-02 <strong>Authored By</strong>: Documentation Specialist <strong>Status</strong>: 확정 (00-decisions.md v1.0 정합 반영)</p>
+<div class="meta-foot">원본: <code>11-tech-stack.md</code> · 자동 생성 2026-07-02 · md-to-html</div>
+</main>
+</div>
+
+<script type="module">
+try{
+  const m = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  m.default.initialize({startOnLoad:true, theme: dark?'dark':'default', securityLevel:'loose'});
+}catch(e){
+  document.querySelectorAll('.mermaid').forEach(el=>{
+    const pre=document.createElement('pre');pre.className='code';
+    pre.textContent=el.textContent;el.replaceWith(pre);
+  });
+}
+</script>
+</body></html>

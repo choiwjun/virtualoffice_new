@@ -1,0 +1,210 @@
+version: "2.0"
+
+screen:
+  name: 3D Main Office
+  platform: godot-native
+  layout: split-3d-hud
+
+data_requirements:
+  - resource: erp_user
+    needs: [id, name, position, email, role, manager_id, work_type, work_hours]
+    access: read-only
+    note: 아바타 정보, HUD 표시명
+
+  - resource: presence
+    needs: [user_id, office_id, floor_id, x, y, z, status, last_activity_at, updated_at]
+    mutations: [update]
+    note: 아바타 위치, 상태 동기화 (WASD 이동 시 실시간 업데이트)
+
+  - resource: office
+    needs: [id, company_id, name, description, address]
+    access: read-only
+    note: 헤더 오피스 선택 드롭다운
+
+  - resource: floor
+    needs: [id, office_id, level, name, minimap_config]
+    access: read-only
+    note: 좌측 사이드바 층 선택, 미니맵 레이아웃
+
+  - resource: office_layout
+    needs: [id, office_id, floor_id, version, status, json]
+    access: read-only
+    note: 3D viewport 지오메트리 렌더링 (좌석, 회의실, 구역 배치)
+
+  - resource: seat
+    needs: [id, floor_id, team_zone_id, type, assigned_user_id, coords, status, seat_number]
+    access: read-only
+    note: 오픈좌석 3D 배치, 할당 여부, 상태(available/occupied/disabled)
+
+  - resource: room
+    needs: [id, floor_id, type, name, capacity, coords, enter_trigger, livekit_room, status]
+    access: read-only
+    note: 회의실/라운지/집중실/폰부스 공간 및 진입 트리거 영역
+
+  - resource: team_zone
+    needs: [id, erp_team_id, org_group_id, office_id, floor_id, zone_label, color, polygon]
+    access: read-only
+    note: 팀 구역 강조색, 폴리곤 바운드(3D 시각화용)
+
+  - resource: meeting
+    needs: [id, room_id, title, scheduled_at, started_at, ended_at, host_user_id, status, livekit_room]
+    access: read-only
+    note: 회의 컨트롤 패널, footer 회의 요약
+
+  - resource: meeting_participant
+    needs: [id, meeting_id, user_id, invited_at, joined_at, left_at, role]
+    mutations: [create]
+    access: read-write
+    note: 회의 입장 시 참석자 레코드 생성
+
+  - resource: work_log
+    needs: [id, user_id, work_date, category, title, est_minutes, actual_minutes, status]
+    access: read-only
+    note: footer 업무 패널 요약 표시
+
+components:
+  - id: viewport-3d-main
+    type: viewport-3d
+    position: main
+    function: 3D 오피스 공간 시각화(로비, 브랜드월, 오픈좌석, 회의실, 라운지, 집중실, 폰부스) + 아바타 이동 조작(WASD/마우스)
+    data_source:
+      resource: office_layout
+
+  - id: avatar-hud-overlay
+    type: panel
+    position: overlay
+    function: 모든 온라인 아바타 위에 이름/직급 텍스트 라벨 표시 + 본인 상태 배지(online/working/meeting/focus/away)
+    data_source:
+      resources: [erp_user, presence]
+
+  - id: minimap
+    type: minimap
+    position: bottom-right
+    function: 현재 층 조감도, 아바타 위치 점, 회의실 점유 상태 표시
+    data_source:
+      resources: [floor, presence, room, seat]
+
+  - id: header-toolbar
+    type: toolbar
+    position: top
+    function: 회사 로고(대시보드 이동 클릭) + Office/Floor 선택 드롭다운 + Search Bar(직원명/팀 검색→아바타 강조+카메라이동) + User Profile(내 상태+드롭다운) + Help(단축키/튜토리얼)
+    data_source:
+      resources: [office, floor, erp_user]
+
+  - id: sidebar-left
+    type: panel
+    position: left
+    function: Floor 선택(radio) + Zone 필터(checkbox) + Available Rooms 목록(점유여부+시간, 클릭→카메라이동) + Online People(팀별그룹, 클릭→추적) + Mini Chat(회의중메모만) + Settings(아바타커스터마이징/알림/접근성)
+    data_source:
+      resources: [floor, room, presence, erp_user, team_zone]
+
+  - id: panel-right-people
+    type: panel
+    position: right
+    function: "현재 참석자 리스트(layer/zone필터) + 팀별 그룹(온라인수표시) + 상태필터(all/online/meeting/focus/away) + 검색바 + 선택 직원 상세(이름/직급/팀/상태/마지막변경시간)"
+    data_source:
+      resources: [presence, erp_user, team_zone]
+
+  - id: footer-meeting-controls
+    type: panel
+    position: bottom
+    function: "[◄이전][▶다음] Meeting: '타이틀'(Host, 시간) [▲펼치기(참석자/회의록/액션)] + 나가기/화면공유/녹화 버튼"
+    data_source:
+      resources: [meeting, meeting_participant]
+
+  - id: footer-work-panel
+    type: panel
+    position: bottom
+    function: "Work Log: '제목'(예상시간 est, 진행도) [상세보기→웹콘솔이동]"
+    data_source:
+      resources: [work_log]
+
+  - id: footer-notifications
+    type: panel
+    position: bottom
+    function: "Chat Notifications: +N(회의채팅), [닫기] + Time + Current Status"
+    data_source:
+      resources: []
+      note: 실시간 알림 큐(백엔드 WebSocket/ENet)
+
+events:
+  - on: user-input-wasd-or-mouse-drag
+    do: "send movement delta to Godot Server (x, y delta) → validate collision with office_layout walls/rooms → broadcast to other clients → update own presence(x, y, z)"
+
+  - on: user-approach-meeting-room
+    do: "distance < 2m to room.enter_trigger → show 'Enter Meeting' modal prompt"
+
+  - on: user-click-enter-meeting-room
+    do: "POST meeting_participant(meeting_id, user_id, joined_at=now, role=participant) → request LiveKit token from server → update presence.status='meeting' → connect audio/video"
+
+  - on: user-click-search-bar
+    do: "filter presence list by name/team keyword → highlight matching avatar in viewport + move camera to focus"
+
+  - on: new-meeting-scheduled-or-status-change
+    do: "WebSocket broadcast → update footer meeting panel + right-panel participant list"
+
+  - on: erp-user-online-off-office
+    do: "presence.status changes (office_id/floor_id change, offline) → remove avatar from viewport, update right-panel list"
+
+  - on: user-click-room-in-sidebar
+    do: "camera pans to room.coords, show room details (capacity, current_participants)"
+
+  - on: user-click-people-name-in-right-panel
+    do: "camera tracks target user's presence(x,y,z) in real-time"
+
+tests:
+  - name: First Login Tutorial Display (Empty State)
+    when: 사용자 첫 로그인, office_layout 로드 완료, presence 레코드 신규 생성(로비 좌표)
+    then:
+      - 3D viewport 중앙에 오버레이 모달 표시 "🎯 가상오피스에 오신 걸 환영합니다"
+      - "[게임처럼 시작하기] [튜토리얼]" 버튼 표시
+      - 튜토리얼 텍스트 "W/A/S/D로 이동, 마우스로 회전합니다. 근처 직원을 클릭하면 채팅할 수 있습니다"
+      - 좌측 sidebar Online People 목록에 현재 office의 presence.status='online' 직원 나열
+      - 우측 panel 팀별 그룹 표시
+      - minimap에 아바타 위치 점으로 표시
+
+  - name: Meeting Room Entry Flow (Normal)
+    when: 사용자가 회의실 근처(2m) 진입, meeting.status='in_progress', room.capacity > 현재_참석자수
+    then:
+      - viewport에 "Enter Meeting (RoomName)" 프롬프트 표시 (위치: room entrance, 2초 유지 후 fade out)
+      - 클릭 시 meeting_participant 레코드 생성 (joined_at=now, role=participant)
+      - footer-meeting-controls 활성화 (회의제목, 호스트명, 남은시간 표시)
+      - avatar-hud status 배지가 "meeting" 표시로 변경
+      - minimap에서 아바타 색상 변경 (meeting 상태 시각화)
+      - LiveKit token 요청→카메라/마이크 연결 시도
+
+  - name: Real-time Presence Sync (Multi-user Movement)
+    when: 다른 직원들(최소 2명)이 viewport 내에서 이동/상태변경
+    then:
+      - viewport에서 모든 presence 업데이트가 실시간 반영 (지연 <500ms 권장)
+      - 아바타 위치 이동, 상태 배지(online→working→meeting) 변경 시각화
+      - right-panel 현재 참석자 리스트의 이름 순서/상태 변경 반영
+      - minimap에서 모든 아바타 위치점 동기화
+
+  - name: Meeting Room Entry Failure (Error State)
+    when: 회의실 용량 만석(room.capacity 도달) 또는 회의 종료(meeting.status='completed') 후 입장 시도
+    then:
+      - ❌ 오류 모달 표시 "회의실에 입장할 수 없습니다"
+      - 원인 리스트 표시:
+        - "회의실 용량이 가득 찼습니다" (if capacity exceeded)
+        - "회의가 종료되었습니다" (if meeting.ended_at < now)
+        - "네트워크 연결이 불안정합니다" (if timeout)
+      - "[재시도] [처음으로] [고객지원]" 버튼
+      - presence.status는 여전히 'working'으로 유지 (입장 실패)
+
+  - name: Search Employee & Camera Track
+    when: 헤더 검색바에 직원명 입력, Enter 또는 클릭 검색 버튼
+    then:
+      - 검색 결과가 right-panel의 현재 참석자 리스트에서 강조 (배경색 변경)
+      - viewport 카메라가 해당 직원의 presence(x, y, z)로 이동/포커스
+      - 아바타 이름 HUD가 점멸(blink) 효과로 강조
+      - 검색어가 없을 때 또는 ESC 키 시 일반 뷰로 복귀
+
+open_questions:
+  - 아바타 스타일 커스터마이징(Settings) 인터페이스는 3D viewport 내 캐릭터 크리에이터로 구현? 아니면 웹 콘솔(separate tab)로 이동?
+  - "화면 공유(Share)" 기능이 LiveKit room 기반 화면공유인지, 아니면 viewport 자체를 스트림하는 방식인지?
+  - 집중실(Focus Room) 입장 시 다른 직원 아바타를 viewport에서 표시/숨길지 여부 (privacy)?
+  - Godot HeadlessServer ↔ Web API 간 presence 동기화 최대 지연시간(SLA)?
+  - "협업 제스처" (근접 1m 시 "+1 nearby") 구현은 3D viewport에 텍스트로 표시하는 방식?
+  - 회의 녹화(recording_url) 재생/다운로드 버튼의 위치 (footer / right-panel / 별도 modal)?
+  - 미니맵(minimap)에서 team_zone 경계(polygon)를 색상으로 표시할지 여부?

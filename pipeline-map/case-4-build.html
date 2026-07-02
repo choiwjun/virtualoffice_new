@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case 4 · 빌드 오케스트레이션 4종 — Pipeline Map</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <div class="brand"><span class="dot"></span> Claude Labs · Pipeline Map</div>
+    <nav>
+      <a href="index.html">조감도</a>
+      <a href="case-1-greenfield.html">① 신규·귀납</a>
+      <a href="case-2-doubt.html">② 검증·연역</a>
+      <a href="case-3-brownfield.html">③ 기존 통합</a>
+      <a href="case-4-build.html" class="active">④ 빌드 4종</a>
+      <a href="case-5-quality.html">⑤ 검증·개선</a>
+      <a href="case-6-stargate.html">⑥ 통합 진입</a>
+      <a href="skills.html">스킬 58</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <div class="eyebrow" style="color:var(--c-build)">CASE 04 · 빌드 오케스트레이션</div>
+    <h1>빌드 실행기 4종 — 환경·규모로 선택</h1>
+    <p>06-tasks.md(또는 spec)를 실제 코드로 바꾸는 단계. 가장 단순한 단일 워커부터 cmux 멀티페인 분산까지 4종이 있습니다.
+       <b>가장 단순한 것부터 시도하고, 답답하면 위로 올라가는 게 정석</b>입니다. <code>/stargate</code>는 환경을 감지해 자동 추천합니다.</p>
+  </div>
+
+  <!-- 4종 비교 -->
+  <table class="tbl">
+    <thead><tr><th>실행기</th><th>입력</th><th>환경/규모</th><th>핵심</th></tr></thead>
+    <tbody>
+      <tr><td><span class="cmd">/auto-orchestrate</span></td><td>06-tasks.md</td><td>단일 워커</td><td>의존성 자동 직렬/병렬. 가장 단순. 멀티페인 불필요</td></tr>
+      <tr><td><span class="cmd">/harness</span></td><td>spec.md (TASKS 불요)</td><td>단일 세션</td><td>Socrates → Builder → Evaluator 3-에이전트 Build–Eval 루프</td></tr>
+      <tr><td><span class="cmd">/harness-forge</span></td><td>06-tasks.md</td><td>cmux 미세팅</td><td>외부 6-페인 자동 배치 (Planner/Reviewer/BE/FE/QA)</td></tr>
+      <tr><td><span class="cmd">/cmux-harness</span></td><td>06-tasks.md</td><td>cmux 안</td><td>sub-agent role 분산 + 컨텍스트 라이프사이클. full/slim</td></tr>
+    </tbody>
+  </table>
+
+  <div class="lane cols-2" style="margin-top:26px">
+
+    <!-- auto-orchestrate -->
+    <div>
+      <div class="band cat-build"><span class="num">A</span><span class="t">/auto-orchestrate</span><span class="s">단일 워커</span></div>
+      <div class="flow">
+        <div class="node cat-build"><div class="nm">의존성 분석</div><div class="role">06-tasks.md 파싱 → 의존성 그래프</div></div>
+        <div class="arrow cat-build"><span class="line"></span><span class="tip">▼</span></div>
+        <div class="node cat-build"><div class="nm">Git Worktree + 실행 큐</div><div class="role">Phase별 브랜치 + 병렬 그룹화</div></div>
+        <div class="arrow cat-build"><span class="line"></span><span class="tip">▼</span></div>
+        <div class="node cat-build"><div class="nm">전문가 에이전트 호출</div><div class="role">backend/frontend/test-specialist를 Task 도구로. 오케스트레이터는 코딩 X</div><div class="opts"><span class="badge opt">--workflow</span></div></div>
+      </div>
+    </div>
+
+    <!-- harness -->
+    <div>
+      <div class="band cat-build"><span class="num">B</span><span class="t">/harness</span><span class="s">spec만, TASKS 불요</span></div>
+      <div class="flow">
+        <div class="node cat-build"><div class="nm">Socrates (기획)</div><div class="role">spec → features + rubric</div></div>
+        <div class="arrow cat-build"><span class="line"></span><span class="tip">▼</span></div>
+        <div class="node cat-build"><div class="nm">Builder (구현)</div><div class="role">기능 순차 연속 빌드</div></div>
+        <div class="arrow cat-build"><span class="line"></span><span class="lbl">Build–Eval 루프 (최대 3회)</span><span class="tip">▼</span></div>
+        <div class="node cat-build"><div class="nm">Evaluator (QA)</div><div class="role">브라우저 클릭 테스트 + rubric 채점. workflow 모드 시 기준별 회의적 verifier 병렬</div><div class="opts"><span class="badge opt">workflow 0순위</span></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- cmux-harness 멀티페인 -->
+  <div class="section-title"><span class="tick" style="background:var(--c-build)"></span> /cmux-harness · 멀티페인 역할 라우팅</div>
+  <p style="color:var(--fg-2);font-size:13.5px;max-width:760px">
+    cmux 터미널 안에서 역할별로 페인을 분리해 운영합니다 — 구독 분산 + <b>구현자/검증자를 다른 모델·세션으로 분리해 self-preferential bias를 구조적으로 차단</b>.
+    진입 시 full(웹 E2E 포함)/slim(제외) 모드를 고릅니다. 태스크의 <code>담당</code>(Specialist)으로 페인이 자동 라우팅됩니다.
+  </p>
+
+  <div class="lane cols-3" style="margin-top:8px">
+    <div class="node cat-meta"><div class="nm">Main · Opus</div><div class="role">오케스트레이터. 조율·핸드오프·병합만 — <b>코딩 X</b></div></div>
+    <div class="node cat-build"><div class="nm">Kimi · 백엔드</div><div class="role">API·비즈니스 로직 (+ DB 스키마 겸임)</div></div>
+    <div class="node cat-build"><div class="nm">Sonnet · 프론트엔드</div><div class="role">UI 컴포넌트·상태관리</div></div>
+    <div class="node cat-build"><div class="nm">Codex · 검증·테스트·E2E</div><div class="role">단위/통합 + Playwright E2E (full 모드, Browser 제어)</div></div>
+    <div class="node cat-verify"><div class="nm">Reviewer · Opus</div><div class="role">코드리뷰·보안·아키텍처 검증 (+Browser)</div></div>
+    <div class="node cat-plan optional"><div class="nm">debate · Codex</div><div class="role">기획을 10+턴 Frozen Metric 검증 토론</div></div>
+  </div>
+
+  <table class="tbl" style="margin-top:18px">
+    <thead><tr><th>태스크 유형</th><th>담당 (Specialist)</th><th>Pane (cmux)</th></tr></thead>
+    <tbody>
+      <tr><td>API·비즈니스 로직</td><td>backend-specialist</td><td><b style="color:var(--c-build)">Kimi</b></td></tr>
+      <tr><td>DB 스키마·마이그레이션</td><td>database-specialist</td><td>Kimi <span class="note" style="display:inline">(BE 겸임)</span></td></tr>
+      <tr><td>UI 컴포넌트·상태관리</td><td>frontend-specialist</td><td>Sonnet</td></tr>
+      <tr><td>테스트 작성·단위/통합</td><td>test-specialist</td><td><b style="color:var(--c-build)">Codex</b></td></tr>
+      <tr><td>E2E / Verification (*-V)</td><td>test-specialist (E2E)</td><td><b style="color:var(--c-build)">Codex</b></td></tr>
+      <tr><td>보안·아키텍처·코드리뷰</td><td>security / architecture</td><td><b style="color:var(--c-verify)">Reviewer</b></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout info" style="margin-top:22px">
+    <b>full / slim 모드.</b> full = 웹 E2E 포함(4+페인, Browser 페인), slim = E2E 제외(백엔드 중심 2페인).
+    매핑은 <code>cmux-harness/references/role-routing.md</code>가 SSOT — 페인 구성이 바뀌면 거기만 고치고 <code>/tasks-generator</code> 재생성.
+  </div>
+
+  <!-- dynamic workflows -->
+  <div class="section-title"><span class="tick" style="background:var(--c-improve)"></span> dynamic workflows 모드 (Workflow 도구 가용 시 0순위)</div>
+  <p style="color:var(--fg-2);font-size:13.5px;max-width:780px">
+    최신 Claude Code의 <code>Workflow</code> 도구가 있으면, 빌드 오케스트레이터는 Build/Eval을 <b>분리된 context window로 격리</b>하는 동적 워크플로우로 실행합니다.
+    이는 agentic laziness(부분 완료 후 종료) · self-preferential bias(자기 결과 편애) · goal drift(목표 손실)를 구조적으로 차단합니다.
+    없으면 기존 분산/단일 모드로 자동 폴백(구버전 호환).
+  </p>
+  <div class="lane cols-4">
+    <div class="node cat-improve"><div class="nm">harness</div><div class="role">build-eval-loop.js — loop-until-done + 회의적 verifier 병렬</div></div>
+    <div class="node cat-improve"><div class="nm">auto-orchestrate</div><div class="role">phase-group.js — worktree fan-out 구현 + adversarial review</div></div>
+    <div class="node cat-improve"><div class="nm">council</div><div class="role">panel-review.js — fan-out 리뷰 + 교차검증</div></div>
+    <div class="node cat-improve"><div class="nm">code-review</div><div class="role">dimension-review.js — 차원 fan-out + finding별 검증</div></div>
+  </div>
+
+</main>
+
+<footer><div class="wrap" style="padding-top:0;padding-bottom:0">Case 04 · 빌드 오케스트레이션 · README 결정 트리 + role-routing.md</div></footer>
+</body>
+</html>

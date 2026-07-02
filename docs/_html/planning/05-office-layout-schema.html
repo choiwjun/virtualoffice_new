@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05. officelayout JSON 스키마</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">05. officelayout JSON 스키마</div><div class="sub">05-office-layout-schema.md</div><a class="lvl1" href="#05-office_layout-json-스키마">05. office_layout JSON 스키마</a><a class="lvl2" href="#개요">개요</a><a class="lvl2" href="#1-office_layout-json-스키마-정의">1. office_layout JSON 스키마 정의</a><a class="lvl3" href="#11-루트-구조">1.1 루트 구조</a><a class="lvl3" href="#12-각-섹션-정의">1.2 각 섹션 정의</a><a class="lvl2" href="#2-버전-상태-관리">2. 버전 &amp; 상태 관리</a><a class="lvl3" href="#21-status-필드-office_layoutstatus">2.1 status 필드 (office_layout.status)</a><a class="lvl3" href="#22-버전-관리-규칙">2.2 버전 관리 규칙</a><a class="lvl3" href="#23-버전-히스토리">2.3 버전 히스토리</a><a class="lvl3" href="#24-좌석-배정과-레이아웃의-분리-d10">2.4 좌석 배정과 레이아웃의 분리 (D10)</a><a class="lvl2" href="#3-검증-규칙-및-검증-아키텍처">3. 검증 규칙 및 검증 아키텍처</a><a class="lvl3" href="#30-검증-아키텍처-d12">3.0 검증 아키텍처 (D12)</a><a class="lvl3" href="#31-구조-검증">3.1 구조 검증</a><a class="lvl3" href="#32-공간-검증">3.2 공간 검증</a><a class="lvl3" href="#33-조직역할-검증">3.3 조직/역할 검증</a><a class="lvl3" href="#34-설비-검증">3.4 설비 검증</a><a class="lvl3" href="#35-미니맵-검증">3.5 미니맵 검증</a><a class="lvl3" href="#36-검증-실행-흐름">3.6 검증 실행 흐름</a><a class="lvl2" href="#4-예시-json-샘플-층-레이아웃">4. 예시 JSON: 샘플 층 레이아웃</a><a class="lvl2" href="#5-클라이언트서버-로드-및-사용">5. 클라이언트/서버 로드 및 사용</a><a class="lvl3" href="#51-godot-클라이언트">5.1 Godot 클라이언트</a><a class="lvl3" href="#52-godot-헤드리스-서버">5.2 Godot 헤드리스 서버</a><a class="lvl3" href="#53-좌표계-godot-월드-매핑-d25">5.3 좌표계 → Godot 월드 매핑 (D25)</a><a class="lvl2" href="#6-loop-metadata">6. Loop Metadata</a><a class="lvl3" href="#upstream-documents-referenced">Upstream documents referenced</a><a class="lvl3" href="#downstream-documents-affected">Downstream documents affected</a><a class="lvl3" href="#open-questions">Open questions</a><a class="lvl3" href="#assumptions">Assumptions</a><a class="lvl3" href="#validation-criteria">Validation criteria</a><a class="lvl3" href="#risks">Risks</a><a class="lvl2" href="#7-변경-이력">7. 변경 이력</a></nav>
+<main><h1 id="05-office_layout-json-스키마">05. office_layout JSON 스키마</h1>
+<p><strong>작성일</strong>: 2026-07-01 <strong>최종 갱신</strong>: 2026-07-02 <strong>버전</strong>: 1.1 <strong>담당</strong>: 시스템 설계팀 + 3D 엔진팀 <strong>참조</strong>: 00-decisions.md (정본 결정, 특히 D7~D12·D25), 04-data-model.md (DB 구조), 06-screens.md (편집기 UI), 07-3d-visual-asset-pipeline.md (에셋 파이프라인)</p>
+<blockquote>이 문서는 00-decisions.md의 정본 결정을 따른다. 충돌 시 00-decisions.md가 이긴다.</blockquote>
+<hr>
+<h2 id="개요">개요</h2>
+<p><code>office_layout</code> JSON은 Godot 3D 가상오피스의 <strong>공간 구조 및 상호작용 규칙의 원본(Source of Truth)</strong>이다. 각 층(floor)마다 1개의 JSON blob으로 저장되며(1 floor = 1 layout), 2D 편집기에서 생성/수정되고, 검증 통과 후 Godot 헤드리스 서버와 클라이언트에서 사용된다. 코드로 하드코딩되지 않으므로, 사무실 변경은 DB 업데이트로만 반영된다(재컴파일 불필요).</p>
+<p><strong>핵심 원칙(정본 결정 반영):</strong></p>
+<ul><li><strong>공간 구조만 담는다(D10)</strong>: 좌석-직원 배정은 이 JSON에 넣지 않는다. 배정은 DB <code>seat_assignment</code> 테이블이 담당하며, 배정 변경은 레이아웃 재배포가 필요 없다.</li><li><strong>좌표계는 <code>top_left</code> 단일·미터 단위(D25)</strong>: 다른 원점은 허용하지 않는다.</li><li><strong>에셋은 <code>asset_id</code> 참조만(D8)</strong>: 클라이언트 빌드(pak)에 동봉된 카탈로그를 조회한다. 런타임에 glb/tscn을 다운로드하지 않는다.</li><li><strong>정밀 검증은 서버 1곳(D12)</strong>: 도달성(A*) 포함 정밀 검증은 FastAPI가 단독으로 수행한다. 웹 편집기는 경량 체크만, Godot 클라이언트는 검증하지 않고 신뢰한다.</li></ul>
+<hr>
+<h2 id="1-office_layout-json-스키마-정의">1. office_layout JSON 스키마 정의</h2>
+<h3 id="11-루트-구조">1.1 루트 구조</h3>
+<pre class="code lang-json"><code>{
+  &quot;metadata&quot;: { ... },
+  &quot;floor&quot;: { ... },
+  &quot;dimensions&quot;: { ... },
+  &quot;zones&quot;: [ ... ],
+  &quot;rooms&quot;: [ ... ],
+  &quot;seats&quot;: [ ... ],
+  &quot;furniture&quot;: [ ... ],
+  &quot;colliders&quot;: [ ... ],
+  &quot;spawn_points&quot;: [ ... ],
+  &quot;spawn_default&quot;: { ... },
+  &quot;minimap&quot;: { ... },
+  &quot;connections&quot;: { ... },
+  &quot;performance&quot;: { ... }
+}</code></pre>
+<h3 id="12-각-섹션-정의">1.2 각 섹션 정의</h3>
+<h4 id="121-metadata">1.2.1 metadata</h4>
+<pre class="code lang-json"><code>{
+  &quot;metadata&quot;: {
+    &quot;version&quot;: &quot;1.0&quot;,
+    &quot;schema_version&quot;: 1,
+    &quot;layout_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440001&quot;,
+    &quot;office_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440010&quot;,
+    &quot;floor_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440020&quot;,
+    &quot;floor_name&quot;: &quot;3F&quot;,
+    &quot;created_at&quot;: &quot;2026-07-01T10:00:00Z&quot;,
+    &quot;updated_at&quot;: &quot;2026-07-01T15:30:00Z&quot;,
+    &quot;created_by&quot;: 101,
+    &quot;updated_by&quot;: 102,
+    &quot;description&quot;: &quot;3층 개발팀 구역 레이아웃 v2&quot;,
+    &quot;language&quot;: &quot;ko-KR&quot;
+  }
+}</code></pre>
+<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>필수</th><th>설명</th></tr></thead><tbody><tr><td>version</td><td>string</td><td>Y</td><td>JSON 스키마 버전(semantic)</td></tr><tr><td>schema_version</td><td>integer</td><td>Y</td><td>브레이킹 체인지 감지용 정수</td></tr><tr><td>layout_id</td><td>UUID</td><td>Y</td><td>office_layout.id (DB PK)</td></tr><tr><td>office_id</td><td>UUID</td><td>Y</td><td>office.id</td></tr><tr><td>floor_id</td><td>UUID</td><td>Y</td><td>floor.id</td></tr><tr><td>floor_name</td><td>string</td><td>Y</td><td>floor.name (예: &quot;3F&quot;, &quot;B1&quot;)</td></tr><tr><td>created<em>at, updated</em>at</td><td>ISO8601</td><td>Y</td><td>타임스탬프</td></tr><tr><td>created<em>by, updated</em>by</td><td>integer(user_id)</td><td>Y</td><td>erp_user.id</td></tr><tr><td>description</td><td>string</td><td>N</td><td>변경사항 메모</td></tr><tr><td>language</td><td>string</td><td>Y</td><td>로케일 기본값 (현재 ko-KR)</td></tr></tbody></table></div>
+<h4 id="122-floor">1.2.2 floor</h4>
+<pre class="code lang-json"><code>{
+  &quot;floor&quot;: {
+    &quot;id&quot;: &quot;550e8400-e29b-41d4-a716-446655440020&quot;,
+    &quot;level&quot;: 3,
+    &quot;name&quot;: &quot;3F&quot;,
+    &quot;total_area_m2&quot;: 2500,
+    &quot;coordinate_origin&quot;: &quot;top_left&quot;,
+    &quot;floor_height_m&quot;: 8.4,
+    &quot;grid_snap_unit_cm&quot;: 10,
+    &quot;unit_system&quot;: &quot;metric&quot;
+  }
+}</code></pre>
+<div class="table-wrap"><table><thead><tr><th>필드</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>floor.id (UUID)</td></tr><tr><td>level</td><td>실제 층수(지상 3층 = 3, B1 = -1)</td></tr><tr><td>name</td><td>표시명</td></tr><tr><td>total<em>area</em>m2</td><td>층 전체 면적(정보용)</td></tr><tr><td>coordinate_origin</td><td>좌표계 원점. <strong><code>top_left</code> 하나만 허용(D25)</strong>. <code>center</code>/<code>bottom_left</code>는 폐기</td></tr><tr><td>floor<em>height</em>m</td><td>이 층 바닥의 Godot 월드 Y 오프셋(m). 다층 매핑에 사용(§5.3)</td></tr><tr><td>grid<em>snap</em>unit_cm</td><td>편집기 그리드 단위(cm)</td></tr><tr><td>unit_system</td><td>측정 단위. <strong><code>metric</code>(미터) 고정</strong></td></tr></tbody></table></div>
+<blockquote><strong>D25 좌표계 확정</strong>: 모든 좌표는 원점 <code>top_left</code>, 단위 미터, 2D 평면(x, y)로 저장한다. x는 오른쪽(동)으로 증가, y는 아래쪽(남)으로 증가한다. Godot 3D 월드로의 변환식은 §5.3에 정의한다.</blockquote>
+<h4 id="123-dimensions">1.2.3 dimensions</h4>
+<pre class="code lang-json"><code>{
+  &quot;dimensions&quot;: {
+    &quot;width_m&quot;: 80.0,
+    &quot;height_m&quot;: 60.0,
+    &quot;min_x&quot;: 0.0,
+    &quot;max_x&quot;: 80.0,
+    &quot;min_y&quot;: 0.0,
+    &quot;max_y&quot;: 60.0,
+    &quot;unit&quot;: &quot;meter&quot;
+  }
+}</code></pre>
+<p>층의 전체 바운드박스. 편집기에서 캔버스 크기와 동일.</p>
+<h4 id="124-zones-팀-구역">1.2.4 zones (팀 구역)</h4>
+<pre class="code lang-json"><code>{
+  &quot;zones&quot;: [
+    {
+      &quot;zone_id&quot;: &quot;Z_001&quot;,
+      &quot;team_zone_db_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440030&quot;,
+      &quot;org_group_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440040&quot;,
+      &quot;erp_team_id&quot;: 201,
+      &quot;label&quot;: &quot;개발팀&quot;,
+      &quot;type&quot;: &quot;team&quot;,
+      &quot;color&quot;: &quot;#4A90E2&quot;,
+      &quot;polygon&quot;: [
+        { &quot;x&quot;: 0.0, &quot;y&quot;: 0.0 },
+        { &quot;x&quot;: 20.0, &quot;y&quot;: 0.0 },
+        { &quot;x&quot;: 20.0, &quot;y&quot;: 15.0 },
+        { &quot;x&quot;: 0.0, &quot;y&quot;: 15.0 }
+      ],
+      &quot;access_control&quot;: {
+        &quot;allowed_roles&quot;: [&quot;admin&quot;, &quot;leader&quot;, &quot;employee&quot;],
+        &quot;restricted&quot;: false
+      },
+      &quot;visual&quot;: {
+        &quot;show_boundary&quot;: true,
+        &quot;boundary_style&quot;: &quot;dashed&quot;,
+        &quot;boundary_width_cm&quot;: 2
+      }
+    }
+  ]
+}</code></pre>
+<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>설명</th></tr></thead><tbody><tr><td>zone_id</td><td>string</td><td>JSON 내 임시 고유ID(예: Z<em>001, Z</em>002)</td></tr><tr><td>team<em>zone</em>db_id</td><td>UUID</td><td>team_zone.id (DB FK)</td></tr><tr><td>erp<em>team</em>id</td><td>BIGINT</td><td>ERP teams.id</td></tr><tr><td>org<em>group</em>id</td><td>UUID</td><td>우리 org_group.id (상위 부서)</td></tr><tr><td>label</td><td>string</td><td>팀명</td></tr><tr><td>type</td><td>enum</td><td>team, department, meeting_hub 등</td></tr><tr><td>color</td><td>hex</td><td>UI 표시 색상</td></tr><tr><td>polygon</td><td>array</td><td>좌표 배열(폐쇄형 다각형)</td></tr><tr><td>access_control</td><td>object</td><td>접근권한 정의</td></tr><tr><td>visual</td><td>object</td><td>경계 표시 옵션</td></tr></tbody></table></div>
+<h4 id="125-rooms-회의실-라운지-집중실-폰부스-등">1.2.5 rooms (회의실, 라운지, 집중실, 폰부스 등)</h4>
+<pre class="code lang-json"><code>{
+  &quot;rooms&quot;: [
+    {
+      &quot;room_id&quot;: &quot;R_001&quot;,
+      &quot;room_db_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440050&quot;,
+      &quot;name&quot;: &quot;회의실 A&quot;,
+      &quot;type&quot;: &quot;meeting&quot;,
+      &quot;capacity&quot;: 6,
+      &quot;floor_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440020&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 25.0,
+        &quot;y&quot;: 10.0,
+        &quot;width&quot;: 6.0,
+        &quot;height&quot;: 4.5
+      },
+      &quot;entrance&quot;: {
+        &quot;trigger_x&quot;: 27.25,
+        &quot;trigger_y&quot;: 13.5,
+        &quot;trigger_width&quot;: 1.5,
+        &quot;trigger_height&quot;: 0.8,
+        &quot;entry_direction&quot;: &quot;south&quot;
+      },
+      &quot;livekit_room&quot;: &quot;meeting_3f_001&quot;,
+      &quot;capacity_mode&quot;: &quot;by_room&quot;,
+      &quot;max_concurrent_users&quot;: 6,
+      &quot;doors&quot;: [
+        {
+          &quot;door_id&quot;: &quot;D_001&quot;,
+          &quot;wall&quot;: &quot;south&quot;,
+          &quot;offset&quot;: 3.0,
+          &quot;width&quot;: 1.2,
+          &quot;door_type&quot;: &quot;glass_single&quot;
+        }
+      ],
+      &quot;glass_walls&quot;: [
+        {
+          &quot;wall_id&quot;: &quot;GW_001&quot;,
+          &quot;edge&quot;: &quot;south&quot;,
+          &quot;start&quot;: { &quot;x&quot;: 25.0, &quot;y&quot;: 14.5 },
+          &quot;end&quot;: { &quot;x&quot;: 31.0, &quot;y&quot;: 14.5 },
+          &quot;transparency&quot;: 0.7,
+          &quot;frame_color&quot;: &quot;#333333&quot;
+        }
+      ],
+      &quot;climate&quot;: {
+        &quot;ac_outlet&quot;: { &quot;x&quot;: 26.0, &quot;y&quot;: 11.0 }
+      },
+      &quot;markers&quot;: {
+        &quot;whiteboard&quot;: { &quot;x&quot;: 26.5, &quot;y&quot;: 12.0 },
+        &quot;projector&quot;: { &quot;x&quot;: 27.5, &quot;y&quot;: 10.5 }
+      }
+    }
+  ]
+}</code></pre>
+<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>설명</th></tr></thead><tbody><tr><td>room_id</td><td>string</td><td>JSON 내 임시 고유ID</td></tr><tr><td>room<em>db</em>id</td><td>UUID</td><td>room.id (DB FK)</td></tr><tr><td>type</td><td>enum</td><td>meeting, lobby, lounge, focus, phonebooth</td></tr><tr><td>capacity</td><td>integer</td><td>room.capacity (수용 인원)</td></tr><tr><td>coords</td><td>object</td><td>위치(좌상단 x,y) + 크기(width, height)</td></tr><tr><td>entrance</td><td>object</td><td>입장 트리거(콜리전 박스 + 진입 방향). <strong>room 경계 내부</strong>에 위치해야 함(§3.2)</td></tr><tr><td>livekit_room</td><td>string</td><td>room.livekit_room(화상회의 연결)</td></tr><tr><td>capacity_mode</td><td>enum</td><td>by<em>seats (좌석 기반) 또는 by</em>room (방 기반)</td></tr><tr><td><strong>doors</strong></td><td>array</td><td><strong>문 개구부(D9)</strong>. 벽 세그먼트에 뚫린 출입구 구멍 정의. 배열이므로 방마다 여러 문 가능</td></tr><tr><td>glass_walls</td><td>array</td><td>유리벽 정의</td></tr><tr><td>markers</td><td>object</td><td>화이트보드, 프로젝터 등 랜드마크</td></tr></tbody></table></div>
+<h5 id="doors-문-개구부-필드-상세-d9">doors (문 개구부) 필드 상세 — D9</h5>
+<p>room의 벽 콜리전은 room 경계에서 자동 생성되는 벽 세그먼트이며, <code>doors</code>에 정의된 위치는 <strong>개구부(구멍)</strong>로 처리되어 아바타가 통과할 수 있다. 개구부가 없으면 방은 사방이 막힌 상자가 되어 진입 불가하다.</p>
+<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>설명</th></tr></thead><tbody><tr><td>door_id</td><td>string</td><td>JSON 내 임시 고유ID</td></tr><tr><td>wall</td><td>enum</td><td>개구부가 뚫릴 벽. <code>north</code>/<code>south</code>/<code>east</code>/<code>west</code> (room <code>coords</code> 기준 변)</td></tr><tr><td>offset</td><td>float(m)</td><td>해당 벽의 시작 모서리(top_left 기준: west/east 벽은 위쪽 y, north/south 벽은 왼쪽 x)에서 <strong>개구부 중심까지의 거리(m)</strong></td></tr><tr><td>width</td><td>float(m)</td><td>개구부 폭(m). 도어 폭 규약 0.9~1.2m 권장(07 §1.2와 정합)</td></tr><tr><td>door_type</td><td>enum</td><td>문 스타일(<code>glass_single</code>/<code>glass_double</code>/<code>wooden_single</code>/<code>wooden_double</code>/<code>open</code>(문짝 없는 개방 통로))</td></tr></tbody></table></div>
+<blockquote><strong>콜리전 생성 규칙(D9)</strong>: room 경계(coords의 사각형 네 변) → 각 변을 벽 세그먼트로 자동 생성. 단, <code>doors[]</code>에 정의된 <code>(wall, offset, width)</code> 구간은 벽 세그먼트에서 제외되어 개구부가 된다. 헤드리스 서버는 이 개구부를 A* 내비게이션의 통행 가능 지점으로 사용한다. 별도의 <code>colliders[]</code> 항목으로 room 벽을 solid box 하나로 덮지 않는다(그러면 개구부가 사라진다).</blockquote>
+<h4 id="126-seats-고정좌석-자율좌석-임시좌석">1.2.6 seats (고정좌석, 자율좌석, 임시좌석)</h4>
+<blockquote><strong>D10 — 좌석 배정 분리</strong>: seat 객체는 <strong>공간 구조(위치·타입·방향·설비)만</strong> 담는다. 좌석-직원 배정(<code>assigned_user_id</code> 등)은 이 JSON에 넣지 않으며, DB <code>seat_assignment</code> 테이블이 단독으로 관리한다. 클라이언트/서버는 런타임에 <code>seat_db_id</code>로 <code>seat_assignment</code>를 조회해 현재 착석자를 얻는다. <strong>좌석 배정 변경은 레이아웃 재배포가 필요 없다</strong>(§2.4 참조).</blockquote>
+<pre class="code lang-json"><code>{
+  &quot;seats&quot;: [
+    {
+      &quot;seat_id&quot;: &quot;S_001&quot;,
+      &quot;seat_db_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440060&quot;,
+      &quot;team_zone_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440030&quot;,
+      &quot;seat_type&quot;: &quot;fixed&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 3.5,
+        &quot;y&quot;: 2.0
+      },
+      &quot;facing&quot;: 180,
+      &quot;furniture_id&quot;: &quot;F_001&quot;,
+      &quot;desk_dimension&quot;: {
+        &quot;width&quot;: 1.5,
+        &quot;depth&quot;: 0.8,
+        &quot;height&quot;: 0.75
+      },
+      &quot;lifecycle_status&quot;: &quot;deployed&quot;,
+      &quot;accessibility&quot;: {
+        &quot;wheelchair_accessible&quot;: false,
+        &quot;ergonomic_type&quot;: &quot;standard&quot;
+      },
+      &quot;nearby_amenities&quot;: {
+        &quot;has_monitor_stand&quot;: true,
+        &quot;has_keyboard&quot;: true,
+        &quot;has_phone&quot;: false
+      }
+    },
+    {
+      &quot;seat_id&quot;: &quot;S_002&quot;,
+      &quot;seat_db_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440061&quot;,
+      &quot;team_zone_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440030&quot;,
+      &quot;seat_type&quot;: &quot;free&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 5.0,
+        &quot;y&quot;: 2.0
+      },
+      &quot;facing&quot;: 180,
+      &quot;furniture_id&quot;: &quot;F_002&quot;,
+      &quot;desk_dimension&quot;: {
+        &quot;width&quot;: 1.5,
+        &quot;depth&quot;: 0.8
+      },
+      &quot;lifecycle_status&quot;: &quot;deployed&quot;
+    }
+  ]
+}</code></pre>
+<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>설명</th></tr></thead><tbody><tr><td>seat_id</td><td>string</td><td>JSON 내 임시 고유ID</td></tr><tr><td>seat<em>db</em>id</td><td>UUID</td><td>seat.id (DB FK). 착석자 조회는 이 값으로 <code>seat_assignment</code> 참조</td></tr><tr><td>seat_type</td><td>enum</td><td>fixed(고정), free(자율), temp(임시), partner(협력사)</td></tr><tr><td>team<em>zone</em>id</td><td>UUID</td><td>team_zone.id (공간 소속. 직원 배정과 무관)</td></tr><tr><td>coords</td><td>object</td><td>좌석 중심 좌표(x, y)</td></tr><tr><td><strong>facing</strong></td><td>float(도)</td><td><strong>착석 방향(D10)</strong>. 아바타가 앉았을 때 바라보는 방향. 도(degree), 시계방향, 기준축 +X(§5.3). 예: 180 = 남향(+Y)</td></tr><tr><td><strong>furniture_id</strong></td><td>string</td><td><strong>책상 상호 참조(D10)</strong>. 이 좌석이 딸린 <code>furniture[]</code> 항목의 <code>furniture_id</code>. 좌석 좌표는 이 가구의 <code>coords</code>에서 파생되므로 좌표 중복·desync를 방지한다</td></tr><tr><td>desk_dimension</td><td>object</td><td>책상 크기(meter). 정보용. 실제 3D 배치는 <code>furniture_id</code>가 가리키는 가구 에셋을 따른다</td></tr><tr><td>lifecycle_status</td><td>enum</td><td>deployed, archived, removed</td></tr><tr><td>accessibility</td><td>object</td><td>접근성 정보</td></tr><tr><td>nearby_amenities</td><td>object</td><td>주변 설비(모니터, 키보드, 전화)</td></tr></tbody></table></div>
+<blockquote><strong>좌석↔가구 좌표 정합</strong>: seat의 <code>coords</code>와 <code>furniture_id</code>가 가리키는 desk의 <code>coords</code>는 동일해야 한다(§3.2 검증 규칙). 편집기는 좌석 배치 시 딸린 desk를 함께 이동시켜 desync를 원천 차단한다.</blockquote>
+<h4 id="127-furniture-테이블-캐비닛-베드-등-일반-가구">1.2.7 furniture (테이블, 캐비닛, 베드 등 일반 가구)</h4>
+<blockquote><strong>D8 — 에셋 참조 방식</strong>: furniture는 <code>asset_id</code>로 <strong>클라이언트 빌드(pak)에 동봉된 에셋 카탈로그</strong>를 참조한다. layout JSON에 파일 경로(glb 등)를 넣지 않는다. 클라이언트는 <code>asset_id</code>로 동봉된 <code>.tscn</code>(임포트 완료본)을 <code>ResourceLoader</code>로 로드한다(§5.1). 런타임 glb 다운로드/CDN은 사용하지 않는다. <code>dimension</code>·<code>type</code> 등은 편집기 표시·검증용 캐시이며, 실측 크기 정본은 asset 테이블(07 §5.3)이다.</blockquote>
+<pre class="code lang-json"><code>{
+  &quot;furniture&quot;: [
+    {
+      &quot;furniture_id&quot;: &quot;F_001&quot;,
+      &quot;asset_id&quot;: &quot;DESK_STANDARD_001&quot;,
+      &quot;type&quot;: &quot;desk&quot;,
+      &quot;category&quot;: &quot;workspace&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 10.0,
+        &quot;y&quot;: 5.0,
+        &quot;rotation&quot;: 0
+      },
+      &quot;dimension&quot;: {
+        &quot;width&quot;: 1.5,
+        &quot;depth&quot;: 0.8,
+        &quot;height&quot;: 0.75
+      },
+      &quot;collision&quot;: true,
+      &quot;physics&quot;: {
+        &quot;type&quot;: &quot;static&quot;,
+        &quot;mass&quot;: 0
+      },
+      &quot;visual&quot;: {
+        &quot;color&quot;: &quot;#D4A574&quot;,
+        &quot;material&quot;: &quot;wood&quot;
+      },
+      &quot;interactive&quot;: false
+    },
+    {
+      &quot;furniture_id&quot;: &quot;F_002&quot;,
+      &quot;asset_id&quot;: &quot;CABINET_STORAGE_001&quot;,
+      &quot;type&quot;: &quot;cabinet&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 15.0,
+        &quot;y&quot;: 1.0,
+        &quot;rotation&quot;: 0
+      },
+      &quot;dimension&quot;: {
+        &quot;width&quot;: 1.2,
+        &quot;depth&quot;: 0.6,
+        &quot;height&quot;: 2.0
+      },
+      &quot;collision&quot;: true,
+      &quot;physics&quot;: {
+        &quot;type&quot;: &quot;static&quot;,
+        &quot;mass&quot;: 0
+      }
+    }
+  ]
+}</code></pre>
+<div class="table-wrap"><table><thead><tr><th>필드</th><th>설명</th></tr></thead><tbody><tr><td>furniture_id</td><td>JSON 내 고유ID</td></tr><tr><td>asset_id</td><td>asset(에셋 레지스트리).asset_id FK. <strong>클라이언트 동봉 카탈로그 조회 키(D8)</strong></td></tr><tr><td>type</td><td>desk, cabinet, shelf, plant, sofa, printer 등</td></tr><tr><td>coords</td><td>2D 좌표(x, y) + <code>rotation</code>(도, 시계방향, 기준축 +X). 3D 배치 변환은 §5.3</td></tr><tr><td>dimension</td><td>가구 크기(meter). 표시·검증용 캐시. 정본은 asset 테이블 <code>dimension</code></td></tr><tr><td>collision</td><td>콜리전 활성화 여부</td></tr><tr><td>physics</td><td>static(고정), dynamic(움직임), 질량 등</td></tr></tbody></table></div>
+<h4 id="128-colliders-충돌-영역-정의">1.2.8 colliders (충돌 영역 정의)</h4>
+<blockquote><strong>collider 형상 표기(D12 정합)</strong>: 형상은 <code>shape</code> 필드로 <code>box</code>/<code>polygon</code>을 분리한다. <code>shape=&quot;box&quot;</code>면 <code>box</code> 객체(x, y, width, height, rotation)를, <code>shape=&quot;polygon&quot;</code>이면 <code>polygon</code> 배열(꼭짓점 좌표)을 사용한다. 한 필드(<code>coords</code>)가 객체/배열 두 형태를 겸하던 다형성을 제거해 스키마 검증을 단순화한다.</blockquote>
+<pre class="code lang-json"><code>{
+  &quot;colliders&quot;: [
+    {
+      &quot;collider_id&quot;: &quot;C_001&quot;,
+      &quot;shape&quot;: &quot;box&quot;,
+      &quot;box&quot;: {
+        &quot;x&quot;: 20.0,
+        &quot;y&quot;: 10.0,
+        &quot;width&quot;: 8.0,
+        &quot;height&quot;: 6.0,
+        &quot;rotation&quot;: 0
+      },
+      &quot;physics&quot;: {
+        &quot;is_kinematic&quot;: false,
+        &quot;block_avatar&quot;: true,
+        &quot;block_interaction&quot;: false
+      },
+      &quot;layer&quot;: 1,
+      &quot;description&quot;: &quot;구조 벽(개구부 없는 통짜 벽)&quot;
+    },
+    {
+      &quot;collider_id&quot;: &quot;C_002&quot;,
+      &quot;shape&quot;: &quot;polygon&quot;,
+      &quot;polygon&quot;: [
+        { &quot;x&quot;: 0.0, &quot;y&quot;: 0.0 },
+        { &quot;x&quot;: 15.0, &quot;y&quot;: 0.0 },
+        { &quot;x&quot;: 15.0, &quot;y&quot;: 12.0 },
+        { &quot;x&quot;: 0.0, &quot;y&quot;: 12.0 }
+      ],
+      &quot;physics&quot;: {
+        &quot;block_avatar&quot;: true
+      },
+      &quot;layer&quot;: 1,
+      &quot;description&quot;: &quot;외부벽&quot;
+    }
+  ]
+}</code></pre>
+<p>아바타의 움직임 경로(A\* 내비게이션)와 물리 충돌 계산에 사용됨.</p>
+<blockquote><strong>room 벽과의 관계(D9)</strong>: room 경계 벽은 <code>doors[]</code> 개구부를 반영해 <strong>자동 생성</strong>되므로, <code>colliders[]</code>에 room을 통짜 box로 다시 넣지 않는다. <code>colliders[]</code>는 외벽·기둥·개구부 없는 구조 벽 등 room 스키마로 표현되지 않는 정적 장애물에만 사용한다.</blockquote>
+<h4 id="129-spawn_points-아바타-시작위치">1.2.9 spawn_points (아바타 시작위치)</h4>
+<pre class="code lang-json"><code>{
+  &quot;spawn_points&quot;: [
+    {
+      &quot;spawn_id&quot;: &quot;SP_LOBBY&quot;,
+      &quot;type&quot;: &quot;lobby&quot;,
+      &quot;coords&quot;: { &quot;x&quot;: 40.0, &quot;y&quot;: 30.0 },
+      &quot;facing&quot;: 0,
+      &quot;description&quot;: &quot;로비 입구&quot;
+    },
+    {
+      &quot;spawn_id&quot;: &quot;SP_DEV_TEAM&quot;,
+      &quot;type&quot;: &quot;team_zone&quot;,
+      &quot;zone_id&quot;: &quot;Z_001&quot;,
+      &quot;coords&quot;: { &quot;x&quot;: 10.0, &quot;y&quot;: 8.0 },
+      &quot;facing&quot;: 45,
+      &quot;description&quot;: &quot;개발팀 입장&quot;
+    }
+  ]
+}</code></pre>
+<p>사용자가 층 진입 시 스폰되는 위치. 팀/부서별로 다를 수 있음(권한 기반).</p>
+<h4 id="1210-spawn_default">1.2.10 spawn_default</h4>
+<pre class="code lang-json"><code>{
+  &quot;spawn_default&quot;: {
+    &quot;spawn_id&quot;: &quot;SP_LOBBY&quot;,
+    &quot;fallback_spawn_id&quot;: &quot;SP_LOBBY&quot;,
+    &quot;facing_default&quot;: 0
+  }
+}</code></pre>
+<p>기본 스폰 위치. 권한 매칭 실패 시 사용.</p>
+<h4 id="1211-minimap">1.2.11 minimap</h4>
+<pre class="code lang-json"><code>{
+  &quot;minimap&quot;: {
+    &quot;enabled&quot;: true,
+    &quot;viewport_x&quot;: 0.0,
+    &quot;viewport_y&quot;: 0.0,
+    &quot;viewport_width&quot;: 80.0,
+    &quot;viewport_height&quot;: 60.0,
+    &quot;pixel_width&quot;: 400,
+    &quot;pixel_height&quot;: 300,
+    &quot;pixels_per_meter&quot;: 5.0,
+    &quot;show_zones&quot;: true,
+    &quot;show_seats&quot;: true,
+    &quot;show_rooms&quot;: true,
+    &quot;show_avatars&quot;: true,
+    &quot;show_grid&quot;: false,
+    &quot;layers&quot;: [
+      {
+        &quot;layer_id&quot;: &quot;base&quot;,
+        &quot;type&quot;: &quot;background&quot;,
+        &quot;color&quot;: &quot;#F5F5F5&quot;
+      },
+      {
+        &quot;layer_id&quot;: &quot;zones&quot;,
+        &quot;type&quot;: &quot;vector&quot;,
+        &quot;visible&quot;: true
+      },
+      {
+        &quot;layer_id&quot;: &quot;rooms&quot;,
+        &quot;type&quot;: &quot;vector&quot;,
+        &quot;visible&quot;: true
+      }
+    ]
+  }
+}</code></pre>
+<p>클라이언트의 미니맵 렌더링 설정.</p>
+<h4 id="1212-connections-로직-연결">1.2.12 connections (로직 연결)</h4>
+<pre class="code lang-json"><code>{
+  &quot;connections&quot;: {
+    &quot;floor_adjacencies&quot;: [
+      {
+        &quot;floor_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440019&quot;,
+        &quot;exit_id&quot;: &quot;EXIT_STAIR&quot;,
+        &quot;entry_id&quot;: &quot;SP_STAIR_DOWN&quot;,
+        &quot;description&quot;: &quot;계단&quot;
+      },
+      {
+        &quot;floor_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440021&quot;,
+        &quot;exit_id&quot;: &quot;EXIT_ELEVATOR&quot;,
+        &quot;entry_id&quot;: &quot;SP_ELEVATOR&quot;,
+        &quot;description&quot;: &quot;엘리베이터&quot;
+      }
+    ],
+    &quot;exit_points&quot;: [
+      {
+        &quot;exit_id&quot;: &quot;EXIT_STAIR&quot;,
+        &quot;coords&quot;: { &quot;x&quot;: 75.0, &quot;y&quot;: 55.0 },
+        &quot;target_floor_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440019&quot;
+      }
+    ],
+    &quot;zone_to_room_shortcuts&quot;: [
+      {
+        &quot;zone_id&quot;: &quot;Z_001&quot;,
+        &quot;room_id&quot;: &quot;R_001&quot;,
+        &quot;relation&quot;: &quot;primary_meeting_room&quot;
+      }
+    ]
+  }
+}</code></pre>
+<p>층 간 이동, 회의실 바로가기 등 내비게이션 설정.</p>
+<h4 id="1213-performance">1.2.13 performance</h4>
+<pre class="code lang-json"><code>{
+  &quot;performance&quot;: {
+    &quot;total_furniture_count&quot;: 120,
+    &quot;total_colliders&quot;: 45,
+    &quot;total_assets&quot;: 32,
+    &quot;estimated_polygon_count&quot;: 640000,
+    &quot;estimated_draw_calls&quot;: 180,
+    &quot;estimated_memory_mb&quot;: 256,
+    &quot;recommended_device_tier&quot;: &quot;mid&quot;,
+    &quot;optimization_notes&quot;: &quot;동일 asset_id 가구를 MultiMesh로 묶으면 드로우콜 감소 가능&quot;
+  }
+}</code></pre>
+<p>클라이언트 성능 예측 및 최적화 힌트.</p>
+<blockquote><strong>서버 파생 계산(D12 정합)</strong>: <code>performance</code> 블록의 수치는 편집기가 자기신고하지 않는다. <strong>FastAPI 서버가 저장 시 asset 테이블(07 §5.3)의 <code>polygon_count</code>·<code>dimension</code> 등에서 파생 계산</strong>해 채운다. 산정 기준: <code>estimated_polygon_count</code>는 각 furniture의 asset <code>polygon_count</code> 합(동일 asset<em>id 반복은 실제 인스턴스 수 그대로 합산), <code>estimated_draw_calls</code>는 서로 다른 asset</em>id 수 + 개별 콜리전 등을 근거로 산정하되 <strong>동일 asset_id 그룹은 MultiMesh 1드로우콜로 계산</strong>(§5.1·07 §6.2). 편집기가 보낸 값은 무시하고 서버 계산값으로 덮어쓴다. 검증 규칙(§3.4)도 이 파생값을 기준으로 판정한다.</blockquote>
+<hr>
+<h2 id="2-버전-상태-관리">2. 버전 &amp; 상태 관리</h2>
+<h3 id="21-status-필드-office_layoutstatus">2.1 status 필드 (office_layout.status)</h3>
+<pre class="code"><code>draft      → 작성 중. 검증 미실행. 클라이언트 미배포.
+validated  → 검증 완료. 문제 없음. 배포 준비.
+deployed   → 라이브 운영 중. 클라이언트 사용 중.
+archived   → 이전 버전. 참고용만 유지.</code></pre>
+<h3 id="22-버전-관리-규칙">2.2 버전 관리 규칙</h3>
+<ul><li><strong>schema_version</strong>: 브레이킹 체인지(필드 삭제, 타입 변경)가 있으면 +1. 하위호환성 유지 시 유지.</li><li><strong>version(metadata.version)</strong>: Semantic Versioning(1.0, 1.1, 2.0). UI에서 변경사항 요약과 함께 저장.</li><li><strong>롤백 단위</strong>: 버전·롤백은 <strong>층(floor) 단위</strong>다(1 floor = 1 layout). office 전체를 한 번에 롤백하지 않는다(06 §3.3.3과 정합).</li><li><strong>DB FK 설계</strong>: <ul><li>seat<em>db</em>id, room<em>db</em>id 등으로 JSON 내 좌석/방의 현재 구성을 DB와 매칭.</li><li>나중에 좌석이 삭제되어도 JSON에서 참조 가능(감사 추적).</li></ul></li></ul>
+<h4 id="schema_version-호환성-처리">schema_version 호환성 처리</h4>
+<div class="table-wrap"><table><thead><tr><th>상황</th><th>동작</th></tr></thead><tbody><tr><td><strong>지원 버전 범위</strong></td><td>클라이언트/서버는 지원하는 <code>schema_version</code>의 최소~최대 범위를 상수로 보유(예: <code>SUPPORTED_SCHEMA = [1, 1]</code>)</td></tr><tr><td><strong>미지원(상위) 버전 수신</strong></td><td>클라이언트는 <strong>로드를 거부</strong>하고 &quot;클라이언트 업데이트가 필요합니다&quot; 안내 후 자동 업데이트 채널(D8)로 유도. 렌더링을 시도하지 않는다</td></tr><tr><td><strong>미지원(하위) 버전 수신</strong></td><td>서버가 마이그레이션 어댑터로 최신 스키마로 올려 응답하거나, 어댑터가 없으면 저장 시점에 재검증·업그레이드</td></tr><tr><td><strong>핸드셰이크 협상</strong></td><td>WSS 핸드셰이크의 <code>protocol_version</code> 협상(D4)과 함께 <code>schema_version</code> 호환성도 확인. 불일치 시 접속 거부 + 안내</td></tr></tbody></table></div>
+<h4 id="상태-전이-라이브-동기화롤백-포함">상태 전이 &amp; 라이브 동기화(롤백 포함)</h4>
+<pre class="code"><code>draft → validated → deployed
+                       │
+                       ├─(롤백)→ rolled_back ─→ (이전 버전) re-deployed
+                       └─(신버전 배포)→ 이전 deployed 는 archived</code></pre>
+<ul><li><strong>롤백 시 상태 전이</strong>: 현재 <code>deployed</code> 레이아웃을 <code>rolled_back</code>으로 표시하고, 지정한 이전 버전을 다시 <code>deployed</code>로 승격(re-deployed)한다.</li><li><strong>라이브 클라이언트 강제 동기화</strong>: 배포/롤백이 확정되면 서버가 접속 중인 모든 클라이언트에 <code>layout_updated</code>(layout<em>id, new</em>version, schema_version) 이벤트를 push한다. 클라이언트는 안전 시점(회의 중이 아니거나 이동 정지 상태)에 새 레이아웃을 재로드한다. 회의 중 사용자에 대한 처리는 §Open questions 1의 정책을 따른다.</li></ul>
+<h3 id="23-버전-히스토리">2.3 버전 히스토리</h3>
+<pre class="code lang-sql"><code>-- office_layouts 테이블
+id, office_id, floor_id, version, status, json, created_at, updated_at, created_by, updated_by, changelog
+
+-- 예: changelog (배열 — 변경 이력이 누적되므로 단일 객체가 아닌 배열로 저장)
+[
+  {
+    &quot;changed_by&quot;: 102,
+    &quot;changed_at&quot;: &quot;2026-07-01T15:30:00Z&quot;,
+    &quot;changes&quot;: [
+      { &quot;type&quot;: &quot;added_seat&quot;, &quot;seat_id&quot;: &quot;S_101&quot; },
+      { &quot;type&quot;: &quot;updated_room&quot;, &quot;room_id&quot;: &quot;R_001&quot;, &quot;fields&quot;: [&quot;capacity&quot;, &quot;name&quot;] }
+    ]
+  },
+  {
+    &quot;changed_by&quot;: 102,
+    &quot;changed_at&quot;: &quot;2026-07-02T09:10:00Z&quot;,
+    &quot;changes&quot;: [
+      { &quot;type&quot;: &quot;added_door&quot;, &quot;room_id&quot;: &quot;R_001&quot;, &quot;door_id&quot;: &quot;D_002&quot; }
+    ]
+  }
+]</code></pre>
+<h3 id="24-좌석-배정과-레이아웃의-분리-d10">2.4 좌석 배정과 레이아웃의 분리 (D10)</h3>
+<p>좌석-직원 배정은 layout JSON이 아니라 DB <code>seat_assignment</code> 테이블(04-data-model.md)에 저장된다.</p>
+<ul><li>layout JSON은 좌석의 <strong>공간 구조</strong>(위치·타입·방향·설비)만 담고 <code>assigned_user_id</code>를 갖지 않는다.</li><li>착석자 조회: <code>seat_db_id</code>로 <code>seat_assignment</code>(seat<em>db</em>id, erp<em>user</em>id, assigned<em>at, released</em>at) 참조.</li><li><strong>좌석 배정 변경(직원 자리 이동, 자율좌석 점유/반납 등)은 <code>seat_assignment</code>만 갱신</strong>하며 layout 재배포·재검증이 필요 없다. 따라서 배정 변경은 버전을 올리지 않는다(라이브 중 변경으로 인한 inconsistent 위험이 원천 제거됨).</li><li>공간 구조 변경(좌석 신설/삭제/좌표 이동)만 layout 버전을 올린다.</li></ul>
+<hr>
+<h2 id="3-검증-규칙-및-검증-아키텍처">3. 검증 규칙 및 검증 아키텍처</h2>
+<h3 id="30-검증-아키텍처-d12">3.0 검증 아키텍처 (D12)</h3>
+<p>정밀 검증은 <strong>FastAPI 서버 1곳</strong>에서만 수행한다. 각 계층의 역할:</p>
+<div class="table-wrap"><table><thead><tr><th>계층</th><th>검증 범위</th><th>근거</th></tr></thead><tbody><tr><td><strong>웹 편집기(클라이언트)</strong></td><td><strong>경량 체크만</strong>: JSON 파싱, 좌표 범위, 오브젝트 겹침 등 즉시 피드백용. 이것은 UX 편의이며 권위가 아니다</td><td>D12</td></tr><tr><td><strong>FastAPI 서버(정본)</strong></td><td><strong>정밀 검증 전부</strong>: 구조·공간·조직/역할·설비·미니맵 + **도달성(A<em>) 검증</em>*. 공식 JSON Schema 파일 기준 스키마 검증 후, 서버 코드가 도달성·파생 성능값을 계산. ERROR 존재 시 저장 거부</td><td>D12</td></tr><tr><td><strong>Godot 클라이언트</strong></td><td><strong>검증 안 함</strong>. 서버가 배포한 레이아웃을 신뢰하고 렌더링만 한다</td><td>D12</td></tr></tbody></table></div>
+<ul><li><strong>공식 JSON Schema 파일 경로</strong>: <code>backend/app/schemas/office_layout.schema.json</code>(Draft 2020-12). 서버·편집기·CI가 모두 이 단일 파일을 참조한다. 편집기의 경량 체크도 이 스키마의 부분집합을 사용한다.</li><li><strong>ERROR/WARNING 정책(D12)</strong>: 하나라도 <strong>ERROR가 있으면 배포 불가</strong>(웹 편집기의 <code>[무시하고 배포]</code> 버튼 제거). <strong>WARNING만</strong> <code>[경고 무시하고 배포]</code>로 진행 가능. 06 §5.2의 검증 실패 다이얼로그와 정합.</li><li>아래 §3.1~§3.5의 규칙은 <strong>서버 정밀 검증의 규칙 목록</strong>이다. 심각도(ERROR/WARNING)는 서버 판정 기준이며, 편집기는 이 중 경량 항목만 미리 보여준다.</li></ul>
+<h3 id="31-구조-검증">3.1 구조 검증</h3>
+<div class="table-wrap"><table><thead><tr><th>규칙</th><th>심각도</th><th>설명</th></tr></thead><tbody><tr><td><strong>JSON 파싱</strong></td><td>ERROR</td><td>JSON 형식 오류(따옴표, 콤마 등)</td></tr><tr><td><strong>필수 필드</strong></td><td>ERROR</td><td>metadata, floor, dimensions, zones, rooms, seats, colliders 필수 존재</td></tr><tr><td><strong>ID 고유성</strong></td><td>ERROR</td><td>같은 floor 내 zone<em>id, room</em>id, seat<em>id, furniture</em>id, collider_id 중복 금지</td></tr><tr><td><strong>좌표 범위</strong></td><td>ERROR</td><td>모든 좌표가 dimensions 내 범위에 있어야 함(x: [min<em>x, max</em>x], y: [min<em>y, max</em>y])</td></tr></tbody></table></div>
+<h3 id="32-공간-검증">3.2 공간 검증</h3>
+<div class="table-wrap"><table><thead><tr><th>규칙</th><th>심각도</th><th>설명</th></tr></thead><tbody><tr><td><strong>오브젝트 충돌</strong></td><td>ERROR</td><td>가구 또는 방이 콜리전 영역과 겹쳤는가?</td></tr><tr><td><strong>좌석 접근성</strong></td><td>WARNING</td><td>좌석이 폐쇄된 공간(콜리전 내부)에 갇혀 있지는 않은가?</td></tr><tr><td><strong>회의실 수용인원</strong></td><td>ERROR</td><td><code>capacity_mode=by_seats</code>인 room은 <strong>해당 room 경계 내부에 seats가 capacity개</strong> 존재해야 함. <code>by_room</code>이면 room 내부 좌석 수와 무관(capacity는 max<em>concurrent</em>users로만 판정)</td></tr><tr><td><strong>입장 트리거</strong></td><td>ERROR</td><td><code>entrance.trigger_x, trigger_y</code>(트리거 박스 전체)가 room <code>coords</code> 경계 <strong>내부</strong>에 있어야 함. 경계 밖이거나 콜리전과 겹치면 ERROR</td></tr><tr><td><strong>문 개구부 정합(D9)</strong></td><td>ERROR</td><td>각 room의 <code>doors[]</code>가 최소 1개 존재(진입 가능). 각 door의 <code>(wall, offset, width)</code>가 해당 벽 길이 범위 내에 완전히 들어가야 함(offset±width/2 ⊆ [0, 벽길이])</td></tr><tr><td><strong>입장 트리거↔문 정합</strong></td><td>WARNING</td><td><code>entrance</code>가 어느 <code>doors[]</code> 개구부와 근접(같은 벽·구간 겹침)하는지. 개구부 없는 벽에 트리거만 있으면 경고</td></tr><tr><td><strong>좌석↔가구 좌표 정합(D10)</strong></td><td>ERROR</td><td>seat의 <code>furniture_id</code>가 유효한 furniture를 가리키고, seat <code>coords</code>와 그 furniture <code>coords</code>(x, y)가 일치해야 함(desync 방지)</td></tr><tr><td><strong>facing 범위</strong></td><td>WARNING</td><td>seat <code>facing</code>, spawn <code>facing</code>이 [0, 360) 범위(도)인가</td></tr><tr><td><strong>아바타 이동경로</strong></td><td>WARNING</td><td>A* 내비게이션으로 spawn_point → 모든 주요 지점(room entrance/door, zone center) 도달 가능? (<strong>서버 전용 정밀 검증</strong> — D12)</td></tr></tbody></table></div>
+<h3 id="33-조직역할-검증">3.3 조직/역할 검증</h3>
+<div class="table-wrap"><table><thead><tr><th>규칙</th><th>심각도</th><th>설명</th></tr></thead><tbody><tr><td><strong>팀 구역 연결</strong></td><td>ERROR</td><td>zone의 erp<em>team</em>id가 유효한가?(ERP teams 존재 확인)</td></tr><tr><td><strong>org_group 누락</strong></td><td>WARNING</td><td>zone이 org<em>group</em>id를 지정하지 않으면 경고(권한 계층에 영향)</td></tr></tbody></table></div>
+<blockquote><strong>좌석 배정 검증 제외(D10)</strong>: 좌석-직원 배정은 layout JSON에 없으므로(§2.4) 여기서 검증하지 않는다. 배정 유효성(erp_user 존재 등)은 <code>seat_assignment</code> 저장 시점에 별도로 검증한다.</blockquote>
+<h3 id="34-설비-검증">3.4 설비 검증</h3>
+<div class="table-wrap"><table><thead><tr><th>규칙</th><th>심각도</th><th>설명</th></tr></thead><tbody><tr><td><strong>회의실 LiveKit 연결</strong></td><td>WARNING</td><td>type=meeting인 room에 livekit_room이 지정되지 않음</td></tr><tr><td><strong>에셋 존재</strong></td><td>ERROR</td><td>furniture.asset_id가 클라이언트 동봉 asset 카탈로그(asset 테이블)에 존재하는가?(D8)</td></tr><tr><td><strong>드로우콜 예산</strong></td><td>ERROR</td><td>서버 파생 <code>estimated_draw_calls</code>(동일 asset_id는 MultiMesh 1콜로 계산)가 예산(07 §1.2 기준 200)을 초과하면 거부</td></tr><tr><td><strong>폴리곤 예산</strong></td><td>WARNING</td><td>서버 파생 <code>estimated_polygon_count</code>가 씬 예산(07 §1.2 기준 상한)을 초과하면 경고</td></tr><tr><td><strong>메모리 예측</strong></td><td>WARNING</td><td>서버 파생 <code>estimated_memory_mb</code>가 기준 사양(D22: GTX 1650급) VRAM 예산을 초과하면 경고</td></tr></tbody></table></div>
+<blockquote><strong>개수 프록시 폐기(D7·D12 정합)</strong>: 종전의 &quot;furniture<em>count &gt; 500개 거부&quot;처럼 <strong>개수를 성능 프록시로 쓰던 규칙은 폐기</strong>한다. 성능 한도는 asset 테이블에서 파생한 <strong>폴리곤/드로우콜 실측 기반값</strong>(§1.2.13)으로 판정한다. 동일 asset</em>id 반복 배치는 MultiMesh로 묶여 드로우콜에 1회만 계상되므로, 같은 책상 500개가 서로 다른 500개보다 훨씬 저렴하다.</blockquote>
+<h3 id="35-미니맵-검증">3.5 미니맵 검증</h3>
+<div class="table-wrap"><table><thead><tr><th>규칙</th><th>심각도</th><th>설명</th></tr></thead><tbody><tr><td><strong>뷰포트 범위</strong></td><td>ERROR</td><td>minimap.viewport_*이 dimensions를 벗어남</td></tr><tr><td><strong>픽셀 해상도</strong></td><td>WARNING</td><td>pixel<em>width * pixel</em>height &lt; 100,000 or &gt; 1,000,000</td></tr></tbody></table></div>
+<h3 id="36-검증-실행-흐름">3.6 검증 실행 흐름</h3>
+<blockquote><strong>아키텍처(D12)</strong>: 편집기는 <strong>경량 체크(범위/겹침)</strong>로 즉시 피드백만 주고, **정밀 검증(도달성 A* 포함)과 최종 심각도 판정은 FastAPI 서버가 단독**으로 한다. 편집기 체크는 권위가 아니므로, 편집기를 통과해도 서버가 ERROR를 낼 수 있다.</blockquote>
+<div class="mermaid">sequenceDiagram
+  actor Editor as 편집기&lt;br/&gt;(사용자)
+  participant Web as 웹 편집기&lt;br/&gt;(경량 체크)
+  participant API as FastAPI&lt;br/&gt;(정밀 검증·정본)
+  participant ERP as ERP DB&lt;br/&gt;(읽기)
+  participant PG as PostgreSQL&lt;br/&gt;우리 DB
+
+  Editor-&gt;&gt;Web: 저장 클릭
+  Web-&gt;&gt;Web: 경량 체크(JSON 파싱, 좌표 범위, 겹침)
+  alt 경량 체크 실패
+    Web-&gt;&gt;Editor: 즉시 피드백(줄 번호/위치)
+    Editor-&gt;&gt;Web: 수정 후 재시도
+  end
+
+  Web-&gt;&gt;API: 레이아웃 JSON 제출
+  API-&gt;&gt;API: 1. JSON Schema 검증(office_layout.schema.json)
+  API-&gt;&gt;API: 2. 구조·공간 정밀 검증(문 개구부, 좌석↔가구 정합 등)
+  API-&gt;&gt;ERP: 3. 조직/역할 검증(SELECT teams WHERE id IN ...)
+  API-&gt;&gt;API: 4. 도달성(A*) 검증 — 서버 전용
+  API-&gt;&gt;API: 5. 에셋 카탈로그 존재 + 파생 성능값 계산
+  alt ERROR 존재
+    API-&gt;&gt;Web: 검증 실패(ERROR 목록) — 배포 불가
+    Web-&gt;&gt;Editor: ERROR 표시([무시하고 배포] 없음)
+  end
+
+  API-&gt;&gt;PG: BEGIN TRANSACTION
+  API-&gt;&gt;PG: INSERT/UPDATE office_layouts (파생 performance 포함)
+  API-&gt;&gt;PG: COMMIT
+  API-&gt;&gt;Web: ✓ 저장 완료(WARNING 있으면 함께)
+  Web-&gt;&gt;Editor: &quot;저장되었습니다. version 1.1&quot;</div>
+<hr>
+<h2 id="4-예시-json-샘플-층-레이아웃">4. 예시 JSON: 샘플 층 레이아웃</h2>
+<p>다음은 실제 가상오피스 3층(개발팀) 로비 및 개발팀 구역의 완전한 예시이다.</p>
+<pre class="code lang-json"><code>{
+  &quot;metadata&quot;: {
+    &quot;version&quot;: &quot;1.1&quot;,
+    &quot;schema_version&quot;: 1,
+    &quot;layout_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440001&quot;,
+    &quot;office_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440010&quot;,
+    &quot;floor_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440020&quot;,
+    &quot;floor_name&quot;: &quot;3F&quot;,
+    &quot;created_at&quot;: &quot;2026-07-01T10:00:00Z&quot;,
+    &quot;updated_at&quot;: &quot;2026-07-02T09:10:00Z&quot;,
+    &quot;created_by&quot;: 101,
+    &quot;updated_by&quot;: 102,
+    &quot;description&quot;: &quot;3층 개발팀 구역 레이아웃 v1.1 (문 개구부·좌석 분리 반영)&quot;,
+    &quot;language&quot;: &quot;ko-KR&quot;
+  },
+  &quot;floor&quot;: {
+    &quot;id&quot;: &quot;550e8400-e29b-41d4-a716-446655440020&quot;,
+    &quot;level&quot;: 3,
+    &quot;name&quot;: &quot;3F&quot;,
+    &quot;total_area_m2&quot;: 2500,
+    &quot;coordinate_origin&quot;: &quot;top_left&quot;,
+    &quot;floor_height_m&quot;: 8.4,
+    &quot;grid_snap_unit_cm&quot;: 10,
+    &quot;unit_system&quot;: &quot;metric&quot;
+  },
+  &quot;dimensions&quot;: {
+    &quot;width_m&quot;: 80.0,
+    &quot;height_m&quot;: 60.0,
+    &quot;min_x&quot;: 0.0,
+    &quot;max_x&quot;: 80.0,
+    &quot;min_y&quot;: 0.0,
+    &quot;max_y&quot;: 60.0,
+    &quot;unit&quot;: &quot;meter&quot;
+  },
+  &quot;zones&quot;: [
+    {
+      &quot;zone_id&quot;: &quot;Z_001&quot;,
+      &quot;team_zone_db_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440030&quot;,
+      &quot;org_group_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440040&quot;,
+      &quot;erp_team_id&quot;: 201,
+      &quot;label&quot;: &quot;개발팀&quot;,
+      &quot;type&quot;: &quot;team&quot;,
+      &quot;color&quot;: &quot;#4A90E2&quot;,
+      &quot;polygon&quot;: [
+        { &quot;x&quot;: 0.0, &quot;y&quot;: 0.0 },
+        { &quot;x&quot;: 25.0, &quot;y&quot;: 0.0 },
+        { &quot;x&quot;: 25.0, &quot;y&quot;: 20.0 },
+        { &quot;x&quot;: 0.0, &quot;y&quot;: 20.0 }
+      ],
+      &quot;access_control&quot;: {
+        &quot;allowed_roles&quot;: [&quot;admin&quot;, &quot;leader&quot;, &quot;employee&quot;],
+        &quot;restricted&quot;: false
+      },
+      &quot;visual&quot;: {
+        &quot;show_boundary&quot;: true,
+        &quot;boundary_style&quot;: &quot;dashed&quot;,
+        &quot;boundary_width_cm&quot;: 2
+      }
+    },
+    {
+      &quot;zone_id&quot;: &quot;Z_002&quot;,
+      &quot;team_zone_db_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440031&quot;,
+      &quot;org_group_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440040&quot;,
+      &quot;erp_team_id&quot;: 202,
+      &quot;label&quot;: &quot;마케팅팀&quot;,
+      &quot;type&quot;: &quot;team&quot;,
+      &quot;color&quot;: &quot;#E24A8E&quot;,
+      &quot;polygon&quot;: [
+        { &quot;x&quot;: 25.0, &quot;y&quot;: 0.0 },
+        { &quot;x&quot;: 50.0, &quot;y&quot;: 0.0 },
+        { &quot;x&quot;: 50.0, &quot;y&quot;: 20.0 },
+        { &quot;x&quot;: 25.0, &quot;y&quot;: 20.0 }
+      ],
+      &quot;access_control&quot;: {
+        &quot;allowed_roles&quot;: [&quot;admin&quot;, &quot;leader&quot;, &quot;employee&quot;],
+        &quot;restricted&quot;: false
+      },
+      &quot;visual&quot;: {
+        &quot;show_boundary&quot;: true,
+        &quot;boundary_style&quot;: &quot;dashed&quot;,
+        &quot;boundary_width_cm&quot;: 2
+      }
+    }
+  ],
+  &quot;rooms&quot;: [
+    {
+      &quot;room_id&quot;: &quot;R_001&quot;,
+      &quot;room_db_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440050&quot;,
+      &quot;name&quot;: &quot;회의실 A&quot;,
+      &quot;type&quot;: &quot;meeting&quot;,
+      &quot;capacity&quot;: 6,
+      &quot;floor_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440020&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 55.0,
+        &quot;y&quot;: 5.0,
+        &quot;width&quot;: 6.0,
+        &quot;height&quot;: 4.5
+      },
+      &quot;entrance&quot;: {
+        &quot;trigger_x&quot;: 57.4,
+        &quot;trigger_y&quot;: 8.5,
+        &quot;trigger_width&quot;: 1.5,
+        &quot;trigger_height&quot;: 0.8,
+        &quot;entry_direction&quot;: &quot;south&quot;
+      },
+      &quot;livekit_room&quot;: &quot;meeting_3f_001&quot;,
+      &quot;capacity_mode&quot;: &quot;by_room&quot;,
+      &quot;max_concurrent_users&quot;: 6,
+      &quot;doors&quot;: [
+        {
+          &quot;door_id&quot;: &quot;D_R001_S&quot;,
+          &quot;wall&quot;: &quot;south&quot;,
+          &quot;offset&quot;: 3.0,
+          &quot;width&quot;: 1.2,
+          &quot;door_type&quot;: &quot;glass_single&quot;
+        }
+      ],
+      &quot;glass_walls&quot;: [
+        {
+          &quot;wall_id&quot;: &quot;GW_001&quot;,
+          &quot;edge&quot;: &quot;south&quot;,
+          &quot;start&quot;: { &quot;x&quot;: 55.0, &quot;y&quot;: 9.5 },
+          &quot;end&quot;: { &quot;x&quot;: 61.0, &quot;y&quot;: 9.5 },
+          &quot;transparency&quot;: 0.7,
+          &quot;frame_color&quot;: &quot;#333333&quot;
+        }
+      ],
+      &quot;climate&quot;: {
+        &quot;ac_outlet&quot;: { &quot;x&quot;: 56.0, &quot;y&quot;: 6.0 }
+      },
+      &quot;markers&quot;: {
+        &quot;whiteboard&quot;: { &quot;x&quot;: 56.5, &quot;y&quot;: 7.0 },
+        &quot;projector&quot;: { &quot;x&quot;: 57.5, &quot;y&quot;: 5.5 }
+      }
+    },
+    {
+      &quot;room_id&quot;: &quot;R_002&quot;,
+      &quot;room_db_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440051&quot;,
+      &quot;name&quot;: &quot;라운지&quot;,
+      &quot;type&quot;: &quot;lounge&quot;,
+      &quot;capacity&quot;: 15,
+      &quot;floor_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440020&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 65.0,
+        &quot;y&quot;: 15.0,
+        &quot;width&quot;: 12.0,
+        &quot;height&quot;: 8.0
+      },
+      &quot;entrance&quot;: {
+        &quot;trigger_x&quot;: 68.0,
+        &quot;trigger_y&quot;: 22.2,
+        &quot;trigger_width&quot;: 2.0,
+        &quot;trigger_height&quot;: 0.8,
+        &quot;entry_direction&quot;: &quot;south&quot;
+      },
+      &quot;livekit_room&quot;: null,
+      &quot;capacity_mode&quot;: &quot;by_room&quot;,
+      &quot;max_concurrent_users&quot;: 15,
+      &quot;doors&quot;: [
+        {
+          &quot;door_id&quot;: &quot;D_R002_S&quot;,
+          &quot;wall&quot;: &quot;south&quot;,
+          &quot;offset&quot;: 4.0,
+          &quot;width&quot;: 2.0,
+          &quot;door_type&quot;: &quot;open&quot;
+        }
+      ],
+      &quot;glass_walls&quot;: [],
+      &quot;climate&quot;: {
+        &quot;ac_outlet&quot;: { &quot;x&quot;: 70.0, &quot;y&quot;: 18.0 }
+      },
+      &quot;markers&quot;: {
+        &quot;coffee_machine&quot;: { &quot;x&quot;: 66.0, &quot;y&quot;: 17.0 },
+        &quot;snack_table&quot;: { &quot;x&quot;: 72.0, &quot;y&quot;: 19.0 }
+      }
+    }
+  ],
+  &quot;seats&quot;: [
+    {
+      &quot;seat_id&quot;: &quot;S_001&quot;,
+      &quot;seat_db_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440060&quot;,
+      &quot;team_zone_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440030&quot;,
+      &quot;seat_type&quot;: &quot;fixed&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 3.5,
+        &quot;y&quot;: 2.0
+      },
+      &quot;facing&quot;: 180,
+      &quot;furniture_id&quot;: &quot;F_001&quot;,
+      &quot;desk_dimension&quot;: {
+        &quot;width&quot;: 1.5,
+        &quot;depth&quot;: 0.8,
+        &quot;height&quot;: 0.75
+      },
+      &quot;lifecycle_status&quot;: &quot;deployed&quot;,
+      &quot;accessibility&quot;: {
+        &quot;wheelchair_accessible&quot;: false,
+        &quot;ergonomic_type&quot;: &quot;standard&quot;
+      },
+      &quot;nearby_amenities&quot;: {
+        &quot;has_monitor_stand&quot;: true,
+        &quot;has_keyboard&quot;: true,
+        &quot;has_phone&quot;: false
+      }
+    },
+    {
+      &quot;seat_id&quot;: &quot;S_002&quot;,
+      &quot;seat_db_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440061&quot;,
+      &quot;team_zone_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440030&quot;,
+      &quot;seat_type&quot;: &quot;fixed&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 5.0,
+        &quot;y&quot;: 2.0
+      },
+      &quot;facing&quot;: 180,
+      &quot;furniture_id&quot;: &quot;F_002&quot;,
+      &quot;desk_dimension&quot;: {
+        &quot;width&quot;: 1.5,
+        &quot;depth&quot;: 0.8,
+        &quot;height&quot;: 0.75
+      },
+      &quot;lifecycle_status&quot;: &quot;deployed&quot;,
+      &quot;accessibility&quot;: {
+        &quot;wheelchair_accessible&quot;: false,
+        &quot;ergonomic_type&quot;: &quot;standard&quot;
+      },
+      &quot;nearby_amenities&quot;: {
+        &quot;has_monitor_stand&quot;: true,
+        &quot;has_keyboard&quot;: true,
+        &quot;has_phone&quot;: false
+      }
+    },
+    {
+      &quot;seat_id&quot;: &quot;S_003&quot;,
+      &quot;seat_db_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440062&quot;,
+      &quot;team_zone_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440030&quot;,
+      &quot;seat_type&quot;: &quot;free&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 6.5,
+        &quot;y&quot;: 2.0
+      },
+      &quot;facing&quot;: 180,
+      &quot;furniture_id&quot;: &quot;F_003&quot;,
+      &quot;desk_dimension&quot;: {
+        &quot;width&quot;: 1.5,
+        &quot;depth&quot;: 0.8,
+        &quot;height&quot;: 0.75
+      },
+      &quot;lifecycle_status&quot;: &quot;deployed&quot;,
+      &quot;accessibility&quot;: {
+        &quot;wheelchair_accessible&quot;: false,
+        &quot;ergonomic_type&quot;: &quot;standard&quot;
+      },
+      &quot;nearby_amenities&quot;: {
+        &quot;has_monitor_stand&quot;: true,
+        &quot;has_keyboard&quot;: true,
+        &quot;has_phone&quot;: false
+      }
+    },
+    {
+      &quot;seat_id&quot;: &quot;S_101&quot;,
+      &quot;seat_db_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440063&quot;,
+      &quot;team_zone_id&quot;: &quot;550e8400-e29b-41d4-a716-446655440031&quot;,
+      &quot;seat_type&quot;: &quot;fixed&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 28.0,
+        &quot;y&quot;: 3.0
+      },
+      &quot;facing&quot;: 180,
+      &quot;furniture_id&quot;: &quot;F_101&quot;,
+      &quot;desk_dimension&quot;: {
+        &quot;width&quot;: 1.5,
+        &quot;depth&quot;: 0.8,
+        &quot;height&quot;: 0.75
+      },
+      &quot;lifecycle_status&quot;: &quot;deployed&quot;,
+      &quot;accessibility&quot;: {
+        &quot;wheelchair_accessible&quot;: false,
+        &quot;ergonomic_type&quot;: &quot;standard&quot;
+      },
+      &quot;nearby_amenities&quot;: {
+        &quot;has_monitor_stand&quot;: true,
+        &quot;has_keyboard&quot;: true,
+        &quot;has_phone&quot;: true
+      }
+    }
+  ],
+  &quot;furniture&quot;: [
+    {
+      &quot;furniture_id&quot;: &quot;F_001&quot;,
+      &quot;asset_id&quot;: &quot;DESK_STANDARD_001&quot;,
+      &quot;type&quot;: &quot;desk&quot;,
+      &quot;category&quot;: &quot;workspace&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 3.5,
+        &quot;y&quot;: 2.0,
+        &quot;rotation&quot;: 0
+      },
+      &quot;dimension&quot;: {
+        &quot;width&quot;: 1.5,
+        &quot;depth&quot;: 0.8,
+        &quot;height&quot;: 0.75
+      },
+      &quot;collision&quot;: true,
+      &quot;physics&quot;: {
+        &quot;type&quot;: &quot;static&quot;,
+        &quot;mass&quot;: 0
+      },
+      &quot;visual&quot;: {
+        &quot;color&quot;: &quot;#D4A574&quot;,
+        &quot;material&quot;: &quot;wood&quot;
+      },
+      &quot;interactive&quot;: false
+    },
+    {
+      &quot;furniture_id&quot;: &quot;F_002&quot;,
+      &quot;asset_id&quot;: &quot;DESK_STANDARD_001&quot;,
+      &quot;type&quot;: &quot;desk&quot;,
+      &quot;category&quot;: &quot;workspace&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 5.0,
+        &quot;y&quot;: 2.0,
+        &quot;rotation&quot;: 0
+      },
+      &quot;dimension&quot;: {
+        &quot;width&quot;: 1.5,
+        &quot;depth&quot;: 0.8,
+        &quot;height&quot;: 0.75
+      },
+      &quot;collision&quot;: true,
+      &quot;physics&quot;: {
+        &quot;type&quot;: &quot;static&quot;,
+        &quot;mass&quot;: 0
+      },
+      &quot;visual&quot;: {
+        &quot;color&quot;: &quot;#D4A574&quot;,
+        &quot;material&quot;: &quot;wood&quot;
+      },
+      &quot;interactive&quot;: false
+    },
+    {
+      &quot;furniture_id&quot;: &quot;F_003&quot;,
+      &quot;asset_id&quot;: &quot;DESK_STANDARD_001&quot;,
+      &quot;type&quot;: &quot;desk&quot;,
+      &quot;category&quot;: &quot;workspace&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 6.5,
+        &quot;y&quot;: 2.0,
+        &quot;rotation&quot;: 0
+      },
+      &quot;dimension&quot;: {
+        &quot;width&quot;: 1.5,
+        &quot;depth&quot;: 0.8,
+        &quot;height&quot;: 0.75
+      },
+      &quot;collision&quot;: true,
+      &quot;physics&quot;: {
+        &quot;type&quot;: &quot;static&quot;,
+        &quot;mass&quot;: 0
+      },
+      &quot;visual&quot;: {
+        &quot;color&quot;: &quot;#D4A574&quot;,
+        &quot;material&quot;: &quot;wood&quot;
+      },
+      &quot;interactive&quot;: false
+    },
+    {
+      &quot;furniture_id&quot;: &quot;F_101&quot;,
+      &quot;asset_id&quot;: &quot;DESK_STANDARD_001&quot;,
+      &quot;type&quot;: &quot;desk&quot;,
+      &quot;category&quot;: &quot;workspace&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 28.0,
+        &quot;y&quot;: 3.0,
+        &quot;rotation&quot;: 0
+      },
+      &quot;dimension&quot;: {
+        &quot;width&quot;: 1.5,
+        &quot;depth&quot;: 0.8,
+        &quot;height&quot;: 0.75
+      },
+      &quot;collision&quot;: true,
+      &quot;physics&quot;: {
+        &quot;type&quot;: &quot;static&quot;,
+        &quot;mass&quot;: 0
+      },
+      &quot;visual&quot;: {
+        &quot;color&quot;: &quot;#D4A574&quot;,
+        &quot;material&quot;: &quot;wood&quot;
+      },
+      &quot;interactive&quot;: false
+    },
+    {
+      &quot;furniture_id&quot;: &quot;F_CABINET_001&quot;,
+      &quot;asset_id&quot;: &quot;CABINET_STORAGE_001&quot;,
+      &quot;type&quot;: &quot;cabinet&quot;,
+      &quot;category&quot;: &quot;storage&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 15.0,
+        &quot;y&quot;: 1.0,
+        &quot;rotation&quot;: 0
+      },
+      &quot;dimension&quot;: {
+        &quot;width&quot;: 1.2,
+        &quot;depth&quot;: 0.6,
+        &quot;height&quot;: 2.0
+      },
+      &quot;collision&quot;: true,
+      &quot;physics&quot;: {
+        &quot;type&quot;: &quot;static&quot;,
+        &quot;mass&quot;: 0
+      },
+      &quot;visual&quot;: {
+        &quot;color&quot;: &quot;#CCCCCC&quot;,
+        &quot;material&quot;: &quot;metal&quot;
+      },
+      &quot;interactive&quot;: false
+    },
+    {
+      &quot;furniture_id&quot;: &quot;F_SOFA_LOUNGE&quot;,
+      &quot;asset_id&quot;: &quot;SOFA_3SEAT_001&quot;,
+      &quot;type&quot;: &quot;sofa&quot;,
+      &quot;category&quot;: &quot;lounge&quot;,
+      &quot;coords&quot;: {
+        &quot;x&quot;: 68.0,
+        &quot;y&quot;: 17.0,
+        &quot;rotation&quot;: 0
+      },
+      &quot;dimension&quot;: {
+        &quot;width&quot;: 2.1,
+        &quot;depth&quot;: 0.9,
+        &quot;height&quot;: 0.8
+      },
+      &quot;collision&quot;: true,
+      &quot;physics&quot;: {
+        &quot;type&quot;: &quot;static&quot;,
+        &quot;mass&quot;: 0
+      },
+      &quot;visual&quot;: {
+        &quot;color&quot;: &quot;#4A4A4A&quot;,
+        &quot;material&quot;: &quot;fabric&quot;
+      },
+      &quot;interactive&quot;: false
+    }
+  ],
+  &quot;colliders&quot;: [
+    {
+      &quot;collider_id&quot;: &quot;C_EXT_WALL_NORTH&quot;,
+      &quot;shape&quot;: &quot;box&quot;,
+      &quot;box&quot;: {
+        &quot;x&quot;: 0.0,
+        &quot;y&quot;: 0.0,
+        &quot;width&quot;: 80.0,
+        &quot;height&quot;: 0.3,
+        &quot;rotation&quot;: 0
+      },
+      &quot;physics&quot;: {
+        &quot;is_kinematic&quot;: false,
+        &quot;block_avatar&quot;: true,
+        &quot;block_interaction&quot;: false
+      },
+      &quot;layer&quot;: 1,
+      &quot;description&quot;: &quot;북쪽 외벽&quot;
+    },
+    {
+      &quot;collider_id&quot;: &quot;C_EXT_WALL_SOUTH&quot;,
+      &quot;shape&quot;: &quot;box&quot;,
+      &quot;box&quot;: {
+        &quot;x&quot;: 0.0,
+        &quot;y&quot;: 59.7,
+        &quot;width&quot;: 80.0,
+        &quot;height&quot;: 0.3,
+        &quot;rotation&quot;: 0
+      },
+      &quot;physics&quot;: {
+        &quot;is_kinematic&quot;: false,
+        &quot;block_avatar&quot;: true,
+        &quot;block_interaction&quot;: false
+      },
+      &quot;layer&quot;: 1,
+      &quot;description&quot;: &quot;남쪽 외벽&quot;
+    }
+  ],
+  &quot;spawn_points&quot;: [
+    {
+      &quot;spawn_id&quot;: &quot;SP_LOBBY&quot;,
+      &quot;type&quot;: &quot;lobby&quot;,
+      &quot;coords&quot;: { &quot;x&quot;: 40.0, &quot;y&quot;: 50.0 },
+      &quot;facing&quot;: 0,
+      &quot;description&quot;: &quot;층 입장(로비)&quot;
+    },
+    {
+      &quot;spawn_id&quot;: &quot;SP_DEV_TEAM&quot;,
+      &quot;type&quot;: &quot;team_zone&quot;,
+      &quot;zone_id&quot;: &quot;Z_001&quot;,
+      &quot;coords&quot;: { &quot;x&quot;: 10.0, &quot;y&quot;: 8.0 },
+      &quot;facing&quot;: 45,
+      &quot;description&quot;: &quot;개발팀 구역 입장&quot;
+    },
+    {
+      &quot;spawn_id&quot;: &quot;SP_MARKETING_TEAM&quot;,
+      &quot;type&quot;: &quot;team_zone&quot;,
+      &quot;zone_id&quot;: &quot;Z_002&quot;,
+      &quot;coords&quot;: { &quot;x&quot;: 35.0, &quot;y&quot;: 8.0 },
+      &quot;facing&quot;: 45,
+      &quot;description&quot;: &quot;마케팅팀 구역 입장&quot;
+    }
+  ],
+  &quot;spawn_default&quot;: {
+    &quot;spawn_id&quot;: &quot;SP_LOBBY&quot;,
+    &quot;fallback_spawn_id&quot;: &quot;SP_LOBBY&quot;,
+    &quot;facing_default&quot;: 0
+  },
+  &quot;minimap&quot;: {
+    &quot;enabled&quot;: true,
+    &quot;viewport_x&quot;: 0.0,
+    &quot;viewport_y&quot;: 0.0,
+    &quot;viewport_width&quot;: 80.0,
+    &quot;viewport_height&quot;: 60.0,
+    &quot;pixel_width&quot;: 400,
+    &quot;pixel_height&quot;: 300,
+    &quot;pixels_per_meter&quot;: 5.0,
+    &quot;show_zones&quot;: true,
+    &quot;show_seats&quot;: true,
+    &quot;show_rooms&quot;: true,
+    &quot;show_avatars&quot;: true,
+    &quot;show_grid&quot;: false,
+    &quot;layers&quot;: [
+      {
+        &quot;layer_id&quot;: &quot;base&quot;,
+        &quot;type&quot;: &quot;background&quot;,
+        &quot;color&quot;: &quot;#F5F5F5&quot;
+      },
+      {
+        &quot;layer_id&quot;: &quot;zones&quot;,
+        &quot;type&quot;: &quot;vector&quot;,
+        &quot;visible&quot;: true
+      },
+      {
+        &quot;layer_id&quot;: &quot;rooms&quot;,
+        &quot;type&quot;: &quot;vector&quot;,
+        &quot;visible&quot;: true
+      },
+      {
+        &quot;layer_id&quot;: &quot;seats&quot;,
+        &quot;type&quot;: &quot;vector&quot;,
+        &quot;visible&quot;: true
+      },
+      {
+        &quot;layer_id&quot;: &quot;avatars&quot;,
+        &quot;type&quot;: &quot;raster&quot;,
+        &quot;visible&quot;: true
+      }
+    ]
+  },
+  &quot;connections&quot;: {
+    &quot;floor_adjacencies&quot;: [
+      {
+        &quot;floor_id&quot;: 2,
+        &quot;exit_id&quot;: &quot;EXIT_STAIR&quot;,
+        &quot;entry_id&quot;: &quot;SP_STAIR_DOWN&quot;,
+        &quot;description&quot;: &quot;계단(2층으로)&quot;
+      },
+      {
+        &quot;floor_id&quot;: 4,
+        &quot;exit_id&quot;: &quot;EXIT_ELEVATOR&quot;,
+        &quot;entry_id&quot;: &quot;SP_ELEVATOR&quot;,
+        &quot;description&quot;: &quot;엘리베이터(4층으로)&quot;
+      }
+    ],
+    &quot;exit_points&quot;: [
+      {
+        &quot;exit_id&quot;: &quot;EXIT_STAIR&quot;,
+        &quot;coords&quot;: { &quot;x&quot;: 75.0, &quot;y&quot;: 55.0 },
+        &quot;target_floor_id&quot;: 2
+      },
+      {
+        &quot;exit_id&quot;: &quot;EXIT_ELEVATOR&quot;,
+        &quot;coords&quot;: { &quot;x&quot;: 78.0, &quot;y&quot;: 28.0 },
+        &quot;target_floor_id&quot;: 4
+      }
+    ],
+    &quot;zone_to_room_shortcuts&quot;: [
+      {
+        &quot;zone_id&quot;: &quot;Z_001&quot;,
+        &quot;room_id&quot;: &quot;R_001&quot;,
+        &quot;relation&quot;: &quot;primary_meeting_room&quot;
+      }
+    ]
+  },
+  &quot;performance&quot;: {
+    &quot;total_furniture_count&quot;: 6,
+    &quot;total_colliders&quot;: 2,
+    &quot;total_assets&quot;: 3,
+    &quot;estimated_polygon_count&quot;: 118000,
+    &quot;estimated_draw_calls&quot;: 9,
+    &quot;estimated_memory_mb&quot;: 96,
+    &quot;recommended_device_tier&quot;: &quot;low&quot;,
+    &quot;optimization_notes&quot;: &quot;소규모 샘플. desk 4개는 동일 asset_id(DESK_STANDARD_001)이므로 MultiMesh 1드로우콜로 계상됨.&quot;
+  }
+}</code></pre>
+<blockquote>위 <code>performance</code> 값은 서버가 asset 카탈로그에서 파생 계산한 예시다(§1.2.13). desk 4개(F<em>001·F</em>002·F<em>003·F</em>101)는 같은 <code>asset_id</code>라 드로우콜 1회로 묶인다. 편집기가 보낸 값이 아니라 서버 계산값이 정본이다.</blockquote>
+<hr>
+<h2 id="5-클라이언트서버-로드-및-사용">5. 클라이언트/서버 로드 및 사용</h2>
+<h3 id="51-godot-클라이언트">5.1 Godot 클라이언트</h3>
+<p>에셋은 <strong><code>asset_id</code>로 클라이언트 빌드(pak)에 동봉된 <code>.tscn</code>을 로드</strong>한다(D8). 런타임 glb 다운로드는 없다. 동일 <code>asset_id</code> 그룹은 <strong>MultiMesh 1드로우콜로 병합</strong>한다(D7 드로우콜 예산·07 §6.2 연계). 좌표 변환은 §5.3의 <code>layout_to_world()</code>를 사용한다.</p>
+<pre class="code lang-gdscript"><code># 로드
+var layout_json: String = # API에서 fetch (배포된 layout)
+var layout: Dictionary = JSON.parse_string(layout_json)
+
+# asset_id → 클라이언트 동봉 .tscn 경로(카탈로그). pak에 포함되어 있음.
+const ASSET_CATALOG := {
+  &quot;DESK_STANDARD_001&quot;: &quot;res://assets/3d/models/desk_standard/desk_standard.tscn&quot;,
+  &quot;CABINET_STORAGE_001&quot;: &quot;res://assets/3d/models/cabinet_storage/cabinet_storage.tscn&quot;,
+  &quot;SOFA_3SEAT_001&quot;: &quot;res://assets/3d/models/sofa_3seat/sofa_3seat.tscn&quot;,
+}
+
+func build_scene(layout: Dictionary) -&gt; Node3D:
+  var scene = Node3D.new()
+  var floor_h: float = layout[&quot;floor&quot;][&quot;floor_height_m&quot;]
+
+  # 가구: 동일 asset_id 끼리 그룹핑 → MultiMesh (드로우콜 예산 준수)
+  var groups := {}   # asset_id -&gt; [furniture, ...]
+  for furniture in layout[&quot;furniture&quot;]:
+    groups.get_or_add(furniture[&quot;asset_id&quot;], []).append(furniture)
+
+  for asset_id in groups:
+    var tscn_path: String = ASSET_CATALOG[asset_id]   # 카탈로그 미존재 시 검증에서 이미 걸러짐
+    var packed := ResourceLoader.load(tscn_path) as PackedScene
+    var items: Array = groups[asset_id]
+    if items.size() &gt;= 2:
+      _add_multimesh(scene, packed, items, floor_h)    # 동일 에셋 다중 → 1드로우콜
+    else:
+      var inst := packed.instantiate()
+      inst.transform = layout_to_world(items[0][&quot;coords&quot;], floor_h)
+      scene.add_child(inst)
+
+  # room 벽: 경계에서 자동 생성하되 doors[] 개구부는 구멍으로 (D9)
+  for room in layout[&quot;rooms&quot;]:
+    _build_room_walls(scene, room, floor_h)   # doors 반영, solid box로 덮지 않음
+
+  # 정적 콜리전(외벽·기둥 등): shape 필드로 box/polygon 분기
+  for collider in layout[&quot;colliders&quot;]:
+    _add_static_collider(scene, collider, floor_h)
+
+  build_minimap(layout[&quot;minimap&quot;])
+  return scene</code></pre>
+<h3 id="52-godot-헤드리스-서버">5.2 Godot 헤드리스 서버</h3>
+<pre class="code lang-gdscript"><code># A* 내비게이션 생성(colliders 기반)
+var astar = AStar2D.new()
+for collider in layout[&quot;colliders&quot;]:
+  # 네비메시 생성
+  pass
+
+# 근접(proximity) 감지(zones 기반)
+func check_proximity(user_pos: Vector2) -&gt; String:
+  for zone in layout[&quot;zones&quot;]:
+    if Geometry2D.point_in_polygon(user_pos, zone[&quot;polygon&quot;]):
+      return zone[&quot;zone_id&quot;]
+  return &quot;&quot;
+
+# 회의실 점유(rooms 기반)
+func enter_room(user_id: int, room_id: String) -&gt; bool:
+  var room = find_room(room_id)
+  if room[&quot;current_occupants&quot;].size() &lt; room[&quot;max_concurrent_users&quot;]:
+    room[&quot;current_occupants&quot;].append(user_id)
+    return true
+  return false</code></pre>
+<h3 id="53-좌표계-godot-월드-매핑-d25">5.3 좌표계 → Godot 월드 매핑 (D25)</h3>
+<p>layout JSON의 2D 좌표(원점 <code>top_left</code>, 미터)를 Godot 3D 월드로 변환하는 <strong>단일 규약</strong>이다.</p>
+<p><strong>변환식:</strong></p>
+<pre class="code"><code>Vector3(x, floor_height, y)</code></pre>
+<ul><li><strong>x(월드 X)</strong> = layout <code>coords.x</code>. <strong>+X = 동쪽</strong>.</li><li><strong>floor_height(월드 Y)</strong> = <code>floor.floor_height_m</code>. 높이축은 층 바닥 오프셋으로만 쓰고, 개별 오브젝트의 z(높이)는 에셋 <code>.tscn</code> 자체가 결정한다.</li><li><strong>y축 매핑(월드 Z)</strong> = layout <code>coords.y</code>. <strong>+Z = 남쪽</strong>. (top_left 원점에서 y가 아래로 증가하므로 남쪽이 +Z)</li></ul>
+<p><strong>회전·facing 규약:</strong></p>
+<ul><li>단위 <strong>도(degree)</strong>, <strong>시계방향</strong>, <strong>기준축 +X</strong>(동쪽이 0도).</li><li>따라서 0=동(+X), 90=남(+Z), 180=서(-X), 270=북(-Z).</li><li>Godot의 <code>rotate_y</code>는 반시계·라디안 기준이므로 부호 변환이 필요: <code>basis = Basis(Vector3.UP, deg_to_rad(-angle_cw))</code>.</li></ul>
+<pre class="code lang-gdscript"><code># 단일 오브젝트 변환(furniture.coords, seat.facing, spawn.facing 공통)
+func layout_to_world(coords: Dictionary, floor_height: float) -&gt; Transform3D:
+    var pos := Vector3(coords[&quot;x&quot;], floor_height, coords[&quot;y&quot;])   # +X 동, +Z 남
+    var angle_cw: float = float(coords.get(&quot;rotation&quot;, 0.0))     # 도, 시계방향, 기준축 +X
+    var basis := Basis(Vector3.UP, deg_to_rad(-angle_cw))
+    return Transform3D(basis, pos)</code></pre>
+<p><strong>다층 건물의 floor_height 오프셋:</strong></p>
+<ul><li>각 층 JSON의 <code>floor.floor_height_m</code>가 그 층 바닥의 월드 Y다.</li><li>규칙: <code>floor_height_m = (level - 1) * story_height</code> (지상). 예: 층고 <code>story_height = 4.2m</code>면 1F=0.0, 2F=4.2, 3F=8.4. 지하는 음수(B1 level=-1 → -4.2).</li><li>다층을 동시에 로드할 때는 각 층 씬을 해당 <code>floor_height_m</code>만큼 Y로 올려 배치한다. 층 전환(계단/엘리베이터, <code>connections</code>)은 대상 층의 spawn으로 텔레포트한다.</li></ul>
+<blockquote>종전 &quot;z는 Godot에서 자동 계산(가정)&quot; 문구는 이 규칙으로 대체된다. 높이축(월드 Y)은 층 오프셋(<code>floor_height_m</code>) + 에셋 자체 높이로 결정되며, layout 좌표의 y는 <strong>월드 Z(남북)</strong>에 매핑된다.</blockquote>
+<hr>
+<h2 id="6-loop-metadata">6. Loop Metadata</h2>
+<h3 id="upstream-documents-referenced">Upstream documents referenced</h3>
+<ul><li>04-data-model.md: erp<em>user, team</em>zone, office, floor, room, seat, presence, meeting, kpi_result, asset 테이블 스키마</li><li>10-roadmap.md: 7단계 로드맵(특히 Step 3. 사무실 배치 편집기)</li></ul>
+<h3 id="downstream-documents-affected">Downstream documents affected</h3>
+<ul><li>06-screens.md: JSON 편집기 UI 설계(좌표 선택, 검증 결과 표시)</li><li>07-3d-visual-asset-pipeline.md: Godot 클라이언트 씬 빌드(office_layout 파싱, 렌더링)</li><li>02-trd-architecture.md: office_layout CRUD 엔드포인트, 검증 API 정의</li></ul>
+<h3 id="open-questions">Open questions</h3>
+<ol><li><strong>공간 구조 변경 시 라이브 처리</strong>: deployed 상태에서 좌석 좌표/문 위치 등 <strong>공간 구조</strong>가 바뀌어 재배포되면, 회의 중인 사용자는 재로드 시점을 언제로? → §2.2 라이브 강제 동기화 정책(안전 시점 재로드) 기준. (배정 변경은 D10으로 재배포 자체가 없어 해당 없음)</li><li><strong>폴리곤 좌표 정확도</strong>: 16자리 소수점 필요? 정수(cm 단위) 충분?</li><li><strong>에셋 버전 관리</strong>: 클라이언트 동봉 asset(.tscn)이 업데이트되면 기존 layout에서 자동 로드되나? → D8: 신규/갱신 에셋은 클라이언트 자동 업데이트 채널로 배포. asset<em>id는 유지, 내용만 갱신되므로 layout 수정 불필요. 브레이킹 변경 시 새 asset</em>id 부여 + layout 마이그레이션.</li><li><strong>다층 빌딩의 floor<em>id</strong>: 각 office</em>layout은 1개 floor<em>id만 가지는가? 또는 1개 JSON이 여러 층을 포함할 수 있나? → 현재 설계: 1 floor = 1 layout (확정). 다층 동시 로드는 §5.3 floor</em>height 오프셋으로 처리.</li></ol>
+<h3 id="assumptions">Assumptions</h3>
+<ul><li>좌표계는 2D(x, y)만 저장(원점 top_left, 미터). 월드 Y(높이축)는 <code>floor_height_m</code> 오프셋 + 에셋 자체 높이로 결정되고, layout의 y는 월드 Z(남북)에 매핑된다(§5.3, D25).</li><li>좌석은 room 내부(by<em>seats 모드일 때 capacity만큼) 또는 개방 구역/by</em>room에 속함.</li><li>에셋 카탈로그(asset 테이블)는 클라이언트 빌드에 동봉되며, JSON에서는 asset_id로만 참조(D8).</li><li>좌석-직원 배정은 layout이 아니라 <code>seat_assignment</code> DB가 담당(D10). ERP DB 동기화(teams, users)는 별도 배치 작업.</li></ul>
+<h3 id="validation-criteria">Validation criteria</h3>
+<ul><li class="task"><input type="checkbox" disabled checked> 모든 필드 설명: 타입, 필수 여부, 용도</li><li class="task"><input type="checkbox" disabled checked> 예시 JSON: 실제 사용 가능 (Godot 로드, 검증 통과) — v1.1에서 자체 검증 위반(입장 트리거 경계·by_seats 좌석 0개·문 개구부) 수정 완료</li><li class="task"><input type="checkbox" disabled checked> 검증 규칙: 에러/경고 분류, 심각도별 처리 흐름, 검증 아키텍처(D12)</li><li class="task"><input type="checkbox" disabled checked> 버전 관리: schema_version 호환성 처리, status·롤백 상태 전이, changelog(배열)</li><li class="task"><input type="checkbox" disabled checked> mermaid 다이어그램: 검증 시퀀스(웹 경량/서버 정밀 분리)</li><li class="task"><input type="checkbox" disabled checked> 상호 참조: 00(정본), 04, 06, 07 등 다른 문서 명확히 표기</li></ul>
+<h3 id="risks">Risks</h3>
+<ul><li><strong>성능</strong>: 파생 폴리곤/드로우콜 예산 초과 시 A*·렌더링 성능 저하. 개수가 아니라 파생값으로 모니터링(§3.4).</li><li><strong>권한 누락</strong>: 좌석/구역에 org<em>group</em>id가 없으면 접근 제어 실패. 검증 경고 필수.</li><li><strong>문 개구부 누락</strong>: room에 doors[]가 없으면 진입 불가한 밀폐 상자가 됨. 검증 ERROR로 차단(§3.2).</li><li><strong>에셋 카탈로그 불일치</strong>: 클라이언트 pak의 asset 카탈로그와 layout asset_id가 어긋나면 로드 실패. 검증에서 존재 확인 + 클라이언트 자동 업데이트 채널로 동기화(D8).</li></ul>
+<hr>
+<h2 id="7-변경-이력">7. 변경 이력</h2>
+<div class="table-wrap"><table><thead><tr><th>버전</th><th>일자</th><th>변경 내용</th></tr></thead><tbody><tr><td>1.0</td><td>2026-07-01</td><td>초안</td></tr><tr><td>1.1</td><td>2026-07-02</td><td>00-decisions 반영: D9 문 개구부(doors[]) 신설·room 벽 자동생성 규칙, D10 좌석 배정 분리(assigned<em>user 제거·facing·furniture</em>id·§2.4), D25 좌표계 top<em>left 단일화·Godot 매핑식·floor</em>height 오프셋(§5.3), D12 검증 아키텍처(서버 단일 정밀검증·공식 JSON Schema·ERROR 배포차단)·검증 흐름 재작성, D8 에셋 asset<em>id 카탈로그 참조·model</em>glb 제거·씬빌더 ResourceLoader+MultiMesh, D7 드로우콜 예산 파생값 기준, schema<em>version 호환성·롤백 상태전이 보강, collider shape 필드 분리, floor</em>id UUID 통일, performance 서버 파생 계산, 샘플 JSON 자체 검증 위반 수정, &quot;설파&quot; 오탈자 수정, changelog 배열화</td></tr></tbody></table></div>
+<hr>
+<p><strong>작성자</strong>: 시스템 설계팀 <strong>마지막 수정</strong>: 2026-07-02 <strong>검토 상태</strong>: 개정(v1.1, 정본 결정 반영)</p>
+<div class="meta-foot">원본: <code>05-office-layout-schema.md</code> · 자동 생성 2026-07-02 · md-to-html</div>
+</main>
+</div>
+
+<script type="module">
+try{
+  const m = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  m.default.initialize({startOnLoad:true, theme: dark?'dark':'default', securityLevel:'loose'});
+}catch(e){
+  document.querySelectorAll('.mermaid').forEach(el=>{
+    const pre=document.createElement('pre');pre.className='code';
+    pre.textContent=el.textContent;el.replaceWith(pre);
+  });
+}
+</script>
+</body></html>

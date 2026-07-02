@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Labs · Pipeline Map — 조감도</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<header class="topnav">
+  <div class="topnav-inner">
+    <div class="brand"><span class="dot"></span> Claude Labs · Pipeline Map</div>
+    <nav>
+      <a href="index.html" class="active">조감도</a>
+      <a href="case-1-greenfield.html">① 신규·귀납</a>
+      <a href="case-2-doubt.html">② 검증·연역</a>
+      <a href="case-3-brownfield.html">③ 기존 통합</a>
+      <a href="case-4-build.html">④ 빌드 4종</a>
+      <a href="case-5-quality.html">⑤ 검증·개선</a>
+      <a href="case-6-stargate.html">⑥ 통합 진입</a>
+      <a href="skills.html">스킬 58</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="page-head">
+    <div class="eyebrow">Claude Labs Skill Pack · 59 skills · v1.22.0</div>
+    <h1>전체 파이프라인 조감도</h1>
+    <p>기획부터 출시까지 — 아이디어를 풀스택 제품으로 만드는 스킬들이 어떤 순서로 맞물리는지를 한 장에 담았습니다.
+       두 갈래의 기획 라인(<b style="color:var(--c-plan)">Socrates 귀납</b> / <b style="color:var(--c-improve)">Descartes 연역</b>)이
+       명세 단계에서 합류해, 빌드 → 검증 → 자가개선 → 출시로 흐릅니다. 케이스별 상세는 상단 메뉴 또는 아래 카드에서.</p>
+  </div>
+
+  <!-- 범례 -->
+  <div class="legend">
+    <div class="item cat-meta"><span class="sw"></span> 진입·메타</div>
+    <div class="item cat-plan"><span class="sw"></span> 기획·이데이션</div>
+    <div class="item cat-spec"><span class="sw"></span> 명세·디자인</div>
+    <div class="item cat-build"><span class="sw"></span> 빌드 오케스트레이션</div>
+    <div class="item cat-verify"><span class="sw"></span> 검증·품질</div>
+    <div class="item cat-improve"><span class="sw"></span> 자가개선·디버깅</div>
+    <div class="item cat-research"><span class="sw"></span> 리서치·지식</div>
+    <div class="item cat-deploy"><span class="sw"></span> 배포·세션</div>
+    <div class="item cat-expert"><span class="sw"></span> 전문가 에이전트</div>
+  </div>
+
+  <!-- ============ 전체 조감 다이어그램 ============ -->
+  <div class="section-title"><span class="tick" style="background:var(--c-meta)"></span> End-to-End 흐름</div>
+
+  <div class="flow">
+
+    <!-- 진입 -->
+    <div class="node cat-meta">
+      <div class="nm"><span class="cmd">/stargate</span> 통합 진입점</div>
+      <div class="role">"어디서부터 시작할지 모를 때"의 기본 답. 체크포인트(.stargate/state.json)로 중단·재개. 매 단계 AskUserQuestion으로 자동 분기.</div>
+      <div class="opts"><span class="badge opt">resume</span><span class="badge opt">restart</span><span class="badge">결정점 14개</span></div>
+    </div>
+    <div class="arrow cat-plan"><span class="line"></span><span class="tip">▼</span></div>
+
+    <!-- Phase 0 브레인스토밍 -->
+    <div class="band cat-plan"><span class="num">P0</span><span class="t">브레인스토밍 (선택)</span><span class="s">아이디어 발산 — 막연할 때만</span></div>
+    <div class="lane cols-4">
+      <div class="node cat-plan optional"><div class="nm"><span class="cmd">/eureka</span></div><div class="role">추상 → 3~4 MVP 제안 (재귀 사고)</div></div>
+      <div class="node cat-plan optional"><div class="nm"><span class="cmd">/neurion</span></div><div class="role">4 페르소나 공동 브레인스토밍</div></div>
+      <div class="node cat-plan optional"><div class="nm"><span class="cmd">/poietes</span></div><div class="role">에로스 사이클 (결핍→창작)</div></div>
+      <div class="node cat-plan optional"><div class="nm"><span class="cmd">/cogito</span></div><div class="role">전제 해체 → 의도만 (메타)</div></div>
+    </div>
+    <div class="arrow cat-plan"><span class="line"></span><span class="lbl">기획 갈림길 · AskUserQuestion</span><span class="tip">▼</span></div>
+
+    <!-- 분기: Socrates vs Descartes -->
+    <div class="branch">
+      <div class="branch-col">
+        <div class="branch-head cat-plan">SOCRATES 라인 · 귀납</div>
+        <div class="branch-body cat-plan">
+          <div class="node cat-plan"><div class="nm"><span class="cmd">/socrates</span> 심층 기획</div>
+            <div class="role">"X란 무엇인가" — Problem Framing → 경쟁분석 → JTBD → MoSCoW → 화면 매핑 → 기술 스택</div>
+            <div class="opts"><span class="badge out">10개 문서</span><span class="badge">01-prd ~ 10-desire-map</span></div></div>
+          <div class="note">시장·페르소나·기능을 채워가는 정방향 빌드업. 신규 아이디어·시장 가설 미정에 적합.</div>
+        </div>
+      </div>
+      <div class="branch-col">
+        <div class="branch-head cat-improve">DESCARTES 라인 · 연역</div>
+        <div class="branch-body cat-improve">
+          <div class="node cat-improve"><div class="nm"><span class="cmd">/doubt</span> 가정 검증 기획</div>
+            <div class="role">"이건 정말 확실한가" — Genius Malignus → Dubito → Assumption Ledger → Cogito → Clara</div>
+            <div class="opts"><span class="badge out">12개 문서</span><span class="badge">+ ledger·validation·impact</span></div></div>
+          <div class="note">가정의 생사 기록 + 검증 실험 설계 + 실패 영향 추적. 이미 선 가정의 위험 검증·MVP 사전 차단에 적합.</div>
+        </div>
+      </div>
+    </div>
+    <div class="arrow cat-plan" style="margin-top:6px"><span class="line"></span><span class="lbl">(선택) /council 3 AI 리뷰 · /cmux-harness debate</span><span class="tip">▼</span></div>
+
+    <!-- 합류: 명세 -->
+    <div class="band cat-spec"><span class="num">━</span><span class="t">합류점 — 명세 단계</span><span class="s">두 라인이 같은 산출물로 수렴</span></div>
+    <div class="lane cols-4">
+      <div class="node cat-spec"><div class="nm"><span class="cmd">/screen-spec</span></div><div class="role">화면별 YAML 명세 + 도메인 리소스</div><div class="opts"><span class="badge out">specs/</span></div></div>
+      <div class="node cat-spec"><div class="nm"><span class="cmd">/tasks-generator</span></div><div class="role">ICV 검증 → 06-tasks.md</div><div class="opts"><span class="badge out">06-tasks.md</span></div></div>
+      <div class="node cat-spec optional"><div class="nm"><span class="cmd">/design-discovery</span></div><div class="role">DESIGN.md + theme.ts</div></div>
+      <div class="node cat-spec optional"><div class="nm"><span class="cmd">/design-linker</span></div><div class="role">목업을 태스크에 연결</div></div>
+    </div>
+    <div class="arrow cat-improve"><span class="line"></span><span class="lbl">[doubt 라인만] Phase 3.5 — Validation 실험 ★</span><span class="tip">▼</span></div>
+
+    <!-- Phase 3.7 기획 검증 루프 게이트 (선택·권장) -->
+    <div class="band cat-spec"><span class="num">3.7</span><span class="t">기획 검증 루프 게이트 · 선택(권장) · 양 라인 공통</span><span class="s">빌드 전 — 설계 패키지 정합성 검증 + 게이트 파생</span></div>
+    <div class="node cat-spec optional">
+      <div class="nm"><span class="cmd">/planning-loop-supervisor</span> 설계문서 감독관</div>
+      <div class="role">tasks.md 직후 <b>선택(권장)</b> — "검증 게이트 실행 / 바로 빌드(건너뛰기)" 분기. 설계문서 간 일관성·추적성(PRD→Flow→Screen→Data→Task→Test)·갭·13항목 품질 검증 → 미달 시 해당 스킬 patch 모드로 되돌려 반자동 루프(≤3회) → 설계서에서 <b>프로젝트별 세부 게이트 파생</b>. 빌드·완료 판정이 이 게이트를 함께 기준으로(통과 전 "구현 완료" 불가). <b>표준 구조 없는 기존(브라운필드) 프로젝트도 지원</b> — Adaptive(문서 자동탐색→역할 매핑)·Gate-Only(작업 지시→게이트 파생) 모드.</div>
+      <div class="opts"><span class="badge out">08-derived-gates.md</span><span class="badge out">00-loop.md</span><span class="badge">stargate Phase 3.7</span></div>
+    </div>
+    <div class="arrow cat-build"><span class="line"></span><span class="lbl">Ready → 빌드 / 또는 게이트 건너뛰고 바로 빌드</span><span class="tip">▼</span></div>
+
+    <!-- 빌드 -->
+    <div class="band cat-build"><span class="num">P4</span><span class="t">빌드 (환경 감지)</span><span class="s">규모·환경으로 4종 중 선택</span></div>
+    <div class="lane cols-4">
+      <div class="node cat-build"><div class="nm"><span class="cmd">/auto-orchestrate</span></div><div class="role">단일 워커 의존성 자동 직렬/병렬</div></div>
+      <div class="node cat-build"><div class="nm"><span class="cmd">/harness</span></div><div class="role">spec만으로 Build–Eval 루프</div></div>
+      <div class="node cat-build"><div class="nm"><span class="cmd">/harness-forge</span></div><div class="role">외부 6-페인 자동 배치</div></div>
+      <div class="node cat-build"><div class="nm"><span class="cmd">/cmux-harness</span></div><div class="role">cmux 분산 (full/slim)</div></div>
+    </div>
+    <div class="arrow cat-verify"><span class="line"></span><span class="lbl">sub-agent role 라우팅 · 테스트 분산</span><span class="tip">▼</span></div>
+
+    <!-- 검증 -->
+    <div class="band cat-verify"><span class="num">━</span><span class="t">검증 (다층)</span><span class="s">품질 게이트 통과 = 병합 자격</span></div>
+    <div class="lane cols-3">
+      <div class="node cat-verify"><div class="nm"><span class="cmd">/code-review</span></div><div class="role">Spec Compliance → Code Quality</div></div>
+      <div class="node cat-verify"><div class="nm"><span class="cmd">/audit</span></div><div class="role">OWASP / SPDX / GDPR</div></div>
+      <div class="node cat-verify"><div class="nm"><span class="cmd">/evaluation</span></div><div class="role">Trinity Score · 품질 게이트</div></div>
+      <div class="node cat-verify"><div class="nm"><span class="cmd">/vercel-review</span></div><div class="role">React/Next 성능·접근성</div></div>
+      <div class="node cat-verify"><div class="nm"><span class="cmd">/sync</span></div><div class="role">명세–코드 드리프트 검증</div></div>
+      <div class="node cat-verify"><div class="nm"><span class="cmd">/trinity</span></div><div class="role">五柱 품질 점수 (90+/70/차단)</div></div>
+    </div>
+    <div class="arrow cat-improve"><span class="line"></span><span class="lbl">[doubt 라인만] Impact Trace 재확인 ★ · 실패 가정 → 회귀</span><span class="tip">▼</span></div>
+
+    <!-- 자가개선 -->
+    <div class="band cat-improve"><span class="num">P5</span><span class="t">자가개선 (선택)</span><span class="s">RSI — 자율 수정·디버그 루프</span></div>
+    <div class="lane cols-4">
+      <div class="node cat-improve optional"><div class="nm"><span class="cmd">:fix</span></div><div class="role">Build/Type/Test/Lint 자동 수정</div></div>
+      <div class="node cat-improve optional"><div class="nm"><span class="cmd">:debug</span></div><div class="role">가설→실험→증명 루프</div></div>
+      <div class="node cat-improve optional"><div class="nm"><span class="cmd">:security</span></div><div class="role">OWASP 자율 점검</div></div>
+      <div class="node cat-improve optional"><div class="nm"><span class="cmd">-frontend</span></div><div class="role">Chrome MCP + Frozen Metric</div></div>
+    </div>
+    <div class="arrow cat-deploy"><span class="line"></span><span class="tip">▼</span></div>
+
+    <!-- 출시 -->
+    <div class="band cat-deploy"><span class="num">P6</span><span class="t">출시·종료</span><span class="s">리포트 + 배포</span></div>
+    <div class="lane cols-3">
+      <div class="node cat-deploy"><div class="nm"><span class="cmd">/session-report</span></div><div class="role">변경 분석 + 메트릭 리포트</div></div>
+      <div class="node cat-deploy"><div class="nm"><span class="cmd">/packaging</span></div><div class="role">배포용 8개 MD + ZIP</div></div>
+      <div class="node cat-deploy"><div class="nm">install.sh / ps1</div><div class="role">TUI 인스톨러 배포</div></div>
+    </div>
+
+  </div>
+
+  <!-- ============ 케이스 네비 ============ -->
+  <div class="section-title"><span class="tick"></span> 케이스별 상세 다이어그램</div>
+  <div class="cards">
+    <a class="card cat-plan" href="case-1-greenfield.html">
+      <div class="k">CASE 01</div><h3>신규 프로젝트 · 귀납</h3>
+      <p>백지에서 출발해 Socrates 라인으로 풀스택까지. 가장 표준적인 정방향 경로.</p>
+      <div class="chain">neurion → socrates → screen-spec → tasks → bootstrap → auto-orchestrate</div>
+    </a>
+    <a class="card cat-improve" href="case-2-doubt.html">
+      <div class="k">CASE 02</div><h3>가정 검증 · 연역</h3>
+      <p>"될 거야"라는 가정을 의심으로 정련. Validation 실험 + Impact Trace 회귀 루프.</p>
+      <div class="chain">doubt → screen-spec → tasks → ★validation → build → ★impact</div>
+    </a>
+    <a class="card cat-spec" href="case-3-brownfield.html">
+      <div class="k">CASE 03</div><h3>기존 프로젝트 통합</h3>
+      <p>이미 만든 코드를 reverse로 spec화해 파이프라인에 역방향 합류. sync로 드리프트 관리.</p>
+      <div class="chain">reverse → specs/ → (신규기능) → tasks → auto-orchestrate</div>
+    </a>
+    <a class="card cat-build" href="case-4-build.html">
+      <div class="k">CASE 04</div><h3>빌드 오케스트레이션 4종</h3>
+      <p>단일 워커부터 cmux 멀티페인까지. 환경·규모로 고르는 빌드 실행기 비교.</p>
+      <div class="chain">auto-orchestrate · harness · harness-forge · cmux-harness</div>
+    </a>
+    <a class="card cat-verify" href="case-5-quality.html">
+      <div class="k">CASE 05</div><h3>검증 · 자가개선 루프</h3>
+      <p>다층 검증 → 실패 시 powerqa·systematic-debugging → autoresearch RSI.</p>
+      <div class="chain">verify → powerqa → systematic-debugging → autoresearch</div>
+    </a>
+    <a class="card cat-meta" href="case-6-stargate.html">
+      <div class="k">CASE 06</div><h3>통합 진입 (stargate)</h3>
+      <p>체크포인트 상태머신 + 결정점 14개. 모든 케이스를 자동 분기로 묶는 오케스트레이터.</p>
+      <div class="chain">checkpoint → 분기 → … → resume / restart</div>
+    </a>
+    <a class="card cat-expert" href="skills.html">
+      <div class="k">CATALOG</div><h3>전체 스킬 58종</h3>
+      <p>카테고리별 역할 + 주요 옵션 + 입출력. 어떤 스킬이 어디에 쓰이는지 한눈에.</p>
+      <div class="chain">기획 · 명세 · 빌드 · 검증 · 개선 · 전문가 · 메타</div>
+    </a>
+  </div>
+
+  <div class="callout info" style="margin-top:28px">
+    <b>읽는 법.</b> 점선 카드 = <b>선택 단계</b>, 실선 = 핵심 경로. <b>★</b> 표시는 Descartes(doubt) 라인 전용 추가 루프, <span class="badge new" style="vertical-align:middle">NEW</span>는 v1.20.1 신규입니다.
+    각 노드의 <span class="badge opt" style="vertical-align:middle">mono 배지</span>는 CLI 옵션, <span class="badge out" style="vertical-align:middle">파란 배지</span>는 산출물입니다.
+  </div>
+
+  <div class="callout info" style="margin-top:14px">
+    <b>설계문서 자동 HTML (v1.20.1 NEW).</b> <code>docs/**/*.md</code> 를 작성하면 PostToolUse 훅이 <code>docs/_html/</code> 에 사이드바 TOC·테이블·mermaid·다크모드를 갖춘 구조적 HTML을 자동 생성합니다. <code>/socrates</code>·<code>/doubt</code> 기획이 끝나면 통합 리포트 + <code>file://</code> 링크를 제공해, md를 직접 읽지 않고 브라우저로 열람합니다. (변환기 <code>.claude/hooks/lib/md-to-html.js</code> — 의존성 0)
+  </div>
+
+</main>
+
+<footer>
+  <div class="wrap" style="padding-top:0;padding-bottom:0">
+    Claude Labs Pipeline Map · SSOT: <code>docs/PIPELINES.md</code> · <code>.claude/docs/master-pipeline.md</code> · 59 skills · v1.22.0
+  </div>
+</footer>
+
+</body>
+</html>

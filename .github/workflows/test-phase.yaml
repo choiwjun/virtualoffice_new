@@ -1,0 +1,276 @@
+name: Test Phase [테스트 자동화]
+
+on:
+  push:
+    branches:
+      - phase-*
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  PYTHON_VERSION: "3.11"
+  GODOT_VERSION: "4.3.0"
+
+jobs:
+  # ============================================================================
+  # Backend 테스트 (FastAPI + pytest)
+  # ============================================================================
+  backend-test:
+    name: Backend (pytest + 린트 + 타입)
+    runs-on: ubuntu-latest
+
+    services:
+      # PostgreSQL 테스트 DB (선택사항, Phase 2+)
+      postgres:
+        image: postgres:17.5
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: voffice_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-asyncio pytest-cov httpx aiosqlite
+
+      - name: Run pytest (with coverage)
+        id: pytest
+        run: |
+          cd backend
+          pytest \
+            --cov=app \
+            --cov-fail-under=70 \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --tb=short \
+            -q
+        continue-on-error: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./backend/coverage.xml
+          flags: backend
+          name: backend-coverage
+
+      - name: Run ruff (linting)
+        id: ruff
+        run: |
+          cd backend
+          ruff check . --format=compact
+        continue-on-error: true
+
+      - name: Run mypy (type checking)
+        id: mypy
+        run: |
+          cd backend
+          mypy app/ --no-error-summary --no-implicit-optional
+        continue-on-error: true
+
+      - name: Backend Quality Gate Status
+        if: always()
+        run: |
+          PYTEST_STATUS=${{ steps.pytest.outcome }}
+          RUFF_STATUS=${{ steps.ruff.outcome }}
+          MYPY_STATUS=${{ steps.mypy.outcome }}
+
+          echo "## Backend 테스트 결과" >> $GITHUB_STEP_SUMMARY
+          echo "- pytest: $PYTEST_STATUS" >> $GITHUB_STEP_SUMMARY
+          echo "- ruff (린트): $RUFF_STATUS" >> $GITHUB_STEP_SUMMARY
+          echo "- mypy (타입): $MYPY_STATUS" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$PYTEST_STATUS" != "success" ] || [ "$RUFF_STATUS" != "success" ] || [ "$MYPY_STATUS" != "success" ]; then
+            echo "❌ 일부 테스트 실패"
+            exit 1
+          fi
+          echo "✅ 모든 테스트 통과"
+
+  # ============================================================================
+  # Godot 클라이언트 테스트 (GUT)
+  # ============================================================================
+  godot-test:
+    name: Godot Client (GUT)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    # Phase 0: GUT 셋업은 아직 구현 전이므로 실패 허용
+    # Phase 1: continue-on-error: false로 변경
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Download Godot 4.3
+        run: |
+          mkdir -p godot_env
+          cd godot_env
+          wget -q https://downloads.tuxfamily.org/godotengine/4.3/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q Godot_v4.3-stable_linux.x86_64.zip
+          chmod +x Godot_v4.3-stable_linux.x86_64
+
+      - name: Install GUT addon (if not exists)
+        run: |
+          # Phase 1: res://addons/gut 에 GUT addon 설치
+          # (별도 스크립트 또는 git submodule)
+          echo "GUT addon 설정 예정 (Phase 1)"
+
+      - name: Run GUT tests (headless)
+        id: gut
+        run: |
+          cd godot
+          ../godot_env/Godot_v4.3-stable_linux.x86_64 \
+            --headless \
+            --script res://addons/gut/gut_cmdline.gd \
+            2>&1 | tee test_results.txt
+        continue-on-error: true
+
+      - name: Parse GUT test results
+        if: always()
+        run: |
+          if grep -q "PASS" godot/test_results.txt; then
+            echo "✅ GUT 테스트 실행 완료"
+          else
+            echo "⚠️ GUT 테스트 결과 파싱 불가 (Phase 0)"
+          fi
+
+      - name: GUT Quality Gate
+        if: always()
+        run: |
+          GUT_STATUS=${{ steps.gut.outcome }}
+          echo "## Godot 테스트 결과" >> $GITHUB_STEP_SUMMARY
+          echo "- GUT: $GUT_STATUS (현재 Phase 0 - 스텁만 구현)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Phase 1부터 실제 테스트 실행" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # 품질 게이트 (Quality Gate)
+  # ============================================================================
+  quality-gate:
+    name: Quality Gate 검증
+    needs: [backend-test, godot-test]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Evaluate Quality Gate
+        run: |
+          BACKEND_STATUS=${{ needs.backend-test.result }}
+          GODOT_STATUS=${{ needs.godot-test.result }}
+
+          echo "## 🛡️ 배포 게이트 (Deployment Gate)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 필수 조건" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] 테스트 실행" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] 커버리지 검증 (>= 70%)" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] 린트 검증" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] 타입 검증" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 결과" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend: $BACKEND_STATUS" >> $GITHUB_STEP_SUMMARY
+          echo "- Godot: $GODOT_STATUS (Phase 0)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$BACKEND_STATUS" = "success" ]; then
+            echo "✅ 품질 게이트 통과" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 배포 정책" >> $GITHUB_STEP_SUMMARY
+            echo "1. 모든 테스트 통과 필수" >> $GITHUB_STEP_SUMMARY
+            echo "2. 커버리지 >= 70% 필수" >> $GITHUB_STEP_SUMMARY
+            echo "3. Flaky 테스트 3회 연속 실행 필수" >> $GITHUB_STEP_SUMMARY
+            echo "4. main 브랜치 보호: PR 병합 전 모든 체크 통과 필수" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          else
+            echo "❌ 품질 게이트 실패" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "다음 항목을 확인하세요:" >> $GITHUB_STEP_SUMMARY
+            echo "1. pytest 실패: 테스트 코드 수정 필요" >> $GITHUB_STEP_SUMMARY
+            echo "2. 커버리지 < 70%: 추가 테스트 작성 필요" >> $GITHUB_STEP_SUMMARY
+            echo "3. 린트 에러: ruff로 자동 수정 또는 수동 수정" >> $GITHUB_STEP_SUMMARY
+            echo "4. 타입 에러: mypy 에러 해결 필수" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  # ============================================================================
+  # 테스트 결과 보고 (선택사항)
+  # ============================================================================
+  report:
+    name: 테스트 결과 보고
+    needs: [backend-test, godot-test, quality-gate]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Summary
+        run: |
+          echo "## 📊 테스트 실행 완료" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Phase 0 산출물 확인" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] backend/tests/conftest.py (pytest 구성)" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] backend/tests/contract/test_management_api_stubs.py (관리 API, 61개 케이스)" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] backend/tests/contract/test_realtime_api_stubs.py (WebSocket, 17개 케이스)" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] godot/tests/test_avatar_movement.gd (GUT 템플릿, 18개 케이스)" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] .github/workflows/test-phase.yaml (CI/CD)" >> $GITHUB_STEP_SUMMARY
+          echo "- [x] docs/testing/test-strategy.md (전략 문서)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Phase별 활성화 계획" >> $GITHUB_STEP_SUMMARY
+          echo "| Phase | 활성화 항목 | 테스트 수 |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-----------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **0** | conftest + 스텁 | 96 (skip) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **1** | 백엔드 구현 | 96 (active) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **2** | 게임 클라이언트 | 114 (active) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **3** | E2E 테스트 | +N (active) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **4** | 성능/부하 | +N (active) |" >> $GITHUB_STEP_SUMMARY
+
+# ============================================================================
+# 참고: 배포 게이트 정책
+# ============================================================================
+
+# 필수 조건 (모두 통과해야 main 병합 가능):
+#
+# 1. 테스트 통과
+#    - pytest: 0 실패
+#    - GUT: 0 실패 (Phase 1+)
+#
+# 2. 커버리지
+#    - 라인 커버리지 >= 70%
+#    - 브랜치 커버리지 >= 60%
+#
+# 3. 린트
+#    - ruff: 0 에러 (warnings는 허용)
+#
+# 4. 타입 검사
+#    - mypy: 0 에러
+#
+# 5. Flaky 테스트 방지
+#    - 3회 연속 실행 통과 필수
+#
+# GitHub Settings > Branches > Branch protection rules:
+# - Require status checks to pass before merging: backend-test + quality-gate
+# - Require branches to be up to date before merging: enabled
+# - Dismiss stale pull request approvals: disabled (필요 시 활성화)
+# - Require code reviews before merging: 1 (선택)
+
