@@ -282,11 +282,13 @@ async def reconcile_erp_users():
 #### 근태 벌크 조회(API 미존재이므로 DB 직접)
 ```sql
 -- ERP attendances 직접 조회(company_id + date range)
-SELECT user_id, date, check_in_at, check_out_at, work_type, updated_at
+-- ⚠️ 라이브 검증(2026-07-02): 컬럼명은 attendance_date (date 아님).
+--    attendances에는 updated_at 컬럼이 없음 → 증분 동기화는 attendance_date 범위로만.
+SELECT user_id, attendance_date, check_in_at, check_out_at, work_type
 FROM attendances
 WHERE company_id = $1
-  AND date >= $2::date AND date <= $3::date
-ORDER BY date ASC, user_id ASC;
+  AND attendance_date >= $2::date AND attendance_date <= $3::date
+ORDER BY attendance_date ASC, user_id ASC;
 ```
 
 ### 2.4 company_id 스코프 강제
@@ -372,10 +374,12 @@ team_zone.org_group_id = 2
 | ERP attendances | 우리 저장(참고용) |
 |-----------------|--------|
 | user_id | user_id FK erp_user.id |
-| date | work_date |
+| attendance_date | work_date |
 | check_in_at | check_in_time |
 | check_out_at | check_out_time |
-| work_type | work_type(enum) |
+| work_type | work_type(enum: office\|remote) |
+
+> ⚠️ 라이브 검증(2026-07-02, space-daily/backend/app/models/tables.py): 날짜 컬럼은 `attendance_date`. `updated_at` 컬럼 없음(증분은 날짜 범위 기반). 그 외 컬럼: `estimated_check_out_at`, `is_reminded`(우리 미사용).
 
 **우리 사용 (v1)**: 출퇴근 시각 및 근무형태는 ERP attendances를 read-only로만 읽음. 우리는 check_in/out을 쓰지 않으며, 공식 출퇴근은 ERP가 원본. 3D 프레즌스는 별도 상태로 관리(로그인→online, 구역 도착→working, 회의실 입장→meeting, 무입력→away, 집중모드→focus, 로그아웃→offline).
 
@@ -1117,13 +1121,14 @@ async def sync_attendances():
     today = datetime.now().date()
     week_ago = today - timedelta(days=7)
     
+    # ⚠️ 라이브 검증(2026-07-02): 컬럼은 attendance_date, updated_at 없음.
+    # 증분은 날짜 범위(최근 7일)로만 — updated_at 필터 사용 불가.
     query = """
-    SELECT user_id, date, check_in_at, check_out_at, work_type
+    SELECT user_id, attendance_date, check_in_at, check_out_at, work_type
     FROM attendances
     WHERE company_id = $1
-      AND date >= $2 AND date <= $3
-      AND updated_at >= (NOW() - INTERVAL '24 hours')
-    ORDER BY date ASC, user_id ASC
+      AND attendance_date >= $2 AND attendance_date <= $3
+    ORDER BY attendance_date ASC, user_id ASC
     """
     
     rows = await erp_db.fetch(query, COMPANY_ID, week_ago, today)
