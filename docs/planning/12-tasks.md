@@ -3,16 +3,18 @@
 ## 태스크 분해 및 로드맵 실행 계획
 
 **프로젝트**: 가상오피스 운영 플랫폼 (vituraloffice_new)  
-**버전**: v2.0  
+**버전**: v2.1  
 **생성일**: 2026-07-01  
 **최종 수정**: 2026-07-02  
 **최종 목표**: 로드맵 7단계 완성 (MVP 컷 없음, 온전한 통합 솔루션)  
 **개발 모델**: 1인 + AI 협업, TDD 기반  
 **총 Phase**: 8개 (Phase 0 + Phase 1~7)  
-**총 Task**: 약 70개  
+**총 Task**: 86개 (2026-07-02 재카운트: 기존 78 + 신설 7 + P5-R2-T2 분할 +1)  
 **정본 기준**: `00-decisions.md` (D1~D25, F절) — 충돌 시 정본이 우선
 
 > **변경 요약 (v2.0, 2026-07-02)**: 일정 58주 기준 정합(D6), 산출물 확장자 `.cs`→`.gd` 전면 수정(D2), Phase 병렬 표기 제거·순차 원칙 통일(1인 개발, R7), 성능 수치 설계 100명/검증 20명 통일(D22), 웹 3D 미리보기 제거→2D 편집+데스크톱 draft 모드(D11), Phase 0 스파이크 S1~S4 신설(F절), Phase 5 STT 회의록 태스크 신설(D5)·GDNative→GDExtension, 누락 태스크 신설(이의신청·분기집계·daily_reports push·감사로그·클라 자동업데이트·ERP 동기화 실패 알림·도그푸딩 피드백), ERP 동기화 D18·엔드포인트 `POST /api/kpi-results` 통일, 화상 지연 <200ms.
+>
+> **변경 요약 (v2.1, 2026-07-02)**: 마이그레이션 표기 정정(0002~0013 증분 실효 → `tables.py` 모델 정의 + `0001_initial_schema.py` 단일 반영, pre-prod 규약), 구현 완료분 반영(P2-R1-T1 부분완료, P2-R1-T2 완료, P2-R1-T4 신설·완료, P2-R2-T0 부분완료), 신규 태스크 7건(P2-R2-T0 인증, P2-R4-T1 외부 공개 하드닝, P4-R1-T3 클라 WSS 네트워킹, P4-R3-T3 presence 파기, P6-R1-T3 work_log UI, P7-R1-T4 조직도 에디터, P5-R2-T2 → T2a/T2b 분할), TLS 표기 사내 PKI → Let's Encrypt/Caddy(D21-r), 이의신청 상태 어휘 D15 정본(none→submitted→reviewing→resolved) 치환, V태스크 7건 검증 리포트 산출물 추가, 모호 완료조건 8건 검증 방법 명기, 과대 태스크 8건 진행 체크리스트 추가. 총 태스크 78 → 86.
 
 ---
 
@@ -146,7 +148,7 @@
 - **의존**: 없음
 - **산출물**: 
   - PoC: `spikes/s3_headless_load/` (GDScript 헤드리스 + PhysicsServer3D, 20명 시뮬레이션)
-  - 리포트: CPU/메모리 측정
+  - 리포트: `spikes/s3_headless_load/report.md` (CPU/메모리 측정)
 - **완료 조건**:
   - 검증 20명 시뮬레이션에서 tick 20Hz 유지 시 CPU/메모리 여유 확인
   - **실패 시 폴백 확정**: tick 하향(10Hz), 물리 간소화
@@ -179,12 +181,18 @@
   - Godot 씬: `godot/scenes/office/lobby.tscn`
   - GLB 에셋: `godot/assets/models/lobby_structure.glb`
   - 조명/머티리얼: `godot/scenes/materials/lobby_materials.tres`
+- **진행 체크리스트** (2026-07-02 추가):
+  - [ ] 블록아웃(화이트박스) 공간 배치
+  - [ ] 구조물 GLB 모델링·임포트 (D8 파이프라인)
+  - [ ] 머티리얼/조명(Forward+) 적용
+  - [ ] 브랜드월·안내 데스크·대기 영역 디테일
+  - [ ] 로딩 시간(<3초) 측정 + 룩 스크린샷
 - **Worktree**: `worktree/phase-1-golden-3d`
 - **브랜치**: `phase-1-golden-3d`
 - **완료 조건**:
   - 로비 크기: 50m × 30m (실제 사무실 스케일)
   - 브랜드월(3m × 5m) + 안내 데스크 + 대기 영역
-  - Forward+ 렌더러 품질 확인 (퀄리티 기준)
+  - Forward+ 렌더러 품질 확인 — 골든샘플 스크린샷 대조 체크리스트(docs/3d-design/) 통과
   - 로딩 시간 < 3초
 
 ### [ ] P1-S1-T2: 좌석 영역(Open, Fixed, Free) 3D 표현
@@ -210,12 +218,18 @@
   - Godot 씬: `godot/scenes/office/meeting_rooms.tscn`
   - 프리팹: `godot/prefabs/meeting_room_glass.tscn`, `godot/prefabs/lounge.tscn`, `godot/prefabs/focus_room.tscn`, `godot/prefabs/phone_booth.tscn`
   - 침입 감지(Trigger): 각 실의 enter/leave 콜라이더
+- **진행 체크리스트** (2026-07-02 추가):
+  - [ ] 회의실 2개 모델링 (유리 머티리얼)
+  - [ ] 라운지/집중실/폰부스 모델링
+  - [ ] enter/leave Trigger 콜라이더 부착
+  - [ ] 용도별 색상/조명 차별화
+  - [ ] 재질/조명 체크리스트 스크린샷 증빙
 - **Worktree**: `worktree/phase-1-golden-3d`
 - **브랜치**: `phase-1-golden-3d`
 - **완료 조건**:
   - 회의실 2개(각 10인 수용) + 라운지 + 집중실 + 폰부스 1개
-  - 유리/투명성 시각 차별화
-  - 용도별 색상/조명 다양화
+  - 유리/투명성 시각 차별화 — 재질/조명 체크리스트 항목별 스크린샷 증빙
+  - 용도별 색상/조명 다양화 — 재질/조명 체크리스트 항목별 스크린샷 증빙
 
 ### [ ] P1-S1-T4: 아바타 모델 및 애니메이션(5~10명) 제작
 
@@ -226,12 +240,18 @@
   - 색상/의류 variant: `godot/assets/models/avatar_variant_{1..10}.glb`
   - 애니메이션: idle, walk, run, interact, sit, stand_talk (6가지 이상)
   - Godot GDScript: `godot/scripts/avatar.gd` (D2)
+- **진행 체크리스트** (2026-07-02 추가):
+  - [ ] 베이스 모델(Rigged) 확보·제작
+  - [ ] variant 10종 (색상/의류 텍스처)
+  - [ ] 애니메이션 6종 임포트·리타게팅
+  - [ ] `avatar.gd` 애니메이션 상태머신
+  - [ ] 10명 동시 렌더링 성능 측정
 - **Worktree**: `worktree/phase-1-golden-3d`
 - **브랜치**: `phase-1-golden-3d`
 - **완료 조건**:
   - 아바타 5~10명 시각 차별화
   - 애니메이션 부드러움(30 FPS 이상)
-  - 성능: 10명 동시 렌더링 < 60ms @ 60Hz (Forward+)
+  - 성능: 10명 동시 렌더링 < 16.6ms/frame @ 60fps (Forward+)
 
 ### [ ] P1-S1-T5: 이름/상태 HUD + 우측 직원 정보 패널
 
@@ -246,7 +266,7 @@
 - **완료 조건**:
   - HUD는 카메라 방향 항상 유지 (Billboard 방식)
   - 패널: 이름/부서/역할/상태/최근 회의/근무시간 표시
-  - 폰트 가독성(한글 포함) 검증
+  - 폰트 가독성(한글 포함) 검증 — 1080p에서 한글 8pt 가독 스크린샷
 
 ### [ ] P1-S1-T6: 하단 회의 패널 + 미니맵 프로토타입
 
@@ -266,11 +286,12 @@
 
 - **담당**: test-specialist
 - **의존**: P1-S1-T1 ~ P1-S1-T6
+- **산출물**: `docs/verification/phase-1-report.md`
 - **수용기준**:
   - Godot 씬 로드 성공 (에러/경고 0개)
   - 아바타 10명 동시 렌더링 + HUD 표시 + 미니맵 업데이트 시뮬레이션 성공
   - 성능 기준: 60 FPS 유지, 메모리 < 2GB
-  - 사용자/관리자 육안 검증: 브랜드 품질 충족 확인
+  - 사용자/관리자 육안 검증: 브랜드 품질 충족 확인 — 관리자 1인 + 직원 2인 리뷰 서명
 
 ---
 
@@ -278,9 +299,10 @@
 
 > **목적**: ERP 직원·조직·근태 데이터 읽기, 좌석·구역 우리 DB 구축, 아바타 시작위치 매핑.  
 > **산출물**: 동기화 배치, 좌석 관리 API, 조직-팀-구역 계층.  
-> **의존**: Phase 1 완료 (순차 원칙, R7).
+> **의존**: Phase 1 완료 (순차 원칙, R7).  
+> **마이그레이션 규약(2026-07-02)**: pre-prod 동안 스키마 변경은 `backend/app/models/tables.py` 모델 수정 → `backend/alembic/versions/0001_initial_schema.py`(create_all 참조식) 단일 리비전에 자동 반영. **운영 첫 배포 후에는 Alembic autogenerate 증분 리비전을 사용한다.** (P2~P6 태스크의 구 0002~0013 증분 표기는 실효 → 본 규약으로 대체)
 
-### [ ] P2-R1-T1: ERP 직원/조직/근태 read-only 동기화 배치
+### [ ] P2-R1-T1: ERP 직원/조직/근태 read-only 동기화 배치 (부분완료, 2026-07-02)
 
 - **담당**: backend-specialist
 - **의존**: P0-T0.4, P0-T0.3
@@ -288,21 +310,26 @@
   - 배치 스크립트: `backend/app/tasks/erp_sync_worker.py` (APScheduler 기반)
   - 모델: `backend/app/models/tables.py::ErpUser, ErpTeam, ErpAttendance`
   - 동기화 로그: `backend/app/services/erp_sync_log.py`
+- **진행 체크리스트** (2026-07-02):
+  - [x] ErpReader 어댑터(mock/postgres)·sync upsert·soft-delete·수동 트리거 `POST /api/erp/sync` — `backend/app/erp/` (reader/mock/postgres/sync/dtos) 구현 완료
+  - [ ] APScheduler 워커: 매시간 증분(updated_at) + 매일 00:00 KST 전체 대사 (D18)
+  - [ ] 동기화 실패 시 **알림 훅 호출** (알림 채널 구축은 P7-R3-T3 소유)
+  - [ ] 에러 처리 + 재시도 로직(exponential backoff)
 - **Worktree**: `worktree/phase-2-erp-integration`
 - **브랜치**: `phase-2-erp-integration`
 - **완료 조건**:
   - 읽기 대상 5개 테이블: users, teams, job_positions, attendances, leaves (읽기 전용 DB 스코프)
   - 동기화 주기: **매시간 증분(updated_at) + 매일 00:00 KST 전체 대사**(D18)
   - 전체 대사에서 하드 삭제 감지 → `is_active=false` **soft-delete**(미러 FK는 RESTRICT + soft-delete, D18)
-  - 에러 처리 + 재시도 로직(exponential backoff), **동기화 실패 시 자동 알림**(관리자 콘솔 + 알림 채널, D18)
+  - 에러 처리 + 재시도 로직(exponential backoff), 동기화 실패 시 **알림 훅 호출**(채널 구축은 P7-R3-T3 소유, D18)
   - 로그 기록 (what, when, who, status)
 
-### [ ] P2-R1-T2: erp_user 마이그레이션 & 조인 키(ERP users.id) 저장
+### [x] P2-R1-T2: erp_user 마이그레이션 & 조인 키(ERP users.id) 저장 (완료, 2026-07-02)
 
 - **담당**: database-specialist
 - **의존**: P0-T0.3, P0-T0.4
-- **산출물**: 
-  - Alembic 마이그레이션: `backend/migrations/versions/0002_erp_user_sync.py`
+- **산출물** (실제 경로 정정, 2026-07-02): 
+  - 모델 정의: `backend/app/models/tables.py::ErpUser` + Alembic 단일 리비전 `backend/alembic/versions/0001_initial_schema.py` (create_all 참조식, pre-prod 규약)
   - 스키마: erp_user(id(FK users.id), company_id, email, name, erp_team_id, role, position, position_id, manager_id, slack_user_id, github_username, jira_email, work_type, work_hours, last_synced_at)
   - 인덱스: (company_id, email) unique, erp_team_id
 - **Worktree**: `worktree/phase-2-erp-integration`
@@ -316,7 +343,7 @@
 - **담당**: backend-specialist
 - **의존**: P2-R1-T2
 - **산출물**: 
-  - 마이그레이션: `backend/migrations/versions/0003_org_group.py`
+  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
   - 모델: `backend/app/models/tables.py::OrgGroup`
   - 스키마: id, name, type[division|department|part], parent_id(FK), color, sort_order
   - API: GET /api/org-groups, POST, PUT, DELETE (admin만)
@@ -326,12 +353,44 @@
   - 표본 조직 3단계 트리 생성 및 테스트
   - CRUD 엔드포인트 전량 구현 및 테스트
 
+### [x] P2-R1-T4: 직원/근태 조회 API (신설·완료, 2026-07-02)
+
+- **담당**: backend-specialist
+- **의존**: P2-R1-T2
+- **산출물**: 
+  - API: `GET /api/employees`, `GET /api/employees/{id}`, `GET /api/attendances` — `backend/app/api/erp.py`
+  - 수동 동기화 트리거: `POST /api/erp/sync` (P2-R1-T1 완료분과 연동)
+- **완료 조건**:
+  - 조회 엔드포인트 3종 구현 + 테스트 6종 통과 ✅ (2026-07-02 구현 완료 반영)
+
+> **P2-R2 구역 참고(2026-07-02)**: office/floor/room 모델은 `0001_initial_schema.py`에 이미 포함 — P3-R1-T1과의 마이그레이션 순서 이슈 해소.
+
+### [ ] P2-R2-T0: 인증 기반 구축 (로그인/JWT 발급/role 미들웨어) — 부분완료 (2026-07-02)
+
+- **담당**: backend-specialist + frontend-specialist
+- **의존**: P0-T0.2
+- **산출물**: 
+  - API: `POST /api/auth/login` (이메일+비밀번호 → JWT 24h)
+  - 의존성: `get_current_user` / `require_role` (참고: `backend/app/core/deps.py` 이미 구현 — 완료분 반영)
+  - Next.js 로그인 화면: `frontend/app/login/page.tsx`
+  - Godot 로그인 씬: `godot/scenes/ui/login.tscn`
+- **진행 체크리스트** (2026-07-02):
+  - [x] 백엔드 JWT 검증/발급 유틸 + role 의존성 (`backend/app/core/` JWT+bcrypt 보안 모듈, `deps.py`)
+  - [ ] 로그인 엔드포인트 `POST /api/auth/login`
+  - [ ] Next.js 로그인 화면 / Godot 로그인 씬
+  - [ ] 계정 잠금 (실패 5회 백오프)
+- **Worktree**: `worktree/phase-2-erp-integration`
+- **브랜치**: `phase-2-erp-integration`
+- **완료 조건**:
+  - 401/403 테스트 통과
+  - 잠금(실패 5회 백오프) 동작 확인
+
 ### [ ] P2-R2-T1: team_zone 매핑 (ERP 팀 ↔ 3D 구역)
 
 - **담당**: backend-specialist
 - **의존**: P2-R1-T3, P0-T0.6
 - **산출물**: 
-  - 마이그레이션: `backend/migrations/versions/0004_team_zone.py`
+  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
   - 모델: `backend/app/models/tables.py::TeamZone`
   - 스키마: id, erp_team_id, org_group_id, office_id, floor_id, zone_label, color, polygon(좌표 blob)
   - API: GET, POST /api/team-zones (office_id 스코프)
@@ -346,7 +405,7 @@
 - **담당**: database-specialist
 - **의존**: P2-R2-T1
 - **산출물**: 
-  - 마이그레이션: `backend/migrations/versions/0005_seat.py`
+  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
   - 모델: `backend/app/models/tables.py::Seat`
   - 스키마: id, floor_id, team_zone_id, type[fixed|free|temp|partner], assigned_user_id(FK erp_user.id), coords(x,y), facing(도 단위, D25), status[available|occupied|reserved|maintenance] (D13 통일)
   - 테이블: seat_assignment_history(id, seat_id, user_id, assigned_at, released_at)
@@ -393,7 +452,7 @@
 - **담당**: database-specialist
 - **의존**: 없음 (Phase 2 내 독립 Task — P2-R2와 별개로 진행 가능)
 - **산출물**: 
-  - 마이그레이션: `backend/migrations/versions/0006_presence.py`
+  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
   - 모델: `backend/app/models/tables.py::Presence`
   - 스키마: user_id(FK), office_id, floor_id, x, y, status[offline|online|working|meeting|focus|away|external] (7종 확정, D13), updated_at
   - 인덱스: (user_id, office_id) unique, updated_at
@@ -401,12 +460,26 @@
 - **브랜치**: `phase-2-erp-integration`
 - **완료 조건**:
   - 테이블 생성 + 샘플 데이터 20명
-  - 상태 전환 유효성 검증
+  - D13 상태전이표 기준 전이 테스트 통과
+
+### [ ] P2-R4-T1: 외부 공개 하드닝 (Caddy 단일 진입, D21-r — 신설 2026-07-02)
+
+- **담당**: backend-specialist (인프라 겸임)
+- **의존**: P2-R2-T0
+- **산출물**: 
+  - Caddy 단일 진입점 구성 (docker-compose reverse proxy, Let's Encrypt TLS)
+  - rate-limit, fail2ban, 포트 최소화 설정 — `docs/deployment/onprem-docker.md` §3.3 체크리스트 태스크화
+- **Worktree**: `worktree/phase-2-erp-integration`
+- **브랜치**: `phase-2-erp-integration`
+- **완료 조건**:
+  - onprem-docker §3.3 체크리스트 전 항목 통과
+  - **도그푸딩 전 완료 게이트** (VPN 없는 인터넷 공개 배포 — 미완료 시 도그푸딩 시작 불가)
 
 ### [ ] P2-R3-V: ERP 동기화 및 좌석/구역 통합 검증
 
 - **담당**: test-specialist
 - **의존**: P2-R1-T3, P2-R2-T3, P2-R3-T1, P2-R3-T2
+- **산출물**: `docs/verification/phase-2-report.md`
 - **수용기준**:
   - ERP 동기화 배치 실행 성공 (직원 10명 이상 동기화)
   - 좌석 배정 → 아바타 시작위치 매핑 E2E 테스트 통과
@@ -426,7 +499,7 @@
 - **담당**: backend-specialist
 - **의존**: P0-T0.3
 - **산출물**: 
-  - 마이그레이션: `backend/migrations/versions/0007_office_floor_room.py`
+  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
   - 모델: `backend/app/models/tables.py::Office, Floor, Room`
   - API:
     - POST /api/offices - 사무실 생성
@@ -445,9 +518,10 @@
 - **담당**: backend-specialist
 - **의존**: P0-T0.6, P3-R1-T1
 - **산출물**: 
-  - 마이그레이션: `backend/migrations/versions/0008_office_layout.py`
+  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
   - 모델: `backend/app/models/tables.py::OfficeLayout`
   - 스키마: id, office_id, floor_id, version(int), status[draft|validated|deployed|archived], json(blob), created_by, created_at, validated_at
+  - 공식 스키마 파일: `backend/app/schemas/office_layout.schema.json` 생성 (05-office-layout-schema.md 정본 반영, 검증 API가 로드 — 2026-07-02 추가)
   - API:
     - POST /api/office-layouts - draft 생성
     - PUT /api/office-layouts/{id} - JSON 업데이트
@@ -468,6 +542,12 @@
   - 페이지: `frontend/app/(admin)/layout-editor/page.tsx`
   - 컴포넌트: `frontend/components/LayoutEditor.tsx`, `frontend/components/FloorsPanel.tsx`, `frontend/components/SeatsPanel.tsx`
   - Konva 스크립트: `frontend/lib/konva-helpers.ts` (드래그, 스냅 그리드, 좌표 계산)
+- **진행 체크리스트** (2026-07-02 추가):
+  - [ ] 캔버스 렌더 (층/존/좌석 2D 표현)
+  - [ ] 드래그 이동·리사이징·스냅 그리드(1m)
+  - [ ] 우클릭 메뉴 (삭제/복제/속성 편집)
+  - [ ] office_layout draft 저장 API 연동
+  - [ ] 마우스 좌표 실시간 표시·단위 검증
 - **Worktree**: `worktree/phase-3-layout-editor`
 - **브랜치**: `phase-3-layout-editor`
 - **완료 조건**:
@@ -535,6 +615,7 @@
 
 - **담당**: test-specialist
 - **의존**: P3-R1-T2, P3-R2-T3, P3-R3-T2
+- **산출물**: `docs/verification/phase-3-report.md`
 - **수용기준**:
   - 2D 편집: 좌석 50개 드래그 이동 + 저장 성공
   - 데스크톱 draft 모드: 편집 내용 저장 후 열람 반영 확인 (웹 3D 미리보기 없음, D11)
@@ -581,6 +662,21 @@
   - 클라이언트 10개 동시 연결 성공
   - 메시지 브로드캐스트 < 100ms 지연
   - 연결 해제 시 깔끔한 cleanup
+
+### [ ] P4-R1-T3: Godot 클라이언트 WSS 네트워킹 & 원격 아바타 동기화 (신설 2026-07-02)
+
+- **담당**: 3d-engine-specialist
+- **의존**: P4-R1-T2, P0-T0.1
+- **산출물**: 
+  - GDScript: `godot/scripts/network/ws_client.gd` (WSS 접속·hello/resume 핸드셰이크, D4)
+  - 이동 입력 → `move_request` 전송
+  - 원격 아바타 보간(interpolation) 렌더
+  - 재접속 시 sequence_num 스냅샷 재수신
+- **Worktree**: `worktree/phase-4-realtime-server`
+- **브랜치**: `phase-4-realtime-server`
+- **완료 조건**:
+  - 20명 동시 연결 E2E p95 < 500ms (D22)
+  - 재접속 5초 내 상태 복원
 
 ### [ ] P4-R2-T1: 아바타 이동 권위 검증 (Godot 서버)
 
@@ -653,13 +749,27 @@
 - **Worktree**: `worktree/phase-4-realtime-server`
 - **브랜치**: `phase-4-realtime-server`
 - **완료 조건**:
-  - 상태 전환 유효성 검증 (로직 정의)
+  - D13 상태전이표 기준 전이 테스트 통과
   - 상태 이력 기록
+
+### [ ] P4-R3-T3: presence 좌표 30일 파기 배치 (D20-a — 신설 2026-07-02)
+
+- **담당**: backend-specialist
+- **의존**: P4-R3-T1
+- **산출물**: 
+  - 배치 스크립트: `backend/app/tasks/presence_purge_worker.py` (APScheduler 일일 배치)
+  - 로직: presence 좌표(x, y) 이력 30일 경과분 파기 (D20-a 보존 정책)
+- **Worktree**: `worktree/phase-4-realtime-server`
+- **브랜치**: `phase-4-realtime-server`
+- **완료 조건**:
+  - 30일 경과 좌표 데이터 파기 검증 (경계값 테스트)
+  - 파기 실행 로그 기록
 
 ### [ ] P4-R3-V: 실시간 가상오피스 통합 검증
 
 - **담당**: test-specialist
-- **의존**: P4-R1-T2, P4-R2-T3, P4-R3-T2
+- **의존**: P4-R1-T2, P4-R1-T3, P4-R2-T3, P4-R3-T2
+- **산출물**: `docs/verification/phase-4-report.md`
 - **수용기준**:
   - Godot 헤드리스 서버 시작 및 10명 클라이언트 연결 성공
   - 아바타 이동 권위 검증: 벽 통과 거부 확인
@@ -681,7 +791,7 @@
 - **담당**: backend-specialist
 - **의존**: P0-T0.2, P1-S1-T3, P2-R1-T1
 - **산출물**: 
-  - 마이그레이션: `backend/migrations/versions/0009_meeting.py`
+  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
   - 모델: `backend/app/models/tables.py::Meeting, MeetingParticipant`
   - API:
     - POST /api/meetings - 회의 생성/예약 (예약 + 즉석 FCFS 병행, D23)
@@ -703,7 +813,7 @@
 - **의존**: P5-R1-T1 (같은 Phase 내 선행)
 - **산출물**: 
   - Docker Compose: `docker-compose.yaml` (**사내 VM**, LiveKit + coturn 서비스 정의, D21 — Kubernetes/클라우드 SaaS 배제)
-  - 설정: `livekit.yaml` (RTC port, API key, 사내 PKI TLS 등)
+  - 설정: `livekit.yaml` (RTC port, API key, Let's Encrypt/Caddy TLS — D21-r 등)
   - 통합 스크립트: `backend/app/services/livekit_client.py` (**FastAPI 경유** room 생성/삭제, D24)
 - **Worktree**: `worktree/phase-5-meeting`
 - **브랜치**: `phase-5-meeting`
@@ -727,27 +837,39 @@
   - 참석자 목록 실시간 업데이트
   - 마이크/카메라 테스트 UI
 
-### [ ] P5-R2-T2: 화상 화면 (LiveKit 통합, Godot 클라이언트, S1 기반)
+### [ ] P5-R2-T2a: WebRTC GDExtension 통합 (S1 산출 승계 — 분할 2026-07-02)
 
 - **담당**: 3d-engine-specialist
-- **의존**: P5-R1-T2, P4-R2-T3, P0-T0.8(S1)
+- **의존**: P5-R1-T2, P0-T0.8(S1)
+- **산출물**: 
+  - **WebRTC GDExtension** 플러그인 통합 (GDNative는 Godot 4에서 폐기, GDExtension으로 정정 — S1 PoC 산출 승계)
+  - LiveKit 룸 접속 GDScript 래퍼: `godot/scripts/livekit_client.gd`
+  - 실패 시 임베디드 브라우저/외부 창 폴백 (S1 폴백 확정안)
+- **Worktree**: `worktree/phase-5-meeting`
+- **브랜치**: `phase-5-meeting`
+- **완료 조건**:
+  - Godot 클라이언트에서 LiveKit 룸 접속 + 오디오/비디오 수신 성공
+  - 오디오 송수신 확인, 음성 지연 < 200ms (D22)
+
+### [ ] P5-R2-T2b: 3D 내 화상 렌더링·참석자 패널 (분할 2026-07-02)
+
+- **담당**: 3d-engine-specialist
+- **의존**: P5-R2-T2a, P4-R2-T3
 - **산출물**: 
   - GDScript: `godot/scripts/meeting_room_view.gd` (화상 렌더링, D2)
-  - **WebRTC GDExtension** 플러그인 (GDNative는 Godot 4에서 폐기, GDExtension으로 정정). 실패 시 임베디드 브라우저 폴백(S1)
   - 회의실 3D 인터페이스: 참석자 비디오 패널
 - **Worktree**: `worktree/phase-5-meeting`
 - **브랜치**: `phase-5-meeting`
 - **완료 조건**:
   - 명시적 입장 후(D24) 화상 활성화
   - 자신 + 상대방 비디오 표시 (2명 기준)
-  - 오디오 송수신 확인, 음성 지연 < 200ms (사내망, D22)
 
 ### [ ] P5-R3-T1: 회의록 저장 (STT 확정본: 결정사항/액션아이템)
 
 - **담당**: backend-specialist
 - **의존**: P5-R1-T1
 - **산출물**: 
-  - 마이그레이션: `backend/migrations/versions/0010_meeting_minute.py`
+  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
   - 모델: `backend/app/models/tables.py::MeetingMinute, ActionItem` (초안/확정 구분 필드 포함)
   - API:
     - POST /api/meeting-minutes - 회의록 저장 (수동 폴백)
@@ -780,6 +902,12 @@
 - **산출물**: 
   - 서비스: `backend/app/services/stt_service.py` (STT, 한국어), `backend/app/services/minute_drafter.py` (화자분리 → 회의록 초안 + 액션아이템 후보 추출)
   - API: POST /api/meetings/{id}/transcribe (내부), GET /api/meetings/{id}/minute-draft
+- **진행 체크리스트** (2026-07-02 추가):
+  - [ ] STT 엔진 연동 (한국어, S2 선정안)
+  - [ ] 화자분리 파이프라인
+  - [ ] 외부 전송 가명화 (실명→사번, D20)
+  - [ ] 회의록 초안 + 액션아이템 후보 추출
+  - [ ] API 2종 + S2 실패 폴백 처리
 - **Worktree**: `worktree/phase-5-meeting`
 - **브랜치**: `phase-5-meeting`
 - **완료 조건**:
@@ -820,7 +948,7 @@
 - **담당**: backend-specialist
 - **의존**: P5-R3-T1
 - **산출물**: 
-  - 마이그레이션: `backend/migrations/versions/0011_message.py`
+  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
   - 모델: `backend/app/models/tables.py::Message`
   - API: GET /api/meetings/{id}/messages
 - **Worktree**: `worktree/phase-5-meeting`
@@ -832,7 +960,8 @@
 ### [ ] P5-R3-V: 회의/화상회의 + STT 회의록 통합 검증
 
 - **담당**: test-specialist
-- **의존**: P5-R2-T2, P5-R3-T2, P5-R4-T3
+- **의존**: P5-R2-T2b, P5-R3-T2, P5-R4-T3
+- **산출물**: `docs/verification/phase-5-report.md`
 - **수용기준**:
   - 회의 예약 → **명시적 입장**(D24) → 화상 참석 → **STT 회의록 초안 → 검토·확정** E2E 성공
   - FastAPI 경유 LiveKit 룸 생성/해제 정상 (D24)
@@ -854,7 +983,7 @@
 - **담당**: database-specialist
 - **의존**: P0-T0.3
 - **산출물**: 
-  - 마이그레이션: `backend/migrations/versions/0012_work_log.py`
+  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
   - 모델: `backend/app/models/tables.py::WorkLog`
   - 스키마: id, user_id, work_date, category, title, goal, related_project, url, est_minutes, status[started|completed], result_url, attachments(JSON), issues, next_action, created_at
 - **Worktree**: `worktree/phase-6-kpi`
@@ -877,6 +1006,19 @@
 - **완료 조건**:
   - CRUD 엔드포인트 전량 구현
   - 권한 검증 (본인 또는 관리자만 접근)
+
+### [ ] P6-R1-T3: work_log 작성/편집 UI (Next.js — 신설 2026-07-02)
+
+- **담당**: frontend-specialist
+- **의존**: P6-R1-T2
+- **산출물**: 
+  - 페이지: `frontend/app/(main)/work-logs/page.tsx`
+  - 컴포넌트: `frontend/components/WorkLogForm.tsx`, `frontend/components/WorkLogList.tsx` (P6-R1-T2 CRUD API 연동)
+- **Worktree**: `worktree/phase-6-kpi`
+- **브랜치**: `phase-6-kpi`
+- **완료 조건**:
+  - 작성/편집/삭제 폼 동작 (P6-R1-T2 API 연동)
+  - 본인 기록 목록 조회 + 날짜 필터
 
 ### [ ] P6-R2-T1: KPI 산출 로직 (회의·완료도·협업 기반)
 
@@ -917,7 +1059,7 @@
 - **담당**: database-specialist
 - **의존**: P0-T0.3
 - **산출물**: 
-  - 마이그레이션: `backend/migrations/versions/0013_kpi_result.py`
+  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
   - 모델: `backend/app/models/tables.py::KpiResult` (정본 스키마 = 04-data-model.md, D16)
   - 스키마(D16 롱포맷): id, user_id(FK erp_user.id), **period_type**(daily|quarterly), **period_key**('2026-07-01'|'2026-Q3'), metric(VARCHAR), value(FLOAT 0~100), source(=virtual_office), **ai_draft(JSONB), admin_adjusted_score, admin_note, admin_user_id, objection_status, final_score, finalized_at**, created_at
   - 제약: **UNIQUE(user_id, period_type, period_key, metric)** (upsert 키). period NULL 금지. `kpi_result_review` 테이블 폐기(인라인)
@@ -995,7 +1137,7 @@
 - **완료 조건**:
   - ERP `POST /api/kpi-results` 성공 (서비스계정 JWT, upsert 멱등)
   - 정정 발생 시 재push(upsert)로 반영 (D15)
-  - **ERP 동기화 실패 시 자동 알림** (관리자 콘솔 + 알림 채널, D18)
+  - ERP push 실패 시 **알림 훅 호출** (알림 채널 구축은 P7-R3-T3 소유, D18)
 
 ### [ ] P6-R3-T4: 직원 평가 열람 + 이의신청 상태머신 (D15)
 
@@ -1004,11 +1146,18 @@
 - **산출물**: 
   - 페이지: `frontend/app/(main)/kpi-results/page.tsx`
   - 컴포넌트: `frontend/components/KpiSelfReview.tsx` (AI 초안/관리자 조정 열람, 이의신청 폼)
-  - **이의신청 상태머신**(D15): 평가 공개 → 이의접수(**7일**) → 재검토 → 확정 → ERP push. API: 이의 접수(POST /api/kpi-results/{id}/objection), 재검토 상태 전환(PUT .../objection-status), 확정 시 ERP 재push 트리거
+  - **이의신청 상태머신**(D15 정본, 2026-07-02 어휘 치환): objection_status **none→submitted→reviewing→resolved**. 흐름: 평가 공개 → 이의접수 submitted(**7일**) → 재검토 reviewing → 확정 resolved → ERP push. API: 이의 접수(POST /api/kpi-results/{id}/objection), 재검토 상태 전환(PUT .../objection-status), 확정 시 ERP 재push 트리거
+- **진행 체크리스트** (2026-07-02 추가):
+  - [ ] 열람 페이지/컴포넌트 (AI 초안·관리자 조정 열람)
+  - [ ] 이의신청 폼 + 접수 API (none→submitted)
+  - [ ] 재검토 전환(submitted→reviewing) + 처리 API
+  - [ ] 확정(reviewing→resolved) + ERP 재push 트리거
+  - [ ] 이의접수 7일 창 만료 처리
+  - [ ] 제출/처리 E2E 테스트
 - **Worktree**: `worktree/phase-6-kpi`
 - **브랜치**: `phase-6-kpi`
 - **완료 조건**:
-  - 상태 전이(draft→published→objected→re_reviewing→finalized) 유효성 검증
+  - 이의신청 상태 전이(**none→submitted→reviewing→resolved**, D15) 유효성 검증
   - 이의접수 7일 창 처리, 확정 후 final_score만 ERP 재push(D15)
   - UI 렌더링 + 이의신청 제출/처리 E2E
 
@@ -1030,12 +1179,13 @@
 
 - **담당**: test-specialist
 - **의존**: P6-R3-T3a, P6-R3-T3b, P6-R3-T3c, P6-R3-T4, P6-R4-T1
+- **산출물**: `docs/verification/phase-6-report.md`
 - **수용기준**:
   - KPI 정량 산출: 10명 × 10일 **결정론적** 계산 성공, 점수 0~100 범위 내 (D14)
   - AI 서술 초안: 문장 생성 성공 (강점/개선/근거, 정량 미산출)
   - 배치(D17): daily_reports **18:00 KST** / KPI AI 초안 **21:00** 정상 실행, 전송 이력 기록
   - kpi_results ERP push: **관리자 확정 이벤트 + 분기 마감**, final_score만 POST /api/kpi-results (D15)
-  - 이의신청 상태머신: 공개→이의접수 7일→재검토→확정→재push E2E (D15)
+  - 이의신청 상태머신: none→submitted(이의접수 7일)→reviewing→resolved→재push E2E (D15 정본)
   - 분기 집계 → ERP 분기평가 수집 폐쇄루프 E2E 통과
 
 ---
@@ -1090,6 +1240,20 @@
   - 회의록 요약 생성 성공
   - 길이: 100~300자
 
+### [ ] P7-R1-T4: 조직도 실시간 에디터 (org_group CRUD UI, PRD SHOULD #7 — 신설 2026-07-02)
+
+- **담당**: frontend-specialist
+- **의존**: P2-R1-T3
+- **산출물**: 
+  - 페이지: `frontend/app/(admin)/org-chart/page.tsx`
+  - 컴포넌트: `frontend/components/OrgChartEditor.tsx` (React Flow 기반 트리 시각 편집)
+  - 연동: org_group CRUD API (P2-R1-T3) — 노드 추가/이동/삭제 즉시 반영
+- **Worktree**: `worktree/phase-7-advanced`
+- **브랜치**: `phase-7-advanced`
+- **완료 조건**:
+  - 3단계 트리 드래그 편집 + 저장 성공
+  - parent_id 순환 참조 방지 검증
+
 ### [ ] P7-R2-T1: 모바일 푸시 알림 (중요 회의/액션아이템)
 
 - **담당**: devops-specialist + backend-specialist
@@ -1111,6 +1275,7 @@
 - **산출물**: 
   - 페이지: `frontend/app/(main)/dashboard/page.tsx`
   - 카드: 주간 KPI 평균, 회의 참석률, 업무 완료도, 근무 시간
+  - **팀 스코프 KPI 뷰(팀리더용)**: require_role(leader)로 소속 팀원 KPI 요약 열람 (범위 명시, 2026-07-02 추가)
   - 그래프: 시계열 차트(Chart.js/D3)
 - **Worktree**: `worktree/phase-7-advanced`
 - **브랜치**: `phase-7-advanced`
@@ -1152,20 +1317,32 @@
 - **산출물**: 
   - API: GET /api/client/version (latest/current/url/required)
   - 배포 채널: 신규 에셋(pak)·클라이언트 빌드 배포 (D8: 에셋은 클라이언트 빌드 동봉, 자동 업데이트 채널로 배포)
-  - 클라이언트 GDScript: `godot/scripts/updater.gd` (버전 체크 + 다운로드, 사내 도메인/PKI)
+  - 클라이언트 GDScript: `godot/scripts/updater.gd` (버전 체크 + 다운로드, 공인 도메인/Let's Encrypt)
+- **진행 체크리스트** (2026-07-02 추가):
+  - [ ] 버전 체크 API (latest/current/url/required)
+  - [ ] 배포 채널 스토리지·서빙 구성 (pak/클라이언트 빌드)
+  - [ ] `updater.gd` 버전 체크 + 다운로드
+  - [ ] 서명·체크섬 검증
+  - [ ] 강제/선택 업데이트 분기 테스트
 - **Worktree**: `worktree/phase-7-advanced`
 - **브랜치**: `phase-7-advanced`
 - **완료 조건**:
   - 버전 체크 API 응답 + 강제/선택 업데이트 분기
-  - 사내 도메인 배포(사내 PKI TLS, D21), 서명·체크섬 검증
+  - 공인 도메인 배포(Let's Encrypt, D21-r), 서명·체크섬 검증
 
 ### [ ] P7-R3-T3: ERP 동기화 실패 자동 알림 + 관측 (D18/D21)
 
 - **담당**: backend-specialist
 - **의존**: P2-R1-T1, P6-R3-T3c
 - **산출물**: 
-  - 알림: read 동기화(매시간/00:00 대사) 및 KPI push 실패 시 자동 알림 (관리자 콘솔 + 알림 채널 1개, D18)
+  - 알림: read 동기화(매시간/00:00 대사) 및 KPI push 실패 시 자동 알림 (관리자 콘솔 + 알림 채널 1개, D18 — **알림 채널 구축 소유: 본 태스크**. P2-R1-T1/P6-R3-T3c는 훅 호출만)
   - 관측: Grafana + Prometheus + Loki + Uptime Kuma 대시보드/알림 규칙 (D21)
+- **진행 체크리스트** (2026-07-02 추가):
+  - [ ] 알림 채널 1개 구축 (Slack 또는 이메일)
+  - [ ] read 동기화/KPI push 실패 훅 → 채널 연결
+  - [ ] Prometheus + Grafana 대시보드
+  - [ ] Loki 로그 수집 + Uptime Kuma
+  - [ ] 실패 주입 테스트 → 알림 발송 확인
 - **Worktree**: `worktree/phase-7-advanced`
 - **브랜치**: `phase-7-advanced`
 - **완료 조건**:
@@ -1183,17 +1360,18 @@
 - **Worktree**: `worktree/phase-7-advanced`
 - **브랜치**: `phase-7-advanced`
 - **완료 조건**:
-  - 피드백 제출/조회 동작
+  - 피드백 제출→조회→관리자 열람 E2E 시나리오 통과
   - 주간 피드백 리포트 집계
 
 ### [ ] P7-R2-V: 고도화 기능 통합 검증
 
 - **담당**: test-specialist
-- **의존**: P7-R1-T3, P7-R2-T2, P7-R3-T1, P7-R3-T2, P7-R3-T3, P7-R3-T4
+- **의존**: P7-R1-T1, P7-R1-T2, P7-R1-T3, P7-R2-T1, P7-R2-T2, P7-R2-T3, P7-R3-T1, P7-R3-T2, P7-R3-T3, P7-R3-T4
+- **산출물**: `docs/verification/phase-7-report.md`
 - **수용기준**:
   - 다층 내비게이션: 3층 건물 이동 성공
   - 구역 권한: 제한된 구역 진입 거부 확인
-  - AI 회의록 요약: 문장 생성 성공, 가독성 확인
+  - AI 회의록 요약: 문장 생성 성공, 모바일 뷰포트 375px 스크린샷 가독 확인
   - 푸시 알림: 회의/액션아이템 알림 수신 확인
   - 대시보드: 통계 표시 및 정확성 검증
   - 피드: 실시간 항목 업데이트 확인
@@ -1298,6 +1476,6 @@
 
 ---
 
-**Last Updated**: 2026-07-02 (v2.0 — 00-decisions.md D1~D25/F절 정합)  
+**Last Updated**: 2026-07-02 (v2.1 — 구현 현황 반영 + 마이그레이션 규약·배포 정본(onprem-docker) 정합)  
 **Author**: Documentation Specialist (Claude Code)  
 **Status**: Draft → Ready for Phase 0 Kickoff

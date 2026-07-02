@@ -1,0 +1,90 @@
+version: "2.0"
+
+screen:
+  name: 로그인 / 세션 (Auth)
+  route: /login
+  platform: web
+  layout: centered
+  required_role: none # 비인증 공개 화면 (06 §3.8, D4)
+
+data_requirements:
+  - resource: erp_user
+    needs: [id, email, name, role, is_active]
+    filters:
+      email: "?email"
+    access: read-only
+    note: 로그인 검증(FastAPI /auth). is_active=false 계정은 로그인 거부
+
+components:
+  - id: login-form
+    type: form
+    position: main
+    function: 이메일/비밀번호 입력 + [로그인] 버튼. 평문 비밀번호는 FastAPI /auth로만 전송(게임서버 전송 금지 — D4)
+    data_source:
+      resource: erp_user
+
+  - id: login-error-message
+    type: badge
+    position: main
+    function: "✗ 401 실패 표시: '이메일 또는 비밀번호 오류'(계정 존재 여부 비노출)"
+
+  - id: session-expired-panel
+    type: panel
+    position: overlay
+    function: "세션 만료 안내: '세션이 만료되었습니다. 보안을 위해 다시 로그인하세요.' + [다시 로그인] 버튼 + '진행 중 작업은 임시 저장됨' 안내"
+
+  - id: loading-indicator
+    type: panel
+    position: main
+    function: 로그인 요청 중 스피너(버튼 비활성, 중복 제출 방지 — §5.3)
+
+events:
+  - on: submit-login-form
+    do: "POST /auth (email, password) → 성공 시 FastAPI JWT(HS256) 발급 → 웹 콘솔/데스크톱 클라이언트 공용 저장 → 직원명부(/admin/employees)로 랜딩(2026-07-02 결정)"
+
+  - on: login-failed-401
+    do: "login-error-message 표시, 비밀번호 필드 초기화, 입력 포커스 복귀"
+
+  - on: jwt-expired
+    do: "session-expired-panel 표시 → 미저장 입력 로컬 임시 저장 → [다시 로그인] 클릭 시 /login 이동, 재로그인 후 임시 저장분 복구(§5.3)"
+
+  - on: token-refresh
+    do: "만료 임박 JWT 자동 갱신(refresh) 시도 → 실패 시 jwt-expired 흐름으로 전이"
+
+  - on: desktop-handshake
+    do: "데스크톱 클라이언트는 WSS 핸드셰이크에서 JWT + protocol_version/schema_version 협상(D4, 05 §2.2)"
+
+tests:
+  - name: "정상 로그인 및 랜딩"
+    when: "유효한 이메일/비밀번호 입력 후 [로그인] 클릭"
+    then:
+      - "FastAPI가 JWT(HS256) 발급, 클라이언트에 저장"
+      - "직원명부(/admin/employees)로 리다이렉트(웹 콘솔 랜딩 = 직원명부)"
+      - "로딩 중 [로그인] 버튼 비활성(중복 제출 방지)"
+
+  - name: "로그인 실패 (401)"
+    when: "잘못된 비밀번호 입력 후 [로그인] 클릭"
+    then:
+      - "'✗ 이메일 또는 비밀번호 오류' 메시지 표시(계정 존재 여부 비노출)"
+      - "비밀번호 필드 초기화, 이메일 값 유지"
+      - "평문 비밀번호가 게임서버로 전송되지 않음(D4)"
+
+  - name: "세션 만료 및 입력 복구"
+    when: "작성 중 JWT 만료로 API가 401 반환"
+    then:
+      - "session-expired-panel 표시"
+      - "미저장 입력이 로컬 임시 저장됨"
+      - "[다시 로그인] → 재로그인 성공 시 임시 저장 입력 복구(§5.3)"
+
+  - name: "비활성 계정 거부"
+    when: "is_active=false(퇴사 soft-delete, D18) 계정으로 로그인 시도"
+    then:
+      - "401과 동일한 오류 메시지 표시(사유 비노출)"
+      - "JWT 미발급"
+
+notes:
+  - "인증 정본: FastAPI 발급 자체 JWT(HS256) — 웹 콘솔/데스크톱 공용(D4)"
+  - "401 처리·재시도 규칙은 06 §5.3(로딩/재연결 상태) 참조"
+
+open_questions:
+  - "JWT 만료 시간 및 refresh 토큰 채택 여부(현재 재로그인 유도 기본)?"

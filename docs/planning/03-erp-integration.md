@@ -84,10 +84,10 @@ FK: company_id, user_id
 
 필드:
   - id, company_id, user_id
-  - date(work_date, unique: (user_id, date))
+  - attendance_date (unique: (user_id, attendance_date))  (라이브 검증 2026-07-02)
   - check_in_at(UTC), check_out_at(UTC)
   - work_type(enum: office|remote)  (ERP 라이브 스키마 기준 재확인 권장)
-  - created_at, updated_at
+  - created_at — ⚠️ updated_at 없음(라이브 검증 2026-07-02). 기타 컬럼: estimated_check_out_at, is_reminded(우리 미사용)
 
 특징: 휴일 판단은 런타임 계산(db 없음). KST 타임존 하드코딩.
       휴가/병가/반차 등은 leaves 테이블 별개(leave_type: vacation|sick|half_day|other).
@@ -138,6 +138,12 @@ developer_daily_evaluations: 일일 AI 초안.
 #### **external_activities**
 ```
 GitHub/Jira 활동 피드. APScheduler poll로 채움. 읽기만.
+```
+
+#### **meeting_rooms / meeting_room_shares / meeting_reservations**
+```
+ERP에 회의실 예약 기능 기존재(라이브 확인 2026-07-02).
+우리 회의 기능과의 관계(무시/미러/통합)는 OQ13(13-risks) 참조, Phase 5 착수 전 결정.
 ```
 
 ### 1.3 API 상태 (중요)
@@ -509,7 +515,7 @@ Response (저장 결과):
 
 **Alembic 마이그레이션**:
 ```python
-# alembic/versions/0010_add_kpi_results.py
+# migrations/alembic/versions/0001_kpi_results_table.py  (실존 파일명과 통일, 2026-07-02)
 
 def upgrade():
     op.create_table(
@@ -1340,7 +1346,7 @@ metric 어휘 사전의 정본은 04-data-model.md §2.5이다. 아래는 계산
 - ERP는 서비스계정 토큰 발급 엔드포인트(POST /api/auth/service-token) 제공 (§5.3)
   - 우리는 service_secret만 보유, ERP가 JWT 발급 → 우리가 전역 SECRET_KEY를 보유하지 않음 (보안)
 - 모든 ERP 쿼리는 company_id 스코프 필수
-- attendances.updated_at은 ERP에서 관리(우리가 임의 수정 X)
+- attendances는 read-only(우리 쓰기 X). updated_at 컬럼 없음(라이브 검증 2026-07-02) → 증분 동기화는 attendance_date 범위 기반
 - 단일 회사(company_id) 기준(B2B 멀티테넌트는 이후 버전)
 
 ### Validation Criteria

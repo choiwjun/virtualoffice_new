@@ -1,0 +1,88 @@
+version: "2.0"
+
+# 권한 규칙 & 접근 매트릭스 (RBAC)
+# 정본: 06-screens.md §3.10. 역할 = erp_user.role (employee | leader | admin | super_admin)
+# 실제 권한 검사는 애플리케이션 레이어에서 role + 팀 소속(user_team_history)으로 수행(04 §4)
+# 작성일: 2026-07-02
+
+roles:
+  - employee # 일반 직원
+  - leader # 팀/부서 리더 (팀 한정 열람 권한)
+  - admin # 회사 관리자 (super_admin은 admin 상위 호환)
+
+access_matrix:
+  # 화면/기능 × 역할. scope 표기: team = 본인 팀 한정, self = 본인 데이터 한정
+  - feature: 3D 오피스(입장·이동·프레즌스)
+    screen: screen-virtual-office-3d
+    employee: allow
+    leader: allow
+    admin: allow
+
+  - feature: 본인 KPI 조회 (/kpi)
+    screen: screen-kpi-dashboard
+    employee: allow (scope=self)
+    leader: allow (scope=self)
+    admin: allow
+
+  - feature: 팀 KPI 순위/타인 점수 열람 (/admin/kpi)
+    screen: screen-kpi-dashboard
+    employee: deny
+    leader: allow (scope=team)
+    admin: allow
+
+  - feature: KPI 점수 조정·확정
+    screen: screen-kpi-dashboard
+    employee: deny
+    leader: deny
+    admin: allow
+
+  - feature: 이의신청 제출
+    screen: screen-kpi-objection
+    employee: allow (scope=self)
+    leader: allow (scope=self)
+    admin: allow
+
+  - feature: 이의신청 재검토·확정
+    screen: screen-kpi-objection
+    employee: deny
+    leader: deny
+    admin: allow
+
+  - feature: 좌석 배치 편집기(구조 편집·배포)
+    screen: screen-seat-layout-editor
+    employee: deny
+    leader: deny
+    admin: allow
+
+  - feature: 조직도 편집
+    screen: screen-org-chart-editor
+    employee: deny
+    leader: deny
+    admin: allow
+
+  - feature: 직원명부 조회
+    screen: screen-employee-directory
+    employee: allow
+    leader: allow
+    admin: allow
+
+  - feature: 회의/회의록·업무기록
+    screen: [screen-meetings, screen-work-log]
+    employee: allow (회의록 수정은 host 한정)
+    leader: allow
+    admin: allow
+
+  - feature: 동기화 모니터링 콘솔
+    screen: screen-sync-monitoring
+    employee: deny
+    leader: deny
+    admin: allow
+
+unauthorized_screen:
+  # 권한 없는 접근 시 공통 표시(06 §3.10)
+  message: "🔒 접근 권한이 없습니다 — 이 화면은 관리자 전용입니다."
+  actions: ["[이전으로]", "[권한 요청]"]
+
+notes:
+  - 각 화면 YAML의 screen.required_role은 최소 진입 역할이며, 세부 기능 경계는 본 매트릭스가 정본
+  - leader의 team 범위 판정은 erp_user.erp_team_id + user_team_history(기간 평가 시) 기준

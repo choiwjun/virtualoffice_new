@@ -122,7 +122,7 @@ backend/
   │   │   └── asset.py (에셋 레지스트리)
   │   ├── api/
   │   │   ├── erp_sync.py (ERP 읽기 초기화)
-  │   │   ├── presence.py (프레즌스 업데이트 엔드포인트)
+  │   │   ├── presence.py (게임서버 배치 push 수신 엔드포인트, internal — D3)
   │   │   └── asset.py (에셋 메타 조회)
   │   └── services/
   │       └── erp_reader.py (ERP 직접 DB 읽기)
@@ -341,7 +341,7 @@ tests/
 
 ### 수용 기준
 - [ ] ERP read-only DB 연결 성공 (테스트: 100명 이상 users 읽기)
-- [ ] 동기화 배치 정상 실행 (매일 마다 로그 기록)
+- [ ] 동기화 배치 정상 실행 (매시간 증분 + 매일 00:00 전체 대사 로그 기록 — D18)
 - [ ] erp_user, team_zone, seat 테이블 일관성 (FK 제약 통과)
 - [ ] GET `/api/erp-user` 응답 시간 <500ms (100명 기준)
 - [ ] 고정 좌석 배정 시 Godot 클라이언트 spawn 위치 정확 (오차 <1m)
@@ -423,7 +423,7 @@ office_layout JSON 스키마:
       "coords": {"x": 0, "y": 0, "width": 50, "height": 40},
       "color": "#FF5733",
       "seats": [
-        {"id": "seat-1-1", "coords": {"x": 5, "y": 5}, "type": "fixed", "assigned_user_id": 101}
+        {"id": "seat-1-1", "coords": {"x": 5, "y": 5}, "type": "fixed", "facing": 90}
       ]
     }
   ],
@@ -471,7 +471,7 @@ def validate_layout(office_layout_json):
     # 1. 모든 객체가 office 범위 내
     # 2. 객체 간 겹침 없음 (합법적 겹침 제외: 방 진입, 좌석 미세 중첩)
     # 3. LiveKit 방 이름 고유성
-    # 4. 좌석 배정 user_id 존재 확인 (erp_user)
+    # 4. (배정 검증은 DB측 — layout JSON에 배정 없음, D10)
     # 5. 각 방의 수용 인원 ≥ 0
     errors = []
     warnings = []
@@ -568,7 +568,7 @@ CREATE TABLE presence (
 ```
 
 API:
-- POST `/api/presence/update` — 아바타 위치/상태 업데이트 (서버는 collision 검사)
+- POST `/api/presence/update` — 게임서버→FastAPI 배치 push (internal, 1~5초 주기 — D3). 클라이언트 이동은 WSS 경유(게임서버 권위, collision 검사는 게임서버)
 - GET `/api/presence/{office_id}` — 현재 출근자 목록 (실시간)
 - WS `/ws/presence` — 프레즌스 실시간 푸시 (구독자)
 
@@ -849,7 +849,7 @@ godot_client/
 - **work_log** (일일 업무 기록) 입력/수정 UI
 - **KPI 산출 엔진** (협업 산출물 기반: 회의·액션아이템·업무완료도). **정량 점수는 결정론적 코드로 계산, AI는 서술만**(D14)
 - **AI 초안 생성** (Claude API) — 강점/개선/근거 서술
-- **관리자 검토 & 조정 + 이의신청 상태머신** (D15: 공개 → 이의접수 7일 → 재검토 → 확정)
+- **관리자 검토 & 조정 + 이의신청 상태머신** (정본 D15: none→submitted→reviewing→resolved, 이의접수 7일 창)
 - **배치 스케줄(D17)**: daily_reports push **18:00 KST** / KPI AI 초안 **21:00 야간 배치**(검토 대기) / kpi_results ERP push = **관리자 확정 이벤트 + 분기 마감 배치**
 - **ERP dev 브랜치 작업** (신규 kpi_results 테이블 + 수신 엔드포인트 `POST /api/kpi-results` + 서비스계정 JWT, 03-erp-integration.md 참조). ERP에는 **관리자 확정 점수(final_score)만 전송**, `ai_draft` 미전송(D15)
 
@@ -891,7 +891,7 @@ CREATE TABLE kpi_result (
   admin_adjusted_score FLOAT,
   admin_note TEXT,
   admin_user_id BIGINT,
-  objection_status VARCHAR(20) DEFAULT 'draft',  -- draft|published|objected|re_reviewing|finalized (D15)
+  objection_status VARCHAR(20) DEFAULT 'none',  -- none|submitted|reviewing|resolved (정본 D15, 04/08 준거)
   final_score FLOAT,                  -- 관리자 확정 점수 (ERP push 대상)
   finalized_at TIMESTAMP,
   created_at TIMESTAMP,
@@ -950,17 +950,17 @@ def generate_kpi_narrative(user_id, work_date, work_logs, meetings, actions, met
 리뷰 필드는 kpi_result에 **인라인**(위 스키마)이며 별도 `kpi_result_review` 테이블은 두지 않는다(D16). 이의신청 상태머신(D15):
 
 ```
-objection_status: draft → published → objected → re_reviewing → finalized
-  - published: 평가 공개 (직원 열람)
-  - objected:  이의접수 (공개 후 7일 창)
-  - re_reviewing: 재검토
-  - finalized: 관리자 확정 → final_score 확정 → ERP push (정정 시 upsert 재push)
+objection_status: none → submitted → reviewing → resolved (정본 D15, 04/08 준거)
+  - none:      이의 없음 (평가 공개 후 기본값)
+  - submitted: 이의접수 (공개 후 7일 창)
+  - reviewing: 재검토
+  - resolved:  이의 종결 → 관리자 확정(final_score/finalized_at) → ERP push (정정 시 upsert 재push)
 ```
 
 UI:
-- 대시보드: "KPI 리뷰 대기"(objection_status='draft') 목록 (filterable by 팀, 상태)
+- 대시보드: "KPI 리뷰 대기"(미확정: finalized_at IS NULL) 목록 (filterable by 팀, 상태)
 - 상세: AI **서술** 초안 표시 + 관리자 조정값(admin_adjusted_score) 입력 폼 + 노트
-- 저장 → admin_adjusted_score/admin_note/admin_user_id 기록. 확정 시 objection_status='finalized', final_score/finalized_at 기록
+- 저장 → admin_adjusted_score/admin_note/admin_user_id 기록. 확정 시 final_score/finalized_at 기록 (이의 접수 건은 objection_status='resolved' 종결 후 확정, D15)
 
 #### 배치 스케줄 (D17 — 순환 모순 해소)
 
@@ -990,7 +990,7 @@ def kpi_ai_draft_batch():
         ai_draft  = generate_kpi_narrative(user.id, today, metrics)   # 서술만
         upsert_kpi_result(user_id=user.id, period_type="daily",
                           period_key=today, metrics=metrics,
-                          ai_draft=ai_draft, objection_status="draft",
+                          ai_draft=ai_draft, objection_status="none",
                           source="virtual_office")   # metric 단위 upsert (D17 멱등성)
     db.commit()
     notify_admins("KPI 리뷰 대기 건 준비됨")
@@ -998,8 +998,8 @@ def kpi_ai_draft_batch():
 # (3) kpi_results ERP push: 관리자 확정 이벤트 + 분기 마감 배치 (D15/D17)
 #     - 이벤트 핸들러: 이의신청 종결 → 관리자 확정(final_score) → 즉시 upsert push
 #     - 분기 마감 배치: 분기 KPI 집계 후 일괄 push
-def on_kpi_finalized(kpi_result):   # 관리자 확정 이벤트
-    if kpi_result.objection_status == "finalized":
+def on_kpi_finalized(kpi_result):   # 관리자 확정 이벤트 (이의 접수 건은 resolved 종결 후, D15)
+    if kpi_result.finalized_at is not None:
         push_kpi_to_erp(kpi_result)   # final_score만 전송, ai_draft 미전송 (D15)
 ```
 > 멱등성(D17): metric 단위 upsert + 배치 `run_id` + advisory lock(동시 실행 방지). ERP kpi_results 미준비 시 feature flag OFF → 로컬 적재 → 준비 후 backfill.
@@ -1121,7 +1121,7 @@ class ErpKpiPusher:
                 "source": "virtual_office"
             }
             for kpi in kpi_results
-            if kpi.objection_status == "finalized"
+            if kpi.finalized_at is not None   # 관리자 확정분만 (이의는 resolved 종결, D15)
         ]
         
         # POST (정본 엔드포인트, D16)
@@ -1136,7 +1136,7 @@ class ErpKpiPusher:
         for kpi in kpi_results:
             log = DailyStatusPush(
                 user_id=kpi.user_id,
-                push_date=kpi.kpi_date,
+                push_date=kpi.period_key,   # kpi_result에 kpi_date 없음 → period_key 사용 (D16)
                 target="erp",
                 status="pushed",
                 pushed_at=datetime.utcnow()
@@ -1203,7 +1203,7 @@ erp_dev_branch/ (feature/virtual-office-integration)
 - [ ] work_log CRUD 정상 (create, read, update, delete)
 - [ ] KPI 정량 메트릭 **결정론적 코드** 계산 정확 (단위 테스트), AI는 서술만 생성 (D14)
 - [ ] Claude AI 서술 초안 생성 성공 (강점/개선/근거)
-- [ ] 관리자 검토 UI + **이의신청 상태머신** 동작 (공개→이의접수 7일→재검토→확정, D15)
+- [ ] 관리자 검토 UI + **이의신청 상태머신** 동작 (none→submitted→reviewing→resolved, 이의접수 7일 창, 정본 D15)
 - [ ] daily_reports push **18:00 KST**, KPI AI 초안 **21:00 야간 배치** 정상 실행 (D17)
 - [ ] kpi_result 레코드 생성 (period_type/period_key 분리, UNIQUE upsert, D16)
 - [ ] kpi_results ERP push = **관리자 확정 이벤트 + 분기 마감 배치** (final_score만, POST /api/kpi-results, D15/D17)
@@ -1333,6 +1333,25 @@ POST /api/feedback
   }
 }
 ```
+
+#### 7.9 조직도 실시간 에디터 (PRD SHOULD #7)
+- **org_group 편집 UI**: React Flow 기반 조직도 캔버스 — 상위그룹(division/department/part) 노드 드래그·연결로 계층 편집
+- **경계 원칙**: ERP 팀은 **리프 노드로 유지**(read-only, ERP 정본). 상위그룹(org_group)만 CRUD (생성/이름·색상 변경/이동/삭제)
+- **반영**: 저장 시 org_group 트리 갱신 → team_zone.org_group_id 매핑·구역 색상에 반영
+
+산출물:
+```
+frontend/pages/admin/org-chart-editor.tsx (React Flow 캔버스)
+frontend/lib/org-group-api.ts
+backend/app/api/org_group.py (CRUD + 트리 검증: 순환 금지, 팀=리프)
+```
+
+수용 기준:
+- [ ] React Flow 조직도에서 상위그룹 생성·이동·삭제 정상 (ERP 팀 노드는 편집 불가·리프 유지)
+- [ ] 순환 참조·팀 하위 그룹 생성 시도 시 검증 거부
+- [ ] 저장 후 team_zone 매핑·구역 색상 갱신 확인
+
+> 참고: 7.9 추가에 따른 Phase 7 기간(6주) 재조정은 하지 않으며, **기간 내 우선순위 조정**으로 소화한다.
 
 ### 산출물
 ```
@@ -1469,7 +1488,7 @@ gantt
 - Phase 6: dev 브랜치 병합 전 로컬 ERP 테스트 환경 구축
 
 ### 리스크 4: 성능 저하 (설계 100명 프레즌스 동기, D22)
-**완화**: Phase 4에서 delta sync + 바이너리 직렬화, 100명 초과 시 AOI 필터링 도입 검토 (Redis 미사용 — 큐/스케줄은 APScheduler + DB 영속 큐, D21)
+**완화**: Phase 4에서 delta sync (바이너리 직렬화·AOI는 100명 초과 시 도입 검토 — D22) (Redis 미사용 — 큐/스케줄은 APScheduler + DB 영속 큐, D21)
 - 초기 도그푸딩 검증 20명 데이터로 동작 검증
 - 점진적 load testing (20 → 50 → 설계 100명)
 
@@ -1527,14 +1546,14 @@ gantt
 
 ### Open questions
 - ERP dev 브랜치 병합 일정 (git 접근권한 보유로 자체 작업, Phase 6 착수 시점 확정 필요)
-- Godot 네이티브 빌드 서명 (Windows code signing cert — 사내 PKI 활용 검토, D21)
+- Godot 네이티브 빌드 서명 (Windows code signing — 자체 서명+설치 시 신뢰 등록 또는 공인 code signing cert 구매 검토. TLS용 사내 PKI는 D21-r로 폐기 — 2026-07-02)
 - 3D 에셋 라이선스 (상용 사용 허가 확인)
 
 > 확정 종결: 실시간 프로토콜=WebSocket(WSS, D1), LiveKit 인프라=사내 VM self-host(D21), 회의실 예약=예약+FCFS 병행(D23).
 
 ### Assumptions
 - ERP(Space-Daily) read-only DB 접근 가능 (같은 사내망)
-- Godot 4 Forward+ 렌더러 성능 = 60 FPS 달성 (저사양 PC도)
+- Godot 4 Forward+ 렌더러 성능 = GTX 1650급 60fps / 내장그래픽(Iris Xe급) 30fps (D7/D22)
 - 1인 개발 + AI 협업으로 예상 기간 내 완성 가능 (변수: 예기치 않은 기술 이슈)
 - LiveKit 셀프호스트 유지비 허용 (예산 범위)
 
@@ -1542,8 +1561,8 @@ gantt
 - [ ] Phase 0 완료: 계약 4종 + 스파이크 S1~S4 결과(성공/폴백 확정)
 - [ ] Phase 1 완료: Godot 클라이언트 빌드, 샘플 씬 렌더링
 - [ ] Phase 2 완료: ERP 동기화 배치 실행, 직원 데이터 로드
-- [ ] Phase 3 완료: 배치도 2D 편집 + 3D 미리보기
-- [ ] Phase 4 완료: 10명 동시 멀티플레이어 프레즌스
+- [ ] Phase 3 완료: 배치도 2D 편집 + 데스크톱 draft 모드 열람(D11)
+- [ ] Phase 4 완료: 20명 동시 멀티플레이어 프레즌스(설계 100명, D22)
 - [ ] Phase 5 완료: 회의 예약 + 화상 통화 + 회의록
 - [ ] Phase 6 완료: KPI 산출 + AI 초안 + ERP 푸시
 - [ ] Phase 7 완료: 층 이동, 권한 제어, AI 요약, 모니터링

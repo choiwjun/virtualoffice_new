@@ -4,10 +4,11 @@ screen:
   route: "/meetings"
   platform: web
   layout: sidebar-main
+  required_role: employee # §3.10 — 전 역할 접근(회의록 수정은 host 한정)
 
 data_requirements:
   - resource: meeting
-    needs: [id, room_id, title, description, scheduled_at, started_at, ended_at, host_user_id, status, livekit_room, recording_url, meeting_minute_id]
+    needs: [id, room_id, title, description, scheduled_at, started_at, ended_at, host_user_id, status, livekit_room, recording_url]
     filters:
       scheduled_at: "?date"
       status: "?status"
@@ -20,7 +21,7 @@ data_requirements:
     access: read-write
 
   - resource: meeting_minute
-    needs: [id, meeting_id, title, summary, decisions, action_items_summary, notes, attachments, created_by, reviewed_by, status, created_at, updated_at]
+    needs: [id, meeting_id, title, summary, stt_draft, ai_summary, decisions, action_items_summary, notes, attachments, created_by, reviewed_by, status, created_at, updated_at]
     mutations: [create, update]
     access: read-write
 
@@ -83,10 +84,22 @@ components:
     position: right
     function: "[참석자 추가] [공유 화면] [녹화] [채팅] [회의록 편집] [종료]"
 
+  - id: recording-consent-banner
+    type: badge
+    position: top
+    function: "🔴 녹음·STT 고지 배너(D20-b): 회의 입장 시 '이 회의는 회의록 자동 작성을 위해 녹음·전사됩니다(원본 90일 보존)' 고지 + [동의하고 참여] [오디오 없이 참여(전사 제외)] 선택"
+
+  - id: stt-draft-review
+    type: panel
+    position: main
+    function: "🤖 STT 자동 초안 검토(D5): 회의 종료 후 생성된 stt_draft(화자분리)·ai_summary 표시, 결정사항/액션아이템 후보 수정·확정, [원본 오디오 듣기], STT 실패 시 [수동 재작성] 폴백"
+    data_source:
+      resource: meeting_minute
+
   - id: meeting-minute-form
     type: form
     position: main
-    function: "회의록 편집: 주요 결정사항, 액션아이템, 자유 노트 입력"
+    function: "회의록 편집: 주요 결정사항, 액션아이템, 자유 노트 입력 (STT 초안 검토 후 수정·확정)"
     data_source:
       resource: meeting_minute
 
@@ -105,7 +118,7 @@ components:
   - id: notes-section
     type: panel
     position: main
-    function: "📄 자유 노트: 마크다운 텍스트 편집 (Whisper 자동 전사 선택)"
+    function: "📄 자유 노트: 마크다운 텍스트 편집 (STT 초안이 기본 채움, 수정 가능)"
 
   - id: minute-metadata
     type: panel
@@ -124,10 +137,13 @@ events:
     do: "show-meeting-details-panel"
 
   - on: "meeting-status-change-to-completed"
-    do: "show-meeting-minute-form-auto"
+    do: "trigger-stt-batch (LiveKit Egress 오디오 → STT 화자분리 → stt_draft 초안 생성, D5) + show-stt-draft-review"
 
   - on: "click-enter-room"
-    do: "generate-livekit-token-and-launch-video"
+    do: "show-recording-consent-banner (D20-b) → 동의/오디오 제외 선택 기록 → generate-livekit-token-and-launch-video (거부 참석자 오디오는 STT 대상 제외)"
+
+  - on: "stt-draft-generation-failed"
+    do: "show-manual-fallback (수동 입력 폴백 + AI 요약 보조, D5)"
 
   - on: "submit-meeting-minute"
     do: "create-or-update-meeting_minute + notify-participants"
@@ -147,13 +163,14 @@ tests:
       - "진행중 회의는 [나가기] [녹화중] [공유] 버튼 활성화"
       - "예정 회의는 [입장하기] [취소] 버튼 활성화"
 
-  - name: "회의록 작성 및 액션아이템 추가"
-    when: "회의 종료 후 meeting_minute_form 자동 표시, 사용자가 결정사항/액션아이템 3개 입력 후 저장"
+  - name: "STT 초안 검토 및 액션아이템 확정 (D5)"
+    when: "회의 종료 후 STT 배치가 stt_draft를 생성, 사용자가 stt-draft-review에서 결정사항/액션아이템 후보를 수정하고 확정"
     then:
+      - "stt-draft-review에 stt_draft(화자분리 전사)·ai_summary 기반 초안 표시"
       - "meeting_minute (id, decisions, notes, created_by, status=draft) 저장"
       - "action_item 3개 (title, assignee_user_id, due_date, status=open) 생성"
       - "관련 참석자 & 담당자에 알림 발송"
-      - "회의록 상태가 draft → finalized로 변경 가능"
+      - "회의록 상태가 draft → finalized로 변경 가능 (STT 실패 시 수동 입력 폴백)"
 
   - name: "액션아이템 대시보드 필터링"
     when: "사용자가 아이템 12개(진행중 3, 완료 9) 보유 중 [진행중] 필터 클릭"
@@ -178,13 +195,14 @@ tests:
 notes:
   - "LiveKit 토큰 생성은 /api/meetings/{id}/livekit-token 엔드포인트에서 처리"
   - "실시간 presence 업데이트: WebSocket으로 meeting_participant.joined_at/left_at 동기화"
-  - "회의록 Whisper 자동 전사: 백엔드 비동기 작업, 선택 기능"
+  - "회의록 STT 자동 초안이 기본(D5): 회의 종료 → LiveKit Egress 오디오 → STT(화자분리) 서버 배치 → stt_draft 초안 → 웹 검토·확정. STT 실패 시 수동 입력 폴백(+AI 요약 보조)"
+  - "녹음·STT 동의(D20-b): 회의 입장 시 고지 배너 필수, 거부 참석자 오디오 미수집(전사 제외). 녹음 원본 90일 보존 후 자동 파기"
   - "액션아이템 추적: action_item.status (open/in_progress/completed/cancelled) 상태 관리"
   - "기한 임박 표시: 현재일 기준 due_date ≤ N일 남음 (N=2로 계획)"
   - "권한: host_user_id만 회의록/액션아이템 수정 가능, assignee는 status만 업데이트"
 
 open_questions:
-  - "Whisper API 호출 타이밍: 회의 종료 직후 vs 수동 트리거?"
+  - "실시간 전사(회의 중) 지원 여부는 S2 스파이크(STT 품질 측정)에서 결정 — 현재는 종료 후 배치만(D5)"
   - "액션아이템 completed_evidence_url 필드 입력 방식 (모달? 인라인?)"
   - "회의 녹화(recording_url) 저장소: S3 기본값?"
   - "참석자 초대 알림 채널: Slack 통합? 우리 앱 푸시?"

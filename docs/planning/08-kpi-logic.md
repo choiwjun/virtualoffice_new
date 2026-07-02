@@ -30,7 +30,7 @@ metric 어휘 사전의 정본은 **04-data-model.md §2.5**이다. 아래 비�
 | **평가 항목** | | | |
 | | 완료 업무 건수 (`work_completed_count`) | 30% | 완료(status=completed) work_log 건수. **시간 비례 점수 폐기**(D14-a) |
 | | 업무 충실도 (`work_quality_score`) | 25% | goal·category·result_url·next_action 작성도 + AI 신뢰도 검증(±0.5) |
-| | 회의록 작성 기여 (`minutes_authored_count`) | 20% | 작성자/공동작성. **회의 참석 기본점·주최자 가점 폐기**(D14-b). decisions 가점은 상한 유지 + 회의록 신뢰도 검증 |
+| | 회의록 작성 기여 (`minutes_authored_count`) | 20% | 작성(created_by 기준). **회의 참석 기본점·주최자 가점 폐기**(D14-b). decisions 가점은 상한 유지 + 회의록 신뢰도 검증 |
 | | 액션아이템 이행 (`action_items_completed`·`action_items_ontime_rate`) | 15% | 완료 +1점 + 기한 내 보너스. **생성 가점 폐기**(D14-c). 일일 인정 상한(쪼개기 방지) |
 | | 업무기록 충실도 (`report_fidelity_score`) | 10% | 일일리포트·work_log 작성도(보일러플레이트 감점) |
 | **제외 항목** | | | |
@@ -96,13 +96,14 @@ graph LR
 
 ```
 신호 정의:
-  meeting_minute.created_by / 공동작성: 회의록 작성 기여
-  meeting_minute.decisions: 명확한 의사결정 수
+  meeting_minute.created_by: 회의록 작성 기여(작성자 기준)
+  meeting_minute.decisions: 명확한 의사결정 수 — decisions(TEXT 마크다운)의 최상위 리스트 항목(-, *) 수 기준
   (자신 담당 액션아이템 이행은 2.2.3에서 별도 반영)
 
 점수 계산(회의 참석 기본점·주최자 가점 폐기):
-  minutes_authored_count = 작성/공동작성한 회의록 수
+  minutes_authored_count = 작성(created_by 기준)한 회의록 수
   decisions 가점: 회의록에 기록된 의사결정 1건당 소량 가점(상한 유지)
+    · 카운트 규칙: decisions(TEXT 마크다운)의 최상위 리스트 항목(-, *) 수 기준 — 결정론 보장(D14-e)
     · 회의록 신뢰도 검증(AI ±0.5): 실체 없는 decisions 인플레 방지(검증 확대 적용)
 ```
 
@@ -110,6 +111,8 @@ graph LR
 - 회의록 2건 작성, 의사결정 총 5건(상한 내) → minutes_authored_count=2 + decisions 가점
 
 > 폐기: "회의당 2점 + 주관자 +1점 + 발표 +0.5점"(D14-b). 단순 참석·주최는 점수화하지 않는다.
+>
+> 공동작성 카운트 제외: 04 meeting_minute에는 공동작성 구조가 없다(`created_by` 단일). 공동작성 인정이 필요해지면 추후 결정 사항으로 다룬다.
 
 #### 2.2.3 액션아이템 이행 → `action_items_completed` + `action_items_ontime_rate` (D14-c)
 
@@ -517,7 +520,7 @@ class DailyStatusPush(Base):
 | **평가 대상** | 전체 직원 (특히 개발자) | 가상오피스 활동 기준 직원 |
 | **신호 출처** | GitHub, Jira, 코드리뷰 | 회의, 업무결과물, 협업 |
 | **평가 차원** | 코드 품질, 생산성, 영향도 | 협업능력, 의사결정, 리더십 |
-| **빈도** | 월간 + 분기별 | 일일 + 주간 + 분기별 |
+| **빈도** | 월간 + 분기별 | 일일 + 분기별(weekly 폐기, D16) |
 | **AI 모델** | Gemini (ERP 기본) | Claude (우리 선택) |
 | **최종 사용** | 기술 성과 평가, 승급 근거 | 인사평가, 인센티브, 팀 배치 |
 
@@ -668,7 +671,7 @@ Response (와이드포맷):
     "strengths": [
       {
         "strength": "우수한 회의록 작성 기여",
-        "example": "Q3 조직개편 회의록 3건 공동작성, 의결사항 명확 기록"
+        "example": "Q3 조직개편 회의록 3건 작성, 의결사항 명확 기록"
       }
     ],
     "improvement_areas": [
@@ -771,8 +774,8 @@ Response:
 {
   "status": "success",
   "batch_date": "2026-07-01",
-  "processed": 150,
-  "created": 150,
+  "processed": 100,
+  "created": 100,
   "failed": 0
 }
 ```
@@ -793,9 +796,9 @@ Response:
 {
   "status": "success",
   "period_key": "2026-Q3",
-  "total_users": 150,
-  "kpi_created": 150,
-  "ai_drafts_generated": 150,
+  "total_users": 100,
+  "kpi_created": 100,
+  "ai_drafts_generated": 100,
   "started_at": "2026-10-01T15:00:00Z",
   "completed_at": "2026-10-01T16:45:00Z"
 }
@@ -816,7 +819,7 @@ Response:
 {
   "status": "success",
   "period_key": "2026-Q3",
-  "pushed_count": 145,
+  "pushed_count": 95,
   "skipped_count": 5,          // finalized_at IS NULL(미확정) | objection_status IN (submitted,reviewing)
   "erp_api_status": "success",
   "synced_at": "2026-10-05T10:30:00Z"
@@ -914,7 +917,7 @@ graph LR
 1. ERP users.id는 우리 erp_user.id의 조인키로 안정적이다.
 2. 모든 직원은 daily_reports(일일리포트)를 작성한다고 가정. (실제로는 옵션이므로 추후 검증)
 3. meeting_minute와 action_item은 회의실(room)에서 LiveKit 종료 시 자동 생성된다.
-4. AI 초안은 Claude API 비용 고려 필요 (월 150명 × 13주 = 1,950회/분기).
+4. AI 초안은 Claude API 비용 고려 필요 — 설계 기준 100명: 일일 서술 초안(§4.1, 매일 21:00) 100명 × 65 영업일(13주 × 5일) = 6,500회/분기 + 분기 초안(§6.2.6) 100회/분기.
 5. 관리자 조정 권한은 leader 역할 이상이라 가정. (role = leader | admin)
 
 ### Validation criteria
@@ -936,9 +939,10 @@ graph LR
 ---
 
 **작성일**: 2026-07-02  
-**버전**: 1.1  
+**버전**: 1.2  
 **작성자**: Documentation Specialist
 
 ### 변경 이력
+- **v1.2 (2026-07-02)**: 데이터 정본 정렬 — §5.1 빈도 "일일 + 분기별"로 정정(weekly 폐기, D16), minutes_authored_count를 작성(created_by 기준)으로 축소(공동작성 구조 04에 없음, 필요 시 추후 결정), decisions 가점 카운트 규칙 명문화(TEXT 마크다운 최상위 리스트 항목 수 기준, D14-e 결정론), Claude API 비용 추정·배치 예시를 설계 기준 100명으로 재계산(6,500회/분기 + 분기 100회).
 - **v1.1 (2026-07-02)**: D14 점수 공식 전면 재작성(시간 비례·회의 참석 기본점·주최자 가점·액션 생성 가점·근태 보정 폐기 → 완료 건수+충실도·회의록 기여·액션 이행률). D14-e 정량은 결정론적 코드·AI는 서술만(프롬프트·JSON 재작성). D15 final_score 전송으로 반전 + 이의신청 상태머신(공개→7일→재검토→확정→push). D16 스키마 04 정본 참조(period_type/period_key, metric 어휘 통일, kpi_result_review 폐기). D17 배치 타임라인(18:00/21:00/분기 마감) + 팀 벤치마크 user_team_history 기준·team_percentile 산출·직군 정규화 OQ 등재. D20 GPS 삭제·가명화·보존 5년. ±10% 모순 정리. 엔드포인트 `POST /api/kpi-results` 통일.
 - **v1.0 (2026-07-01)**: 초안.

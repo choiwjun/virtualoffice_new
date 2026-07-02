@@ -105,7 +105,7 @@ backend/tests/conftest.py, .github/workflows/test-phase.yaml</code></pre>
   │   │   └── asset.py (에셋 레지스트리)
   │   ├── api/
   │   │   ├── erp_sync.py (ERP 읽기 초기화)
-  │   │   ├── presence.py (프레즌스 업데이트 엔드포인트)
+  │   │   ├── presence.py (게임서버 배치 push 수신 엔드포인트, internal — D3)
   │   │   └── asset.py (에셋 메타 조회)
   │   └── services/
   │       └── erp_reader.py (ERP 직접 DB 읽기)
@@ -278,7 +278,7 @@ tests/
 <h3 id="의존성-3">의존성</h3>
 <ul><li>Phase 1 완료 (Godot 클라이언트 기본 구조 확정)</li><li>ERP 접근 자격증명 (read-only 계정, DB 직접 접근)</li></ul>
 <h3 id="수용-기준-3">수용 기준</h3>
-<ul><li class="task"><input type="checkbox" disabled> ERP read-only DB 연결 성공 (테스트: 100명 이상 users 읽기)</li><li class="task"><input type="checkbox" disabled> 동기화 배치 정상 실행 (매일 마다 로그 기록)</li><li class="task"><input type="checkbox" disabled> erp<em>user, team</em>zone, seat 테이블 일관성 (FK 제약 통과)</li><li class="task"><input type="checkbox" disabled> GET <code>/api/erp-user</code> 응답 시간 &lt;500ms (100명 기준)</li><li class="task"><input type="checkbox" disabled> 고정 좌석 배정 시 Godot 클라이언트 spawn 위치 정확 (오차 &lt;1m)</li><li class="task"><input type="checkbox" disabled> 자율 좌석 선택 UI 동작 (assigned<em>user</em>id NULL → assigned)</li></ul>
+<ul><li class="task"><input type="checkbox" disabled> ERP read-only DB 연결 성공 (테스트: 100명 이상 users 읽기)</li><li class="task"><input type="checkbox" disabled> 동기화 배치 정상 실행 (매시간 증분 + 매일 00:00 전체 대사 로그 기록 — D18)</li><li class="task"><input type="checkbox" disabled> erp<em>user, team</em>zone, seat 테이블 일관성 (FK 제약 통과)</li><li class="task"><input type="checkbox" disabled> GET <code>/api/erp-user</code> 응답 시간 &lt;500ms (100명 기준)</li><li class="task"><input type="checkbox" disabled> 고정 좌석 배정 시 Godot 클라이언트 spawn 위치 정확 (오차 &lt;1m)</li><li class="task"><input type="checkbox" disabled> 자율 좌석 선택 UI 동작 (assigned<em>user</em>id NULL → assigned)</li></ul>
 <h3 id="독립-데모-3">독립 데모</h3>
 <p><strong>&quot;좌석 배정 대시보드&quot;</strong> — 아바타 없이 우리 UI에서 직원·팀·좌석 시각화. 팀별 구역색, 직원명, 배정 상태만으로도 조직 구조 검증 가능.</p>
 <hr>
@@ -345,7 +345,7 @@ CREATE TABLE room (
       &quot;coords&quot;: {&quot;x&quot;: 0, &quot;y&quot;: 0, &quot;width&quot;: 50, &quot;height&quot;: 40},
       &quot;color&quot;: &quot;#FF5733&quot;,
       &quot;seats&quot;: [
-        {&quot;id&quot;: &quot;seat-1-1&quot;, &quot;coords&quot;: {&quot;x&quot;: 5, &quot;y&quot;: 5}, &quot;type&quot;: &quot;fixed&quot;, &quot;assigned_user_id&quot;: 101}
+        {&quot;id&quot;: &quot;seat-1-1&quot;, &quot;coords&quot;: {&quot;x&quot;: 5, &quot;y&quot;: 5}, &quot;type&quot;: &quot;fixed&quot;, &quot;facing&quot;: 90}
       ]
     }
   ],
@@ -373,7 +373,7 @@ CREATE TABLE room (
     # 1. 모든 객체가 office 범위 내
     # 2. 객체 간 겹침 없음 (합법적 겹침 제외: 방 진입, 좌석 미세 중첩)
     # 3. LiveKit 방 이름 고유성
-    # 4. 좌석 배정 user_id 존재 확인 (erp_user)
+    # 4. (배정 검증은 DB측 — layout JSON에 배정 없음, D10)
     # 5. 각 방의 수용 인원 ≥ 0
     errors = []
     warnings = []
@@ -442,7 +442,7 @@ godot_client/
   FOREIGN KEY (user_id) REFERENCES erp_user(id)
 );</code></pre>
 <p>API:</p>
-<ul><li>POST <code>/api/presence/update</code> — 아바타 위치/상태 업데이트 (서버는 collision 검사)</li><li>GET <code>/api/presence/{office_id}</code> — 현재 출근자 목록 (실시간)</li><li>WS <code>/ws/presence</code> — 프레즌스 실시간 푸시 (구독자)</li></ul>
+<ul><li>POST <code>/api/presence/update</code> — 게임서버→FastAPI 배치 push (internal, 1~5초 주기 — D3). 클라이언트 이동은 WSS 경유(게임서버 권위, collision 검사는 게임서버)</li><li>GET <code>/api/presence/{office_id}</code> — 현재 출근자 목록 (실시간)</li><li>WS <code>/ws/presence</code> — 프레즌스 실시간 푸시 (구독자)</li></ul>
 <h4 id="멀티플레이어-동기화-websocketwss-d1">멀티플레이어 동기화 (WebSocket/WSS, D1)</h4>
 <ul><li><strong>프로토콜</strong>: <strong>WebSocket(WSS)</strong> — TLS 내장, 재택 근무자 방화벽/VPN 통과 용이. 재접속 시 sequence_num 기반 스냅샷 재수신. 핸드셰이크에 <code>protocol_version</code> 협상 포함(미지원 버전 거부, D4)</li><li><strong>서버 tick</strong>: 20Hz (D22)</li><li><strong>동기화 항목</strong>:<ul><li>플레이어 위치 (서버 tick 20Hz, E2E p95 &lt; 500ms)</li><li>애니메이션 상태 (change-driven)</li><li>회의실 점유/진입 (1Hz)</li><li>채팅/근접 신호 (real-time)</li></ul></li></ul>
 <h4 id="충돌-시스템">충돌 시스템</h4>
@@ -635,7 +635,7 @@ godot_client/
 <hr>
 <h2 id="phase-6-업무결과kpi-산출-erp-push">Phase 6: 업무결과·KPI 산출 + ERP push</h2>
 <h3 id="목표-7">목표</h3>
-<ul><li><strong>work_log</strong> (일일 업무 기록) 입력/수정 UI</li><li><strong>KPI 산출 엔진</strong> (협업 산출물 기반: 회의·액션아이템·업무완료도). <strong>정량 점수는 결정론적 코드로 계산, AI는 서술만</strong>(D14)</li><li><strong>AI 초안 생성</strong> (Claude API) — 강점/개선/근거 서술</li><li><strong>관리자 검토 &amp; 조정 + 이의신청 상태머신</strong> (D15: 공개 → 이의접수 7일 → 재검토 → 확정)</li><li><strong>배치 스케줄(D17)</strong>: daily<em>reports push <strong>18:00 KST</strong> / KPI AI 초안 <strong>21:00 야간 배치</strong>(검토 대기) / kpi</em>results ERP push = <strong>관리자 확정 이벤트 + 분기 마감 배치</strong></li><li><strong>ERP dev 브랜치 작업</strong> (신규 kpi<em>results 테이블 + 수신 엔드포인트 <code>POST /api/kpi-results</code> + 서비스계정 JWT, 03-erp-integration.md 참조). ERP에는 <strong>관리자 확정 점수(final</em>score)만 전송</strong>, <code>ai_draft</code> 미전송(D15)</li></ul>
+<ul><li><strong>work_log</strong> (일일 업무 기록) 입력/수정 UI</li><li><strong>KPI 산출 엔진</strong> (협업 산출물 기반: 회의·액션아이템·업무완료도). <strong>정량 점수는 결정론적 코드로 계산, AI는 서술만</strong>(D14)</li><li><strong>AI 초안 생성</strong> (Claude API) — 강점/개선/근거 서술</li><li><strong>관리자 검토 &amp; 조정 + 이의신청 상태머신</strong> (정본 D15: none→submitted→reviewing→resolved, 이의접수 7일 창)</li><li><strong>배치 스케줄(D17)</strong>: daily<em>reports push <strong>18:00 KST</strong> / KPI AI 초안 <strong>21:00 야간 배치</strong>(검토 대기) / kpi</em>results ERP push = <strong>관리자 확정 이벤트 + 분기 마감 배치</strong></li><li><strong>ERP dev 브랜치 작업</strong> (신규 kpi<em>results 테이블 + 수신 엔드포인트 <code>POST /api/kpi-results</code> + 서비스계정 JWT, 03-erp-integration.md 참조). ERP에는 <strong>관리자 확정 점수(final</em>score)만 전송</strong>, <code>ai_draft</code> 미전송(D15)</li></ul>
 <h3 id="범위-7">범위</h3>
 <h4 id="업무-기록-work_log">업무 기록 (work_log)</h4>
 <pre class="code lang-sql"><code>CREATE TABLE work_log (
@@ -670,7 +670,7 @@ CREATE TABLE kpi_result (
   admin_adjusted_score FLOAT,
   admin_note TEXT,
   admin_user_id BIGINT,
-  objection_status VARCHAR(20) DEFAULT 'draft',  -- draft|published|objected|re_reviewing|finalized (D15)
+  objection_status VARCHAR(20) DEFAULT 'none',  -- none|submitted|reviewing|resolved (정본 D15, 04/08 준거)
   final_score FLOAT,                  -- 관리자 확정 점수 (ERP push 대상)
   finalized_at TIMESTAMP,
   created_at TIMESTAMP,
@@ -718,13 +718,13 @@ CREATE TABLE kpi_result (
     return response.content[0].text</code></pre>
 <h4 id="관리자-검토-조정-이의신청-d15">관리자 검토 &amp; 조정 + 이의신청 (D15)</h4>
 <p>리뷰 필드는 kpi_result에 <strong>인라인</strong>(위 스키마)이며 별도 <code>kpi_result_review</code> 테이블은 두지 않는다(D16). 이의신청 상태머신(D15):</p>
-<pre class="code"><code>objection_status: draft → published → objected → re_reviewing → finalized
-  - published: 평가 공개 (직원 열람)
-  - objected:  이의접수 (공개 후 7일 창)
-  - re_reviewing: 재검토
-  - finalized: 관리자 확정 → final_score 확정 → ERP push (정정 시 upsert 재push)</code></pre>
+<pre class="code"><code>objection_status: none → submitted → reviewing → resolved (정본 D15, 04/08 준거)
+  - none:      이의 없음 (평가 공개 후 기본값)
+  - submitted: 이의접수 (공개 후 7일 창)
+  - reviewing: 재검토
+  - resolved:  이의 종결 → 관리자 확정(final_score/finalized_at) → ERP push (정정 시 upsert 재push)</code></pre>
 <p>UI:</p>
-<ul><li>대시보드: &quot;KPI 리뷰 대기&quot;(objection_status='draft') 목록 (filterable by 팀, 상태)</li><li>상세: AI <strong>서술</strong> 초안 표시 + 관리자 조정값(admin<em>adjusted</em>score) 입력 폼 + 노트</li><li>저장 → admin<em>adjusted</em>score/admin<em>note/admin</em>user<em>id 기록. 확정 시 objection</em>status='finalized', final<em>score/finalized</em>at 기록</li></ul>
+<ul><li>대시보드: &quot;KPI 리뷰 대기&quot;(미확정: finalized_at IS NULL) 목록 (filterable by 팀, 상태)</li><li>상세: AI <strong>서술</strong> 초안 표시 + 관리자 조정값(admin<em>adjusted</em>score) 입력 폼 + 노트</li><li>저장 → admin<em>adjusted</em>score/admin<em>note/admin</em>user<em>id 기록. 확정 시 final</em>score/finalized<em>at 기록 (이의 접수 건은 objection</em>status='resolved' 종결 후 확정, D15)</li></ul>
 <h4 id="배치-스케줄-d17-순환-모순-해소">배치 스케줄 (D17 — 순환 모순 해소)</h4>
 <p>배치는 <strong>3개 트리거로 분리</strong>된다. 서로의 산출물을 순환 참조하지 않는다.</p>
 <pre class="code lang-python"><code># (1) daily_reports push: 매일 18:00 KST
@@ -750,7 +750,7 @@ def kpi_ai_draft_batch():
         ai_draft  = generate_kpi_narrative(user.id, today, metrics)   # 서술만
         upsert_kpi_result(user_id=user.id, period_type=&quot;daily&quot;,
                           period_key=today, metrics=metrics,
-                          ai_draft=ai_draft, objection_status=&quot;draft&quot;,
+                          ai_draft=ai_draft, objection_status=&quot;none&quot;,
                           source=&quot;virtual_office&quot;)   # metric 단위 upsert (D17 멱등성)
     db.commit()
     notify_admins(&quot;KPI 리뷰 대기 건 준비됨&quot;)
@@ -758,8 +758,8 @@ def kpi_ai_draft_batch():
 # (3) kpi_results ERP push: 관리자 확정 이벤트 + 분기 마감 배치 (D15/D17)
 #     - 이벤트 핸들러: 이의신청 종결 → 관리자 확정(final_score) → 즉시 upsert push
 #     - 분기 마감 배치: 분기 KPI 집계 후 일괄 push
-def on_kpi_finalized(kpi_result):   # 관리자 확정 이벤트
-    if kpi_result.objection_status == &quot;finalized&quot;:
+def on_kpi_finalized(kpi_result):   # 관리자 확정 이벤트 (이의 접수 건은 resolved 종결 후, D15)
+    if kpi_result.finalized_at is not None:
         push_kpi_to_erp(kpi_result)   # final_score만 전송, ai_draft 미전송 (D15)</code></pre>
 <blockquote>멱등성(D17): metric 단위 upsert + 배치 <code>run_id</code> + advisory lock(동시 실행 방지). ERP kpi_results 미준비 시 feature flag OFF → 로컬 적재 → 준비 후 backfill.</blockquote>
 <h4 id="erp-연동-dev-브랜치-작업">ERP 연동 (dev 브랜치 작업)</h4>
@@ -864,7 +864,7 @@ class ErpKpiPusher:
                 &quot;source&quot;: &quot;virtual_office&quot;
             }
             for kpi in kpi_results
-            if kpi.objection_status == &quot;finalized&quot;
+            if kpi.finalized_at is not None   # 관리자 확정분만 (이의는 resolved 종결, D15)
         ]
         
         # POST (정본 엔드포인트, D16)
@@ -879,7 +879,7 @@ class ErpKpiPusher:
         for kpi in kpi_results:
             log = DailyStatusPush(
                 user_id=kpi.user_id,
-                push_date=kpi.kpi_date,
+                push_date=kpi.period_key,   # kpi_result에 kpi_date 없음 → period_key 사용 (D16)
                 target=&quot;erp&quot;,
                 status=&quot;pushed&quot;,
                 pushed_at=datetime.utcnow()
@@ -935,7 +935,7 @@ erp_dev_branch/ (feature/virtual-office-integration)
 <h3 id="의존성-7">의존성</h3>
 <ul><li>Phase 1~5 완료 (완전한 가상오피스 + 회의 기록)</li><li>ERP dev 브랜치 셋업 (kpi_results 테이블 + 엔드포인트)</li><li>Claude API 키</li></ul>
 <h3 id="수용-기준-7">수용 기준</h3>
-<ul><li class="task"><input type="checkbox" disabled> work_log CRUD 정상 (create, read, update, delete)</li><li class="task"><input type="checkbox" disabled> KPI 정량 메트릭 <strong>결정론적 코드</strong> 계산 정확 (단위 테스트), AI는 서술만 생성 (D14)</li><li class="task"><input type="checkbox" disabled> Claude AI 서술 초안 생성 성공 (강점/개선/근거)</li><li class="task"><input type="checkbox" disabled> 관리자 검토 UI + <strong>이의신청 상태머신</strong> 동작 (공개→이의접수 7일→재검토→확정, D15)</li><li class="task"><input type="checkbox" disabled> daily_reports push <strong>18:00 KST</strong>, KPI AI 초안 <strong>21:00 야간 배치</strong> 정상 실행 (D17)</li><li class="task"><input type="checkbox" disabled> kpi<em>result 레코드 생성 (period</em>type/period_key 분리, UNIQUE upsert, D16)</li><li class="task"><input type="checkbox" disabled> kpi<em>results ERP push = <strong>관리자 확정 이벤트 + 분기 마감 배치</strong> (final</em>score만, POST /api/kpi-results, D15/D17)</li><li class="task"><input type="checkbox" disabled> daily<em>status</em>push 로그 기록 (target=&quot;erp&quot;, status=&quot;pending&quot;/&quot;pushed&quot;)</li></ul>
+<ul><li class="task"><input type="checkbox" disabled> work_log CRUD 정상 (create, read, update, delete)</li><li class="task"><input type="checkbox" disabled> KPI 정량 메트릭 <strong>결정론적 코드</strong> 계산 정확 (단위 테스트), AI는 서술만 생성 (D14)</li><li class="task"><input type="checkbox" disabled> Claude AI 서술 초안 생성 성공 (강점/개선/근거)</li><li class="task"><input type="checkbox" disabled> 관리자 검토 UI + <strong>이의신청 상태머신</strong> 동작 (none→submitted→reviewing→resolved, 이의접수 7일 창, 정본 D15)</li><li class="task"><input type="checkbox" disabled> daily_reports push <strong>18:00 KST</strong>, KPI AI 초안 <strong>21:00 야간 배치</strong> 정상 실행 (D17)</li><li class="task"><input type="checkbox" disabled> kpi<em>result 레코드 생성 (period</em>type/period_key 분리, UNIQUE upsert, D16)</li><li class="task"><input type="checkbox" disabled> kpi<em>results ERP push = <strong>관리자 확정 이벤트 + 분기 마감 배치</strong> (final</em>score만, POST /api/kpi-results, D15/D17)</li><li class="task"><input type="checkbox" disabled> daily<em>status</em>push 로그 기록 (target=&quot;erp&quot;, status=&quot;pending&quot;/&quot;pushed&quot;)</li></ul>
 <h3 id="독립-데모-7">독립 데모</h3>
 <p><strong>&quot;KPI 산출 &amp; 리뷰&quot;</strong> — 가상 업무 기록 + 가상 회의 데이터로 KPI 계산, AI 초안 생성, 관리자 조정. ERP 연동 전에 내부 로직만 검증.</p>
 <hr>
@@ -1028,6 +1028,15 @@ Response: {
     &quot;presence_status&quot;: &quot;online&quot;
   }
 }</code></pre>
+<h4 id="79-조직도-실시간-에디터-prd-should-7">7.9 조직도 실시간 에디터 (PRD SHOULD #7)</h4>
+<ul><li><strong>org_group 편집 UI</strong>: React Flow 기반 조직도 캔버스 — 상위그룹(division/department/part) 노드 드래그·연결로 계층 편집</li><li><strong>경계 원칙</strong>: ERP 팀은 <strong>리프 노드로 유지</strong>(read-only, ERP 정본). 상위그룹(org_group)만 CRUD (생성/이름·색상 변경/이동/삭제)</li><li><strong>반영</strong>: 저장 시 org<em>group 트리 갱신 → team</em>zone.org<em>group</em>id 매핑·구역 색상에 반영</li></ul>
+<p>산출물:</p>
+<pre class="code"><code>frontend/pages/admin/org-chart-editor.tsx (React Flow 캔버스)
+frontend/lib/org-group-api.ts
+backend/app/api/org_group.py (CRUD + 트리 검증: 순환 금지, 팀=리프)</code></pre>
+<p>수용 기준:</p>
+<ul><li class="task"><input type="checkbox" disabled> React Flow 조직도에서 상위그룹 생성·이동·삭제 정상 (ERP 팀 노드는 편집 불가·리프 유지)</li><li class="task"><input type="checkbox" disabled> 순환 참조·팀 하위 그룹 생성 시도 시 검증 거부</li><li class="task"><input type="checkbox" disabled> 저장 후 team_zone 매핑·구역 색상 갱신 확인</li></ul>
+<blockquote>참고: 7.9 추가에 따른 Phase 7 기간(6주) 재조정은 하지 않으며, <strong>기간 내 우선순위 조정</strong>으로 소화한다.</blockquote>
 <h3 id="산출물-8">산출물</h3>
 <pre class="code"><code>backend/
   ├── app/
@@ -1116,7 +1125,7 @@ godot_client/
 <p><strong>완화</strong>: Phase 6에서만 ERP dev 브랜치 작업, 그 전까지는 모의 데이터</p>
 <ul><li>Phase 1~5: ERP 데이터 자체는 필요 없음 (Phase 2에서 cache만 읽음)</li><li>Phase 6: dev 브랜치 병합 전 로컬 ERP 테스트 환경 구축</li></ul>
 <h3 id="리스크-4-성능-저하-설계-100명-프레즌스-동기-d22">리스크 4: 성능 저하 (설계 100명 프레즌스 동기, D22)</h3>
-<p><strong>완화</strong>: Phase 4에서 delta sync + 바이너리 직렬화, 100명 초과 시 AOI 필터링 도입 검토 (Redis 미사용 — 큐/스케줄은 APScheduler + DB 영속 큐, D21)</p>
+<p><strong>완화</strong>: Phase 4에서 delta sync (바이너리 직렬화·AOI는 100명 초과 시 도입 검토 — D22) (Redis 미사용 — 큐/스케줄은 APScheduler + DB 영속 큐, D21)</p>
 <ul><li>초기 도그푸딩 검증 20명 데이터로 동작 검증</li><li>점진적 load testing (20 → 50 → 설계 100명)</li></ul>
 <h3 id="리스크-5-변경사항-추적-어려움">리스크 5: 변경사항 추적 어려움</h3>
 <p><strong>완화</strong>: 각 phase마다 주요 테스트 케이스 작성 (회귀 방지)</p>
@@ -1142,12 +1151,12 @@ godot_client/
 <h3 id="downstream-documents-affected">Downstream documents affected</h3>
 <ul><li>12-tasks.md (Task ID 파생: P1-T1 ~ P7-T?)</li></ul>
 <h3 id="open-questions">Open questions</h3>
-<ul><li>ERP dev 브랜치 병합 일정 (git 접근권한 보유로 자체 작업, Phase 6 착수 시점 확정 필요)</li><li>Godot 네이티브 빌드 서명 (Windows code signing cert — 사내 PKI 활용 검토, D21)</li><li>3D 에셋 라이선스 (상용 사용 허가 확인)</li></ul>
+<ul><li>ERP dev 브랜치 병합 일정 (git 접근권한 보유로 자체 작업, Phase 6 착수 시점 확정 필요)</li><li>Godot 네이티브 빌드 서명 (Windows code signing — 자체 서명+설치 시 신뢰 등록 또는 공인 code signing cert 구매 검토. TLS용 사내 PKI는 D21-r로 폐기 — 2026-07-02)</li><li>3D 에셋 라이선스 (상용 사용 허가 확인)</li></ul>
 <blockquote>확정 종결: 실시간 프로토콜=WebSocket(WSS, D1), LiveKit 인프라=사내 VM self-host(D21), 회의실 예약=예약+FCFS 병행(D23).</blockquote>
 <h3 id="assumptions">Assumptions</h3>
-<ul><li>ERP(Space-Daily) read-only DB 접근 가능 (같은 사내망)</li><li>Godot 4 Forward+ 렌더러 성능 = 60 FPS 달성 (저사양 PC도)</li><li>1인 개발 + AI 협업으로 예상 기간 내 완성 가능 (변수: 예기치 않은 기술 이슈)</li><li>LiveKit 셀프호스트 유지비 허용 (예산 범위)</li></ul>
+<ul><li>ERP(Space-Daily) read-only DB 접근 가능 (같은 사내망)</li><li>Godot 4 Forward+ 렌더러 성능 = GTX 1650급 60fps / 내장그래픽(Iris Xe급) 30fps (D7/D22)</li><li>1인 개발 + AI 협업으로 예상 기간 내 완성 가능 (변수: 예기치 않은 기술 이슈)</li><li>LiveKit 셀프호스트 유지비 허용 (예산 범위)</li></ul>
 <h3 id="validation-criteria">Validation criteria</h3>
-<ul><li class="task"><input type="checkbox" disabled> Phase 0 완료: 계약 4종 + 스파이크 S1~S4 결과(성공/폴백 확정)</li><li class="task"><input type="checkbox" disabled> Phase 1 완료: Godot 클라이언트 빌드, 샘플 씬 렌더링</li><li class="task"><input type="checkbox" disabled> Phase 2 완료: ERP 동기화 배치 실행, 직원 데이터 로드</li><li class="task"><input type="checkbox" disabled> Phase 3 완료: 배치도 2D 편집 + 3D 미리보기</li><li class="task"><input type="checkbox" disabled> Phase 4 완료: 10명 동시 멀티플레이어 프레즌스</li><li class="task"><input type="checkbox" disabled> Phase 5 완료: 회의 예약 + 화상 통화 + 회의록</li><li class="task"><input type="checkbox" disabled> Phase 6 완료: KPI 산출 + AI 초안 + ERP 푸시</li><li class="task"><input type="checkbox" disabled> Phase 7 완료: 층 이동, 권한 제어, AI 요약, 모니터링</li></ul>
+<ul><li class="task"><input type="checkbox" disabled> Phase 0 완료: 계약 4종 + 스파이크 S1~S4 결과(성공/폴백 확정)</li><li class="task"><input type="checkbox" disabled> Phase 1 완료: Godot 클라이언트 빌드, 샘플 씬 렌더링</li><li class="task"><input type="checkbox" disabled> Phase 2 완료: ERP 동기화 배치 실행, 직원 데이터 로드</li><li class="task"><input type="checkbox" disabled> Phase 3 완료: 배치도 2D 편집 + 데스크톱 draft 모드 열람(D11)</li><li class="task"><input type="checkbox" disabled> Phase 4 완료: 20명 동시 멀티플레이어 프레즌스(설계 100명, D22)</li><li class="task"><input type="checkbox" disabled> Phase 5 완료: 회의 예약 + 화상 통화 + 회의록</li><li class="task"><input type="checkbox" disabled> Phase 6 완료: KPI 산출 + AI 초안 + ERP 푸시</li><li class="task"><input type="checkbox" disabled> Phase 7 완료: 층 이동, 권한 제어, AI 요약, 모니터링</li></ul>
 <h3 id="risks">Risks</h3>
 <ol><li><strong>3D 렌더링 성능</strong>: 저사양 PC에서 60 FPS 미달 위험<ul><li>완화: Phase 1 조기에 성능 벤치마크 (전체 아바타 10명, 모든 방)</li></ul></li><li><strong>ERP 연동 지연</strong>: dev 브랜치 병합 일정 미정<ul><li>완화: Phase 6 병렬 작업 (내부 KPI 엔진 먼저 검증)</li></ul></li><li><strong>LiveKit 구축 난제</strong>: 자체 호스팅 복잡도 (오디오/비디오 codec, 대역폭)<ul><li>완화: Phase 5 초기 리서치, PoC 먼저 (작은 테스트 룸부터)</li></ul></li><li><strong>데이터 일관성</strong>: ERP ↔ 우리 플랫폼 양방향 동기 오류<ul><li>완화: audit<em>log, daily</em>status_push 로깅 (문제 추적 용이)</li></ul></li></ol>
 <hr>

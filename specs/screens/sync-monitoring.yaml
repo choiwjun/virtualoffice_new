@@ -1,0 +1,105 @@
+version: "2.0"
+
+screen:
+  name: 동기화 모니터링 콘솔 (Sync Monitoring)
+  route: /admin/sync
+  platform: web
+  layout: sidebar-main
+  required_role: admin # §3.10 — 관리자 전용
+
+data_requirements:
+  - resource: erp_sync_log
+    needs: [id, sync_type, started_at, finished_at, status, error_message, records_affected]
+    filters:
+      status: "?status"
+      sync_type: "?sync_type"
+    mutations: [create]
+    access: read-write
+    note: ERP 동기화(매시간 증분/00시 전체대사) 실행 이력. 수동 재시도 시 sync_type=manual_retry 행 생성
+
+  - resource: daily_status_push
+    needs: [id, user_id, push_date, target, status, pushed_at, error_message, retry_count, run_id]
+    filters:
+      status: "?status"
+      target: "?target"
+    mutations: [update]
+    access: read-write
+    note: daily_reports(18:00)·kpi_results push 로그. 수동 재시도 시 status/retry_count 갱신
+
+  - resource: erp_user
+    needs: [id, name]
+    access: read-only
+    note: 실패 행의 대상 직원 표시
+
+components:
+  - id: job-status-table
+    type: table
+    position: main
+    function: "작업별 최근 실행 상태 테이블: ERP 증분(매시간)/전체대사(00시)/daily_reports push(18:00)/KPI AI 초안(21시, D17)/kpi_results push — 최근 실행 시각, 상태(● OK / ✗ 실패 / ○ 예정), [재시도] 버튼"
+    data_source:
+      resource: erp_sync_log
+
+  - id: failure-history-list
+    type: list
+    position: main
+    function: "실패 이력 목록: 발생 시각, 대상(target/sync_type), error_message(예: 401 JWT 만료), [로그] 상세 링크"
+    data_source:
+      resource: daily_status_push
+
+  - id: retry-button
+    type: toolbar
+    position: main
+    function: "[재시도] — 실패 작업 수동 재시도(백필 트리거 포함). run_id 새로 부여, retry_count 증가"
+
+  - id: status-badge
+    type: badge
+    position: main
+    function: "상태 배지: running/success/failed(erp_sync_log), pending/sent/failed(daily_status_push)"
+
+  - id: feature-flag-panel
+    type: panel
+    position: bottom
+    function: "[전체 로그] 링크 + feature flag 표시(예: ERP kpi_results = ON)"
+
+events:
+  - on: page-load
+    do: "erp_sync_log 최신 실행분 + daily_status_push 실패분 로드, 작업별 최근 상태 집계 표시"
+
+  - on: click-retry
+    do: "수동 재시도 트리거: ERP 동기화는 erp_sync_log(sync_type=manual_retry) 생성, push 실패분은 daily_status_push 재실행(run_id 신규, retry_count+1) → 완료 후 상태 갱신"
+
+  - on: sync-failure-detected
+    do: "알림 채널로 관리자 통지(06 §3.12) + failure-history-list 갱신"
+
+tests:
+  - name: "작업 상태 대시보드 정상 표시"
+    when: "관리자가 /admin/sync 접속, 최근 실행 이력 존재"
+    then:
+      - "job-status-table에 ERP 증분/전체대사/daily_reports push/KPI 배치/kpi_results push 행 표시"
+      - "각 행에 최근 실행 시각과 상태 배지(● OK / ✗ 실패 / ○ 예정) 표시"
+      - "실패 행에만 [재시도] 버튼 활성"
+
+  - name: "push 실패 이력 및 수동 재시도"
+    when: "daily_status_push에 status=failed(error_message='401 JWT 만료') 행이 있고 관리자가 [재시도] 클릭"
+    then:
+      - "failure-history-list에 실패 시각·target·error_message 표시"
+      - "재시도 시 run_id 신규 부여, retry_count+1"
+      - "성공 시 status=sent·pushed_at 갱신, 실패 시 error_message 갱신 후 failed 유지"
+
+  - name: "ERP 동기화 수동 재시도"
+    when: "erp_sync_log 최근 행이 status=failed이고 [재시도] 클릭"
+    then:
+      - "sync_type=manual_retry인 erp_sync_log 행 생성(status=running)"
+      - "완료 시 finished_at·records_affected 기록, status=success/failed 갱신"
+      - "job-status-table 상태 배지 갱신"
+
+  - name: "권한 경계 - 비관리자 접근"
+    when: "role=employee 사용자가 /admin/sync 접근"
+    then:
+      - "권한 없음 화면(§3.10) 표시"
+      - "동기화 데이터 미노출"
+
+notes:
+  - "배치 일정 정본(D17·D18): ERP 증분 매시간, 전체대사 00:00 KST, daily_reports push 18:00 KST, KPI AI 초안 21:00"
+  - "재시도 정책: target별 분리, 최대 3회 지수 백오프. 다음날 정규 배치 upsert가 우선(04 §2.5)"
+  - "run_id/advisory lock으로 중복 실행 방지(멱등성)"

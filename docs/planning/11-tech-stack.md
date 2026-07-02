@@ -4,8 +4,8 @@
 - **대상**: 개발팀(L3+), 아키텍처 리뷰어
 - **목적**: 가상오피스 플랫폼 기술 스택 확정 및 근거 문서화
 - **유효 범위**: 단일 조직(단일 company_id) 도그푸딩 버전
-- **버전**: v1.1
-- **마지막 갱신**: 2026-07-02 (00-decisions.md v1.0 정합 반영)
+- **버전**: v1.2
+- **마지막 갱신**: 2026-07-02 (배포·네트워크 확정 및 정합 패치 반영)
 
 > 본 문서의 모든 결정은 **00-decisions.md(정본)** 를 따른다. 충돌 시 정본이 이긴다. 변경 이력은 하단 참조.
 
@@ -130,7 +130,7 @@ Hosting      | 사내 VM (도그푸딩)
 
 **기능 범위**:
 - 대시보드(KPI, 통계)
-- 사무실 배치 편집기(Konva.js 2D, 3D 미리보기)
+- 사무실 배치 편집기(Konva.js 2D 전용, 정밀 확인은 데스크톱 draft 모드 — D11)
 - 조직도 편집(React Flow)
 - 회의록/액션아이템 관리
 - 근태/휴가 조회(ERP read-only)
@@ -166,7 +166,7 @@ Capacity      | 최대 100명(1회의실) 이상 확장 가능
 - **자체호스팅(On-Premise)**: 미디어 데이터 주권(회의가 인사평가 근거), ERP·백엔드과 동일 사내망 지연 이점, 단일 SFU 노드로 충분(오토스케일 불필요→1인 운영 부담 경감)
 - **LiveKit Cloud 배제**: 민감 미디어 외부 경유, SaaS 구독비, B2B 이후 우선순위
 - **신규 AWS 배제**: 데이터 주권, 사내 우선 고려
-- **접속 경로**: 재택·하이브리드·외근자는 사내 VPN 또는 TURN-over-TLS(443 공개 엔드포인트) 접속
+- **접속 경로**: 재택·하이브리드·외근자는 공개 엔드포인트 직결 + TURN-TLS 443 폴백(VPN 없음, 2026-07-02)
 - **결정**: 사내 self-host(LiveKit+coturn Docker), 단일 SFU 확정. LiveKit Cloud·신규 AWS 배제.
 
 ---
@@ -213,13 +213,13 @@ STT 엔진      | 한국어 화자분리 음성→텍스트 | 후보: (a) OpenAI
 | **대안** | Gemini | ERP Space-Daily와 통일(현재 사용 중) |
 
 **역할**:
-- 업무결과(work_log) + 회의록(meeting_minute) + 외부활동(external_activities) 수집
-- 프롬프트: 성과도·협업품질·책임감·지속성 정량화
+- 업무결과(work_log) + 회의록(meeting_minute) 수집 (외부활동 테이블은 D20-c 폐기로 제외, 2026-07-02)
+- 프롬프트: 확정 정량점수 기반 강점/개선/근거 서술 생성(D14-e — AI는 서술만, 정량은 결정론적 코드)
 - 출력: ai_draft(텍스트) → kpi_result 저장 → 관리자 검토 & 조정
 - **최종이 아닌 초안**: 사유+개선액션 함께 제시, 관리자 개입 필수
 
 **근거**:
-- 로컬 LLM(Ollama): 초안 품질 저하, 추론 시간↑ → EOD 배치 33시간 한계
+- 로컬 LLM(Ollama): 초안 품질 저하, 추론 시간↑ → 야간 배치 3시간 윈도우 한계
 - **결정**: Claude(기본) + Gemini(대안) **확정**
 
 ---
@@ -283,7 +283,7 @@ graph TD
 
 ```bash
 # 3D 클라이언트
-Godot 4.3+ (네이티브 + 헤드리스)
+Godot 4.3+ 안정(stable) 버전 (네이티브 + 헤드리스, 별도 LTS 채널 없음)
 Git LFS (대용량 에셋: .blend, .glb)
 
 # 백엔드
@@ -524,7 +524,7 @@ func report_error(error_msg: String):
 
 | 리스크 | 영향도 | 완화 방안 |
 |-------|-------|---------|
-| **Godot 엔진 버그** | 높음 | 정기 업데이트 추적, 커뮤니티 수렴 확인, fallback 계획 |
+| **Godot 엔진 버그** | 높음 | 안정(stable) 최신 패치 추적(Godot 4는 LTS 채널 없음), 커뮤니티 수렴 확인, fallback 계획 |
 | **PostgreSQL 성능 (>1M presence 업데이트/초)** | 중간 | Redis 캐시, 배치 쓰기, 파티셔닝(필요시) |
 | **ERP 의존 (direct DB 접근)** | 높음 | read-only 계정, 브랜치·마이그레이션 검증, 테스트 DB 사본 |
 | **LiveKit 확장성 (회의 참석 100명+)** | 낮음(도그푸딩) | 스트리밍 프로토콜 선택, 사내 인프라 여유 |
@@ -662,10 +662,11 @@ func report_error(error_msg: String):
 |------|------|-----------|
 | v1.0 | 2026-07-01 | 최초 작성 |
 | v1.1 | 2026-07-02 | 00-decisions.md v1.0 정합 반영 — D1(ENet/WebSocket→WSS 확정), D2(GDScript 확정·C# 표기 제거), D3(게임서버 메모리 권위+FastAPI 경유 배치 push), D4(PyJWT·자체 시크릿 HS256), D5(STT 회의록 스택 §2.6.1 신설), D13(프레즌스 6종→7종·external 추가), D21(사내 VM·관측 Grafana/Prometheus/Loki/Uptime Kuma·APScheduler+DB 영속 재시도 큐·검색 PG fulltext 확정/ELK 배제), 버전 정정(FastAPI 3.0+→0.115+, python-jose→PyJWT), Godot 4 export 명령 정정(--export-release, --standalone-mode 제거), 검증 항목에 스파이크 S1(Godot↔LiveKit 수신 PoC)·S2(STT)·S3(헤드리스 부하) 추가 |
+| v1.2 | 2026-07-02 | 정합 패치 — 배치 편집기 Konva.js 2D 전용·정밀 확인은 데스크톱 draft 모드(D11), KPI 입력에서 external_activities 제외(D20-c 폐기)·프롬프트를 서술 생성으로 한정(D14-e), "EOD 배치 33시간"→야간 배치 3시간 윈도우 오타 정정, Godot 버전 표기 "4.3+ 안정 버전(LTS 채널 없음)" 통일, LiveKit 접속 경로 공개 엔드포인트 직결+TURN-TLS 443 폴백(VPN 없음 확정) |
 
 ---
 
-**Document Version**: 1.1  
+**Document Version**: 1.2  
 **Last Updated**: 2026-07-02  
 **Authored By**: Documentation Specialist  
 **Status**: 확정 (00-decisions.md v1.0 정합 반영)

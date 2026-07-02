@@ -55,8 +55,8 @@ enums:
 
   presence_status:
     description: |
-      사용자 실시간 상태. 3D 아바타 상태 + 프레즌스 인디케이터.
-      공식 출퇴근(ERP attendance) 과 분리.
+      사용자 실시간 상태(7종 확정 — D13, 04 §2.4). 3D 아바타 상태 + 프레즌스 인디케이터.
+      공식 출퇴근(ERP attendance) 과 분리. external은 수동 전환(GPS 자동 전환 폐기 — D13/D20).
     values:
       - value: online
         icon: 🟢
@@ -76,24 +76,12 @@ enums:
         color: "#A855F7"
       - value: away
         icon: ⚪
-        description: 자리 비움 (오래 무입력)
+        description: 자리 비움 (오래 무입력, 자동 전이 5분 — D13)
         color: "#D1D5DB"
-      - value: trip_moving
-        icon: 🚗
-        description: 외근 중 이동
-        color: "#F97316"
-      - value: trip_arrived
-        icon: 📍
-        description: 외근 목적지 도착
-        color: "#06B6D4"
       - value: external
         icon: 🌐
-        description: 외부 네트워크
+        description: 외근/출장/재택 (수동 전환 — D13)
         color: "#8B5CF6"
-      - value: returning
-        icon: ➡️
-        description: 복귀 중
-        color: "#14B8A6"
       - value: offline
         icon: ⭕
         description: 오프라인 / 로그아웃
@@ -474,6 +462,8 @@ metadata:
     audit: 1
 
 design_notes:
+  design_tokens:
+    - "디자인 토큰 정본 = TailwindCSS 기본 테마(색·타이포·간격). 상태 색상만 본 파일 정의(2026-07-02)"
   presence_status:
     - "icon은 Slack/Discord 스타일 참고"
     - "color는 Tailwind 팔레트 기반"

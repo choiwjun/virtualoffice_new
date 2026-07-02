@@ -11,15 +11,16 @@ SQLAlchemy 2.x 모델 정의 (async ORM)
 **FK 제약**: ON DELETE RESTRICT(평가 기록 영구성)
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
+from decimal import Decimal
 from typing import Optional, List
 from enum import Enum
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
     String, Integer, Float, Boolean, DateTime, Date, JSON, Text,
-    ForeignKey, Index, UniqueConstraint, Enum as SQLEnum,
-    BigInteger, select, func, text
+    ForeignKey, Index, UniqueConstraint, CheckConstraint, Enum as SQLEnum,
+    BigInteger, Numeric, select, func, text
 )
 from sqlalchemy.dialects.postgresql import JSONB as PG_JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -215,11 +216,13 @@ class RoomStatus(str, Enum):
 
 
 class AssetType(str, Enum):
-    """에셋 타입"""
-    MODEL = "model"
-    TEXTURE = "texture"
-    MATERIAL = "material"
-    ANIMATION = "animation"
+    """에셋 타입 (07-3d §5.3 v1.1 정본)"""
+    FURNITURE = "furniture"     # 가구
+    STRUCTURE = "structure"     # 구조물 (벽, 바닥 등)
+    MATERIAL = "material"       # 머티리얼
+    UI3D = "ui3d"               # 3D UI 요소
+    CHARACTER = "character"     # 캐릭터
+    ENVIRONMENT = "environment" # 환경 요소
 
 
 # ============================================================================
@@ -286,15 +289,14 @@ class ErpUser(Base, TimestampMixin, SoftDeleteMixin):
     )
     """마지막 ERP 동기화 시각 (UTC)"""
 
-    # 관계
+    # 관계 (self-FK 표준: many-to-one 스칼라 쪽에 remote_side=[id], 컬렉션 쪽은 없음)
     managed_users: Mapped[List["ErpUser"]] = relationship(
         "ErpUser",
-        remote_side=[id],
         back_populates="manager"
     )
     manager: Mapped[Optional["ErpUser"]] = relationship(
         "ErpUser",
-        remote_side=[manager_id],
+        remote_side=[id],
         back_populates="managed_users"
     )
 
@@ -303,7 +305,7 @@ class ErpUser(Base, TimestampMixin, SoftDeleteMixin):
         Index("idx_erp_user_company_email", "company_id", "email"),
         Index("idx_erp_user_team", "erp_team_id"),
         Index("idx_erp_user_role", "role"),
-        Index("idx_erp_user_is_active", "is_active"),
+        # is_active 인덱스는 SoftDeleteMixin(index=True)이 생성 — 중복 명시 Index 제거(A3-20)
     )
 
 
@@ -333,15 +335,14 @@ class OrgGroup(Base, TimestampMixin):
     """HEX 컬러 (3D 구역 시각화)"""
     sort_order: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
-    # 관계
+    # 관계 (self-FK 표준: many-to-one 스칼라 쪽에 remote_side=[id], 컬렉션 쪽은 없음)
     children: Mapped[List["OrgGroup"]] = relationship(
         "OrgGroup",
-        remote_side=[id],
         back_populates="parent"
     )
     parent: Mapped[Optional["OrgGroup"]] = relationship(
         "OrgGroup",
-        remote_side=[parent_id],
+        remote_side=[id],
         back_populates="children"
     )
 
@@ -524,9 +525,9 @@ class Room(Base, TimestampMixin):
     capacity: Mapped[int] = mapped_column(Integer, nullable=False)
     """수용인원"""
     coords: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    """{x, y, z} 3D 위치 (Godot 월드좌표)"""
+    """{x, y, width, height} 2D top_left 기준 미터 좌표 (D25). 3D 변환은 Godot 임포트 시 수행."""
     enter_trigger: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
-    """{x, y, z, radius} 진입 감지 영역"""
+    """{x, y, width, height} 진입 감지 영역 (2D top_left 미터, D25)"""
     livekit_room: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     """LiveKit room ID (회의 이용 시)"""
     status: Mapped[RoomStatus] = mapped_column(
@@ -586,7 +587,7 @@ class Seat(Base, TimestampMixin):
     )
     """현재 배정 사원"""
     coords: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    """{x, y, z} 3D 위치"""
+    """{x, y} + facing — 2D top_left 기준 미터 좌표 (D25)"""
     status: Mapped[SeatStatus] = mapped_column(
         SQLEnum(SeatStatus),
         nullable=False,
@@ -664,6 +665,16 @@ class SeatAssignmentHistory(Base):
     __table_args__ = (
         Index("idx_seat_assignment_history_seat", "seat_id", "assigned_at"),
         Index("idx_seat_assignment_history_user", "user_id", "assigned_at"),
+        CheckConstraint(
+            "unassigned_at IS NULL OR unassigned_at >= assigned_at",
+            name="ck_assignment_dates",
+        ),
+        # 좌석 배타성: 현재 배정(unassigned_at IS NULL)은 좌석당 1건만 (부분 unique)
+        Index(
+            "uk_current_seat", "seat_id", unique=True,
+            sqlite_where=text("unassigned_at IS NULL"),
+            postgresql_where=text("unassigned_at IS NULL"),
+        ),
     )
 
 
@@ -710,6 +721,10 @@ class UserTeamHistory(Base):
     __table_args__ = (
         Index("idx_user_team_history_user", "user_id", "valid_from"),
         Index("idx_user_team_history_team", "erp_team_id", "valid_from"),
+        CheckConstraint(
+            "valid_to IS NULL OR valid_to >= valid_from",
+            name="ck_uth_dates",
+        ),
     )
 
 
@@ -846,6 +861,11 @@ class Meeting(Base, TimestampMixin):
         Index("idx_meeting_room_scheduled", "room_id", "scheduled_at"),
         Index("idx_meeting_host", "host_user_id"),
         Index("idx_meeting_status", "status", "started_at"),
+        # 실제 컬럼은 scheduled_at/started_at/ended_at (scheduled_start/end 없음)
+        CheckConstraint(
+            "ended_at IS NULL OR started_at IS NULL OR ended_at >= started_at",
+            name="ck_meeting_times",
+        ),
     )
 
 
@@ -931,6 +951,10 @@ class MeetingMinute(Base, TimestampMixin):
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     attachments: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
     """{filename, url, mime_type}"""
+    stt_draft: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    """STT 원본 초안 (D5 — 회의 음성 전사 결과, 수정 전 원본 보존)"""
+    ai_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    """AI 요약 (Phase 7 — stt_draft 기반 자동 요약)"""
     created_by: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("erp_user.id", ondelete="RESTRICT"),
@@ -985,7 +1009,7 @@ class ActionItem(Base, TimestampMixin):
         index=True
     )
     """담당자"""
-    due_date: Mapped[datetime] = mapped_column(Date, nullable=False)
+    due_date: Mapped[date] = mapped_column(Date, nullable=False)
     """기한 (KST 날짜)"""
     priority: Mapped[ActionItemPriority] = mapped_column(
         SQLEnum(ActionItemPriority),
@@ -1034,11 +1058,12 @@ class WorkLog(Base, TimestampMixin):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     user_id: Mapped[int] = mapped_column(
         BigInteger,
-        ForeignKey("erp_user.id", ondelete="CASCADE"),
+        ForeignKey("erp_user.id", ondelete="RESTRICT"),
         nullable=False,
         index=True
     )
-    work_date: Mapped[datetime] = mapped_column(Date, nullable=False)
+    """RESTRICT: D18 평가 근거 영구 보존"""
+    work_date: Mapped[date] = mapped_column(Date, nullable=False)
     """업무 날짜 (KST)"""
     category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     """업무 분류 (개발, 리뷰, 회의, 설계 등)"""
@@ -1117,8 +1142,8 @@ class KpiResult(Base, TimestampMixin):
     """period_type=daily → 'YYYY-MM-DD', quarterly → 'YYYY-Q#' (NULL 금지 — D16)"""
     metric: Mapped[str] = mapped_column(String(100), nullable=False)
     """metric 어휘사전(8가지) 값만 허용"""
-    value: Mapped[float] = mapped_column(Float, nullable=False)
-    """결정론적 코드로 계산된 정량 값"""
+    value: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    """결정론적 코드로 계산된 정량 값 (NUMERIC(10,2) — 04 정본, 감사 재현성 D14-e)"""
     unit: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     """단위 (count, %, score)"""
     source: Mapped[KpiSource] = mapped_column(
@@ -1137,8 +1162,8 @@ class KpiResult(Base, TimestampMixin):
     ai_model: Mapped[str] = mapped_column(String(50), nullable=False, default="claude-opus")
 
     # 관리자 검토 (D15)
-    admin_adjusted_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    """관리자 조정 점수 (미조정 시 NULL → value가 유효)"""
+    admin_adjusted_score: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    """관리자 조정 점수 (미조정 시 NULL → value가 유효, NUMERIC(10,2))"""
     admin_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     """관리자 검토/조정 사유"""
     admin_user_id: Mapped[Optional[int]] = mapped_column(
@@ -1155,8 +1180,8 @@ class KpiResult(Base, TimestampMixin):
     objection_status: Mapped[KpiObjectionStatus] = mapped_column(
         SQLEnum(KpiObjectionStatus),
         nullable=False,
-        default=KpiObjectionStatus.NONE,
-        index=True
+        default=KpiObjectionStatus.NONE
+        # 인덱스는 idx_kpi_result_objection(명시 Index)만 사용 (A3-20 중복 제거)
     )
     objection_detail: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
     """{category, text, evidence, submitted_at}"""
@@ -1170,12 +1195,12 @@ class KpiResult(Base, TimestampMixin):
     )
 
     # 확정 (D15)
-    final_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    """확정 최종 점수 (= admin_adjusted_score ?? value, 확정 시 설정)"""
+    final_score: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    """확정 최종 점수 (= admin_adjusted_score ?? value, 확정 시 설정, NUMERIC(10,2))"""
     finalized_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
-        nullable=True,
-        index=True
+        nullable=True
+        # 인덱스는 idx_kpi_result_finalized(명시 Index)만 사용 (A3-20 중복 제거)
     )
     """확정 시각 (UTC, NULL = 미확정)"""
 
@@ -1201,6 +1226,7 @@ class KpiResult(Base, TimestampMixin):
         Index("idx_kpi_result_objection", "objection_status"),
         Index("idx_kpi_result_pushed", "pushed_to_erp", "pushed_at"),
         Index("idx_kpi_result_finalized", "finalized_at"),
+        CheckConstraint("value >= 0", name="ck_kpi_value_nonnegative"),
     )
 
 
@@ -1224,7 +1250,7 @@ class DailyStatusPush(Base, TimestampMixin):
         index=True
     )
     """RESTRICT: 전송 이력 보존(D18)"""
-    push_date: Mapped[datetime] = mapped_column(Date, nullable=False)
+    push_date: Mapped[date] = mapped_column(Date, nullable=False)
     """푸시 대상 날짜 (KST 경계)"""
     target: Mapped[DailyStatusPushTarget] = mapped_column(
         SQLEnum(DailyStatusPushTarget),
@@ -1250,7 +1276,7 @@ class DailyStatusPush(Base, TimestampMixin):
     """실패 사유 요약 (재시도 판정용)"""
     retry_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     """재시도 횟수 (최대 3, 지수 백오프)"""
-    run_id: Mapped[Optional[UUID]] = mapped_column(None, nullable=True, index=True)
+    run_id: Mapped[Optional[UUID]] = mapped_column(nullable=True, index=True)
     """배치 실행 식별자 (멱등성·감사)"""
 
     # 관계
@@ -1269,57 +1295,79 @@ class DailyStatusPush(Base, TimestampMixin):
 
 class Asset(Base, TimestampMixin):
     # @TASK T16.0 - 3D 에셋 레지스트리
-    # @SPEC 04-data-model.md §2.6
+    # @SPEC docs/planning/07-3d-visual-asset-pipeline.md §5.3 v1.1 (정본, C4-c)
     """
-    3D 에셋 메타데이터 (Blender → GLB → Godot)
+    3D 에셋 메타데이터 (Blender → GLB → .tscn → Godot)
 
-    라이선스/저작권 추적
+    - PK는 카탈로그 키 문자열 (예: "reception-desk-v1.0") — 05 layout asset_id와 직접 조인
+    - 라이선스/저작권 추적 + 성능 예산(polygon/파일 크기) 정본 소스
     """
     __tablename__ = "asset"
 
-    asset_id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    asset_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    asset_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    """카탈로그 키 (예: "reception-desk-v1.0")"""
+    asset_name: Mapped[str] = mapped_column(String(256), nullable=False)
+    """표시명 (예: "Reception Desk")"""
     asset_type: Mapped[AssetType] = mapped_column(
         SQLEnum(AssetType),
         nullable=False,
         index=True
     )
+    """furniture | structure | material | ui3d | character | environment"""
     asset_category: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    """가구, 조명, 장식 등"""
-    source_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
-    """원본 다운로드 URL (ambientCG, Poly Haven)"""
-    author: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    """office | meeting-room | lounge | lobby 등"""
+    source_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    """원본 다운로드 URL (CC0 소스: ambientCG, Poly Haven)"""
+    author: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
     """에셋 제작자"""
-    license: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
-    """CC0, CC-BY, MIT, Commercial 등"""
-    license_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
-    downloaded_at: Mapped[datetime] = mapped_column(
+    license: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    """CC0 | CC-BY | custom | proprietary"""
+    license_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    """라이선스 문서 링크"""
+    downloaded_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc)
-    )
-    """다운로드 시각 (UTC)"""
-    modified_by: Mapped[Optional[int]] = mapped_column(
-        BigInteger,
-        ForeignKey("erp_user.id", ondelete="SET NULL"),
         nullable=True
     )
-    """최종 수정자"""
+    """최초 취득 시각 (UTC)"""
+    modified_by: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    """수정/가공한 사람 (자유텍스트 — 07 §5.3)"""
     commercial_allowed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    attribution_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    """상업적 사용 가능"""
+    attribution_required: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     """저작권 표시 필수"""
-    redistribution_allowed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    redistribution_allowed: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    """수정본 재배포 가능"""
     original_file_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    """SHA256 (변조 감지)"""
+    """원본 SHA-256 (변조 감지)"""
     optimized_file_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    """최적화 후 GLB SHA256"""
-    file_size_mb: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    """최적화 후 GLB SHA-256"""
+    tscn_path: Mapped[str] = mapped_column(String(256), nullable=False)
+    """res://assets/3d/models/<name>/<name>.tscn (배포 산출물, 05 ASSET_CATALOG 조회 대상)"""
+    source_glb_path: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    """임포트 소스 glb (저장소 보관, pak 미포함)"""
+    file_size_bytes: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    """산출물 크기 (성능 예산 참고용, CDN 아님 — 런타임 다운로드 없음/D8)"""
+    polygon_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    """트라이앵글 수 (LOD 0). 05 performance 파생 계산의 정본 소스"""
+    texture_resolution: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    """예: "2048x2048" """
+    dimension: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    """실측 크기 {"width":1.5,"depth":0.8,"height":0.75}(m). 05 좌석↔가구 정합·검증의 정본"""
+    footprint_2d: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    """편집기 도면용 2D 풋프린트 {"width":1.5,"depth":0.8}(m)"""
+    thumbnail_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    """편집기 팔레트 썸네일"""
     used_in_scene: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
-    """사용 장면 배열"""
+    """사용 장면 배열 (예: ["stage1_lobby", "stage1_office"])"""
+    external_dependencies: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    """의존 에셋 (예: materials/wood_floor_006)"""
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-
-    # 관계
-    modified_by_user: Mapped[Optional["ErpUser"]] = relationship("ErpUser")
+    """커스텀 메타데이터, 사용 노트"""
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    """soft delete 시각 (NULL = 활성)"""
 
     __table_args__ = (
         Index("idx_asset_type_category", "asset_type", "asset_category"),

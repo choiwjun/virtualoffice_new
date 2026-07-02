@@ -1,0 +1,112 @@
+version: "2.0"
+
+screen:
+  name: KPI 이의신청 (KPI Objection)
+  route: /kpi/objection # 직원 제출 뷰. 관리자 재검토 뷰는 /admin/kpi/objections
+  platform: web
+  layout: sidebar-main
+  required_role: employee # 제출은 전 역할, 재검토·확정은 admin 전용(§3.10)
+
+data_requirements:
+  - resource: kpi_result
+    needs: [id, user_id, period_type, period_key, metric, value, final_score, objection_status, objection_detail, objection_submitted_at, objection_resolved_at, admin_adjusted_score, admin_note, finalized_at]
+    filters:
+      user_id: "?user_id"
+      objection_status: "?objection_status"
+    mutations: [update]
+    access: read-write
+    note: 직원은 objection_status/objection_detail/objection_submitted_at만 갱신 가능(04 권한). 상태머신 none→submitted→reviewing→resolved (D15)
+
+  - resource: erp_user
+    needs: [id, name, erp_team_id, role]
+    access: read-only
+    note: 신청자 표시, 관리자 뷰의 대상 직원 정보
+
+components:
+  - id: my-evaluation-card
+    type: panel
+    position: main
+    function: "직원 뷰: 내 평가(기간, 종합점수, [상세 근거 보기]) + 이의신청 가능 기한(공개 후 7일 창, D-n 표시)"
+    data_source:
+      resource: kpi_result
+
+  - id: objection-form
+    type: form
+    position: main
+    function: "직원 뷰: [이의신청] — 사유 입력(필수), 근거 링크(선택) → objection_detail {category, text, evidence, submitted_at}"
+    data_source:
+      resource: kpi_result
+
+  - id: objection-status-tracker
+    type: badge
+    position: main
+    function: "진행 상태 표시: none(공개) → submitted(접수) → reviewing(재검토중) → resolved(확정) 단계 인디케이터"
+    data_source:
+      resource: kpi_result
+
+  - id: admin-objection-queue
+    type: table
+    position: main
+    function: "관리자 뷰: 이의신청 접수 목록(신청자/기간/접수일/기한 D-n), 행 클릭 → 재검토 패널"
+    data_source:
+      resource: kpi_result
+
+  - id: admin-review-panel
+    type: panel
+    position: right
+    function: "관리자 뷰: 사유·근거 확인 → [재검토 시작] → [점수 유지] / [조정: 값 입력] + 코멘트(admin_note) → [확정]"
+    data_source:
+      resource: kpi_result
+
+events:
+  - on: submit-objection
+    do: "objection_status: none → submitted, objection_detail 저장, objection_submitted_at=now. 기한(공개 후 7일) 경과 시 제출 버튼 비활성"
+
+  - on: admin-start-review
+    do: "objection_status: submitted → reviewing"
+
+  - on: admin-resolve
+    do: "objection_status: reviewing → resolved, objection_resolved_at=now. 조정 시 admin_adjusted_score·admin_note 갱신 → final_score 재계산·finalized_at 갱신 → ERP 재push(upsert, D15)"
+
+  - on: objection-status-changed
+    do: "신청자에게 알림 발송 + objection-status-tracker 갱신"
+
+tests:
+  - name: "직원 이의신청 제출 (정상)"
+    when: "공개된 평가(objection_status=none, 기한 내)에서 사유 입력 후 [이의신청] 클릭"
+    then:
+      - "objection_status가 none → submitted로 전이"
+      - "objection_detail에 {category, text, evidence, submitted_at} 저장"
+      - "objection-status-tracker가 '접수완료' 단계 표시"
+      - "관리자 큐(admin-objection-queue)에 신규 항목 노출"
+
+  - name: "기한 경과 시 제출 차단"
+    when: "이의신청 창(공개 후 7일) 경과 후 화면 진입"
+    then:
+      - "[이의신청] 버튼 비활성 + '기한 만료' 안내"
+      - "objection_status는 none 유지"
+
+  - name: "관리자 재검토 → 점수 조정 확정"
+    when: "관리자가 submitted 항목에서 [재검토] → 조정값·코멘트 입력 → [확정]"
+    then:
+      - "submitted → reviewing → resolved 순서로 전이(단계 건너뛰기 불가)"
+      - "admin_adjusted_score·admin_note 저장, objection_resolved_at 기록"
+      - "final_score = admin_adjusted_score로 갱신, finalized_at 갱신"
+      - "ERP 재push(upsert) 트리거(D15) + 신청자 알림"
+
+  - name: "관리자 재검토 → 점수 유지"
+    when: "관리자가 [점수 유지] + 코멘트 입력 후 [확정]"
+    then:
+      - "objection_status=resolved, admin_note에 사유 저장"
+      - "final_score 변동 없음(기존 값 유지), ERP 재push 없음 또는 동일값 upsert"
+
+  - name: "권한 경계"
+    when: "일반 직원이 /admin/kpi/objections 접근 또는 타인 kpi_result에 이의신청 시도"
+    then:
+      - "권한 없음 화면(§3.10) 표시"
+      - "직원의 쓰기 권한은 본인 행의 objection_* 필드로 한정(04 GRANT)"
+
+notes:
+  - "상태머신 정본: none → submitted → reviewing → resolved (D15, 04 §2.5)"
+  - "이의신청 창: 평가 공개 후 7일(06 §3.7)"
+  - "확정 시 ERP 재push는 final_score만 metric 단위 upsert(D15)"

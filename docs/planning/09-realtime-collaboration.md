@@ -2,7 +2,7 @@
 
 실시간 & 협업 명세
 
-**버전**: v1.1  
+**버전**: v1.2  
 **작성일**: 2026-07-02 (최초 2026-07-01)  
 **대상**: 가상오피스 운영 플랫폼 개발팀  
 **상태**: 확정 반영(00-decisions.md v1.0 정합)
@@ -350,7 +350,7 @@ graph TD
 | 2 | (선택) AI | Claude API로 요약·결정사항·액션아이템 후보 추출 | `meeting_minute.ai_summary` |
 | 3 | 호스트/참석자 | STT 초안 **검토·수정·확정**. STT 실패 시 **수동 입력이 폴백** | `meeting_minute.notes` |
 | 4 | 참여자 | 액션아이템 추가 (담당자, 마감일, 설명) | `action_item` 레코드 |
-| 5 | 호스트/관리자 | 회의록 공식 발행 (status=`published`) | `meeting_minute.status` |
+| 5 | 호스트/관리자 | 회의록 공식 확정 (status=`finalized`, 04 enum: draft\|finalized) | `meeting_minute.status` |
 | 6 | 담당자 | 액션아이템 진행 (상태: todo→in_progress→completed) | `action_item.status` |
 
 - **누락률 기준(D22)**: 자동 초안의 발화자·액션아이템 누락률 < 5%(테스트 회의 N회 대비 수동 전사 대조로 측정).
@@ -377,7 +377,7 @@ graph TD
 
 **WebSocket(WSS, TCP 기반) — 확정 (D1)**:
 - 모든 메시지 순서 보장 및 신뢰성 확보 (별도 unreliable 채널 없음)
-- TLS 내장 → 재택 근무자의 방화벽/프록시 통과 용이, 사내 PKI 인증서 사용
+- TLS 내장 → 재택 근무자의 방화벽/프록시 통과 용이, Let's Encrypt 인증서 사용(Caddy 자동 발급, 2026-07-02)
 - 재접속 시 `sequence_num` 기반 스냅샷 재수신으로 상태 복구
 
 **폐기**: ENet(UDP) 및 "ENet TCP"(존재하지 않는 조합). UDP의 미세 지연 이점보다 재택 접속성·TLS 내장·구현 단순성을 우선.
@@ -530,7 +530,7 @@ sequenceDiagram
 ## 7. 향후 고려사항 (Won't in v3.2, Future)
 
 - [ ] **모바일 알림**: 화상 요청/회의 초대 → 모바일 푸시 (Out of scope)
-- [ ] **녹화 & 자동 요약**: LiveKit 클라우드 레코딩 + Gemini 요약
+- [ ] **녹화 & 자동 요약**: LiveKit Egress(자체 호스트) 레코딩 + Claude(기본)/Gemini(대안) 요약
 - [ ] **언어 자동 감지**: 회의록 다국어 지원
 - [ ] **엘리베이터**: floor 간 이동 애니메이션
 - [ ] **비공개 구역**: 권한 기반 접근 제어 (leader-only 미팅룸 등)
@@ -556,15 +556,15 @@ sequenceDiagram
 1. **LOS (광선 추적) 구현**: **PhysicsServer3D Raycast 기반 확정**(헤드리스 렌더러 미로드). 유리벽 레이어 마스크 설계 및 성능은 스파이크 S3(20명 부하)에서 측정.
 2. **근접 거리 임계값**: 5m이 UX상 최적인가? 사무실 규모에 따라 조정 필요.
 3. **[OQ3 확정] 상태 away 자동 전이 시간 = 5분**(설정 가능 기본값, D13). "미정의/N분" 표기 폐기. 운영 중 문화에 맞춰 기본값 조정 가능.
-4. **[OQ5 RESOLVED] LiveKit 호스팅**: Self-host 결정(온프렘 VM 또는 사내 클라우드 + Docker Compose). 단일 SFU 노드로 충분하며, 재택/하이브리드는 사내 VPN 또는 TURN-over-TLS(443)로 접속. 배제: SaaS(민감 미디어 외부 경유), 신규 AWS(데이터 주권 우선).
+4. **[OQ5 RESOLVED] LiveKit 호스팅**: Self-host 결정(온프렘 VM 또는 사내 클라우드 + Docker Compose). 단일 SFU 노드로 충분하며, 재택/하이브리드는 공개 엔드포인트 직결(UDP) + TURN-TLS 443 폴백 (VPN 없음 확정 2026-07-02). 배제: SaaS(민감 미디어 외부 경유), 신규 AWS(데이터 주권 우선).
 5. **회의록 AI 요약**: Claude 기본(Gemini 대안). 비용과 응답 시간 평가 후 선택.
 
 ### Assumptions
 - 사내 단일 테넌트(company_id) 배포이므로 멀티테넌트 회의 공유 로직 미포함.
-- ERP와 우리 플랫폼이 같은 VPN 내에 있어 네트워크 지연 < 50ms 가정.
+- ERP와 우리 플랫폼이 같은 사내 LAN(서버 PC ↔ ERP 서버)에 있어 네트워크 지연 < 50ms 가정.
 - Godot 헤드리스 서버가 씬 물리엔진(PhysicsServer3D, 렌더러 미로드)을 풀로 실행 가능. "CPU 리소스 충분" 가정은 **스파이크 S3(GDScript 헤드리스 20명 시뮬레이션 CPU/메모리 측정)로 검증**한다.
 - **[OQ3 결정]**: ERP `attendances` 테이블과 우리 3D `presence` 상태는 완전히 분리. ERP가 원본(check_in/out), 우리는 read-only로 읽기만 수행. v1에서 우리 플랫폼은 attendance 테이블을 쓰지 않음. 3D 프레즌스는 사용자 행동(로그인, 좌석 도착, 회의실 입장 등) 기반 자동 전이.
-- **[OQ5 결정]**: LiveKit은 self-host (온프렘 VM 또는 사내 클라우드 계정에 Docker Compose로 배포). 재택/외근자는 사내 VPN 또는 TURN-over-TLS(443 공개 엔드포인트)로 접속. 단일 SFU 노드로 충분하므로 오토스케일 불필요 → 1인 운영 부담 낮음. 배제: LiveKit SaaS(민감 미디어 외부 경유, 구독비), 신규 AWS(데이터 주권).
+- **[OQ5 결정]**: LiveKit은 self-host (온프렘 VM 또는 사내 클라우드 계정에 Docker Compose로 배포). 재택/외근자는 공개 엔드포인트 직결(UDP) + TURN-TLS 443 폴백으로 접속 (VPN 없음 확정 2026-07-02). 단일 SFU 노드로 충분하므로 오토스케일 불필요 → 1인 운영 부담 낮음. 배제: LiveKit SaaS(민감 미디어 외부 경유, 구독비), 신규 AWS(데이터 주권).
 - 모든 클라이언트가 Godot 4.x 네이티브 데스크톱 클라이언트 사용(웹 WASM export는 품질 이유로 제외).
 
 ### Validation criteria
@@ -577,7 +577,7 @@ sequenceDiagram
 
 ### Risks
 - **서버 권위 모델의 CPU 병목**: 모든 이동 명령을 검증하므로 동시 접속자 수 증가 시 병목 가능. → 차후 서버 확장 또는 메시지 배치 처리 필요.
-- **LiveKit 자체 호스트의 운영 복잡도**: 클라우드 서비스(Twilio LiveKit Cloud) 대비 관리 부담 높음. → 팀 역량 확보 필수.
+- **LiveKit 자체 호스트의 운영 복잡도**: 클라우드 서비스(LiveKit Cloud) 대비 관리 부담 높음. → 팀 역량 확보 필수.
 - **ERP 동기화 지연**: ERP read-only 접근 중 쿼리가 느리면 presence 갱신이 지연될 수 있음. → 캐싱 전략 수립 필요.
 - **모바일 클라이언트 부재**: 사내에서도 모바일 사용자가 있을 경우 불만족. → 완성 후 별도 모바일 앱 검토(웹 WASM은 품질 이유로 후순위).
 
@@ -589,3 +589,4 @@ sequenceDiagram
 |------|------|-----------|
 | v1.0 | 2026-07-01 | 최초 작성 |
 | v1.1 | 2026-07-02 | 00-decisions.md v1.0 정합 반영 — D1(WSS 확정, "현재 선택 ENet" 폐기, 헤드리스 렌더러 미로드·Web WASM 제거, 재접속 sequence_num 스냅샷), D3(동기화 시퀀스 FastAPI 경유·presence 메모리 권위+1~5초 배치 push), D4(login(email,password)→JWT 핸드셰이크·protocol_version), D5(STT 정식 포함·회의록 STT 자동 초안→검토 확정), D13(상태 10종→7종·GPS 상태 삭제·external 수동·전이 다이어그램 working 포함 재작성·away 5분 확정), D22(p95<500ms·tick 20Hz·검증 20명), D24(자동 연결 금지 원칙 유지+02 정합 명시), LOS PhysicsServer3D Raycast 명시, CPU 가정 스파이크 S3 참조 |
+| v1.2 | 2026-07-02 | 배포·네트워크 확정 반영 — VPN 없음 확정(LiveKit 공개 엔드포인트 직결 UDP + TURN-TLS 443 폴백, WSS 인증서 사내 PKI→Let's Encrypt), ERP 연결 표기 "같은 VPN"→같은 사내 LAN(서버 PC ↔ ERP 서버), 녹화·요약 "LiveKit 클라우드 레코딩+Gemini"→LiveKit Egress(자체 호스트)+Claude(기본)/Gemini(대안), "Twilio LiveKit Cloud"→LiveKit Cloud 표기 정정, meeting_minute status published→finalized(04 enum 정합) |

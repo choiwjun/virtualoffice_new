@@ -106,10 +106,10 @@ FK: company_id, user_id
 
 필드:
   - id, company_id, user_id
-  - date(work_date, unique: (user_id, date))
+  - attendance_date (unique: (user_id, attendance_date))  (라이브 검증 2026-07-02)
   - check_in_at(UTC), check_out_at(UTC)
   - work_type(enum: office|remote)  (ERP 라이브 스키마 기준 재확인 권장)
-  - created_at, updated_at
+  - created_at — ⚠️ updated_at 없음(라이브 검증 2026-07-02). 기타 컬럼: estimated_check_out_at, is_reminded(우리 미사용)
 
 특징: 휴일 판단은 런타임 계산(db 없음). KST 타임존 하드코딩.
       휴가/병가/반차 등은 leaves 테이블 별개(leave_type: vacation|sick|half_day|other).
@@ -148,6 +148,9 @@ developer_evaluations: ai_review(Gemini, 텍스트)만 저장.
 developer_daily_evaluations: 일일 AI 초안.</code></pre>
 <h4 id="external_activities"><strong>external_activities</strong></h4>
 <pre class="code"><code>GitHub/Jira 활동 피드. APScheduler poll로 채움. 읽기만.</code></pre>
+<h4 id="meeting_rooms-meeting_room_shares-meeting_reservations"><strong>meeting<em>rooms / meeting</em>room<em>shares / meeting</em>reservations</strong></h4>
+<pre class="code"><code>ERP에 회의실 예약 기능 기존재(라이브 확인 2026-07-02).
+우리 회의 기능과의 관계(무시/미러/통합)는 OQ13(13-risks) 참조, Phase 5 착수 전 결정.</code></pre>
 <h3 id="13-api-상태-중요">1.3 API 상태 (중요)</h3>
 <h4 id="읽기-가능">읽기 가능</h4>
 <ul><li><code>GET /api/users</code> → 사용자 목록(필터/페이징)</li><li><code>GET /api/teams</code> → 팀 목록</li><li><code>GET /api/positions</code> → 직급(admin 이상)</li><li><code>GET /api/leaves</code> → 휴가(기간/사용자 필터)</li><li><code>GET /api/attendance/admin/record?user_id=&amp;date=</code> → 단건 근태</li></ul>
@@ -372,7 +375,7 @@ Response (저장 결과):
 <h3 id="51-신규-테이블-kpi_results">5.1 신규 테이블: kpi_results</h3>
 <p><strong>정본 기준</strong>: ERP kpi<em>results는 스칼라 스키마(metric VARCHAR + value FLOAT) 사용, <strong>확정 점수만</strong> 저장. period는 <code>period_type</code> + <code>period_key</code>로 분리(D16). ai</em>draft/admin_*/이의신청 워크플로우는 우리 플랫폼 DB <code>kpi_result</code>에 인라인(04 §2.5). <code>kpi_result_review</code> 테이블은 폐기(D16).</p>
 <p><strong>Alembic 마이그레이션</strong>:</p>
-<pre class="code lang-python"><code># alembic/versions/0010_add_kpi_results.py
+<pre class="code lang-python"><code># migrations/alembic/versions/0001_kpi_results_table.py  (실존 파일명과 통일, 2026-07-02)
 
 def upgrade():
     op.create_table(
@@ -1004,7 +1007,7 @@ class AuditLog(SQLModel, table=True):
 <h3 id="open-questions">Open Questions</h3>
 <ul><li class="task"><input type="checkbox" disabled> ERP POST /api/reports가 서비스계정으로 대상 user_id 대리 작성을 지원하는가? (§6.3 가정)<ul><li>미지원 시 대안: (a) 기존 엔드포인트 확장 또는 (b) 신규 대리작성 엔드포인트 추가</li></ul></li><li class="task"><input type="checkbox" disabled> ERP POST /api/auth/service-token 엔드포인트 신설 일정 및 구현 담당자 확정 (§5.3)</li><li class="task"><input type="checkbox" disabled> ERP daily_reports.status 라이브 enum 값 확인(문서 표기는 08과 동일하게 통일: draft|submitted|reviewed)</li><li><del>재시도 정책 세부사항</del> → <strong>종결(D17)</strong>: 지수 백오프, 최대 3회, target별 분리, 정규 배치 우선(upsert). (§6.4)</li><li><del>ERP kpi_results 미준비 대응</del> → <strong>종결(D17)</strong>: feature flag + 로컬 적재 + backfill. (§6.5)</li><li class="task"><input type="checkbox" disabled> ERP dev 브랜치 병합 일정 및 프로덕션 배포 타이밍(→ §6.5 backfill로 디커플링됨)</li></ul>
 <h3 id="assumptions">Assumptions</h3>
-<ul><li>ERP DB는 read-only 계정으로 접근 가능(사내 DBA 협조)</li><li>ERP main 브랜치는 우리가 수정하지 않음(feature/virtual-office-integration만)</li><li>ERP는 서비스계정 토큰 발급 엔드포인트(POST /api/auth/service-token) 제공 (§5.3)<ul><li>우리는 service<em>secret만 보유, ERP가 JWT 발급 → 우리가 전역 SECRET</em>KEY를 보유하지 않음 (보안)</li></ul></li><li>모든 ERP 쿼리는 company_id 스코프 필수</li><li>attendances.updated_at은 ERP에서 관리(우리가 임의 수정 X)</li><li>단일 회사(company_id) 기준(B2B 멀티테넌트는 이후 버전)</li></ul>
+<ul><li>ERP DB는 read-only 계정으로 접근 가능(사내 DBA 협조)</li><li>ERP main 브랜치는 우리가 수정하지 않음(feature/virtual-office-integration만)</li><li>ERP는 서비스계정 토큰 발급 엔드포인트(POST /api/auth/service-token) 제공 (§5.3)<ul><li>우리는 service<em>secret만 보유, ERP가 JWT 발급 → 우리가 전역 SECRET</em>KEY를 보유하지 않음 (보안)</li></ul></li><li>모든 ERP 쿼리는 company_id 스코프 필수</li><li>attendances는 read-only(우리 쓰기 X). updated<em>at 컬럼 없음(라이브 검증 2026-07-02) → 증분 동기화는 attendance</em>date 범위 기반</li><li>단일 회사(company_id) 기준(B2B 멀티테넌트는 이후 버전)</li></ul>
 <h3 id="validation-criteria">Validation Criteria</h3>
 <ul><li class="task"><input type="checkbox" disabled> ERP read-only DB 연결 테스트</li><li class="task"><input type="checkbox" disabled> 동기화 시 company_id 필터 적용 확인</li><li class="task"><input type="checkbox" disabled> EOD 배치 멱등성 테스트(2회 실행 → 같은 결과)</li><li class="task"><input type="checkbox" disabled> 서비스계정 JWT 발급 및 검증</li><li class="task"><input type="checkbox" disabled> daily<em>reports + kpi</em>results ERP 수신 확인</li><li class="task"><input type="checkbox" disabled> 네트워크 장애 시 부분 성공/재시도 동작 검증</li><li class="task"><input type="checkbox" disabled> 스키마 드리프트 감지(alembic version check)</li></ul>
 <h3 id="risks">Risks</h3>

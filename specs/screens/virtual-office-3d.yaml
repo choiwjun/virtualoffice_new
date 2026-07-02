@@ -4,6 +4,7 @@ screen:
   name: 3D Main Office
   platform: godot-native
   layout: split-3d-hud
+  required_role: employee # §3.10 — 전 역할 접근(입장·이동·프레즌스)
 
 data_requirements:
   - resource: erp_user
@@ -33,8 +34,15 @@ data_requirements:
 
   - resource: seat
     needs: [id, floor_id, team_zone_id, type, assigned_user_id, coords, status, seat_number]
-    access: read-only
-    note: 오픈좌석 3D 배치, 할당 여부, 상태(available/occupied/disabled)
+    mutations: [update]
+    access: read-write
+    note: 오픈좌석 3D 배치, 할당 여부, 상태. 자율좌석(free) 점유/반납 시 assigned_user_id 갱신(§3.11, 05 D10)
+
+  - resource: seat_assignment_history
+    needs: [id, seat_id, user_id, assigned_at, unassigned_at]
+    mutations: [create, update]
+    access: read-write
+    note: 좌석 점유 시 이력 INSERT(assigned_at), 자동 반납 시 unassigned_at 갱신(§3.11)
 
   - resource: room
     needs: [id, floor_id, type, name, capacity, coords, enter_trigger, livekit_room, status]
@@ -135,7 +143,13 @@ events:
     do: "distance < 2m to room.enter_trigger → show 'Enter Meeting' modal prompt"
 
   - on: user-click-enter-meeting-room
-    do: "POST meeting_participant(meeting_id, user_id, joined_at=now, role=participant) → request LiveKit token from server → update presence.status='meeting' → connect audio/video"
+    do: "녹음·STT 동의 배너 표시(D20-b: '이 회의는 회의록 자동 작성을 위해 녹음·전사됩니다', [동의하고 참여]/[오디오 없이 참여(전사 제외)]) → POST meeting_participant(meeting_id, user_id, joined_at=now, role=participant) → request LiveKit token from server → update presence.status='meeting' → connect audio/video (오디오 제외 선택 시 마이크 미수집)"
+
+  - on: user-click-free-seat
+    do: "빈 자율좌석(seat.type=free, assigned_user_id=null) 클릭 → '이 자리에 앉기' 프롬프트 → 확인 시 서버가 seat.assigned_user_id=본인 설정 + seat_assignment_history INSERT(assigned_at) → 아바타 착석(seat.facing 방향) + 좌석 이름표 표시. 이미 점유된 좌석은 '사용 중' 표시, 고정좌석(fixed)은 배정자 외 점유 불가 (§3.11)"
+
+  - on: user-logout-or-long-away
+    do: "퇴근/오프라인 전이(away 장기화 등) → 서버가 seat.assigned_user_id=NULL + seat_assignment_history.unassigned_at 갱신(자동 반납) → 좌석 다시 free 표시 (§3.11)"
 
   - on: user-click-search-bar
     do: "filter presence list by name/team keyword → highlight matching avatar in viewport + move camera to focus"
@@ -157,7 +171,7 @@ tests:
     when: 사용자 첫 로그인, office_layout 로드 완료, presence 레코드 신규 생성(로비 좌표)
     then:
       - 3D viewport 중앙에 오버레이 모달 표시 "🎯 가상오피스에 오신 걸 환영합니다"
-      - "[게임처럼 시작하기] [튜토리얼]" 버튼 표시
+      - "\"[게임처럼 시작하기] [튜토리얼]\" 버튼 표시"
       - 튜토리얼 텍스트 "W/A/S/D로 이동, 마우스로 회전합니다. 근처 직원을 클릭하면 채팅할 수 있습니다"
       - 좌측 sidebar Online People 목록에 현재 office의 presence.status='online' 직원 나열
       - 우측 panel 팀별 그룹 표시
@@ -186,10 +200,10 @@ tests:
     then:
       - ❌ 오류 모달 표시 "회의실에 입장할 수 없습니다"
       - 원인 리스트 표시:
-        - "회의실 용량이 가득 찼습니다" (if capacity exceeded)
-        - "회의가 종료되었습니다" (if meeting.ended_at < now)
-        - "네트워크 연결이 불안정합니다" (if timeout)
-      - "[재시도] [처음으로] [고객지원]" 버튼
+        - "\"회의실 용량이 가득 찼습니다\" (if capacity exceeded)"
+        - "\"회의가 종료되었습니다\" (if meeting.ended_at < now)"
+        - "\"네트워크 연결이 불안정합니다\" (if timeout)"
+      - "\"[재시도] [처음으로] [고객지원]\" 버튼"
       - presence.status는 여전히 'working'으로 유지 (입장 실패)
 
   - name: Search Employee & Camera Track
@@ -202,9 +216,9 @@ tests:
 
 open_questions:
   - 아바타 스타일 커스터마이징(Settings) 인터페이스는 3D viewport 내 캐릭터 크리에이터로 구현? 아니면 웹 콘솔(separate tab)로 이동?
-  - "화면 공유(Share)" 기능이 LiveKit room 기반 화면공유인지, 아니면 viewport 자체를 스트림하는 방식인지?
+  - "\"화면 공유(Share)\" 기능이 LiveKit room 기반 화면공유인지, 아니면 viewport 자체를 스트림하는 방식인지?"
   - 집중실(Focus Room) 입장 시 다른 직원 아바타를 viewport에서 표시/숨길지 여부 (privacy)?
   - Godot HeadlessServer ↔ Web API 간 presence 동기화 최대 지연시간(SLA)?
-  - "협업 제스처" (근접 1m 시 "+1 nearby") 구현은 3D viewport에 텍스트로 표시하는 방식?
+  - "\"협업 제스처\" (근접 1m 시 \"+1 nearby\") 구현은 3D viewport에 텍스트로 표시하는 방식?"
   - 회의 녹화(recording_url) 재생/다운로드 버튼의 위치 (footer / right-panel / 별도 modal)?
   - 미니맵(minimap)에서 team_zone 경계(polygon)를 색상으로 표시할지 여부?

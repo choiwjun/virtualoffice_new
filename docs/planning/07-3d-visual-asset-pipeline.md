@@ -2,7 +2,7 @@
 
 ## 메타 정보
 - **문서명**: 3D 비주얼 & 오픈에셋 파이프라인
-- **버전**: 1.1
+- **버전**: 1.2
 - **작성일**: 2026-07-01
 - **최종 갱신**: 2026-07-02
 - **담당자**: 3d-engine-specialist
@@ -63,7 +63,7 @@
 
 #### HUD & 오버레이 UI
 - **직원 이름 태그**: 아바타 머리 위 텍스트, 거리별 페이드(20m 이상 숨김)
-- **상태 뱃지**: 온라인/작업중/회의중/집중중/이동중/외출 아이콘, 색상 코드
+- **상태 뱃지**: D13 7종(offline/online/working/meeting/focus/away/external — 오프라인/온라인/작업중/회의중/집중중/자리비움/외출) 아이콘, 색상 코드. 화면 표시 시 오프라인 제외 6종("이동중" 상태는 폐기, D13)
 - **우측 직원 패널**: 현재 시각 + 출근한 직원 목록(팀별) + 실시간 프레즌스 표시
 - **하단 회의 패널**: 진행 중인 회의실 목록 + 참가자 얼굴 + 입장 버튼
 - **미니맵**: 우측 하단 고정(05·06과 통일), 층/구역 토글, 아바타·회의실·클릭 네비게이션
@@ -211,9 +211,9 @@ CC0 > CC-BY > (금지) > 구매/자체제작
 | **모니터 스크린** | 장비 | 회의·라운지·데스크 | 낮음 | 4h | Blender 또는 Quaternius | 디스플레이 표면 UV 매핑 |
 | **LED 라인조명** | 구조 | 천장·벽 - 간접광 원천 | 낮음 | 5h | Blender | 이미시브 재질, 색온도 변형 |
 | **미니맵 구조물** | UI 3D | HUD - 평면도 기준 | 낮음 | 4h | Blender | 투명도 조정 |
-| **상태 뱃지 UI** | UI 3D | 아바타 상태 표시 | 낮음 | 3h | Blender + UI 설정 | 빌보드, 6가지 상태 아이콘 |
+| **상태 뱃지 UI** | UI 3D | 아바타 상태 표시 | 낮음 | 3h | Blender + UI 설정 | 빌보드, 상태 아이콘 D13 7종(화면 표시는 오프라인 제외 6종) |
 | **회의실 플로팅 라벨** | UI 3D | 회의실 이름·점유 상태 | 낮음 | 3h | Blender + shader | 거리별 페이드, 항상 정면 향 |
-| **아바타 변형 5~10명** | 캐릭터 | Stage 1 - 기본 휴머노이드 + 색상 변형 | 높음 | 40h (베이스 리깅 + 변형, 2배 버퍼 포함) | **Mixamo/기성 리그 활용(정식 계획)** + Blender | 자동 리깅(Mixamo) 후 색상·프로포션 변형. 커스텀 리깅은 최소 2배 버퍼. 상세 08 문서 참조 |
+| **아바타 변형 5~10명** | 캐릭터 | Stage 1 - 기본 휴머노이드 + 색상 변형 | 높음 | 40h (베이스 리깅 + 변형, 2배 버퍼 포함) | **Mixamo/기성 리그 활용(정식 계획)** + Blender | 자동 리깅(Mixamo) 후 색상·프로포션 변형. 커스텀 리깅은 최소 2배 버퍼. 리깅 상세는 본 문서 §4.1 및 P1-S1-T4 태스크 산출물로 정의 |
 
 ### 4.2 자체 제작 가이드라인
 
@@ -383,6 +383,8 @@ assets/
 - QA 체크리스트 완료
 
 ### 5.3 Asset Registry 스키마
+
+> **정본 선언(2026-07-02 동기화)**: 이 스키마가 asset 테이블의 **정본(SoT)**이며, 04-data-model.md §2.6은 이를 참조(사본 동기화)한다. 충돌 시 본 절이 이긴다.
 
 #### 테이블: asset
 
@@ -584,7 +586,7 @@ func _ready():
 | 파티션·집중실·라운지 | 24h | Ready to start |
 | 모니터·LED·테이블 | 17h | Ready to start |
 | 미니맵·UI 뱃지·라벨 | 10h | Ready to start |
-| 아바타 5~10명 (Mixamo/기성 리그 활용, 2배 버퍼) | 40h | 별도 문서(08) |
+| 아바타 5~10명 (Mixamo/기성 리그 활용, 2배 버퍼) | 40h | 본 문서 §4.1·P1-S1-T4 산출물 |
 | 텍스처 수집 & 최적화(Godot 임포트) | 20h | Ready to start |
 | 씬 통합 & 성능 검증 | 16h | Ready to start |
 | **소계** | **~167h** | **~4주 (1인 풀타임)** |
@@ -592,7 +594,7 @@ func _ready():
 ### 7.2 Stage 2 (통합) 일정
 
 - ERP 동기화 모듈 추가: +40h
-- 좌석 배정 시스템(05 `seat_assignment` 연동, D10): +24h
+- 좌석 배정 시스템(04 `seat.assigned_user_id`+`seat_assignment_history` 연동, D10): +24h
 - **총 Stage 1+2: ~231h (~6주)**
 
 > 위 시간은 3D/에셋 작업만의 추정이며, 전체 프로젝트 기준선은 **58주(D6)**다(10-roadmap.md). Stage 1+2(~6주)는 그 기준선 안의 3D 파이프라인 몫으로, D6과 모순되지 않는다. 아바타·커스텀 제작 시간은 최소 2배 버퍼를 반영했다.
@@ -605,58 +607,50 @@ func _ready():
 
 ```
 vituraloffice_new/
-├── assets/
-│   ├── 3d/
-│   │   ├── models/
-│   │   │   ├── brand_wall/
-│   │   │   │   ├── brand_wall.tscn         # 배포 산출물(pak 동봉). 05 ASSET_CATALOG 조회 대상
-│   │   │   │   ├── raw/
-│   │   │   │   │   └── brand_wall_v1.0.glb # 임포트 소스(저장소 보관, pak 미포함)
-│   │   │   │   ├── thumb.png               # 편집기 팔레트 썸네일
-│   │   │   │   ├── textures/
-│   │   │   │   │   ├── logo_albedo.png (2K)
-│   │   │   │   │   ├── wall_normal.png
-│   │   │   │   │   └── wall_roughness.png
-│   │   │   │   └── METADATA.json
-│   │   │   ├── reception_desk/
-│   │   │   ├── meeting_room_glass/
-│   │   │   ├── open_desk/
-│   │   │   └── ...
-│   │   ├── materials/
-│   │   │   ├── pbr/
-│   │   │   │   ├── wood_floor_006/ (from ambientCG)
-│   │   │   │   ├── concrete_wall/
-│   │   │   │   └── metal_frame/
-│   │   │   └── shaders/
-│   │   │       ├── glass.gdshader
-│   │   │       ├── emissive_led.gdshader
-│   │   │       └── billboard_ui.gdshader
-│   │   ├── hdri/
-│   │   │   └── kloppenheim_06_puresky_4k.exr (from Poly Haven)
-│   │   └── avatars/
-│   │       ├── base_male/
-│   │       └── base_female/
-│   ├── ui/
-│   │   ├── icons/
-│   │   │   ├── status_online.png
-│   │   │   ├── status_meeting.png
-│   │   │   └── ...
-│   │   └── fonts/
-│   │       └── roboto_mono_nerd.otf
-│   └── LICENSE/
-│       ├── THIRD_PARTY_LICENSES.md
-│       ├── brand_wall.txt (라이선스 명시)
-│       └── ...
-├── docs/
-│   ├── planning/
-│   │   ├── 07-3d-visual-asset-pipeline.md (이 문서)
-│   │   └── ASSET_REGISTRY.md (레지스트리 쿼리 예시)
-│   └── 3d/
-│       ├── GODOT_SETUP.md (엔진 설정)
-│       ├── SHADER_LIBRARY.md (커스텀 셰이더)
-│       └── SCENE_STRUCTURE.md (씬 구조)
 ├── godot/
 │   ├── project.godot
+│   ├── assets/                                 # Godot 프로젝트 하위 — res://assets/... 경로와 정합
+│   │   ├── 3d/
+│   │   │   ├── models/
+│   │   │   │   ├── brand_wall/
+│   │   │   │   │   ├── brand_wall.tscn         # 배포 산출물(pak 동봉). 05 ASSET_CATALOG 조회 대상
+│   │   │   │   │   ├── raw/
+│   │   │   │   │   │   └── brand_wall_v1.0.glb # 임포트 소스(저장소 보관, pak 미포함)
+│   │   │   │   │   ├── thumb.png               # 편집기 팔레트 썸네일
+│   │   │   │   │   ├── textures/
+│   │   │   │   │   │   ├── logo_albedo.png (2K)
+│   │   │   │   │   │   ├── wall_normal.png
+│   │   │   │   │   │   └── wall_roughness.png
+│   │   │   │   │   └── METADATA.json
+│   │   │   │   ├── reception_desk/
+│   │   │   │   ├── meeting_room_glass/
+│   │   │   │   ├── open_desk/
+│   │   │   │   └── ...
+│   │   │   ├── materials/
+│   │   │   │   ├── pbr/
+│   │   │   │   │   ├── wood_floor_006/ (from ambientCG)
+│   │   │   │   │   ├── concrete_wall/
+│   │   │   │   │   └── metal_frame/
+│   │   │   │   └── shaders/
+│   │   │   │       ├── glass.gdshader
+│   │   │   │       ├── emissive_led.gdshader
+│   │   │   │       └── billboard_ui.gdshader
+│   │   │   ├── hdri/
+│   │   │   │   └── kloppenheim_06_puresky_4k.exr (from Poly Haven)
+│   │   │   └── avatars/
+│   │   │       ├── base_male/
+│   │   │       └── base_female/
+│   │   ├── ui/
+│   │   │   ├── icons/
+│   │   │   │   ├── status_online.png
+│   │   │   │   ├── status_meeting.png
+│   │   │   │   └── ...
+│   │   │   └── fonts/
+│   │   │       └── roboto_mono_nerd.otf
+│   │   └── LICENSE/
+│   │       ├── THIRD_PARTY_LICENSES.md
+│   │       ├── brand_wall.txt (라이선스 명시)
+│   │       └── ...
 │   ├── scenes/
 │   │   ├── stage1_lobby.tscn
 │   │   ├── stage1_office.tscn
@@ -670,6 +664,14 @@ vituraloffice_new/
 │   │   ├── world/
 │   │   └── ui/
 │   └── addons/ (필요시)
+├── docs/
+│   ├── planning/
+│   │   ├── 07-3d-visual-asset-pipeline.md (이 문서)
+│   │   └── ASSET_REGISTRY.md (레지스트리 쿼리 예시)
+│   └── 3d/
+│       ├── GODOT_SETUP.md (엔진 설정)
+│       ├── SHADER_LIBRARY.md (커스텀 셰이더)
+│       └── SCENE_STRUCTURE.md (씬 구조)
 └── backend/
     ├── app/
     │   ├── models/
@@ -714,7 +716,7 @@ vituraloffice_new/
 - docs/3d/SCENE_STRUCTURE.md (신규 작성, 씬 조직)
 
 ### Open Questions
-- **아바타 리깅**: Humanoid 기본 구조인지 사내 고유 스키마인지? → 08 문서에서 정의
+- **아바타 리깅**: Humanoid 기본 구조인지 사내 고유 스키마인지? → 본 문서 §4.1(Mixamo/기성 리그) 및 P1-S1-T4 태스크 산출물로 정의(구 "08 문서" 참조는 삭제 — 08은 KPI 문서)
 - **HDRI 교체**: 사계절·날씨 표현 필요한가? (현재 기획: X)
 - **모바일 대응**: WASM 배포 시 텍스처 해상도 재조정 필요 범위는? → 로드맵 "완성 이후" 결정
 
@@ -722,7 +724,7 @@ vituraloffice_new/
 1. 사내 인트라넷 환경이라 CC0/CC-BY 에셋 사용 가능 (SA/NC/ND 배제, B2B 시 재검수 필수)
 2. Forward+ 렌더러가 **GTX 1650급에서 60fps / 내장그래픽에서 30fps**로 작동한다고 가정(D22). 라이트맵·전체 씬 Occluder 사전 베이크는 동적 씬이라 불가(D7)
 3. **Godot 4.x 안정 버전** 사용(Godot 4에는 별도 LTS 채널이 없음)
-4. 아바타는 **Mixamo/기성 리그를 정식 활용**하고, 사내 리깅 표준은 그 위에 정의(§4.1·08 문서)
+4. 아바타는 **Mixamo/기성 리그를 정식 활용**하고, 사내 리깅 표준은 그 위에 정의(§4.1·P1-S1-T4 태스크 산출물)
 5. 배포 산출물은 `.tscn`(클라이언트 pak 동봉), 런타임 glb 다운로드/CDN 없음(D8)
 
 ### Validation Criteria
@@ -744,6 +746,7 @@ vituraloffice_new/
 |------|------|----------|
 | 1.0 | 2026-07-01 | 초안 |
 | 1.1 | 2026-07-02 | 00-decisions 반영: D7 라이팅(실시간 직접광+ReflectionProbe+SSAO 기본·SDFGI 고사양 옵션, 라이트맵/Occluder 사전 베이크 배제 사유), D8 에셋 전달(.tscn pak 동봉·런타임 다운로드/CDN 배제·Draco/gltfpack 제거·Godot 임포트 최적화·경로 규약 05 통일), D9(회의실 골조 프리팹 제거→파라메트릭, 가구/소품만), 시간 재추정(Mixamo 정식 승격·§7.1 167h·§7.2 231h·D6 정합), asset 테이블 편집기 메타(footprint_2d·thumbnail_url·dimension·tscn_path) 및 dimension 일치 검증, 드로우콜 예산 MultiMesh 집행 규칙(개수 프록시 폐기), 사실 오류 정정(Poly Haven 연혁·ISO 14644 제거·CC-SA ShareAlike·Godot 4.x 안정판·메모리 2GB·미니맵 우측 하단), 성능 기준 D22(GTX 1650/내장) 통일 |
+| 1.2 | 2026-07-02 | 데이터 정본 정렬: 상태 뱃지를 D13 7종(offline/online/working/meeting/focus/away/external, 화면 표시 시 오프라인 제외 6종 — "이동중" 삭제·away 추가)으로 정정, 아바타 리깅의 깨진 "08 문서" 참조를 본 문서 §4.1·P1-S1-T4 산출물로 교체, §8 저장소 레이아웃의 assets/를 godot/ 하위로 이동(res:// 경로 정합), §5.3 asset 스키마 정본 선언(04 §2.6이 참조), §7.2 좌석 배정 참조를 04 정본(seat.assigned_user_id+seat_assignment_history)으로 정정 |
 
 ---
 

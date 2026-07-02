@@ -136,8 +136,8 @@ class ValidationContext:
     asset·ERP teams 조회 스켈레톤을 제공한다.
     """
     # asset_id(문자열 카탈로그 키) → polygon_count. 존재 확인 + 파생 계산에 사용.
-    # NOTE: 05 layout은 asset_id를 문자열 코드('DESK_STANDARD_001')로 쓰나
-    #       tables.py Asset.asset_id는 UUID PK다. 통합 시 카탈로그 코드 컬럼
+    # tables.py Asset.asset_id는 07 §5.3 v1.1 정본에 따라 VARCHAR(64) 카탈로그 키
+    # (예: 'reception-desk-v1.0')로, 05 layout asset_id와 직접 매칭된다.
     #       매핑이 필요(최종 보고 불일치 항목 참조).
     asset_polygons: dict[str, int] = field(default_factory=dict)
     asset_memory_mb: dict[str, float] = field(default_factory=dict)
@@ -856,10 +856,8 @@ async def build_context_from_db(session: Any, layout: dict[str, Any]) -> Validat
       - asset 테이블: layout에서 사용된 asset_id의 polygon_count/메모리(존재 확인 + 파생 계산)
       - ERP teams(미러): zones의 erp_team_id 유효성
 
-    NOTE(불일치): 05 layout의 asset_id는 문자열 카탈로그 코드이나 tables.py
-    Asset.asset_id는 UUID PK다. 통합 시 asset 테이블에 카탈로그 코드 컬럼
-    (예: catalog_key/asset_name)을 두고 그 컬럼으로 조회해야 한다. 아래는
-    그 매핑 컬럼이 존재한다고 가정한 스켈레톤이다.
+    Asset.asset_id는 07 §5.3 v1.1 정본에 따라 VARCHAR(64) 카탈로그 키
+    (예: "reception-desk-v1.0")이므로 05 layout의 asset_id와 직접 조인한다.
     """
     from sqlalchemy import select
     from app.models.tables import Asset, ErpUser  # 지연 임포트(순환 방지)
@@ -873,16 +871,14 @@ async def build_context_from_db(session: Any, layout: dict[str, Any]) -> Validat
 
     ctx = ValidationContext()
 
-    # --- asset 조회 (카탈로그 코드 컬럼 가정) ---------------------------------
+    # --- asset 조회 (asset_id = 카탈로그 키, 07 §5.3 v1.1) --------------------
     if used_asset_ids:
-        # TODO: Asset에 카탈로그 코드 컬럼 확정 후 필터 컬럼 교체.
-        #       polygon_count/파일 크기 컬럼도 asset 파이프라인(07 §5.3) 확정 후 매핑.
-        rows = (await session.execute(select(Asset))).scalars().all()
+        rows = (
+            await session.execute(select(Asset).where(Asset.asset_id.in_(used_asset_ids)))
+        ).scalars().all()
         for a in rows:
-            key = getattr(a, "asset_name", None) or str(a.asset_id)
-            if key in used_asset_ids:
-                ctx.asset_polygons[key] = getattr(a, "polygon_count", 0) or 0
-                ctx.asset_memory_mb[key] = getattr(a, "file_size_mb", 0.0) or 0.0
+            ctx.asset_polygons[a.asset_id] = a.polygon_count or 0
+            ctx.asset_memory_mb[a.asset_id] = (a.file_size_bytes or 0) / (1024 * 1024)
 
     # --- ERP teams 유효성 ----------------------------------------------------
     if used_team_ids:

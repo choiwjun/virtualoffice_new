@@ -40,20 +40,21 @@ screens:
     name: 좌석 배치 편집기
     route: /admin/office-layout
     platform: web
-    layout: split-3d-hud
+    layout: sidebar-main
     description: |
-      2D Konva.js 평면도 + 3D Godot 미리보기. 벽, 좌석, 회의실, 구역 배치.
-      Undo/Redo, 검증 체크리스트, 버전 관리, 배포/롤백.
+      2D Konva.js 평면도 전용(웹 3D 미리보기 없음 — D11). 벽, 좌석, 회의실, 문 개구부, 구역 배치.
+      정밀 3D 확인은 저장 후 [데스크톱에서 열기(draft)]로 Godot 데스크톱 클라이언트에서 수행.
+      Undo/Redo, 서버 검증(D12: ERROR 배포 차단), 층 단위 버전 관리, 배포/롤백.
 
   - id: screen-kpi-dashboard
     file: kpi-dashboard.yaml
     name: KPI 대시보드
-    route: /admin/kpi
+    route: /admin/kpi # 라우팅 분리: /kpi = 본인 KPI 열람(전 역할), /admin/kpi = 관리자 검토·확정(leader 팀 한정/admin)
     platform: web
     layout: sidebar-main
     description: |
-      KPI 평가 결과 조회/검토. AI 초안 표시, 관리자 조정, ERP 푸시 상태 추적.
-      기간별 필터, 팀 종합, 개인 지표, 추이/비교/순위 탭.
+      KPI 평가 결과 조회/검토. AI 초안 표시, 관리자 조정·확정(final_score), ERP 푸시 상태 추적.
+      기간별 필터, 팀 종합, 개인 지표, 추이/비교/순위 탭. 본인용(/kpi)과 관리자용(/admin/kpi) 라우팅 분리.
 
   - id: screen-meetings
     file: meetings.yaml
@@ -75,13 +76,48 @@ screens:
       일별 업무 기록, 범주/시간/결과물/이슈 추적. 일일 상태 리포트 작성.
       기간별 요약(일간/주간/월간/연간), 카테고리 분포, ERP 동기화.
 
+  - id: screen-auth
+    file: auth.yaml
+    name: 로그인 / 세션 (Auth)
+    route: /login
+    platform: web
+    layout: centered
+    description: |
+      FastAPI 자체 JWT(HS256) 로그인(D4). 401 실패, 세션 만료·토큰 갱신, 임시 저장 복구.
+      로그인 성공 시 직원명부로 랜딩(웹 콘솔 랜딩 = 직원명부, 2026-07-02 결정).
+
+  - id: screen-kpi-objection
+    file: kpi-objection.yaml
+    name: KPI 이의신청
+    route: /kpi/objection # 관리자 재검토 뷰는 /admin/kpi/objections
+    platform: web
+    layout: sidebar-main
+    description: |
+      직원 이의신청 제출(사유 필수, 7일 창) + 관리자 재검토·확정 뷰.
+      상태머신 none→submitted→reviewing→resolved(D15). 확정 시 final_score ERP 재push.
+
+  - id: screen-sync-monitoring
+    file: sync-monitoring.yaml
+    name: 동기화 모니터링 콘솔
+    route: /admin/sync
+    platform: web
+    layout: sidebar-main
+    description: |
+      ERP 동기화·EOD push·KPI 배치의 상태 테이블/실패 이력/수동 재시도(관리자 전용, 06 §3.12).
+      erp_sync_log + daily_status_push(run_id, error_message) 기반.
+
 metadata:
-  total_screens: 7
-  web_screens: 6
+  total_screens: 10
+  web_screens: 9
   native_screens: 1
-  admin_routes: 4 # org-chart, employees, office-layout, kpi
-  user_routes: 2 # meetings, work-log
+  admin_routes: 5 # org-chart, employees, office-layout, kpi(admin), sync
+  user_routes: 3 # meetings, work-log, kpi/objection (본인 KPI는 /kpi)
+  public_routes: 1 # login
   godot_routes: 1 # 3d-office
+
+routing_notes:
+  - "KPI 라우팅 분리: /kpi = 본인 KPI 열람(전 역할), /admin/kpi = 관리자 검토·확정 — §3.10 접근 매트릭스(shared/rbac.yaml) 참조"
+  - "웹 콘솔 랜딩 = 직원명부(/admin/employees). 별도 대시보드 화면 없음(2026-07-02 결정)"
 
 grouping:
   admin:
@@ -89,8 +125,12 @@ grouping:
     - screen-employee-directory
     - screen-seat-layout-editor
     - screen-kpi-dashboard
+    - screen-sync-monitoring
   user:
     - screen-meetings
     - screen-work-log
+    - screen-kpi-objection
+  public:
+    - screen-auth
   immersive:
     - screen-virtual-office-3d

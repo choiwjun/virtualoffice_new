@@ -9,11 +9,11 @@ resources:
     description: ERP 직원 정보의 읽기전용 동기화. 모든 참조의 단일 진실 공급처(PK=users.id).
     fields:
       - name: id
-        type: UUID or BIGINT
-        note: ERP users.id (조인 키)
+        type: BIGINT
+        note: ERP users.id (조인 키, ERP 원본 타입)
       - name: company_id
-        type: UUID
-        note: ERP company 스코프(사내 단일값)
+        type: INTEGER
+        note: ERP company_id 스코프(ERP 원본 타입, 사내 단일값)
       - name: email
         type: VARCHAR(255)
         note: ERP와 동일, company_id 내 unique
@@ -35,24 +35,18 @@ resources:
       - name: manager_id
         type: BIGINT
         note: ERP users.id (보고라인, nullable, self)
-      - name: slack_user_id
-        type: VARCHAR(255)
-        note: ERP slack_user_id
-      - name: github_username
-        type: VARCHAR(255)
-        note: ERP github_username
-      - name: jira_email
-        type: VARCHAR(255)
-        note: ERP jira_email
       - name: work_type
         type: VARCHAR(50)
         note: ERP work_type
       - name: work_hours
         type: INT
         note: 일일 근무시간
+      - name: is_active
+        type: BOOLEAN
+        note: soft-delete 플래그(ERP 하드 삭제 감지 시 FALSE, D18)
       - name: last_synced_at
         type: TIMESTAMP
-        note: 마지막 ERP 동기화 시각(KST)
+        note: 마지막 ERP 동기화 시각(UTC 저장, 표시 시 KST — D19)
       - name: created_at
         type: TIMESTAMP
         note: 우리 DB 생성 시각
@@ -232,7 +226,7 @@ resources:
         note: FK(미래 멀티테넌트용)
       - name: name
         type: VARCHAR(255)
-        note: 예: 엔지니어링 본부, 마케팅 팀
+        note: "예: 엔지니어링 본부, 마케팅 팀"
       - name: type
         type: ENUM
         note: division | department | part
@@ -280,7 +274,7 @@ resources:
         note: FK(floor)
       - name: zone_label
         type: VARCHAR(255)
-        note: 예: 백엔드팀 구역, 마케팅 존
+        note: "예: 백엔드팀 구역, 마케팅 존"
       - name: color
         type: VARCHAR(7)
         note: HEX(3D 구역 강조색)
@@ -319,7 +313,7 @@ resources:
         note: FK(사내 단일, 미래 멀티테넌트)
       - name: name
         type: VARCHAR(255)
-        note: 예: 본사, 판교
+        note: "예: 본사, 판교"
       - name: description
         type: TEXT
         note: 사무실 설명
@@ -358,7 +352,7 @@ resources:
         note: 1, 2, 3... (B1=-1)
       - name: name
         type: VARCHAR(255)
-        note: 예: 1층 오픈좌석, 2층 회의실
+        note: "예: 1층 오픈좌석, 2층 회의실"
       - name: minimap_config
         type: JSON
         note: 미니맵 2D 레이아웃(캐시용)
@@ -419,7 +413,7 @@ resources:
         note: FK(erp_user.id, 검증자, nullable)
       - name: deployed_at
         type: TIMESTAMP
-        note: 배포 시각(KST, nullable)
+        note: 배포 시각(UTC 저장, 표시 시 KST — D19, nullable)
       - name: deployment_notes
         type: TEXT
         note: 배포 메모
@@ -445,7 +439,7 @@ resources:
         note: lobby | meeting | lounge | focus | phonebooth
       - name: name
         type: VARCHAR(255)
-        note: 예: 컨퍼런스룸 A, 집중실
+        note: "예: 컨퍼런스룸 A, 집중실"
       - name: capacity
         type: INT
         note: 수용인원
@@ -455,6 +449,9 @@ resources:
       - name: enter_trigger
         type: JSON
         note: "{x, y, z, radius} 진입 감지 영역"
+      - name: doors
+        type: JSON
+        note: "[{door_id, wall, offset, width, door_type}] 문 개구부 배열(05 §1.2 규약 — 개구부 없는 방은 검증 ERROR)"
       - name: livekit_room
         type: VARCHAR(255)
         note: LiveKit room ID(회의 이용 시)
@@ -502,7 +499,7 @@ resources:
         note: available | occupied | disabled | reserved
       - name: seat_number
         type: VARCHAR(50)
-        note: 예: 1-A-01(선택)
+        note: "예: 1-A-01(선택)"
       - name: created_at
         type: TIMESTAMP
         note: 생성 시각
@@ -547,7 +544,7 @@ resources:
         note: FK(erp_user.id, 배정 담당자, nullable)
       - name: reason
         type: VARCHAR(255)
-        note: 예: 팀 재구성, 퇴사, 출장
+        note: "예: 팀 재구성, 퇴사, 출장"
       - name: created_at
         type: TIMESTAMP
         note: 생성 시각
@@ -558,6 +555,33 @@ resources:
       - to: erp_user
         kind: many-to-one
         note: user_id
+
+  - name: user_team_history
+    source: our-db
+    description: 직원 팀 이동 이력(D18 신설). 분기 KPI 벤치마크 시 평가 기간 실제 소속 팀 판정용(04 §2.3).
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: user_id
+        type: BIGINT
+        note: FK(erp_user.id, ON DELETE RESTRICT — 이력 보존)
+      - name: erp_team_id
+        type: BIGINT
+        note: ERP teams.id(당시 소속 팀)
+      - name: valid_from
+        type: TIMESTAMP
+        note: 소속 시작(UTC)
+      - name: valid_to
+        type: TIMESTAMP
+        note: 소속 종료(UTC, NULL = 현재 소속)
+      - name: created_at
+        type: TIMESTAMP
+        note: 기록 생성(UTC)
+    relations:
+      - to: erp_user
+        kind: many-to-one
+        note: user_id (ON DELETE RESTRICT)
 
   # ==================================================
   # 4. 실시간·협업 계층
@@ -587,13 +611,13 @@ resources:
         note: 3D 위치(월드좌표)
       - name: status
         type: ENUM
-        note: "online | working | meeting | focus | away | trip_moving | trip_arrived | external | returning | offline"
+        note: "offline | online | working | meeting | focus | away | external (7종 확정, D13)"
       - name: last_activity_at
         type: TIMESTAMP
         note: 마지막 활동 시각
       - name: updated_at
         type: TIMESTAMP
-        note: 상태 업데이트 시각(KST)
+        note: 상태 업데이트 시각(UTC 저장, 표시 시 KST — D19)
     relations:
       - to: erp_user
         kind: many-to-one
@@ -604,6 +628,27 @@ resources:
       - to: floor
         kind: many-to-one
         note: floor_id
+
+  - name: user_avatar
+    source: our-db
+    description: 아바타 커스터마이징 설정. 프리셋 + 색상 팔레트 수준(06 §3.9).
+    fields:
+      - name: user_id
+        type: BIGINT
+        note: PK, FK(erp_user.id)
+      - name: preset_id
+        type: VARCHAR(50)
+        note: 기본 휴머노이드 프리셋 ID(5~10종 템플릿)
+      - name: colors
+        type: JSON
+        note: "{top, bottom} 상의/하의 색상 팔레트 선택값"
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각(UTC)
+    relations:
+      - to: erp_user
+        kind: one-to-one
+        note: user_id (PK)
 
   - name: meeting
     source: our-db
@@ -617,7 +662,7 @@ resources:
         note: FK(room)
       - name: title
         type: VARCHAR(255)
-        note: 예: Q2 계획 회의
+        note: "예: Q2 계획 회의"
       - name: description
         type: TEXT
         note: 회의 설명
@@ -642,9 +687,6 @@ resources:
       - name: recording_url
         type: VARCHAR(1000)
         note: 화상 녹화 URL(선택)
-      - name: meeting_minute_id
-        type: UUID
-        note: FK(meeting_minute, nullable, 1:1)
       - name: created_at
         type: TIMESTAMP
         note: 생성 시각
@@ -663,7 +705,7 @@ resources:
         note: meeting_id
       - to: meeting_minute
         kind: one-to-one
-        note: meeting_minute_id (nullable)
+        note: 단방향 — meeting_minute.meeting_id로만 조회(meeting.meeting_minute_id 역방향 FK 폐기, 순환 참조 방지)
       - to: action_item
         kind: one-to-many
         note: meeting_id
@@ -729,6 +771,12 @@ resources:
       - name: notes
         type: TEXT
         note: 추가 노트
+      - name: stt_draft
+        type: TEXT
+        note: STT 자동 전사 초안(D5, nullable — 04 v1.2 추가 2026-07-02)
+      - name: ai_summary
+        type: TEXT
+        note: AI 요약(Phase 7, nullable — 04 v1.2 추가 2026-07-02)
       - name: attachments
         type: JSON
         note: "[{filename, url, mime_type}]"
@@ -770,7 +818,7 @@ resources:
         note: FK(meeting)
       - name: title
         type: VARCHAR(255)
-        note: 예: 프로토타입 설계 완료
+        note: "예: 프로토타입 설계 완료"
       - name: description
         type: TEXT
         note: 상세 설명
@@ -828,10 +876,10 @@ resources:
         note: 업무 날짜(KST)
       - name: category
         type: VARCHAR(50)
-        note: 예: 개발, 리뷰, 회의, 설계
+        note: "예: 개발, 리뷰, 회의, 설계"
       - name: title
         type: VARCHAR(255)
-        note: 예: API 엔드포인트 개발
+        note: "예: API 엔드포인트 개발"
       - name: goal
         type: TEXT
         note: 이번 업무의 목표
@@ -849,7 +897,7 @@ resources:
         note: 실제 소요시간
       - name: status
         type: ENUM
-        note: started | completed
+        note: started | completed | aborted
       - name: result_url
         type: VARCHAR(1000)
         note: 결과물 URL(코드, 문서)
@@ -874,11 +922,11 @@ resources:
     relations:
       - to: erp_user
         kind: many-to-one
-        note: user_id (ON DELETE CASCADE)
+        note: user_id (ON DELETE RESTRICT — 평가 기초 기록 보존, D18)
 
   - name: kpi_result
     source: our-db
-    description: KPI 평가 결과. AI 초안 + 관리자 검토 + 최종 조정. EOD 배치로 ERP로 push.
+    description: KPI 평가 결과(04 §2.5 D16 정본). metric별 롱포맷(1행 = 1 user + 1 기간 + 1 metric). 정량 값은 결정론적 코드 계산(D14-e), AI는 서술만. 관리자 확정 final_score가 이의신청(D15)을 거쳐 ERP push.
     fields:
       - name: id
         type: UUID
@@ -886,64 +934,85 @@ resources:
       - name: user_id
         type: BIGINT
         note: FK(erp_user.id)
-      - name: period
+      - name: period_type
         type: VARCHAR(20)
-        note: 예: 2026-Q3(분기) 또는 2026-06(월)
-      - name: kpi_date
-        type: DATE
-        note: 평가 날짜
+        note: daily | quarterly (D16, period 컬럼 폐기)
+      - name: period_key
+        type: VARCHAR(20)
+        note: "period_type=daily → '2026-07-01', quarterly → '2026-Q3'"
       - name: metric
         type: VARCHAR(100)
-        note: 예: completed_work_count, meetings_attended
+        note: "metric 어휘 사전(04 §2.5) 값만 허용. 예: work_completed_count, work_quality_score, action_items_completed"
       - name: value
-        type: FLOAT
-        note: 메트릭 값
+        type: NUMERIC
+        note: 결정론적 코드로 계산된 정량 값(D14-e)
+      - name: unit
+        type: VARCHAR(50)
+        note: '"count", "%", "score"'
       - name: source
         type: ENUM
         note: virtual_office(우리만 해당)
-      - name: unit
-        type: VARCHAR(50)
-        note: 예: %, 건수, 점수
       - name: ai_draft
-        type: TEXT
-        note: AI 평가 초안(사유, 개선 제안)
+        type: JSONB
+        note: AI 서술 초안(강점/개선/근거) — 정량 점수 미포함(D14-e)
       - name: ai_draft_generated_at
         type: TIMESTAMP
-        note: AI 생성 시각
-      - name: admin_reviewed
-        type: BOOLEAN
-        note: 관리자 검토 완료 여부
-      - name: admin_adjusted
-        type: BOOLEAN
-        note: 관리자 조정 여부
-      - name: admin_adjusted_value
-        type: FLOAT
-        note: 관리자 조정 값(nullable)
-      - name: admin_review_note
+        note: AI 생성 시각(UTC)
+      - name: ai_model
+        type: VARCHAR(50)
+        note: "사용 모델(DEFAULT 'claude-opus')"
+      - name: admin_adjusted_score
+        type: NUMERIC
+        note: 관리자 조정 점수(미조정 시 NULL → value가 유효)
+      - name: admin_note
         type: TEXT
-        note: 관리자 검토 의견
+        note: 관리자 검토/조정 사유
+      - name: admin_user_id
+        type: BIGINT
+        note: FK(erp_user.id, 조정한 관리자, nullable, ON DELETE SET NULL)
       - name: admin_reviewed_at
         type: TIMESTAMP
-        note: 검토 시각(nullable)
+        note: 검토 시각(UTC, nullable)
+      - name: objection_status
+        type: VARCHAR(20)
+        note: "none | submitted | reviewing | resolved (이의신청 상태머신, D15, DEFAULT 'none')"
+      - name: objection_detail
+        type: JSONB
+        note: "{category, text, evidence, submitted_at}"
+      - name: objection_submitted_at
+        type: TIMESTAMP
+        note: 이의 접수 시각(UTC)
+      - name: objection_resolved_at
+        type: TIMESTAMP
+        note: 이의 처리 완료 시각(UTC)
+      - name: final_score
+        type: NUMERIC
+        note: 관리자 확정 최종 점수(= admin_adjusted_score ?? value, 확정 시 설정)
+      - name: finalized_at
+        type: TIMESTAMP
+        note: 확정 시각(UTC, NULL = 미확정)
       - name: note
         type: TEXT
-        note: 추가 노트
+        note: 메트릭별 추가 주석
       - name: pushed_to_erp
         type: BOOLEAN
         note: ERP로 전송됨 여부
       - name: pushed_at
         type: TIMESTAMP
-        note: ERP 전송 시각(nullable)
+        note: ERP 전송 시각(UTC, nullable)
       - name: created_at
         type: TIMESTAMP
-        note: 생성 시각
+        note: 생성 시각(UTC)
       - name: updated_at
         type: TIMESTAMP
-        note: 수정 시각
+        note: 수정 시각(UTC)
     relations:
       - to: erp_user
         kind: many-to-one
-        note: user_id (ON DELETE CASCADE)
+        note: user_id (ON DELETE RESTRICT — 평가 기록 영구성, D18)
+      - to: erp_user
+        kind: many-to-one
+        note: admin_user_id (nullable, ON DELETE SET NULL)
 
   - name: daily_status_push
     source: our-db
@@ -972,10 +1041,16 @@ resources:
         note: 실제 전송 시각(nullable)
       - name: erp_response
         type: JSON
-        note: ERP 응답 or 에러 메시지(nullable)
+        note: ERP 응답(성공/에러 본문, nullable)
+      - name: error_message
+        type: TEXT
+        note: 실패 사유 요약(재시도 판정용, nullable)
       - name: retry_count
         type: INT
-        note: 재시도 횟수
+        note: 재시도 횟수(최대 3, 지수 백오프)
+      - name: run_id
+        type: UUID
+        note: 배치 실행 식별자(멱등성·감사, nullable)
       - name: created_at
         type: TIMESTAMP
         note: 생성 시각
@@ -985,7 +1060,33 @@ resources:
     relations:
       - to: erp_user
         kind: many-to-one
-        note: user_id (ON DELETE CASCADE)
+        note: user_id (ON DELETE RESTRICT — 전송 이력 보존, D18)
+
+  - name: erp_sync_log
+    source: our-db
+    description: ERP 동기화 실행 로그. 동기화 모니터링 콘솔(06 §3.12)의 상태·실패 이력·수동 재시도 근거 데이터.
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: sync_type
+        type: ENUM
+        note: incremental(매시간 증분) | full_reconcile(매일 00:00 전체 대사) | manual_retry(수동 재시도)
+      - name: started_at
+        type: TIMESTAMP
+        note: 실행 시작 시각(UTC)
+      - name: finished_at
+        type: TIMESTAMP
+        note: 실행 종료 시각(UTC, nullable — 실행 중 NULL)
+      - name: status
+        type: ENUM
+        note: running | success | failed
+      - name: error_message
+        type: TEXT
+        note: 실패 사유(nullable)
+      - name: records_affected
+        type: INT
+        note: 반영된 레코드 수(생성/갱신/soft-delete 합계)
 
   # ==================================================
   # 6. 자산·감시·감사 계층
@@ -1000,13 +1101,13 @@ resources:
         note: PK
       - name: asset_name
         type: VARCHAR(255)
-        note: 예: oak_desk, leather_chair
+        note: "예: oak_desk, leather_chair"
       - name: asset_type
         type: ENUM
         note: model | texture | material | animation
       - name: asset_category
         type: VARCHAR(100)
-        note: 예: furniture, lighting, decor
+        note: "예: furniture, lighting, decor"
       - name: source_url
         type: VARCHAR(1000)
         note: 원본 다운로드 URL(ambientCG, Poly Haven)
@@ -1072,7 +1173,7 @@ resources:
         note: FK(erp_user.id, 행위자, nullable)
       - name: action
         type: VARCHAR(100)
-        note: 예: seat_assigned, meeting_created, kpi_adjusted, layout_deployed
+        note: "예: seat_assigned, meeting_created, kpi_adjusted, layout_deployed"
       - name: entity_type
         type: VARCHAR(50)
         note: seat, meeting, kpi_result, office_layout
@@ -1093,7 +1194,7 @@ resources:
         note: 클라이언트 user-agent
       - name: created_at
         type: TIMESTAMP
-        note: 행위 시각(KST)
+        note: 행위 시각(UTC 저장, 표시 시 KST — D19)
     relations:
       - to: erp_user
         kind: many-to-one

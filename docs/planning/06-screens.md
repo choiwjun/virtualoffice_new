@@ -169,6 +169,8 @@ Dashboard
 
 > 조직도 편집기(§3.1)는 **P3/고도화**로 마킹(MVP 범위 밖). 자율좌석 점유/반납(§3.11)은 3D 오피스 내 상호작용이나 배정 로직상 여기 함께 표기.
 
+> **웹 콘솔 랜딩 = 직원명부** — 별도 대시보드 화면 없음(2026-07-02 결정). 위 트리의 "Dashboard"는 내비게이션 루트 개념일 뿐 독립 화면이 아니며, 웹 콘솔 진입 시 직원명부(§3.2)로 랜딩한다.
+
 ### 2.2 각 화면 상세 명세
 
 ---
@@ -302,7 +304,7 @@ Dashboard
 ```
 
 #### Data Requirements
-- **입력**: erp_user (id, company_id, email, name, team_id, role, position, position_id, manager_id, slack_user_id, github_username, work_type, work_hours), presence (user_id, status), seat + seat_assignment (좌석 배정은 seat_assignment 조회 — D10)
+- **입력**: erp_user (id, company_id, email, name, team_id, role, position, position_id, manager_id, slack_user_id, github_username, work_type, work_hours), presence (user_id, status), seat(assigned_user_id — 현재 배정) + seat_assignment_history(배정 이력, unassigned_at — D10)
 - **참조**: 01-prd.md (ERP 사용자 구조)
 
 #### 읽기전용 표시
@@ -373,7 +375,7 @@ Dashboard
 
 **컴포넌트 데이터 구조:**
 
-> **단위 규약**: 캔버스 렌더링은 픽셀이지만 **저장 좌표는 미터(원점 top_left)**로 변환한다(05 정본과 동일 단위). 아래 예시는 저장 직전의 미터 좌표 기준이며, 필드명·타입도 05 스키마(seat_id, seat_type, lifecycle_status, erp_team_id 정수, doors[], shape 등)와 일치시킨다. 좌석-직원 배정 필드는 여기 없다(배정은 `seat_assignment` DB — 05 D10).
+> **단위 규약**: 캔버스 렌더링은 픽셀이지만 **저장 좌표는 미터(원점 top_left)**로 변환한다(05 정본과 동일 단위). 아래 예시는 저장 직전의 미터 좌표 기준이며, 필드명·타입도 05 스키마(seat_id, seat_type, lifecycle_status, erp_team_id 정수, doors[], shape 등)와 일치시킨다. 좌석-직원 배정 필드는 여기 없다(배정은 `seat.assigned_user_id` + `seat_assignment_history` DB — 05 D10).
 
 ```json
 {
@@ -515,10 +517,10 @@ graph LR
   v1.0 (2026-06-18, deployed)  : 8 seats, 1 meeting
 ```
 
-> 좌석-직원 **배정 변경**은 `seat_assignment`만 갱신하므로 층 버전을 올리지 않는다(05 D10). 공간 구조 변경만 버전을 올린다.
+> 좌석-직원 **배정 변경**은 `seat.assigned_user_id`(+ `seat_assignment_history` 이력)만 갱신하므로 층 버전을 올리지 않는다(05 D10). 공간 구조 변경만 버전을 올린다.
 
 #### Data Requirements
-- **입력**: office_layout (id, office_id, floor_id, version, status, json — **층 단위**), room (id, floor_id, type, name, capacity, coords, doors), seat (id, floor_id, team_zone_id, seat_type, coords, facing, furniture_id, lifecycle_status — **직원 배정 없음**), seat_assignment (seat_id, erp_user_id, assigned_at, released_at), team_zone (id, erp_team_id, org_group_id, color)
+- **입력**: office_layout (id, office_id, floor_id, version, status, json — **층 단위**), room (id, floor_id, type, name, capacity, coords, doors), seat (id, floor_id, team_zone_id, seat_type, coords, facing, furniture_id, lifecycle_status, assigned_user_id — 현재 배정), seat_assignment_history (seat_id, user_id, assigned_at, unassigned_at — 배정 이력), team_zone (id, erp_team_id, org_group_id, color)
 - **출력**: office_layout 생성/수정(층 단위), 서버 검증 결과(ERROR/WARNING)
 - **참조**: 05-office-layout-schema.md (JSON 스키마 정본), 04-data-model.md (데이터 모델)
 
@@ -959,7 +961,7 @@ graph TD
 
 #### 목적
 - 평가 공개 후 직원이 결과에 이의를 제기하고, 관리자가 재검토·확정하는 흐름(D15).
-- 상태머신: **공개 → 이의접수(7일 창) → 재검토 → 확정 → ERP push**.
+- 상태머신: **공개(none) → 이의접수(submitted, 7일 창) → 재검토(reviewing) → 확정(resolved) → ERP push**.
 
 #### 직원 화면
 ```
@@ -994,7 +996,7 @@ graph TD
 
 #### Data Requirements
 - **입력**: kpi_result (id, user_id, period_type, period_key, metric, ai_draft, admin_adjusted_score, objection_status, final_score, finalized_at)
-- **상태값**: objection_status = published → objection_filed → under_review → finalized
+- **상태값**: objection_status = none → submitted → reviewing → resolved (D15 상태머신)
 - **참조**: 00-decisions.md D15, 03-erp-integration.md, 08-kpi-logic.md
 
 ---
@@ -1088,23 +1090,25 @@ graph TD
 ### 3.11 자율좌석(Free Seat) 점유 / 반납
 
 #### 목적
-- 3D 오피스에서 빈 자율좌석(seat_type=free)을 클릭해 점유하고, 퇴근 시 자동 반납. **layout 재배포 없이 `seat_assignment`만 갱신**(05 D10).
+- 3D 오피스에서 빈 자율좌석(seat_type=free)을 클릭해 점유하고, 퇴근 시 자동 반납. **layout 재배포 없이 `seat.assigned_user_id`(현재) + `seat_assignment_history`(이력)만 갱신**(05 D10).
 
 ```
 [3D] 빈 자율좌석 클릭
   → "이 자리에 앉기" 프롬프트 → 클릭
-  → 서버: seat_assignment INSERT (seat_id, erp_user_id, assigned_at)
+  → 서버: seat.assigned_user_id = 본인 설정
+         + seat_assignment_history INSERT (seat_id, user_id, assigned_at)
   → 아바타 착석(seat.facing 방향), 좌석에 이름표 표시
 
 퇴근/오프라인 전이(away 장기화 등)
-  → 서버: seat_assignment.released_at 갱신(자동 반납)
+  → 서버: seat.assigned_user_id = NULL
+         + seat_assignment_history.unassigned_at 갱신(자동 반납)
   → 좌석 다시 free 표시
 ```
 
 - 이미 점유된 자율좌석은 클릭 시 "사용 중" 표시. 고정좌석(fixed)은 배정자 외 점유 불가.
 
 #### Data Requirements
-- **입력/출력**: seat(seat_type, coords, facing), seat_assignment(seat_id, erp_user_id, assigned_at, released_at), presence
+- **입력/출력**: seat(seat_type, coords, facing, assigned_user_id — 현재 배정), seat_assignment_history(seat_id, user_id, assigned_at, unassigned_at — 이력), presence
 - **참조**: 05-office-layout-schema.md(§2.4 좌석 배정 분리), 04-data-model.md
 
 ---
@@ -1178,6 +1182,8 @@ graph TD
     style P fill:#D4B4FF
     style T fill:#B4FFD4
 ```
+
+> **노드 F 각주**: "웹 콘솔 대시보드"는 별도 대시보드 화면이 아니다 — 웹 콘솔 랜딩은 **직원명부**(§3.2)이다(2026-07-02 결정, §2.1 참조).
 
 ---
 
@@ -1312,6 +1318,23 @@ graph TD
 └──────────────────────────────────────────┘
 ```
 
+### 5.3 로딩 / 재연결 상태 (Loading & Reconnect)
+
+#### 초기 로드
+- **웹 콘솔**: 목록/테이블 화면은 **스켈레톤 UI**(테이블 행 형태), 카드/차트 화면은 **스피너**. 응답이 1초 미만이면 스켈레톤 생략 가능(깜빡임 방지)
+- **3D 오피스**: 전용 로딩 화면(진행바: 에셋→layout→presence 순) → office_layout 로드 완료 후 입장. 로딩 < 5초 목표(D22)
+
+#### 3D 오피스 WSS 단절 시 UX
+- 단절 감지 즉시 뷰포트에 반투명 오버레이 **"연결 끊김 — 재연결 중…"** 표시. 조작은 잠그고 마지막 수신 상태는 화면에 유지(아바타 이동 정지)
+- 재연결: **지수 백오프**(1s → 2s → 4s → … 최대 30s), 자동 무한 재시도
+- 재연결 성공 시 **resume 프로토콜**: JWT + protocol_version/schema_version 재협상(05 §2.2) → 마지막 수신 seq 이후 상태 스냅샷 + 델타 재동기화 → 오버레이 해제
+- 60초 이상 단절 시 오버레이에 `[지금 재연결] [로그인 화면으로]` 버튼 노출. 서버는 단절 사용자의 presence를 away→offline으로 전이
+
+#### API 실패 재시도 규칙 (웹 콘솔)
+- **조회(GET) 실패**: 자동 1회 재시도 후 오류 상태 컴포넌트 표시(`[재시도]` 버튼 제공)
+- **변경(POST/PATCH/DELETE) 실패**: 자동 재시도 금지(중복 생성 방지). 입력값 보존 + 인라인 오류 표시 후 사용자 수동 재시도
+- **401(세션 만료)**: §3.8 세션 만료 화면으로 유도. 미저장 입력은 로컬 임시 저장 후 재로그인 시 복구
+
 ---
 
 ## 6. 각 화면의 주요 컴포넌트 & 의존성
@@ -1375,7 +1398,7 @@ Godot Headless Server
 | **3D 오피스 메인** | erp_user, presence, office, floor, office_layout, seat, room, meeting, meeting_participant | 04-data-model.md |
 | **조직도 편집** | org_group, team_zone, erp_user (teams) | 04-data-model.md, 01-prd.md |
 | **직원명부** | erp_user, presence, seat, team_zone | 04-data-model.md |
-| **좌석 배치 편집** | office, floor, office_layout(층 단위), seat, seat_assignment, room(doors), team_zone | 05-office-layout-schema.md, 04-data-model.md |
+| **좌석 배치 편집** | office, floor, office_layout(층 단위), seat(assigned_user_id), seat_assignment_history, room(doors), team_zone | 05-office-layout-schema.md, 04-data-model.md |
 | **KPI 대시보드** | kpi_result, work_log, meeting, meeting_minute, action_item | 03-erp-integration.md, 01-prd.md |
 | **이의신청(§3.7)** | kpi_result(objection_status, final_score), erp_user | 03-erp-integration.md(D15) |
 | **회의/회의록** | meeting, room, meeting_participant, meeting_minute, action_item, erp_user | 04-data-model.md |
@@ -1383,7 +1406,7 @@ Godot Headless Server
 | **로그인/세션(§3.8)** | erp_user, JWT(FastAPI /auth) | 03-erp-integration.md(D4) |
 | **아바타(§3.9)** | user_avatar | 07-3d-visual-asset-pipeline.md |
 | **권한 매트릭스(§3.10)** | erp_user(role, team_id) | 04-data-model.md |
-| **자율좌석 점유/반납(§3.11)** | seat(seat_type), seat_assignment, presence | 05-office-layout-schema.md, 04-data-model.md |
+| **자율좌석 점유/반납(§3.11)** | seat(seat_type, assigned_user_id), seat_assignment_history, presence | 05-office-layout-schema.md, 04-data-model.md |
 | **동기화 모니터링(§3.12)** | erp_sync_log, daily_status_push, kpi push 로그 | 03-erp-integration.md(D17·D18) |
 
 ---
@@ -1399,7 +1422,7 @@ Godot Headless Server
 ### 7.2 웹 콘솔 (Next.js)
 - **OS**: 모든 OS (브라우저)
 - **렌더**: Server-Side Rendering (SSR) / Static Generation (SSG) 혼합
-- **배포**: **사내 VM 단일화**(웹 프론트 포함 전부 사내 VM, 사내 PKI TLS — D21). Vercel/외부 배포는 폐기
+- **배포**: **사내 서버 PC + Docker Compose**(웹 프론트 포함 전부 사내 서버, Let's Encrypt TLS — D21-r, 2026-07-02). Vercel/외부 배포는 폐기
 - **브라우저 지원**: Chrome/Edge 90+, Safari 14+, Firefox 88+
 
 ### 7.3 성능 목표 (D22)

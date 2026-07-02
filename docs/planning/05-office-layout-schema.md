@@ -2,7 +2,7 @@
 
 **작성일**: 2026-07-01  
 **최종 갱신**: 2026-07-02  
-**버전**: 1.1  
+**버전**: 1.2  
 **담당**: 시스템 설계팀 + 3D 엔진팀  
 **참조**: 00-decisions.md (정본 결정, 특히 D7~D12·D25), 04-data-model.md (DB 구조), 06-screens.md (편집기 UI), 07-3d-visual-asset-pipeline.md (에셋 파이프라인)
 
@@ -15,7 +15,7 @@
 `office_layout` JSON은 Godot 3D 가상오피스의 **공간 구조 및 상호작용 규칙의 원본(Source of Truth)**이다. 각 층(floor)마다 1개의 JSON blob으로 저장되며(1 floor = 1 layout), 2D 편집기에서 생성/수정되고, 검증 통과 후 Godot 헤드리스 서버와 클라이언트에서 사용된다. 코드로 하드코딩되지 않으므로, 사무실 변경은 DB 업데이트로만 반영된다(재컴파일 불필요).
 
 **핵심 원칙(정본 결정 반영):**
-- **공간 구조만 담는다(D10)**: 좌석-직원 배정은 이 JSON에 넣지 않는다. 배정은 DB `seat_assignment` 테이블이 담당하며, 배정 변경은 레이아웃 재배포가 필요 없다.
+- **공간 구조만 담는다(D10)**: 좌석-직원 배정은 이 JSON에 넣지 않는다. 배정은 DB `seat.assigned_user_id`(현재값) + `seat_assignment_history`(이력)가 담당하며(04 정본), 배정 변경은 레이아웃 재배포가 필요 없다.
 - **좌표계는 `top_left` 단일·미터 단위(D25)**: 다른 원점은 허용하지 않는다.
 - **에셋은 `asset_id` 참조만(D8)**: 클라이언트 빌드(pak)에 동봉된 카탈로그를 조회한다. 런타임에 glb/tscn을 다운로드하지 않는다.
 - **정밀 검증은 서버 1곳(D12)**: 도달성(A*) 포함 정밀 검증은 FastAPI가 단독으로 수행한다. 웹 편집기는 경량 체크만, Godot 클라이언트는 검증하지 않고 신뢰한다.
@@ -263,7 +263,7 @@ room의 벽 콜리전은 room 경계에서 자동 생성되는 벽 세그먼트�
 
 #### 1.2.6 seats (고정좌석, 자율좌석, 임시좌석)
 
-> **D10 — 좌석 배정 분리**: seat 객체는 **공간 구조(위치·타입·방향·설비)만** 담는다. 좌석-직원 배정(`assigned_user_id` 등)은 이 JSON에 넣지 않으며, DB `seat_assignment` 테이블이 단독으로 관리한다. 클라이언트/서버는 런타임에 `seat_db_id`로 `seat_assignment`를 조회해 현재 착석자를 얻는다. **좌석 배정 변경은 레이아웃 재배포가 필요 없다**(§2.4 참조).
+> **D10 — 좌석 배정 분리**: seat 객체는 **공간 구조(위치·타입·방향·설비)만** 담는다. 좌석-직원 배정(`assigned_user_id` 등)은 이 JSON에 넣지 않으며, DB `seat.assigned_user_id`(현재값) + `seat_assignment_history`(이력)가 단독으로 관리한다(04 정본). 클라이언트/서버는 런타임에 `seat_db_id`로 `seat.assigned_user_id`를 조회해 현재 착석자를 얻는다. **좌석 배정 변경은 레이아웃 재배포가 필요 없다**(§2.4 참조).
 
 ```json
 {
@@ -319,7 +319,7 @@ room의 벽 콜리전은 room 경계에서 자동 생성되는 벽 세그먼트�
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | seat_id | string | JSON 내 임시 고유ID |
-| seat_db_id | UUID | seat.id (DB FK). 착석자 조회는 이 값으로 `seat_assignment` 참조 |
+| seat_db_id | UUID | seat.id (DB FK). 착석자 조회는 이 값으로 `seat.assigned_user_id` 참조(이력은 `seat_assignment_history`) |
 | seat_type | enum | fixed(고정), free(자율), temp(임시), partner(협력사) |
 | team_zone_id | UUID | team_zone.id (공간 소속. 직원 배정과 무관) |
 | coords | object | 좌석 중심 좌표(x, y) |
@@ -624,46 +624,31 @@ archived   → 이전 버전. 참고용만 유지.
 ```
 draft → validated → deployed
                        │
-                       ├─(롤백)→ rolled_back ─→ (이전 버전) re-deployed
+                       ├─(롤백)→ 현 deployed 를 archived 처리 ─→ 이전 버전 재deployed
                        └─(신버전 배포)→ 이전 deployed 는 archived
 ```
 
-- **롤백 시 상태 전이**: 현재 `deployed` 레이아웃을 `rolled_back`으로 표시하고, 지정한 이전 버전을 다시 `deployed`로 승격(re-deployed)한다.
+- **롤백 시 상태 전이**: 롤백 = 현재 `deployed` 레이아웃을 `archived` 처리하고, 지정한 이전 버전을 다시 `deployed`로 승격(재deployed)한다. 별도 `rolled_back` 상태는 없다(04 §3.4 enum 4종 draft/validated/deployed/archived 유지).
 - **라이브 클라이언트 강제 동기화**: 배포/롤백이 확정되면 서버가 접속 중인 모든 클라이언트에 `layout_updated`(layout_id, new_version, schema_version) 이벤트를 push한다. 클라이언트는 안전 시점(회의 중이 아니거나 이동 정지 상태)에 새 레이아웃을 재로드한다. 회의 중 사용자에 대한 처리는 §Open questions 1의 정책을 따른다.
 
 ### 2.3 버전 히스토리
 
 ```sql
--- office_layouts 테이블
-id, office_id, floor_id, version, status, json, created_at, updated_at, created_by, updated_by, changelog
-
--- 예: changelog (배열 — 변경 이력이 누적되므로 단일 객체가 아닌 배열로 저장)
-[
-  {
-    "changed_by": 102,
-    "changed_at": "2026-07-01T15:30:00Z",
-    "changes": [
-      { "type": "added_seat", "seat_id": "S_101" },
-      { "type": "updated_room", "room_id": "R_001", "fields": ["capacity", "name"] }
-    ]
-  },
-  {
-    "changed_by": 102,
-    "changed_at": "2026-07-02T09:10:00Z",
-    "changes": [
-      { "type": "added_door", "room_id": "R_001", "door_id": "D_002" }
-    ]
-  }
-]
+-- office_layout 테이블(04 §2.3 정본)
+id, office_id, floor_id, version, status, json, created_by, validated_by, deployed_at, deployment_notes, created_at, updated_at
 ```
+
+> **변경 이력 기록**: 이전 서술의 `updated_by`·`changelog` 컬럼은 없다(04 정본과 통일). 레이아웃 변경 이력은 공용 `audit_log`(04 §2.6, 예: `office_layout_deployed`)로 기록한다.
 
 ### 2.4 좌석 배정과 레이아웃의 분리 (D10)
 
-좌석-직원 배정은 layout JSON이 아니라 DB `seat_assignment` 테이블(04-data-model.md)에 저장된다.
+좌석-직원 배정은 layout JSON이 아니라 DB `seat.assigned_user_id`(현재값) + `seat_assignment_history`(이력) — 04-data-model.md 정본 — 에 저장된다.
+
+> **C4-a 정본 확정(2026-07-02)**: 배정 정본은 04의 `seat.assigned_user_id` + `seat_assignment_history`(해제 시각은 `unassigned_at`)다. 이전 서술의 별도 `seat_assignment` 테이블(erp_user_id, released_at)은 존재하지 않는다.
 
 - layout JSON은 좌석의 **공간 구조**(위치·타입·방향·설비)만 담고 `assigned_user_id`를 갖지 않는다.
-- 착석자 조회: `seat_db_id`로 `seat_assignment`(seat_db_id, erp_user_id, assigned_at, released_at) 참조.
-- **좌석 배정 변경(직원 자리 이동, 자율좌석 점유/반납 등)은 `seat_assignment`만 갱신**하며 layout 재배포·재검증이 필요 없다. 따라서 배정 변경은 버전을 올리지 않는다(라이브 중 변경으로 인한 inconsistent 위험이 원천 제거됨).
+- 착석자 조회: `seat_db_id`로 `seat.assigned_user_id`(현재값)를 참조하고, 이력은 `seat_assignment_history`(seat_id, user_id, assigned_at, unassigned_at)를 참조.
+- **좌석 배정 변경(직원 자리 이동, 자율좌석 점유/반납 등)은 `seat.assigned_user_id`(+ `seat_assignment_history` 이력)만 갱신**하며 layout 재배포·재검증이 필요 없다. 따라서 배정 변경은 버전을 올리지 않는다(라이브 중 변경으로 인한 inconsistent 위험이 원천 제거됨).
 - 공간 구조 변경(좌석 신설/삭제/좌표 이동)만 layout 버전을 올린다.
 
 ---
@@ -714,7 +699,7 @@ id, office_id, floor_id, version, status, json, created_at, updated_at, created_
 | **팀 구역 연결** | ERROR | zone의 erp_team_id가 유효한가?(ERP teams 존재 확인) |
 | **org_group 누락** | WARNING | zone이 org_group_id를 지정하지 않으면 경고(권한 계층에 영향) |
 
-> **좌석 배정 검증 제외(D10)**: 좌석-직원 배정은 layout JSON에 없으므로(§2.4) 여기서 검증하지 않는다. 배정 유효성(erp_user 존재 등)은 `seat_assignment` 저장 시점에 별도로 검증한다.
+> **좌석 배정 검증 제외(D10)**: 좌석-직원 배정은 layout JSON에 없으므로(§2.4) 여기서 검증하지 않는다. 배정 유효성(erp_user 존재 등)은 `seat.assigned_user_id` 갱신(및 `seat_assignment_history` 기록) 시점에 별도로 검증한다.
 
 ### 3.4 설비 검증
 
@@ -1337,13 +1322,13 @@ sequenceDiagram
   "connections": {
     "floor_adjacencies": [
       {
-        "floor_id": 2,
+        "floor_id": "550e8400-e29b-41d4-a716-446655440019",
         "exit_id": "EXIT_STAIR",
         "entry_id": "SP_STAIR_DOWN",
         "description": "계단(2층으로)"
       },
       {
-        "floor_id": 4,
+        "floor_id": "550e8400-e29b-41d4-a716-446655440021",
         "exit_id": "EXIT_ELEVATOR",
         "entry_id": "SP_ELEVATOR",
         "description": "엘리베이터(4층으로)"
@@ -1353,12 +1338,12 @@ sequenceDiagram
       {
         "exit_id": "EXIT_STAIR",
         "coords": { "x": 75.0, "y": 55.0 },
-        "target_floor_id": 2
+        "target_floor_id": "550e8400-e29b-41d4-a716-446655440019"
       },
       {
         "exit_id": "EXIT_ELEVATOR",
         "coords": { "x": 78.0, "y": 28.0 },
-        "target_floor_id": 4
+        "target_floor_id": "550e8400-e29b-41d4-a716-446655440021"
       }
     ],
     "zone_to_room_shortcuts": [
@@ -1519,13 +1504,13 @@ func layout_to_world(coords: Dictionary, floor_height: float) -> Transform3D:
 - 좌표계는 2D(x, y)만 저장(원점 top_left, 미터). 월드 Y(높이축)는 `floor_height_m` 오프셋 + 에셋 자체 높이로 결정되고, layout의 y는 월드 Z(남북)에 매핑된다(§5.3, D25).
 - 좌석은 room 내부(by_seats 모드일 때 capacity만큼) 또는 개방 구역/by_room에 속함.
 - 에셋 카탈로그(asset 테이블)는 클라이언트 빌드에 동봉되며, JSON에서는 asset_id로만 참조(D8).
-- 좌석-직원 배정은 layout이 아니라 `seat_assignment` DB가 담당(D10). ERP DB 동기화(teams, users)는 별도 배치 작업.
+- 좌석-직원 배정은 layout이 아니라 `seat.assigned_user_id` + `seat_assignment_history` DB가 담당(D10, C4-a). ERP DB 동기화(teams, users)는 별도 배치 작업.
 
 ### Validation criteria
 - [x] 모든 필드 설명: 타입, 필수 여부, 용도
 - [x] 예시 JSON: 실제 사용 가능 (Godot 로드, 검증 통과) — v1.1에서 자체 검증 위반(입장 트리거 경계·by_seats 좌석 0개·문 개구부) 수정 완료
 - [x] 검증 규칙: 에러/경고 분류, 심각도별 처리 흐름, 검증 아키텍처(D12)
-- [x] 버전 관리: schema_version 호환성 처리, status·롤백 상태 전이, changelog(배열)
+- [x] 버전 관리: schema_version 호환성 처리, status·롤백 상태 전이(archived 재서술), 변경 이력 audit_log 기록(04 정본)
 - [x] mermaid 다이어그램: 검증 시퀀스(웹 경량/서버 정밀 분리)
 - [x] 상호 참조: 00(정본), 04, 06, 07 등 다른 문서 명확히 표기
 
@@ -1543,9 +1528,10 @@ func layout_to_world(coords: Dictionary, floor_height: float) -> Transform3D:
 |------|------|----------|
 | 1.0 | 2026-07-01 | 초안 |
 | 1.1 | 2026-07-02 | 00-decisions 반영: D9 문 개구부(doors[]) 신설·room 벽 자동생성 규칙, D10 좌석 배정 분리(assigned_user 제거·facing·furniture_id·§2.4), D25 좌표계 top_left 단일화·Godot 매핑식·floor_height 오프셋(§5.3), D12 검증 아키텍처(서버 단일 정밀검증·공식 JSON Schema·ERROR 배포차단)·검증 흐름 재작성, D8 에셋 asset_id 카탈로그 참조·model_glb 제거·씬빌더 ResourceLoader+MultiMesh, D7 드로우콜 예산 파생값 기준, schema_version 호환성·롤백 상태전이 보강, collider shape 필드 분리, floor_id UUID 통일, performance 서버 파생 계산, 샘플 JSON 자체 검증 위반 수정, "설파" 오탈자 수정, changelog 배열화 |
+| 1.2 | 2026-07-02 | 데이터 정본 정렬: C4-a 좌석 배정 정본을 04(`seat.assigned_user_id`+`seat_assignment_history`, `unassigned_at`)로 확정·`seat_assignment`/`released_at` 참조 전면 정정, 상태 전이도 `rolled_back` 제거(롤백=archived 처리+이전 버전 재deployed, 04 enum 4종 유지), §2.3 컬럼 목록 04 정본 정정(updated_by·changelog 삭제→validated_by·deployed_at·deployment_notes, 이력은 audit_log), §6 샘플 JSON connections floor_id/target_floor_id UUID 정정(§1.2.12 규약) |
 
 ---
 
 **작성자**: 시스템 설계팀  
 **마지막 수정**: 2026-07-02  
-**검토 상태**: 개정(v1.1, 정본 결정 반영)
+**검토 상태**: 개정(v1.2, 데이터 정본 정렬 반영)

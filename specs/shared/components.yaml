@@ -22,11 +22,12 @@ shared_components:
       - screen-virtual-office-3d (header-toolbar: office/floor/search)
       - screen-org-chart-editor (toolbar: add_dept, deploy, preview)
       - screen-employee-directory (filter-toolbar: team, status, search, csv)
-      - screen-seat-layout-editor (toolbar: undo/redo, 3d-preview, save)
+      - screen-seat-layout-editor (toolbar: undo/redo, 데스크톱 draft 열기, save)
       - screen-kpi-dashboard (header-controls: period, team, export)
       - screen-meetings (date-selector: add meeting, view tabs)
       - screen-work-log (date-tabs: period selection)
-    count: 7
+      - screen-sync-monitoring (retry-button: 수동 재시도)
+    count: 8
 
   - id: component-selector-dropdown
     type: form
@@ -42,8 +43,7 @@ shared_components:
       - screen-seat-layout-editor (office/floor selector)
       - screen-employee-directory (team-filter, status-filter)
       - screen-kpi-dashboard (period-selector, team-filter)
-      - screen-meetings (date-selector)
-    count: 5
+    count: 4
 
   - id: component-search-input
     type: form
@@ -76,7 +76,9 @@ shared_components:
     used_by:
       - screen-employee-directory (employee-table)
       - screen-work-log (work-list)
-    count: 2
+      - screen-kpi-objection (admin-objection-queue: 이의신청 접수 목록)
+      - screen-sync-monitoring (job-status-table: 작업별 상태)
+    count: 4
 
   - id: component-list
     type: list
@@ -92,7 +94,8 @@ shared_components:
       - screen-employee-directory (team-filter-dropdown, status-filter)
       - screen-meetings (participant-list, action-item list)
       - screen-work-log (work-list, action-item dashboard)
-    count: 5
+      - screen-sync-monitoring (failure-history-list: 실패 이력)
+    count: 6
 
   - id: component-card
     type: panel
@@ -122,10 +125,13 @@ shared_components:
       - screen-virtual-office-3d (avatar-hud-overlay: status badge)
       - screen-employee-directory (status-badge: presence.status)
       - screen-org-chart-editor (validation-banner: error/warning count)
-      - screen-meetings (participant-list: status icons)
+      - screen-meetings (participant-list: status icons, recording-consent-banner)
       - screen-work-log (status-badge: work status)
       - screen-kpi-dashboard (status-badge: admin review status, erp-push-indicator)
-    count: 6
+      - screen-kpi-objection (objection-status-tracker: none→submitted→reviewing→resolved)
+      - screen-sync-monitoring (status-badge: sync/push 상태)
+      - screen-auth (login-error-message: 401 실패)
+    count: 9
 
   # ============================================================
   # 3. 폼 & 입력 컴포넌트
@@ -141,11 +147,9 @@ shared_components:
       actions: [create, update, delete, validate]
       validation: [inline_errors, banner_messages]
     used_by:
-      - screen-org-chart-editor (org_group 생성, team_zone 매핑)
-      - screen-seat-layout-editor (요소 편집)
-      - screen-meetings (meeting 생성, participant 추가)
-      - screen-work-log (work_log 생성/수정)
-    count: 4
+      - screen-org-chart-editor (org_group 생성 모달, error_detail_modal)
+      - screen-work-log (work-form-modal: work_log 생성/수정)
+    count: 2
 
   - id: component-textarea
     type: form
@@ -157,7 +161,8 @@ shared_components:
       - screen-meetings (decisions-section, notes-section, review notes)
       - screen-work-log (daily-status-form: 4개 텍스트 필드)
       - screen-kpi-dashboard (ai-draft, admin-review notes)
-    count: 3
+      - screen-kpi-objection (objection-form: 사유 입력, admin-review-panel 코멘트)
+    count: 4
 
   - id: component-date-picker
     type: form
@@ -167,11 +172,10 @@ shared_components:
     properties:
       mode: [single, range, period]
     used_by:
-      - screen-seat-layout-editor (filter by floor_id, created_at)
       - screen-kpi-dashboard (period-selector)
       - screen-meetings (calendar date selector)
       - screen-work-log (date-tabs: date range)
-    count: 4
+    count: 3
 
   # ============================================================
   # 4. 레이아웃 & 패널 컴포넌트
@@ -194,7 +198,8 @@ shared_components:
       - screen-seat-layout-editor (layers-panel, team-zones-list)
       - screen-seat-layout-editor (properties-panel: 요소 속성)
       - screen-employee-directory (detail-panel: 직원 상세정보)
-    count: 7
+      - screen-kpi-objection (admin-review-panel: 재검토 패널)
+    count: 8
 
   - id: component-split-view
     type: layout
@@ -207,7 +212,7 @@ shared_components:
       panels: [3d_viewport, 2d_canvas, form, preview]
     used_by:
       - screen-virtual-office-3d (viewport-3d-main + sidebar + right-panel + footer)
-      - screen-seat-layout-editor (canvas-2d + viewport-3d-preview + properties)
+      - screen-seat-layout-editor (palette + canvas-2d + properties)
     count: 2
 
   - id: component-details-panel
@@ -241,8 +246,8 @@ shared_components:
       interactive: [movement, camera_control, room_entry]
     used_by:
       - screen-virtual-office-3d (viewport-3d-main: 메인 3D 공간)
-      - screen-seat-layout-editor (viewport-3d-preview: 배치 검증)
-    count: 2
+    count: 1
+    note: 좌석 배치 편집기의 웹 3D 미리보기는 제거됨(D11) — 데스크톱 클라이언트 draft 모드로 대체
 
   - id: component-canvas-2d
     type: canvas
@@ -290,7 +295,7 @@ shared_components:
     used_by:
       - screen-virtual-office-3d (meeting 입장 실패)
       - screen-employee-directory (erp-sync failure)
-      - screen-seat-layout-editor (3d-preview load fail)
+      - screen-seat-layout-editor (서버 검증 실패/저장 오류)
       - screen-kpi-dashboard (ai-draft generation fail)
       - screen-work-log (eod-batch failure)
     count: 5
@@ -318,9 +323,10 @@ shared_components:
       variants: [spinner, progress_bar, skeleton]
     used_by:
       - screen-org-chart-editor (배포 진행바)
-      - screen-seat-layout-editor (3d 렌더링 로딩)
+      - screen-seat-layout-editor (저장·서버 검증 진행 표시)
       - screen-employee-directory (목록 로딩)
-    count: 3
+      - screen-auth (loading-indicator: 로그인 요청 중 스피너)
+    count: 4
 
   # ============================================================
   # 7. 고급 컴포넌트
@@ -358,25 +364,24 @@ shared_components:
     count: 1
 
 metadata:
-  total_shared_components: 29
+  total_shared_components: 22 # 실제 정의 수와 일치(2026-07-02 재계산)
   categories:
-    navigation: 3
-    data_display: 5
-    input: 4
-    layout: 3
-    rendering: 2
-    feedback: 4
-    visualization: 3
-    advanced: 2
+    navigation: 3 # toolbar, selector-dropdown, search-input
+    data_display: 4 # table, list, card, badge
+    input: 3 # form-modal, textarea, date-picker
+    layout: 3 # sidebar-panel, split-view, details-panel
+    rendering: 2 # viewport-3d, canvas-2d
+    feedback: 4 # empty-state, error-state, validation-banner, loading-indicator
+    visualization: 3 # chart-progress-bar, calendar-grid, timeline-history
 
 component_usage_summary:
   most_used:
-    - component-toolbar (7 screens)
-    - component-selector-dropdown (5 screens)
-    - component-sidebar-panel (7 screens)
-    - component-badge (6 screens)
-    - component-empty-state (4 screens)
+    - component-badge (9 screens)
+    - component-toolbar (8 screens)
+    - component-sidebar-panel (8 screens)
+    - component-list (6 screens)
     - component-error-state (5 screens)
+    - component-empty-state (4 screens)
   essential:
     - component-toolbar
     - component-sidebar-panel

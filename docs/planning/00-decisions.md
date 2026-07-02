@@ -28,7 +28,7 @@
 | **D7** | 라이팅 = **실시간 직접광 + ReflectionProbe + SSAO** | 라이트맵 베이킹 배제(JSON 동적 씬과 양립 불가). SDFGI는 고사양 PC용 옵션 토글. 기준 사양: **GTX 1650급 60fps / 내장그래픽(Iris Xe급) 30fps** | 라이트맵 베이크 파이프라인, "RTX 4060 최소" 요구 |
 | **D8** | 에셋 전달 = **클라이언트 빌드(pak) 동봉** | 에셋 카탈로그는 클라이언트에 포함(임포트 최적화·VRAM 압축·LOD 적용). layout JSON은 `asset_id` 참조만. 신규 에셋 추가 = 클라이언트 자동 업데이트 채널로 배포. 산출물 포맷 `.tscn`(임포트 완료본) | 런타임 glb 다운로드/CDN, Draco·meshopt 압축(Godot 미지원) |
 | **D9** | room = **파라메트릭 생성** | 벽 세그먼트 + **door opening(문 개구부) 필드 신설** — 방 콜리전에 출입구 구멍 정의. 프리팹은 가구·소품만 | 회의실 골조 프리팹(고정 크기), 개구부 없는 solid box 콜리전 |
-| **D10** | 좌석 배정 = **layout JSON에서 분리** | layout JSON은 공간 구조만(좌석 위치·타입·방향). 좌석↔직원 배정은 DB(`seat_assignment`). 배정 변경은 레이아웃 재배포 불필요. seat에 `facing`(도 단위) 필드 추가, seat↔furniture 상호 참조(`furniture_id`) 추가 | 배정 포함 blob 전체 재배포 |
+| **D10** | 좌석 배정 = **layout JSON에서 분리** | layout JSON은 공간 구조만(좌석 위치·타입·방향). 좌석↔직원 배정은 DB(`seat.assigned_user_id` 현재값 + `seat_assignment_history` 이력) — 04 정본과 명명 통일(2026-07-02). 배정 변경은 레이아웃 재배포 불필요. seat에 `facing`(도 단위) 필드 추가, seat↔furniture 상호 참조(`furniture_id`) 추가 | 배정 포함 blob 전체 재배포 |
 | **D11** | 웹 3D 미리보기 = **제거** | 편집기는 Konva.js 2D 전용. 정밀 확인은 저장 후 **데스크톱 클라이언트 draft 모드**로 열람. WASM/HTML5 export 미사용(PRD WON'T 준수) | Godot HTML5 export iframe, WebSocket 픽셀 스트리밍 |
 | **D12** | 레이아웃 검증 = **서버(FastAPI) 단일 정밀 검증** | 공식 JSON Schema 파일 제공. 도달성(A*) 포함 정밀 검증은 서버 1곳. 웹 편집기는 경량 체크(범위/겹침)만. **ERROR는 배포 불가**(`[무시하고 배포]` 버튼 제거), WARNING만 무시 가능 | 웹/서버/Godot 3중 검증 구현 |
 | **D25** | 좌표계 = **top_left 단일 고정, 미터 단위** | `coordinate_origin`은 `top_left` 하나만 허용. Godot 매핑: `Vector3(x, floor_height, y)` (+X 동, +Z 남). 회전·facing 단위는 **도(degree), 시계방향, 기준축 +X**. 층별 `floor_height` 오프셋 규칙 명시 | origin 3종 허용, 단위/방향 미정의 |
@@ -57,7 +57,7 @@
 
 | ID | 결정 | 내용 | 폐기되는 대안 |
 |----|------|------|-------------|
-| **D21** | 인프라 = **사내 VM 단일화** | 웹 프론트 포함 전부 사내 VM 배포. 사내 도메인 + **사내 PKI(자체 CA)** TLS. 관측: **Grafana + Prometheus + Loki** + Uptime Kuma + 알림 채널 1개(1인 운영 규모). 배치/큐: **APScheduler + DB 영속 재시도 큐**. 시크릿: .env 파일 권한 제한(600) + 반기 로테이션 정책 문서화 | Vercel, Let's Encrypt(.internal 발급 불가), ELK/Jaeger/온콜 에스컬레이션, Celery+RabbitMQ, 메모리 큐 |
+| **D21-r** (2026-07-02 개정) | 인프라 = **온프렘 사내 서버 PC 1대 + Docker Compose(Linux)** | 웹 프론트 포함 전부 서버 PC 1대에 Docker Compose 배포. **VPN 없음 → 인터넷 공개**. 공인 고정 IP + 공인 도메인(추후 구매, 그 전 임시 Caddy 내부 CA) + **Let's Encrypt 자동(Caddy)**. 관측: **Grafana + Prometheus + Loki** + Uptime Kuma + 알림 채널 1개(1인 운영 규모). 배치/큐: **APScheduler + DB 영속 재시도 큐**. 시크릿: .env 파일 권한 제한(600) + 반기 로테이션 정책 문서화. **정본: docs/deployment/onprem-docker.md**. ~~(구버전 D21: 사내 VM 단일화 · 사내 도메인 + 사내 PKI(자체 CA) TLS · 폐기: Let's Encrypt)~~ | 사내 PKI(.internal), Vercel, ELK/Jaeger/온콜 에스컬레이션, Celery+RabbitMQ, 메모리 큐 |
 | **D22** | 성능·규모 정본 수치 | 동시접속: **설계 100명 / 도그푸딩 검증 20명**(500명 표기 전부 삭제). 아바타 동기화: E2E(입력→원격 표시) **p95 < 500ms**, 서버 tick 20Hz. 대역폭: 브로드캐스트 팬아웃 O(N²) 명시, 100명 초과 시 AOI 필터링+바이너리 직렬화 도입 검토. 화상 음성 지연 < 200ms(사내망). 클라이언트: 60fps@GTX1650(최소 30fps@내장), 로딩 < 5초. 회의록: 자동 초안 발화자·액션아이템 누락률 < 5%(수동 전사 대조 측정) | 10/100/500 혼재, 측정 방법 없는 수치 |
 
 ## F. Phase 0 스파이크 (신설 필수)

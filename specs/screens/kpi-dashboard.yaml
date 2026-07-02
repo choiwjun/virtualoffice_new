@@ -2,15 +2,17 @@ version: "2.0"
 
 screen:
   name: KPI 대시보드
-  route: /admin/kpi
+  route: /admin/kpi # 관리자 검토·확정용. 본인 KPI 열람은 /kpi (라우팅 분리)
   platform: web
   layout: sidebar-main
+  required_role: employee # 본인 KPI(/kpi)는 전 역할, 팀 순위·조정·확정(/admin/kpi)은 leader(팀 한정)/admin — §3.10
 
 data_requirements:
   - resource: kpi_result
-    needs: [id, user_id, period, kpi_date, metric, value, ai_draft, ai_draft_generated_at, admin_reviewed, admin_adjusted, admin_adjusted_value, admin_review_note, admin_reviewed_at, pushed_to_erp, pushed_at, source, unit]
+    needs: [id, user_id, period_type, period_key, metric, value, unit, source, ai_draft, ai_draft_generated_at, ai_model, admin_adjusted_score, admin_note, admin_user_id, admin_reviewed_at, objection_status, final_score, finalized_at, pushed_to_erp, pushed_at]
     filters:
-      period: "?period"
+      period_type: "?period_type"
+      period_key: "?period_key"
       user_id: "?user_id"
     mutations: [update]
     access: read-write
@@ -99,7 +101,7 @@ components:
   - id: status-badge
     type: badge
     position: main
-    function: 검토 상태 배지 (checked: admin_reviewed boolean)
+    function: 검토 상태 배지 (admin_reviewed_at 유무 + finalized_at 유무 + objection_status로 판정)
 
   - id: erp-push-indicator
     type: badge
@@ -111,7 +113,7 @@ events:
     do: 필터링 조건 변경, kpi_result 재로드
 
   - on: admin_review_submitted
-    do: kpi_result.admin_adjusted, admin_adjusted_value, admin_review_note, admin_reviewed_at 업데이트
+    do: kpi_result.admin_adjusted_score, admin_note, admin_user_id, admin_reviewed_at 업데이트 (확정 시 final_score = admin_adjusted_score ?? value, finalized_at 설정)
 
   - on: ai_draft_not_found
     do: 에러 모달 표시 (재시도/수동입력 옵션)
@@ -123,17 +125,18 @@ tests:
   - name: "정상 흐름 - KPI 조회 및 AI 초안 표시"
     when: "사용자가 기간을 선택하고 대시보드 로드"
     then:
-      - "kpi_result 데이터가 로드됨 (선택한 period로 필터링)"
+      - "kpi_result 데이터가 로드됨 (선택한 period_type + period_key로 필터링)"
       - "metric 별 진행도 바가 value를 반영하여 표시 (색상: 초록/노랑/빨강)"
-      - "ai_draft가 표시되고 ai_draft_generated_at 타임스탐프 표시"
-      - "admin_reviewed=false이면 [검토중] 배지, true이면 [확정] 배지"
+      - "ai_draft(강점/개선/근거 서술)가 표시되고 ai_draft_generated_at 타임스탐프 표시"
+      - "admin_reviewed_at=null이면 [검토중] 배지, finalized_at 설정 시 [확정] 배지"
 
   - name: "관리자 검토 및 조정 - 값 수정"
     when: "관리자가 admin-review-form에서 조정값을 입력하고 저장"
     then:
-      - "admin_adjusted=true, admin_adjusted_value 저장"
-      - "admin_review_note 필드에 의견 저장"
-      - "admin_reviewed=true, admin_reviewed_at 타임스탐프 기록"
+      - "admin_adjusted_score 저장 (조정 여부는 admin_adjusted_score IS NOT NULL로 판정)"
+      - "admin_note 필드에 의견 저장"
+      - "admin_user_id, admin_reviewed_at 기록"
+      - "확정 시 final_score = admin_adjusted_score ?? value, finalized_at 설정"
       - "상태 배지가 [승인] 또는 [조정]으로 업데이트"
 
   - name: "AI 평가 실패 - 에러 상태 및 복구"
@@ -147,10 +150,10 @@ tests:
   - name: "ERP 동기화 상태 추적"
     when: "관리자가 [내보내기] 버튼 클릭하여 ERP 푸시 초기화"
     then:
-      - "daily_status_push 레코드 생성 (user_id, push_date, target=erp_kpi_results, status=pending)"
+      - "daily_status_push 레코드 생성 (user_id, push_date, target=erp_kpi_results, status=pending, run_id 부여) — final_score만 전송(D15)"
       - "kpi_result.pushed_to_erp=true, pushed_at 타임스탐프 설정"
-      - "erp-push-indicator에 상태 표시 (pending → sent, 또는 failed 시 에러 메시지)"
-      - "EOD 배치 실행 후 상태 업데이트 (retry_count 추적)"
+      - "erp-push-indicator에 상태 표시 (pending → sent, 또는 failed 시 error_message)"
+      - "관리자 확정 이벤트 + 분기 마감 배치로 push (retry_count 추적, D15·D17)"
 
   - name: "팀 KPI 종합 및 순위 조회"
     when: "사용자가 팀 필터를 선택하고 [팀랭킹] 탭 클릭"
@@ -161,16 +164,16 @@ tests:
       - "각 지표별 팀 평균값과 개인값 비교 차트 표시"
 
 notes:
-  - "KPI 지표 계산: 매일 18:00 배치로 자동 수행, 데이터 소스 = work_log, meeting, meeting_minute, action_item"
+  - "KPI 지표 계산: 21:00 야간 배치(D17)로 자동 수행(결정론적 코드), 데이터 소스 = work_log, meeting, meeting_minute, action_item"
   - "결과중심 원칙: 협업점수·회의생산성 지표는 회의록(decisions)·액션아이템 이행률·완료 업무 기반으로 산출. meeting.started_at/ended_at은 표시·맥락용이며 접속시간·참석횟수를 KPI 산식에 반영하지 않음(반감시)."
-  - "AI 초안 생성: Claude API 호출, ai_draft_generated_at 기록, 실패 시 ai_draft=null"
-  - "Admin 검토: admin_reviewed=true, admin_adjusted=false 또는 true로 구분"
-  - "ERP 푸시: 매일 근무 종료 후 EOD 배치로 자동 수행, daily_status_push 로그 생성"
+  - "AI 초안 생성: 21:00 야간 배치(D17)에서 Claude API 호출(서술만 — 정량 점수는 결정론적 코드, D14-e), ai_draft_generated_at 기록, 실패 시 ai_draft=null"
+  - "Admin 검토: admin_reviewed_at 기록. 조정 여부는 admin_adjusted_score IS NOT NULL로 판정(별도 boolean 없음, D16)"
+  - "ERP 푸시: 관리자 확정 이벤트 + 분기 마감 배치(D15·D17), daily_status_push 로그 생성(final_score만 전송)"
+  - "이의신청: objection_status(none→submitted→reviewing→resolved)는 kpi-objection.yaml 화면에서 처리, 본 화면은 상태 표시만"
   - "지표 정의 문서: 06-screens.md §3.4의 지표 상세 참조"
 
 open_questions:
-  - "팀 필터 기준: org_group (상위 조직)을 사용할지, team_zone (물리적 구역)을 사용할지?"
-  - "기간(period) 포맷 명확화: 분기(2026-Q3) vs 월(2026-07) vs 일(2026-07-01)?"
+  - "팀 필터 기준: org_group (상위 조직)을 사용할지, team_zone (물리적 구역)을 사용할지? (벤치마크는 user_team_history 기준 — 04 §2.3)"
   - "AI 초안 재시도 정책: 몇 초 후 몇 회까지 자동 재시도할지?"
   - "복수 관리자인 경우 검토 workflow: sequential vs parallel?"
   - "메트릭 weight 변경: hardcoded(완료도×30%...)인지 UI에서 조정 가능한지?"

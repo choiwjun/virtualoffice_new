@@ -22,7 +22,7 @@
 | # | 리스크명 | 영향도 | 확률 | 시간(주) | 완화 전략 | 담당 | 상태 |
 |---|---------|--------|------|---------|---------|------|------|
 | R1 | **Godot 크로스플랫폼 빌드 복잡성** | 높음 | 중 | 1~2 | Phase 1부터 네이티브 빌드 CI/CD 준비; 윈도우만 우선 검증 | backend-specialist + 3d-engine-specialist | OPEN |
-| R2 | **자동 업데이트 메커니즘 미정** | 높음 | 높음 | 1 | Phase 6~7에 업데이트 전략 정의 (GitHub Releases vs 사내 배포 서버) | DevOps 역할 필요 (외주 또는 1인 담당) | OPEN |
+| R2 | **자동 업데이트 메커니즘 미정** | 높음 | 높음 | 1 | Phase 6~7에 업데이트 전략 정의 — 배포 경로는 사내 배포 서버로 방향 확정(D8/D21-r 정합, 2026-07-02), 세부 구현만 미결 | DevOps 역할 필요 (외주 또는 1인 담당) | OPEN |
 | R3 | **ERP DB 접근 프로비저닝 지연** | 중 | 중 | 0.5 | Phase 1 전 read-only 계정 생성; DBA 조율 필요 | 인프라 담당자 | BLOCKED |
 | R4 | **ERP 근태 벌크 조회 API 부재** | 중 | 확정 | 2 | 초기 동기화는 DB 직접 접근; 실시간은 trigger/CDC 고려 또는 정기 배치 | backend-specialist | MITIGATED |
 | R5 | **3D 출근 ↔ ERP 출퇴근 연결 규칙 미결** | 중 | 높음 | 2 | OQ3 결정으로 분리 확정: 3D 프레즌스(로그인·좌석·회의실)는 우리 소유, ERP 출퇴근은 read-only | 기획 + backend-specialist | MITIGATED |
@@ -50,8 +50,8 @@
 
 #### R2: 자동 업데이트 메커니즘 미정
 - **상황**: 네이티브 데스크톱 배포 시 자동 업데이트(OTA, Over-The-Air)가 표준.
+- **방향 확정(2026-07-02)**: 배포 경로는 **사내 배포 서버**(D8/D21-r 정합) — 세부 구현만 미결.
 - **미결정**: 
-  - 배포 경로 (GitHub Releases vs 사내 배포 서버).
   - 버전 관리 및 롤백 정책.
   - 보안 서명 및 체크섬 검증.
 - **영향**: 유저 경험(수동 재설치 불편) 및 보안(unsigned 바이너리 배포 리스크).
@@ -71,8 +71,8 @@
 - **사실**: ERP GET /api/attendance/admin/record?user_id=&date= 는 **단건 조회만 지원** (벌크 없음).
 - **선택**: 근태 벌크는 **read-only DB 직접 접근** (attendances 테이블).
 - **완화**:
-  1. Phase 2에 동기화 스크립트 작성 (SELECT * FROM attendances WHERE date >= ? AND date <= ? AND company_id = ?).
-  2. 실시간 vs 배치: 초기는 EOD 배치(매일 18:00), 향후 PostgreSQL trigger 또는 변경데이터캡처(CDC) 고려.
+  1. Phase 2에 동기화 스크립트 작성 (SELECT user_id, attendance_date, check_in_at, check_out_at, work_type FROM attendances WHERE attendance_date >= ? AND attendance_date <= ? AND company_id = ?). (컬럼명 라이브 검증 2026-07-02)
+  2. 실시간 vs 배치: **매시간 증분 + 매일 00:00 전체 대사(D18)**. 18:00은 daily_reports push(D17)로 별개 프로세스(2026-07-02 정정). 향후 PostgreSQL trigger 또는 변경데이터캡처(CDC) 고려.
   3. 시간대: ERP 시간대(KST)와 우리 시간대 일치 확인.
 
 #### R5: 3D 출근 ↔ ERP 출퇴근 연결 규칙 미결
@@ -94,7 +94,7 @@
 - **결정(2026-07-01)**: OQ5 확정으로 호스팅 환경 확정됨.
 - **선택**: LiveKit + coturn self-host (Docker Compose), 사내 통제 인프라(온프렘 VM 또는 사내 클라우드 계정).
 - **네트워크**:
-  - 재택/하이브리드/외근: 회사 VPN 또는 TURN-over-TLS(443 공개 엔드포인트)로 접속.
+  - 재택/하이브리드/외근: 공개 엔드포인트 직결(UDP) + TURN-TLS 443 폴백 (VPN 없음 확정 2026-07-02).
 - **배제**:
   - LiveKit Cloud (SaaS, 민감 미디어 외부 경유, 구독비, B2B 이후).
   - 순수 신규 AWS (데이터 주권, 사내 우선 고려 시 후순위).
@@ -103,7 +103,7 @@
   1. Phase 4 중반에 성능 테스트 (10명 동시 회의).
   2. 모니터링: Prometheus + Grafana 기본 구성.
   3. 초기(Phase 1~5)는 Docker Compose로 테스트; Phase 6 이후 프로덕션 안정화.
-  4. 잔여 협의: 사외 회의 접속 경로(VPN 유무/TURN 공개 여부)는 인프라 상황 맞춰 결정.
+  4. 종결(2026-07-02): VPN 없음 → 공개 엔드포인트.
 
 #### R7: 1인 개발 순서 병목
 - **핵심 리스크**: 가장 높은 우선순위.
@@ -192,14 +192,15 @@
 | OQ2 | **근태 벌크 동기화: 초기 로드 vs 실시간 CDC?** | 중 | R4 완화 | backend-specialist | Phase 2 설계 단계 |
 | OQ3 | **3D 출근 규칙: 로그인→online, 좌석→working, 회의실→meeting, 근무상태 분리 확정** | 높음 | 없음 | 기획 + backend-specialist | Phase 0 완료(2026-07-01 확정) |
 | OQ4 | **Godot 멀티플레이어 프로토콜 → WebSocket(WSS) 확정 종결(D1)** | 중 | 없음 | 3d-engine-specialist | 확정(2026-07-02) |
-| OQ5 | **LiveKit 호스팅: 사내 self-host(Docker Compose), VPN/TURN, 단일 SFU 확정** | 중 | 없음 | 인프라 담당자 | Phase 0 완료(2026-07-01 확정) |
+| OQ5 | **LiveKit 호스팅: 사내 self-host(Docker Compose), TURN-over-TLS/UDP 직결(VPN 없음), 단일 SFU — 2026-07-02 최종 확정** | 중 | 없음 | 인프라 담당자 | 확정(2026-07-02) |
 | OQ6 | **KPI AI 초안: Claude 확정(기본), Gemini 대안 여부만 검토** | 낮음 | Phase 6 설계 | 기획 + backend-specialist | Phase 5 말 |
 | OQ7 | **좌석 미배정 시 아바타 fallback: 로비 vs 에러?** | 낮음 | Phase 2 데이터 설계 | 기획 + 3d-engine-specialist | Phase 2 설계 |
 | OQ8 | **사무실 배치 롤백: 활성 좌석/아바타를 어떻게 처리?** | 중 | Phase 3 구현 | PM + backend-specialist | Phase 3 말 |
-| OQ9 | **조직 계층별 3D 구역 접근 제어: org_group.type별로?** | 낮음 | Phase 2 설계 | 기획 + backend-specialist | Phase 2 말 |
+| OQ9 | **조직 계층별 3D 구역 접근 제어: org_group.type별로?** | 낮음 | Phase 2 설계 | 기획 + backend-specialist | 설계 Phase 2 말 / 구현 Phase 7 (2026-07-02) |
 | OQ10 | **ERP read-only DB 계정 프로비저닝: 언제? 누가 책임?** | 높음 | R3 완화 | 인프라 담당자 | Phase 0 완료 시 |
 | OQ11 | **회의실 예약 → 예약 시스템 + 즉석(FCFS) 병행 확정(D23)** | 중 | 없음 | 기획 | 확정(2026-07-02) |
-| OQ12 | **아바타 콜리전: 벽면 관통 차단 vs 통과 허용 (비장애)?** | 낮음 | Phase 1 설계 | 3d-engine-specialist | Phase 1 샘플 |
+| OQ12 | **아바타 콜리전 → 벽면 관통 차단 확정(로드맵 Phase 4 충돌 시스템과 정합) — 2026-07-02 종결** | 낮음 | 없음 | 3d-engine-specialist | 확정(2026-07-02) |
+| OQ13 | **ERP 회의실 예약 테이블(meeting_rooms/meeting_room_shares/meeting_reservations)과 우리 회의 기능의 관계 — 무시/미러/통합 중 결정** | 중 | Phase 5 착수 전 필수 | 기획 + backend-specialist | Phase 5 착수 전 (발견 2026-07-02, 라이브 스키마 검증) |
 
 ---
 
@@ -210,15 +211,16 @@
 | A1 | **ERP users.id는 변경되지 않음** | erp_user의 FK로 사용, 데이터 무결성 | ERP 스키마 문서 확인 + DBA 인터뷰 | 높음 |
 | A2 | **단일 조직(company_id) 운영** | v3.2 spec = 도그푸딩, 다중테넌트는 v3.3 이후 | 프로젝트 스코프 명시 | 높음 |
 | A3 | **ERP teams는 리프 노드만 지원** | ERP 스키마에 parent_team_id 없음 | ERP 소스코드 확인 (backend/app/models/tables.py) | 중 |
-| A4 | **사내망 안정적, 직접 DB 접근 가능** | read-only 계정으로 근태 벌크 조회 | 네트워크 아키텍처 검토 + Firewall 규칙 | 높음 |
+| A4 | **사내망 안정적, 직접 DB 접근 가능** (범위: 서버 PC↔ERP DB 구간 한정 — 사용자 접속은 인터넷 공개, onprem-docker §3, 2026-07-02) | read-only 계정으로 근태 벌크 조회 | 네트워크 아키텍처 검토 + Firewall 규칙 | 높음 |
 | A5 | **EOD 배치는 고정 시간(예: 18:00) 실행** | work_hours 기준이 아니라 규칙적 스케줄 | Phase 6에 APScheduler로 구현 및 테스트 | 중 |
 | A6 | **직원은 하루에 한 번만 출근** | 근태 로직 단순화 (중복 check_in 처리 불필요) | 사내 근무 정책 확인 | 낮음 |
 | ~~A7~~ | ~~**회의실은 first-come-first-served**~~ **폐기(D23)** — 예약 시스템 + 즉석(FCFS) **병행** 확정 | 예약 충돌 검증 유지 | OQ11 확정 종결 | — |
 | A8 | **Godot 헤드리스 서버는 권위 있는 소스** | 클라이언트는 서버 검증 결과만 신뢰 | Phase 4 보안 검토 | 중 |
 | A9 | **Asset 라이선스·속성 정확도** | CC0 및 라이선스 명시 에셋만 사용 | 각 에셋별 라이선스 문서 보관 | 낮음 |
 | A10 | **Email은 (company_id, email) 복합 유니크** | 다중테넌트 후속 고려 | ERP 스키마 제약 조건 확인 | 중 |
-| A11 | **아바타는 물리적 콜리전 무시 가능** | 게임 UX 선례 (비-장애 기능) | Phase 1 설계 검토 | 낮음 |
+| ~~A11~~ | ~~**아바타는 물리적 콜리전 무시 가능**~~ **폐기(2026-07-02)** — OQ12 벽면 관통 **차단 확정**(로드맵 Phase 4 충돌 시스템과 정합) | 게임 UX 선례 (비-장애 기능) | OQ12 확정 종결 | — |
 | A12 | **Godot 4 네이티브 빌드는 안정적** | 커뮤니티 지원, LTS 버전 예상 | Godot 릴리스 노트, 주요 프로젝트 사례 | 중 |
+| A13 | **공인 고정 IP 유지, 도메인 구매 전 임시 내부 CA 운용** | D21-r 온프렘 인터넷 공개 배포 확정(2026-07-02), onprem-docker 정본 | 배포 시 공인 IP·인증서 상태 확인 | 중 |
 
 ---
 
@@ -226,7 +228,7 @@
 
 ### 4.1 Phase별 검증 Gate
 
-> **일정 기준선(D6)**: 이 검증 간트는 **10-roadmap.md v2.0의 58주 재산정(시작 2026-07-06 → 완성 2027-08-16)과 동일한 기준선**이다. 각 Phase 기간·게이트 날짜는 로드맵과 정합한다. (기존 검증 간트의 Phase 합계 405일 ≈ 58주가 로드맵 재산정의 근거였으며, 이제 Phase별 배분과 날짜를 로드맵에 맞춰 통일.)
+> **일정 기준선(D6)**: 이 검증 간트는 **10-roadmap.md v2.0의 58주 재산정(시작 2026-07-06 → 완성 2027-08-16)과 동일한 기준선**이다. 각 Phase 기간·게이트 날짜는 로드맵과 정합한다. (기존 검증 간트의 Phase 합계 406일 = 58주가 로드맵 재산정의 근거였으며(수치 정정 2026-07-02), 이제 Phase별 배분과 날짜를 로드맵에 맞춰 통일.)
 
 ```mermaid
 gantt
@@ -272,7 +274,7 @@ gantt
 - [ ] 근태 벌크 동기화 설계 완료 (OQ2)
 - [ ] 좌석·구역 데이터 모델 확정
 - [ ] 3D 출근 규칙 분리 구현 (OQ3 확정 2026-07-01: 로그인→online, 좌석→working, 회의실→meeting, attendance read-only)
-- [ ] A1~A12 가정 재검증 및 기록
+- [ ] A1~A13 가정 재검증 및 기록 (A7·A11 폐기 확인 포함)
 
 #### Phase 3 완료 조건
 - [ ] 사무실 배치 편집기 UI/UX 완성
@@ -397,7 +399,7 @@ graph LR
 - OQ1 완료(2026-07-01): ERP git 접근권한 보유, feature/virtual-office-integration 브랜치 자체 작업.
 - OQ3 완료(2026-07-01): 3D 출근 규칙 분리 확정 (로그인→online, 좌석→working, 회의실→meeting, attendance read-only).
 - OQ4 완료(2026-07-02): 실시간 프로토콜 WebSocket(WSS) 확정(D1).
-- OQ5 완료(2026-07-01): LiveKit self-host (사내 VM, Docker Compose), VPN/TURN-over-TLS, 단일 SFU 확정.
+- OQ5 완료: LiveKit self-host (Docker Compose), TURN-over-TLS/UDP 직결(VPN 없음), 단일 SFU — 2026-07-02 최종 확정.
 - OQ11 완료(2026-07-02): 회의실 예약 + 즉석(FCFS) 병행 확정(D23), A7 폐기.
 - R7: 1인 개발 속도가 예상 12주(Phase 1) 이내에 끝날 수 있는가?
 
@@ -408,7 +410,7 @@ graph LR
 
 ### Validation Criteria
 - 모든 R1~R14: 완화 전략 실행 여부 및 효과 (월 1회)
-- 모든 OQ1~OQ12: 해결/의사결정 기록 (OQ4·OQ11 확정 종결 포함, Phase 진행 시 갱신)
+- 모든 OQ1~OQ13: 해결/의사결정 기록 (OQ4·OQ11·OQ12 확정 종결 포함, OQ13은 Phase 5 착수 전 필수, Phase 진행 시 갱신)
 - Phase별 Gate: Risk/OQ 관련 Task 완료 여부 (스파이크 S1~S4 포함)
 
 ### Risks

@@ -57,7 +57,6 @@ erDiagram
     ERP_USER ||--o{ DAILY_STATUS_PUSH : "EOD푸시"
     ERP_USER ||--o{ AUDIT_LOG : "감사"
     AUDIT_LOG }o--|| ERP_USER : "created_by"
-    ASSET ||--o| ERP_USER : "modified_by"
 ```
 
 > **ERD 주석**: `ERP_TEAMS`는 ERP 원본 테이블(우리 DB 아님, read-only 참조)이며 `team_zone.erp_team_id`가 이를 가리킨다. `MEETING ↔ MEETING_MINUTE`는 **단방향**(meeting_minute.meeting_id)만 유지한다 — meeting.meeting_minute_id 역방향 FK는 폐기(순환 참조 방지). 분기 중 팀 이동자의 KPI 벤치마크 왜곡을 막기 위해 `USER_TEAM_HISTORY`를 신설한다(D18).
@@ -139,7 +138,7 @@ erDiagram
 | 필드 | 타입 | 제약 | 설명 |
 |-----|------|------|------|
 | id | UUID | PK | |
-| company_id | UUID | FK, NN | (미래 멀티테넌트용) |
+| company_id | INTEGER | NN | 테넌트 스코프 값 — company 테이블 없음, ERP company_id와 동일 값(FK 아님, erp_user와 동일 타입) |
 | name | VARCHAR(255) | NN | "엔지니어링 본부", "마케팅 팀" |
 | type | ENUM | NN | division \| department \| part |
 | parent_id | UUID | FK, self | 상위 그룹(null = 루트) |
@@ -193,7 +192,7 @@ erDiagram
 | 필드 | 타입 | 제약 | 설명 |
 |-----|------|------|------|
 | id | UUID | PK | |
-| company_id | UUID | FK, NN | (사내 단일, 미래 멀티테넌트) |
+| company_id | INTEGER | NN | 테넌트 스코프 값(사내 단일) — company 테이블 없음, ERP company_id와 동일 값(FK 아님, erp_user와 동일 타입) |
 | name | VARCHAR(255) | NN | "본사", "판교" |
 | description | TEXT | | |
 | address | VARCHAR(500) | | 사무실 주소(GPS 기준점?) |
@@ -272,8 +271,8 @@ erDiagram
 | type | ENUM | NN | lobby \| meeting \| lounge \| focus \| phonebooth |
 | name | VARCHAR(255) | NN | "컨퍼런스룸 A", "집중실" |
 | capacity | INT | NN | 수용인원 |
-| coords | JSON | NN | {x: , y: , z: } 3D 위치(Godot 월드좌표) |
-| enter_trigger | JSON | | {x, y, z, radius} 진입 감지 영역(콜리전) |
+| coords | JSON | NN | {x, y, width, height} 2D 위치·크기(원점 top_left, 미터 — D25) |
+| enter_trigger | JSON | | {trigger_x, trigger_y, trigger_width, trigger_height, entry_direction} 진입 감지 박스(room 경계 내부, 05 §1.2.5) |
 | livekit_room | VARCHAR(255) | | LiveKit room ID(회의 이용 시) |
 | status | ENUM | DEFAULT 'active' | active \| inactive \| maintenance |
 | created_at | TIMESTAMP | NN | |
@@ -284,6 +283,8 @@ erDiagram
 **인덱스**: `INDEX(floor_id, type)`, `INDEX(livekit_room)`
 
 **참고**: room은 office_layout JSON에도 정의되지만, 메타 저장(용량, 화상회의 링크)은 별도 테이블.
+
+> **좌표계 정본(D25, 2026-07-02 정렬)**: coords·enter_trigger는 05-office-layout-schema.md의 **2D top_left 원점·미터 단위** 규약을 따른다. Godot 3D 월드좌표는 DB에 저장하지 않으며 05 §5.3 변환식으로 파생한다.
 
 ---
 
@@ -298,7 +299,7 @@ erDiagram
 | team_zone_id | UUID | FK, NULL | team_zone(소속 구역, null = 공용) |
 | type | ENUM | NN | fixed \| free \| temp \| partner |
 | assigned_user_id | BIGINT | FK, NULL | erp_user.id(현재 배정 사원) |
-| coords | JSON | NN | {x, y, z} 3D 위치 |
+| coords | JSON | NN | {x, y} 2D 위치(top_left 미터, D25 — 착석 방향 `facing`은 layout JSON에서 정의, Godot 월드좌표는 05 §5.3 변환식으로 파생) |
 | status | ENUM | DEFAULT 'available' | available \| occupied \| disabled \| reserved |
 | seat_number | VARCHAR(50) | | "1-A-01" (선택) |
 | created_at | TIMESTAMP | NN | |
@@ -483,6 +484,8 @@ erDiagram
 | decisions | TEXT | NN | 결정사항(마크다운) |
 | action_items_summary | TEXT | | 액션아이템 요약 |
 | notes | TEXT | | 추가 노트 |
+| stt_draft | TEXT | NULL | STT 원본 초안(회의 음성 STT 산출, D5) |
+| ai_summary | TEXT | NULL | AI 요약(Phase 7) |
 | attachments | JSON | | [{filename, url, mime_type}] |
 | created_by | BIGINT | FK, NN | erp_user.id(기록자) |
 | reviewed_by | BIGINT | FK, NULL | erp_user.id(검토자) |
@@ -498,7 +501,7 @@ erDiagram
 
 **인덱스**: `UNIQUE(meeting_id)`, `INDEX(status)`
 
-**참고**: meeting_minute과 action_item은 1:N. 하나의 회의록에 다수의 액션아이템.
+**참고**: meeting_minute과 action_item은 1:N. 하나의 회의록에 다수의 액션아이템. status enum은 `draft | finalized` 2종을 **유지**한다 — stt_draft(D5)·ai_summary(Phase 7)는 초안 보조 필드일 뿐 별도 상태를 추가하지 않는다.
 
 ---
 
@@ -559,11 +562,11 @@ erDiagram
 | updated_at | TIMESTAMP | NN | |
 
 **PK**: `id`  
-**FK**: `user_id` → `erp_user(id)` (with ON DELETE CASCADE)
+**FK**: `user_id` → `erp_user(id)` (ON DELETE RESTRICT — D18 평가 근거 영구 보존, §4.2와 통일)
 
 **인덱스**: `INDEX(user_id, work_date DESC)`, `INDEX(status, work_date DESC)`
 
-**KPI 산출 로직**: work_log.status=completed 중 result_url이 있는 건(산출물 있는 업무) KPI 평가 대상.
+**KPI 산출 로직(D14-a)**: status='completed' **전건**이 `work_completed_count` 카운트 대상이며, result_url 존재 건은 `work_quality_score`의 충실도 가점으로 반영한다(08-kpi-logic.md §2.2.1 정합).
 
 ---
 
@@ -575,7 +578,7 @@ erDiagram
 |-----|------|------|------|
 | id | UUID | PK | |
 | user_id | BIGINT | FK, NN | erp_user.id |
-| period_type | VARCHAR(20) | NN | `daily` \| `quarterly` (D16, `period` 컬럼 폐기) |
+| period_type | ENUM(kpi_period_type) | NN | `daily` \| `quarterly` (§3.5 enum 참조, D16 — `period` 컬럼 폐기) |
 | period_key | VARCHAR(20) | NN | period_type=daily → `'2026-07-01'`, quarterly → `'2026-Q3'` |
 | metric | VARCHAR(100) | NN | metric 어휘 사전(하단) 값만 허용 |
 | value | NUMERIC | NN | 결정론적 코드로 계산된 정량 값 |
@@ -588,7 +591,7 @@ erDiagram
 | admin_note | TEXT | NULL | 관리자 검토/조정 사유 |
 | admin_user_id | BIGINT | FK, NULL | 조정한 관리자 erp_user.id |
 | admin_reviewed_at | TIMESTAMP | NULL | 검토 시각(UTC) |
-| objection_status | VARCHAR(20) | NN, DEFAULT 'none' | `none` \| `submitted` \| `reviewing` \| `resolved` (이의신청 상태머신, D15) |
+| objection_status | ENUM(kpi_objection_status) | NN, DEFAULT 'none' | `none` \| `submitted` \| `reviewing` \| `resolved` (§3.5 enum 참조 — 이의신청 상태머신, D15) |
 | objection_detail | JSONB | NULL | {category, text, evidence, submitted_at} |
 | objection_submitted_at | TIMESTAMP | NULL | 이의 접수 시각(UTC) |
 | objection_resolved_at | TIMESTAMP | NULL | 이의 처리 완료 시각(UTC) |
@@ -617,7 +620,7 @@ D14 재작성 공식에 정합하는 최종 metric 어휘. 이 8개 외의 metri
 |--------|----------|------|----------------------|
 | `work_completed_count` | count | ≥0 | 완료(status=completed) work_log 건수 (D14-a) |
 | `work_quality_score` | score | 0–100 | 완료 work_log의 충실도: goal·category·result_url·next_action 작성도 각 가점 + AI 신뢰도 검증 반영 (D14-a) |
-| `minutes_authored_count` | count | ≥0 | 회의록 작성/공동작성 기여 수 (decisions 신뢰도 AI ±0.5 검증 반영, D14-b) |
+| `minutes_authored_count` | count | ≥0 | 회의록 작성 수(created_by 기준 — 공동작성 구조 없음, 필요 시 추후 결정) (decisions 신뢰도 AI ±0.5 검증 반영, D14-b) |
 | `action_items_completed` | count | ≥0 | 완료(status='completed')한 **담당** 액션아이템 수, 일일 인정 상한 적용(쪼개기 방지, D14-c) |
 | `action_items_ontime_rate` | % | 0–100 | 담당 액션아이템의 기한 내 완료율 (D14-c) |
 | `report_fidelity_score` | score | 0–100 | 업무기록/일일리포트 충실도(작성 신뢰도, 보일러플레이트 감점) |
@@ -674,31 +677,41 @@ D14 재작성 공식에 정합하는 최종 metric 어휘. 이 8개 외의 metri
 
 **역할**: 3D 에셋(모델, 텍스처) 메타데이터. Blender → GLB → Godot 변환 파이프라인. 라이선스/저작권 추적.
 
+> **정본 출처: 07-3d-visual-asset-pipeline.md §5.3** (2026-07-02 동기화). 아래 표는 07 v1.1 스키마의 사본이며, 충돌 시 07 §5.3이 이긴다.
+
 | 필드 | 타입 | 제약 | 설명 |
 |-----|------|------|------|
-| asset_id | UUID | PK | |
-| asset_name | VARCHAR(255) | NN | "oak_desk", "leather_chair" |
-| asset_type | ENUM | NN | model \| texture \| material \| animation |
-| asset_category | VARCHAR(100) | | "furniture", "lighting", "decor" |
-| source_url | VARCHAR(1000) | | 원본 다운로드 URL(ambientCG, Poly Haven) |
-| author | VARCHAR(255) | | 에셋 제작자 |
-| license | VARCHAR(50) | NN | CC0, CC-BY, MIT, Commercial 등 |
-| license_url | VARCHAR(1000) | | 라이선스 텍스트 URL |
-| downloaded_at | TIMESTAMP | NN | 다운로드 시각 |
-| modified_by | BIGINT | FK, NULL | erp_user.id(최종 수정자) |
+| asset_id | VARCHAR(64) | PK | 예: "reception-desk-v1.0" (버전은 asset 테이블·CHANGELOG로 관리) |
+| asset_name | VARCHAR(256) | NN | "Reception Desk" |
+| asset_type | VARCHAR(50) | NN | furniture \| structure \| material \| ui3d \| character \| environment |
+| asset_category | VARCHAR(100) | | "office", "meeting-room", "lounge", "lobby" |
+| source_url | TEXT | | 원본 다운로드 URL(ambientCG, Poly Haven) |
+| author | VARCHAR(256) | | 에셋 제작자 |
+| license | VARCHAR(100) | NN | CC0 \| CC-BY \| custom \| proprietary |
+| license_url | TEXT | | 라이선스 문서 링크 |
+| downloaded_at | TIMESTAMP | | 최초 획득 시각 |
+| modified_by | VARCHAR(256) | | 수정/가공 담당자 |
 | commercial_allowed | BOOLEAN | DEFAULT TRUE | 상용 이용 가능 |
-| attribution_required | BOOLEAN | DEFAULT FALSE | 저작권 표시 필수 |
-| redistribution_allowed | BOOLEAN | DEFAULT FALSE | 재배포 허용 |
-| original_file_hash | VARCHAR(64) | | 원본 파일 SHA256(변조 감지) |
-| optimized_file_hash | VARCHAR(64) | | 최적화 후 GLB SHA256 |
-| file_size_mb | FLOAT | | 파일 크기(MB) |
-| used_in_scene | JSON | | ["office_layout_1", "office_layout_2"] (사용 장면) |
+| attribution_required | BOOLEAN | | 저작권 표시 필수 |
+| redistribution_allowed | BOOLEAN | | 재배포 허용 |
+| original_file_hash | VARCHAR(64) | | 원본 파일 SHA-256(변조 감지) |
+| optimized_file_hash | VARCHAR(64) | | 최적화 후 GLB SHA-256 |
+| tscn_path | VARCHAR(256) | NN | `res://assets/3d/models/<name>/<name>.tscn` (배포 산출물, 05 ASSET_CATALOG 조회 대상) |
+| source_glb_path | VARCHAR(256) | | 임포트 소스 glb(저장소 보관, pak 미포함) |
+| file_size_bytes | BIGINT | | 산출물 크기(성능 예산 참고용, 런타임 다운로드 없음 — D8) |
+| polygon_count | INT | | LOD 0 삼각형 수. 05 performance 파생 계산의 정본 소스 |
+| texture_resolution | VARCHAR(20) | | 예: "2048x2048" |
+| dimension | JSONB | | 실측 크기 {"width","depth","height"}(m). 05 좌석↔가구 정합·검증의 정본 |
+| footprint_2d | JSONB | | 편집기 도면용 2D 풋프린트 {"width","depth"}(m) |
+| thumbnail_url | TEXT | | 편집기 팔레트 썸네일 |
+| used_in_scene | JSONB | | ["stage1_lobby", "stage1_office"] (사용 장면) |
+| external_dependencies | TEXT | | 의존 에셋(예: materials/wood_floor_006) |
 | notes | TEXT | | 비고 |
 | created_at | TIMESTAMP | NN | |
 | updated_at | TIMESTAMP | NN | |
+| deleted_at | TIMESTAMP | NULL | soft delete |
 
-**PK**: `asset_id`  
-**FK**: `modified_by` → `erp_user(id)` (nullable)
+**PK**: `asset_id`
 
 **인덱스**: `INDEX(asset_type, asset_category)`, `INDEX(license)`
 
@@ -937,7 +950,7 @@ ALTER TABLE erp_user ADD CONSTRAINT uk_erp_user_email UNIQUE(company_id, email);
 ALTER TABLE seat ADD CONSTRAINT uk_seat_number UNIQUE(floor_id, seat_number) WHERE seat_number IS NOT NULL;
 ALTER TABLE team_zone ADD CONSTRAINT uk_team_zone_placement UNIQUE(erp_team_id, office_id, floor_id);
 ALTER TABLE office_layout ADD CONSTRAINT uk_layout_version UNIQUE(office_id, floor_id, version);
-ALTER TABLE seat_assignment_history ADD CONSTRAINT uk_current_seat_user UNIQUE(seat_id, user_id) WHERE unassigned_at IS NULL;
+ALTER TABLE seat_assignment_history ADD CONSTRAINT uk_current_seat_user UNIQUE(seat_id) WHERE unassigned_at IS NULL;  -- 한 좌석에 동시 배정 1명(자율석 포함 동시 점유 불가 정책 — Risks '좌석 충돌' 목표 달성)
 ALTER TABLE kpi_result ADD CONSTRAINT uk_kpi_result_metric UNIQUE(user_id, period_type, period_key, metric);
 
 -- 외래 키 및 삭제 정책
@@ -960,7 +973,7 @@ ALTER TABLE seat_assignment_history ADD CONSTRAINT ck_assignment_dates CHECK (as
 ALTER TABLE meeting ADD CONSTRAINT ck_meeting_times CHECK (scheduled_at <= started_at OR started_at IS NULL);
 ALTER TABLE meeting ADD CONSTRAINT ck_meeting_completion CHECK (started_at <= ended_at OR ended_at IS NULL);
 ALTER TABLE office_layout ADD CONSTRAINT ck_layout_status_timestamp CHECK (status = 'deployed' AND deployed_at IS NOT NULL OR status != 'deployed');
-ALTER TABLE work_log ADD CONSTRAINT ck_work_dates CHECK (work_date <= CURRENT_DATE);
+-- work_log.work_date 상한(미래 날짜 금지) 검증은 앱 레이어로 이관 — CURRENT_DATE 참조 CHECK는 비결정적이라 회피
 ALTER TABLE kpi_result ADD CONSTRAINT ck_kpi_value_nonnegative CHECK (value >= 0);
 ALTER TABLE user_team_history ADD CONSTRAINT ck_uth_dates CHECK (valid_to IS NULL OR valid_from < valid_to);
 
@@ -1069,7 +1082,7 @@ GRANT SELECT ON office, floor, room TO godot_server;
 
 ### 8.2 데이터 민감도
 
-- 위치정보(presence.x, y): 사내망 내부용(외부 API 노출 금지), 30일 후 삭제(D20-a)
+- 위치정보(presence.x, y): 인증된 내부 기능 전용(공개/외부 연동 API 미노출), 30일 후 삭제(D20-a)
 - 개인평가(kpi_result.ai_draft): 본인 + 담당 관리자만 열람
 - 급여/휴가: 미포함(ERP leaves는 참조만, 우리 DB에 사본 불가)
 - 외부 AI 전송: 실명 대신 사번 가명화(D20-d)
@@ -1150,9 +1163,10 @@ SELECT COUNT(*) FROM presence; -- 0 (시스템 가동 전)?
 
 ---
 
-**문서 버전**: 1.1  
+**문서 버전**: 1.2  
 **최종 검토**: 2026-07-02 (00-decisions.md D10·D16·D18·D19·D20 반영)
 
 ### 변경 이력
+- **v1.2 (2026-07-02)**: 데이터 정본 정렬 — room/seat coords를 D25 2D top_left 미터 규약으로 정정(Godot 월드좌표는 05 §5.3 파생), asset 표를 07 §5.3 v1.1 정본으로 동기화, work_log FK RESTRICT 통일(D18), meeting_minute stt_draft·ai_summary 추가(D5·Phase 7), uk_current_seat_user UNIQUE(seat_id) 정정, company_id INTEGER 통일, ck_work_dates 앱 레이어 이관, period_type·objection_status §3.5 enum 참조 통일, work_completed_count 정의 D14-a 정합, presence 좌표 노출 문구 정정.
 - **v1.1 (2026-07-02)**: D16 kpi_result 정본 스키마 재정의(period_type/period_key, 이의신청 필드 인라인, kpi_result_review 폐기, metric 어휘 사전 신설). D18 user_team_history 신설·erp_user.is_active·평가 계층 FK RESTRICT+soft-delete. D19 타임존 저장 UTC 통일(KST 주석 정정). D20 개인정보 절 보강(5년 보존·녹화 90일·좌표 30일·audit 대상 확대·app_admin 롤 분리). D10 좌석 배정 layout 분리 원칙. ERD 오타(ERE_USER)·company_id INTEGER·work_hours 분 단위·meeting↔minute 단방향 FK 정정.
 - **v1.0 (2026-07-01)**: 초안(ERP 통합 반영).

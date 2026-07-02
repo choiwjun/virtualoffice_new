@@ -1,7 +1,7 @@
 # 기술 아키텍처(TRD) — 가상오피스 운영 플랫폼
 
 **문서 ID**: 02-trd-architecture.md  
-**버전**: v1.1  
+**버전**: v1.2  
 **작성일**: 2026-07-02 (최초 2026-07-01)  
 **상태**: 확정 반영(00-decisions.md v1.0 정합)  
 **대상**: 개발팀 L3 실무자  
@@ -30,7 +30,7 @@ graph TB
     end
 
     subgraph "백엔드 API 계층"
-        FastAPI["🔧 FastAPI 백엔드<br/>(Python)<br/>- 비즈니스 로직<br/>- 데이터 포택(Persistence)<br/>- 배치 작업<br/>- ERP 동기화"]
+        FastAPI["🔧 FastAPI 백엔드<br/>(Python)<br/>- 비즈니스 로직<br/>- 데이터 영속(Persistence)<br/>- 배치 작업<br/>- ERP 동기화"]
     end
 
     subgraph "웹 관리/업무 계층"
@@ -125,9 +125,9 @@ graph TB
 **통신 프로토콜**
 - **게임서버 연결**: WebSocket(WSS) 단일 확정 (D1)
   - TLS 내장(WSS) → 재택 근무자의 방화벽/프록시 통과 용이. ENet(UDP)·"ENet TCP" 폴백은 폐기(존재하지 않는 조합)
-  - 프로토콜: Godot MultiplayerAPI 메시지 (WebSocketMultiplayerPeer)
-  - 메시지 예: `@AvatarMove:{"user_id": 123, "x": 10.5, "y": 20.3, "floor_id": 1}`
-  - **접속 경로**: 사무실 내는 사내 LAN에서 WSS 직접 접속. 재택/외근자는 (a) WSS 공개 엔드포인트 직접(443, 사내 PKI 인증서) 또는 (b) 사내 VPN 경유 — 인프라 상황에 맞춰 결정
+  - 전송: WebSocketPeer(WSS) / 메시지: 09-realtime-collaboration.md §5.3 정의 JSON 프로토콜
+  - 메시지 예: `{"type":"move_request","player_id":42,"target_pos":[10.5,0.0,20.3],"floor_id":1,"sequence_num":1234}` (09 §5.3 정본)
+  - **접속 경로**: 사무실 내는 사내 LAN에서 WSS 직접 접속. 재택/외근자는 443 공개 엔드포인트(WSS, Let's Encrypt) 직접 접속 — VPN 없음 확정(2026-07-02)
 - **FastAPI 백엔드**: REST API (HTTPS)
   - 초기화: `GET /api/presence/init` → 현재 위치, 직원 명단, 좌석 배치 로드
   - 액션: `POST /api/meetings/join` (회의실 진입), `POST /api/work-logs` (업무 기록)
@@ -170,9 +170,9 @@ graph TB
   - 1초 ~ 5초 주기 (설정 가능)
 
 **통신 프로토콜**
-- **클라이언트 입력**: Godot MultiplayerAPI (WebSocket)
-  - 받음: `@AvatarMove`, `@RoomEnter`, `@RoomExit`
-  - 응답: `@AvatarMoved`, `@ErrorInvalid...`
+- **클라이언트 입력**: WebSocketPeer(WSS) + 09 §5.3 JSON 프로토콜
+  - 받음: `move_request`(player_id, target_pos, sequence_num), `room_enter`, `room_exit`
+  - 응답: `player_update`(20Hz 브로드캐스트), `reject`(오류)
 - **FastAPI 동기화**: REST API (HTTPS)
   - 배치 쿼리: `GET /api/office/{office_id}/floor/{floor_id}/layout` (오피스 씬/콜리전)
   - 배치 업데이트: `POST /api/presence/batch` (아바타 위치)
@@ -183,7 +183,7 @@ graph TB
 - 클라이언트 부정 입력 → 무시, 서버 상태 그대로 유지 (클라이언트가 재동기화)
 - FastAPI 연결 끊김 → 메모리 버퍼링, 온라인 복귀 시 배치 동기화
 - 데이터 불일치 → 정기적 재검증 (예: 30초마다 위치 재확인)
-- **게임서버 크래시 시 인메모리 상태 복원**: 프레즌스·아바타 위치는 게임서버 메모리 권위이므로 크래시 시 휘발 → 재기동 후 클라이언트 재접속 시 각 클라이언트가 마지막 `sequence_num`을 제시하고 서버가 좌석 배정(DB)·최근 배치 push 스냅샷을 근거로 상태를 재구축(reconstruct)한다.
+- **게임서버 크래시 시 인메모리 상태 복원**: 프레즌스·아바타 위치는 게임서버 메모리 권위이므로 크래시 시 휘발 → 재기동 후 클라이언트 재접속 시 각 클라이언트가 마지막 `last_server_seq`를 제시하고(09 §5.3 resume) 서버가 좌석 배정(DB)·최근 배치 push 스냅샷을 근거로 상태를 재구축(reconstruct)한다.
 
 ---
 
@@ -206,7 +206,7 @@ graph TB
 ### 2.3 FastAPI 백엔드
 
 **책임**
-- **데이터 포택(Persistence)**
+- **데이터 영속(Persistence)**
   - 비즈니스 엔티티 CRUD: office, seat, user, team, meeting, work_log, kpi_result 등
   - 트랜잭션 관리, 동시성 제어
 - **ERP 동기화**
@@ -261,7 +261,7 @@ graph TB
   - 팀 별 색, 3D 구역 매핑 (React Flow)
 - **사무실 편집기**
   - 2D 배치 편집 (Konva.js)
-  - 3D 미리보기 (Godot 헤드리스 또는 경량 Three.js)
+  - 정밀 확인은 저장 후 데스크톱 클라이언트 draft 모드(D11)
   - 좌석/회의실 정의
   - office_layout JSON 생성 → FastAPI 저장 → 배포
 - **KPI & 업무 대시보드**
@@ -393,6 +393,8 @@ graph TB
 
 ## 3. 배포 구조
 
+> 배포 상세 정본은 **docs/deployment/onprem-docker.md** (2026-07-02 신설).
+
 ### 3.1 네이티브 데스크톱 배포
 
 **대상**: Windows, macOS, Linux (Godot 4 Forward+ 지원)
@@ -408,8 +410,8 @@ graph TB
 - 재시작: 자동 설치 후 재실행 (또는 사용자 확인)
 
 **설치형 단점 제거**
-- 사내망만 배포 → 대규모 확장 부담 없음
-- IT 관리자가 배포 중앙화 가능 (Active Directory 연동)
+- 단일 조직 소규모(동시 ~20명) → 확장 부담 없음. 단, 서버는 인터넷 공개(보안 §4.2)
+- IT 관리자가 배포 중앙화 가능 (AD 있는 경우)
 
 ---
 
@@ -421,12 +423,12 @@ graph TB
 - API Routes → FastAPI 백엔드 프록시
 
 **호스팅**
-- **사내 VM 단일화** (D21): 웹 프론트 포함 전부 사내 VM 배포. PM2 + Nginx 리버스 프록시
-- Vercel/외부 CDN은 폐기(사내 도메인 `.internal`은 외부 CA·Vercel과 양립 불가)
+- **Linux 서버 PC 단일화** (D21, 2026-07-02): 웹 프론트 포함 전부 Docker Compose + Caddy(TLS 종단) 배포 — 정본 docs/deployment/onprem-docker.md
+- Vercel/외부 CDN은 폐기(온프렘 데이터 주권 — 회의·평가 데이터를 외부 인프라에 두지 않음)
 
 **도메인**
-- `voffice.internal` (사내 도메인)
-- SSL: **사내 PKI(자체 CA) 발급 인증서** (D21). Let's Encrypt는 폐기(`.internal` 도메인 발급 불가)
+- 공인 도메인(추후 구매, 그 전 임시 Caddy 내부 CA) — 2026-07-02 확정
+- SSL: **Let's Encrypt 자동 발급(Caddy)**. 상세: docs/deployment/onprem-docker.md §3.1
 
 ---
 
@@ -510,15 +512,11 @@ graph TB
 
 **네트워크 접속 경로**
 - **사무실 내**: 사내 LAN → LiveKit (7880-7882, UDP 49152-65535)
-- **재택/하이브리드/외근**:
-  - 회사 VPN 연결 → LiveKit (직접 경로, 낮은 지연)
-  - OR TURN-over-TLS (443 공개 엔드포인트) → coturn → LiveKit (VPN 미사용 시)
-  - 선택: 인프라 상황에 맞춰 결정 (잔여 협의 항목)
+- **재택/하이브리드/외근**: 7881/TCP + UDP 50000-60000 공개 직결(품질 우선), 실패 시 TURN-over-TLS 443 폴백 — VPN 없음 확정(2026-07-02), 상세 docs/deployment/onprem-docker.md §3.2
 
 **방화벽 규칙**
-- TCP 7880-7882 (제어 신호) — 사내망 전용 또는 TURN 경유
-- UDP 49152-65535 (미디어 스트림) — 사내망 전용 또는 TURN 경유
-- TCP 443 (TURN-over-TLS) — 공개 엔드포인트(재택 접속 지원 시만)
+- TCP 7881 (WebRTC TCP) + UDP 50000-60000 (미디어 스트림) — 공개 직결 (onprem-docker §3.2)
+- TCP 443 (TURN-over-TLS) — 공개 직결 실패 시 폴백
 - TCP 3478, UDP 3478/5349 (coturn) — TURN 수신 포트
 
 **모니터링**
@@ -537,10 +535,10 @@ graph TB
 **3D 렌더링 성능** (D7/D22)
 - 목표: 60 FPS@1080p (Forward+)
   - 기준 GPU: **GTX 1650급** 60fps
-  - 저사양 모드(30 FPS, LOD 2, 그림자 비활성): **내장그래픽(Iris Xe급)** 에서 실행 가능
+  - 저사양 모드 = **Low 프리셋** (그래픽 프리셋 정본: 07-3d §6.5 Ultra/High/Medium/Low): **내장그래픽(Iris Xe급)** 에서 실행 가능
   - 로딩 < 5초
 - 최적화 기법:
-  - **LOD (Level of Detail)**: 아바타 5m 이상 거리 → 심화(Simplified) 모델
+  - **LOD (Level of Detail)**: 아바타 5m 이상 거리 → 단순화(Simplified) 모델
   - **인스턴싱(Instancing)**: 동일 에셋(책상, 의자) → GPU 일괄 렌더링
   - **오클루전 컬링(Occlusion Culling)**: 벽/바닥 뒤 객체 렌더링 스킵
   - **배칭(Batching)**: 드로우콜 합산
@@ -595,7 +593,7 @@ graph TB
 
 **데이터 보호**
 - 네트워크: TLS 1.3 (모든 API, DB 연결, **게임 트래픽 WSS 포함** — D1)
-  - 인증서: **사내 PKI(자체 CA)** 발급 (D21). Let's Encrypt는 폐기(`.internal` 발급 불가)
+  - 인증서: **Let's Encrypt 자동 발급(Caddy)** — WSS/HTTPS/TURN-TLS 단일 인증서로 통일(2026-07-02). 상세: docs/deployment/onprem-docker.md §3.1
 - 저장소: 암호화 (옵션)
   - PII(Personal Identifiable Information): 직원명, 이메일은 평문(필수 업무용)
   - **GPS 수집 기능 삭제** (D13/D20(c)): 데스크톱에 GPS 없음, ERP lat/lng/radius 미러링 금지
@@ -607,11 +605,17 @@ graph TB
 
 **API 보안**
 - 게임서버↔FastAPI: **서비스 계정 토큰(service account JWT) + IP allowlist**로 제한(게임서버는 브라우저가 아니므로 CORS 무의미 — "게임서버 IP CORS" 표기 폐기)
-- CORS: 브라우저 원본 제한 (localhost, voffice.internal)
-- Rate limiting: 사용자당 100 req/min (로그인), 1000 req/min (일반)
+- CORS: 브라우저 원본 제한 (localhost 개발용, 공인 도메인 — 구매 후 확정, 임시 사내 IP)
+- Rate limiting: 로그인은 IP당 10 req/min + 실패 누적 잠금, 일반은 1000 req/min
 - Input validation: JSON Schema (FastAPI pydantic)
 - CSRF: 토큰 기반 (POST/PATCH/DELETE)
 - SQL Injection 방지: Parameterized queries (SQLAlchemy)
+
+**외부 공개 엔드포인트 보강** — 외부 공개 확정(2026-07-02)에 따른 보강
+- 로그인 실패 5회 시 지수 백오프/일시 잠금
+- IP 기반 rate-limit (Caddy/미들웨어)
+- fail2ban (반복 침입 시도 IP 차단)
+- (선택) 관리자 계정 2FA
 
 **반감시 방지**
 - 위치 추적: **GPS 수집 기능 삭제** (D13/D20(c)). 사무실 내 3D 좌표(x,y)는 논리적 위치이며 KPI 산출 미사용, 보존 30일 후 삭제
@@ -801,7 +805,7 @@ sequenceDiagram
     participant OurDB as 우리 DB
 
     User1->>GodotClient: 회의실 바운드 진입<br/>(아바타 이동)
-    GodotClient->>GodotServer: @RoomEnter {room_id}
+    GodotClient->>GodotServer: room_enter {room_id} (09 §5.3 JSON)
     GodotServer->>FastAPI: POST /api/rooms/{id}/check-capacity
     FastAPI->>OurDB: SELECT COUNT(*) FROM meeting_participant<br/>WHERE room_id=?
     OurDB-->>FastAPI: 참여자 수 + 초대 여부
@@ -812,7 +816,7 @@ sequenceDiagram
     GodotClient->>User1: "입장하시겠습니까?" 다이얼로그<br/>(호스트/참여자 표시)
     User1->>GodotClient: [입장하기] 클릭
 
-    GodotClient->>GodotServer: @JoinMeeting {room_id}
+    GodotClient->>GodotServer: join_meeting {room_id} (09 §5.3 JSON)
     GodotServer->>FastAPI: POST /api/meetings/join<br/>(room_id, user_id)
     FastAPI->>OurDB: INSERT INTO meeting (없으면 생성)
     OurDB-->>FastAPI: meeting.id
@@ -860,7 +864,7 @@ sequenceDiagram
 
 | 위험 | 영향 | 완화 |
 |-----|------|-----|
-| Godot 4.x 버그(렌더러) | 3D 품질 저하, 배포 지연 | LTS 버전 추적, 커뮤니티 피드백 조기 반영 |
+| Godot 4.x 버그(렌더러) | 3D 품질 저하, 배포 지연 | 안정(stable) 최신 패치 추적(Godot 4는 LTS 채널 없음), 커뮤니티 피드백 조기 반영 |
 | ERP DB 스키마 변경 | 우리 쿼리 깨짐 | 마이그레이션 테스트(테스트 DB), 버전 관리 |
 | ERP API 속도 저하 | 배치 지연, KPI 푸시 밀림 | 캐시(Redis), 배치 큐(지수 백오프) |
 | LiveKit 자체 호스팅 비용 | 인프라 부담 | 사용자 수 기반 리소스 계획, 모니터링 |
@@ -896,12 +900,12 @@ sequenceDiagram
 3. **ERP API 신규 엔드포인트(kpi_results 테이블·Alembic·수신 엔드포인트·service account)는 우리가 직접 생성·관리**(OQ1 결정, §4.2 참조). ERP 담당자 승인·병합 대기 불필요.
 4. 네이티브 데스크톱 설치는 IT 관리자가 배포(자동 업데이트는 우리 서버).
 5. 단일 조직(single company_id)이므로 멀티테넌트 복잡도 제외 — 이후 확장은 B2B 단계에서 검토.
-6. **LiveKit self-host 인프라 (결정: OQ5)**: 온프레미스 VM 또는 사내 클라우드 계정에서 Docker Compose로 배포, 사내 IT 담당. 재택/외근자는 사내 VPN 또는 TURN-over-TLS로 접속; 사외 접속 경로는 인프라 상황에 따라 결정 (잔여 협의).
+6. **LiveKit self-host 인프라 (결정: OQ5)**: Linux 서버 PC에서 Docker Compose로 배포, 사내 IT 담당. VPN 없음 확정(2026-07-02) → 재택/외근자는 공개 엔드포인트로 확정(직결 + TURN-TLS 443 폴백), 협의 종결.
 
 ### Validation Criteria
 - **Phase 1 끝**: 3D 골든 샘플(로비~5명 아바타) + 최소 API 호출 가능, FPS 측정 문서화.
 - **Phase 2 끝**: ERP 직원/조직 동기화, 우리 seat/presence 동작, 아바타 시작위치 연결 확인.
-- **Phase 4 끝**: 실시간 서버 권위 검증(충돌감지, 회의실 점유), 네트워크 레이턴시 < 200ms.
+- **Phase 4 끝**: 실시간 서버 권위 검증(충돌감지, 회의실 점유), 아바타 동기화 E2E p95 < 500ms(D22)로 통일.
 - **Phase 5 끝**: LiveKit 화상회의 + 회의록 저장, 참여자 동기화 확인.
 - **Phase 6 끝**: KPI push to ERP 성공, AI 초안 생성 확인, EOD 배치 로그 무결성.
 - **일반**: 보안 감시(위반 사례 0), 가용성 모니터링(월간 99.5% 달성 추적).
@@ -916,6 +920,13 @@ sequenceDiagram
 | KPI AI 초안 품질 부족 | 중간 | 관리자 수동 조정 프로세스, 여러 모델 테스트(Claude vs Gemini) |
 
 ---
+
+## 변경 이력
+
+| 버전 | 일자 | 변경 내용 |
+|------|------|-----------|
+| v1.1 | 2026-07-02 | 00-decisions.md v1.0 정합 반영 |
+| v1.2 | 2026-07-02 | 배포·네트워크 확정 반영 — VPN 없음 확정(재택 접속=443 공개 엔드포인트, LiveKit 공개 직결+TURN-TLS 443 폴백), Docker Compose + Caddy + Let's Encrypt(사내 PKI·PM2/Nginx 표기 폐기, 정본 docs/deployment/onprem-docker.md), 외부 공개 보안 보강(§4.2 로그인 잠금·rate-limit·fail2ban·2FA), WSS 메시지 어휘 09 §5.3 정본 통일(move_request/player_update/last_server_seq), 3D 미리보기→데스크톱 draft 모드(D11), 저사양 모드=Low 프리셋(07-3d §6.5), Godot LTS 표기 정정, 레이턴시 검증 기준 E2E p95<500ms(D22) 통일, 오타 정정(데이터 영속, 단순화 모델) |
 
 ## 변경 이력
 
