@@ -1,0 +1,15 @@
+# 가상오피스 백엔드 런타임 의존성
+# 정본: docs/planning/11-tech-stack.md (D4: PyJWT HS256, python-jose 폐기)
+
+fastapi>=0.115,<0.120
+uvicorn[standard]>=0.27,<0.35
+sqlalchemy>=2.0,<2.1
+pydantic>=2.0,<3.0
+pydantic-settings>=2.0,<3.0
+alembic>=1.13,<2.0
+PyJWT>=2.9,<3.0
+bcrypt>=4.1,<6.0          # 비밀번호 해시 (passlib 유지보수 중단으로 직접 사용)
+asyncpg>=0.29,<0.31        # PostgreSQL async 드라이버 (운영)
+aiosqlite>=0.19,<0.22      # SQLite async 드라이버 (테스트)
+python-multipart>=0.0.9    # OAuth2 form / 파일 업로드
+httpx>=0.27,<0.29          # 내부 HTTP 클라이언트 (ERP 연동 등)

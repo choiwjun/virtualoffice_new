@@ -17,12 +17,17 @@ from enum import Enum
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
-    String, Integer, Float, Boolean, DateTime, Date, JSONB, Text,
+    String, Integer, Float, Boolean, DateTime, Date, JSON, Text,
     ForeignKey, Index, UniqueConstraint, Enum as SQLEnum,
-    BigInteger, select, func
+    BigInteger, select, func, text
 )
+from sqlalchemy.dialects.postgresql import JSONB as PG_JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.ext.declarative import declared_attr
+
+# Portable JSON 타입: 운영(PostgreSQL)에서는 JSONB, 테스트(SQLite)에서는 JSON으로 폴백.
+# 04-data-model.md는 JSONB가 정본이나, 테스트 in-memory SQLite 호환을 위해 variant 사용.
+JSONB = JSON().with_variant(PG_JSONB, "postgresql")
 
 # ============================================================================
 # Base 클래스 & 공통 Mixin
@@ -598,7 +603,13 @@ class Seat(Base, TimestampMixin):
     __table_args__ = (
         Index("idx_seat_floor_type", "floor_id", "type"),
         Index("idx_seat_assigned_user", "assigned_user_id"),
-        UniqueConstraint("floor_id", "seat_number", name="uq_seat_number", sqlite_where="seat_number IS NOT NULL"),
+        # 부분 유니크: seat_number가 NULL이 아닐 때만 (floor_id, seat_number) 유일.
+        # UniqueConstraint는 부분(where) 미지원 → unique Index로 구현 (dialect별 where).
+        Index(
+            "uq_seat_number", "floor_id", "seat_number", unique=True,
+            sqlite_where=text("seat_number IS NOT NULL"),
+            postgresql_where=text("seat_number IS NOT NULL"),
+        ),
     )
 
 
