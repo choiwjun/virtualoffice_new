@@ -49,5 +49,7 @@ async def health() -> dict:
 
 
 # ── 라우터 등록 (점진적) ─────────────────────────────────
-# from app.api import users, teams, seats, meetings, kpi
-# app.include_router(users.router, prefix="/api")
+from app.api import erp  # noqa: E402
+
+app.include_router(erp.router)
+# TODO(Phase 2+): seats, meetings, kpi 라우터

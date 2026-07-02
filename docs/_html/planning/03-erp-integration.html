@@ -241,11 +241,13 @@ async def sync_erp_users_incremental():
     await notify_admin_if_drift(len(deleted), len(reappeared))</code></pre>
 <h4 id="근태-벌크-조회api-미존재이므로-db-직접">근태 벌크 조회(API 미존재이므로 DB 직접)</h4>
 <pre class="code lang-sql"><code>-- ERP attendances 직접 조회(company_id + date range)
-SELECT user_id, date, check_in_at, check_out_at, work_type, updated_at
+-- ⚠️ 라이브 검증(2026-07-02): 컬럼명은 attendance_date (date 아님).
+--    attendances에는 updated_at 컬럼이 없음 → 증분 동기화는 attendance_date 범위로만.
+SELECT user_id, attendance_date, check_in_at, check_out_at, work_type
 FROM attendances
 WHERE company_id = $1
-  AND date &gt;= $2::date AND date &lt;= $3::date
-ORDER BY date ASC, user_id ASC;</code></pre>
+  AND attendance_date &gt;= $2::date AND attendance_date &lt;= $3::date
+ORDER BY attendance_date ASC, user_id ASC;</code></pre>
 <h3 id="24-company_id-스코프-강제">2.4 company_id 스코프 강제</h3>
 <p><strong>중요</strong>: 모든 ERP 쿼리에 <code>WHERE company_id = ?</code> 필수</p>
 <pre class="code lang-python"><code># 안전: company_id 필터
@@ -275,7 +277,8 @@ team_zone.org_group_id = 2</code></pre>
 <div class="table-wrap"><table><thead><tr><th>ERP job_positions</th><th>우리 저장 위치</th></tr></thead><tbody><tr><td>id</td><td>erp<em>user.position</em>id 참조</td></tr><tr><td>name</td><td>직급명</td></tr><tr><td>level</td><td>서열 정렬용</td></tr></tbody></table></div>
 <p>조회: <code>GET /api/positions</code> 사용 또는 DB 직접.</p>
 <h3 id="34-근태attendances">3.4 근태(attendances)</h3>
-<div class="table-wrap"><table><thead><tr><th>ERP attendances</th><th>우리 저장(참고용)</th></tr></thead><tbody><tr><td>user_id</td><td>user<em>id FK erp</em>user.id</td></tr><tr><td>date</td><td>work_date</td></tr><tr><td>check<em>in</em>at</td><td>check<em>in</em>time</td></tr><tr><td>check<em>out</em>at</td><td>check<em>out</em>time</td></tr><tr><td>work_type</td><td>work_type(enum)</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>ERP attendances</th><th>우리 저장(참고용)</th></tr></thead><tbody><tr><td>user_id</td><td>user<em>id FK erp</em>user.id</td></tr><tr><td>attendance_date</td><td>work_date</td></tr><tr><td>check<em>in</em>at</td><td>check<em>in</em>time</td></tr><tr><td>check<em>out</em>at</td><td>check<em>out</em>time</td></tr><tr><td>work_type</td><td>work_type(enum: office|remote)</td></tr></tbody></table></div>
+<blockquote>⚠️ 라이브 검증(2026-07-02, space-daily/backend/app/models/tables.py): 날짜 컬럼은 <code>attendance_date</code>. <code>updated_at</code> 컬럼 없음(증분은 날짜 범위 기반). 그 외 컬럼: <code>estimated_check_out_at</code>, <code>is_reminded</code>(우리 미사용).</blockquote>
 <p><strong>우리 사용 (v1)</strong>: 출퇴근 시각 및 근무형태는 ERP attendances를 read-only로만 읽음. 우리는 check_in/out을 쓰지 않으며, 공식 출퇴근은 ERP가 원본. 3D 프레즌스는 별도 상태로 관리(로그인→online, 구역 도착→working, 회의실 입장→meeting, 무입력→away, 집중모드→focus, 로그아웃→offline).</p>
 <h3 id="35-휴가leaves">3.5 휴가(leaves)</h3>
 <div class="table-wrap"><table><thead><tr><th>ERP leaves</th><th>우리 저장(참고용)</th></tr></thead><tbody><tr><td>user_id</td><td>user<em>id FK erp</em>user.id</td></tr><tr><td>start<em>date, end</em>date</td><td>leave<em>start, leave</em>end</td></tr><tr><td>leave_type</td><td>type</td></tr></tbody></table></div>
@@ -871,13 +874,14 @@ async def kpi_quarterly_push_batch():
     today = datetime.now().date()
     week_ago = today - timedelta(days=7)
     
+    # ⚠️ 라이브 검증(2026-07-02): 컬럼은 attendance_date, updated_at 없음.
+    # 증분은 날짜 범위(최근 7일)로만 — updated_at 필터 사용 불가.
     query = &quot;&quot;&quot;
-    SELECT user_id, date, check_in_at, check_out_at, work_type
+    SELECT user_id, attendance_date, check_in_at, check_out_at, work_type
     FROM attendances
     WHERE company_id = $1
-      AND date &gt;= $2 AND date &lt;= $3
-      AND updated_at &gt;= (NOW() - INTERVAL '24 hours')
-    ORDER BY date ASC, user_id ASC
+      AND attendance_date &gt;= $2 AND attendance_date &lt;= $3
+    ORDER BY attendance_date ASC, user_id ASC
     &quot;&quot;&quot;
     
     rows = await erp_db.fetch(query, COMPANY_ID, week_ago, today)
