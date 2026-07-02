@@ -1,0 +1,51 @@
+# 가상오피스 운영 플랫폼 — 사내 로컬 서버 PC 배포 (Docker Compose)
+#
+# 배포 대상: 사내 온프렘 로컬 서버 PC (단일 조직 도그푸딩, K8s 미사용)
+# 현재 서비스: db(PostgreSQL) + backend(FastAPI)
+# 확장 예정: web(Next.js 관리콘솔), livekit+coturn(화상, self-host), godot-server(헤드리스)
+#
+# 사용:
+#   cp .env.example .env   # 시크릿/비밀번호 설정
+#   docker compose up -d --build
+#   curl http://localhost:8000/health
+
+services:
+  db:
+    image: postgres:17
+    container_name: vo_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-virtualoffice}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-virtualoffice}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: vo_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-virtualoffice}
+      # ERP dailylog read-only — 접속정보 확보 시 .env에 채우면 실 DB 자동 전환.
+      ERP_DATABASE_URL: ${ERP_DATABASE_URL:-}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-only-secret-CHANGE-IN-PRODUCTION}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      # dev/도그푸딩 첫 기동: 테이블 자동 생성 (운영 전환 시 Alembic으로 대체)
+      AUTO_CREATE_TABLES: ${AUTO_CREATE_TABLES:-true}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000"]}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+volumes:
+  pgdata:

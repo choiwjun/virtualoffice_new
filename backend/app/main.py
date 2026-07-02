@@ -17,7 +17,12 @@ from app.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 시작/종료 훅 (Phase 2+: ERP 커넥션 풀 워밍업, 스케줄러 기동 등)
+    # dev/도그푸딩: 테이블 자동 생성 (운영은 Alembic). Docker 최초 기동 편의.
+    if settings.auto_create_tables:
+        from app.db import Base, engine
+
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
     yield
 
 

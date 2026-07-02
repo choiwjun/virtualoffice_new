@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     )
     db_echo: bool = False
 
+    # dev/도그푸딩 편의: 기동 시 테이블 자동 생성 (운영은 Alembic 마이그레이션 사용).
+    auto_create_tables: bool = False
+
     # ── ERP dailylog read-only DB (03-erp-integration, D18) ──
     # 같은 사내망, company_id 스코프. 비어있으면 ERP 연동 비활성.
     erp_database_url: str = ""
