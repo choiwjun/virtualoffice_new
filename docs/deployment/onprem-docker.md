@@ -43,7 +43,11 @@
 
 ---
 
-## 2. ⚠️ 성패를 가르는 결정: 서버 PC의 OS
+> **확정 (2026-07-02 사용자 인터뷰)**
+> - **서버 OS = Linux 설치 예정** (§2 권장안 채택) → LiveKit/coturn 경로 순탄.
+> - **회사 VPN 없음 → 외부 공개 필요** (OQ5 종결) → §3이 "사내망 전용"에서 **"인터넷 노출 아키텍처"**로 격상됨. 보안 요구 대폭 상승.
+
+## 2. ⚠️ 성패를 가르는 결정: 서버 PC의 OS — ✅ Linux 확정
 
 | | **Linux (Ubuntu Server 24.04 권장)** | Windows + Docker Desktop |
 |---|---|---|
@@ -55,12 +59,32 @@
 **권장**: 서버 PC에 **Ubuntu Server를 설치**하고 Docker Engine(비-Desktop)으로 운영.
 Windows를 유지해야 한다면 — Phase 4까지(3D 서버까지)는 가능하나, **Phase 5 화상(LiveKit)에서 벽**에 부딪힐 가능성이 높음. 그 경우 WSL2에 직접 docker engine을 넣거나 화상만 별도 Linux 미니PC로 분리하는 폴백 필요.
 
-## 3. TLS/WSS — 사내망이어도 필요 (D1: WSS 확정)
+## 3. 외부 공개 아키텍처 — VPN 없음 확정 (OQ5 종결, 2026-07-02)
 
-- Godot 클라이언트↔게임서버는 **WSS**, 화상(WebRTC)도 TLS 전제 → **인증서 필요**.
-- 권장: **Caddy 내부 CA**(자동 발급) 또는 `mkcert`로 사내 CA 1개 만들고 직원 PC에 루트 인증서 배포(클라이언트 설치 패키지에 포함).
-- 사내 DNS(또는 hosts)로 `vo.company.local` 같은 내부 도메인 지정 — IP 직결보다 인증서 관리가 쉬움.
-- 재택/외근: **회사 VPN 접속을 v1 기본**으로(OQ5). TURN-over-TLS(443) 직결은 협의 후.
+재택·외근자가 **공인 인터넷에서 직접 접속**한다. "사내망이라 안전" 전제 폐기.
+
+### 3.1 도메인·인증서
+- **공인 도메인 1개 필요** (예: `vo.spacecl.com`) — 고정 공인 IP면 A레코드, 유동이면 DDNS.
+- 인증서: **Let's Encrypt** — Caddy가 자동 발급·갱신 (80/443 인바운드 필요). 내부 CA·수동 인증서 배포 불필요해짐(오히려 단순해진 부분).
+- WSS(D1)·HTTPS·TURN-TLS 모두 이 인증서로 통일.
+
+### 3.2 포트 노출 원칙 — 최소만 연다
+| 포트 | 용도 | 공유기/방화벽 포워딩 |
+|---|---|---|
+| 443/TCP | HTTPS(웹콘솔·API) + WSS(3D) + TURN-TLS(화상 폴백) | ✅ 개방 |
+| 80/TCP | Let's Encrypt 검증 + HTTPS 리다이렉트 | ✅ 개방 |
+| 7881/TCP + UDP 50000-60000 | LiveKit WebRTC 직결(품질↑) | Phase 5에서 개방 (안되면 TURN-TLS 443 폴백) |
+| **5432(DB), 8000(backend), 3000(web)** | 내부 전용 | ❌ **절대 비개방** — compose에서 127.0.0.1 바인딩(적용됨) |
+
+### 3.3 공개 노출 보안 체크리스트 (도그푸딩 시작 전 필수)
+- [x] DB 포트 localhost 바인딩 (compose 적용, 2026-07-02)
+- [ ] 모든 외부 트래픽 Caddy 단일 진입 → backend/web은 프록시 뒤로 (직접 노출 금지)
+- [ ] JWT 시크릿 강한 값 교체 + `ENVIRONMENT=production`
+- [ ] 로그인 rate-limit (fastapi 미들웨어 또는 Caddy rate_limit)
+- [ ] fail2ban 또는 Caddy 레벨 차단 + ssh 키 인증 전용(패스워드 로그인 off)
+- [ ] Docker 자동 보안업데이트(unattended-upgrades) + 이미지 주기 갱신
+- [ ] 관리자 기능(POST /erp/sync 등)은 admin 역할 — 적용됨. 추가로 audit_log 기록(P6 태스크)
+- [ ] ERP read-only 접속은 서버→ERP 방향 아웃바운드만 (ERP를 외부 노출하지 않음)
 
 ## 4. 운영 절차 (1인 운영 기준 최소셋)
 
@@ -108,16 +132,18 @@ docker exec vo_db pg_dump -U postgres virtualoffice | gzip > /backup/vo_$(date +
 
 | 리스크 | 완화 |
 |---|---|
-| Windows 서버 PC + LiveKit UDP | **OS를 Linux로** (§2). 불가 시 화상만 분리 |
+| ~~Windows 서버 + LiveKit UDP~~ | ✅ 해소 — Linux 확정 (§2) |
+| **인터넷 공개 노출 (VPN 없음)** | §3.2 포트 최소화 + §3.3 보안 체크리스트. 도그푸딩 전 완료 필수 |
 | 서버 PC 1대 = SPOF | 도그푸딩 수용(사내). 백업 절차(§4)로 데이터만 보호 |
 | 디스크 유실 | 일일 pg_dump 외부 복사 + 복원 리허설 |
-| WSS 인증서 관리 | Caddy 내부 CA + 클라이언트 설치본에 루트 포함 |
+| WSS 인증서 관리 | ✅ 단순화 — 공인 도메인 + Let's Encrypt 자동 (Caddy) |
 | Docker Desktop 개발PC(Windows)와 서버 환경 차이 | compose 파일 동일 사용, 서버는 Linux Engine |
 
 ## 7. 미결(사용자/사내 확인 필요)
 
-- [ ] **서버 PC OS 확정** (현재 뭐가 설치돼 있나? Ubuntu 전환 가능?) ← §2, 최우선
-- [ ] 서버 PC 사양 (RAM/디스크/CPU)
-- [ ] 재택·외근자 접속: 회사 VPN 존재 여부 (OQ5 잔여)
-- [ ] 백업 목적지 (NAS? 다른 PC? 클라우드 금지 여부)
-- [ ] 사내 DNS 운영 여부 (내부 도메인 지정 가능?)
+- [x] ~~서버 PC OS~~ → **Linux 설치 예정 확정** (2026-07-02)
+- [x] ~~VPN 여부~~ → **VPN 없음, 외부 공개 확정** (2026-07-02, §3 참조)
+- [ ] **공인 IP: 고정인가 유동인가?** (고정→A레코드 / 유동→DDNS 필요)
+- [ ] **도메인**: 회사 보유 도메인(spacecl.com?)에 서브도메인 추가 가능? 아니면 신규 구매?
+- [ ] 서버 PC 사양 (RAM 16GB+ 권장 / 디스크 SSD 256GB+)
+- [ ] 백업 목적지 (NAS? 다른 PC? — 서버 PC 외부여야 함)

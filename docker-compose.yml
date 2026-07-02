@@ -21,7 +21,9 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # 외부 공개 서버 전제(VPN 없음) → DB는 localhost에만 바인딩.
+      # 컨테이너 간 통신은 compose 내부 네트워크로 충분(backend는 db:5432 사용).
+      - "${DB_BIND:-127.0.0.1}:${DB_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-virtualoffice}"]
       interval: 10s
