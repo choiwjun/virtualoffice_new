@@ -4,6 +4,7 @@
 **목적**: 승인 기획(58주, Phase 0~7) 대비 **실제 구현 현황**과 **남은 전 작업**을 한 문서로 재개 가능하게 정리한다.
 **정본 참조(SSOT)**: `docs/planning/00-decisions.md`(D1~D25) · `01-prd.md` · `10-roadmap.md` · `12-tasks.md`(태스크 ID) · `06-screens.md`(웹 화면) · `specs/screens/*.yaml` · `specs/shared/*.yaml` · `docs/data-model/office-layout-schema.json`
 **관련 문서**: `blocked-work-registry.md`(환경/사람 차단 B-01~B-22) · `ultragoal-handoff.md`(백엔드 관리 API 구현 이력)
+**🎨 디자인 목표 퀄리티(정본 레퍼런스)**: `design/screens/virtual-office-3d-reference.md` (+ 원본 시안 `design/screens/virtual-office-3d-reference.png`) — 실사급 3D 아이소메트릭 오피스 + 다크테마 글래스모피즘 HUD + 인앱 화상. Phase 1 골든샘플·HUD·디자인토큰의 **아트/UX 기준**.
 
 > **한 줄 요약**: 태스크 86개 중 실질 완료는 **백엔드 관리 API + 계약/설계**뿐. **웹 프론트엔드(Next.js) 전체와 Godot 3D 클라·실시간 서버·화상/STT는 미구현**이다. 그동안의 "완료" 보고는 백엔드 API 범위였다.
 
@@ -44,6 +45,7 @@
 ### A. 🔴 웹 프론트엔드 (Next.js) — **전체 미구현** [READY]
 정본: `06-screens.md`, `specs/screens/*.yaml`, `specs/shared/{components,rbac,types}.yaml`, 11-tech-stack
 스택: Next.js(App Router)+TypeScript+TailwindCSS, Konva.js(좌석2D), React Flow(조직도)
+**🎨 디자인 언어**: `design/screens/virtual-office-3d-reference.md` §7 토큰(다크테마·블루 액센트·글래스모피즘·상태색)을 웹 콘솔에도 일관 적용 — 3D 클라와 브랜딩 통일. 임시 `console.html`이 톤 참고용(정식 대체 아님).
 
 - [ ] **A0. Next.js 앱 스캐폴드** — `frontend/` 신설(package.json, App Router, Tailwind, tsconfig), API 클라이언트(JWT 저장/자동 refresh/401 session-expired), 레이아웃(사이드바+헤더), RBAC 가드(`specs/shared/rbac.yaml`)
 - [ ] **A1. 로그인/세션** (`auth.yaml`, 태스크 P2-R2-T0 프론트분) — `/login`, 401 처리, 세션만료 복구, 성공 시 직원명부 랜딩
@@ -69,13 +71,14 @@
 
 ### C. 🔴 Godot 3D 클라이언트 (Phase 1 골든샘플) — **미구현** [ENV: GPU/에셋]
 정본: `07-3d-visual-asset-pipeline.md`, `06-screens.md §1`, `virtual-office-3d.yaml`, 태스크 P1-*
+**🎨 아트/HUD 타깃**: `design/screens/virtual-office-3d-reference.md`(실사급 PBR 3D 오피스 + 다크 HUD). C1~C7 수용기준에 **"레퍼런스 대비 시각 일치"** 추가.
 - [ ] **C1. 로비/브랜드월/공개영역 모델링** (P1-S1-T1)
 - [ ] **C2. 좌석영역(Open/Fixed/Free) 3D 표현** (P1-S1-T2)
 - [ ] **C3. 회의실 2개 + 라운지/집중실/폰부스** (P1-S1-T3)
 - [ ] **C4. 아바타 모델·애니메이션(5~10)** (P1-S1-T4)
 - [ ] **C5. 이름/상태 HUD + 우측 직원정보 패널** (P1-S1-T5)
 - [ ] **C6. 하단 회의패널 + 미니맵** (P1-S1-T6)
-- [ ] **C7. 골든샘플 통합검증 (60fps GTX1650, 로딩<5s)** (P1-S1-V) [ENV]
+- [ ] **C7. 골든샘플 통합검증 (60fps GTX1650, 로딩<5s + 레퍼런스 시각 일치)** (P1-S1-V) [ENV]
 - [ ] **C8. 로그인 씬** (`godot/scenes/ui/login.tscn`)
 - [ ] **C9. 데스크톱 draft 뷰어** (P3-R2-T2, `layout_draft_viewer.tscn`)
 - [ ] **C10. 클라이언트 WSS 네트워킹·원격아바타 동기화** (P4-R1-T3, blocker B-02) [ENV]
@@ -110,10 +113,11 @@
 - [ ] **G1. GLB 에셋 제작(Blender)·최적화·asset 테이블 등록** — office_layout `asset_id` 참조 대상 실물.
 - [ ] **G2. office_layout → Godot 씬 변환 파이프라인** (P3-R3-T2)
 
-### H. 🟡 디자인 시스템 / 시각 목업 — **약함(갭)** [READY]
-정본: `specs/shared/types.yaml`(design_tokens), 갭 리포트 A2-20
-- [ ] **H1. 디자인 토큰 확정** — 현재 "Tailwind 기본 테마=정본" + 상태색만. 팔레트/타이포/간격 구체화(또는 tokens.yaml).
-- [ ] **H2. 시각 목업/와이어프레임** — `design/html`·`design/screens` 비어있음. 화면 시안 부재.
+### H. 🟡 디자인 시스템 / 시각 목업 — **부분 해소(레퍼런스 확보)** [READY]
+정본: `specs/shared/types.yaml`(design_tokens), 갭 리포트 A2-20, **`design/screens/virtual-office-3d-reference.md`(신규 시각 레퍼런스)**
+- [ ] **H1. 디자인 토큰 확정** — 현재 "Tailwind 기본 테마=정본" + 상태색만. 레퍼런스 §7(다크테마·블루 액센트·상태색·라운드·글래스모피즘)을 팔레트/타이포/간격으로 구체화(또는 tokens.yaml). **웹 콘솔·3D HUD 공통 적용(브랜딩 통일)**.
+- [x] **H2. 시각 목업/레퍼런스** — ✅ 3D 메인 오피스 고해상 시안 확보(`design/screens/virtual-office-3d-reference.{md,png}`). 나머지 웹 9화면 시안은 미확보(레퍼런스 토큰 기반 파생 가능).
+- [ ] **H3. spec ↔ 시안 델타 재정합** — 레퍼런스 §8: 좌측 내비 **신규 3항목(Events·Whiteboard·Files)** scope/Phase 결정 + `virtual-office-3d.yaml` 반영, 회의입장 E키 UX, 플로팅 화상 패널 HUD 스펙, 프레즌스 그룹핑(In Office/In a Meeting/Online/Away).
 
 ### I. 🟡 DevOps / 배포 하드닝
 - [ ] **I1. 외부 공개 하드닝** (P2-R4-T1, D21-r) — Caddy 단일진입/rate-limit/fail2ban. compose 일부만.
