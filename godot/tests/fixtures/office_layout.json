@@ -1,0 +1,102 @@
+{
+  "metadata": {
+    "version": "1.1",
+    "schema_version": 1,
+    "floor_name": "1F",
+    "language": "ko-KR"
+  },
+  "floor": {
+    "level": 1,
+    "name": "1F",
+    "coordinate_origin": "top_left",
+    "floor_height_m": 0.0,
+    "unit_system": "metric"
+  },
+  "dimensions": {
+    "width_m": 20.0,
+    "height_m": 20.0,
+    "min_x": 0.0,
+    "max_x": 20.0,
+    "min_y": 0.0,
+    "max_y": 20.0,
+    "unit": "meter"
+  },
+  "zones": [
+    {
+      "zone_id": "Z_001",
+      "label": "Team A",
+      "polygon": [
+        { "x": 0.0, "y": 0.0 },
+        { "x": 20.0, "y": 0.0 },
+        { "x": 20.0, "y": 20.0 }
+      ]
+    }
+  ],
+  "rooms": [
+    {
+      "room_id": "R_001",
+      "name": "Meeting A",
+      "type": "meeting",
+      "capacity": 4,
+      "capacity_mode": "by_room",
+      "max_concurrent_users": 4,
+      "coords": { "x": 5.0, "y": 5.0, "width": 8.0, "height": 6.0 },
+      "entrance": {
+        "trigger_x": 8.0,
+        "trigger_y": 10.0,
+        "trigger_width": 2.0,
+        "trigger_height": 1.0,
+        "entry_direction": "south"
+      },
+      "doors": [
+        { "door_id": "D1", "wall": "south", "offset": 4.0, "width": 1.2, "door_type": "open" }
+      ]
+    }
+  ],
+  "seats": [
+    {
+      "seat_id": "S_001",
+      "seat_type": "fixed",
+      "coords": { "x": 2.0, "y": 2.0 },
+      "facing": 180.0,
+      "furniture_id": "F_001"
+    },
+    {
+      "seat_id": "S_002",
+      "seat_type": "free",
+      "coords": { "x": 16.0, "y": 16.0 },
+      "facing": 0.0,
+      "furniture_id": "F_002"
+    }
+  ],
+  "furniture": [
+    {
+      "furniture_id": "F_001",
+      "asset_id": "desk-v1",
+      "type": "desk",
+      "coords": { "x": 2.0, "y": 2.0 },
+      "dimension": { "width": 1.2, "depth": 0.7, "height": 0.75 },
+      "collision": true
+    },
+    {
+      "furniture_id": "F_002",
+      "asset_id": "desk-v1",
+      "type": "desk",
+      "coords": { "x": 16.0, "y": 16.0 },
+      "dimension": { "width": 1.2, "depth": 0.7, "height": 0.75 },
+      "collision": true
+    }
+  ],
+  "colliders": [
+    {
+      "collider_id": "C_001",
+      "shape": "box",
+      "box": { "x": 10.0, "y": 15.0, "width": 1.0, "height": 1.0 },
+      "physics": { "block_avatar": true },
+      "description": "pillar"
+    }
+  ],
+  "spawn_points": [
+    { "spawn_id": "SP_1", "coords": { "x": 1.0, "y": 1.0 }, "facing": 90.0 }
+  ]
+}

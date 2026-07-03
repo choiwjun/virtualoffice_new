@@ -19,7 +19,7 @@
 
 | ID | 항목 | 분류 | 실행 불가 사유 | 해소 선행조건 |
 |----|------|------|----------------|----------------|
-| B-01 | Godot 3D 클라이언트 (Phase 1) | phase_blocked | Godot 엔진·GPU·에셋 파이프라인 부재. 관리 API Phase 범위 밖. | Godot 프로젝트 + GPU 빌드/런 환경, 에셋 레지스트리(asset 테이블) 실 GLB/tscn |
+| B-01 | Godot 3D 클라이언트 (Phase 1) | phase_blocked (헤드리스 로직 슬라이스 진행 중) | GPU 렌더링·실 GLB 에셋·에디터 런타임은 부재로 여전히 차단. **헤드리스 GUT로 검증 가능한 로직 슬라이스는 진행**: 아바타 이동/충돌/좌석/근접/A*(`scenes/avatar.gd`), JWT HS256 검증(`server/jwt_verify.gd`), **office_layout(05 스키마) → 3D 씬 + 아바타용 obstacle_cells/seats/spawn 파생 로더(`scenes/office_layout_loader.gd`)**. 실 GPU 40아바타 FPS·GLB 임포트·export 빌드만 GPU/에셋 차단. | Godot GPU 빌드/런 환경, 에셋 레지스트리(asset 테이블) 실 GLB/tscn, export 파이프라인 |
 | B-02 | 헤드리스 실시간 서버 + 클라이언트 WSS 네트워킹 (Phase 4) | phase_blocked | 실시간 서버 런타임·WSS 인프라 부재. `docs/api/realtime-server-api.yaml`은 계약만 존재. | Phase 4 실시간 서버 구현, presence 좌표 브로드캐스트 인프라 |
 | B-03 | LiveKit 화상 + STT 회의록 런타임 (Phase 5) | phase_blocked (토큰 발급+배포 스캐폴드 슬라이스는 해소 → B-07) | LiveKit 서버·Egress·STT 엔진(한국어 화자분리)·AI 후처리 런타임 부재. **회의 입장 토큰(실 AccessToken 조건부 발급) + livekit/coturn compose opt-in 스캐폴드는 완료(B-07)** — 실 서버 룸 생성/화상/STT/AI만 남음. | LiveKit 서버 배포 + STT 엔진 + AI 요약 파이프라인 |
 | B-04 | 선행 스파이크 S1~S4 | phase_blocked | S1(3D 성능), S2(STT 정확도<5% 누락률, D22), S3(실시간 부하), S4(에셋 파이프라인) — 각 후속 Phase 검증용 스파이크. | 해당 Phase 하드웨어/런타임 확보 |
