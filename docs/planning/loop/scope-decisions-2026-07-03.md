@@ -46,13 +46,14 @@
 | `specs/screens/virtual-office-3d.yaml` | sidebar-left 내비 확정 + E키/화상패널/그룹핑 note | ✅ 본 커밋 |
 | `implementation-handoff.md` | H3 "델타 재정합" → **결정 완료**로 갱신 + 본 문서 링크 | ✅ 본 커밋 |
 | `01-prd.md §3` 범위표 | Events(SHOULD#7)·Whiteboard디지털(COULD#7)·Files(WON'T) 행 추가 | ⏳ 후속(제안) |
-| `12-tasks.md` Phase 7 | Events 화면·Whiteboard 디지털 태스크 신설 | ⏳ 후속(제안) |
-| `06-screens.md` | 좌측 내비·화상 패널·E키 서술 정정 | ⏳ 후속(제안) |
+| `12-tasks.md` Phase 7 | Events(P7-R1-T5)·Whiteboard 디지털(P7-R1-T6) 태스크 신설 | ✅ 반영 |
+| `06-screens.md` | 좌측 내비 확정 note | ✅ 반영 |
+| `01-prd.md §3` 범위표 | Events(SHOULD#7)·Whiteboard디지털(COULD#7+)·Files(WON'T) 행 추가 | ✅ 반영 |
 
-> ⏳ 후속 3건은 SSOT(00-decisions)에 결정이 박혀 있으므로 언제든 일괄 propagate 가능. 본 문서가 그 근거다.
+> SSOT(00-decisions D26~D30)에 결정이 박혀 있고, 파급 문서 반영 완료.
 
-## 5. 승인 포인트 (사용자 조정 가능)
-아래 3건은 **린 MVP 기본값**으로 결정했으나, 제품 오너 판단으로 상향 가능:
-1. **Files** → 현재 WON'T(MVP). "파일 공유가 MVP 필수"면 SHOULD/#7로 상향.
-2. **Whiteboard 디지털 협업보드** → 현재 COULD/#7+. 회의 핵심 UX로 본다면 #5로 상향(단, 실시간 협업 캔버스는 +공수).
-3. **Events 전용 화면** → 현재 #7. MVP에서 회의 캘린더로 충분하면 그대로, 전사 일정 허브가 필요하면 #7 유지.
+## 5. 승인 포인트 — **확정됨 (2026-07-03, 제품 오너 승인: "추천대로")**
+아래 3건은 **린 MVP 기본값 유지**로 최종 확정. 근거 = PRD "운영 허브, 기능 과적 지양" + 58주 코어(3D/프레즌스/KPI) 보호.
+1. **Files** → ✅ **WON'T(MVP) 확정.** 파일관리는 운영 허브 포지셔닝 밖(경쟁표상 Teams 영역), `result_url`+웹콘솔로 충분. 완성 후 재검토.
+2. **Whiteboard 디지털 협업보드** → ✅ **COULD/#7+ 확정.** 실시간 협업 캔버스는 별도 제품 규모. MVP 회의 시각공유는 **LiveKit 화면공유(D28)**로 충족, 물리 화이트보드 프롭(3D)은 유지.
+3. **Events 전용 화면** → ✅ **#7 확정.** MVP는 회의 캘린더(meetings)로 충분. 전사 일정 허브만 Phase 7.

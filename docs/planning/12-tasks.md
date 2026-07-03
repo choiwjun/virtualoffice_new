@@ -1254,6 +1254,33 @@
   - 3단계 트리 드래그 편집 + 저장 성공
   - parent_id 순환 참조 방지 검증
 
+### [ ] P7-R1-T5: Events 전용 화면 (전사 일정 허브, PRD SHOULD #7 — 신설 2026-07-03, D26)
+
+- **담당**: frontend-specialist
+- **의존**: P5-R1-T1 (회의), P6-R1-T2 (업무)
+- **산출물**:
+  - 페이지: `frontend/app/(admin)/events/page.tsx`
+  - 컴포넌트: `frontend/components/EventsHub.tsx` (회의·마감·전사 이벤트 통합 캘린더)
+  - 3D 클라 좌측 내비 `Events` 항목 노출(Phase 7)
+- **비고**: MVP는 회의 캘린더(`/meetings`)로 대체(D26). 전용 이벤트 허브만 Phase 7.
+- **Worktree**: `worktree/phase-7-advanced` · **브랜치**: `phase-7-advanced`
+- **완료 조건**:
+  - 회의/마감/전사 이벤트가 단일 캘린더에 통합 표시
+  - 이벤트 클릭 → 상세/이동(회의는 /meetings 연결)
+
+### [ ] P7-R1-T6: Whiteboard 디지털 협업보드 (실시간 캔버스, PRD COULD #7+ — 신설 2026-07-03, D26)
+
+- **담당**: frontend-specialist + backend-specialist
+- **의존**: P4-R1-T2 (WSS 게이트웨이), P5-R1-T1 (회의)
+- **산출물**:
+  - 실시간 협업 캔버스(회의 컨텍스트 내 도형/펜/스티키)
+  - 백엔드 실시간 동기화(WSS) + 스냅샷 저장
+- **비고**: 중량 기능(Miro류). **MVP 회의 시각공유는 LiveKit 화면공유(D28)로 충족**, 물리 화이트보드 프롭(3D)은 별개 유지. COULD — 코어(3D/프레즌스/KPI) 완료 후 착수.
+- **Worktree**: `worktree/phase-7-advanced` · **브랜치**: `phase-7-advanced`
+- **완료 조건**:
+  - 2인 이상 동시 편집 실시간 반영(지연 <500ms)
+  - 회의 종료 후 보드 스냅샷 저장·재열람
+
 ### [ ] P7-R2-T1: 모바일 푸시 알림 (중요 회의/액션아이템)
 
 - **담당**: devops-specialist + backend-specialist

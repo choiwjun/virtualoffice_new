@@ -59,6 +59,7 @@
 - **People**: 현재 온라인 직원 목록 (팀별 그룹), 클릭 → 아바타 추적
 - **Chat**: 미니 채팅 인터페이스 (회의 중 메모/근접 DM만, KPI 반감시 원칙 준수). **본격 채팅은 Phase 7 고도화** — MVP는 회의 메모·근접 DM 수준으로 한정
 - **Settings**: 아바타 커스터마이징, 알림, 접근성
+- **내비 범위 확정(D26, 2026-07-03 시안)**: MVP 노출 = Office/Rooms/People/Chat(제한)/Settings. **Events·Whiteboard(디지털 협업보드)는 Phase 7**, **Files는 MVP 제외(WON'T)**. 시각 레퍼런스: `design/screens/virtual-office-3d-reference.md`.
 
 #### **3D Main Viewport (중앙 — 메인 렌더링 영역)**
 **기하학적 요소:**
