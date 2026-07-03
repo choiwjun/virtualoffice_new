@@ -1,0 +1,47 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "architect 재리뷰(4-G002DirReReview): 1차 WATCH 3건(RBAC fail-open / get_employee 상세 RBAC 부재 / 엔벨로프 불일치) 모두 근본 해소, 정본 management-api.yaml /users 계약 정합, 세 레인 CLEAR. 근거 erp.py:85-133, deps.py:20-55.",
+    "commands": ["task architect 2-G002DirArchReview (1차 WATCH/COMMENT)", "task architect 4-G002DirReReview (재리뷰 APPROVE)"],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "디렉터리 전용 테스트 12개(RBAC 3분기+상세 RBAC 3건+teams+org-groups+401) + executor 레드팀 15개 적대 케이스 전원 통과(취약점 0). ai-slop 수동 스윕: fail-open 제거·엔벨로프 통일로 병렬 컨벤션/마스킹 없음. 전체 회귀 84 passed/80 skipped.",
+    "e2eCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/test_directory_api.py -q"],
+    "redTeamCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/redteam/test_directory_redteam.py -q"],
+    "artifactRefs": [
+      {"id": "g002-dir", "kind": "api-package-test-report", "path": "backend/artifacts/g002-directory.xml", "description": "디렉터리 12 passed JUnit"},
+      {"id": "g002-dir-redteam", "kind": "black-box-api-receipt", "path": "backend/artifacts/g002-directory-redteam.xml", "description": "15 적대 케이스 JUnit(취약점 0)"}
+    ],
+    "contractCoverage": [
+      {"id": "cc-users", "contractRef": "management-api.yaml#/users", "obligation": "RBAC 목록: employee=본인, leader=팀, admin=전체, {items,total}", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-forgedadmin", "ac-leaderteam"]},
+      {"id": "cc-userdetail", "contractRef": "management-api.yaml#/users/{user_id}", "obligation": "상세 RBAC: 본인/팀/전체 외 404", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-crossuser"]},
+      {"id": "cc-teams", "contractRef": "management-api.yaml#/teams", "obligation": "팀 목록 read-through {items,total}, limit/offset", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-pagination"]},
+      {"id": "cc-orggroups", "contractRef": "management-api.yaml#/org-groups", "obligation": "조직 계층 {items,total}, parent_id", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-unauth"]}
+    ],
+    "surfaceEvidence": [
+      {"id": "se-api", "contractRef": "FastAPI /api/employees·/api/teams·/api/org-groups (httpx AsyncClient black-box)", "surface": "api", "invocation": "pytest tests/test_directory_api.py + tests/redteam/test_directory_redteam.py", "verdict": "passed", "artifactRefs": ["g002-dir", "g002-dir-redteam"]}
+    ],
+    "adversarialCases": [
+      {"id": "ac-forgedadmin", "contractRef": "GET /api/employees", "scenario": "임의 시크릿으로 위조한 admin 클레임 토큰", "expectedBehavior": "401 (RBAC 우회 불가)", "verdict": "passed", "artifactRefs": ["g002-dir-redteam"]},
+      {"id": "ac-leaderteam", "contractRef": "GET /api/employees", "scenario": "leader(team1) 조회 시 team2 직원 노출 여부", "expectedBehavior": "team1(id1,2,3)만, id4 미노출", "verdict": "passed", "artifactRefs": ["g002-dir-redteam"]},
+      {"id": "ac-crossuser", "contractRef": "GET /api/employees/{id}", "scenario": "employee가 타인 id 상세 조회", "expectedBehavior": "404 (존재 미노출)", "verdict": "passed", "artifactRefs": ["g002-dir"]},
+      {"id": "ac-pagination", "contractRef": "GET /api/teams", "scenario": "limit=0/99999, offset=-1/초과", "expectedBehavior": "422 경계 검증 / offset 초과는 빈 items", "verdict": "passed", "artifactRefs": ["g002-dir-redteam"]},
+      {"id": "ac-unauth", "contractRef": "GET /api/{employees,teams,org-groups}", "scenario": "미인증 요청", "expectedBehavior": "401", "verdict": "passed", "artifactRefs": ["g002-dir-redteam"]}
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "WATCH 3건 수정 후 전체 스위트 재실행 84 passed/80 skipped, 0 실패. architect 재리뷰 APPROVE(세 레인 CLEAR).",
+    "fullRerun": true,
+    "rerunCommands": ["cd backend && .venv/Scripts/python.exe -m pytest -q"],
+    "blockers": []
+  }
+}

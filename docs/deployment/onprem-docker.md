@@ -21,6 +21,7 @@
 | `proxy` | caddy (TLS 종단/리버스 프록시) | 80/443 | web 도입 시 | 예정 |
 
 - EOD 배치(18:00 KST ERP push)·ERP 동기화 스케줄은 **backend 내 APScheduler**로 실행 — 별도 컨테이너 불필요.
+  자세한 cron 표·동시성 가드는 §3.4 참조.
 - STT 워커(Phase 5)는 부하 보고 backend 내장 vs 분리 결정.
 
 ### Docker에 들어가지 **않는** 것
@@ -83,11 +84,83 @@ Windows를 유지해야 한다면 — Phase 4까지(3D 서버까지)는 가능�
 - [x] DB 포트 localhost 바인딩 (compose 적용, 2026-07-02)
 - [ ] 모든 외부 트래픽 Caddy 단일 진입 → backend/web은 프록시 뒤로 (직접 노출 금지)
 - [ ] JWT 시크릿 강한 값 교체 + `ENVIRONMENT=production`
-- [ ] 로그인 rate-limit (fastapi 미들웨어 또는 Caddy rate_limit)
+- [x] 로그인 rate-limit — 애플리케이션 레벨 계정 잠금(C2, G010): 연속 실패 5회(설정: `LOGIN_MAX_ATTEMPTS`) 시 423 Locked, 15분 잠금(`LOGIN_LOCKOUT_MINUTES`). Caddy `rate_limit`(IP 기준)은 추가 방어층으로 선택 적용 가능(미필수).
 - [ ] fail2ban 또는 Caddy 레벨 차단 + ssh 키 인증 전용(패스워드 로그인 off)
 - [ ] Docker 자동 보안업데이트(unattended-upgrades) + 이미지 주기 갱신
 - [ ] 관리자 기능(POST /erp/sync 등)은 admin 역할 — 적용됨. 추가로 audit_log 기록(P6 태스크)
 - [ ] ERP read-only 접속은 서버→ERP 방향 아웃바운드만 (ERP를 외부 노출하지 않음)
+
+### 3.4 Caddy 라우팅 규약 + 배치 스케줄러 운영 노트 (D21-r, D17, G010)
+
+**Caddy 리버스 프록시 매핑** — 계약 테스트/구현 라우터는 대부분 prefix 없이 root 경로로
+동작한다(`/auth/*`, `/work-logs`, `/kpi-results`, `/sync/*`, `/seats`, `/meetings` 등).
+`docs/api/management-api.yaml`의 `servers.url`에 있는 `/api`는 리버스 프록시가 얹는 base이며,
+`app/api/erp.py`만 예외로 라우터 자체에 `/api` prefix가 붙어 있다(`/api/employees`,
+`/api/erp/sync`, `/api/attendances`, `/api/teams`, `/api/org-groups`). Caddyfile은 다음 규칙을
+따른다:
+
+```caddyfile
+example.com {
+    # erp.py 라우터만 이미 /api prefix를 갖고 있다 — 실제 erp 경로만 그대로 통과시킨다.
+    # 광범위한 `handle /api/*`로 erp를 잡으면 strip이 필요한 비-erp 계약 경로
+    # (/api/auth/* 등)까지 같이 잠식하는 예시가 되므로, erp 실경로를 명시 나열한다.
+    handle /api/employees* /api/teams* /api/org-groups* /api/attendances* /api/erp/* {
+        reverse_proxy backend:8000
+    }
+    # 그 외 계약 경로(/auth/*, /work-logs, /kpi-results, /sync/*, /seats, /meetings, /health 등)는
+    # 외부에서 /api/* 로 노출하되 backend에는 prefix 없이 전달한다(D21-r).
+    handle /api/* {
+        uri strip_prefix /api
+        reverse_proxy backend:8000
+    }
+    handle /* {
+        reverse_proxy web:3000
+    }
+}
+```
+
+요지: **erp 실경로만 `/api` 그대로 통과**(명시 나열, 광범위 `/api/*` 패스스루 금지), 나머지 계약
+라우터는 **외부 `/api/*` → 내부 `/*`**로 strip한다(D21-r). 웹 콘솔(`web:3000`)은 API가 아닌
+나머지 경로를 받는다.
+
+**배치 스케줄러 운영 노트(D17, G010 구현, 라이브 검증은 G011)** — `backend` 컨테이너 내
+APScheduler(`AsyncIOScheduler`, `timezone=Asia/Seoul`)로 4개 잡을 cron 등록한다. 별도 워커
+컨테이너는 두지 않는다(단일 인스턴스 전제, D21 1인 운영).
+
+| 잡 | cron(KST) | 목적 |
+|---|---|---|
+| `daily_reports_push` | 평일(mon-fri) 18:00 | 일일 업무 요약 → `daily_status_push`(ERP_DAILY_REPORTS) 멱등 적재 — 공휴일 캘린더는 G011 이연 |
+| `kpi_ai_draft_generation` | 매일 21:00 | 당일 `kpi_result.ai_draft` 초안 채움(결정론 placeholder) |
+| `erp_incremental_sync` | 매시 정각 | `ErpSyncService.sync_users` 증분 동기화 |
+| `erp_full_reconciliation` | 매일 00:00 | 동일 서비스로 전체 대사(soft-delete 감지, D18) |
+
+- `settings.scheduler_enabled`(기본 `False`)가 `True`일 때만 `main.lifespan`에서
+  `build_scheduler().start()`가 실행된다. 운영 배포는 `.env`에 `SCHEDULER_ENABLED=true`를
+  설정해야 배치가 실제로 돈다 — 기본값 그대로 두면 컨테이너는 뜨지만 배치는 미기동.
+- 동시성 가드: `pg_advisory_lock`/`pg_advisory_unlock`로 각 잡 실행을 감싼다. PostgreSQL에서만
+  유효하며, 비-PostgreSQL(테스트 SQLite 등)에서는 no-op으로 통과한다(단일 인스턴스 전제라
+  운영에서도 이론상 불필요하지만, 향후 다중 인스턴스/수동 재실행 중복 방지용 방어선).
+- **환경차단(이 리포지토리의 로컬/CI 테스트 환경에서는 검증 불가, G011 durable blocker로
+  등록됨)**: 실제 APScheduler 프로세스의 상시 실행, 실 18:00/21:00/매시/00:00 KST cron 발화,
+  PostgreSQL `pg_advisory_lock` 동시성(다중 인스턴스 경쟁), 실 ERP 라이브 DB로의 push는 모두
+  운영 Docker Compose 환경에서만 검증할 수 있다. 이 리포지토리의 단위/e2e 테스트는 잡 함수
+  로직·멱등성·스케줄 등록(트리거 시각/타임존)까지만 커버한다.
+
+### 3.5 LiveKit 화상 회의 토큰 (D24, B-03 슬라이스)
+
+- 회의 입장(`POST /meetings/{id}/join`)의 `livekit_token`은 `app/services/livekit_service.issue_join_token`
+  단일 진입점으로 발급한다. `.env`에 `LIVEKIT_API_KEY`+`LIVEKIT_API_SECRET`이 설정되면 **실 LiveKit
+  AccessToken**(VideoGrants `room_join`, `iss=api_key`, `sub=user_id`, `room=meeting-{id}`, TTL 6h)을,
+  미설정이면 **결정적 stub 토큰**(자체 JWT — 하위호환)을 반환한다. 코드 변경 없이 `.env`만으로 전환된다.
+- self-host LiveKit/coturn은 **opt-in profile**이다(기본 스택 미포함). 활성화:
+  ```bash
+  # .env: LIVEKIT_API_KEY / LIVEKIT_API_SECRET(>=32자) / LIVEKIT_URL 설정 후
+  docker compose --profile livekit up -d
+  ```
+  `livekit`(signaling 7880 / RTC-TCP 7881)와 `coturn`(TURN 3478)이 함께 기동된다.
+- **환경차단(B-03, 이 리포지토리에서 검증 불가)**: 실 LiveKit 서버 룸 생성·미디어(오디오/비디오)·Egress→STT
+  (한국어 화자분리)·AI 요약은 서버/엔진/GPU 및 운영 네트워크(RTC UDP 포트 범위·TURN 튜닝)가 필요하다. 이
+  슬라이스는 **토큰 발급 계약 + 배포 스캐폴드**까지만 커버한다(coturn UDP/포트·realm·인증은 운영 전 튜닝 필요).
 
 ## 4. 운영 절차 (1인 운영 기준 최소셋)
 

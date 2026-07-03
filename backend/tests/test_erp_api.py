@@ -25,20 +25,20 @@ async def test_sync_then_list_employees(async_client, admin_auth_headers, auth_h
     body = r.json()
     assert body["created"] == 5 and body["updated"] == 0
 
-    # 직원 디렉터리 (employee 권한이면 충분)
-    r = await async_client.get("/api/employees", headers=auth_headers)
+    # 직원 디렉터리 (admin=전체 조회, RBAC 매트릭스 management-api.yaml /users)
+    r = await async_client.get("/api/employees", headers=admin_auth_headers)
     assert r.status_code == 200
-    employees = r.json()
+    employees = r.json()["items"]
     assert len(employees) == 5
     ceo = next(e for e in employees if e["id"] == 1)
     assert ceo["role"] == "super_admin"
 
     # 단건 조회
-    r = await async_client.get("/api/employees/3", headers=auth_headers)
+    r = await async_client.get("/api/employees/3", headers=admin_auth_headers)
     assert r.status_code == 200 and r.json()["name"] == "이개발"
 
     # 없는 직원 → 404
-    r = await async_client.get("/api/employees/99999", headers=auth_headers)
+    r = await async_client.get("/api/employees/99999", headers=admin_auth_headers)
     assert r.status_code == 404
 
 

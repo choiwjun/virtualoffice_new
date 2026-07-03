@@ -41,8 +41,8 @@ def upgrade() -> None:
         sa.Column(
             'user_id',
             sa.Integer,
+            sa.ForeignKey('users.id'),
             nullable=False,
-            sa.ForeignKeyConstraint(['user_id'], ['users.id']),
             index=True,
             comment='ERP users.id (FK)'
         ),

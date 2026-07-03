@@ -139,12 +139,38 @@ def test_layout() -> dict:
     }
 
 
+@pytest_asyncio.fixture
+async def test_user(db_session: AsyncSession) -> dict:
+    """로그인 계약 테스트용 시드 사용자 + 로컬 크리덴셜 (G001)."""
+    from app.core.security import hash_password
+    from app.models.tables import AuthCredential, ErpRole, ErpUser
+
+    user = ErpUser(
+        id=1,
+        company_id=1,
+        email="testuser@example.com",
+        name="Test User",
+        erp_team_id=1,
+        role=ErpRole.EMPLOYEE,
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.flush()
+    db_session.add(
+        AuthCredential(user_id=1, password_hash=hash_password("TestPass123!"))
+    )
+    await db_session.commit()
+    return {
+        "id": 1,
+        "email": "testuser@example.com",
+        "name": "Test User",
+        "role": "employee",
+    }
+
+
 # ============================================================================
 # pytest 훅
 # ============================================================================
 
-def pytest_collection_modifyitems(config, items):
-    """contract/ 디렉토리 테스트는 구현 대기 스텁 → 자동 skip."""
-    for item in items:
-        if "contract" in str(item.fspath):
-            item.add_marker(pytest.mark.skip(reason="구현 대기 (Phase 2+ 계약 스텁)"))
+# contract/ 계약 스텁은 각 테스트의 @pytest.mark.skip로 개별 제어한다.
+# 스토리 구현 완료 시 해당 테스트의 @pytest.mark.skip만 제거해 활성화한다.

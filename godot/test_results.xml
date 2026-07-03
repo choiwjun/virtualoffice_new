@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="GutTests" failures="0" tests="20" >
+  <testsuite name="tests/test_avatar_movement.gd" tests="0" failures="0" skipped="0" time="0.0" >
+      </testsuite>
+  <testsuite name="tests/test_avatar_movement.gd.TestAvatarMovement" tests="5" failures="0" skipped="0" time="0.68139" >
+      <testcase name="test_avatar_move_direction_forward" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarMovement" time="0.075221" >
+      </testcase>
+      <testcase name="test_avatar_move_direction_right" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarMovement" time="0.168862" >
+      </testcase>
+      <testcase name="test_avatar_max_speed" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarMovement" time="0.071139" >
+      </testcase>
+      <testcase name="test_avatar_rotate_facing" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarMovement" time="0.013817" >
+      </testcase>
+      <testcase name="test_avatar_boundary_limits" assertions="4" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarMovement" time="0.352351" >
+      </testcase>
+  </testsuite>
+  <testsuite name="tests/test_avatar_movement.gd.TestAvatarCollision" tests="6" failures="0" skipped="0" time="1.977733" >
+      <testcase name="test_avatar_wall_collision" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.294494" >
+      </testcase>
+      <testcase name="test_avatar_furniture_avoidance" assertions="2" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.014563" >
+      </testcase>
+      <testcase name="test_avatar_other_collision_authority" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.385927" >
+      </testcase>
+      <testcase name="test_avatar_slope_movement" assertions="2" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.178986" >
+      </testcase>
+      <testcase name="test_avatar_narrow_passage" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.386282" >
+      </testcase>
+      <testcase name="test_avatar_door_opening" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.717481" >
+      </testcase>
+  </testsuite>
+  <testsuite name="tests/test_avatar_movement.gd.TestSeatOccupancy" tests="4" failures="0" skipped="0" time="0.057164" >
+      <testcase name="test_avatar_enter_seat_range" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestSeatOccupancy" time="0.008679" >
+      </testcase>
+      <testcase name="test_avatar_exit_seat_range" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestSeatOccupancy" time="0.014163" >
+      </testcase>
+      <testcase name="test_avatar_multiple_seat_prevent" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestSeatOccupancy" time="0.020473" >
+      </testcase>
+      <testcase name="test_avatar_seat_assignment_error" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestSeatOccupancy" time="0.013849" >
+      </testcase>
+  </testsuite>
+  <testsuite name="tests/test_avatar_movement.gd.TestProximityInteraction" tests="3" failures="0" skipped="0" time="0.053482" >
+      <testcase name="test_proximity_menu_display" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestProximityInteraction" time="0.019385" >
+      </testcase>
+      <testcase name="test_proximity_menu_hide" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestProximityInteraction" time="0.01335" >
+      </testcase>
+      <testcase name="test_proximity_distance_tiers" assertions="4" status="pass" classname="tests/test_avatar_movement.gd.TestProximityInteraction" time="0.020747" >
+      </testcase>
+  </testsuite>
+  <testsuite name="tests/test_avatar_movement.gd.TestAvatarPerformance" tests="2" failures="0" skipped="2" time="0.002509" >
+      <testcase name="test_performance_fps" assertions="0" status="pending" classname="tests/test_avatar_movement.gd.TestAvatarPerformance" time="0.001448" >
+      <skipped message="pending"><![CDATA[렌더 FPS는 창모드 GPU 40아바타 프로파일 필요 — Phase 2. 헤드리스 물리 처리량은 B-04 하네스 참조.]]></skipped></testcase>
+      <testcase name="test_performance_loading_time" assertions="0" status="pending" classname="tests/test_avatar_movement.gd.TestAvatarPerformance" time="0.001061" >
+      <skipped message="pending"><![CDATA[번들/로딩 시간은 최적화된 export 빌드 대상 — Phase 2.]]></skipped></testcase>
+  </testsuite>
+</testsuites>

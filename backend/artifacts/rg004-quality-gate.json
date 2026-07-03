@@ -1,0 +1,43 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "architect(7-RG004IntegrationReview) 세 레인 CLEAR+APPROVE, blockers=none. 검증 진정성(실 로그인 토큰으로 8단계 구동, conftest 고정 토큰 재사용 아님, sub=1→user_id=1 클레임 흐름 정합), 상태전이 정합(join SCHEDULED→IN_PROGRESS DB 왕복 재확인, minute DRAFT→FINALIZED, 확정후 409, objection none→submitted), RBAC 정합(host=user1 확정 D5, owner=user1 이의신청), 환경차단 경계(LiveKit/ERP push 계약 표면만, 시드 최소·정확) 전부 통과. LOW 2건: (1) join room_name 결정성 단언 강화 → room_name==f'meeting-{meeting_id}' 등가 검증 추가 반영, (2) 단일사용자 e2e라 크로스액터 음성 RBAC 미포함(계약 단위테스트 담당 영역, 해피패스 통합 e2e 정당 범위). info: confirm status 키 중복(제품코드 무해, 범위 밖).",
+    "commands": ["task architect 7-RG004IntegrationReview (APPROVE, 세 레인 CLEAR)"],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "통합 워크플로우 e2e 활성화(test_full_workflow_login_to_kpi): Office/Floor/Room + user1 KPI 시드 후 실 엔드포인트로 로그인(POST /auth/login→token) → 회의 생성(host=user1, 201 scheduled) → 입장(join 200, 결정적 room_name=meeting-{id}, SCHEDULED→IN_PROGRESS, GET 재조회로 전이 영속 확인) → 회의록 작성(PUT DRAFT) → 확정(confirm 200 finalized, host RBAC) → 확정후 재수정 409 → KPI 조회(본인, kpi_result_id 실재) → 이의신청(소유자 201, none→submitted, GET 재조회 확인) 을 단일 흐름으로 실증. 1 passed. 전체 회귀 327 passed/25 skipped/0 failed(통합 스텁 활성화로 skip 26→25, 회귀 없음). LiveKit 실 룸·실 ERP push는 환경차단(G011)이라 계약 표면(결정적 room_name/토큰)까지만 검증.",
+    "e2eCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/contract/test_management_api_stubs.py::TestIntegrationAPIFlow::test_full_workflow_login_to_kpi -q"],
+    "redTeamCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/contract/test_management_api_stubs.py::TestIntegrationAPIFlow -q"],
+    "artifactRefs": [
+      {"id": "rg004-integration-e2e", "kind": "black-box-api-receipt", "path": "backend/artifacts/rg004-integration-e2e.xml", "description": "통합 워크플로우 e2e 1 passed JUnit(login→meeting→join→minutes→confirm→kpi→objection)"},
+      {"id": "rg004-regression", "kind": "api-package-test-report", "path": "backend/artifacts/rg004-regression.xml", "description": "전체 회귀 JUnit — 327 passed/25 skipped/0 failed"}
+    ],
+    "contractCoverage": [
+      {"id": "cc-workflow", "contractRef": "TestIntegrationAPIFlow (login→meeting→minutes→kpi 크로스컷) + D5/D24", "obligation": "실 로그인 토큰으로 회의 생성/입장/회의록 작성·확정/KPI 조회·이의신청이 단일 흐름으로 상태전이·RBAC 정합하게 동작", "status": "covered", "surfaceEvidenceRefs": ["se-e2e"], "adversarialCaseRefs": ["ac-workflow-transitions", "ac-finalized-immutable", "ac-deterministic-room", "ac-owner-objection"]}
+    ],
+    "surfaceEvidence": [
+      {"id": "se-e2e", "contractRef": "FastAPI auth+meetings+kpi 크로스컷 (httpx AsyncClient black-box, 실 로그인 토큰 구동)", "surface": "api", "invocation": "pytest TestIntegrationAPIFlow::test_full_workflow_login_to_kpi", "verdict": "passed", "artifactRefs": ["rg004-integration-e2e"]}
+    ],
+    "adversarialCases": [
+      {"id": "ac-workflow-transitions", "contractRef": "meeting/minute/objection 상태머신", "scenario": "join/confirm/objection 순차 실행", "expectedBehavior": "SCHEDULED→IN_PROGRESS(DB 왕복 확인), DRAFT→FINALIZED, none→submitted", "verdict": "passed", "artifactRefs": ["rg004-integration-e2e"]},
+      {"id": "ac-finalized-immutable", "contractRef": "PUT /meetings/{id}/minutes", "scenario": "확정(FINALIZED) 후 회의록 재수정", "expectedBehavior": "409 minute_finalized", "verdict": "passed", "artifactRefs": ["rg004-integration-e2e"]},
+      {"id": "ac-deterministic-room", "contractRef": "POST /meetings/{id}/join (D24)", "scenario": "입장 시 room_name 발급", "expectedBehavior": "결정적 room_name == meeting-{meeting_id} (LiveKit stub)", "verdict": "passed", "artifactRefs": ["rg004-integration-e2e"]},
+      {"id": "ac-owner-objection", "contractRef": "POST /kpi-results/{id}/objections (D15)", "scenario": "소유자(로그인 사용자)가 본인 KPI 이의신청", "expectedBehavior": "201, objection_status=submitted", "verdict": "passed", "artifactRefs": ["rg004-integration-e2e"]}
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "AI SLOP CLEANUP REPORT (읽기 전용, 변경: test_management_api_stubs.py 통합 e2e 스텁 활성화만 — 제품 코드 무변경): BLOCKING 0. e2e는 실 엔드포인트/실 토큰 구동, 각 assert 실응답·상태 검증(비토톨로지), 시드 최소·정확. ADVISORY: 크로스액터 음성 RBAC는 계약 단위테스트 담당(범위 한정). architect LOW(room_name 결정성)는 등가 단언 추가 반영. 전체 회귀 327 passed/25 skipped/0 failed(fullRerun).",
+    "fullRerun": true,
+    "rerunCommands": ["cd backend && .venv/Scripts/python.exe -m pytest -q -p no:cacheprovider"],
+    "blockers": []
+  }
+}

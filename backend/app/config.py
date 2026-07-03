@@ -49,6 +49,33 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.environment == "production"
 
+    @property
+    def uses_default_jwt_secret(self) -> bool:
+        # prod에서 기본 시크릿이면 토큰 위조 가능 → 부팅 시 fail-fast(main.lifespan).
+        default = type(self).model_fields["jwt_secret_key"].default
+        return self.jwt_secret_key == default
+
+    # ── 로그인 보안 (C2: 계정 잠금 + rate-limit) ──────────
+    login_max_attempts: int = 5
+    """연속 로그인 실패 허용 횟수 (초과 시 잠금, G010)"""
+    login_lockout_minutes: int = 15
+    """계정 잠금 지속 시간(분) (G010)"""
+
+    # ── 배치 스케줄러 (D17: APScheduler, G010) ──────────
+    scheduler_enabled: bool = False
+    """True면 main.lifespan에서 APScheduler 기동. 기본 False(테스트/개발 미기동)."""
+
+    # ── LiveKit 화상 (D24, Phase 5 — B-03 토큰 발급 슬라이스) ──────────
+    livekit_url: str = ""
+    livekit_api_key: str = ""
+    livekit_api_secret: str = ""
+    """key+secret 설정 시 회의 입장에 실 LiveKit AccessToken 발급. 비면 결정적 stub 토큰(하위호환).
+    실 LiveKit 서버 룸 생성·화상·Egress·STT는 범위 밖(B-03 환경차단)."""
+
+    @property
+    def livekit_enabled(self) -> bool:
+        return bool(self.livekit_api_key and self.livekit_api_secret)
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scenes/avatar.gd" id="1_avatar"]
+
+[sub_resource type="CapsuleShape3D" id="cap_1"]
+radius = 0.3
+height = 1.8
+
+[sub_resource type="CapsuleMesh" id="mesh_1"]
+radius = 0.3
+height = 1.8
+
+[node name="Avatar" type="CharacterBody3D"]
+script = ExtResource("1_avatar")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("cap_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("mesh_1")

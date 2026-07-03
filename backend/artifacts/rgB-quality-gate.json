@@ -1,0 +1,53 @@
+{
+  "story": "Group B (정책 결정 반영: B-15 / B-17 / B-18)",
+  "context": "사용자 승인('B부터 추천 방향대로 진행') 하에 blocked-work-registry의 결정 대기 항목 3건을 추천 방향으로 반영. 관리 API ultragoal 완료 이후 standalone 후속이므로 gjc ultragoal checkpoint 대상 아님 — 본 파일은 증거 번들.",
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "architect 재리뷰(9-RGBGroupBReReview) 세 레인 CLEAR+APPROVE, blockers=none, product BLOCK 해소. 1차(8-RGBGroupBReview)는 product BLOCK/REQUEST CHANGES — HIGH 제헌절(7/17) 누락(리더 오류: 2008 제외 지식으로 제외했으나 법률 제21338호 2026-05-11 시행 재지정, 웹 검증). 반영: (1) 제헌절 (7,17) 고정 공휴일 추가 + 2027-07-19 대체, docstring 정정, is_kr_holiday(2026-07-17)=True·daily_reports 스킵 회귀 가드; (2) MEDIUM 2028 오류 → 관보 미확정이라 잘못된 인코딩 대신 2028 제거 + VARIABLE_COVERED_YEARS={2026,2027} 축소(정직·안전) + 미커버 연도 WARN; (3) MEDIUM 레거시 sync 실패경로 → erp.py try/except로 rollback 후 FAILED ErpSyncLog 기록(정본 sync.py 미러) + 500, 실패 모니터링 사각 제거; (4) LOW 테스트 갭 → 제헌절/WARN/실패경로 테스트 추가. 재리뷰 세 레인 CLEAR. 잔여 LOW/WATCH(2028+ WARN 완화 유지보수, 실패응답 헤더 유실 무해)는 비blocker.",
+    "commands": ["task architect 8-RGBGroupBReview (REQUEST CHANGES, product BLOCK 제헌절)", "task architect 9-RGBGroupBReReview (APPROVE, 세 레인 CLEAR)"],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "B-15 레거시 /api/erp/sync deprecate(deprecated=True + RFC 8594 Deprecation/Link) + 성공 SUCCESS/실패 FAILED ErpSyncLog 기록(모니터링 사각 제거, 하위호환 SyncResultOut 유지). B-17 build_scheduler 4잡 max_instances=1+coalesce=True(D21 단일 인스턴스). B-18 app/services/holidays.py 정적 공휴일(양력 고정+2026~2027 음력/대체, 제헌절 재지정, 외부 API 불필요) + daily_reports_push 공휴일 스킵 + 미커버 연도 WARN. 전용 테스트 tests/services/test_group_b_followups.py 13건(공휴일 고정/음력/제헌절/비공휴일/스킵/제헌절스킵/WARN/max_instances/레거시 deprecate+SUCCESS로그/실패 FAILED로그/admin RBAC). 전체 회귀 338 passed/25 skipped/0 failed(회귀 없음). 기존 test_erp_api/test_scheduler/sync-audit 무회귀.",
+    "e2eCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/services/test_group_b_followups.py tests/test_erp_api.py -q"],
+    "redTeamCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/services/test_group_b_followups.py tests/redteam/test_sync_audit_redteam.py -q"],
+    "artifactRefs": [
+      {"id": "rgB-groupb", "kind": "api-package-test-report", "path": "backend/artifacts/rgB-groupb.xml", "description": "Group B 계약/레드팀 JUnit(공휴일·max_instances·레거시 deprecate+FAILED로그)"},
+      {"id": "rgB-regression", "kind": "api-package-test-report", "path": "backend/artifacts/rgB-regression.xml", "description": "전체 회귀 JUnit — 338 passed/25 skipped/0 failed"}
+    ],
+    "contractCoverage": [
+      {"id": "cc-b15", "contractRef": "blocked-work-registry B-15 (레거시 sync deprecation)", "obligation": "레거시 /api/erp/sync를 deprecated 표기 + 성공/실패 ErpSyncLog 기록으로 모니터링 사각 제거, 하위호환(SyncResultOut) 유지, admin RBAC 유지", "status": "covered", "surfaceEvidenceRefs": ["se-legacy"], "adversarialCaseRefs": ["ac-legacy-success-log", "ac-legacy-failed-log", "ac-legacy-rbac"]},
+      {"id": "cc-b17", "contractRef": "blocked-work-registry B-17 + D21 (단일 인스턴스)", "obligation": "build_scheduler 4잡 max_instances=1 + coalesce=True", "status": "covered", "surfaceEvidenceRefs": ["se-scheduler"], "adversarialCaseRefs": ["ac-max-instances"]},
+      {"id": "cc-b18", "contractRef": "blocked-work-registry B-18 + D17 (공휴일 스킵)", "obligation": "정적 공휴일 소스(양력 고정+음력/대체, 제헌절 재지정 포함)로 daily_reports 공휴일 스킵, 미커버 연도 WARN, 비공휴일 정상 실행", "status": "covered", "surfaceEvidenceRefs": ["se-holiday"], "adversarialCaseRefs": ["ac-holiday-jeheonjeol", "ac-holiday-skip", "ac-uncovered-warn", "ac-business-day"]}
+    ],
+    "surfaceEvidence": [
+      {"id": "se-legacy", "contractRef": "FastAPI POST /api/erp/sync (httpx black-box + db ErpSyncLog 조회)", "surface": "api", "invocation": "pytest test_group_b_followups.py (legacy sync)", "verdict": "passed", "artifactRefs": ["rgB-groupb"]},
+      {"id": "se-scheduler", "contractRef": "build_scheduler 잡 등록(단위 introspection)", "surface": "package", "invocation": "pytest test_group_b_followups.py::test_scheduler_jobs_are_single_instance_and_coalesced", "verdict": "passed", "artifactRefs": ["rgB-groupb"]},
+      {"id": "se-holiday", "contractRef": "is_kr_holiday + daily_reports_push 공휴일 스킵(단위)", "surface": "package", "invocation": "pytest test_group_b_followups.py (holidays)", "verdict": "passed", "artifactRefs": ["rgB-groupb"]}
+    ],
+    "adversarialCases": [
+      {"id": "ac-legacy-success-log", "contractRef": "POST /api/erp/sync", "scenario": "정상 동기화", "expectedBehavior": "200 SyncResultOut + Deprecation 헤더 + ErpSyncLog(SUCCESS, created_count)", "verdict": "passed", "artifactRefs": ["rgB-groupb"]},
+      {"id": "ac-legacy-failed-log", "contractRef": "POST /api/erp/sync", "scenario": "sync_users 예외(monkeypatch)", "expectedBehavior": "500 + rollback 후 FAILED ErpSyncLog(error_count/error_message) 기록", "verdict": "passed", "artifactRefs": ["rgB-groupb"]},
+      {"id": "ac-legacy-rbac", "contractRef": "POST /api/erp/sync", "scenario": "employee 트리거", "expectedBehavior": "403 (deprecate 후에도 admin 전용)", "verdict": "passed", "artifactRefs": ["rgB-groupb"]},
+      {"id": "ac-max-instances", "contractRef": "build_scheduler", "scenario": "잡 등록 introspection", "expectedBehavior": "4잡 모두 max_instances==1, coalesce==True", "verdict": "passed", "artifactRefs": ["rgB-groupb"]},
+      {"id": "ac-holiday-jeheonjeol", "contractRef": "is_kr_holiday", "scenario": "제헌절 2026-07-17(재지정)", "expectedBehavior": "True (고정 공휴일)", "verdict": "passed", "artifactRefs": ["rgB-groupb"]},
+      {"id": "ac-holiday-skip", "contractRef": "daily_reports_push", "scenario": "공휴일(신정/제헌절)에 work_log 존재", "expectedBehavior": "created==0 (스킵)", "verdict": "passed", "artifactRefs": ["rgB-groupb"]},
+      {"id": "ac-uncovered-warn", "contractRef": "daily_reports_push", "scenario": "커버 범위 밖 연도(2029)", "expectedBehavior": "WARN 로그(테이블 갱신 촉구)", "verdict": "passed", "artifactRefs": ["rgB-groupb"]},
+      {"id": "ac-business-day", "contractRef": "daily_reports_push", "scenario": "비공휴일 평일 work_log", "expectedBehavior": "created==1 (정상 생성)", "verdict": "passed", "artifactRefs": ["rgB-groupb"]}
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "AI SLOP CLEANUP REPORT (읽기 전용, 변경: erp.py 레거시 deprecate+FAILED, holidays.py 신설, scheduler.py 공휴일 스킵+WARN+max_instances, tables docstring, test_group_b_followups.py 신규, registry): BLOCKING 0. 1차 리뷰 product BLOCK(제헌절) 포함 findings 5건 전부 반영(제헌절 추가·2028 제거·FAILED 로그·WARN·테스트). 미사용 import(pytest) 제거·sync/async 혼합 pytestmark 경고 정리. 전체 회귀 338 passed/25 skipped/0 failed(fullRerun). architect 재리뷰 세 레인 CLEAR+APPROVE. 잔여 WATCH(2028+ 공휴일 미커버)는 WARN으로 완화·문서화(registry B-18).",
+    "fullRerun": true,
+    "rerunCommands": ["cd backend && .venv/Scripts/python.exe -m pytest -q -p no:cacheprovider"],
+    "blockers": []
+  }
+}

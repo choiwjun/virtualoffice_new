@@ -992,6 +992,8 @@ paths:
                 properties:
                   livekit_token:
                     type: string
+                  room_name:
+                    type: string
                   livekit_url:
                     type: string
         '404':
@@ -1651,17 +1653,72 @@ paths:
           $ref: '#/components/responses/ServerError'
 
   # ======== ERP 동기화 ========
-  /erp-sync/status:
+  # 정정(G009 architect COMMENT MEDIUM): 구현 표면(backend/app/api/sync.py, 계약/레드팀
+  # 테스트)이 정본이다. 스테일 정의(/erp-sync/*, {sync_type}, {items,total} 응답)를
+  # POST /sync/erp · GET /sync/status · GET /sync/errors 및 실 ErpSyncLog 모델 스키마로 갱신.
+  /sync/erp:
+    post:
+      tags:
+        - ERP 동기화 (ERP Integration)
+      summary: ERP 동기화 수동 트리거 (관리자 전용)
+      x-required-role: admin
+      description: |
+        POST 요청 처리 중 ErpSyncService.sync_users를 동기 실행하고 결과를 ErpSyncLog에
+        즉시 기록한다. 실패해도 202를 반환하며 status로 성공/실패를 판별한다(예외는
+        롤백 후 별도 트랜잭션으로 FAILED 레코드를 기록한다 — G009 architect COMMENT LOW).
+        비동기 작업 큐/스케줄러(APScheduler)는 G010에서 구현 예정(D18: 증분+전체 대사).
+
+        **정본 근거**: backend/app/api/sync.py::trigger_erp_sync,
+        contract/test_management_api_stubs.py::TestSyncAPI,
+        redteam/test_sync_audit_redteam.py. 요청 바디 없음(sync_type 파라미터는
+        구현에 없는 스테일 정의였음 — 제거).
+      operationId: triggerERPSync
+      responses:
+        '202':
+          description: 동기화 실행됨(성공/실패 여부는 status로 판별, 실패해도 202)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - sync_job_id
+                  - run_id
+                  - status
+                properties:
+                  sync_job_id:
+                    type: string
+                    format: uuid
+                  run_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: ['success', 'failed']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /sync/status:
     get:
       tags:
         - ERP 동기화 (ERP Integration)
       summary: ERP 동기화 상태 조회 (관리자 전용)
       x-required-role: admin
       description: |
-        매시간 증분 + 매일 00:00 KST 전체 대사 상태
+        job_id(POST /sync/erp가 반환한 sync_job_id)로 개별 동기화 실행 상태를 조회한다.
 
-        **정본 참조**: 00-decisions.md D17·D18, 06-screens.md §3.12
+        **정본 근거**: backend/app/api/sync.py::get_sync_status.
       operationId: getERPSyncStatus
+      parameters:
+        - name: job_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           description: 동기화 상태
@@ -1670,101 +1727,57 @@ paths:
               schema:
                 type: object
                 properties:
-                  incremental_sync:
-                    type: object
-                    properties:
-                      last_run:
-                        type: string
-                        format: date-time
-                      status:
-                        type: string
-                        enum: ['success', 'failed', 'pending']
-                      error_message:
-                        type: string
-                  full_sync:
-                    type: object
-                    properties:
-                      last_run:
-                        type: string
-                        format: date-time
-                      status:
-                        type: string
-                      records_synced:
-                        type: integer
-                  kpi_push:
-                    type: object
-                    properties:
-                      last_run:
-                        type: string
-                        format: date-time
-                      status:
-                        type: string
-                      pending_count:
-                        type: integer
+                  status:
+                    type: string
+                    enum: ['running', 'success', 'failed']
+                  synced_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  next_scheduled:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  error_count:
+                    type: integer
+                  created_count:
+                    type: integer
+                  updated_count:
+                    type: integer
+                  deactivated_count:
+                    type: integer
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/ServerError'
-
-  /erp-sync/trigger:
-    post:
-      tags:
-        - ERP 동기화 (ERP Integration)
-      summary: ERP 동기화 수동 트리거 (관리자 전용)
-      x-required-role: admin
-      description: 실패 또는 지연 시 수동으로 트리거
-      operationId: triggerERPSync
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - sync_type
-              properties:
-                sync_type:
-                  type: string
-                  enum: ['incremental', 'full', 'kpi_push']
-      responses:
-        '202':
-          description: 동기화 시작됨
+        '404':
+          description: job_id에 해당하는 동기화 기록 없음(형식 오류 포함, 422 대신 404로 통일)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  run_id:
-                    type: string
-                  status:
-                    type: string
-                    const: 'started'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /erp-sync/failures:
+  /sync/errors:
     get:
       tags:
         - ERP 동기화 (ERP Integration)
       summary: ERP 동기화 실패 이력 조회 (관리자 전용)
       x-required-role: admin
-      description: 최근 실패 건들 조회
-      operationId: getERPSyncFailures
+      description: |
+        최근 실패(FAILED) 이력만 반환한다(성공 로그 제외).
+
+        **정본 근거**: backend/app/api/sync.py::get_sync_errors.
+      operationId: getERPSyncErrors
       parameters:
         - name: limit
           in: query
           schema:
             type: integer
-            default: 50
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            default: 0
+            default: 10
+            minimum: 1
+            maximum: 100
       responses:
         '200':
           description: 실패 이력 목록
@@ -1772,29 +1785,36 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                  - errors
                 properties:
-                  items:
+                  errors:
                     type: array
                     items:
                       type: object
                       properties:
-                        timestamp:
+                        sync_job_id:
                           type: string
-                          format: date-time
-                        sync_type:
-                          type: string
-                        error_code:
-                          type: string
+                          format: uuid
                         error_message:
                           type: string
-                  total:
-                    type: integer
+                          nullable: true
+                        error_count:
+                          type: integer
+                        attempted_at:
+                          type: string
+                          format: date-time
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/ServerError'
 
   # ======== 감사 로그 ========
+  # 정정(G009 architect COMMENT MEDIUM/LOW): 구현 표면(backend/app/api/audit.py)이 정본.
+  # 페이지네이션(limit/offset)·from_date/to_date 쿼리 및 {logs,total,limit,offset} 응답으로
+  # 갱신. 생산자 훅(audit_service, P7-R3-T1) 미구현 노트 포함.
   /audit-logs:
     get:
       tags:
@@ -1802,49 +1822,121 @@ paths:
       summary: 감사 로그 조회 (관리자 전용)
       x-required-role: admin
       description: |
-        모든 주요 작업(배포, 점수 조정, 이의신청 등) 기록
+        모든 주요 작업(좌석배정, 회의, KPI 조정, 오피스 레이아웃 배포 등) 기록.
 
-        **정본 참조**: 04-data-model.md audit_log
+        **생산자 훅 노트**: 감사 로그 생산자 훅(app.services.audit_service, P7-R3-T1)이
+        아직 도메인 API에 연결되지 않아, 훅이 랜딩하기 전까지는(직접 시드하지 않는 한)
+        비어있다 — 훅 구현은 별도 후속(G011 후속 레지스트리)이며 G009 범위 밖이다.
+
+        **정본 참조**: 04-data-model.md §2.6 (AuditLog), 00-decisions.md D20-e.
+        **정본 근거**: backend/app/api/audit.py::list_audit_logs,
+        contract/test_management_api_stubs.py::TestAuditLogAPI,
+        redteam/test_sync_audit_redteam.py. from_date/to_date가 지정되면 days보다 우선한다.
       operationId: listAuditLogs
       parameters:
         - name: action
           in: query
           schema:
             type: string
-            description: 필터링 액션 (login, layout_deploy, kpi_adjust, objection_submit 등)
+            description: 필터링 액션 (seat_assigned, meeting_created, kpi_adjusted 등)
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+            description: 행위자 ERP user.id 필터
+        - name: days
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            description: 최근 N일 필터 (from_date/to_date 미지정 시에만 적용)
         - name: from_date
           in: query
           schema:
             type: string
-            format: date-time
+            format: date
+            description: created_at 시작일(포함, ISO date). 지정 시 days보다 우선.
         - name: to_date
           in: query
           schema:
             type: string
-            format: date-time
+            format: date
+            description: created_at 종료일(포함, ISO date). 지정 시 days보다 우선.
         - name: limit
           in: query
           schema:
             type: integer
             default: 100
+            minimum: 1
+            maximum: 500
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
       responses:
         '200':
-          description: 감사 로그 목록
+          description: 감사 로그 목록(필터+페이지네이션 적용)
           content:
             application/json:
               schema:
                 type: object
+                required:
+                  - logs
+                  - total
+                  - limit
+                  - offset
                 properties:
-                  items:
+                  logs:
                     type: array
                     items:
                       $ref: '#/components/schemas/AuditLogResponse'
                   total:
                     type: integer
+                    description: 필터 적용 후 전체 건수(페이지 분리 전)
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /audit-logs/{log_id}:
+    get:
+      tags:
+        - 감사 로그 (Audit Log)
+      summary: 개별 감사 로그 조회 (관리자 전용)
+      x-required-role: admin
+      operationId: getAuditLog
+      parameters:
+        - name: log_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 감사 로그 상세
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: log_id에 해당하는 감사 로그 없음(형식 오류 포함, 422 대신 404로 통일)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -2566,12 +2658,14 @@ components:
           description: 증거 (URL, 파일 등)
 
     # ======== 감사 로그 ========
+    # 정정(G009 architect COMMENT MEDIUM): backend/app/api/audit.py::_audit_log_out이 정본.
+    # user_id는 UUID가 아닌 ERP user.id(integer, nullable=system). details 대신 실제 응답
+    # 필드인 changes:{old,new}·ip_address로 갱신.
     AuditLogResponse:
       type: object
       required:
         - id
         - action
-        - user_id
         - timestamp
       properties:
         id:
@@ -2579,20 +2673,31 @@ components:
           format: uuid
         action:
           type: string
-          description: 액션 (login, layout_deploy, kpi_adjust 등)
+          description: 액션 (seat_assigned, meeting_created, kpi_adjusted 등)
         user_id:
-          type: string
-          format: uuid
-          description: 실행자 ID
+          type: integer
+          nullable: true
+          description: 실행자 ERP user.id (system 행위는 null)
         resource_type:
           type: string
-          description: 리소스 타입 (meeting, kpi_result 등)
+          description: 리소스 타입 (seat, meeting, kpi_result 등)
         resource_id:
           type: string
           description: 리소스 ID
-        details:
+        changes:
           type: object
-          description: 상세 정보
+          description: 변경 전/후 값
+          properties:
+            old:
+              type: object
+              nullable: true
+            new:
+              type: object
+              nullable: true
+        ip_address:
+          type: string
+          nullable: true
+          description: IPv4/IPv6
         timestamp:
           type: string
           format: date-time

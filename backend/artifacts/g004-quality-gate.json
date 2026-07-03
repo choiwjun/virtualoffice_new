@@ -1,0 +1,49 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "architect(10-G004LayoutArchReview) 첫 판정 세 레인 CLEAR: D12 배포 게이트(ERROR→400)·draft 미검증 저장·단일 DEPLOYED 상태머신 정합, 검증기 섀도잉 버그 완전 제거(coord_to_cell 개명, float self.cell 무손상), jsonschema fail-loud(SCHEMA_LIB_MISSING). P3 비차단 노트만(단일 DEPLOYED DB 유니크·current 404 테스트·키 일관화).",
+    "commands": ["task architect 10-G004LayoutArchReview (APPROVE, 세 레인 CLEAR)"],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "레이아웃 계약 10개 + 검증기 회귀 3개 + deployable 샘플 실증 + deploy 거부 실증(15) + executor 레드팀 9개(D12 게이트·RBAC·404·상태머신·검증기 회귀) 전원 통과(취약점 0). 검증기 버그(coord_to_cell 섀도잉) 수정+회귀테스트. jsonschema 의존성 추가(D12). ai-slop 수동 스윕: 버그 우회(spawn=[]) 대신 근본 수정, 결함 마스킹 없음. 전체 125 passed/62 skipped.",
+    "e2eCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/contract/test_management_api_stubs.py::TestOfficeLayoutAPI tests/services/test_office_layout_validator.py -q"],
+    "redTeamCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/redteam/test_layouts_redteam.py -q"],
+    "artifactRefs": [
+      {"id": "g004-layouts", "kind": "api-package-test-report", "path": "backend/artifacts/g004-layouts.xml", "description": "레이아웃 계약 12 + 검증기 회귀 3 = 15 passed JUnit"},
+      {"id": "g004-layouts-redteam", "kind": "black-box-api-receipt", "path": "backend/artifacts/g004-layouts-redteam.xml", "description": "9 적대 케이스 JUnit(취약점 0)"}
+    ],
+    "contractCoverage": [
+      {"id": "cc-layout-crud", "contractRef": "management-api.yaml#/layouts", "obligation": "목록{layouts}/생성201(draft,admin)/조회/수정(draft만)", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-rbac", "ac-put-deployed"]},
+      {"id": "cc-layout-validate", "contractRef": "management-api.yaml#/layouts/validate", "obligation": "검증 200|400, ERROR면 400, {errors/warnings}", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-invalid", "ac-validator-bug"]},
+      {"id": "cc-layout-deploy", "contractRef": "management-api.yaml#/layouts/{id}/deploy", "obligation": "배포 게이트(ERROR→400), 성공 시 기존 DEPLOYED archive, rollback", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-deploy-gate", "ac-rollback-missing"]},
+      {"id": "cc-layout-get", "contractRef": "management-api.yaml#/layouts/{id}", "obligation": "current{layout_json}, non-UUID/미존재 404", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-404"]}
+    ],
+    "surfaceEvidence": [
+      {"id": "se-api", "contractRef": "FastAPI /layouts* (httpx AsyncClient black-box) + 검증기 단위", "surface": "api", "invocation": "pytest TestOfficeLayoutAPI + test_office_layout_validator + tests/redteam/test_layouts_redteam.py", "verdict": "passed", "artifactRefs": ["g004-layouts", "g004-layouts-redteam"]}
+    ],
+    "adversarialCases": [
+      {"id": "ac-deploy-gate", "contractRef": "POST /layouts/{id}/deploy", "scenario": "ERROR 있는 레이아웃 배포", "expectedBehavior": "400 + errors, status!=deployed (D12)", "verdict": "passed", "artifactRefs": ["g004-layouts-redteam"]},
+      {"id": "ac-rbac", "contractRef": "POST /layouts, deploy, rollback", "scenario": "employee가 생성/배포/롤백", "expectedBehavior": "403", "verdict": "passed", "artifactRefs": ["g004-layouts-redteam"]},
+      {"id": "ac-404", "contractRef": "GET /layouts/{id}", "scenario": "잘못된 UUID 'nonexistent' / 유효하나 미존재 UUID", "expectedBehavior": "둘 다 404 (422 아님)", "verdict": "passed", "artifactRefs": ["g004-layouts-redteam"]},
+      {"id": "ac-rollback-missing", "contractRef": "POST /layouts/{id}/rollback", "scenario": "미존재 version=999 롤백", "expectedBehavior": "404", "verdict": "passed", "artifactRefs": ["g004-layouts-redteam"]},
+      {"id": "ac-put-deployed", "contractRef": "PUT /layouts/{id}", "scenario": "DEPLOYED 레이아웃 수정", "expectedBehavior": "409 (draft 전용)", "verdict": "passed", "artifactRefs": ["g004-layouts-redteam"]},
+      {"id": "ac-validator-bug", "contractRef": "POST /layouts/validate", "scenario": "spawn_points 포함 레이아웃 검증(coord_to_cell 섀도잉 회귀)", "expectedBehavior": "500 크래시 없이 200|400", "verdict": "passed", "artifactRefs": ["g004-layouts-redteam"]},
+      {"id": "ac-invalid", "contractRef": "POST /layouts/validate", "scenario": "{'invalid':'schema'}", "expectedBehavior": "400, errors 비어있지 않음", "verdict": "passed", "artifactRefs": ["g004-layouts-redteam"]}
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "검증기 버그 수정 + jsonschema 도입 후 전체 스위트 125 passed/62 skipped, 0 실패. architect 첫 판정 APPROVE(세 레인 CLEAR), 재작업 불필요.",
+    "fullRerun": true,
+    "rerunCommands": ["cd backend && .venv/Scripts/python.exe -m pytest -q"],
+    "blockers": []
+  }
+}

@@ -7,6 +7,7 @@ FastAPI 앱 엔트리포인트.
 """
 
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,13 +18,37 @@ from app.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # D4/C2: 운영이 기본 JWT 시크릿으로 뜨면 토큰 위조 가능 → 부팅 즉시 실패.
+    if settings.is_production and settings.uses_default_jwt_secret:
+        raise RuntimeError(
+            "jwt_secret_key must be overridden in production (D4; set JWT_SECRET_KEY env)"
+        )
     # dev/도그푸딩: 테이블 자동 생성 (운영은 Alembic). Docker 최초 기동 편의.
     if settings.auto_create_tables:
         from app.db import Base, engine
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+
+    # D17: 배치 스케줄러(APScheduler) — 기본 미기동. 상시 실행/실 cron 발화 검증은
+    # 환경차단(G011), 이 환경(단발성 pytest)에서는 기동하지 않는다.
+    scheduler = None
+    if settings.scheduler_enabled:
+        from app.services.scheduler import build_scheduler
+
+        scheduler = build_scheduler()
+        scheduler.start()
+        # B-16: 운영 관측 — 컨테이너 상시 구동 시 스케줄러 기동 확인용(uvicorn 로거로 가시화).
+        logging.getLogger("uvicorn.error").info(
+            "APScheduler started: %d jobs registered (scheduler_enabled=true)",
+            len(scheduler.get_jobs()),
+        )
+
     yield
+
+    if scheduler is not None:
+        scheduler.shutdown(wait=False)
+        logging.getLogger("uvicorn.error").info("APScheduler shut down")
 
 
 app = FastAPI(
@@ -54,7 +79,14 @@ async def health() -> dict:
 
 
 # ── 라우터 등록 (점진적) ─────────────────────────────────
-from app.api import erp  # noqa: E402
+from app.api import audit, auth, erp, kpi, layouts, meetings, seats, sync, worklogs  # noqa: E402
 
+app.include_router(auth.router)
 app.include_router(erp.router)
-# TODO(Phase 2+): seats, meetings, kpi 라우터
+app.include_router(kpi.router)
+app.include_router(layouts.router)
+app.include_router(meetings.router)
+app.include_router(seats.router)
+app.include_router(worklogs.router)
+app.include_router(sync.router)
+app.include_router(audit.router)

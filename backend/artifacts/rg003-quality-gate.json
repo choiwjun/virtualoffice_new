@@ -1,0 +1,49 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "architect 재리뷰(6-RG003SyncReReview) 세 레인 CLEAR+APPROVE, blockers=none, product_watch_resolved=true. 1차(5-RG003SyncStrategyReview)는 architecture/code CLEAR, product WATCH(F2 §1.3 델타 미구현·F3 soft-delete 감사 누락). 반영: F3 sync_users soft-delete 시 AuditLog(erp_user_soft_deleted, actor=None 시스템, old/new is_active) 원자적 stage(contract §1.3 line141·D20-e 정합, app.erp→app.models 레이어 유지) → product WATCH 근본 사유 해소; F1 FK 보존 테스트 docstring 정직화(SQLite FK 미강제 반영, u1 보존=하드삭제 회귀 가드); F2 증분==전체(전체 로스터 재사용)를 registry B-22로 의도적 설계 durable 등록(향후 델타 리더 도입 게이트). erp_user_soft_deleted 감사 행은 action-scoped 단언·함수스코프 db_session 격리로 G009 sync/audit·B-14 audit 카운트 무회귀. 잔여 LOW(모델 docstring 액션 어휘)는 erp_user_soft_deleted 추가로 반영.",
+    "commands": ["task architect 5-RG003SyncStrategyReview (COMMENT, product WATCH)", "task architect 6-RG003SyncReReview (APPROVE, 세 레인 CLEAR)"],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "ERP 동기화 전략(D18) 서비스 계약 실증: 계약 test_sync_incremental_plus_daily_full 활성화(증분 최초 created3 → 재실행 멱등 updated3·행수3 → 전체대사 하드삭제 감지 soft-delete deactivated1·행보존 → 재등장 복원) + 신규 레드팀 tests/redteam/test_erp_sync_strategy_redteam.py 6건(빈리더 전원 soft-delete·행보존, company 스코프 격리, soft-delete UPDATE 참조행 보존, 이미 비활성 재대사 무중복, 증분·전체 동일 시맨틱, soft-delete 감사 로그 생성). F3로 sync_users에 erp_user_soft_deleted 감사 stage 추가. 48 passed/1 skip(감사보존=범위밖 D20-e Phase2) 포커스 스위트, 전체 회귀 326 passed/26 skipped/0 failed(동기화 스텁 활성화로 skip 28→26, 회귀 없음). 실 cron 상시발화는 여전히 환경차단(G011 B-16).",
+    "e2eCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/contract/test_management_api_stubs.py::TestSyncAPI::test_sync_incremental_plus_daily_full -q"],
+    "redTeamCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/redteam/test_erp_sync_strategy_redteam.py -q"],
+    "artifactRefs": [
+      {"id": "rg003-sync-strategy-redteam", "kind": "api-package-test-report", "path": "backend/artifacts/rg003-sync-strategy-redteam.xml", "description": "동기화 전략+감사 계약/레드팀 48 passed/1 skip JUnit(증분멱등·soft-delete·스코프·FK보존·감사)"},
+      {"id": "rg003-regression", "kind": "api-package-test-report", "path": "backend/artifacts/rg003-regression.xml", "description": "전체 회귀 JUnit — 326 passed/26 skipped/0 failed"}
+    ],
+    "contractCoverage": [
+      {"id": "cc-sync-strategy", "contractRef": "00-decisions D18 + contract.md §1.3", "obligation": "증분(erp_incremental_sync)/전체 대사(erp_full_reconciliation)가 sync_users 재사용으로 upsert 멱등 + 하드삭제 감지 soft-delete(is_active=false, 물리삭제 금지) + 재등장 복원", "status": "covered", "surfaceEvidenceRefs": ["se-sync"], "adversarialCaseRefs": ["ac-empty-reader-softdelete", "ac-idempotent", "ac-incremental-eq-full", "ac-recount"]},
+      {"id": "cc-sync-scope", "contractRef": "contract.md §1.4 (company_id 필터 필수)", "obligation": "동기화가 company_id 스코프로만 soft-delete 대상을 고른다 — 타 company 미영향", "status": "covered", "surfaceEvidenceRefs": ["se-sync"], "adversarialCaseRefs": ["ac-scope-isolation"]},
+      {"id": "cc-sync-fk-preserve", "contractRef": "00-decisions D18 (FK RESTRICT + soft-delete, 평가기록 영구성)", "obligation": "soft-delete(UPDATE)는 사용자를 참조하는 평가 근거(work_log/kpi_result)를 캐스케이드 삭제하지 않는다", "status": "covered", "surfaceEvidenceRefs": ["se-sync"], "adversarialCaseRefs": ["ac-fk-preserve"]},
+      {"id": "cc-sync-audit", "contractRef": "contract.md §1.3 + D20-e (soft-delete 감사)", "obligation": "soft-delete 시 AuditLog(erp_user_soft_deleted) 생성(감사 추적)", "status": "covered", "surfaceEvidenceRefs": ["se-sync"], "adversarialCaseRefs": ["ac-softdelete-audit"]}
+    ],
+    "surfaceEvidence": [
+      {"id": "se-sync", "contractRef": "ErpSyncService.sync_users / erp_incremental_sync / erp_full_reconciliation (MockErpReader 기반 서비스 계약)", "surface": "package", "invocation": "pytest tests/redteam/test_erp_sync_strategy_redteam.py + TestSyncAPI::test_sync_incremental_plus_daily_full", "verdict": "passed", "artifactRefs": ["rg003-sync-strategy-redteam"]}
+    ],
+    "adversarialCases": [
+      {"id": "ac-empty-reader-softdelete", "contractRef": "erp_full_reconciliation", "scenario": "ERP 전원 사라진 빈 리더", "expectedBehavior": "활성 사용자 전원 soft-delete(is_active=false), 행 보존(하드삭제 아님)", "verdict": "passed", "artifactRefs": ["rg003-sync-strategy-redteam"]},
+      {"id": "ac-idempotent", "contractRef": "erp_incremental_sync", "scenario": "동일 리더 재실행", "expectedBehavior": "created 0/updated N, ErpUser 중복 행 없음", "verdict": "passed", "artifactRefs": ["rg003-sync-strategy-redteam"]},
+      {"id": "ac-incremental-eq-full", "contractRef": "erp_incremental_sync vs erp_full_reconciliation", "scenario": "증분에서 사라진 사용자", "expectedBehavior": "증분도 전체 로스터 대조로 soft-delete(동일 시맨틱)", "verdict": "passed", "artifactRefs": ["rg003-sync-strategy-redteam"]},
+      {"id": "ac-recount", "contractRef": "erp_full_reconciliation", "scenario": "이미 비활성 사용자 재대사", "expectedBehavior": "deactivated 재집계 안 함(stale는 is_active 가드)", "verdict": "passed", "artifactRefs": ["rg003-sync-strategy-redteam"]},
+      {"id": "ac-scope-isolation", "contractRef": "sync_users company_id 스코프", "scenario": "company 1 동기화 중 company 2 사용자 존재", "expectedBehavior": "company 2 사용자 미영향(is_active 유지)", "verdict": "passed", "artifactRefs": ["rg003-sync-strategy-redteam"]},
+      {"id": "ac-fk-preserve", "contractRef": "soft-delete(UPDATE) + FK RESTRICT(D18)", "scenario": "work_log/kpi_result가 참조하는 사용자 soft-delete", "expectedBehavior": "사용자 행 보존(is_active=false), 참조 평가근거 캐스케이드 삭제 없음", "verdict": "passed", "artifactRefs": ["rg003-sync-strategy-redteam"]},
+      {"id": "ac-softdelete-audit", "contractRef": "sync_users soft-delete 감사(contract §1.3)", "scenario": "soft-delete 발생", "expectedBehavior": "AuditLog(erp_user_soft_deleted, entity_type=erp_user, old/new is_active) 생성", "verdict": "passed", "artifactRefs": ["rg003-sync-strategy-redteam"]}
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "AI SLOP CLEANUP REPORT (읽기 전용, 변경: sync.py soft-delete 감사 stage, test_management_api_stubs sync 계약 재작성, test_erp_sync_strategy_redteam 신규, tables.py 액션 어휘 docstring, blocked-work-registry B-22): BLOCKING 0. 감사 추가는 contract §1.3 명시 근거(마스킹 아님), 테스트는 실제 sync_users 동작 검증(비토톨로지). ADVISORY: F2(델타 미구현)는 registry B-22로 의도적 설계 문서화(현 리더 계약상 봉쇄). architect 재리뷰 세 레인 CLEAR+APPROVE. 1차 WATCH 3건(F1/F2/F3) 전부 반영. 전체 회귀 326 passed/26 skipped/0 failed(fullRerun; 이후 tables.py docstring 추가는 동작 무영향 inert).",
+    "fullRerun": true,
+    "rerunCommands": ["cd backend && .venv/Scripts/python.exe -m pytest -q -p no:cacheprovider"],
+    "blockers": []
+  }
+}

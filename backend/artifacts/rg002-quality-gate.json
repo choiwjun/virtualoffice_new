@@ -1,0 +1,52 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "architect(4-RG002AggregateReview) 세 레인 CLEAR+APPROVE, blockers=none. 5개 검증항목(멱등/입력검증·500방어/집계정확성·값안전/스코프경계/테스트품질) 전부 통과, CRITICAL/HIGH/MEDIUM 없음. LOW 5건 중 실질 2건 + 정리 2건 반영: (2) 확정(finalized_at) KpiResult 행 재집계 value 덮어쓰기 → finalized_at 가드로 잠금(D15 값 괴리 방지) + 레드팀 test_aggregate_does_not_overwrite_finalized_row, (1) kpi.py:17 stale '스텁만' 헤더 정정(동기 트리거 활성 명시), (3) dead 'if not metrics' 가드 제거(compute_kpi_metrics는 항상 dict), (5) participant 수집 3쿼리 .distinct() 추가. (4) O(users*metrics) N+1은 단일 company 도그푸딩 규모라 비차단 유지(문서화). 재검증: 17 passed(집계·멱등·finalized잠금·invalid period 6종·RBAC·스코프) + 전체 회귀 319 passed/27 skipped/0 fail.",
+    "commands": ["task architect 4-RG002AggregateReview (APPROVE, 세 레인 CLEAR)"],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "POST /kpi/aggregate를 202 스텁에서 관리자 동기 집계로 활성화(kpi.py trigger_kpi_aggregate + _period_participant_ids, aggregate_user_period/period_key_to_range 재사용). 지정 분기 KPI 신호 있는 사용자별 결정론 metric(1~7) quarterly KpiResult 멱등 upsert(uq_kpi_result_metric SELECT-후-update/insert, finalized 행 잠금). 계약 test_kpi_quarterly_aggregation 재작성(집계·멱등·RBAC·daily400) + 전용 레드팀 tests/redteam/test_kpi_aggregate_redteam.py 12케이스(RBAC 403×2/미인증 401/period미지정 400/invalid period 6종 파라미터라이즈 400-not-500/daily 400/멱등 3회/기간밖 제외/빈기간 0/음수값 없음/finalized 잠금). 17 passed. 전체 회귀 319 passed/27 skipped/0 failed(집계 활성화로 skip 28→27, 회귀 없음). 실 cron 상시발화·ERP push는 여전히 환경차단(G011 B-16/B-12/B-19).",
+    "e2eCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/contract/test_management_api_stubs.py::TestKPIResultAPI::test_kpi_quarterly_aggregation -q"],
+    "redTeamCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/redteam/test_kpi_aggregate_redteam.py -q"],
+    "artifactRefs": [
+      {"id": "rg002-kpi-aggregate-redteam", "kind": "black-box-api-receipt", "path": "backend/artifacts/rg002-kpi-aggregate-redteam.xml", "description": "KPI 집계 계약+레드팀 17 passed JUnit(집계·멱등·RBAC·invalid-500방어·finalized잠금·스코프)"},
+      {"id": "rg002-regression", "kind": "api-package-test-report", "path": "backend/artifacts/rg002-regression.xml", "description": "전체 회귀 JUnit — 319 passed/27 skipped/0 failed"}
+    ],
+    "contractCoverage": [
+      {"id": "cc-aggregate", "contractRef": "management-api.yaml #/kpi/aggregate + 00-decisions D14-e/D16/D17", "obligation": "POST /kpi/aggregate?period=YYYY-Q# (admin 전용): 지정 분기 KPI 신호 있는 사용자별 결정론 metric을 quarterly KpiResult로 멱등 upsert, 200 반환({status,period_key,aggregated_users,aggregated_metrics})", "status": "covered", "surfaceEvidenceRefs": ["se-aggregate"], "adversarialCaseRefs": ["ac-idempotent", "ac-scope-exclusion", "ac-empty-period"]},
+      {"id": "cc-aggregate-rbac", "contractRef": "require_role(admin, super_admin)", "obligation": "비admin 403, 미인증 401", "status": "covered", "surfaceEvidenceRefs": ["se-aggregate"], "adversarialCaseRefs": ["ac-rbac", "ac-unauth"]},
+      {"id": "cc-aggregate-input", "contractRef": "입력 검증 (period 400 매핑, 500 누출 금지)", "obligation": "period 미지정/daily/잘못된 분기(2026-Q9)/malformed → 400, period_key_to_range ValueError 500 누출 없음", "status": "covered", "surfaceEvidenceRefs": ["se-aggregate"], "adversarialCaseRefs": ["ac-missing-period", "ac-invalid-period-500", "ac-daily-rejected"]},
+      {"id": "cc-aggregate-finalized", "contractRef": "00-decisions D15 (확정 값 잠금)", "obligation": "확정(finalized_at) KpiResult 행은 재집계가 value를 덮어쓰지 않는다", "status": "covered", "surfaceEvidenceRefs": ["se-aggregate"], "adversarialCaseRefs": ["ac-finalized-lock", "ac-nonneg"]}
+    ],
+    "surfaceEvidence": [
+      {"id": "se-aggregate", "contractRef": "FastAPI POST /kpi/aggregate (httpx AsyncClient black-box + db KpiResult 조회)", "surface": "api", "invocation": "pytest tests/redteam/test_kpi_aggregate_redteam.py + TestKPIResultAPI::test_kpi_quarterly_aggregation", "verdict": "passed", "artifactRefs": ["rg002-kpi-aggregate-redteam"]}
+    ],
+    "adversarialCases": [
+      {"id": "ac-rbac", "contractRef": "POST /kpi/aggregate", "scenario": "employee/leader 집계 트리거", "expectedBehavior": "403", "verdict": "passed", "artifactRefs": ["rg002-kpi-aggregate-redteam"]},
+      {"id": "ac-unauth", "contractRef": "POST /kpi/aggregate", "scenario": "미인증 트리거", "expectedBehavior": "401", "verdict": "passed", "artifactRefs": ["rg002-kpi-aggregate-redteam"]},
+      {"id": "ac-missing-period", "contractRef": "POST /kpi/aggregate", "scenario": "period 파라미터 없음", "expectedBehavior": "400 period_required", "verdict": "passed", "artifactRefs": ["rg002-kpi-aggregate-redteam"]},
+      {"id": "ac-invalid-period-500", "contractRef": "POST /kpi/aggregate?period=", "scenario": "2026-Q9/2026-Q0/2026-Q/abc/2026-13-01/2026-QQ", "expectedBehavior": "400 (period_key_to_range ValueError 500 누출 없음)", "verdict": "passed", "artifactRefs": ["rg002-kpi-aggregate-redteam"]},
+      {"id": "ac-daily-rejected", "contractRef": "POST /kpi/aggregate?period=2026-07-15", "scenario": "daily 기간", "expectedBehavior": "400 quarterly_period_required", "verdict": "passed", "artifactRefs": ["rg002-kpi-aggregate-redteam"]},
+      {"id": "ac-idempotent", "contractRef": "POST /kpi/aggregate", "scenario": "동일 분기 4회 재집계", "expectedBehavior": "KpiResult 행 수 불변(uq 멱등, 값만 갱신)", "verdict": "passed", "artifactRefs": ["rg002-kpi-aggregate-redteam"]},
+      {"id": "ac-scope-exclusion", "contractRef": "POST /kpi/aggregate", "scenario": "기간 밖(Q2) 신호만 있는 사용자", "expectedBehavior": "Q3 집계 대상에서 제외(행 미생성)", "verdict": "passed", "artifactRefs": ["rg002-kpi-aggregate-redteam"]},
+      {"id": "ac-empty-period", "contractRef": "POST /kpi/aggregate?period=2027-Q1", "scenario": "데이터 없는 분기", "expectedBehavior": "200, aggregated_users=0, aggregated_metrics=0", "verdict": "passed", "artifactRefs": ["rg002-kpi-aggregate-redteam"]},
+      {"id": "ac-finalized-lock", "contractRef": "POST /kpi/aggregate (D15)", "scenario": "확정된 KpiResult 행 존재 상태에서 재집계", "expectedBehavior": "확정 행 value 불변(덮어쓰기 안 함)", "verdict": "passed", "artifactRefs": ["rg002-kpi-aggregate-redteam"]},
+      {"id": "ac-nonneg", "contractRef": "ck_kpi_value_nonnegative", "scenario": "집계 산출 metric 값", "expectedBehavior": "모든 value >= 0", "verdict": "passed", "artifactRefs": ["rg002-kpi-aggregate-redteam"]}
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "AI SLOP CLEANUP REPORT (읽기 전용, 변경 파일: kpi.py aggregate 엔드포인트+헬퍼, test_management_api_stubs.py aggregate 계약, test_kpi_aggregate_redteam.py 신규): BLOCKING 0. architect LOW 반영으로 dead code(if not metrics) 제거·stale 헤더 정정, finalized 잠금 가드는 근거 있는 D15 보호(마스킹 아님), DISTINCT 추가. ADVISORY: N+1(단일 company 규모 비차단, 문서화). 수정 후 전체 회귀 319 passed/27 skipped/0 failed(fullRerun). architect 세 레인 CLEAR+APPROVE.",
+    "fullRerun": true,
+    "rerunCommands": ["cd backend && .venv/Scripts/python.exe -m pytest -q -p no:cacheprovider"],
+    "blockers": []
+  }
+}

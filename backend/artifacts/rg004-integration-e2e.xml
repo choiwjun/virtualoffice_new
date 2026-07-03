@@ -1,0 +1,1 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="2.032" timestamp="2026-07-03T14:43:09.570490+09:00" hostname="WJ"><testcase classname="tests.contract.test_management_api_stubs.TestIntegrationAPIFlow" name="test_full_workflow_login_to_kpi" time="1.683" /></testsuite></testsuites>

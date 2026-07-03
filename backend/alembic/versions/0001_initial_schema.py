@@ -1,4 +1,4 @@
-"""initial schema — 20개 테이블 (04-data-model.md)
+"""initial schema — 22개 테이블 (04-data-model.md + auth_credential/G001 + erp_sync_log/G009)
 
 Revision ID: 0001_initial
 Revises: None

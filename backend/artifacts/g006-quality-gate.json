@@ -1,0 +1,52 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "architect 재리뷰(2-G006MinuteReReview) 세 레인 CLEAR+APPROVE, blockers=[]. 1차(1-G006MinuteArchReview) REQUEST CHANGES MEDIUM 2건 해소: (code) confirm require_role('admin') super_admin 락아웃 → 호스트 OR admin/super_admin 인라인 검사로 수정(관례 정합); (product) admin-only 확정 → 정본 D5 '호스트+admin' 정합(호스트 자기 회의록 확정 가능). 추가로 update를 호스트/참석자/admin 스코핑(임의 사용자 편집 차단). 검사순서 meeting존재(404)→권한(403)→minute(404)/상태(409)로 정보누출 없이 안전. 잔여 LOW(참석자 확정 D5 문서 사인오프, GET 비스코핑 조회, 경로 /minutes vs OpenAPI, action_items 평탄화 D14 후속)는 비blocker.",
+    "commands": ["task architect 1-G006MinuteArchReview (REQUEST CHANGES, MEDIUM 2)", "task architect 2-G006MinuteReReview (APPROVE, 세 레인 CLEAR)"],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "회의록 계약 4개 활성·통과(TestMeetingMinuteAPI: get/stt-draft/update/confirm) + STT정확도 1건 skip(Phase4+ S2 스파이크, G011 환경차단) + 레드팀 15개(취약점 0). 전체 회귀 172 passed/50 skipped/0 failed(153→172, 회귀 없음). 실 STT 파이프라인(LiveKit Egress→화자분리→AI요약)은 환경차단이라 저장 stt_draft 조회 계약만 구현. 확정(FINALIZED) 불변·확정/수정 RBAC(호스트/참석자/admin) 강제 검증.",
+    "e2eCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/contract/test_management_api_stubs.py::TestMeetingMinuteAPI -q"],
+    "redTeamCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/redteam/test_minutes_redteam.py -q"],
+    "artifactRefs": [
+      {"id": "g006-minutes", "kind": "api-package-test-report", "path": "backend/artifacts/g006-minutes.xml", "description": "회의록 계약 4 passed + 1 skipped JUnit"},
+      {"id": "g006-minutes-redteam", "kind": "black-box-api-receipt", "path": "backend/artifacts/g006-minutes-redteam.xml", "description": "13 적대 케이스 JUnit(취약점 0)"}
+    ],
+    "contractCoverage": [
+      {"id": "cc-minute-get", "contractRef": "management-api.yaml#/meetings/{id}/minutes (GET)", "obligation": "회의록 조회 200{meeting_id,status,...}, 회의 미존재/회의록 미존재 404, 비UUID 404", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-get-no-meeting-404", "ac-get-no-minute-404", "ac-malformed-404"]},
+      {"id": "cc-minute-stt", "contractRef": "management-api.yaml#/meetings/{id}/minutes/stt-draft", "obligation": "저장 stt_draft 조회 200|404(미존재). 실 STT 파이프라인 G011 환경차단", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-stt-no-minute-404", "ac-malformed-404"]},
+      {"id": "cc-minute-update", "contractRef": "management-api.yaml#/meetings/{id}/minutes (PUT)", "obligation": "회의록 수정 200, 최초 수정 시 초안 upsert(회의당 1건), content/decisions/action_items 반영, FINALIZED 불변 409", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-put-upsert", "ac-put-no-dup", "ac-finalized-immutable"]},
+      {"id": "cc-minute-confirm", "contractRef": "management-api.yaml#/meetings/{id}/minutes/confirm", "obligation": "관리자 확정 200 status=finalized(DRAFT→FINALIZED, reviewed_by 기록), 비관리자 403, 회의록 미존재 404", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-confirm-non-admin-403", "ac-confirm-no-minute-404", "ac-finalized-immutable"]}
+    ],
+    "surfaceEvidence": [
+      {"id": "se-api", "contractRef": "FastAPI /meetings/{id}/minutes* (httpx AsyncClient black-box)", "surface": "api", "invocation": "pytest TestMeetingMinuteAPI + tests/redteam/test_minutes_redteam.py", "verdict": "passed", "artifactRefs": ["g006-minutes", "g006-minutes-redteam"]}
+    ],
+    "adversarialCases": [
+      {"id": "ac-get-no-meeting-404", "contractRef": "GET /meetings/{id}/minutes", "scenario": "미존재 회의 UUID", "expectedBehavior": "404", "verdict": "passed", "artifactRefs": ["g006-minutes-redteam"]},
+      {"id": "ac-get-no-minute-404", "contractRef": "GET /meetings/{id}/minutes", "scenario": "회의는 있으나 회의록 없음", "expectedBehavior": "404 minute_not_found", "verdict": "passed", "artifactRefs": ["g006-minutes-redteam"]},
+      {"id": "ac-malformed-404", "contractRef": "GET /meetings/{id}/minutes(/stt-draft)", "scenario": "not-a-uuid/경로탐색/SQLi 문자열 id", "expectedBehavior": "404 (422 아님)", "verdict": "passed", "artifactRefs": ["g006-minutes-redteam"]},
+      {"id": "ac-stt-no-minute-404", "contractRef": "GET /meetings/{id}/minutes/stt-draft", "scenario": "회의록 없음", "expectedBehavior": "404 stt_draft_not_found", "verdict": "passed", "artifactRefs": ["g006-minutes-redteam"]},
+      {"id": "ac-put-upsert", "contractRef": "PUT /meetings/{id}/minutes", "scenario": "초안 최초 수정", "expectedBehavior": "200, 생성+content/decisions/action_items 반영, GET 재조회 일치", "verdict": "passed", "artifactRefs": ["g006-minutes-redteam"]},
+      {"id": "ac-put-no-dup", "contractRef": "PUT /meetings/{id}/minutes", "scenario": "동일 회의 2회 수정", "expectedBehavior": "회의록 row 1건 유지(meeting_id UNIQUE)", "verdict": "passed", "artifactRefs": ["g006-minutes-redteam"]},
+      {"id": "ac-confirm-non-admin-403", "contractRef": "POST /meetings/{id}/minutes/confirm", "scenario": "employee/leader 확정 시도", "expectedBehavior": "403", "verdict": "passed", "artifactRefs": ["g006-minutes-redteam"]},
+      {"id": "ac-confirm-no-minute-404", "contractRef": "POST /meetings/{id}/minutes/confirm", "scenario": "회의록 없이 확정", "expectedBehavior": "404 minute_not_found", "verdict": "passed", "artifactRefs": ["g006-minutes-redteam"]},
+      {"id": "ac-finalized-immutable", "contractRef": "PUT /meetings/{id}/minutes", "scenario": "확정(FINALIZED) 후 재수정", "expectedBehavior": "409 minute_finalized", "verdict": "passed", "artifactRefs": ["g006-minutes-redteam"]},
+      {"id": "ac-unauth-401", "contractRef": "GET/PUT/confirm minutes", "scenario": "미인증 접근", "expectedBehavior": "401", "verdict": "passed", "artifactRefs": ["g006-minutes-redteam"]}
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "회의록 모델(기존 stt_draft/ai_summary 재사용) + 라우터 4엔드포인트 구현 후 전체 170 passed/50 skipped/0 실패. 계약 스텁은 고정 문자열 id → 실 UUID 픽스처로 rigorous 재작성. STT 정확도 측정만 Phase4+(S2, G011 환경차단)로 skip 유지.",
+    "fullRerun": true,
+    "rerunCommands": ["cd backend && .venv/Scripts/python.exe -m pytest -q"],
+    "blockers": []
+  }
+}

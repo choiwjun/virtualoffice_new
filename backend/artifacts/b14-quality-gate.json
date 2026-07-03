@@ -1,0 +1,66 @@
+{
+  "story": "B-14",
+  "title": "감사 로그 생산자 훅 (D20 컴플라이언스 컨트롤 활성화)",
+  "context": "관리 API ultragoal(G001~G011 complete) 이후 후속 스토리. blocked-work-registry.md B-14(감사 생산자 훅 전무 → D20 감사추적 미작동)를 해소. ultragoal 정식 goal이 아닌 standalone 후속이므로 gjc ultragoal checkpoint 대상 아님 — 본 파일은 증거 번들.",
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "architect(2-B14AuditHooksReview) 세 레인 CLEAR+APPROVE, blockers=none. 6개 검증 항목 전부 통과: (1) 원자성 — record_audit stage-only(commit/flush 없음), 9개 훅 전부 도메인 뮤테이션과 단일 commit 이전 배치, seats assign IntegrityError 롤백 경로·layouts deploy 400 조기반환 경로에서 감사 미stage(올바름). (2) 커버리지 — D20/04-data-model §2.6 어휘(seat_assigned/unassigned, meeting_created/cancelled, kpi_adjusted/finalized/objection_submitted, office_layout_deployed) 완전, meeting_updated 엔드포인트 부재로 누락 아님, recording_*는 LiveKit 환경차단. (3) JSON 직렬화 안전 — UUID→str/Decimal→float/datetime→isoformat/Enum→.value. (4) actor 정확 — 전 훅 current(_user).user_id, unassign _→current 교체. (5) create_meeting flush→id→record→commit 원자성 유지. (6) 테스트 15건 실질 검증(허수/토톨로지 없음). 잔여 LOW(ip_address/user_agent 미배선, staged-후-롤백 무테스트, occupy/release·minutes confirm 감사 어휘 밖)는 비blocker → registry §D 후속 등록.",
+    "commands": ["task architect 2-B14AuditHooksReview (APPROVE, 세 레인 CLEAR)"],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "app/services/audit_service.py(record_audit — 트랜잭션 stage-only 헬퍼) 신설 + seats/meetings/kpi/layouts 라우터에 감사 훅 배선. 전용 레드팀 16건 통과(ip/user-agent 기록 포함), 전체 회귀 298 passed/28 skipped/0 failed(282→298, 회귀 없음). 감사는 도메인 뮤테이션과 원자적(commit 이전 stage → 뮤테이션 롤백 시 동반 폐기). D20 감사추적 컴플라이언스 컨트롤 작동(누가/무엇을/어느 엔티티/언제/old→new + 클라이언트 IP/User-Agent). architect LOW(ip_address/user_agent 미배선)는 record_audit가 Request에서 도출하도록 후속 배선하여 해소.",
+    "e2eCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/redteam/test_audit_producer_redteam.py -q"],
+    "redTeamCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/redteam/test_audit_producer_redteam.py -q"],
+    "artifactRefs": [
+      {"id": "b14-audit-hooks-redteam", "kind": "black-box-api-receipt", "path": "backend/artifacts/b14-audit-hooks-redteam.xml", "description": "감사 생산자 훅 레드팀 16 passed JUnit(액션별 감사 생성 + 원자성/멱등/거부 무감사 + IP/User-Agent 기록)"},
+      {"id": "b14-regression", "kind": "api-package-test-report", "path": "backend/artifacts/b14-regression.xml", "description": "전체 회귀 JUnit — 298 passed/28 skipped/0 failed"}
+    ],
+    "contractCoverage": [
+      {"id": "cc-audit-seat", "contractRef": "AuditLog 어휘 seat_assigned/seat_unassigned (D20, tables.AuditLog)", "obligation": "seats assign/unassign 시 AuditLog(action, entity_type=seat, entity_id, user_id=actor, old→new)를 도메인 뮤테이션과 원자적으로 기록", "status": "covered", "surfaceEvidenceRefs": ["se-audit"], "adversarialCaseRefs": ["ac-seat-assign", "ac-seat-unassign", "ac-seat-conflict-noaudit"]},
+      {"id": "cc-audit-meeting", "contractRef": "AuditLog 어휘 meeting_created/meeting_cancelled", "obligation": "meeting 생성/취소 시 감사 기록(create는 flush로 id 확보 후), 비호스트 취소 거부(403) 시 무감사", "status": "covered", "surfaceEvidenceRefs": ["se-audit"], "adversarialCaseRefs": ["ac-meeting-create", "ac-meeting-cancel", "ac-meeting-nonhost-noaudit"]},
+      {"id": "cc-audit-kpi", "contractRef": "AuditLog 어휘 kpi_adjusted/kpi_finalized/kpi_objection_submitted", "obligation": "adjust/confirm/objection 시 감사 기록(objection actor=본인), 비admin 거부(403) 무감사, confirm 멱등 재호출 시 감사 중복 없음", "status": "covered", "surfaceEvidenceRefs": ["se-audit"], "adversarialCaseRefs": ["ac-kpi-adjust", "ac-kpi-confirm", "ac-kpi-confirm-idempotent", "ac-kpi-objection", "ac-kpi-forbidden-noaudit"]},
+      {"id": "cc-audit-layout", "contractRef": "AuditLog 어휘 office_layout_deployed", "obligation": "layout deploy 시 감사 기록, rollback도 office_layout_deployed(new_value.via=rollback), 검증실패(400) 시 무감사", "status": "covered", "surfaceEvidenceRefs": ["se-audit"], "adversarialCaseRefs": ["ac-layout-deploy", "ac-layout-rollback", "ac-layout-invalid-noaudit"]},
+      {"id": "cc-audit-readonly", "contractRef": "감사 대상 액션 한정", "obligation": "GET 조회 등 읽기 전용 액션은 감사 로그를 남기지 않는다", "status": "covered", "surfaceEvidenceRefs": ["se-audit"], "adversarialCaseRefs": ["ac-readonly-noaudit"]}
+    ],
+    "surfaceEvidence": [
+      {"id": "se-audit", "contractRef": "FastAPI seats/meetings/kpi/layouts 감사 훅 (httpx AsyncClient black-box + db AuditLog 조회)", "surface": "api", "invocation": "pytest tests/redteam/test_audit_producer_redteam.py", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]}
+    ],
+    "adversarialCases": [
+      {"id": "ac-seat-assign", "contractRef": "POST /seats/{n}/assign", "scenario": "좌석 배정", "expectedBehavior": "seat_assigned 감사 1건(entity=seat, actor=admin, new_value.assigned_user_id)", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]},
+      {"id": "ac-seat-unassign", "contractRef": "DELETE /seats/{n}/assign", "scenario": "좌석 해제", "expectedBehavior": "seat_unassigned 감사 1건(old→new assigned_user_id)", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]},
+      {"id": "ac-seat-conflict-noaudit", "contractRef": "POST /seats/{n}/assign", "scenario": "이미 배정된 좌석 재배정 409", "expectedBehavior": "거부된 배정은 감사 미생성(원자성) — seat_assigned 1건만", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]},
+      {"id": "ac-meeting-create", "contractRef": "POST /meetings", "scenario": "회의 생성", "expectedBehavior": "meeting_created 감사(entity_id=생성 meeting.id, flush로 확보)", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]},
+      {"id": "ac-meeting-cancel", "contractRef": "DELETE /meetings/{id}", "scenario": "호스트 취소", "expectedBehavior": "meeting_cancelled 감사(new_value.status=cancelled)", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]},
+      {"id": "ac-meeting-nonhost-noaudit", "contractRef": "DELETE /meetings/{id}", "scenario": "비호스트 취소 403", "expectedBehavior": "감사 미생성", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]},
+      {"id": "ac-kpi-adjust", "contractRef": "PUT /kpi-results/{id}/adjust", "scenario": "관리자 조정", "expectedBehavior": "kpi_adjusted 감사(old/new admin_adjusted_score)", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]},
+      {"id": "ac-kpi-confirm", "contractRef": "POST /kpi-results/{id}/confirm", "scenario": "확정", "expectedBehavior": "kpi_finalized 감사(new_value.final_score)", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]},
+      {"id": "ac-kpi-confirm-idempotent", "contractRef": "POST /kpi-results/{id}/confirm", "scenario": "확정 재호출(멱등)", "expectedBehavior": "kpi_finalized 감사 1건만(조기반환 시 무감사)", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]},
+      {"id": "ac-kpi-objection", "contractRef": "POST /kpi-results/{id}/objections", "scenario": "본인 이의신청", "expectedBehavior": "kpi_objection_submitted 감사(actor=본인 employee)", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]},
+      {"id": "ac-kpi-forbidden-noaudit", "contractRef": "PUT /kpi-results/{id}/adjust", "scenario": "비admin 조정 403", "expectedBehavior": "감사 미생성", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]},
+      {"id": "ac-layout-deploy", "contractRef": "POST /layouts/{id}/deploy", "scenario": "배포", "expectedBehavior": "office_layout_deployed 감사(new_value.version)", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]},
+      {"id": "ac-layout-rollback", "contractRef": "POST /layouts/{id}/rollback", "scenario": "롤백", "expectedBehavior": "office_layout_deployed 감사 new_value.via=rollback", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]},
+      {"id": "ac-layout-invalid-noaudit", "contractRef": "POST /layouts/{id}/deploy", "scenario": "검증실패 레이아웃 배포 400", "expectedBehavior": "감사 미생성(원자성 조기반환)", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]},
+      {"id": "ac-readonly-noaudit", "contractRef": "GET /seats,/layouts,/kpi-results", "scenario": "읽기 조회", "expectedBehavior": "감사 미생성", "verdict": "passed", "artifactRefs": ["b14-audit-hooks-redteam"]}
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "audit_service.py 신설 + 9개 훅 배선 + ip/ua Request 도출 후속 배선 후 전체 회귀 298 passed/28 skipped/0 failed(282 베이스라인 + 신규 16). architect 세 레인 CLEAR+APPROVE. architect LOW-1(ip/ua)은 해소, 잔여(occupy/release·minutes confirm 감사 어휘 밖, staged-후-롤백 무테스트)는 비blocker로 blocked-work-registry.md §D 후속 등록.",
+    "fullRerun": true,
+    "rerunCommands": ["cd backend && .venv/Scripts/python.exe -m pytest -q -p no:cacheprovider"],
+    "blockers": []
+  },
+  "residualFollowups": [
+    "~~ip_address/user_agent 미배선~~ → 해소: record_audit가 Request에서 IP/User-Agent 도출, 9개 훅 배선, 전용 테스트 test_audit_captures_client_ip_and_user_agent (2026-07-03)",
+    "자율석 occupy/release·회의록 confirm은 D20 감사 어휘 밖(SeatAssignmentHistory가 이력 보유) — 스코프 경계 (INFO, architect)",
+    "staged-후-commit실패(IntegrityError) 롤백 경로 회귀 테스트 보강 (LOW, architect)"
+  ]
+}

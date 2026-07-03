@@ -1,0 +1,57 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "architect 재리뷰(G005MeetingReReview) 세 레인 CLEAR: 직전 WATCH 유발 MEDIUM 3건 모두 해소. (1) join 상태가드가 토큰발급·상태전이·participant upsert·commit 이전에 위치해 우회 불가, 409 선택 타당(room_conflict 선례 일관); (2) open-ended 충돌쿼리 반개구간 의미론 정확 or_(scheduled_end IS NULL, scheduled_end>b.start), 인접경계·CANCELLED 재예약 회귀 무손상; (3) TOCTOU는 온프렘 단일 인스턴스 저위험 한정으로 코드주석에 정확히 표기+정본해법(PostgreSQL EXCLUDE+tstzrange) 명시하여 수용. tables.py:900 주석 정정 정확. blockers=[]. LOW 2건(TOCTOU 후속 트래커 위치, ck_meeting_times DB CHECK 부재)은 게이트 무관 — TOCTOU 주석은 '설계 백로그 후속(환경차단 아님)'으로 정정.",
+    "commands": ["task architect 0-G005MeetingReReview (APPROVE, architecture/product/code 세 레인 CLEAR)"],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "회의 계약 8개(TestMeetingAPI) + 레드팀 20개(취약점 0) 전원 통과, 전체 회귀 153 passed/54 skipped/0 failed(회귀 없음, 151→153). WATCH 해소: CANCELLED/COMPLETED join 409 차단(토큰 미발급), open-ended(scheduled_end NULL) 회의 [start,∞) 상시점유로 충돌검사 포함, TOCTOU 문서화. redteam 신규 3건(completed join 409, cancelled join 409 격상, open-ended 충돌 409+경계 201) 추가. ai-slop 스윕: 취소회의 재예약 회귀(방 영구잠금) 방지 유지, 결함 마스킹 없음.",
+    "e2eCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/contract/test_management_api_stubs.py::TestMeetingAPI -q"],
+    "redTeamCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/redteam/test_meetings_redteam.py -q"],
+    "artifactRefs": [
+      {"id": "g005-meetings", "kind": "api-package-test-report", "path": "backend/artifacts/g005-meetings.xml", "description": "회의 계약 8 passed JUnit(TestMeetingAPI)"},
+      {"id": "g005-meetings-redteam", "kind": "black-box-api-receipt", "path": "backend/artifacts/g005-meetings-redteam.xml", "description": "20 적대 케이스 JUnit(취약점 0)"}
+    ],
+    "contractCoverage": [
+      {"id": "cc-meeting-crud", "contractRef": "management-api.yaml#/meetings", "obligation": "POST 201{meeting_id,room_id}/GET 목록{meetings}/GET {id}/DELETE 취소(호스트만 403)", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-rbac-cancel", "ac-malformed-id"]},
+      {"id": "cc-meeting-conflict", "contractRef": "management-api.yaml#/meetings (D23 예약충돌+FCFS)", "obligation": "[start,end) 반개구간 겹침 409(room_conflict), 인접경계 201, 다른 room 201, open-ended NULL 상시점유 차단, CANCELLED 재예약 허용", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-overlap-409", "ac-adjacent-201", "ac-different-room-201", "ac-open-ended-409", "ac-cancelled-rebook-201"]},
+      {"id": "cc-meeting-join", "contractRef": "management-api.yaml#/meetings/{id}/join (D24 명시적 입장)", "obligation": "SCHEDULED join 200+livekit_token, 최초 입장 IN_PROGRESS 전이, participant upsert, CANCELLED/COMPLETED join 409(meeting_not_joinable, 토큰 미발급), 미존재/비UUID 404", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-join-transition", "ac-cancelled-join-409", "ac-completed-join-409", "ac-join-404"]},
+      {"id": "cc-meeting-leave", "contractRef": "management-api.yaml#/meetings/{id}/leave", "obligation": "퇴장 200, participant 미존재도 멱등 200", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-leave-idempotent"]},
+      {"id": "cc-meeting-participants", "contractRef": "management-api.yaml#/meetings/{id}/participants", "obligation": "참석자 목록{participants[user_id,role,joined_at,left_at]}", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-join-transition", "ac-malformed-id"]}
+    ],
+    "surfaceEvidence": [
+      {"id": "se-api", "contractRef": "FastAPI /meetings* (httpx AsyncClient black-box)", "surface": "api", "invocation": "pytest TestMeetingAPI + tests/redteam/test_meetings_redteam.py", "verdict": "passed", "artifactRefs": ["g005-meetings", "g005-meetings-redteam"]}
+    ],
+    "adversarialCases": [
+      {"id": "ac-overlap-409", "contractRef": "POST /meetings", "scenario": "같은 room 겹치는 시간대 예약", "expectedBehavior": "409 room_conflict", "verdict": "passed", "artifactRefs": ["g005-meetings-redteam"]},
+      {"id": "ac-adjacent-201", "contractRef": "POST /meetings", "scenario": "인접 반개구간(앞 회의 end == 뒤 회의 start)", "expectedBehavior": "201 (겹침 아님)", "verdict": "passed", "artifactRefs": ["g005-meetings-redteam"]},
+      {"id": "ac-different-room-201", "contractRef": "POST /meetings", "scenario": "다른 room 같은 시간", "expectedBehavior": "201", "verdict": "passed", "artifactRefs": ["g005-meetings-redteam"]},
+      {"id": "ac-open-ended-409", "contractRef": "POST /meetings", "scenario": "scheduled_end NULL(open-ended) 회의 시작 이후 시작하는 예약", "expectedBehavior": "409 room_conflict(상시점유), 시작 이전 종료 예약은 201", "verdict": "passed", "artifactRefs": ["g005-meetings-redteam"]},
+      {"id": "ac-cancelled-rebook-201", "contractRef": "POST /meetings", "scenario": "취소된 회의 슬롯 재예약", "expectedBehavior": "201 (CANCELLED은 충돌 대상 아님, 방 영구잠금 회귀 방지)", "verdict": "passed", "artifactRefs": ["g005-meetings-redteam"]},
+      {"id": "ac-cancelled-join-409", "contractRef": "POST /meetings/{id}/join", "scenario": "CANCELLED 회의 입장", "expectedBehavior": "409 meeting_not_joinable, livekit_token 미발급", "verdict": "passed", "artifactRefs": ["g005-meetings-redteam"]},
+      {"id": "ac-completed-join-409", "contractRef": "POST /meetings/{id}/join", "scenario": "COMPLETED 회의 입장", "expectedBehavior": "409 meeting_not_joinable, livekit_token 미발급", "verdict": "passed", "artifactRefs": ["g005-meetings-redteam"]},
+      {"id": "ac-join-transition", "contractRef": "POST /meetings/{id}/join", "scenario": "SCHEDULED 회의 최초/중복 입장", "expectedBehavior": "200, IN_PROGRESS 전이, participant row 중복 생성 금지(upsert)", "verdict": "passed", "artifactRefs": ["g005-meetings-redteam"]},
+      {"id": "ac-join-404", "contractRef": "POST /meetings/{id}/join", "scenario": "미존재/비UUID 회의 입장", "expectedBehavior": "404 (422 아님)", "verdict": "passed", "artifactRefs": ["g005-meetings-redteam"]},
+      {"id": "ac-rbac-cancel", "contractRef": "DELETE /meetings/{id}", "scenario": "비호스트 취소 시도", "expectedBehavior": "403 not_host, 호스트는 200", "verdict": "passed", "artifactRefs": ["g005-meetings-redteam"]},
+      {"id": "ac-malformed-id", "contractRef": "GET/POST/DELETE /meetings/{id}", "scenario": "not-a-uuid/빈문자/경로탐색/SQLi 문자열 id", "expectedBehavior": "404 (422 아님)", "verdict": "passed", "artifactRefs": ["g005-meetings-redteam"]},
+      {"id": "ac-leave-idempotent", "contractRef": "POST /meetings/{id}/leave", "scenario": "입장 없이 퇴장", "expectedBehavior": "200 멱등, 크래시 없음", "verdict": "passed", "artifactRefs": ["g005-meetings-redteam"]},
+      {"id": "ac-invalid-range-400", "contractRef": "POST /meetings", "scenario": "end<=start 시간 범위", "expectedBehavior": "400 invalid_time_range", "verdict": "passed", "artifactRefs": ["g005-meetings-redteam"]},
+      {"id": "ac-unauth-401", "contractRef": "GET/POST /meetings", "scenario": "미인증 목록/생성", "expectedBehavior": "401", "verdict": "passed", "artifactRefs": ["g005-meetings-redteam"]}
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "WATCH 3건 수정(join 상태가드, open-ended 충돌, TOCTOU 문서화) + tables 주석 정정 후 전체 스위트 153 passed/54 skipped/0 실패. architect 재리뷰 세 레인 CLEAR+APPROVE. LiveKit 실연동은 환경차단(G011)으로 토큰 발급 계약만 구현(결정적 room_name stub).",
+    "fullRerun": true,
+    "rerunCommands": ["cd backend && .venv/Scripts/python.exe -m pytest -q"],
+    "blockers": []
+  }
+}

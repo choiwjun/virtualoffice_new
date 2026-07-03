@@ -173,6 +173,12 @@ class DailyStatusPushStatus(str, Enum):
     SENT = "sent"               # 전송 완료
     FAILED = "failed"           # 전송 실패
 
+class ErpSyncStatus(str, Enum):
+    """ERP 동기화 실행 상태 (G009)"""
+    RUNNING = "running"         # 진행 중
+    SUCCESS = "success"         # 성공
+    FAILED = "failed"           # 실패
+
 
 class ActionItemStatus(str, Enum):
     """액션아이템 상태"""
@@ -307,6 +313,37 @@ class ErpUser(Base, TimestampMixin, SoftDeleteMixin):
         Index("idx_erp_user_role", "role"),
         # is_active 인덱스는 SoftDeleteMixin(index=True)이 생성 — 중복 명시 Index 제거(A3-20)
     )
+
+class AuthCredential(Base, TimestampMixin):
+    # @TASK P2-R2-T0 - 로컬 인증 크리덴셜 (D4 자체 JWT)
+    # @SPEC 00-decisions.md D4, docs/api/management-api.yaml /auth/login
+    """
+    로컬 인증 크리덴셜 저장소 (D4: FastAPI 자체 JWT).
+
+    ERP 미러(erp_user)는 read-only(D18)라 비밀번호를 담지 않는다. 로그인은 이 저장소로
+    로컬 검증한다. 계정 잠금/rate-limit(C2)용 컬럼(failed_attempts/locked_until)은
+    스키마만 준비하고 잠금 흐름은 G010에서 구현한다. 라이브 ERP 비밀번호 검증 경로는
+    OQ10(ERP DB 계정) 확보 시 어댑터로 연결(환경 차단, G011 blocker).
+    """
+    __tablename__ = "auth_credential"
+
+    user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("erp_user.id", ondelete="RESTRICT"),
+        primary_key=True,
+    )
+    """erp_user.id 1:1 (평가 기록 영구성 → RESTRICT, D18)"""
+
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    """bcrypt 해시 (app.core.security.hash_password)"""
+
+    failed_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    """연속 로그인 실패 횟수 (계정 잠금, C2 — G010에서 사용)"""
+
+    locked_until: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    """잠금 해제 시각 (UTC). NULL이면 미잠금. (C2 — G010에서 사용)"""
 
 
 # ============================================================================
@@ -827,6 +864,11 @@ class Meeting(Base, TimestampMixin):
         nullable=False
     )
     """예정 시각 (UTC)"""
+    scheduled_end: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    """예정 종료 시각 (UTC). 예약 충돌 검증 [scheduled_at, scheduled_end) 용 (G005, D23)."""
     started_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
         nullable=True
@@ -861,7 +903,7 @@ class Meeting(Base, TimestampMixin):
         Index("idx_meeting_room_scheduled", "room_id", "scheduled_at"),
         Index("idx_meeting_host", "host_user_id"),
         Index("idx_meeting_status", "status", "started_at"),
-        # 실제 컬럼은 scheduled_at/started_at/ended_at (scheduled_start/end 없음)
+        # 실제 컬럼은 scheduled_at/scheduled_end/started_at/ended_at (scheduled_start 없음)
         CheckConstraint(
             "ended_at IS NULL OR started_at IS NULL OR ended_at >= started_at",
             name="ck_meeting_times",
@@ -1389,6 +1431,7 @@ class AuditLog(Base):
     - recording_started / recording_stopped (D20-b)
     - kpi_adjusted / kpi_finalized / kpi_objection_submitted
     - office_layout_deployed
+    - erp_user_soft_deleted (D18 동기화 전체 대사 하드삭제 감지)
     """
     __tablename__ = "audit_log"
 
@@ -1418,9 +1461,49 @@ class AuditLog(Base):
 
     # 관계
     user: Mapped[Optional["ErpUser"]] = relationship("ErpUser")
-
     __table_args__ = (
         Index("idx_audit_log_user_time", "user_id", "created_at"),
         Index("idx_audit_log_entity", "entity_type", "entity_id"),
         Index("idx_audit_log_action_time", "action", "created_at"),
+    )
+
+
+class ErpSyncLog(Base, TimestampMixin):
+    # @TASK T18.0 - ERP 동기화 실행 이력 (G009)
+    # @SPEC 00-decisions.md D18(증분+전체대사), D20(컴플라이언스)
+    """
+    ERP 수동/배치 동기화 실행 기록 (모니터링 + 상태/오류 조회용)
+
+    daily_status_push(우리→ERP push)와 무관 — 이쪽은 ERP→우리 pull 동기화 실행 이력.
+    """
+    __tablename__ = "erp_sync_log"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    run_id: Mapped[UUID] = mapped_column(default=uuid4, index=True)
+    status: Mapped[ErpSyncStatus] = mapped_column(
+        SQLEnum(ErpSyncStatus),
+        nullable=False,
+        index=True
+    )
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc)
+    )
+    finished_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    created_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    updated_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    deactivated_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    next_scheduled_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+    __table_args__ = (
+        Index("idx_erp_sync_log_status_time", "status", "started_at"),
     )

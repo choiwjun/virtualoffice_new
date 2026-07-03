@@ -1,0 +1,175 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "architect 리뷰(1-G011RegistryReview2) 세 레인 CLEAR+APPROVE, blockers=[]. G011은 문서 산출물(docs/planning/loop/blocked-work-registry.md) 스토리. 검증: (1) 커버리지 완전 — objective 6항목(Godot 3D Phase1→B-01, 실시간+WSS Phase4→B-02, LiveKit+STT Phase5→B-03, 스파이크 S1~S4→B-04, ERP 라이브 DB OQ10→B-05, 도메인 R-d→B-06) + architect 선행조건 B-14(감사 생산자 훅)·B-15(레거시 sync deprecation) 전부 등록, G005~G010 누적 환경차단 B-07~B-21까지 초과 등록(누락 없음). (2) 분류 — objective의 flat 'human_blocked' 지시를 human_blocked/phase_blocked/followup 3분류로 세분화한 것이 phase gate와 인적 gate를 구분해 더 정확·실행지향적(architect 채택 권장). (3) 코드측 주장 소스 직접 대조 전부 일치: B-05 reader.py:50-61 팩토리(ERP_DATABASE_URL 빈 문자열 falsy→MockErpReader/설정→PostgresErpReader), B-16/B-17 scheduler.py build_scheduler 4잡 KST cron+scheduler_enabled=False 기본+advisory_lock Postgres-only/SQLite no-op+_stable_job_key crc32, B-14 audit.py 읽기 2엔드포인트만·도메인 라우터 AuditLog 생산자 훅 전무(생성은 테스트에서만). (4) 해소 선행조건 구체적·실행가능. 1차 스키마 직렬화 실패(schema_violation, 내용 손실) → 프로세 형식 재리뷰로 확정. LOW 2건: B-14 'followup' 라벨 과대표현(net-new 구현 필요), 분류 이탈 표면화. LOW-1은 레지스트리 B-14 라벨을 followup(net-new)로 정정 반영, LOW-2는 본 체크포인트 evidence로 리더 인지 표면화. 둘 다 비blocker.",
+    "commands": [
+      "task architect 0-G011RegistryReview (schema_violation 실패, 내용 손실)",
+      "task architect 1-G011RegistryReview2 (APPROVE, 세 레인 CLEAR, 프로세 형식)"
+    ],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "G011은 코드가 아니라 문서(blocked-work-registry.md)가 산출물이므로 수용 기준은 (a) objective 요구 항목의 레지스트리 등록 완전성, (b) 레지스트리가 주장하는 코드측 현재 상태의 소스 정확성, (c) 코드 무변경으로 전체 회귀 무회귀. 셋 다 충족. 코드측 주장 3건을 소스에서 직접 대조 검증(search/ast_grep): B-05 reader.py 팩토리 자동전환, B-16/B-17 scheduler.py 스케줄러 스캐폴딩·advisory no-op·crc32 키·scheduler_enabled 기본 False, B-14 도메인 라우터 AuditLog 생산자 훅 전무. 추가로 B-15 레거시 erp.py POST /erp/sync가 ErpSyncLog 미기록으로 신규 sync.py POST /sync/erp와 공존함을 architect가 소스 확인. 문서 스토리라 코드 변경 없음 → 전체 회귀 282 passed/28 skipped/0 failed 재확인(G010 베이스라인과 동일, 무회귀).",
+    "e2eCommands": [
+      "cd backend && \"$(pwd)/.venv/Scripts/python.exe\" -m pytest -q -p no:cacheprovider (282 passed/28 skipped/0 failed)"
+    ],
+    "redTeamCommands": [
+      "소스 대조: search 'ERP_DATABASE_URL|PostgresErpReader|MockErpReader|scheduler_enabled' backend/app; search 'advisory_lock|_stable_job_key|build_scheduler' scheduler.py; ast_grep 'AuditLog' backend/app/api"
+    ],
+    "artifactRefs": [
+      {
+        "id": "g011-blocked-work-registry",
+        "kind": "artifact",
+        "path": "docs/planning/loop/blocked-work-registry.md",
+        "description": "환경 차단 작업 durable 레지스트리 B-01~B-21(분류/사유/코드 현재상태/해소 선행조건), §C 분류요약, §D 정책 결정 대기"
+      }
+      ,
+      {
+        "id": "g011-regression",
+        "kind": "api-package-test-report",
+        "path": "backend/artifacts/g011-regression.xml",
+        "description": "문서 스토리 후 전체 회귀 JUnit — 282 passed/28 skipped/0 failed(G010 베이스라인 유지, 무회귀)"
+      }
+    ],
+    "contractCoverage": [
+      {
+        "id": "cc-registry-coverage",
+        "contractRef": "ultragoal G011 objective + G009/G010 architect 선행조건",
+        "obligation": "objective 6항목(Godot 3D Phase1, 실시간+WSS Phase4, LiveKit+STT Phase5, 스파이크 S1~S4, ERP 라이브 DB OQ10, 도메인 R-d) + B-14 감사 생산자 훅 + B-15 레거시 sync deprecation을 실행 불가 사유·해소 선행조건과 함께 durable 레지스트리에 빠짐없이 등록",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["se-doc"],
+        "adversarialCaseRefs": ["ac-coverage-6items", "ac-precondition-b14-b15"]
+      },
+      {
+        "id": "cc-registry-classification",
+        "contractRef": "잠금 분류 taxonomy (human_blocked/phase_blocked/followup)",
+        "obligation": "각 항목이 실제 해소 성격에 맞게 분류되어야 한다 — 단일 인적 조치 게이트만 human_blocked, 후속 Phase 전체 구현 선행은 phase_blocked, 코드 방어 완료·후속 검증/신규구현만 남은 것은 followup",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["se-doc"],
+        "adversarialCaseRefs": ["ac-classify-phase-vs-human"]
+      },
+      {
+        "id": "cc-registry-code-accuracy",
+        "contractRef": "레지스트리 코드측 현재상태 주장 ↔ 실제 소스",
+        "obligation": "레지스트리가 '코드 현재 상태'로 기술한 내용(B-05 reader 팩토리 자동전환, B-16/B-17 스케줄러 스캐폴딩·advisory no-op, B-14 감사 생산자 훅 전무, B-15 레거시 sync 공존)은 실제 소스와 정확히 일치해야 한다(과대/허위 주장 금지)",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["se-source"],
+        "adversarialCaseRefs": ["ac-code-b05", "ac-code-b16-b17", "ac-code-b14", "ac-code-b15"]
+      },
+      {
+        "id": "cc-no-regression",
+        "contractRef": "문서 스토리 무코드변경 → 무회귀",
+        "obligation": "G011은 코드로 완결하지 않는 문서 스토리이므로 코드 변경이 없어야 하고 전체 회귀는 G010 베이스라인(282 passed)을 유지해야 한다",
+        "status": "covered",
+        "surfaceEvidenceRefs": ["se-regression"],
+        "adversarialCaseRefs": ["ac-full-regression"]
+      }
+    ],
+    "surfaceEvidence": [
+      {
+        "id": "se-doc",
+        "contractRef": "blocked-work-registry.md 문서 검토(커버리지·분류·해소조건)",
+        "surface": "doc",
+        "invocation": "architect 리뷰 1-G011RegistryReview2 + 리더 매핑 검토",
+        "verdict": "passed",
+        "artifactRefs": ["g011-blocked-work-registry"]
+      },
+      {
+        "id": "se-source",
+        "contractRef": "레지스트리 코드측 주장 소스 대조(reader.py/scheduler.py/audit.py/erp.py)",
+        "surface": "source-review",
+        "invocation": "search + ast_grep 소스 직접 확인 (리더 + architect)",
+        "verdict": "passed",
+        "artifactRefs": ["g011-blocked-work-registry"]
+      },
+      {
+        "id": "se-regression",
+        "contractRef": "app.services + app.api 전체 회귀(pytest)",
+        "surface": "unit",
+        "invocation": "cd backend && .venv/Scripts/python.exe -m pytest -q",
+        "verdict": "passed",
+        "artifactRefs": ["g011-regression"]
+      }
+    ],
+    "adversarialCases": [
+      {
+        "id": "ac-coverage-6items",
+        "contractRef": "G011 objective 6항목",
+        "scenario": "objective가 명시한 6개 환경차단 항목 각각의 레지스트리 등록 여부",
+        "expectedBehavior": "6항목 모두 B-01~B-06으로 등록, 사유·해소조건 명시",
+        "verdict": "passed",
+        "artifactRefs": ["g011-blocked-work-registry"]
+      },
+      {
+        "id": "ac-precondition-b14-b15",
+        "contractRef": "G009/G010 architect 선행조건",
+        "scenario": "감사 생산자 훅(B-14)·레거시 sync deprecation(B-15) 등록 여부",
+        "expectedBehavior": "둘 다 §B G009 + §D에 등록, B-14는 net-new 구현 필요로 정정 표기",
+        "verdict": "passed",
+        "artifactRefs": ["g011-blocked-work-registry"]
+      },
+      {
+        "id": "ac-classify-phase-vs-human",
+        "contractRef": "분류 taxonomy",
+        "scenario": "Godot/LiveKit/실시간/스파이크를 human_blocked로 뭉뚱그리면 '단일 인적 조치 해소' 오인",
+        "expectedBehavior": "B-01~B-04는 phase_blocked, 인적 게이트(B-05/B-06/B-17/B-18)만 human_blocked",
+        "verdict": "passed",
+        "artifactRefs": ["g011-blocked-work-registry"]
+      },
+      {
+        "id": "ac-code-b05",
+        "contractRef": "backend/app/erp/reader.py:50-61",
+        "scenario": "ERP_DATABASE_URL 빈 문자열/설정 시 리더 선택",
+        "expectedBehavior": "빈 문자열(falsy)→MockErpReader, 설정→PostgresErpReader 자동전환 (레지스트리 B-05 주장 일치)",
+        "verdict": "passed",
+        "artifactRefs": ["g011-blocked-work-registry"]
+      },
+      {
+        "id": "ac-code-b16-b17",
+        "contractRef": "backend/app/services/scheduler.py",
+        "scenario": "build_scheduler 잡 등록·scheduler_enabled 기본·advisory_lock 백엔드 분기·안정키",
+        "expectedBehavior": "4잡 KST cron(18:00 평일/21:00/매시/00:00), scheduler_enabled=False 기본 미기동, advisory_lock Postgres만 실행/SQLite no-op, _stable_job_key crc32 (레지스트리 B-16/B-17 주장 일치)",
+        "verdict": "passed",
+        "artifactRefs": ["g011-blocked-work-registry"]
+      },
+      {
+        "id": "ac-code-b14",
+        "contractRef": "backend/app/api (도메인 라우터) + audit.py",
+        "scenario": "AuditLog 생산자 훅 존재 여부",
+        "expectedBehavior": "audit.py는 읽기 API만, seats/meetings/kpi/layouts 도메인 라우터에 db.add(AuditLog(...)) 훅 전무(생성은 테스트에서만) — D20 컨트롤 미작동, net-new 구현 필요 (레지스트리 B-14 주장 일치)",
+        "verdict": "passed",
+        "artifactRefs": ["g011-blocked-work-registry"]
+      },
+      {
+        "id": "ac-code-b15",
+        "contractRef": "backend/app/api/erp.py:171 + sync.py:69",
+        "scenario": "레거시 POST /erp/sync vs 신규 POST /sync/erp 공존",
+        "expectedBehavior": "레거시는 ErpSyncLog 미기록, 신규는 기록 → 모니터링 사각/이중 트리거 (레지스트리 B-15 주장 일치)",
+        "verdict": "passed",
+        "artifactRefs": ["g011-blocked-work-registry"]
+      },
+      {
+        "id": "ac-full-regression",
+        "contractRef": "전체 pytest",
+        "scenario": "문서 스토리 후 전체 회귀",
+        "expectedBehavior": "282 passed/28 skipped/0 failed (G010 베이스라인 유지, 무회귀)",
+        "verdict": "passed",
+        "artifactRefs": ["g011-regression"]
+      }
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "G011은 문서 산출물 스토리 — 코드 변경 없음. 레지스트리 B-14 라벨을 architect LOW-1(followup 과대표현→net-new 구현 필요)에 따라 정정. 문서 변경만 있으므로 전체 회귀 282 passed/28 skipped/0 failed(G010과 동일, 무회귀). ultragoal 11개 스토리 전부 완료 — 관리 API(G001~G010) 세 레인 CLEAR + 환경차단 durable 등록(G011) 완결. 실행 불가 잔여 작업(Godot/실시간/LiveKit·STT/스파이크/ERP 라이브 DB/도메인/감사 생산자 훅/레거시 sync)은 레지스트리에 human_blocked/phase_blocked/followup으로 durable 기록되어 라이브·후속 Phase에서 최소 변경으로 활성화 가능.",
+    "fullRerun": true,
+    "rerunCommands": ["cd backend && \"$(pwd)/.venv/Scripts/python.exe\" -m pytest -q -p no:cacheprovider"],
+    "blockers": []
+  }
+}

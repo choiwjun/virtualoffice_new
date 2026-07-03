@@ -530,7 +530,7 @@ def _validate_reachability(layout: dict[str, Any], result: ValidationResult) -> 
 
     # 스폰 셀 집합에서 BFS
     spawns = layout.get("spawn_points", []) or []
-    sources = [grid.cell(sp.get("coords", {})) for sp in spawns]
+    sources = [grid.coord_to_cell(sp.get("coords", {})) for sp in spawns]
     sources = [c for c in sources if c and grid.walkable(*c)]
     if not sources:
         result.warn(
@@ -752,7 +752,7 @@ class _CollisionGrid:
         grid._mark_room_walls(layout)
         return grid
 
-    def cell(self, coords: dict[str, Any]) -> Optional[tuple[int, int]]:
+    def coord_to_cell(self, coords: dict[str, Any]) -> Optional[tuple[int, int]]:
         if "x" not in coords or "y" not in coords:
             return None
         c = int((coords["x"] - self.min_x) / self.cell)
@@ -833,7 +833,7 @@ class _CollisionGrid:
         목표 좌표 셀 또는 인접 8셀 중 reachable에 포함된 셀 반환(없으면 None).
         좌석/문 중심이 벽 셀 위에 놓일 수 있어 이웃까지 허용한다.
         """
-        target = self.cell(coords)
+        target = self.coord_to_cell(coords)
         if target is None:
             return None
         tr, tc = target

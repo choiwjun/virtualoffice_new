@@ -1,0 +1,19 @@
+; Virtual Office - Godot 3D client project
+; Engine configuration; headless test target for GUT.
+
+config_version=5
+
+[application]
+
+config/name="VirtualOffice Client"
+config/features=PackedStringArray("4.4", "Forward Plus")
+run/main_scene=""
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
+
+[physics]
+
+3d/default_gravity=0.0
+common/physics_ticks_per_second=60

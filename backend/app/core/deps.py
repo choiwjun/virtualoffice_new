@@ -42,8 +42,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
     if sub is None or role is None:
         raise credentials_exc
 
+    try:
+        user_id = int(sub)
+    except (TypeError, ValueError):
+        raise credentials_exc
+
     return CurrentUser(
-        user_id=int(sub),
+        user_id=user_id,
         email=payload.get("email"),
         role=role,
         team_id=payload.get("team_id"),

@@ -72,3 +72,9 @@ temp/
 .claude/handoffs/
 .claude/analysis/
 .claude/docs/
+
+# ===== GJC — 세션 런타임 상태 (durable 기획물은 docs/planning/loop/ 에 미러) =====
+.gjc/
+
+# ===== Godot GUT 테스트 임시 산출물 =====
+godot/.gut-tmp/

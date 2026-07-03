@@ -1,0 +1,5 @@
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MiIsInJvbGUiOiJlbXBsb3llZSIsImV4cCI6MTc4MzE1MzMyNH0.TjwJ8OI7QiBr59hytOAEBUNirWcMya2Ux0KS6qj6ByA",
+  "secret": "dev-only-secret-CHANGE-IN-PRODUCTION",
+  "algorithm": "HS256"
+}

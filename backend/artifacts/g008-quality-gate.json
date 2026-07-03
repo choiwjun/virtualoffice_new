@@ -1,0 +1,65 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "architect 재리뷰(8-G008KpiReReview) 세 레인 CLEAR+APPROVE, blockers=[]. 1차(6-G008KpiArchReview) APPROVE·blockers=[]이나 architecture/product WATCH → MEDIUM/LOW 정정: (1) confirm 확정관리자 기록+SUBMITTED confirm 409(재검토→확정 강제, D15)+REVIEWING→RESOLVED 종결, (2) adjust 확정후 409+음수 점수 400, (3) aggregate minutes 반개구간, (4) collaboration_score 15%축 completed·ontime 블렌드(08-kpi-logic §1.2). 재리뷰 세 레인 CLEAR. 잔여 LOW(objection 403 vs 조회 404 존재노출=의도·테스트됨, _kpi_result_out float 직렬화=감사 미세손실, aggregate 라텐트 경로=G010 배선 시 경계테스트 권장)는 비blocker.",
+    "commands": ["task architect 6-G008KpiArchReview (APPROVE, architecture/product WATCH)", "task architect 8-G008KpiReReview (APPROVE, 세 레인 CLEAR)"],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "KPI 계약 TestKPIResultAPI 11개 활성·통과 + 1 skip(#8 quarterly_aggregation=배치 스케줄러 G010/D17) + 레드팀 27개(취약점 0, confirm-on-submitted 409·adjust-after-finalized 409·음수 점수 400 포함). 전체 회귀 234 passed/33 skipped/0 failed(196→234, 회귀 없음). 결정론 점수(D14-e, compute_kpi_metrics 순수함수 동일입력→동일출력, collaboration_score 30/25/20/15/10 completed·ontime 블렌드, attendance/presence 미반영 D14-d), 이의신청 상태머신(none→submitted→reviewing→resolved, 재검토→확정 강제, 7일 유예 410, 중복 409, 본인만), 관리자 조정/확정(final_score=admin_adjusted_score??value, 확정관리자 감사기록, 확정후 조정 차단, 멱등), RBAC(employee 본인/leader 팀/admin 전체, adjust·confirm·aggregate admin 전용). 구현은 executor 위임, 리더가 전체 회귀+architect 게이트 소유.",
+    "e2eCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/contract/test_management_api_stubs.py::TestKPIResultAPI -q"],
+    "redTeamCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/redteam/test_kpi_redteam.py -q"],
+    "artifactRefs": [
+      {"id": "g008-kpi", "kind": "api-package-test-report", "path": "backend/artifacts/g008-kpi.xml", "description": "KPI 계약 11 passed + 1 skipped JUnit"},
+      {"id": "g008-kpi-redteam", "kind": "black-box-api-receipt", "path": "backend/artifacts/g008-kpi-redteam.xml", "description": "27 적대 케이스 JUnit(취약점 0)"}
+    ],
+    "contractCoverage": [
+      {"id": "cc-kpi-list", "contractRef": "management-api.yaml#/kpi-results (GET)", "obligation": "목록 200{kpi_results}, period(YYYY-Q#|YYYY-MM-DD) 필터, RBAC(employee 본인/leader 팀/admin 전체)", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-list-rbac-employee", "ac-list-rbac-leader", "ac-list-rbac-admin"]},
+      {"id": "cc-kpi-detail", "contractRef": "management-api.yaml#/kpi-results/{id} (GET)", "obligation": "상세 200{metric,ai_draft,admin_adjusted_score,objection_status,final_score}, 비소유자 404(존재 미노출), 비UUID 404", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-detail-nonowner-404", "ac-malformed-404"]},
+      {"id": "cc-kpi-adjust", "contractRef": "management-api.yaml#/kpi-results/{id}/adjust (PUT)", "obligation": "관리자 조정 200{admin_adjusted_score,admin_note,admin_user_id}, 비admin 403, submitted→reviewing 전이", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-adjust-nonadmin-403", "ac-adjust-final-score"]},
+      {"id": "cc-kpi-confirm", "contractRef": "management-api.yaml#/kpi-results/{id}/confirm (POST)", "obligation": "확정 200 final_score=admin_adjusted_score??value + finalized_at, 멱등, 미해결 이의 resolved 종결, 비admin 403", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-confirm-nonadmin-403", "ac-confirm-idempotent", "ac-confirm-resolves-objection"]},
+      {"id": "cc-kpi-objection", "contractRef": "management-api.yaml#/kpi-results/{id}/objections (POST) + D15 상태머신", "obligation": "제출 201(none→submitted), 본인만(403), 중복 409, 7일 유예 초과 410, 상태 역행 금지", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-objection-nonowner-403", "ac-objection-dup-409", "ac-objection-grace-410", "ac-objection-grace-boundary-201", "ac-objection-workflow"]},
+      {"id": "cc-kpi-ai-draft", "contractRef": "management-api.yaml#/kpi-results/{id}/ai-draft (GET)", "obligation": "AI 초안 조회 200|404 (정량 점수 미포함, D14-e 서술만)", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-malformed-404"]},
+      {"id": "cc-kpi-metrics", "contractRef": "management-api.yaml#/kpi/metrics (GET)", "obligation": "메트릭 어휘사전 8개 반환 200", "status": "covered", "surfaceEvidenceRefs": ["se-api"], "adversarialCaseRefs": ["ac-unauth-401"]},
+      {"id": "cc-kpi-scoring", "contractRef": "00-decisions.md#D14-e + 08-kpi-logic.md §2.1-2.2", "obligation": "결정론 점수(동일 입력 동일 출력, ROUND_HALF_UP 소수1자리, 30/25/20/15/10 가중합), attendance/presence 미반영(D14-d)", "status": "covered", "surfaceEvidenceRefs": ["se-scoring"], "adversarialCaseRefs": ["ac-deterministic", "ac-no-double-counting"]}
+    ],
+    "surfaceEvidence": [
+      {"id": "se-api", "contractRef": "FastAPI /kpi-results*, /kpi/* (httpx AsyncClient black-box)", "surface": "api", "invocation": "pytest TestKPIResultAPI + tests/redteam/test_kpi_redteam.py", "verdict": "passed", "artifactRefs": ["g008-kpi", "g008-kpi-redteam"]},
+      {"id": "se-scoring", "contractRef": "app.services.kpi_scoring.compute_kpi_metrics (D14-e 결정론)", "surface": "unit", "invocation": "pytest TestKPIResultAPI::test_kpi_deterministic_calculation + test_kpi_double_counting_prevention", "verdict": "passed", "artifactRefs": ["g008-kpi"]}
+    ],
+    "adversarialCases": [
+      {"id": "ac-list-rbac-employee", "contractRef": "GET /kpi-results", "scenario": "employee 목록(타인 KPI 존재)", "expectedBehavior": "본인 KPI만", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-list-rbac-leader", "contractRef": "GET /kpi-results", "scenario": "leader 팀外 KPI 조회", "expectedBehavior": "404/팀 스코프", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-list-rbac-admin", "contractRef": "GET /kpi-results", "scenario": "admin 전체 조회", "expectedBehavior": "200 전체", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-detail-nonowner-404", "contractRef": "GET /kpi-results/{id}", "scenario": "비소유자 employee 조회", "expectedBehavior": "404 (존재 미노출)", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-malformed-404", "contractRef": "GET/PUT/POST /kpi-results/{id}*", "scenario": "비UUID id", "expectedBehavior": "404 (422 아님)", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-adjust-nonadmin-403", "contractRef": "PUT /kpi-results/{id}/adjust", "scenario": "비admin 조정", "expectedBehavior": "403", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-adjust-final-score", "contractRef": "PUT adjust + POST confirm", "scenario": "admin_adjusted_score 후 확정", "expectedBehavior": "final_score=admin_adjusted_score(미조정시 value)", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-confirm-nonadmin-403", "contractRef": "POST /kpi-results/{id}/confirm", "scenario": "비admin 확정", "expectedBehavior": "403", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-confirm-idempotent", "contractRef": "POST /kpi-results/{id}/confirm", "scenario": "확정된 결과 재확정", "expectedBehavior": "200 멱등(값 불변)", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-confirm-resolves-objection", "contractRef": "POST /kpi-results/{id}/confirm", "scenario": "미해결 이의 상태에서 확정", "expectedBehavior": "objection_status=resolved 종결", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-objection-nonowner-403", "contractRef": "POST /kpi-results/{id}/objections", "scenario": "비소유자 제출", "expectedBehavior": "403 not_owner", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-objection-dup-409", "contractRef": "POST /kpi-results/{id}/objections", "scenario": "이미 제출된 상태 재제출", "expectedBehavior": "409 objection_already_submitted", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-objection-grace-410", "contractRef": "POST /kpi-results/{id}/objections", "scenario": "공개(created_at) 후 7일 초과 제출", "expectedBehavior": "410 objection_grace_period_expired", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-objection-grace-boundary-201", "contractRef": "POST /kpi-results/{id}/objections", "scenario": "6일23시간(유예 내) 제출", "expectedBehavior": "201", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-objection-workflow", "contractRef": "objections+adjust+confirm", "scenario": "none→submitted→reviewing→resolved 전이", "expectedBehavior": "상태머신 정상, 역행 금지", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-unauth-401", "contractRef": "GET /kpi/metrics 등", "scenario": "미인증 접근", "expectedBehavior": "401", "verdict": "passed", "artifactRefs": ["g008-kpi-redteam"]},
+      {"id": "ac-deterministic", "contractRef": "compute_kpi_metrics", "scenario": "동일 입력 2회 계산", "expectedBehavior": "동일 출력(결정론)", "verdict": "passed", "artifactRefs": ["g008-kpi"]},
+      {"id": "ac-no-double-counting", "contractRef": "compute_kpi_metrics", "scenario": "attendance/presence 반영 여부", "expectedBehavior": "파라미터 부재로 미반영(D14-d)", "verdict": "passed", "artifactRefs": ["g008-kpi"]}
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "kpi_scoring 서비스 + kpi 라우터 + main 등록 후 전체 231 passed/33 skipped/0 실패. 계약 스텁의 aspirational 7상태·고정 id·ERP 자동push 가정을 모델 정본(4상태) 정합으로 rigorous 재작성. #8 quarterly_aggregation은 배치 스케줄러(G010/D17)로 skip 유지, POST /kpi/aggregate는 202 스텁(배치 미구현 명시). published_at 부재로 유예기간 기준은 created_at 대용(향후 published_at 마이그레이션은 스토리 범위 밖).",
+    "fullRerun": true,
+    "rerunCommands": ["cd backend && .venv/Scripts/python.exe -m pytest -q"],
+    "blockers": []
+  }
+}

@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3]
+
+[sub_resource type="BoxShape3D" id="floor_1"]
+size = Vector3(100, 0.2, 100)
+
+[sub_resource type="BoxShape3D" id="wall_1"]
+size = Vector3(0.4, 3, 20)
+
+[node name="OfficeTestMap" type="Node3D"]
+
+[node name="Floor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, -0.1, 50)
+
+[node name="FloorShape" type="CollisionShape3D" parent="Floor"]
+shape = SubResource("floor_1")
+
+[node name="WallWest" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 50)
+
+[node name="WallWestShape" type="CollisionShape3D" parent="WallWest"]
+shape = SubResource("wall_1")

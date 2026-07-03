@@ -1,0 +1,46 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "architect(10-RGCLiveKitReview) 세 레인 CLEAR+APPROVE, blockers=none. 검증: (1) 하위호환 — LiveKit 미설정 시 issue_join_token이 기존 stub과 동일 토큰({sub,room,video:'join'}, room_name=meeting-{id}) 반환, join 409/상태전이/participant/room_name 결정성 불변, 계약/통합/레드팀 무회귀; (2) 실토큰 — livekit_enabled(key+secret) 시 실 LiveKit AccessToken(VideoGrants room_join, iss=api_key, sub=identity, TTL 6h), 부분설정(key만)→stub fallback(반쪽 실토큰 방지); (3) 레이어링 — 지연 임포트 + 단일 진입점; (4) compose — livekit/coturn opt-in profile로 기본 스택(db+backend) 불오염(B-16 검증 기본 기동 불변); (5) 스코프 정직 — 실 서버 룸/화상/STT는 B-03 환경차단 일관 표기, 테스트 비토톨로지. MEDIUM(join 응답 livekit_url 미포함 + OpenAPI 드리프트) + LOW(backend/.env.example)는 리뷰 후 반영: join 응답에 livekit_url 추가, management-api.yaml join 200에 room_name 동기화, backend/.env.example LIVEKIT_* 추가, 통합 테스트에 livekit_url 필드 검증. 재검증 341 passed.",
+    "commands": ["task architect 10-RGCLiveKitReview (APPROVE, 세 레인 CLEAR)"],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "회의 입장 토큰을 FastAPI 자체 JWT stub에서 조건부 실 LiveKit AccessToken으로 승격(app/services/livekit_service.issue_join_token 단일 진입점). livekit-api SDK, config livekit_* + livekit_enabled(key+secret 둘 다), meetings.join 배선, docker-compose livekit/coturn opt-in profile + backend LIVEKIT_* env, .env.example/backend .env.example/onprem §3.5 문서. 전용 테스트 tests/services/test_livekit_service.py 3건(실토큰 grant decode/stub fallback/key-only→stub) + 회의 계약 8 + 레드팀 20 + 통합 1 무회귀. 전체 회귀 341 passed/25 skipped/0 failed(338→341). compose 유효성: docker compose config VALID(기본=db,backend / --profile livekit=+livekit,coturn). 실 LiveKit 서버 룸/화상/Egress/STT/AI는 서버·엔진 부재로 범위 밖(B-03 환경차단).",
+    "e2eCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/services/test_livekit_service.py tests/contract/test_management_api_stubs.py::TestMeetingAPI tests/contract/test_management_api_stubs.py::TestIntegrationAPIFlow -q"],
+    "redTeamCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/services/test_livekit_service.py tests/redteam/test_meetings_redteam.py -q"],
+    "artifactRefs": [
+      {"id": "rgC-livekit-redteam", "kind": "black-box-api-receipt", "path": "backend/artifacts/rgC-livekit-redteam.xml", "description": "LiveKit 토큰 서비스 + 회의 계약/레드팀/통합 32 passed JUnit"},
+      {"id": "rgC-livekit-regression", "kind": "api-package-test-report", "path": "backend/artifacts/rgC-livekit-regression.xml", "description": "전체 회귀 JUnit — 341 passed/25 skipped/0 failed"}
+    ],
+    "contractCoverage": [
+      {"id": "cc-livekit-token", "contractRef": "00-decisions D24 (LiveKit 토큰 FastAPI 경유) + livekit_service.issue_join_token", "obligation": "LiveKit 설정 시 실 LiveKit AccessToken(room_join grant, iss=api_key, sub=identity, room, TTL), 미설정/부분설정 시 결정적 stub 토큰(하위호환)", "status": "covered", "surfaceEvidenceRefs": ["se-token"], "adversarialCaseRefs": ["ac-real-token", "ac-stub-fallback", "ac-partial-config"]},
+      {"id": "cc-join-nonregression", "contractRef": "management-api.yaml POST /meetings/{id}/join (D24)", "obligation": "join 200 {livekit_token, room_name=meeting-{id}, livekit_url}, CANCELLED/COMPLETED 409, SCHEDULED→IN_PROGRESS 전이·participant upsert 불변", "status": "covered", "surfaceEvidenceRefs": ["se-join"], "adversarialCaseRefs": ["ac-join-contract"]},
+      {"id": "cc-compose-scaffold", "contractRef": "docker-compose.yml livekit/coturn opt-in profile 배포 스캐폴드", "status": "not_applicable", "reason": "compose profile 스캐폴드는 docker compose config로 구문/서비스 격리 검증(기본=db,backend / profile=+livekit,coturn) — 실 LiveKit 서버 부팅/화상은 B-03 환경차단이라 자동화 테스트 표면 아님. 런타임 e2e 없이 config 유효성만 리더 확인."}
+    ],
+    "surfaceEvidence": [
+      {"id": "se-token", "contractRef": "app.services.livekit_service.issue_join_token (실토큰/stub JWT 디코드 단위)", "surface": "package", "invocation": "pytest tests/services/test_livekit_service.py", "verdict": "passed", "artifactRefs": ["rgC-livekit-redteam"]},
+      {"id": "se-join", "contractRef": "FastAPI POST /meetings/{id}/join (httpx AsyncClient black-box)", "surface": "api", "invocation": "pytest TestMeetingAPI + test_meetings_redteam + TestIntegrationAPIFlow", "verdict": "passed", "artifactRefs": ["rgC-livekit-redteam"]}
+    ],
+    "adversarialCases": [
+      {"id": "ac-real-token", "contractRef": "issue_join_token (livekit_enabled)", "scenario": "key+secret 설정 후 토큰 발급", "expectedBehavior": "실 LiveKit AccessToken — 디코드 iss=api_key, sub=identity, video.roomJoin=true, room=대상", "verdict": "passed", "artifactRefs": ["rgC-livekit-redteam"]},
+      {"id": "ac-stub-fallback", "contractRef": "issue_join_token (미설정)", "scenario": "LiveKit 미설정(기본)", "expectedBehavior": "기존 stub 토큰 형식({sub,room,video:'join'}) 유지 — 하위호환", "verdict": "passed", "artifactRefs": ["rgC-livekit-redteam"]},
+      {"id": "ac-partial-config", "contractRef": "settings.livekit_enabled", "scenario": "key만 있고 secret 없음", "expectedBehavior": "livekit_enabled=False → stub fallback(반쪽 실토큰 방지)", "verdict": "passed", "artifactRefs": ["rgC-livekit-redteam"]},
+      {"id": "ac-join-contract", "contractRef": "POST /meetings/{id}/join", "scenario": "정상 입장 + CANCELLED/COMPLETED 입장", "expectedBehavior": "200 {livekit_token, room_name=meeting-{id}, livekit_url}; CANCELLED/COMPLETED 409(토큰 미발급); 상태전이/participant 불변", "verdict": "passed", "artifactRefs": ["rgC-livekit-redteam"]}
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "AI SLOP CLEANUP REPORT (읽기 전용, 변경: livekit_service.py 신규, config.py livekit 설정, meetings.py join 배선+livekit_url, requirements/compose/.env.example×2/onprem §3.5/management-api.yaml/registry, 신규 테스트): BLOCKING 0. stub fallback은 명시적 게이트(livekit_enabled) 기반 정의된 계약(마스킹 아님), 지연 임포트·단일 진입점, compose opt-in profile로 기본 스택 불오염. config/.env.example 편집 중 발생한 앵커 중복 라인 2건 즉시 제거. architect MEDIUM(livekit_url)/LOW(backend/.env) 반영. 전체 회귀 341 passed/25 skipped/0 failed(fullRerun). architect 세 레인 CLEAR+APPROVE. 실 LiveKit 서버 룸/화상/STT는 B-03 환경차단 유지(과장 없음).",
+    "fullRerun": true,
+    "rerunCommands": ["cd backend && .venv/Scripts/python.exe -m pytest -q -p no:cacheprovider"],
+    "blockers": []
+  }
+}

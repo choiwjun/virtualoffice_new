@@ -1,7 +1,7 @@
 """
 Alembic 마이그레이션 검증 (SQLite 파일 DB 대상).
 
-- upgrade head → 20개 테이블 + alembic_version 생성
+- upgrade head → 22개 테이블 + alembic_version 생성
 - downgrade base → 전부 제거
 운영(PostgreSQL)과 방언은 다르지만 리비전 체인·env.py 배선이 실제로
 동작하는지를 보장한다. (env.py가 asyncio.run을 쓰므로 sync 테스트여야 함.)
@@ -39,10 +39,10 @@ def test_upgrade_head_creates_all_tables(tmp_path, monkeypatch):
 
     tables = _table_names(db_path)
     assert "alembic_version" in tables
-    # 대표 테이블 표본 + 총수 (20 모델 + alembic_version)
+    # 대표 테이블 표본 + 총수 (22 모델 + alembic_version)
     for expected in ("erp_user", "kpi_result", "office_layout", "presence", "meeting"):
         assert expected in tables, f"missing: {expected}"
-    assert len(tables) == 21
+    assert len(tables) == 23
 
 
 def test_downgrade_base_drops_all_tables(tmp_path, monkeypatch):

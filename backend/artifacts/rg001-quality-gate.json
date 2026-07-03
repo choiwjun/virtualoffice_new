@@ -1,0 +1,43 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "architect(3-RG001MigrationReview) 세 레인 CLEAR+APPROVE, blockers=none. '삭제가 아닌 수정' 판단 타당 확인 — 루트 migrations 트리는 다중 정본(backend/alembic.ini:2, contract.md §2.2/§5.1/§6.2, 12-tasks P0-T0.4, 03-erp-integration §5, onprem-docker.md)에서 명시된 의도된 ERP dev 브랜치 산출물이라 삭제 시 실 deliverable 파괴. user_id FK 정정(sa.ForeignKey('users.id') 위치인자)은 SQLAlchemy 관례상 정확·SyntaxError 근본 해소. 생성 스키마(10컬럼+UNIQUE(company_id,user_id,period_type,period_key,metric)+인덱스3+FK→users)가 contract §2.2/§5.1·D16 롱포맷 완전 정합. FK 타깃 users(ERP 원본)는 우리 단수 모델의 erp_user FK와 대비되는 올바른 저장소별 구분. README가 복수(ERP)/단수(우리) 테이블 경계 명확화. LOW/INFO만(단일인덱스 중복 무해, down_revision ERP핸드오프 caveat 이미 문서화, company_id FK 선택) blocker 없음.",
+    "commands": ["task architect 3-RG001MigrationReview (APPROVE, 세 레인 CLEAR)"],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "ERP dev 브랜치 마이그레이션(migrations/alembic/versions/0001_kpi_results_table.py)의 SyntaxError(키워드 뒤 위치인자 + Column에 ForeignKeyConstraint 오용) 수정 후, 신규 회귀 가드 backend/tests/test_erp_branch_migration.py 4건으로 검증: (a) 파일 존재, (b) importlib 로드 시 SyntaxError 부재(revision=0001_kpi_results), (c) upgrade()가 contract §2.2/§5.1 정합 kpi_results 스키마 생성(필수 10컬럼·UNIQUE·FK→users), (d) downgrade() 정상 드롭. 인메모리 SQLite로 실제 DDL 실행 검증. 전체 회귀 302 passed/28 skipped/0 failed(298→302, 회귀 없음). 루트 트리는 우리 백엔드 alembic/부팅/테스트와 완전 격리(env.py/alembic.ini 부재). 파괴적 변경 없음(삭제 대신 수정), README로 재오진/오삭제 영구 방지.",
+    "e2eCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/test_erp_branch_migration.py -q"],
+    "redTeamCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/test_erp_branch_migration.py -q --junitxml=artifacts/rg001-erp-migration.xml"],
+    "artifactRefs": [
+      {"id": "rg001-erp-migration", "kind": "api-package-test-report", "path": "backend/artifacts/rg001-erp-migration.xml", "description": "ERP kpi_results 마이그레이션 가드 4 passed JUnit(구문·계약 스키마·downgrade)"},
+      {"id": "rg001-regression", "kind": "api-package-test-report", "path": "backend/artifacts/rg001-regression.xml", "description": "전체 회귀 JUnit — 302 passed/28 skipped/0 failed"}
+    ],
+    "contractCoverage": [
+      {"id": "cc-erp-kpi-schema", "contractRef": "docs/erp-integration/contract.md §2.2/§5.1 + 00-decisions.md D16", "obligation": "ERP dev 브랜치 마이그레이션이 kpi_results 스칼라 테이블(D16 롱포맷: period_type+period_key, metric VARCHAR+value FLOAT, source)을 UNIQUE(company_id,user_id,period_type,period_key,metric) + user_id FK(users) 로 생성하고 downgrade로 롤백. 파일은 구문 유효해야 한다.", "status": "covered", "surfaceEvidenceRefs": ["se-migration"], "adversarialCaseRefs": ["ac-syntax-error", "ac-schema-contract-drift", "ac-downgrade-orphan"]},
+      {"id": "cc-boundary", "contractRef": "backend/alembic.ini:2 + migrations/README.md (트리 격리)", "obligation": "루트 migrations 트리(ERP kpi_results 복수)는 우리 백엔드 alembic·부팅·테스트와 격리되어야 하고, 우리 단수 kpi_result 모델과 혼동되지 않아야 한다", "status": "covered", "surfaceEvidenceRefs": ["se-migration"], "adversarialCaseRefs": ["ac-schema-contract-drift"]}
+    ],
+    "surfaceEvidence": [
+      {"id": "se-migration", "contractRef": "ERP kpi_results Alembic 마이그레이션 (importlib 로드 + 인메모리 SQLite upgrade/downgrade)", "surface": "package", "invocation": "pytest tests/test_erp_branch_migration.py", "verdict": "passed", "artifactRefs": ["rg001-erp-migration"]}
+    ],
+    "adversarialCases": [
+      {"id": "ac-syntax-error", "contractRef": "migrations/alembic/versions/0001_kpi_results_table.py", "scenario": "마이그레이션 파일 구문 오류(키워드 뒤 위치인자 등)로 import 실패", "expectedBehavior": "importlib 로드 성공, revision='0001_kpi_results', upgrade/downgrade 존재", "verdict": "passed", "artifactRefs": ["rg001-erp-migration"]},
+      {"id": "ac-schema-contract-drift", "contractRef": "contract.md §2.2/§5.1", "scenario": "upgrade가 계약 필수 컬럼/UNIQUE를 누락(스키마 드리프트)", "expectedBehavior": "필수 10컬럼 + UNIQUE(company_id,user_id,period_type,period_key,metric) + FK(user_id→users) 모두 생성", "verdict": "passed", "artifactRefs": ["rg001-erp-migration"]},
+      {"id": "ac-downgrade-orphan", "contractRef": "migration downgrade()", "scenario": "downgrade 후 kpi_results 테이블 잔존(고아)", "expectedBehavior": "downgrade가 kpi_results 완전 드롭", "verdict": "passed", "artifactRefs": ["rg001-erp-migration"]}
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "AI SLOP CLEANUP REPORT (읽기 전용 스윕, 변경 파일: migrations/alembic/versions/0001_kpi_results_table.py 수정, migrations/README.md 신규, backend/tests/test_erp_branch_migration.py 신규): BLOCKING 0건. 근거 — 마이그레이션 수정은 근본 원인(컬럼레벨 FK=sa.ForeignKey 관례) 해소로 폴백/우회/마스킹 없음, README는 사실 기반 문서, 가드 테스트는 실제 DDL 실행 단언(토톨로지 없음). ADVISORY 0건. 수정+가드+문서 후 전체 회귀 302 passed/28 skipped/0 failed(fullRerun). architect 세 레인 CLEAR+APPROVE. 삭제가 아닌 수정으로 spec deliverable(P0-T0.4) 보존.",
+    "fullRerun": true,
+    "rerunCommands": ["cd backend && .venv/Scripts/python.exe -m pytest -q -p no:cacheprovider"],
+    "blockers": []
+  }
+}

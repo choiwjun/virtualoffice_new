@@ -14,7 +14,7 @@ from datetime import date, datetime, timezone
 from sqlalchemy import select, update
 
 from app.erp.reader import ErpReader
-from app.models.tables import ErpRole, ErpUser
+from app.models.tables import AuditLog, ErpRole, ErpUser
 
 _VALID_ROLES = {r.value for r in ErpRole}
 
@@ -95,6 +95,19 @@ class ErpSyncService:
                 .where(ErpUser.id.in_(stale_ids))
                 .values(is_active=False, last_synced_at=now)
             )
+            # D18/contract §1.3: 하드삭제 감지 soft-delete는 감사 추적(actor=시스템 배치).
+            # AuditLog는 stage-only(commit은 호출자=scheduler/sync 엔드포인트가 수행) — soft-delete와 원자적.
+            for uid in stale_ids:
+                self.session.add(
+                    AuditLog(
+                        user_id=None,
+                        action="erp_user_soft_deleted",
+                        entity_type="erp_user",
+                        entity_id=str(uid),
+                        old_value={"is_active": True},
+                        new_value={"is_active": False},
+                    )
+                )
             result.deactivated = len(stale_ids)
 
         await self.session.flush()

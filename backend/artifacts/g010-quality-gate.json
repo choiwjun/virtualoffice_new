@@ -1,0 +1,53 @@
+{
+  "architectReview": {
+    "architectureStatus": "CLEAR",
+    "productStatus": "CLEAR",
+    "codeStatus": "CLEAR",
+    "recommendation": "APPROVE",
+    "evidence": "architect 재리뷰(16-G010ReReview) 세 레인 CLEAR+APPROVE, blockers=[]. 1차(14-G010ArchReview) COMMENT(architecture CLEAR, product/code WATCH) → 정정: (1) 로그인 타이밍 계정열거 해소(miss 경로 더미 verify_password로 bcrypt 평준화), (2) D17 주말 스킵 daily_reports_push day_of_week=mon-fri(공휴일 캘린더 G011 이연), (3) advisory_lock 안정 키 _stable_job_key(crc32) 결정론, (4) KST 업무일 산출(ZoneInfo Asia/Seoul), (5) Caddyfile 예시 비-erp strip 정정. 재리뷰 세 레인 CLEAR. 잔여 LOW(daily_status_push UNIQUE 방어선, kpi JSONB null Postgres 검증, 실 cron 발화·PG advisory 다중인스턴스·공휴일 캘린더·Docker 재시작 지속성)는 비blocker → G011 durable blocker 등록.",
+    "commands": ["task architect 14-G010ArchReview (COMMENT, product/code WATCH)", "task architect 16-G010ReReview (APPROVE, 세 레인 CLEAR)"],
+    "blockers": []
+  },
+  "executorQa": {
+    "status": "passed",
+    "e2eStatus": "passed",
+    "redTeamStatus": "passed",
+    "evidence": "계약 스텁 없는 스토리 → 전용 테스트가 수용 기준. 계정잠금 레드팀 7 + 스케줄러 단위 15 통과. 전체 회귀 282 passed/28 skipped/0 failed(259→282, 회귀 없음, APScheduler venv 설치). 보안(C2): login rate-limit + 계정잠금(auth_credential.failed_attempts/locked_until, 임계5/윈도우15분, 423 account_locked, 계정 존재 비노출·miss 경로 더미 verify 타이밍 평준화, 성공 리셋). 배치(D17): scheduler.py 잡 4종(daily_reports_push=평일 mon-fri/kpi_ai_draft_generation/erp_incremental_sync/erp_full_reconciliation) 멱등 + advisory_lock(_stable_job_key crc32, pg만 실행/그외 no-op) + build_scheduler(AsyncIOScheduler tz=Asia/Seoul, cron 18:00/21:00/매시/00:00, 기본 미기동 scheduler_enabled=False) + KST 업무일 산출. 라이브 cron 발화·PG advisory 다중인스턴스·공휴일 캘린더·실 ERP push·상시실행은 환경차단 → G011 등록. 구현 executor 위임, 리더 검증.",
+    "e2eCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/redteam/test_auth_lockout_redteam.py tests/contract/test_management_api_stubs.py::TestAuthAPI -q"],
+    "redTeamCommands": ["cd backend && .venv/Scripts/python.exe -m pytest tests/redteam/test_auth_lockout_redteam.py tests/services/test_scheduler.py -q"],
+    "artifactRefs": [
+      {"id": "g010-auth-lockout-redteam", "kind": "black-box-api-receipt", "path": "backend/artifacts/g010-auth-lockout-redteam.xml", "description": "계정잠금/rate-limit 적대 7 passed JUnit(취약점 0)"},
+      {"id": "g010-scheduler", "kind": "api-package-test-report", "path": "backend/artifacts/g010-scheduler.xml", "description": "배치 스케줄러 단위 15 passed JUnit(잡 멱등·평일트리거·안정키·KST·미기동)"},
+      {"id": "g010-deploy-doc", "kind": "artifact", "path": "docs/deployment/onprem-docker.md", "description": "온프렘 배포 문서 §3.4 — Caddy /api 매핑 + 배치 스케줄러 운영표(D21-r/D17)"}
+    ],
+    "contractCoverage": [
+      {"id": "cc-login-lockout", "contractRef": "00-decisions.md#C2 (brute-force 방어)", "obligation": "로그인 실패 임계(5) 도달 시 계정잠금(15분, 423 account_locked), 잠금 중 정답 비번도 차단, 성공 시 카운터 리셋, 계정 존재 비노출(미존재 항상 401)", "status": "covered", "surfaceEvidenceRefs": ["se-auth"], "adversarialCaseRefs": ["ac-lockout-threshold", "ac-lockout-blocks-correct-pw", "ac-lockout-reset", "ac-lockout-no-enum", "ac-lockout-window"]},
+      {"id": "cc-scheduler-jobs", "contractRef": "00-decisions.md#D17 (배치 멱등 upsert)", "obligation": "daily_reports_push/kpi_ai_draft_generation 멱등(중복 생성 없음), erp 증분/전체대사(sync_users 재사용 soft-delete), advisory_lock(pg만 실행/그외 no-op 예외 재전파)", "status": "covered", "surfaceEvidenceRefs": ["se-scheduler"], "adversarialCaseRefs": ["ac-job-idempotent", "ac-advisory-noop"]},
+      {"id": "cc-scheduler-registration", "contractRef": "00-decisions.md#D17 (배치 스케줄)", "obligation": "build_scheduler 4잡 cron(18:00/21:00/매시/00:00 KST) 등록, timezone=Asia/Seoul, scheduler_enabled=False 기본 미기동", "status": "covered", "surfaceEvidenceRefs": ["se-scheduler"], "adversarialCaseRefs": ["ac-scheduler-triggers", "ac-scheduler-disabled-default"]}
+    ],
+    "surfaceEvidence": [
+      {"id": "se-auth", "contractRef": "FastAPI /auth/login 계정잠금 (httpx AsyncClient black-box)", "surface": "api", "invocation": "pytest test_auth_lockout_redteam + TestAuthAPI", "verdict": "passed", "artifactRefs": ["g010-auth-lockout-redteam"]},
+      {"id": "se-scheduler", "contractRef": "app.services.scheduler 잡 로직·등록 (단위)", "surface": "unit", "invocation": "pytest tests/services/test_scheduler.py", "verdict": "passed", "artifactRefs": ["g010-scheduler"]},
+      {"id": "se-doc", "contractRef": "docs/deployment/onprem-docker.md §3.4 (문서 검토)", "surface": "doc", "invocation": "manual review", "verdict": "passed", "artifactRefs": ["g010-deploy-doc"]}
+    ],
+    "adversarialCases": [
+      {"id": "ac-lockout-threshold", "contractRef": "POST /auth/login", "scenario": "연속 5회 실패 후 6회째", "expectedBehavior": "423 account_locked", "verdict": "passed", "artifactRefs": ["g010-auth-lockout-redteam"]},
+      {"id": "ac-lockout-blocks-correct-pw", "contractRef": "POST /auth/login", "scenario": "잠금 중 올바른 비밀번호", "expectedBehavior": "423(비번검증 전 차단)", "verdict": "passed", "artifactRefs": ["g010-auth-lockout-redteam"]},
+      {"id": "ac-lockout-reset", "contractRef": "POST /auth/login", "scenario": "실패 후 성공 로그인", "expectedBehavior": "failed_attempts 리셋, 재잠금 가능", "verdict": "passed", "artifactRefs": ["g010-auth-lockout-redteam"]},
+      {"id": "ac-lockout-no-enum", "contractRef": "POST /auth/login", "scenario": "미존재 계정 반복 실패", "expectedBehavior": "항상 401(잠금 카운터 비노출)", "verdict": "passed", "artifactRefs": ["g010-auth-lockout-redteam"]},
+      {"id": "ac-lockout-window", "contractRef": "POST /auth/login", "scenario": "잠금 윈도우 만료 전/후", "expectedBehavior": "만료 전 423, 만료 후 재시도 가능", "verdict": "passed", "artifactRefs": ["g010-auth-lockout-redteam"]},
+      {"id": "ac-job-idempotent", "contractRef": "scheduler daily_reports_push/kpi_ai_draft_generation", "scenario": "2회 호출", "expectedBehavior": "중복 생성/재기입 없음(멱등)", "verdict": "passed", "artifactRefs": ["g010-scheduler"]},
+      {"id": "ac-advisory-noop", "contractRef": "scheduler advisory_lock", "scenario": "SQLite에서 락 획득", "expectedBehavior": "no-op 통과, 본문 예외 재전파", "verdict": "passed", "artifactRefs": ["g010-scheduler"]},
+      {"id": "ac-scheduler-triggers", "contractRef": "scheduler build_scheduler", "scenario": "잡 등록 트리거 검사", "expectedBehavior": "4잡 cron 18:00/21:00/매시/00:00, tz=Asia/Seoul", "verdict": "passed", "artifactRefs": ["g010-scheduler"]},
+      {"id": "ac-scheduler-disabled-default", "contractRef": "main lifespan", "scenario": "scheduler_enabled 기본 False", "expectedBehavior": "스케줄러 미기동", "verdict": "passed", "artifactRefs": ["g010-scheduler"]}
+    ],
+    "blockers": []
+  },
+  "iteration": {
+    "status": "passed",
+    "evidence": "보안 하드닝 + 스케줄러 스캐폴딩 후 전체 279 passed/28 skipped/0 실패. 라이브 스케줄러 상시실행·실 cron 발화·PG pg_advisory_lock 동시성·실 ERP 라이브 push·Docker 재시작 지속성은 환경차단 → G011 durable blocker 등록.",
+    "fullRerun": true,
+    "rerunCommands": ["cd backend && .venv/Scripts/python.exe -m pytest -q"],
+    "blockers": []
+  }
+}

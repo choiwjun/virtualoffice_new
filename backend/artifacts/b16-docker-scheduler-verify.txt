@@ -1,0 +1,6 @@
+# B-16 Docker scheduler always-on verification (Fri Jul  3 16:09:35     2026)
+## ON: SCHEDULER_ENABLED=true
+APScheduler started: 4 jobs registered (boot + after docker restart)
+/health = 200
+## OFF: SCHEDULER_ENABLED=false
+scheduler NOT started, container healthy (/health 200)

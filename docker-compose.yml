@@ -1,8 +1,8 @@
 # 가상오피스 운영 플랫폼 — 사내 로컬 서버 PC 배포 (Docker Compose)
 #
 # 배포 대상: 사내 온프렘 로컬 서버 PC (단일 조직 도그푸딩, K8s 미사용)
-# 현재 서비스: db(PostgreSQL) + backend(FastAPI)
-# 확장 예정: web(Next.js 관리콘솔), livekit+coturn(화상, self-host), godot-server(헤드리스)
+# 현재 서비스: db(PostgreSQL) + backend(FastAPI). opt-in(profile "livekit"): livekit-server + coturn(화상, D24).
+# 확장 예정: web(Next.js 관리콘솔), godot-server(헤드리스, Phase 1/4)
 #
 # 사용:
 #   cp .env.example .env   # 시크릿/비밀번호 설정
@@ -46,8 +46,45 @@ services:
       # dev/도그푸딩 첫 기동: 테이블 자동 생성 (운영 전환 시 Alembic으로 대체)
       AUTO_CREATE_TABLES: ${AUTO_CREATE_TABLES:-true}
       CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000"]}
+      # 배치 스케줄러(D17, B-16): .env SCHEDULER_ENABLED로 토글. 기본 false(컨테이너는 뜨되 배치 미기동),
+      # 운영 온프렘은 true로 설정해 EOD/KPI초안/ERP동기화 cron을 상시 구동한다.
+      SCHEDULER_ENABLED: ${SCHEDULER_ENABLED:-false}
+      # LiveKit 화상(D24, B-03): key+secret 설정 시 회의 입장에 실 LiveKit AccessToken 발급(미설정=stub).
+      LIVEKIT_URL: ${LIVEKIT_URL:-}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
+
+  # LiveKit 화상 self-host (D24, Phase 5 — opt-in profile). 기본 스택(db+backend)엔 미포함.
+  # 활성화: .env에 LIVEKIT_API_KEY/SECRET/URL 설정 후 `docker compose --profile livekit up -d`.
+  # 실 화상/Egress/STT는 별도 구성 필요(B-03 환경차단) — 이 슬라이스는 배포 스캐폴드 + 토큰 발급까지.
+  livekit:
+    image: livekit/livekit-server:v1.8
+    container_name: vo_livekit
+    restart: unless-stopped
+    profiles: ["livekit"]
+    command: ["--dev", "--bind", "0.0.0.0"]
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-devsecret_at_least_32_chars_long__}"
+    ports:
+      - "${LIVEKIT_PORT:-7880}:7880"           # signaling (WS/HTTP)
+      - "${LIVEKIT_RTC_TCP_PORT:-7881}:7881"   # RTC/TCP fallback
+      # 실 화상 RTC/UDP(예: 50000-60000)는 호스트 네트워크/방화벽 구성 필요 — 운영 시 튜닝.
+
+  coturn:
+    image: coturn/coturn:4.6
+    container_name: vo_coturn
+    restart: unless-stopped
+    profiles: ["livekit"]
+    # TURN은 광범위 UDP 포트 필요 — 운영은 host networking + 방화벽/포트 범위 튜닝 필수.
+    # 아래는 배포 스캐폴드 최소 예시(운영 전 realm/인증/포트 범위 조정 필요).
+    command: >
+      -n --realm=virtualoffice --no-tls --no-dtls
+      --min-port=50000 --max-port=50100
+    ports:
+      - "${TURN_PORT:-3478}:3478/udp"
+      - "${TURN_PORT:-3478}:3478/tcp"
 
 volumes:
   pgdata:
