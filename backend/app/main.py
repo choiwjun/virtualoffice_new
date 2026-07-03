@@ -11,6 +11,7 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 from app import __version__
 from app.config import settings
@@ -65,6 +66,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/", include_in_schema=False)
+async def root() -> RedirectResponse:
+    """루트 접속 → API 문서(/docs)로 유도(브라우저 편의)."""
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health", tags=["system"])
