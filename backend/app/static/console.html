@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>가상오피스 관리 콘솔</title>
+<style>
+  :root {
+    --bg: #0f172a; --panel: #1e293b; --panel2: #334155; --line: #334155;
+    --text: #e2e8f0; --muted: #94a3b8; --primary: #6366f1; --primary2: #818cf8;
+    --ok: #22c55e; --warn: #f59e0b; --err: #ef4444; --card: #1e293b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", "Malgun Gothic", system-ui, sans-serif;
+    background: var(--bg); color: var(--text); font-size: 14px; }
+  a { color: var(--primary2); }
+  button { cursor: pointer; font-family: inherit; }
+  [hidden] { display: none !important; }   /* id 선택자 display 규칙보다 우선(숨김 보장) */
+
+  /* ── 로그인 ── */
+  #login-view { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .login-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 36px 32px; width: 360px; box-shadow: 0 20px 50px rgba(0,0,0,.4); }
+  .login-card h1 { font-size: 20px; margin: 0 0 4px; }
+  .login-card p.sub { color: var(--muted); margin: 0 0 24px; font-size: 13px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .field input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line);
+    background: #0b1220; color: var(--text); font-size: 14px; }
+  .btn { background: var(--primary); color: #fff; border: none; border-radius: 8px;
+    padding: 10px 16px; font-size: 14px; font-weight: 600; }
+  .btn:hover { background: var(--primary2); }
+  .btn.block { width: 100%; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--text); }
+  .err-msg { color: var(--err); font-size: 13px; margin-top: 12px; min-height: 18px; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 16px; line-height: 1.5; }
+
+  /* ── 앱 셸 ── */
+  #app-view { display: grid; grid-template-columns: 220px 1fr; grid-template-rows: 56px 1fr;
+    grid-template-areas: "brand header" "nav main"; height: 100vh; }
+  .brand { grid-area: brand; background: var(--panel); border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 18px;
+    font-weight: 700; gap: 8px; }
+  .brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary2); }
+  header.top { grid-area: header; background: var(--panel); border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+  header.top .title { font-size: 15px; font-weight: 600; }
+  header.top .user { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 12px; }
+  nav.side { grid-area: nav; background: var(--panel); border-right: 1px solid var(--line);
+    padding: 10px 8px; overflow-y: auto; }
+  nav.side .group { color: var(--muted); font-size: 11px; text-transform: uppercase;
+    letter-spacing: .05em; padding: 12px 12px 6px; }
+  nav.side button { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+    background: transparent; border: none; color: var(--text); padding: 9px 12px; border-radius: 8px;
+    font-size: 13.5px; }
+  nav.side button:hover { background: var(--panel2); }
+  nav.side button.active { background: var(--primary); color: #fff; font-weight: 600; }
+  main.content { grid-area: main; padding: 24px 28px; overflow-y: auto; }
+
+  h2.view-title { margin: 0 0 4px; font-size: 20px; }
+  p.view-sub { color: var(--muted); margin: 0 0 20px; font-size: 13px; }
+
+  .cards { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 18px; min-width: 130px; }
+  .stat .n { font-size: 26px; font-weight: 700; }
+  .stat .l { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--card);
+    border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  th { background: #0b1220; color: var(--muted); font-weight: 600; font-size: 12px; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(99,102,241,.06); }
+
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .badge.role-admin, .badge.role-super_admin { background: rgba(99,102,241,.2); color: var(--primary2); }
+  .badge.role-leader { background: rgba(245,158,11,.2); color: var(--warn); }
+  .badge.role-employee { background: rgba(148,163,184,.2); color: var(--muted); }
+  .badge.ok { background: rgba(34,197,94,.2); color: var(--ok); }
+  .badge.off { background: rgba(239,68,68,.2); color: var(--err); }
+
+  .empty { color: var(--muted); padding: 40px; text-align: center; background: var(--card);
+    border: 1px dashed var(--line); border-radius: 12px; }
+  .layout-wrap { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+  canvas { background: #0b1220; border: 1px solid var(--line); border-radius: 12px; }
+  .legend { font-size: 12px; color: var(--muted); line-height: 1.9; }
+  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px;
+    vertical-align: middle; margin-right: 6px; }
+  .meta-list { list-style: none; padding: 0; margin: 0; font-size: 13px; }
+  .meta-list li { padding: 5px 0; border-bottom: 1px solid var(--line); }
+  .meta-list li span { color: var(--muted); display: inline-block; width: 120px; }
+  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+  .toolbar input { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line);
+    background: #0b1220; color: var(--text); }
+  .loading { color: var(--muted); padding: 20px; }
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="login-view">
+  <form class="login-card" id="login-form">
+    <h1>가상오피스 관리 콘솔</h1>
+    <p class="sub">FastAPI JWT(HS256) 인증 · 웹 관리 콘솔</p>
+    <div class="field">
+      <label>이메일</label>
+      <input id="email" type="email" autocomplete="username" value="admin@vo.local" required />
+    </div>
+    <div class="field">
+      <label>비밀번호</label>
+      <input id="password" type="password" autocomplete="current-password" value="Admin123!" required />
+    </div>
+    <button class="btn block" id="login-btn" type="submit">로그인</button>
+    <div class="err-msg" id="login-err"></div>
+    <div class="hint">개발 시드 계정: <b>admin@vo.local</b> / <b>Admin123!</b><br />
+      로그인 성공 시 직원명부로 이동합니다(D4).</div>
+  </form>
+</div>
+
+<!-- 앱 -->
+<div id="app-view" hidden>
+  <div class="brand"><span class="dot"></span> 가상오피스</div>
+  <header class="top">
+    <div class="title" id="view-title">직원명부</div>
+    <div class="user">
+      <span id="whoami"></span>
+      <button class="btn ghost" id="logout-btn">로그아웃</button>
+    </div>
+  </header>
+  <nav class="side" id="nav"></nav>
+  <main class="content" id="content"><div class="loading">불러오는 중…</div></main>
+</div>
+
+<script>
+const API = "";                       // 동일 오리진(백엔드가 서빙)
+let token = localStorage.getItem("vo_token") || "";
+let currentUser = JSON.parse(localStorage.getItem("vo_user") || "null");
+let activeView = "employees";
+
+const ROLE_KO = { admin: "관리자", super_admin: "최고관리자", leader: "팀장", employee: "직원" };
+const NAV = [
+  { group: "관리", items: [
+    { id: "employees", label: "직원명부" },
+    { id: "org", label: "조직도" },
+    { id: "seats", label: "좌석 배치" },
+    { id: "layout", label: "오피스 레이아웃" },
+    { id: "kpi", label: "KPI 대시보드" },
+    { id: "sync", label: "동기화 모니터링" },
+    { id: "audit", label: "감사 로그" },
+  ]},
+  { group: "업무", items: [
+    { id: "meetings", label: "회의 & 회의록" },
+    { id: "worklogs", label: "업무기록" },
+  ]},
+];
+
+// ── API ──
+async function api(path) {
+  const res = await fetch(API + path, { headers: { Authorization: "Bearer " + token } });
+  if (res.status === 401) { sessionExpired(); throw new Error("401"); }
+  return res.json();
+}
+function esc(s) { return String(s ?? "").replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
+function roleBadge(r) { return `<span class="badge role-${esc(r)}">${ROLE_KO[r] || esc(r)}</span>`; }
+function boolBadge(v, on = "활성", off = "비활성") {
+  return v ? `<span class="badge ok">${on}</span>` : `<span class="badge off">${off}</span>`;
+}
+
+// ── 로그인 ──
+const loginForm = document.getElementById("login-form");
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("login-btn");
+  const errEl = document.getElementById("login-err");
+  errEl.textContent = ""; btn.disabled = true; btn.textContent = "로그인 중…";
+  try {
+    const res = await fetch(API + "/auth/login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value,
+      }),
+    });
+    if (!res.ok) {
+      errEl.textContent = "✗ 이메일 또는 비밀번호 오류";
+      document.getElementById("password").value = ""; return;
+    }
+    const data = await res.json();
+    token = data.token; currentUser = data.user;
+    localStorage.setItem("vo_token", token);
+    localStorage.setItem("vo_user", JSON.stringify(currentUser));
+    enterApp();
+  } catch (_) {
+    errEl.textContent = "✗ 서버에 연결할 수 없습니다";
+  } finally {
+    btn.disabled = false; btn.textContent = "로그인";
+  }
+});
+
+function sessionExpired() {
+  localStorage.removeItem("vo_token");
+  document.getElementById("app-view").hidden = true;
+  document.getElementById("login-view").hidden = false;
+  document.getElementById("login-err").textContent = "세션이 만료되었습니다. 다시 로그인하세요.";
+}
+document.getElementById("logout-btn").addEventListener("click", () => {
+  token = ""; localStorage.removeItem("vo_token"); localStorage.removeItem("vo_user");
+  document.getElementById("app-view").hidden = true;
+  document.getElementById("login-view").hidden = false;
+});
+
+// ── 앱 진입 ──
+function enterApp() {
+  document.getElementById("login-view").hidden = true;
+  document.getElementById("app-view").hidden = false;
+  document.getElementById("whoami").textContent =
+    `${currentUser.name} · ${ROLE_KO[currentUser.role] || currentUser.role}`;
+  renderNav();
+  go("employees");                    // 랜딩 = 직원명부(2026-07-02 결정)
+}
+function renderNav() {
+  const nav = document.getElementById("nav");
+  nav.innerHTML = NAV.map(g =>
+    `<div class="group">${g.group}</div>` +
+    g.items.map(it => `<button data-id="${it.id}">${it.label}</button>`).join("")
+  ).join("");
+  nav.querySelectorAll("button").forEach(b =>
+    b.addEventListener("click", () => go(b.dataset.id)));
+}
+function go(id) {
+  activeView = id;
+  document.querySelectorAll("#nav button").forEach(b =>
+    b.classList.toggle("active", b.dataset.id === id));
+  const v = NAV.flatMap(g => g.items).find(x => x.id === id);
+  document.getElementById("view-title").textContent = v ? v.label : id;
+  const c = document.getElementById("content");
+  c.innerHTML = `<div class="loading">불러오는 중…</div>`;
+  (VIEWS[id] || (() => c.innerHTML = `<div class="empty">준비 중</div>`))(c);
+}
+
+function table(cols, rows) {
+  if (!rows.length) return `<div class="empty">데이터가 없습니다.</div>`;
+  return `<table><thead><tr>${cols.map(c => `<th>${c.h}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(r => `<tr>${cols.map(c => `<td>${c.f(r)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+function stats(items) {
+  return `<div class="cards">${items.map(i =>
+    `<div class="stat"><div class="n">${i.n}</div><div class="l">${i.l}</div></div>`).join("")}</div>`;
+}
+
+// ── 뷰들 ──
+const VIEWS = {
+  async employees(c) {
+    const d = await api("/api/employees");
+    c.innerHTML = `<h2 class="view-title">직원명부</h2>
+      <p class="view-sub">ERP 동기화 직원 정보(읽기전용) · 총 ${d.total}명</p>
+      ${stats([{ n: d.total, l: "전체 직원" },
+               { n: d.items.filter(e => e.is_active).length, l: "활성" }])}
+      ${table([
+        { h: "ID", f: e => e.id },
+        { h: "이름", f: e => esc(e.name) },
+        { h: "이메일", f: e => esc(e.email) },
+        { h: "팀ID", f: e => e.erp_team_id ?? "-" },
+        { h: "역할", f: e => roleBadge(e.role) },
+        { h: "상태", f: e => boolBadge(e.is_active) },
+      ], d.items)}`;
+  },
+  async org(c) {
+    const [t, g] = await Promise.all([api("/api/teams"), api("/api/org-groups")]);
+    c.innerHTML = `<h2 class="view-title">조직도</h2>
+      <p class="view-sub">ERP 팀 · 조직 그룹 계층</p>
+      ${stats([{ n: t.total, l: "팀" }, { n: g.total, l: "조직 그룹" }])}
+      <h3>팀</h3>${table([
+        { h: "ID", f: x => x.id ?? x.erp_team_id ?? "-" },
+        { h: "이름", f: x => esc(x.name ?? x.team_name ?? "-") },
+      ], t.items)}
+      <h3 style="margin-top:20px">조직 그룹</h3>${table([
+        { h: "ID", f: x => x.id ?? "-" },
+        { h: "이름", f: x => esc(x.name ?? "-") },
+      ], g.items)}`;
+  },
+  async seats(c) {
+    const [all, avail] = await Promise.all([api("/seats"), api("/seats/available")]);
+    const seats = all.seats || [];
+    c.innerHTML = `<h2 class="view-title">좌석 배치</h2>
+      <p class="view-sub">좌석 목록 및 배정/가용 현황</p>
+      ${stats([{ n: seats.length, l: "전체 좌석" },
+               { n: (avail.available_seats || []).length, l: "가용 좌석" }])}
+      ${table([
+        { h: "좌석번호", f: s => esc(s.seat_number ?? s.seat_id ?? "-") },
+        { h: "타입", f: s => esc(s.seat_type ?? "-") },
+        { h: "배정", f: s => s.assigned_user_id ? boolBadge(true, "배정됨") : boolBadge(false, "미배정") },
+      ], seats)}`;
+  },
+  async layout(c) {
+    let d;
+    try { d = await api("/layouts/current"); }
+    catch (e) { if (e.message === "401") return; c.innerHTML = `<div class="empty">배포된 레이아웃이 없습니다.</div>`; return; }
+    if (!d || !d.layout_json) { c.innerHTML = `<div class="empty">배포된 레이아웃이 없습니다.</div>`; return; }
+    const L = d.layout_json;
+    c.innerHTML = `<h2 class="view-title">오피스 레이아웃</h2>
+      <p class="view-sub">현재 배포본(2D 평면도) · Godot 3D 클라이언트가 이 데이터로 씬을 구성합니다</p>
+      <div class="layout-wrap">
+        <canvas id="floorplan" width="620" height="440"></canvas>
+        <div>
+          <ul class="meta-list">
+            <li><span>레이아웃 ID</span>${esc((d.layout_id||"").slice(0,8))}…</li>
+            <li><span>버전 / 상태</span>v${d.version} · <span class="badge ok">${esc(d.status)}</span></li>
+            <li><span>층</span>${esc(L.metadata?.floor_name || "-")} (${L.dimensions?.width_m}×${L.dimensions?.height_m}m)</li>
+            <li><span>좌석</span>${(L.seats||[]).length}</li>
+            <li><span>회의실</span>${(L.rooms||[]).length}</li>
+            <li><span>가구</span>${(L.furniture||[]).length}</li>
+            <li><span>스폰</span>${(L.spawn_points||[]).length} (기본: ${esc(L.spawn_default?.spawn_id||"-")})</li>
+          </ul>
+          <div class="legend" style="margin-top:14px">
+            <div><span class="sw" style="background:#334155"></span>벽 / 콜라이더</div>
+            <div><span class="sw" style="background:#22c55e"></span>좌석</div>
+            <div><span class="sw" style="background:#f59e0b"></span>가구</div>
+            <div><span class="sw" style="background:#6366f1"></span>회의실 영역</div>
+            <div><span class="sw" style="background:#ef4444"></span>스폰 위치</div>
+          </div>
+        </div>
+      </div>`;
+    drawFloorplan(document.getElementById("floorplan"), L);
+  },
+  async kpi(c) {
+    const d = await api("/kpi-results");
+    c.innerHTML = `<h2 class="view-title">KPI 대시보드</h2>
+      <p class="view-sub">KPI 평가 결과 · 총 ${d.total ?? 0}건</p>
+      ${table([
+        { h: "사용자", f: k => k.user_id ?? "-" },
+        { h: "기간", f: k => `${esc(k.period_type||"")} ${esc(k.period_key||"")}` },
+        { h: "점수", f: k => k.final_score ?? k.ai_score ?? "-" },
+        { h: "상태", f: k => esc(k.status || k.objection_status || "-") },
+      ], d.kpi_results || [])}`;
+  },
+  async meetings(c) {
+    const d = await api("/meetings");
+    c.innerHTML = `<h2 class="view-title">회의 & 회의록</h2>
+      <p class="view-sub">회의 일정 및 상태</p>
+      ${table([
+        { h: "제목", f: m => esc(m.title || "-") },
+        { h: "시작", f: m => esc(m.scheduled_at || m.scheduled_start || "-") },
+        { h: "상태", f: m => esc(m.status || "-") },
+      ], d.meetings || [])}`;
+  },
+  async worklogs(c) {
+    const d = await api("/work-logs");
+    c.innerHTML = `<h2 class="view-title">업무기록</h2>
+      <p class="view-sub">일별 업무 기록</p>
+      ${table([
+        { h: "날짜", f: w => esc(w.log_date || w.work_date || "-") },
+        { h: "목표", f: w => esc(w.goal || "-") },
+        { h: "결과", f: w => esc(w.result_url || w.result || "-") },
+      ], d.work_logs || [])}`;
+  },
+  async sync(c) {
+    const d = await api("/sync/errors");
+    c.innerHTML = `<h2 class="view-title">동기화 모니터링</h2>
+      <p class="view-sub">ERP 동기화 실패 이력 · job_id로 상태 조회</p>
+      <div class="toolbar">
+        <input id="jobid" placeholder="job_id 입력" style="width:280px" />
+        <button class="btn" id="job-btn">상태 조회</button>
+        <span id="job-out" style="color:var(--muted)"></span>
+      </div>
+      ${table([
+        { h: "run_id", f: e => esc(e.run_id || e.id || "-") },
+        { h: "오류", f: e => esc(e.error_message || e.error || "-") },
+        { h: "시각", f: e => esc(e.created_at || "-") },
+      ], d.errors || [])}`;
+    document.getElementById("job-btn").addEventListener("click", async () => {
+      const id = document.getElementById("jobid").value.trim();
+      const out = document.getElementById("job-out");
+      if (!id) { out.textContent = "job_id를 입력하세요"; return; }
+      const r = await fetch(API + "/sync/status?job_id=" + encodeURIComponent(id),
+        { headers: { Authorization: "Bearer " + token } });
+      out.textContent = `${r.status} · ${JSON.stringify(await r.json()).slice(0, 120)}`;
+    });
+  },
+  async audit(c) {
+    const d = await api("/audit-logs");
+    c.innerHTML = `<h2 class="view-title">감사 로그</h2>
+      <p class="view-sub">시스템 감사 추적(D20) · 총 ${d.total ?? 0}건</p>
+      ${table([
+        { h: "시각", f: l => esc(l.created_at || "-") },
+        { h: "액터", f: l => esc(l.actor_user_id ?? l.actor ?? "-") },
+        { h: "액션", f: l => esc(l.action || "-") },
+        { h: "대상", f: l => esc(l.target_type || l.resource || "-") },
+      ], d.logs || [])}`;
+  },
+};
+
+// ── 2D 평면도 렌더 (layout_json → canvas, Godot 로더와 동일 좌표계 D25) ──
+function subtractGaps(a, b, gaps) {
+  let segs = [[a, b]];
+  for (const [g0, g1] of gaps) {
+    const next = [];
+    for (const [s0, s1] of segs) {
+      if (g1 <= s0 || g0 >= s1) { next.push([s0, s1]); continue; }
+      if (g0 > s0) next.push([s0, Math.min(g0, s1)]);
+      if (g1 < s1) next.push([Math.max(g1, s0), s1]);
+    }
+    segs = next;
+  }
+  return segs.filter(([s0, s1]) => s1 - s0 > 1e-6);
+}
+function wallSegments(room) {
+  const c = room.coords || {}, rx = c.x, ry = c.y, rw = c.width, rh = c.height;
+  const doors = room.doors || [], t = 0.2, out = [];
+  const gaps = (wall) => doors.filter(d => d.wall === wall)
+    .map(d => [d.offset - d.width / 2, d.offset + d.width / 2]);
+  for (const [wall, yl] of [["north", ry], ["south", ry + rh]])
+    for (const [s0, s1] of subtractGaps(0, rw, gaps(wall)))
+      out.push([rx + s0, yl - t / 2, s1 - s0, t]);
+  for (const [wall, xl] of [["west", rx], ["east", rx + rw]])
+    for (const [s0, s1] of subtractGaps(0, rh, gaps(wall)))
+      out.push([xl - t / 2, ry + s0, t, s1 - s0]);
+  return out;
+}
+function drawFloorplan(cv, L) {
+  const ctx = cv.getContext("2d");
+  const dim = L.dimensions || {};
+  const W = dim.width_m || 20, H = dim.height_m || 20;
+  const minX = dim.min_x || 0, minY = dim.min_y || 0;
+  const pad = 20, sx = (cv.width - pad * 2) / W, sy = (cv.height - pad * 2) / H;
+  const s = Math.min(sx, sy);
+  const X = x => pad + (x - minX) * s, Y = y => pad + (y - minY) * s;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  // 바닥
+  ctx.fillStyle = "#111a2e"; ctx.fillRect(X(minX), Y(minY), W * s, H * s);
+  ctx.strokeStyle = "#243049"; ctx.strokeRect(X(minX), Y(minY), W * s, H * s);
+  // 그리드
+  ctx.strokeStyle = "rgba(148,163,184,.08)"; ctx.lineWidth = 1;
+  for (let gx = Math.ceil(minX); gx <= minX + W; gx += 5) {
+    ctx.beginPath(); ctx.moveTo(X(gx), Y(minY)); ctx.lineTo(X(gx), Y(minY + H)); ctx.stroke();
+  }
+  for (let gy = Math.ceil(minY); gy <= minY + H; gy += 5) {
+    ctx.beginPath(); ctx.moveTo(X(minX), Y(gy)); ctx.lineTo(X(minX + W), Y(gy)); ctx.stroke();
+  }
+  // 회의실 영역
+  ctx.fillStyle = "rgba(99,102,241,.12)"; ctx.strokeStyle = "rgba(99,102,241,.5)";
+  for (const r of (L.rooms || [])) {
+    const c = r.coords; ctx.fillRect(X(c.x), Y(c.y), c.width * s, c.height * s);
+    ctx.fillStyle = "#a5b4fc"; ctx.font = "11px sans-serif";
+    ctx.fillText(r.name || r.room_id, X(c.x) + 4, Y(c.y) + 14);
+    ctx.fillStyle = "rgba(99,102,241,.12)";
+  }
+  // 콜라이더(box)
+  ctx.fillStyle = "#334155";
+  for (const cl of (L.colliders || [])) {
+    if (cl.shape === "box" && cl.box) {
+      const b = cl.box; ctx.fillRect(X(b.x), Y(b.y), b.width * s, b.height * s);
+    }
+  }
+  // 방 벽(문 개구부 제외)
+  ctx.fillStyle = "#475569";
+  for (const r of (L.rooms || []))
+    for (const [x, y, w, h] of wallSegments(r)) ctx.fillRect(X(x), Y(y), w * s, h * s);
+  // 가구
+  ctx.fillStyle = "rgba(245,158,11,.75)";
+  for (const f of (L.furniture || [])) {
+    const c = f.coords, d = f.dimension || { width: 1, depth: 1 };
+    ctx.fillRect(X(c.x - d.width / 2), Y(c.y - d.depth / 2), d.width * s, d.depth * s);
+  }
+  // 좌석
+  for (const st of (L.seats || [])) {
+    ctx.fillStyle = "#22c55e"; ctx.beginPath();
+    ctx.arc(X(st.coords.x), Y(st.coords.y), 5, 0, Math.PI * 2); ctx.fill();
+  }
+  // 스폰
+  for (const sp of (L.spawn_points || [])) {
+    ctx.fillStyle = "#ef4444"; ctx.beginPath();
+    const px = X(sp.coords.x), py = Y(sp.coords.y);
+    ctx.moveTo(px, py - 6); ctx.lineTo(px + 5, py + 5); ctx.lineTo(px - 5, py + 5);
+    ctx.closePath(); ctx.fill();
+  }
+}
+
+// ── 부팅 ──
+if (token && currentUser) { enterApp(); }
+</script>
+</body>
+</html>

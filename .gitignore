@@ -83,3 +83,4 @@ godot/.gut-tmp/
 backend/dev.db
 backend/dev.db-shm
 backend/dev.db-wal
+backend/artifacts/console-*.png

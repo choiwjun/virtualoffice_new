@@ -7,11 +7,12 @@ FastAPI 앱 엔트리포인트.
 """
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 
 from app import __version__
 from app.config import settings
@@ -68,10 +69,19 @@ app.add_middleware(
 )
 
 
+_CONSOLE_HTML = Path(__file__).resolve().parent / "static" / "console.html"
+
+
 @app.get("/", include_in_schema=False)
 async def root() -> RedirectResponse:
-    """루트 접속 → API 문서(/docs)로 유도(브라우저 편의)."""
-    return RedirectResponse(url="/docs")
+    """루트 접속 → 웹 관리 콘솔(/console)로 유도."""
+    return RedirectResponse(url="/console")
+
+
+@app.get("/console", include_in_schema=False)
+async def console() -> FileResponse:
+    """웹 관리 콘솔 SPA(단일 파일) — 백엔드 API 동일 오리진 서빙."""
+    return FileResponse(_CONSOLE_HTML, media_type="text/html")
 
 
 @app.get("/health", tags=["system"])
