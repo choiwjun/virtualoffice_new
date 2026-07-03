@@ -78,3 +78,8 @@ temp/
 
 # ===== Godot GUT 테스트 임시 산출물 =====
 godot/.gut-tmp/
+
+# ===== 로컬 개발 SQLite (uvicorn dev 실행용, 커밋 금지) =====
+backend/dev.db
+backend/dev.db-shm
+backend/dev.db-wal
