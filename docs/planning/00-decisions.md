@@ -69,6 +69,18 @@
 | S3 | 헤드리스 서버 부하 | GDScript 헤드리스 + PhysicsServer3D, 20명 시뮬레이션 CPU/메모리 측정 | tick 하향(10Hz), 물리 간소화 |
 | S4 | 동적 씬 라이팅 룩 검증 | D7 조합(실시간광+ReflectionProbe+SSAO)으로 골든 샘플 룩 확인 | SDFGI 옵션 기본화 + 기준 사양 상향 재협의 |
 
+## G. 화면/기능 범위 확정 (2026-07-03 — 3D 메인 오피스 시안 반영)
+
+> 근거: `design/screens/virtual-office-3d-reference.md`(목표 퀄리티 시안) + `loop/scope-decisions-2026-07-03.md`(범위 분석). 원칙: PRD "운영 허브, 기능 과적 지양" + 린 MVP.
+
+| ID | 결정 | 내용 | 폐기/이연되는 대안 |
+|----|------|------|-------------------|
+| **D26** | 3D 클라 좌측 내비 확정 | MVP 노출 = **Office · Rooms · People · Chat(제한: 회의메모/근접DM) · Settings**. Phase 7 추가 = **Events(전용 화면) · Whiteboard(디지털 협업보드, COULD)**. **Files = 58주 MVP 제외(WON'T)** — 파일은 `work_log.result_url`+웹콘솔로 대체, 완성 후 재검토. 상단바 조직스위처·⌘K 검색·알림 벨 채택 | 8종 내비 전부 MVP 동시 노출, 범용 파일 저장소 MVP |
+| **D27** | 회의 입장 UX = **근접 + E키** | D24(명시적 입장) 유지, 트리거 구체화: "Walk up + press **E** → 입장 다이얼로그 → 확인 → LiveKit 토큰(D24)". 클릭 병행 | 자동 접속(D24 위반) |
+| **D28** | 인앱 화상 HUD = **플로팅 드래그 패널** | 그리드 비디오 타일 + 컨트롤바(마이크/카메라/화면공유/리액션/손들기/종료). 06 footer 회의 컨트롤을 이 패널로 구체화(Phase 5, E3). 회의록 **작성**은 여전히 웹(D5 경계) | 고정 footer 전용 |
+| **D29** | 우측 People 패널 = **상태 섹션 그룹핑** | 필터(all/online/meeting/focus/away)를 섹션 그룹(**In Office / In a Meeting / Online / Away**)으로 표현 + 호스트 왕관 배지 | 단일 목록+필터만 |
+| **D30** | 시각 품질 기준(아트 타깃) = **시안 레퍼런스** | `design/screens/virtual-office-3d-reference.md`(실사급 PBR + 다크 글래스모피즘 HUD)를 Phase 1 골든샘플 수용기준으로 고정(D22 60fps와 병행). 웹 콘솔·3D HUD 디자인토큰 공통 | 텍스트 품질기준만 |
+
 ---
 
 ## 문서별 반영 체크리스트

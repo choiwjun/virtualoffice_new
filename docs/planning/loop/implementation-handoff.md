@@ -117,7 +117,7 @@
 정본: `specs/shared/types.yaml`(design_tokens), 갭 리포트 A2-20, **`design/screens/virtual-office-3d-reference.md`(신규 시각 레퍼런스)**
 - [ ] **H1. 디자인 토큰 확정** — 현재 "Tailwind 기본 테마=정본" + 상태색만. 레퍼런스 §7(다크테마·블루 액센트·상태색·라운드·글래스모피즘)을 팔레트/타이포/간격으로 구체화(또는 tokens.yaml). **웹 콘솔·3D HUD 공통 적용(브랜딩 통일)**.
 - [x] **H2. 시각 목업/레퍼런스** — ✅ 3D 메인 오피스 고해상 시안 확보(`design/screens/virtual-office-3d-reference.{md,png}`). 나머지 웹 9화면 시안은 미확보(레퍼런스 토큰 기반 파생 가능).
-- [ ] **H3. spec ↔ 시안 델타 재정합** — 레퍼런스 §8: 좌측 내비 **신규 3항목(Events·Whiteboard·Files)** scope/Phase 결정 + `virtual-office-3d.yaml` 반영, 회의입장 E키 UX, 플로팅 화상 패널 HUD 스펙, 프레즌스 그룹핑(In Office/In a Meeting/Online/Away).
+- [x] **H3. spec ↔ 시안 델타 scope 확정** — ✅ **결정 완료**(`loop/scope-decisions-2026-07-03.md`, 00-decisions **D26~D30**): 좌측 내비 MVP=Office/Rooms/People/Chat(제한)/Settings, Phase7=Events·Whiteboard(디지털), **Files=MVP 제외**. E키 입장(D27)·플로팅 화상 HUD(D28)·People 상태 그룹핑(D29)·실사급 아트타깃(D30). `virtual-office-3d.yaml` 반영. ⏳ 후속 propagate: PRD §3 범위표·12-tasks Phase7 태스크·06-screens 서술.
 
 ### I. 🟡 DevOps / 배포 하드닝
 - [ ] **I1. 외부 공개 하드닝** (P2-R4-T1, D21-r) — Caddy 단일진입/rate-limit/fail2ban. compose 일부만.

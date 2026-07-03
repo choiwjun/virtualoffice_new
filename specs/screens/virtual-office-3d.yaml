@@ -105,6 +105,10 @@ components:
     function: Floor 선택(radio) + Zone 필터(checkbox) + Available Rooms 목록(점유여부+시간, 클릭→카메라이동) + Online People(팀별그룹, 클릭→추적) + Mini Chat(회의중메모만) + Settings(아바타커스터마이징/알림/접근성)
     data_source:
       resources: [floor, room, presence, erp_user, team_zone]
+    note: |
+      좌측 내비 확정(D26, 2026-07-03 시안): MVP 노출 = Office/Rooms/People/Chat(제한)/Settings.
+      Phase 7 추가 = Events(전용)·Whiteboard(디지털 협업보드, COULD). Files = MVP 제외(WON'T).
+      상단바(header-toolbar): 조직 스위처·⌘K 검색·알림 벨 채택.
 
   - id: panel-right-people
     type: panel
@@ -112,6 +116,9 @@ components:
     function: "현재 참석자 리스트(layer/zone필터) + 팀별 그룹(온라인수표시) + 상태필터(all/online/meeting/focus/away) + 검색바 + 선택 직원 상세(이름/직급/팀/상태/마지막변경시간)"
     data_source:
       resources: [presence, erp_user, team_zone]
+    note: |
+      우측 패널 상태 그룹핑(D29): 필터 대신 섹션 그룹(In Office / In a Meeting / Online / Away)
+      + 호스트 왕관 배지. 시각 레퍼런스 design/screens/virtual-office-3d-reference.md §6.
 
   - id: footer-meeting-controls
     type: panel
