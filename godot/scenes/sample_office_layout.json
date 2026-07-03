@@ -1,0 +1,131 @@
+{
+  "metadata": {
+    "version": "1.1",
+    "schema_version": 1,
+    "floor_name": "1F",
+    "language": "ko-KR"
+  },
+  "floor": {
+    "level": 1,
+    "name": "1F",
+    "coordinate_origin": "top_left",
+    "floor_height_m": 0.0,
+    "unit_system": "metric"
+  },
+  "dimensions": {
+    "width_m": 30.0,
+    "height_m": 20.0,
+    "min_x": 0.0,
+    "max_x": 30.0,
+    "min_y": 0.0,
+    "max_y": 20.0,
+    "unit": "meter"
+  },
+  "zones": [
+    {
+      "zone_id": "Z_TEAM_A",
+      "label": "Team A",
+      "polygon": [
+        { "x": 1.0, "y": 1.0 },
+        { "x": 14.0, "y": 1.0 },
+        { "x": 14.0, "y": 9.0 },
+        { "x": 1.0, "y": 9.0 }
+      ]
+    }
+  ],
+  "rooms": [
+    {
+      "room_id": "R_MEETING_A",
+      "name": "회의실 A",
+      "type": "meeting",
+      "capacity": 6,
+      "capacity_mode": "by_room",
+      "max_concurrent_users": 6,
+      "coords": { "x": 18.0, "y": 4.0, "width": 8.0, "height": 6.0 },
+      "entrance": {
+        "trigger_x": 21.0,
+        "trigger_y": 9.0,
+        "trigger_width": 2.0,
+        "trigger_height": 1.0,
+        "entry_direction": "south"
+      },
+      "doors": [
+        { "door_id": "D_A", "wall": "south", "offset": 4.0, "width": 1.2, "door_type": "open" }
+      ]
+    }
+  ],
+  "seats": [
+    {
+      "seat_id": "S_A1",
+      "seat_type": "fixed",
+      "coords": { "x": 4.0, "y": 4.0 },
+      "facing": 180.0,
+      "furniture_id": "F_DESK_A1"
+    },
+    {
+      "seat_id": "S_A2",
+      "seat_type": "fixed",
+      "coords": { "x": 8.0, "y": 4.0 },
+      "facing": 180.0,
+      "furniture_id": "F_DESK_A2"
+    },
+    {
+      "seat_id": "S_A3",
+      "seat_type": "free",
+      "coords": { "x": 4.0, "y": 7.0 },
+      "facing": 0.0,
+      "furniture_id": "F_DESK_A3"
+    }
+  ],
+  "furniture": [
+    {
+      "furniture_id": "F_DESK_A1",
+      "asset_id": "desk-v1",
+      "type": "desk",
+      "coords": { "x": 4.0, "y": 4.0 },
+      "dimension": { "width": 1.4, "depth": 0.8, "height": 0.75 },
+      "collision": true
+    },
+    {
+      "furniture_id": "F_DESK_A2",
+      "asset_id": "desk-v1",
+      "type": "desk",
+      "coords": { "x": 8.0, "y": 4.0 },
+      "dimension": { "width": 1.4, "depth": 0.8, "height": 0.75 },
+      "collision": true
+    },
+    {
+      "furniture_id": "F_DESK_A3",
+      "asset_id": "desk-v1",
+      "type": "desk",
+      "coords": { "x": 4.0, "y": 7.0 },
+      "dimension": { "width": 1.4, "depth": 0.8, "height": 0.75 },
+      "collision": true
+    },
+    {
+      "furniture_id": "F_PLANT_1",
+      "asset_id": "plant-v1",
+      "type": "plant",
+      "coords": { "x": 15.0, "y": 15.0 },
+      "dimension": { "width": 0.6, "depth": 0.6, "height": 1.2 },
+      "collision": false
+    }
+  ],
+  "colliders": [
+    {
+      "collider_id": "C_PILLAR_1",
+      "shape": "box",
+      "box": { "x": 14.0, "y": 12.0, "width": 1.0, "height": 1.0 },
+      "physics": { "block_avatar": true },
+      "description": "중앙 기둥"
+    }
+  ],
+  "spawn_points": [
+    { "spawn_id": "SP_LOBBY", "coords": { "x": 15.0, "y": 18.0 }, "facing": 0.0 },
+    { "spawn_id": "SP_TEAM_A", "coords": { "x": 6.0, "y": 9.0 }, "facing": 0.0 }
+  ],
+  "spawn_default": {
+    "spawn_id": "SP_LOBBY",
+    "facing_default": 0.0
+  }
+}
