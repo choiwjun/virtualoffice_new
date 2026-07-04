@@ -1,211 +1,237 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="GutTests" failures="0" tests="85" >
+<testsuites name="GutTests" failures="0" tests="97" >
   <testsuite name="tests/test_avatar_movement.gd" tests="0" failures="0" skipped="0" time="0.0" >
       </testsuite>
-  <testsuite name="tests/test_avatar_movement.gd.TestAvatarMovement" tests="5" failures="0" skipped="0" time="0.673955" >
-      <testcase name="test_avatar_move_direction_forward" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarMovement" time="0.053203" >
+  <testsuite name="tests/test_avatar_movement.gd.TestAvatarMovement" tests="5" failures="0" skipped="0" time="0.680946" >
+      <testcase name="test_avatar_move_direction_forward" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarMovement" time="0.067043" >
       </testcase>
-      <testcase name="test_avatar_move_direction_right" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarMovement" time="0.193013" >
+      <testcase name="test_avatar_move_direction_right" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarMovement" time="0.179296" >
       </testcase>
-      <testcase name="test_avatar_max_speed" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarMovement" time="0.062083" >
+      <testcase name="test_avatar_max_speed" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarMovement" time="0.068953" >
       </testcase>
-      <testcase name="test_avatar_rotate_facing" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarMovement" time="0.02075" >
+      <testcase name="test_avatar_rotate_facing" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarMovement" time="0.013807" >
       </testcase>
-      <testcase name="test_avatar_boundary_limits" assertions="4" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarMovement" time="0.344906" >
-      </testcase>
-  </testsuite>
-  <testsuite name="tests/test_avatar_movement.gd.TestAvatarCollision" tests="6" failures="0" skipped="0" time="1.979157" >
-      <testcase name="test_avatar_wall_collision" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.295831" >
-      </testcase>
-      <testcase name="test_avatar_furniture_avoidance" assertions="2" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.021687" >
-      </testcase>
-      <testcase name="test_avatar_other_collision_authority" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.378364" >
-      </testcase>
-      <testcase name="test_avatar_slope_movement" assertions="2" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.179323" >
-      </testcase>
-      <testcase name="test_avatar_narrow_passage" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.386368" >
-      </testcase>
-      <testcase name="test_avatar_door_opening" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.717584" >
+      <testcase name="test_avatar_boundary_limits" assertions="4" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarMovement" time="0.351847" >
       </testcase>
   </testsuite>
-  <testsuite name="tests/test_avatar_movement.gd.TestSeatOccupancy" tests="4" failures="0" skipped="0" time="0.060708" >
-      <testcase name="test_avatar_enter_seat_range" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestSeatOccupancy" time="0.012568" >
+  <testsuite name="tests/test_avatar_movement.gd.TestAvatarCollision" tests="6" failures="0" skipped="0" time="1.978985" >
+      <testcase name="test_avatar_wall_collision" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.295667" >
       </testcase>
-      <testcase name="test_avatar_exit_seat_range" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestSeatOccupancy" time="0.020857" >
+      <testcase name="test_avatar_furniture_avoidance" assertions="2" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.014627" >
       </testcase>
-      <testcase name="test_avatar_multiple_seat_prevent" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestSeatOccupancy" time="0.013627" >
+      <testcase name="test_avatar_other_collision_authority" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.385493" >
       </testcase>
-      <testcase name="test_avatar_seat_assignment_error" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestSeatOccupancy" time="0.013656" >
+      <testcase name="test_avatar_slope_movement" assertions="2" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.17925" >
       </testcase>
-  </testsuite>
-  <testsuite name="tests/test_avatar_movement.gd.TestProximityInteraction" tests="3" failures="0" skipped="0" time="0.054617" >
-      <testcase name="test_proximity_menu_display" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestProximityInteraction" time="0.019944" >
+      <testcase name="test_avatar_narrow_passage" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.386426" >
       </testcase>
-      <testcase name="test_proximity_menu_hide" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestProximityInteraction" time="0.013828" >
-      </testcase>
-      <testcase name="test_proximity_distance_tiers" assertions="4" status="pass" classname="tests/test_avatar_movement.gd.TestProximityInteraction" time="0.020845" >
+      <testcase name="test_avatar_door_opening" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestAvatarCollision" time="0.717522" >
       </testcase>
   </testsuite>
-  <testsuite name="tests/test_avatar_movement.gd.TestAvatarPerformance" tests="2" failures="0" skipped="2" time="0.001053" >
-      <testcase name="test_performance_fps" assertions="0" status="pending" classname="tests/test_avatar_movement.gd.TestAvatarPerformance" time="0.000525" >
+  <testsuite name="tests/test_avatar_movement.gd.TestSeatOccupancy" tests="4" failures="0" skipped="0" time="0.06087" >
+      <testcase name="test_avatar_enter_seat_range" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestSeatOccupancy" time="0.012608" >
+      </testcase>
+      <testcase name="test_avatar_exit_seat_range" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestSeatOccupancy" time="0.013784" >
+      </testcase>
+      <testcase name="test_avatar_multiple_seat_prevent" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestSeatOccupancy" time="0.020771" >
+      </testcase>
+      <testcase name="test_avatar_seat_assignment_error" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestSeatOccupancy" time="0.013707" >
+      </testcase>
+  </testsuite>
+  <testsuite name="tests/test_avatar_movement.gd.TestProximityInteraction" tests="3" failures="0" skipped="0" time="0.047729" >
+      <testcase name="test_proximity_menu_display" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestProximityInteraction" time="0.01998" >
+      </testcase>
+      <testcase name="test_proximity_menu_hide" assertions="1" status="pass" classname="tests/test_avatar_movement.gd.TestProximityInteraction" time="0.013773" >
+      </testcase>
+      <testcase name="test_proximity_distance_tiers" assertions="4" status="pass" classname="tests/test_avatar_movement.gd.TestProximityInteraction" time="0.013976" >
+      </testcase>
+  </testsuite>
+  <testsuite name="tests/test_avatar_movement.gd.TestAvatarPerformance" tests="2" failures="0" skipped="2" time="0.000686" >
+      <testcase name="test_performance_fps" assertions="0" status="pending" classname="tests/test_avatar_movement.gd.TestAvatarPerformance" time="0.00032" >
       <skipped message="pending"><![CDATA[렌더 FPS는 창모드 GPU 40아바타 프로파일 필요 — Phase 2. 헤드리스 물리 처리량은 B-04 하네스 참조.]]></skipped></testcase>
-      <testcase name="test_performance_loading_time" assertions="0" status="pending" classname="tests/test_avatar_movement.gd.TestAvatarPerformance" time="0.000528" >
+      <testcase name="test_performance_loading_time" assertions="0" status="pending" classname="tests/test_avatar_movement.gd.TestAvatarPerformance" time="0.000366" >
       <skipped message="pending"><![CDATA[번들/로딩 시간은 최적화된 export 빌드 대상 — Phase 2.]]></skipped></testcase>
   </testsuite>
-  <testsuite name="tests/test_game_server.gd" tests="18" failures="0" skipped="0" time="0.006733" >
-      <testcase name="test_proximity_type_tiers" assertions="7" status="pass" classname="tests/test_game_server.gd" time="0.000533" >
+  <testsuite name="tests/test_game_server.gd" tests="26" failures="0" skipped="0" time="0.011151" >
+      <testcase name="test_proximity_type_tiers" assertions="7" status="pass" classname="tests/test_game_server.gd" time="0.000541" >
       </testcase>
-      <testcase name="test_is_blocked" assertions="4" status="pass" classname="tests/test_game_server.gd" time="0.000247" >
+      <testcase name="test_is_blocked" assertions="4" status="pass" classname="tests/test_game_server.gd" time="0.000245" >
       </testcase>
-      <testcase name="test_move_within_speed_accepted" assertions="2" status="pass" classname="tests/test_game_server.gd" time="0.000346" >
+      <testcase name="test_move_within_speed_accepted" assertions="2" status="pass" classname="tests/test_game_server.gd" time="0.000315" >
       </testcase>
-      <testcase name="test_move_exceeds_speed_clamped" assertions="2" status="pass" classname="tests/test_game_server.gd" time="0.000279" >
+      <testcase name="test_move_exceeds_speed_clamped" assertions="2" status="pass" classname="tests/test_game_server.gd" time="0.000261" >
       </testcase>
-      <testcase name="test_move_out_of_bounds_clamped" assertions="2" status="pass" classname="tests/test_game_server.gd" time="0.000279" >
+      <testcase name="test_move_out_of_bounds_clamped" assertions="2" status="pass" classname="tests/test_game_server.gd" time="0.000252" >
       </testcase>
-      <testcase name="test_move_into_obstacle_rejected" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000255" >
+      <testcase name="test_move_into_obstacle_rejected" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000236" >
       </testcase>
-      <testcase name="test_facing_normalized" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000243" >
+      <testcase name="test_facing_normalized" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000229" >
       </testcase>
-      <testcase name="test_replay_buffer_cap" assertions="2" status="pass" classname="tests/test_game_server.gd" time="0.001613" >
+      <testcase name="test_replay_buffer_cap" assertions="2" status="pass" classname="tests/test_game_server.gd" time="0.001572" >
       </testcase>
-      <testcase name="test_next_server_seq_monotonic" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000273" >
+      <testcase name="test_next_server_seq_monotonic" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000246" >
       </testcase>
-      <testcase name="test_meeting_capacity_enforced" assertions="3" status="pass" classname="tests/test_game_server.gd" time="0.000337" >
+      <testcase name="test_meeting_capacity_enforced" assertions="3" status="pass" classname="tests/test_game_server.gd" time="0.000322" >
       </testcase>
-      <testcase name="test_meeting_enter_exit_updates_state" assertions="4" status="pass" classname="tests/test_game_server.gd" time="0.000329" >
+      <testcase name="test_meeting_enter_exit_updates_state" assertions="4" status="pass" classname="tests/test_game_server.gd" time="0.000333" >
       </testcase>
-      <testcase name="test_forget_connection_cleans_session" assertions="3" status="pass" classname="tests/test_game_server.gd" time="0.000252" >
+      <testcase name="test_forget_connection_cleans_session" assertions="3" status="pass" classname="tests/test_game_server.gd" time="0.000215" >
       </testcase>
-      <testcase name="test_build_snapshot_only_ready" assertions="3" status="pass" classname="tests/test_game_server.gd" time="0.000316" >
+      <testcase name="test_build_snapshot_only_ready" assertions="3" status="pass" classname="tests/test_game_server.gd" time="0.000302" >
       </testcase>
-      <testcase name="test_handshake_valid_jwt_ready" assertions="4" status="pass" classname="tests/test_game_server.gd" time="0.000464" >
+      <testcase name="test_handshake_valid_jwt_ready" assertions="4" status="pass" classname="tests/test_game_server.gd" time="0.000459" >
       </testcase>
-      <testcase name="test_handshake_bad_protocol_rejected" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000209" >
+      <testcase name="test_handshake_bad_protocol_rejected" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000218" >
       </testcase>
-      <testcase name="test_handshake_invalid_jwt_rejected" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000227" >
+      <testcase name="test_handshake_invalid_jwt_rejected" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000221" >
       </testcase>
-      <testcase name="test_handshake_expired_jwt_rejected" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000283" >
+      <testcase name="test_handshake_expired_jwt_rejected" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000262" >
       </testcase>
-      <testcase name="test_handshake_wrong_secret_rejected" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000248" >
+      <testcase name="test_handshake_wrong_secret_rejected" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000271" >
+      </testcase>
+      <testcase name="test_move_flood_single_msg_no_teleport" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000251" >
+      </testcase>
+      <testcase name="test_move_flood_bounded_by_elapsed_not_count" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.002614" >
+      </testcase>
+      <testcase name="test_presence_invalid_status_rejected" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000306" >
+      </testcase>
+      <testcase name="test_presence_valid_status_applied" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000268" >
+      </testcase>
+      <testcase name="test_capacity_rejects_when_ready_full" assertions="2" status="pass" classname="tests/test_game_server.gd" time="0.00029" >
+      </testcase>
+      <testcase name="test_broadcast_seq_records_presence_for_replay" assertions="2" status="pass" classname="tests/test_game_server.gd" time="0.000303" >
+      </testcase>
+      <testcase name="test_broadcast_seq_records_chat_and_action" assertions="1" status="pass" classname="tests/test_game_server.gd" time="0.000269" >
+      </testcase>
+      <testcase name="test_meeting_enter_not_replayed_but_presence_is" assertions="3" status="pass" classname="tests/test_game_server.gd" time="0.00035" >
       </testcase>
   </testsuite>
-  <testsuite name="tests/test_jwt.gd" tests="6" failures="0" skipped="0" time="0.002446" >
-      <testcase name="test_mint_verify_roundtrip" assertions="2" status="pass" classname="tests/test_jwt.gd" time="0.000338" >
+  <testsuite name="tests/test_jwt.gd" tests="6" failures="0" skipped="0" time="0.002552" >
+      <testcase name="test_mint_verify_roundtrip" assertions="2" status="pass" classname="tests/test_jwt.gd" time="0.000342" >
       </testcase>
-      <testcase name="test_wrong_secret_rejected" assertions="2" status="pass" classname="tests/test_jwt.gd" time="0.000279" >
+      <testcase name="test_wrong_secret_rejected" assertions="2" status="pass" classname="tests/test_jwt.gd" time="0.000288" >
       </testcase>
-      <testcase name="test_tampered_payload_rejected" assertions="1" status="pass" classname="tests/test_jwt.gd" time="0.000211" >
+      <testcase name="test_tampered_payload_rejected" assertions="1" status="pass" classname="tests/test_jwt.gd" time="0.000218" >
       </testcase>
-      <testcase name="test_expired_rejected" assertions="2" status="pass" classname="tests/test_jwt.gd" time="0.000267" >
+      <testcase name="test_expired_rejected" assertions="2" status="pass" classname="tests/test_jwt.gd" time="0.000268" >
       </testcase>
-      <testcase name="test_malformed_rejected" assertions="2" status="pass" classname="tests/test_jwt.gd" time="0.000222" >
+      <testcase name="test_malformed_rejected" assertions="2" status="pass" classname="tests/test_jwt.gd" time="0.000217" >
       </testcase>
-      <testcase name="test_interop_real_fastapi_token" assertions="4" status="pass" classname="tests/test_jwt.gd" time="0.001129" >
+      <testcase name="test_interop_real_fastapi_token" assertions="4" status="pass" classname="tests/test_jwt.gd" time="0.001219" >
       </testcase>
   </testsuite>
-  <testsuite name="tests/test_net_integration.gd" tests="3" failures="0" skipped="0" time="2.484835" >
-      <testcase name="test_handshake_ready_and_snapshot" assertions="5" status="pass" classname="tests/test_net_integration.gd" time="0.075855" >
+  <testsuite name="tests/test_net_integration.gd" tests="3" failures="0" skipped="0" time="2.478293" >
+      <testcase name="test_handshake_ready_and_snapshot" assertions="5" status="pass" classname="tests/test_net_integration.gd" time="0.068945" >
       </testcase>
-      <testcase name="test_server_authority_clamps_move_over_wire" assertions="6" status="pass" classname="tests/test_net_integration.gd" time="1.103737" >
+      <testcase name="test_server_authority_clamps_move_over_wire" assertions="6" status="pass" classname="tests/test_net_integration.gd" time="1.103917" >
       </testcase>
-      <testcase name="test_presence_online_and_offline_broadcast" assertions="3" status="pass" classname="tests/test_net_integration.gd" time="1.305243" >
+      <testcase name="test_presence_online_and_offline_broadcast" assertions="3" status="pass" classname="tests/test_net_integration.gd" time="1.305431" >
       </testcase>
   </testsuite>
   <testsuite name="tests/test_office_client.gd" tests="0" failures="0" skipped="0" time="0.0" >
       </testsuite>
-  <testsuite name="tests/test_office_client.gd.TestLoadOffice" tests="5" failures="0" skipped="0" time="0.069442" >
-      <testcase name="test_load_office_spawns_avatar_at_spawn" assertions="5" status="pass" classname="tests/test_office_client.gd.TestLoadOffice" time="0.007927" >
+  <testsuite name="tests/test_office_client.gd.TestLoadOffice" tests="5" failures="0" skipped="0" time="0.083573" >
+      <testcase name="test_load_office_spawns_avatar_at_spawn" assertions="5" status="pass" classname="tests/test_office_client.gd.TestLoadOffice" time="0.015038" >
       </testcase>
-      <testcase name="test_nav_and_seats_injected" assertions="3" status="pass" classname="tests/test_office_client.gd.TestLoadOffice" time="0.01418" >
+      <testcase name="test_nav_and_seats_injected" assertions="3" status="pass" classname="tests/test_office_client.gd.TestLoadOffice" time="0.013191" >
       </testcase>
-      <testcase name="test_empty_layout_fails_gracefully" assertions="2" status="pass" classname="tests/test_office_client.gd.TestLoadOffice" time="0.018597" >
+      <testcase name="test_empty_layout_fails_gracefully" assertions="2" status="pass" classname="tests/test_office_client.gd.TestLoadOffice" time="0.019449" >
       </testcase>
-      <testcase name="test_reload_replaces_previous" assertions="2" status="pass" classname="tests/test_office_client.gd.TestLoadOffice" time="0.018015" >
+      <testcase name="test_reload_replaces_previous" assertions="2" status="pass" classname="tests/test_office_client.gd.TestLoadOffice" time="0.017165" >
       </testcase>
-      <testcase name="test_sample_uses_spawn_default" assertions="2" status="pass" classname="tests/test_office_client.gd.TestLoadOffice" time="0.010723" >
-      </testcase>
-  </testsuite>
-  <testsuite name="tests/test_office_client.gd.TestSpawnSelection" tests="4" failures="0" skipped="0" time="0.00083" >
-      <testcase name="test_pick_spawn_matches_default" assertions="1" status="pass" classname="tests/test_office_client.gd.TestSpawnSelection" time="0.000266" >
-      </testcase>
-      <testcase name="test_pick_spawn_first_when_no_default" assertions="1" status="pass" classname="tests/test_office_client.gd.TestSpawnSelection" time="0.000216" >
-      </testcase>
-      <testcase name="test_pick_spawn_first_when_default_unknown" assertions="1" status="pass" classname="tests/test_office_client.gd.TestSpawnSelection" time="0.000207" >
-      </testcase>
-      <testcase name="test_pick_spawn_empty" assertions="1" status="pass" classname="tests/test_office_client.gd.TestSpawnSelection" time="0.000141" >
+      <testcase name="test_sample_uses_spawn_default" assertions="2" status="pass" classname="tests/test_office_client.gd.TestLoadOffice" time="0.01873" >
       </testcase>
   </testsuite>
-  <testsuite name="tests/test_office_client.gd.TestLayoutResponse" tests="5" failures="0" skipped="0" time="0.079123" >
-      <testcase name="test_success_response_loads_office" assertions="2" status="pass" classname="tests/test_office_client.gd.TestLayoutResponse" time="0.019108" >
+  <testsuite name="tests/test_office_client.gd.TestSpawnSelection" tests="4" failures="0" skipped="0" time="0.000814" >
+      <testcase name="test_pick_spawn_matches_default" assertions="1" status="pass" classname="tests/test_office_client.gd.TestSpawnSelection" time="0.000275" >
       </testcase>
-      <testcase name="test_non_200_fails" assertions="1" status="pass" classname="tests/test_office_client.gd.TestLayoutResponse" time="0.011963" >
+      <testcase name="test_pick_spawn_first_when_no_default" assertions="1" status="pass" classname="tests/test_office_client.gd.TestSpawnSelection" time="0.000195" >
       </testcase>
-      <testcase name="test_bad_json_fails" assertions="1" status="pass" classname="tests/test_office_client.gd.TestLayoutResponse" time="0.02062" >
+      <testcase name="test_pick_spawn_first_when_default_unknown" assertions="1" status="pass" classname="tests/test_office_client.gd.TestSpawnSelection" time="0.00018" >
       </testcase>
-      <testcase name="test_missing_layout_json_fails" assertions="1" status="pass" classname="tests/test_office_client.gd.TestLayoutResponse" time="0.013792" >
-      </testcase>
-      <testcase name="test_transport_failure_fails" assertions="2" status="pass" classname="tests/test_office_client.gd.TestLayoutResponse" time="0.01364" >
+      <testcase name="test_pick_spawn_empty" assertions="1" status="pass" classname="tests/test_office_client.gd.TestSpawnSelection" time="0.000164" >
       </testcase>
   </testsuite>
-  <testsuite name="tests/test_office_client.gd.TestCameraFraming" tests="1" failures="0" skipped="0" time="0.021809" >
-      <testcase name="test_camera_repositioned_above_office" assertions="2" status="pass" classname="tests/test_office_client.gd.TestCameraFraming" time="0.021809" >
+  <testsuite name="tests/test_office_client.gd.TestLayoutResponse" tests="5" failures="0" skipped="0" time="0.078951" >
+      <testcase name="test_success_response_loads_office" assertions="2" status="pass" classname="tests/test_office_client.gd.TestLayoutResponse" time="0.011972" >
+      </testcase>
+      <testcase name="test_non_200_fails" assertions="1" status="pass" classname="tests/test_office_client.gd.TestLayoutResponse" time="0.011882" >
+      </testcase>
+      <testcase name="test_bad_json_fails" assertions="1" status="pass" classname="tests/test_office_client.gd.TestLayoutResponse" time="0.020786" >
+      </testcase>
+      <testcase name="test_missing_layout_json_fails" assertions="1" status="pass" classname="tests/test_office_client.gd.TestLayoutResponse" time="0.013766" >
+      </testcase>
+      <testcase name="test_transport_failure_fails" assertions="2" status="pass" classname="tests/test_office_client.gd.TestLayoutResponse" time="0.020545" >
+      </testcase>
+  </testsuite>
+  <testsuite name="tests/test_office_client.gd.TestCameraFraming" tests="1" failures="0" skipped="0" time="0.014275" >
+      <testcase name="test_camera_repositioned_above_office" assertions="2" status="pass" classname="tests/test_office_client.gd.TestCameraFraming" time="0.014275" >
       </testcase>
   </testsuite>
   <testsuite name="tests/test_office_layout_loader.gd" tests="0" failures="0" skipped="0" time="0.0" >
       </testsuite>
-  <testsuite name="tests/test_office_layout_loader.gd.TestDerivation" tests="11" failures="0" skipped="0" time="0.020926" >
-      <testcase name="test_wall_segments_split_by_door" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.001313" >
+  <testsuite name="tests/test_office_layout_loader.gd.TestDerivation" tests="11" failures="0" skipped="0" time="0.012515" >
+      <testcase name="test_wall_segments_split_by_door" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.001178" >
       </testcase>
-      <testcase name="test_wall_segments_no_door" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.002049" >
+      <testcase name="test_wall_segments_no_door" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.001067" >
       </testcase>
-      <testcase name="test_derive_seats" assertions="6" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.002494" >
+      <testcase name="test_derive_seats" assertions="6" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.001157" >
       </testcase>
-      <testcase name="test_derive_spawns" assertions="4" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.002075" >
+      <testcase name="test_derive_spawns" assertions="4" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.001203" >
       </testcase>
-      <testcase name="test_pillar_obstacle_cells" assertions="5" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.00173" >
+      <testcase name="test_pillar_obstacle_cells" assertions="5" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.00116" >
       </testcase>
-      <testcase name="test_door_opening_walkable_wall_blocked" assertions="4" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.001997" >
+      <testcase name="test_door_opening_walkable_wall_blocked" assertions="4" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.001306" >
       </testcase>
-      <testcase name="test_furniture_is_obstacle" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.002648" >
+      <testcase name="test_furniture_is_obstacle" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.001293" >
       </testcase>
-      <testcase name="test_non_colliding_furniture_skipped" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.002172" >
+      <testcase name="test_non_colliding_furniture_skipped" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.001128" >
       </testcase>
-      <testcase name="test_non_blocking_collider_skipped" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.001884" >
+      <testcase name="test_non_blocking_collider_skipped" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.000978" >
       </testcase>
-      <testcase name="test_polygon_collider_aabb" assertions="3" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.001362" >
+      <testcase name="test_polygon_collider_aabb" assertions="3" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.001086" >
       </testcase>
-      <testcase name="test_parse_bad_json_returns_empty" assertions="3" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.001202" >
-      </testcase>
-  </testsuite>
-  <testsuite name="tests/test_office_layout_loader.gd.TestSceneBuild" tests="7" failures="0" skipped="0" time="0.017625" >
-      <testcase name="test_floor_node_built" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestSceneBuild" time="0.002621" >
-      </testcase>
-      <testcase name="test_room_walls_built" assertions="1" status="pass" classname="tests/test_office_layout_loader.gd.TestSceneBuild" time="0.003351" >
-      </testcase>
-      <testcase name="test_collider_node_built" assertions="1" status="pass" classname="tests/test_office_layout_loader.gd.TestSceneBuild" time="0.002422" >
-      </testcase>
-      <testcase name="test_furniture_nodes_built" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestSceneBuild" time="0.002189" >
-      </testcase>
-      <testcase name="test_seat_and_spawn_markers_built" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestSceneBuild" time="0.002044" >
-      </testcase>
-      <testcase name="test_derived_arrays_populated" assertions="4" status="pass" classname="tests/test_office_layout_loader.gd.TestSceneBuild" time="0.002745" >
-      </testcase>
-      <testcase name="test_floor_height_offset" assertions="1" status="pass" classname="tests/test_office_layout_loader.gd.TestSceneBuild" time="0.002253" >
+      <testcase name="test_parse_bad_json_returns_empty" assertions="3" status="pass" classname="tests/test_office_layout_loader.gd.TestDerivation" time="0.000959" >
       </testcase>
   </testsuite>
-  <testsuite name="tests/test_office_layout_loader.gd.TestAvatarIntegration" tests="3" failures="0" skipped="0" time="0.010564" >
-      <testcase name="test_avatar_routes_around_layout_pillar" assertions="5" status="pass" classname="tests/test_office_layout_loader.gd.TestAvatarIntegration" time="0.003784" >
+  <testsuite name="tests/test_office_layout_loader.gd.TestSceneBuild" tests="7" failures="0" skipped="0" time="0.010901" >
+      <testcase name="test_floor_node_built" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestSceneBuild" time="0.001498" >
       </testcase>
-      <testcase name="test_avatar_detects_layout_seat" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestAvatarIntegration" time="0.003846" >
+      <testcase name="test_room_walls_built" assertions="1" status="pass" classname="tests/test_office_layout_loader.gd.TestSceneBuild" time="0.001562" >
       </testcase>
-      <testcase name="test_avatar_no_seat_out_of_range" assertions="1" status="pass" classname="tests/test_office_layout_loader.gd.TestAvatarIntegration" time="0.002934" >
+      <testcase name="test_collider_node_built" assertions="1" status="pass" classname="tests/test_office_layout_loader.gd.TestSceneBuild" time="0.001422" >
+      </testcase>
+      <testcase name="test_furniture_nodes_built" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestSceneBuild" time="0.001539" >
+      </testcase>
+      <testcase name="test_seat_and_spawn_markers_built" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestSceneBuild" time="0.00139" >
+      </testcase>
+      <testcase name="test_derived_arrays_populated" assertions="4" status="pass" classname="tests/test_office_layout_loader.gd.TestSceneBuild" time="0.00172" >
+      </testcase>
+      <testcase name="test_floor_height_offset" assertions="1" status="pass" classname="tests/test_office_layout_loader.gd.TestSceneBuild" time="0.00177" >
       </testcase>
   </testsuite>
-  <testsuite name="tests/test_scene_load.gd" tests="2" failures="0" skipped="0" time="0.006029" >
-      <testcase name="test_avatar_scene_loads" assertions="2" status="pass" classname="tests/test_scene_load.gd" time="0.003471" >
+  <testsuite name="tests/test_office_layout_loader.gd.TestAvatarIntegration" tests="3" failures="0" skipped="0" time="0.023478" >
+      <testcase name="test_avatar_routes_around_layout_pillar" assertions="5" status="pass" classname="tests/test_office_layout_loader.gd.TestAvatarIntegration" time="0.002695" >
       </testcase>
-      <testcase name="test_office_map_loads" assertions="2" status="pass" classname="tests/test_scene_load.gd" time="0.002558" >
+      <testcase name="test_avatar_detects_layout_seat" assertions="2" status="pass" classname="tests/test_office_layout_loader.gd.TestAvatarIntegration" time="0.007313" >
+      </testcase>
+      <testcase name="test_avatar_no_seat_out_of_range" assertions="1" status="pass" classname="tests/test_office_layout_loader.gd.TestAvatarIntegration" time="0.01347" >
+      </testcase>
+  </testsuite>
+  <testsuite name="tests/test_scene_load.gd" tests="2" failures="0" skipped="0" time="0.004757" >
+      <testcase name="test_avatar_scene_loads" assertions="2" status="pass" classname="tests/test_scene_load.gd" time="0.002869" >
+      </testcase>
+      <testcase name="test_office_map_loads" assertions="2" status="pass" classname="tests/test_scene_load.gd" time="0.001888" >
+      </testcase>
+  </testsuite>
+  <testsuite name="tests/test_server_main.gd" tests="4" failures="0" skipped="0" time="0.004485" >
+      <testcase name="test_wire_injects_obstacle_cells" assertions="2" status="pass" classname="tests/test_server_main.gd" time="0.001254" >
+      </testcase>
+      <testcase name="test_wire_injects_room_capacities" assertions="2" status="pass" classname="tests/test_server_main.gd" time="0.001188" >
+      </testcase>
+      <testcase name="test_wire_missing_layout_returns_false" assertions="2" status="pass" classname="tests/test_server_main.gd" time="0.000832" >
+      </testcase>
+      <testcase name="test_injected_obstacle_actually_blocks_move" assertions="1" status="pass" classname="tests/test_server_main.gd" time="0.001211" >
       </testcase>
   </testsuite>
 </testsuites>

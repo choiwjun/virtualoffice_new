@@ -1,59 +1,42 @@
 {
   "story": "G008",
-  "title": "Godot headless authority server (GDScript) - runtime verified",
+  "title": "Godot headless authority server (GDScript) - runtime verified + hardened",
   "runtime": {
     "engine": "Godot Engine v4.7.stable.official (win64, installed via scoop extras)",
     "mode": "--headless GUT 9.6.0",
-    "note": "이전 세션에서 human_blocked 처리(바이너리 부재)였으나 scoop으로 Godot 4.7 설치 후 실제 런타임 검증 완료."
+    "note": "이전 세션 human_blocked(바이너리 부재) → scoop으로 Godot 4.7 설치 후 실런타임 검증 완료."
   },
-  "suites": {
-    "unit": {
-      "file": "godot/tests/test_game_server.gd",
-      "tests": 18,
-      "passed": 18,
-      "covers": [
-        "proximity_type D9 tiers (direct_talk<1m/menu<2m/chat<5m/none)",
-        "is_blocked obstacle-cell detection + rounding",
-        "avatar_move within-speed accepted (position+facing)",
-        "avatar_move exceeds-speed clamped to MAX_SPEED*SPEED_SLACK*dt (D3)",
-        "avatar_move out-of-bounds clamped to 0..100 (D25)",
-        "avatar_move into obstacle rejected (position unchanged)",
-        "facing 0..360 normalization",
-        "resume replay ring buffer cap (500, pop_front oldest)",
-        "server_seq monotonic",
-        "meeting capacity enforced (over-capacity join refused, room unset)",
-        "meeting enter/exit room+occupant state transitions",
-        "forget_connection cleans session/room/proximity",
-        "build_snapshot only READY connections",
-        "handshake valid JWT -> READY + session registered",
-        "handshake bad protocol_version -> connection closed",
-        "handshake invalid JWT -> closed",
-        "handshake expired JWT -> closed",
-        "handshake wrong-secret JWT -> closed"
-      ]
-    },
-    "integration_real_socket": {
-      "file": "godot/tests/test_net_integration.gd",
-      "tests": 3,
-      "passed": 3,
-      "note": "실제 TCPServer+WebSocketPeer 소켓으로 GameServer 기동 후 NetClient 실접속.",
-      "covers": [
-        "handshake ready + snapshot (self 포함, G001 realtime.py 계약 일치; 2번째 클라 스냅샷에 기존 접속자 포함)",
-        "server authority avatar_move clamp propagated over wire (A가 (0,0)->(95,0) 순간이동 시도 -> B가 관측한 user1 max_x < 50)",
-        "presence online/offline broadcast (B 접속 -> A online 수신; B 종료 -> 서버 감지 후 A offline 수신)"
-      ]
-    }
-  },
-  "contract_consistency": "game_server.gd 는 backend/app/api/realtime.py(G001) 와이어 계약과 정합: hello/ready/reject 핸드셰이크, protocol_version 3, close 4001(auth)/4002(protocol)/4003(capacity), snapshot(self 포함), avatar_move 서버 권위, 20Hz server_tick, resume(server_seq>last), presence/meeting/chat/action_notify. JWT는 jwt_verify.gd(HS256) 로 FastAPI 동일 시크릿 재검증(D4).",
   "full_suite": {
     "command": "godot --headless --path godot -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit",
-    "scripts": 19,
-    "tests": 85,
-    "passed": 83,
+    "scripts": 20,
+    "tests": 97,
+    "passed": 95,
     "failed": 0,
     "pending": 2,
-    "pending_reason": "GPU 렌더 60fps(40아바타) 프로파일 + 최적화 export 로딩시간 = Phase 2(windowed GPU 필요, G010-e). 헤드리스 기능검증은 전부 통과.",
+    "pending_reason": "GPU 렌더 60fps(40아바타) 프로파일 + 최적화 export 로딩시간 = Phase 2(windowed GPU 필요, G010-e).",
     "junit_xml": "backend/artifacts/g008-g009-godot-gut.xml"
   },
-  "deferred_human_blocked": "GPU 기반 60fps 렌더 성능 프로파일(40아바타 windowed) 만 남음 - godot 바이너리는 확보했으나 헤드리스에는 GPU 렌더 파이프라인이 없어 성능 벤치는 별도 GPU 세션 필요(G010-e). 기능/프로토콜/권위 검증은 완료."
+  "suites": {
+    "unit_game_server": { "file": "godot/tests/test_game_server.gd", "tests": 26, "passed": 26 },
+    "server_main_wiring": { "file": "godot/tests/test_server_main.gd", "tests": 4, "passed": 4 },
+    "integration_real_socket": { "file": "godot/tests/test_net_integration.gd", "tests": 3, "passed": 3 },
+    "jwt": { "file": "godot/tests/test_jwt.gd", "tests": 6, "passed": 6 }
+  },
+  "architect_review": {
+    "initial": "agent 26-G008G009-Review: REVISE / productStatus BLOCK — 2 HIGH + 8 MEDIUM findings (실제 결함, 러버스탬프 아님).",
+    "fixes_applied": [
+      "HIGH-1 속도권위 flood 우회: _handle_avatar_move dt를 1/TICK_HZ floor 제거→true elapsed(maxf(now-last,0)). MAX_PACKETS_PER_POLL=64 프레임당 패킷 캡. 테스트 test_move_flood_single_msg_no_teleport + test_move_flood_bounded_by_elapsed_not_count.",
+      "HIGH-2 server_main obstacle/capacity dead: server_main.wire_layout_authority()가 배포 레이아웃 로드→derive_obstacle_cells 주입 + rooms[].max_concurrent_users→room_capacities. 테스트 test_server_main.gd(4, test_injected_obstacle_actually_blocks_move 포함).",
+      "MEDIUM D12 self-filter: office_client _on_net_ready_received가 서버 배정 user_id 채택(자기 유령 방지).",
+      "MEDIUM 용량 4003: _handle_hello가 READY 세션만 카운트→초과 시 reject+close 4003; accept는 max+MAX_PENDING_HANDSHAKES(64)로 대기 소켓 상한.",
+      "MEDIUM close-code 정합: 프로토콜 불일치→reject{min,max}+1000, timeout→1000, malformed→4002, non-hello→4002 (realtime.py 일치).",
+      "MEDIUM presence 검증: D13 7-enum 외 status 거부(error), 브로드캐스트 안 함.",
+      "MEDIUM meeting_enter: 요청자 전용 회신 + livekit 필드 공백(백엔드 D24 발급, 클라 토큰 미중계).",
+      "MEDIUM replay 완전성: _broadcast_seq(seq+record)로 presence/chat/action/meeting_exit/offline 기록(server_tick은 휘발성 제외).",
+      "LOW chat.range: msg.get(range,5) int 기본값 통과(realtime.py 일치)."
+    ],
+    "recheck": "agent 27-G008G009-Recheck (재리뷰 진행)."
+  },
+  "contract_consistency": "game_server.gd 는 backend/app/api/realtime.py(G001) 계약과 정합: 핸드셰이크(hello/ready/reject, protocol_version 3), close 1000(protocol/timeout)/4001(auth)/4002(malformed)/4003(capacity), snapshot(self 포함), avatar_move 서버 권위(속도/경계/장애물, flood-safe), 20Hz tick, resume(server_seq>last, 전 브로드캐스트 기록), presence(7-enum 검증)/meeting(요청자전용)/chat/action_notify. JWT는 jwt_verify.gd(HS256, alg-confusion 안전) FastAPI 동일 시크릿(D4).",
+  "deferred_human_blocked": "GPU 기반 60fps 렌더 성능 프로파일(40아바타 windowed)만 남음(G010-e). 기능/프로토콜/권위/보안 검증은 완료."
 }

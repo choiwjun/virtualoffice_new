@@ -248,7 +248,12 @@ func _send_pending_move(delta: float) -> void:
 
 
 ## 서버 ready: 스냅샷에 담긴 기존 접속자를 원격 아바타로 스폰(D12: 서버값 그대로 신뢰).
-func _on_net_ready_received(_user_id: int, snapshot: Array) -> void:
+func _on_net_ready_received(user_id: int, snapshot: Array) -> void:
+	# D12: 서버가 배정한 user_id를 로컬 정체성으로 채택 → 이후 self-filter가 실제 서버 uid
+	# 기준으로 동작(avatar_user_id export 기본값과 JWT sub가 다를 때 자기 유령 스폰 방지).
+	avatar_user_id = user_id
+	if avatar != null and is_instance_valid(avatar):
+		avatar.user_id = user_id
 	for entry in snapshot:
 		var uid := int(entry.get("user_id", 0))
 		if uid == avatar_user_id or uid == 0:

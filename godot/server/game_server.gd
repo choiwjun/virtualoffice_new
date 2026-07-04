@@ -46,6 +46,11 @@ const CLOSE_NORMAL := 1000
 const CLOSE_AUTH := 4001
 const CLOSE_PROTOCOL := 4002
 const CLOSE_CAPACITY := 4003
+const MAX_PENDING_HANDSHAKES := 64  ## AWAIT_HELLO 대기 소켓 상한(핸드셰이크 슬롯 고갈 DoS 방지)
+const MAX_PACKETS_PER_POLL := 64    ## 연결당 프레임 처리 패킷 상한(메시지 폭주 CPU DoS 방지)
+
+## D13: presence 7-상태. 목록 외 status는 거부(realtime.py 정합).
+const VALID_PRESENCE := ["offline", "online", "working", "meeting", "focus", "away", "external"]
 
 # 연결 상태 머신
 enum ConnState { AWAIT_HELLO, READY, CLOSED }
@@ -152,8 +157,8 @@ func _accept_new_connections() -> void:
 		var tcp := _tcp_server.take_connection()
 		if tcp == null:
 			continue
-		if _connections.size() >= max_connections:
-			# 용량 초과: WS 핸드셰이크까지 갈 필요 없이 즉시 소켓을 닫는다.
+		if _connections.size() >= max_connections + MAX_PENDING_HANDSHAKES:
+			# 소켓 절대 상한(READY + 대기 핸드셰이크). 초과 시 즉시 닫는다.
 			tcp.disconnect_from_host()
 			continue
 		var ws := WebSocketPeer.new()
@@ -192,16 +197,20 @@ func _poll_connections(_delta: float) -> void:
 			continue
 
 		if conn["state"] == ConnState.AWAIT_HELLO and now > float(conn["hello_deadline"]):
-			_reject(conn_id, "unsupported_protocol_version", CLOSE_PROTOCOL)
+			_close_connection(conn_id, CLOSE_NORMAL, "handshake_timeout")
 			continue
 
-		while ws.get_available_packet_count() > 0:
+		var handled := 0
+		while ws.get_available_packet_count() > 0 and handled < MAX_PACKETS_PER_POLL:
+			handled += 1
 			var packet := ws.get_packet()
 			var text := packet.get_string_from_utf8()
-			var parsed = JSON.parse_string(text)
-			if typeof(parsed) != TYPE_DICTIONARY:
-				continue
-			_handle_message(conn_id, parsed)
+			var json := JSON.new()
+			if json.parse(text) != OK or typeof(json.data) != TYPE_DICTIONARY:
+				# 손상 프레임(비-JSON/비-객체) → 프로토콜 오류로 종료(realtime.py 정합, close 4002).
+				_close_connection(conn_id, CLOSE_PROTOCOL, "invalid_message_format")
+				break
+			_handle_message(conn_id, json.data)
 			# 메시지 처리 중 연결이 닫혔을 수 있으므로 재확인.
 			if not _connections.has(conn_id):
 				break
@@ -220,7 +229,9 @@ func _handle_message(conn_id: int, msg: Dictionary) -> void:
 	if conn["state"] == ConnState.AWAIT_HELLO:
 		if msg_type == "hello":
 			_handle_hello(conn_id, msg)
-		# 핸드셰이크 전 다른 메시지는 무시(스펙 외 프레임).
+		else:
+			# 핸드셰이크 전 hello 외 프레임 → 프로토콜 오류(realtime.py 정합, close 4002).
+			_close_connection(conn_id, CLOSE_PROTOCOL, "invalid_message_format")
 		return
 
 	match msg_type:
@@ -251,10 +262,16 @@ func _handle_hello(conn_id: int, msg: Dictionary) -> void:
 
 	var protocol_version := int(msg.get("protocol_version", -1))
 	if protocol_version != PROTOCOL_VERSION:
-		_reject(conn_id, "unsupported_protocol_version", CLOSE_PROTOCOL)
+		_send(conn_id, {
+			"type": "reject",
+			"reason": "unsupported_protocol_version",
+			"min": PROTOCOL_VERSION,
+			"max": PROTOCOL_VERSION,
+		})
+		_close_connection(conn_id, CLOSE_NORMAL, "unsupported_protocol_version")
 		return
 
-	if _connections.size() > max_connections:
+	if _sessions_by_user.size() >= max_connections:
 		_reject(conn_id, "capacity_exceeded", CLOSE_CAPACITY)
 		return
 
@@ -293,7 +310,7 @@ func _handle_hello(conn_id: int, msg: Dictionary) -> void:
 		"snapshot": _build_snapshot(),
 	})
 
-	_broadcast({
+	_broadcast_seq({
 		"type": "presence_update",
 		"user_id": user_id,
 		"status": "online",
@@ -337,7 +354,9 @@ func _handle_avatar_move(conn_id: int, msg: Dictionary) -> void:
 		facing += 360.0
 
 	var now := Time.get_unix_time_from_system()
-	var dt := maxf(now - float(conn["last_move_time"]), 1.0 / TICK_HZ)
+	# D3: 실제 경과시간으로 예산 산정. 1/TICK_HZ floor 금지 — 그래야 메시지 폭주 시에도
+	# 누적 이동이 MAX_SPEED*SLACK*(실경과)로 묶여 속도상한 우회를 막는다(telescoping).
+	var dt := maxf(now - float(conn["last_move_time"]), 0.0)
 	var from := Vector2(conn["x"], conn["y"])
 	var requested := Vector2(target_x, target_y)
 	var dist := from.distance_to(requested)
@@ -447,9 +466,17 @@ func _handle_presence_update(conn_id: int, msg: Dictionary) -> void:
 	var conn: Dictionary = _connections[conn_id]
 	var user_id: int = conn["user_id"]
 	var status := str(msg.get("status", "online"))
+	# D13: 7-상태 외 status 거부(realtime.py 정합) — 상태 미변경 + error 통지.
+	if not VALID_PRESENCE.has(status):
+		_send(conn_id, {
+			"type": "error",
+			"code": "invalid_message_format",
+			"detail": "unknown_status",
+		})
+		return
 	conn["status"] = status
 	_connections[conn_id] = conn
-	_broadcast({
+	_broadcast_seq({
 		"type": "presence_update",
 		"user_id": user_id,
 		"status": status,
@@ -463,18 +490,18 @@ func _handle_presence_update(conn_id: int, msg: Dictionary) -> void:
 func _handle_chat(conn_id: int, msg: Dictionary) -> void:
 	var conn: Dictionary = _connections[conn_id]
 	var user_id: int = conn["user_id"]
-	_broadcast({
+	_broadcast_seq({
 		"type": "chat",
 		"user_id": user_id,
 		"message": str(msg.get("message", "")),
-		"range": str(msg.get("range", "chat")),
+		"range": msg.get("range", 5),
 	}, user_id)
 
 
 func _handle_action_notify(conn_id: int, msg: Dictionary) -> void:
 	var conn: Dictionary = _connections[conn_id]
 	var user_id: int = conn["user_id"]
-	_broadcast({
+	_broadcast_seq({
 		"type": "action_notify",
 		"user_id": user_id,
 		"action": str(msg.get("action", "")),
@@ -506,27 +533,26 @@ func _handle_meeting_enter(conn_id: int, msg: Dictionary) -> void:
 	conn["room_id"] = room_id
 	_connections[conn_id] = conn
 
+	# meeting_enter는 요청자에게만 회신(realtime.py 정합). LiveKit 토큰은 백엔드(D24)가
+	# 발급 — 이 헤드리스 서버는 클라 제공 토큰을 중계하지 않는다(조인토큰 유출 방지).
 	var seq := _next_server_seq()
-	var out_msg := {
+	_send(conn_id, {
 		"type": "meeting_enter",
 		"user_id": user_id,
 		"meeting_id": meeting_id,
 		"room_id": room_id,
-		# LiveKit 발급은 백엔드(D24) 소관 — 클라가 이미 받아온 값을 그대로 중계한다.
-		"livekit_room_name": str(msg.get("livekit_room_name", "")),
-		"livekit_token": str(msg.get("livekit_token", "")),
+		"livekit_room_name": "",
+		"livekit_token": "",
 		"server_seq": seq,
-	}
-	_broadcast(out_msg, user_id)
-	_send(conn_id, out_msg)
-	_record_replay(seq, out_msg)
+	})
 
-	_broadcast({
+	# 타인에게는 presence_update(meeting)만 브로드캐스트(seq+replay 기록).
+	_broadcast_seq({
 		"type": "presence_update",
 		"user_id": user_id,
 		"status": "meeting",
 		"room_id": room_id,
-	})
+	}, user_id)
 
 
 func _handle_meeting_exit(conn_id: int, msg: Dictionary) -> void:
@@ -541,13 +567,13 @@ func _handle_meeting_exit(conn_id: int, msg: Dictionary) -> void:
 	conn["room_id"] = ""
 	_connections[conn_id] = conn
 
-	_broadcast({
+	_broadcast_seq({
 		"type": "meeting_exit",
 		"user_id": user_id,
 		"meeting_id": meeting_id,
 		"room_id": room_id,
 	})
-	_broadcast({
+	_broadcast_seq({
 		"type": "presence_update",
 		"user_id": user_id,
 		"status": "online",
@@ -628,6 +654,14 @@ func _broadcast(message: Dictionary, exclude_user_id: int = -1) -> void:
 		_send(conn_id, message)
 
 
+## 브로드캐스트 + server_seq 부여 + resume 재생 버퍼 기록(realtime.py broadcast 정합).
+## presence/chat/action/meeting_exit 등 상태성 이벤트용(server_tick은 휘발성 → 제외).
+func _broadcast_seq(message: Dictionary, exclude_user_id: int = -1) -> void:
+	var seq := _next_server_seq()
+	message["server_seq"] = seq
+	_record_replay(seq, message)
+	_broadcast(message, exclude_user_id)
+
 ## exclude_user_id 없이 특정 user_id 집합에게만 송신(근접 알림처럼 당사자만 필요한 경우).
 func _broadcast_to(user_ids, message: Dictionary) -> void:
 	for conn_id in _connections.keys():
@@ -661,7 +695,7 @@ func _forget_connection(conn_id: int) -> void:
 			if occupants.has(user_id):
 				occupants.erase(user_id)
 				_room_occupants[room_id] = occupants
-		_broadcast({
+		_broadcast_seq({
 			"type": "presence_update",
 			"user_id": user_id,
 			"status": "offline",

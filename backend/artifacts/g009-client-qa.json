@@ -1,10 +1,10 @@
 {
   "story": "G009",
-  "title": "Godot client WSS networking (NetClient + office_client integration) - runtime verified",
+  "title": "Godot client WSS networking (NetClient + office_client) - runtime verified + D12 hardened",
   "runtime": {
     "engine": "Godot Engine v4.7.stable.official (win64, scoop)",
     "mode": "--headless GUT 9.6.0",
-    "note": "이전 세션 human_blocked(바이너리 부재) -> Godot 4.7 설치 후 실소켓 통합 검증 완료."
+    "note": "이전 세션 human_blocked → Godot 4.7 설치 후 실소켓 통합 검증 완료."
   },
   "verification": {
     "real_socket_integration": {
@@ -12,25 +12,26 @@
       "tests": 3,
       "passed": 3,
       "covers": [
-        "NetClient.connect_to_server -> hello 핸드셰이크 -> ready_received (user_id, snapshot) 실제 소켓 왕복",
-        "server_tick + avatar_moved 수신으로 원격 user 위치 반영; 서버 권위 클램프값이 클라에 그대로 전파(D12)",
+        "NetClient.connect_to_server → hello 핸드셰이크 → ready_received(user_id, snapshot) 실소켓 왕복",
+        "서버 권위 이동 클램프값이 server_tick/avatar_move로 클라에 전파(D12) — B가 관측한 user1 max_x<50",
         "presence_updated online/offline 수신"
       ]
     },
-    "client_contract": "net_client.gd 는 G001 메시지 형태 그대로 송수신: send_avatar_move/presence/meeting_enter/exit/chat/action_notify/resume 발신, ready/reject/avatar_move/presence_update/meeting_*/chat/action_notify/server_tick 수신 시그널. last_server_seq 추적(resume용). State 머신 DISCONNECTED->CONNECTING->AWAIT_READY->READY.",
-    "office_client_integration": "office_client.gd connect_to_server() 게이트(미호출 시 기존 오프라인 로드 흐름 무손상), 로컬 avatar.moved 10Hz throttle 송신, 원격 아바타 스폰/lerp 보간(REMOTE_LERP_SPEED), presence 반영, self uid 필터(_on_net_ready_received). D12: 원격 위치는 서버 권위만 신뢰(로컬 예측 없음)."
+    "client_contract": "net_client.gd 는 G001 메시지 형태 그대로: send_avatar_move/presence/meeting_enter/exit/chat/action_notify/resume 발신, ready/reject/avatar_move/presence/meeting/chat/action/server_tick 수신 시그널, last_server_seq 추적. State: DISCONNECTED→CONNECTING→AWAIT_READY→READY, close/reconnect null-safe.",
+    "office_client_integration": "connect_to_server() 게이트(미호출 시 오프라인 로드 무손상), 로컬 avatar.moved 10Hz throttle 송신, 원격 아바타 스폰/lerp 보간(set_physics_process(false), D12 서버권위만 신뢰)."
   },
+  "architect_fix_D12": "office_client _on_net_ready_received가 서버 배정 user_id를 로컬 정체성으로 채택(avatar_user_id + avatar.user_id) → self-filter가 export 기본값이 아닌 실제 서버 uid 기준 동작(avatar_user_id≠JWT sub 시 자기 유령 스폰 방지). architect MEDIUM 해결.",
   "regression_fixes_this_session": [
-    "office_client.gd _clear(): remove_child 후 queue_free 로 재로드 시 트리 상태 즉시 정합(test_reload_replaces_previous 통과) - 기존 queue_free 지연 타이밍 결함 수정",
-    "office_client.gd _on_layout_response + office_layout_loader.gd parse_json: JSON.parse_string -> JSON.new().parse() (quiet parse) 로 불량 JSON 시 네이티브 에러 로그 제거, 동작 동일(test_bad_json_fails, test_parse_bad_json_returns_empty 통과)"
+    "office_client.gd _clear(): remove_child 후 queue_free 로 재로드 시 트리 상태 즉시 정합(test_reload_replaces_previous 통과).",
+    "office_client.gd _on_layout_response + office_layout_loader.gd parse_json: JSON.new().parse() quiet parse 로 불량 JSON 네이티브 에러 로그 제거(동작 동일)."
   ],
   "full_suite": {
-    "scripts": 19,
-    "tests": 85,
-    "passed": 83,
+    "scripts": 20,
+    "tests": 97,
+    "passed": 95,
     "failed": 0,
     "pending": 2,
     "junit_xml": "backend/artifacts/g008-g009-godot-gut.xml"
   },
-  "deferred_human_blocked": "GPU 렌더/60fps 성능 프로파일(G010-e)만 별도 GPU 세션 필요. 네트워킹 기능/프로토콜/보간/presence 검증은 실소켓으로 완료."
+  "deferred_human_blocked": "GPU 렌더/60fps 성능 프로파일(G010-e)만 별도 GPU 세션 필요. 네트워킹 기능/프로토콜/보간/presence는 실소켓으로 검증 완료."
 }

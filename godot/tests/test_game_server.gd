@@ -224,3 +224,93 @@ func test_handshake_wrong_secret_rejected() -> void:
 	)
 	s._handle_hello(1, { "protocol_version": 3, "jwt": token })
 	assert_false(s._connections.has(1), "서명 불일치 → 연결 종료")
+
+# ============================================================================
+# avatar_move flood 우회 방지(D3, architect HIGH-1 회귀 가드)
+# ============================================================================
+
+func test_move_flood_single_msg_no_teleport() -> void:
+	var s := _server()
+	# dt_back=0 → 방금 이동함(경과≈0). 단일 폭주 메시지는 예산≈0이라 순간이동 불가.
+	_inject(s, 1, 10, GameServer.ConnState.READY, 0.0, 0.0, 0.0)
+	s._handle_avatar_move(1, { "x": 95.0, "y": 0.0, "facing": 0.0, "sequence_num": 1 })
+	assert_lt(s._connections[1]["x"], 0.5, "경과≈0 메시지는 순간이동 불가(예산≈0)")
+
+
+func test_move_flood_bounded_by_elapsed_not_count() -> void:
+	var s := _server()
+	_inject(s, 1, 10, GameServer.ConnState.READY, 0.0, 0.0, 0.0)
+	# 타이트 루프로 다수 메시지 폭주 → 누적 이동은 실경과시간에 묶여야 함(메시지 수 아님).
+	for i in range(200):
+		s._handle_avatar_move(1, { "x": 95.0, "y": 0.0, "facing": 0.0, "sequence_num": i })
+	assert_lt(s._connections[1]["x"], 20.0, "폭주해도 누적 이동 bounded(≠95 순간이동)")
+
+
+# ============================================================================
+# presence 상태 검증(D13 7-enum)
+# ============================================================================
+
+func test_presence_invalid_status_rejected() -> void:
+	var s := _server()
+	_inject(s, 1, 10, GameServer.ConnState.READY)
+	s._handle_presence_update(1, { "status": "bogus_state" })
+	assert_eq(str(s._connections[1]["status"]), "online", "허용외 status는 미반영")
+
+
+func test_presence_valid_status_applied() -> void:
+	var s := _server()
+	_inject(s, 1, 10, GameServer.ConnState.READY)
+	s._handle_presence_update(1, { "status": "focus" })
+	assert_eq(str(s._connections[1]["status"]), "focus", "7-enum status 반영")
+
+
+# ============================================================================
+# 용량 4003(READY 세션만 카운트)
+# ============================================================================
+
+func test_capacity_rejects_when_ready_full() -> void:
+	var s := _server()
+	s.max_connections = 1
+	_inject(s, 1, 10, GameServer.ConnState.READY)  # READY 1개 → 정원 도달
+	_inject(s, 2, 0, GameServer.ConnState.AWAIT_HELLO)
+	var token := JwtVerify.mint(
+		{ "sub": 20, "exp": Time.get_unix_time_from_system() + 3600 }, SECRET
+	)
+	s._handle_hello(2, { "protocol_version": 3, "jwt": token })
+	assert_false(s._connections.has(2), "정원 초과 hello → 연결 종료(4003)")
+	assert_false(s._sessions_by_user.has(20), "정원 초과 세션 미등록")
+
+
+# ============================================================================
+# resume 재생 완전성(presence/chat/action도 버퍼 기록)
+# ============================================================================
+
+func test_broadcast_seq_records_presence_for_replay() -> void:
+	var s := _server()
+	_inject(s, 1, 10, GameServer.ConnState.READY)
+	var before := s._replay_buffer.size()
+	s._handle_presence_update(1, { "status": "away" })
+	assert_eq(s._replay_buffer.size(), before + 1, "presence 브로드캐스트가 replay 기록됨")
+	var last: Dictionary = s._replay_buffer[s._replay_buffer.size() - 1]["message"]
+	assert_eq(str(last["type"]), "presence_update", "기록된 메시지 타입")
+
+
+func test_broadcast_seq_records_chat_and_action() -> void:
+	var s := _server()
+	_inject(s, 1, 10, GameServer.ConnState.READY)
+	var before := s._replay_buffer.size()
+	s._handle_chat(1, { "message": "hi", "range": 5 })
+	s._handle_action_notify(1, { "action": "wave", "target_type": "user", "target_id": 2 })
+	assert_eq(s._replay_buffer.size(), before + 2, "chat+action 모두 replay 기록")
+
+
+func test_meeting_enter_not_replayed_but_presence_is() -> void:
+	var s := _server()
+	_inject(s, 1, 10, GameServer.ConnState.READY)
+	var before := s._replay_buffer.size()
+	s._handle_meeting_enter(1, { "room_id": "R1", "meeting_id": "M1" })
+	# meeting_enter는 요청자 전용(미기록), presence(meeting)만 기록 → +1
+	assert_eq(s._replay_buffer.size(), before + 1, "meeting_enter는 요청자전용·미기록, presence만 기록")
+	var last: Dictionary = s._replay_buffer[s._replay_buffer.size() - 1]["message"]
+	assert_eq(str(last["type"]), "presence_update", "기록된 것은 presence(meeting)")
+	assert_eq(str(last["status"]), "meeting", "meeting 상태")
