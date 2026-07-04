@@ -26,16 +26,19 @@ from __future__ import annotations
 
 import logging
 
+import httpx
+
 from contextlib import asynccontextmanager
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import AsyncIterator
 from uuid import uuid4
 from zlib import crc32
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import JSON, select, text
+from sqlalchemy import JSON, delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings as default_settings
 from app.erp.reader import ErpReader
 from app.erp.sync import ErpSyncService, SyncResult
 from app.models.tables import (
@@ -44,9 +47,11 @@ from app.models.tables import (
     DailyStatusPushTarget,
     KpiPeriodType,
     KpiResult,
+    Presence,
     WorkLog,
     WorkLogStatus,
 )
+from app.services.ai_narrative import generate_narrative
 from app.services.holidays import VARIABLE_COVERED_YEARS, is_kr_holiday
 
 logger = logging.getLogger(__name__)
@@ -162,24 +167,80 @@ async def daily_reports_push(db: AsyncSession, run_date: date) -> int:
     return created
 
 
+async def daily_reports_erp_push(
+    db: AsyncSession, run_date: date, client: httpx.AsyncClient | None = None
+) -> dict:
+    """daily_reports_push가 적재한 PENDING(ERP_DAILY_REPORTS) 행을 실 ERP로 POST한다.
+
+    settings.daily_reports_erp_push_enabled가 False면(기본) 아무것도 하지 않는다 —
+    daily_reports_push가 남긴 PENDING 행은 로컬 로그로 그대로 유지된다(D17 리스크 완화).
+    True면 run_date에 해당하는 PENDING 행을 조회해 `{erp_push_base_url}/api/reports`로
+    POST하고, 2xx 응답이면 SENT, 그 외에는 FAILED로 표시한다(재시도는 범위 밖).
+    """
+    settings = default_settings
+    if not settings.daily_reports_erp_push_enabled:
+        return {"pushed": 0, "failed": 0, "skipped": "flag_off"}
+
+    if not settings.erp_push_base_url:
+        logger.warning("daily_reports_erp_push: 플래그 ON이나 erp_push_base_url 미설정 — 스킵")
+        return {"pushed": 0, "failed": 0, "skipped": "base_url_missing"}
+
+    rows = (
+        await db.execute(
+            select(DailyStatusPush).where(
+                DailyStatusPush.push_date == run_date,
+                DailyStatusPush.target == DailyStatusPushTarget.ERP_DAILY_REPORTS,
+                DailyStatusPush.status == DailyStatusPushStatus.PENDING,
+            )
+        )
+    ).scalars().all()
+    if not rows:
+        return {"pushed": 0, "failed": 0, "skipped": "no_pending_rows"}
+
+    owns_client = client is None
+    http_client = client or httpx.AsyncClient(timeout=10.0)
+    pushed = 0
+    failed = 0
+    now = datetime.now(timezone.utc)
+    try:
+        for row in rows:
+            row.error_message = None
+            try:
+                response = await http_client.post(
+                    f"{settings.erp_push_base_url}/api/reports", json=row.payload
+                )
+                ok = 200 <= response.status_code < 300
+                if not ok:
+                    row.error_message = f"http_{response.status_code}"
+            except httpx.HTTPError as exc:
+                ok = False
+                row.error_message = str(exc)
+            if ok:
+                row.status = DailyStatusPushStatus.SENT
+                row.pushed_at = now
+                pushed += 1
+            else:
+                row.status = DailyStatusPushStatus.FAILED
+                row.retry_count += 1
+                failed += 1
+    finally:
+        if owns_client:
+            await http_client.aclose()
+
+    await db.flush()
+    return {"pushed": pushed, "failed": failed}
+
+
 # ============================================================================
 # 잡 2 — KPI AI 서술 초안 생성 (21:00 KST)
 # ============================================================================
-def _ai_draft_placeholder(kr: KpiResult) -> dict:
-    """실 AI 호출은 환경차단(G011) — 정량 값 기반 결정론 placeholder만 생성한다."""
-    return {
-        "strength": f"{kr.metric} 지표 값 {kr.value} 기반 초안 대기",
-        "improvement": "AI 서술 생성 대기 중(라이브 모델 호출은 G011 환경차단)",
-        "note": "ai_draft_pending",
-    }
-
-
 async def kpi_ai_draft_generation(
     db: AsyncSession, period_type: KpiPeriodType, period_key: str
 ) -> int:
-    """대상 kpi_result(ai_draft가 아직 없는 행)에 결정론 placeholder를 채운다(멱등).
+    """대상 kpi_result(ai_draft가 아직 없는 행)에 AI 서술 초안(app.services.ai_narrative)을 채운다(멱등).
 
     이미 ai_draft가 채워진 행은 건드리지 않는다 — 재실행해도 중복/덮어쓰기 없음.
+    provider는 settings.ai_narrative_live에 따라 결정(fallback 기본, claude 라이브 옵션).
     반환값: 갱신된 행 수.
     """
     rows = (
@@ -199,7 +260,13 @@ async def kpi_ai_draft_generation(
 
     now = datetime.now(timezone.utc)
     for kr in rows:
-        kr.ai_draft = _ai_draft_placeholder(kr)
+        draft = await generate_narrative(kr.metric, kr.value, kr.user_id)
+        kr.ai_draft = {
+            "strength": draft["strength"],
+            "improvement": draft["improvement"],
+            "note": draft["note"],
+        }
+        kr.ai_model = draft["model"]
         kr.ai_draft_generated_at = now
 
     await db.flush()
@@ -212,8 +279,14 @@ async def kpi_ai_draft_generation(
 async def erp_incremental_sync(
     db: AsyncSession, reader: ErpReader, company_id: int = DEFAULT_COMPANY_ID
 ) -> SyncResult:
-    """매시간 증분 동기화. ErpSyncService.sync_users 재사용(G009)."""
-    result = await ErpSyncService(db).sync_users(reader, company_id)
+    """매시간 증분 동기화. ErpSyncService.sync_users/sync_teams/sync_positions 재사용(G009, G005).
+
+    attendances/leaves는 read-through 설계(dtos.py)라 여기서 동기화하지 않는다.
+    """
+    svc = ErpSyncService(db)
+    result = await svc.sync_users(reader, company_id)
+    await svc.sync_teams(reader, company_id)
+    await svc.sync_positions(reader, company_id)
     await db.commit()
     return result
 
@@ -223,22 +296,48 @@ async def erp_full_reconciliation(
 ) -> SyncResult:
     """00:00 KST 전체 대사. sync_users는 매 실행마다 company 스코프 전체 행을 대조해
     soft-delete까지 감지하므로 증분과 동일 로직을 재사용한다(D18) — 배치 트리거 주기만 다르다.
+    sync_teams/sync_positions도 동일 주기로 함께 대사한다(G005).
     """
-    result = await ErpSyncService(db).sync_users(reader, company_id)
+    svc = ErpSyncService(db)
+    result = await svc.sync_users(reader, company_id)
+    await svc.sync_teams(reader, company_id)
+    await svc.sync_positions(reader, company_id)
     await db.commit()
     return result
 
+# ============================================================================
+# 잡 5 — presence 좌표 30일 파기 (D20-a, 03:00 KST)
+# ============================================================================
+async def presence_coordinate_purge(db: AsyncSession, now: datetime | None = None) -> int:
+    """D20-a: presence 좌표(현위치)는 개인정보 최소보관 원칙에 따라 30일 지난 행을 파기한다.
+
+    updated_at(마지막 상태·위치 갱신 시각) 기준 30일 경과 행을 물리 삭제한다. 멱등 —
+    이미 삭제된 행은 다시 삭제되지 않으므로 재실행해도 반환값은 0에 수렴한다.
+    """
+    if now is None:
+        now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=30)
+
+    target_ids = (
+        await db.execute(select(Presence.user_id).where(Presence.updated_at < cutoff))
+    ).scalars().all()
+    if not target_ids:
+        return 0
+
+    await db.execute(delete(Presence).where(Presence.updated_at < cutoff))
+    return len(target_ids)
 
 # ============================================================================
 # 스케줄러 등록 (D17: cron, timezone=Asia/Seoul) — 기본 미기동
 # ============================================================================
 def build_scheduler(session_factory=None, reader_factory=None):
-    """AsyncIOScheduler에 4개 배치 잡을 KST cron으로 등록한다.
+    """AsyncIOScheduler에 5개 배치 잡을 KST cron으로 등록한다.
 
     - daily_reports:  18:00 KST 평일(mon-fri, D17), 공휴일(정적 소스 is_kr_holiday) 스킵
     - kpi_ai_draft:   21:00 KST 매일
     - erp_incremental: 매시간(0분) KST
     - erp_full_reconciliation: 00:00 KST 매일
+    - presence_coordinate_purge: 03:00 KST 매일 — D20-a presence 좌표 30일 파기
 
     session_factory/reader_factory 미지정 시 app.db.SessionLocal / app.erp.reader.get_erp_reader를
     지연 임포트로 사용한다(순환 임포트 방지, 테스트에서 오버라이드 가능).
@@ -264,6 +363,7 @@ def build_scheduler(session_factory=None, reader_factory=None):
                 # 하루 어긋날 수 있다).
                 run_date = datetime.now(ZoneInfo(KST_TZ_NAME)).date()
                 await daily_reports_push(db, run_date)
+                await daily_reports_erp_push(db, run_date)
                 await db.commit()
 
     async def _run_kpi_ai_draft_generation() -> None:
@@ -292,6 +392,11 @@ def build_scheduler(session_factory=None, reader_factory=None):
             finally:
                 await reader.aclose()
 
+    async def _run_presence_coordinate_purge() -> None:
+        async with session_factory() as db:
+            async with advisory_lock(db, key=_stable_job_key("presence_coordinate_purge")):
+                await presence_coordinate_purge(db)
+                await db.commit()
     scheduler.add_job(
         _run_daily_reports_push,
         # product D17(G010 architect): 평일(mon-fri)만 발화 — 주말 업무 요약 푸시 스킵.
@@ -326,5 +431,14 @@ def build_scheduler(session_factory=None, reader_factory=None):
         max_instances=1,
         coalesce=True,
     )
+    scheduler.add_job(
+        _run_presence_coordinate_purge,
+        CronTrigger(hour=3, minute=0, timezone=KST_TZ_NAME),
+        id="presence_coordinate_purge",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+    )
+
 
     return scheduler

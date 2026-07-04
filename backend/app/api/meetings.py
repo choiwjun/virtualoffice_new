@@ -460,6 +460,62 @@ async def update_meeting_minutes(
             minute.decisions = decisions_text
         if action_items_text is not None:
             minute.action_items_summary = action_items_text
+    # 구조적 액션아이템 인입 (T12c, KPI 집계 데이터 소스): title+owner_id(int)+due_date(ISO
+    # date str) 3종을 모두 갖춘 dict만 ActionItem 행으로 영속화. 누락된 dict는 기존처럼
+    # 텍스트 요약에만 반영되고 구조적 행은 생성하지 않는다(계약 유지, 회귀 방지).
+    # idempotent: (meeting_id, title, assignee_user_id) 동일 조합이 이미 있으면 스킵.
+    if body.action_items:
+        from datetime import date as _date
+
+        from app.models.tables import ActionItem, ActionItemPriority, ErpUser
+
+        for raw_item in body.action_items:
+            title = raw_item.get("title")
+            owner_id = raw_item.get("owner_id")
+            due_date_raw = raw_item.get("due_date")
+            # owner_id: bool 제외 + int64 범위(BigInteger)만 허용 — 범위 밖은 DB 바인딩
+            # OverflowError(500) 방지 위해 malformed로 취급하고 스킵.
+            if (
+                not title
+                or isinstance(owner_id, bool)
+                or not isinstance(owner_id, int)
+                or not (0 < owner_id <= 9223372036854775807)
+                or not due_date_raw
+            ):
+                continue
+            try:
+                parsed_due = _date.fromisoformat(due_date_raw)
+            except (ValueError, TypeError):
+                continue
+
+            existing_stmt = select(ActionItem).where(
+                ActionItem.meeting_id == meeting.id,
+                ActionItem.title == title,
+                ActionItem.assignee_user_id == owner_id,
+            )
+            if (await db.execute(existing_stmt)).scalars().first() is not None:
+                continue
+
+            assignee = await db.get(ErpUser, owner_id)
+            if assignee is None:
+                continue
+
+            priority_raw = raw_item.get("priority")
+            try:
+                priority = ActionItemPriority(priority_raw) if priority_raw else ActionItemPriority.MEDIUM
+            except ValueError:
+                priority = ActionItemPriority.MEDIUM
+
+            db.add(
+                ActionItem(
+                    meeting_id=meeting.id,
+                    title=title,
+                    assignee_user_id=owner_id,
+                    due_date=parsed_due,
+                    priority=priority,
+                )
+            )
+
 
     await db.commit()
     await db.refresh(minute)

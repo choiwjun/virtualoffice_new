@@ -6,7 +6,7 @@ G010 배치 스케줄러 단위 테스트 — 잡 로직 멱등성 + build_sched
 환경차단(G011로 리더 등록 대상): 실제 APScheduler 상시 실행, 실 18:00/21:00/매시/00:00 KST
 cron 발화, PostgreSQL pg_advisory_lock 동시성은 이 환경(단발성 pytest, SQLite)에서 검증할 수
 없다. 이 테스트는 (1) 잡 함수 로직의 결정론/멱등성, (2) advisory_lock의 SQLite no-op 통과,
-(3) build_scheduler가 4개 잡을 올바른 트리거로 등록하는지(start() 없이), (4) scheduler_enabled
+(3) build_scheduler가 5개 잡을 올바른 트리거로 등록하는지(start() 없이), (4) scheduler_enabled
 기본값(False)에서 main이 스케줄러를 기동하지 않는지만 검증한다.
 """
 
@@ -148,7 +148,7 @@ async def test_kpi_ai_draft_generation_fills_placeholder_deterministically(db_se
     assert updated == 1
     await db_session.refresh(kr)
     assert kr.ai_draft is not None
-    assert kr.ai_draft["note"] == "ai_draft_pending"
+    assert kr.ai_draft["note"] == "ai_draft_fallback"
     assert kr.ai_draft_generated_at is not None
 
 
@@ -237,9 +237,9 @@ async def test_erp_full_reconciliation_detects_soft_delete(db_session):
 
 
 # ============================================================================
-# 5) build_scheduler — 4개 잡, 올바른 cron 트리거(KST) 등록. start() 없음.
+# 5) build_scheduler — 5개 잡, 올바른 cron 트리거(KST) 등록. start() 없음.
 # ============================================================================
-def test_build_scheduler_registers_four_jobs_with_expected_cron_triggers():
+def test_build_scheduler_registers_five_jobs_with_expected_cron_triggers():
     scheduler = build_scheduler()
     try:
         jobs = {job.id: job for job in scheduler.get_jobs()}
@@ -248,7 +248,9 @@ def test_build_scheduler_registers_four_jobs_with_expected_cron_triggers():
             "kpi_ai_draft_generation",
             "erp_incremental_sync",
             "erp_full_reconciliation",
+            "presence_coordinate_purge",
         }
+
 
         def _field(trigger: CronTrigger, name: str) -> str:
             return str(next(f for f in trigger.fields if f.name == name))
@@ -275,6 +277,12 @@ def test_build_scheduler_registers_four_jobs_with_expected_cron_triggers():
         assert str(erp_full.timezone) == "Asia/Seoul"
         assert _field(erp_full, "hour") == "0"
         assert _field(erp_full, "minute") == "0"
+
+
+        purge = jobs["presence_coordinate_purge"].trigger
+        assert str(purge.timezone) == "Asia/Seoul"
+        assert _field(purge, "hour") == "3"
+        assert _field(purge, "minute") == "0"
 
         # 스케줄러는 생성만 되고 시작되지 않아야 한다(기본/테스트는 미기동).
         assert scheduler.running is False

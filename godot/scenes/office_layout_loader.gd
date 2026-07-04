@@ -50,7 +50,10 @@ func build(layout: Dictionary) -> void:
 
 ## JSON 문자열 → layout Dictionary(파싱 실패 시 빈 Dictionary).
 static func parse_json(text: String) -> Dictionary:
-	var data = JSON.parse_string(text)
+	var json := JSON.new()
+	if json.parse(text) != OK:
+		return {}
+	var data = json.data
 	if typeof(data) == TYPE_DICTIONARY:
 		return data
 	return {}

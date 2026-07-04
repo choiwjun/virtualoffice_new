@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "kind": "api-test-report",
+  "story": "G001",
+  "title": "WSS realtime gateway QA + red-team evidence",
+  "surface": "api-websocket",
+  "sut": "backend/app/api/realtime.py (@router.websocket /ws)",
+  "commands": {
+    "full_suite": "backend/.venv/Scripts/python.exe -m pytest -q",
+    "focused": "backend/.venv/Scripts/python.exe -m pytest tests/contract/test_realtime_api_stubs.py tests/redteam/test_realtime_redteam.py -q"
+  },
+  "results": {
+    "full_suite": "369 passed, 9 skipped, 0 failed",
+    "focused": "28 passed, 7 skipped, 0 failed"
+  },
+  "contract_coverage": [
+    {"obligation": "hello handshake protocol_version==3 negotiation", "status": "covered", "test": "test_websocket_handshake_success/unsupported_version"},
+    {"obligation": "JWT auth (invalid/expired) reject + close 4001", "status": "covered", "test": "test_error_invalid_jwt/test_error_expired_jwt"},
+    {"obligation": "malformed/non-hello -> close 4002", "status": "covered", "test": "test_error_invalid_message_format"},
+    {"obligation": "capacity_exceeded -> reject + close 4003", "status": "covered", "test": "test_error_capacity_exceeded"},
+    {"obligation": "message types avatar_move/presence_update/meeting_enter/chat/action_notify/server_tick", "status": "covered", "test": "TestWebSocketMessages (6)"},
+    {"obligation": "resume replay after last_server_seq", "status": "covered", "test": "test_reconnection_message_replay"}
+  ],
+  "adversarial_cases": [
+    {"case": "hello JSON array (non-dict)", "verdict": "passed (close 4002)"},
+    {"case": "hello missing protocol_version", "verdict": "passed (reject unsupported)"},
+    {"case": "avatar_move missing x/y/facing", "verdict": "passed (no crash, sender survives)"},
+    {"case": "presence_update invalid status", "verdict": "passed (non-closing error)"},
+    {"case": "duplicate user_id, close first conn", "verdict": "passed AFTER FIX (identity-based cleanup; B stays registered, receives broadcasts)"},
+    {"case": "resume huge last_server_seq", "verdict": "passed (empty replay)"},
+    {"case": "resume negative last_server_seq", "verdict": "passed (safe replay)"},
+    {"case": "resume non-int last_server_seq", "verdict": "passed AFTER FIX (int guard, no crash)"},
+    {"case": "oversized 100k chat", "verdict": "passed (broadcast intact)"},
+    {"case": "empty string frame", "verdict": "passed (close 4002)"},
+    {"case": "binary frame post-handshake", "verdict": "passed AFTER FIX (_receive_text branch, close 4002 instead of KeyError crash)"},
+    {"case": "capacity boundary + recovery", "verdict": "passed (4003 then recovers)"},
+    {"case": "unknown message type", "verdict": "passed (non-closing error)"}
+  ],
+  "blockers_found_and_fixed": [
+    {"id": "identity-cleanup", "source": "architect+redteam", "fix": "finally cleans up only if manager.connections.get(user_id) is websocket; evicts last_state; broadcasts offline only when actually removed"},
+    {"id": "reconnect-stale-presence", "source": "architect", "fix": "on (re)connect set last_state.setdefault(user_id,{})['status']='online'; last_state evicted on disconnect"},
+    {"id": "binary-frame-keyerror", "source": "redteam", "fix": "_receive_text() uses websocket.receive() and raises _NonTextFrame for non-text frames -> close 4002 (both handshake + loop)"}
+  ],
+  "advisory_open": [
+    "chat/action_notify broadcast to all (documented) vs true <5m proximity filtering",
+    "resume gap-signaling when last_server_seq below 512-entry replay floor (client cannot detect gap)",
+    "broadcast swallows all send exceptions (delegated to disconnect handling)",
+    "20Hz server_tick loop driven externally (only build_tick_payload provided) - Godot headless (G008) owns cadence"
+  ]
+}

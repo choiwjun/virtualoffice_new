@@ -95,6 +95,14 @@
   .toolbar input { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line);
     background: #0b1220; color: var(--text); }
   .loading { color: var(--muted); padding: 20px; }
+  .toast { position: fixed; top: 16px; right: 16px; padding: 12px 18px; border-radius: 8px;
+    color: #fff; font-size: 13px; z-index: 999; box-shadow: 0 10px 30px rgba(0,0,0,.3); display: none; }
+  .toast.ok { background: var(--ok); }
+  .toast.err { background: var(--err); }
+  .wl-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
+  .wl-form .field { margin-bottom: 0; }
+  .wl-form input, .wl-form select { width: 160px; padding: 8px 10px; border-radius: 8px;
+    border: 1px solid var(--line); background: #0b1220; color: var(--text); }
 </style>
 </head>
 <body>
@@ -161,6 +169,33 @@ async function api(path) {
   const res = await fetch(API + path, { headers: { Authorization: "Bearer " + token } });
   if (res.status === 401) { sessionExpired(); throw new Error("401"); }
   return res.json();
+}
+async function apiSend(path, method = "POST", body = null) {
+  const res = await fetch(API + path, {
+    method,
+    headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+    body: body != null ? JSON.stringify(body) : undefined,
+  });
+  if (res.status === 401) { sessionExpired(); throw new Error("401"); }
+  if (!res.ok) {
+    let detail = res.status;
+    try { const j = await res.json(); detail = j.detail || j.message || j; } catch (_) {}
+    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+  }
+  return res.status === 204 ? null : res.json();
+}
+function notify(msg, ok = true) {
+  let el = document.getElementById("toast");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "toast";
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.className = "toast " + (ok ? "ok" : "err");
+  el.style.display = "block";
+  clearTimeout(notify._t);
+  notify._t = setTimeout(() => { el.style.display = "none"; }, 3000);
 }
 function esc(s) { return String(s ?? "").replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
 function roleBadge(r) { return `<span class="badge role-${esc(r)}">${ROLE_KO[r] || esc(r)}</span>`; }
@@ -295,10 +330,40 @@ const VIEWS = {
       ], seats)}`;
   },
   async layout(c) {
+    const isAdmin = currentUser && (currentUser.role === "admin" || currentUser.role === "super_admin");
+    let versions = [];
+    try { const lv = await api("/layouts"); versions = lv.layouts || lv.items || []; }
+    catch (e) { if (e.message === "401") return; }
+    const versionsHtml = isAdmin ? `<h3 style="margin-top:24px">레이아웃 버전</h3>${table([
+        { h: "버전", f: v => "v" + (v.version ?? "-") },
+        { h: "상태", f: v => esc(v.status || "-") },
+        { h: "ID", f: v => esc((v.id || v.layout_id || "").slice(0, 8)) + "…" },
+        { h: "작업", f: v => `<button class="btn ghost" data-act="layout-deploy" data-id="${esc(v.id || v.layout_id)}">배포</button>
+          <button class="btn ghost" data-act="layout-rollback" data-id="${esc(v.id || v.layout_id)}" data-version="${esc(v.version)}">롤백</button>` },
+      ], versions)}` : "";
+    function attachLayoutHandlers() {
+      c.querySelectorAll('[data-act="layout-deploy"]').forEach(btn => btn.addEventListener("click", async () => {
+        if (!confirm("이 버전을 배포하시겠습니까?")) return;
+        try { await apiSend(`/layouts/${btn.dataset.id}/deploy`, "POST"); notify("배포되었습니다"); go("layout"); }
+        catch (err) { notify(err.message || "오류가 발생했습니다", false); }
+      }));
+      c.querySelectorAll('[data-act="layout-rollback"]').forEach(btn => btn.addEventListener("click", async () => {
+        if (!confirm("이 버전으로 롤백하시겠습니까?")) return;
+        try { await apiSend(`/layouts/${btn.dataset.id}/rollback?version=${encodeURIComponent(btn.dataset.version)}`, "POST"); notify("롤백되었습니다"); go("layout"); }
+        catch (err) { notify(err.message || "오류가 발생했습니다", false); }
+      }));
+    }
     let d;
     try { d = await api("/layouts/current"); }
-    catch (e) { if (e.message === "401") return; c.innerHTML = `<div class="empty">배포된 레이아웃이 없습니다.</div>`; return; }
-    if (!d || !d.layout_json) { c.innerHTML = `<div class="empty">배포된 레이아웃이 없습니다.</div>`; return; }
+    catch (e) {
+      if (e.message === "401") return;
+      c.innerHTML = `<div class="empty">배포된 레이아웃이 없습니다.</div>${versionsHtml}`;
+      attachLayoutHandlers(); return;
+    }
+    if (!d || !d.layout_json) {
+      c.innerHTML = `<div class="empty">배포된 레이아웃이 없습니다.</div>${versionsHtml}`;
+      attachLayoutHandlers(); return;
+    }
     const L = d.layout_json;
     c.innerHTML = `<h2 class="view-title">오피스 레이아웃</h2>
       <p class="view-sub">현재 배포본(2D 평면도) · Godot 3D 클라이언트가 이 데이터로 씬을 구성합니다</p>
@@ -322,11 +387,15 @@ const VIEWS = {
             <div><span class="sw" style="background:#ef4444"></span>스폰 위치</div>
           </div>
         </div>
-      </div>`;
+      </div>
+      ${versionsHtml}`;
     drawFloorplan(document.getElementById("floorplan"), L);
+    attachLayoutHandlers();
   },
   async kpi(c) {
     const d = await api("/kpi-results");
+    const rows = d.kpi_results || [];
+    const isAdmin = currentUser && (currentUser.role === "admin" || currentUser.role === "super_admin");
     c.innerHTML = `<h2 class="view-title">KPI 대시보드</h2>
       <p class="view-sub">KPI 평가 결과 · 총 ${d.total ?? 0}건</p>
       ${table([
@@ -334,7 +403,42 @@ const VIEWS = {
         { h: "기간", f: k => `${esc(k.period_type||"")} ${esc(k.period_key||"")}` },
         { h: "점수", f: k => k.final_score ?? k.ai_score ?? "-" },
         { h: "상태", f: k => esc(k.status || k.objection_status || "-") },
-      ], d.kpi_results || [])}`;
+        { h: "작업", f: k => {
+            const btns = [];
+            if (isAdmin) {
+              btns.push(`<button class="btn ghost" data-act="kpi-adjust" data-id="${esc(k.kpi_result_id)}">조정</button>`);
+              btns.push(`<button class="btn ghost" data-act="kpi-confirm" data-id="${esc(k.kpi_result_id)}">확정</button>`);
+            }
+            if (currentUser && k.user_id === currentUser.id) {
+              btns.push(`<button class="btn ghost" data-act="kpi-objection" data-id="${esc(k.kpi_result_id)}">이의신청</button>`);
+            }
+            return btns.join(" ") || "-";
+          } },
+      ], rows)}`;
+    c.querySelectorAll('[data-act="kpi-adjust"]').forEach(btn => btn.addEventListener("click", async () => {
+      const score = prompt("조정 점수를 입력하세요(숫자):");
+      if (score === null || score.trim() === "") return;
+      const note = prompt("조정 사유(선택):") || undefined;
+      try {
+        await apiSend(`/kpi-results/${btn.dataset.id}/adjust`, "PUT", { admin_adjusted_score: Number(score), admin_note: note });
+        notify("점수가 조정되었습니다"); go("kpi");
+      } catch (err) { notify(err.message || "오류가 발생했습니다", false); }
+    }));
+    c.querySelectorAll('[data-act="kpi-confirm"]').forEach(btn => btn.addEventListener("click", async () => {
+      if (!confirm("이 KPI 결과를 확정하시겠습니까?")) return;
+      try { await apiSend(`/kpi-results/${btn.dataset.id}/confirm`, "POST"); notify("확정되었습니다"); go("kpi"); }
+      catch (err) { notify(err.message || "오류가 발생했습니다", false); }
+    }));
+    c.querySelectorAll('[data-act="kpi-objection"]').forEach(btn => btn.addEventListener("click", async () => {
+      const text = prompt("이의신청 사유를 입력하세요:");
+      if (!text) return;
+      const category = prompt("이의 유형(예: 점수/근거/기타):") || "기타";
+      const evidence = prompt("증빙(선택):") || undefined;
+      try {
+        await apiSend(`/kpi-results/${btn.dataset.id}/objections`, "POST", { category, text, evidence });
+        notify("이의신청이 접수되었습니다"); go("kpi");
+      } catch (err) { notify(err.message || "오류가 발생했습니다", false); }
+    }));
   },
   async meetings(c) {
     const d = await api("/meetings");
@@ -348,13 +452,71 @@ const VIEWS = {
   },
   async worklogs(c) {
     const d = await api("/work-logs");
+    const logs = d.work_logs || [];
     c.innerHTML = `<h2 class="view-title">업무기록</h2>
       <p class="view-sub">일별 업무 기록</p>
+      <h3>새 업무기록</h3>
+      <form id="worklog-form" class="wl-form">
+        <div class="field"><label>제목*</label><input id="wl-title" required /></div>
+        <div class="field"><label>목표</label><input id="wl-goal" /></div>
+        <div class="field"><label>카테고리</label><input id="wl-category" /></div>
+        <div class="field"><label>상태</label>
+          <select id="wl-status"><option value="started">started</option><option value="completed">completed</option></select>
+        </div>
+        <div class="field"><label>결과 URL</label><input id="wl-result_url" /></div>
+        <input type="hidden" id="wl-id" />
+        <button class="btn" type="submit" id="wl-submit">추가</button>
+        <button class="btn ghost" type="button" id="wl-cancel" hidden>취소</button>
+      </form>
       ${table([
         { h: "날짜", f: w => esc(w.log_date || w.work_date || "-") },
+        { h: "제목", f: w => esc(w.title || "-") },
         { h: "목표", f: w => esc(w.goal || "-") },
         { h: "결과", f: w => esc(w.result_url || w.result || "-") },
-      ], d.work_logs || [])}`;
+        { h: "상태", f: w => esc(w.status || "-") },
+        { h: "작업", f: w => `<button class="btn ghost" data-act="wl-edit" data-id="${esc(w.work_log_id)}">편집</button>
+          <button class="btn ghost" data-act="wl-del" data-id="${esc(w.work_log_id)}">삭제</button>` },
+      ], logs)}`;
+
+    const form = document.getElementById("worklog-form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = document.getElementById("wl-id").value;
+      const body = {
+        title: document.getElementById("wl-title").value.trim(),
+        goal: document.getElementById("wl-goal").value.trim() || null,
+        category: document.getElementById("wl-category").value.trim() || null,
+        status: document.getElementById("wl-status").value,
+        result_url: document.getElementById("wl-result_url").value.trim() || null,
+      };
+      if (!body.title) { notify("제목을 입력하세요", false); return; }
+      try {
+        if (id) await apiSend(`/work-logs/${id}`, "PUT", body);
+        else await apiSend("/work-logs", "POST", body);
+        notify(id ? "수정되었습니다" : "등록되었습니다");
+        go("worklogs");
+      } catch (err) { notify(err.message || "오류가 발생했습니다", false); }
+    });
+    document.getElementById("wl-cancel").addEventListener("click", () => go("worklogs"));
+
+    c.querySelectorAll('[data-act="wl-edit"]').forEach(btn => btn.addEventListener("click", () => {
+      const log = logs.find(w => String(w.work_log_id) === btn.dataset.id);
+      if (!log) return;
+      document.getElementById("wl-id").value = log.work_log_id;
+      document.getElementById("wl-title").value = log.title || "";
+      document.getElementById("wl-goal").value = log.goal || "";
+      document.getElementById("wl-category").value = log.category || "";
+      document.getElementById("wl-status").value = log.status || "started";
+      document.getElementById("wl-result_url").value = log.result_url || "";
+      document.getElementById("wl-submit").textContent = "수정";
+      document.getElementById("wl-cancel").hidden = false;
+      form.scrollIntoView({ behavior: "smooth" });
+    }));
+    c.querySelectorAll('[data-act="wl-del"]').forEach(btn => btn.addEventListener("click", async () => {
+      if (!confirm("삭제하시겠습니까?")) return;
+      try { await apiSend(`/work-logs/${btn.dataset.id}`, "DELETE"); notify("삭제되었습니다"); go("worklogs"); }
+      catch (err) { notify(err.message || "오류가 발생했습니다", false); }
+    }));
   },
   async sync(c) {
     const d = await api("/sync/errors");

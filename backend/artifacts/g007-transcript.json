@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "surface": "web",
+  "tool": "gjc browser tool (headless Chromium/puppeteer) vs live uvicorn http://127.0.0.1:8000",
+  "actions": [
+    {"type": "navigate", "url": "http://127.0.0.1:8000/console", "timestamp": 1},
+    {"type": "fill", "selector": "#email", "value": "admin@example.com", "timestamp": 2},
+    {"type": "fill", "selector": "#password", "timestamp": 3},
+    {"type": "click", "selector": "#login-btn", "timestamp": 4},
+    {"type": "navigate", "selector": "nav [data-id=\"worklogs\"]", "timestamp": 5},
+    {"type": "click", "selector": "[data-act=\"wl-edit\"]", "timestamp": 6},
+    {"type": "fill", "selector": "#wl-title", "value": "\ud3b8\uc9d1\ub428-\uc7ac\uac80\uc99d", "timestamp": 7},
+    {"type": "click", "selector": "#wl-submit", "timestamp": 8},
+    {"type": "click", "selector": "[data-act=\"wl-del\"]", "timestamp": 9},
+    {"type": "navigate", "selector": "nav [data-id=\"kpi\"]", "timestamp": 10},
+    {"type": "click", "selector": "[data-act=\"kpi-adjust\"]", "timestamp": 11},
+    {"type": "click", "selector": "[data-act=\"kpi-confirm\"]", "timestamp": 12},
+    {"type": "click", "selector": "[data-act=\"kpi-objection\"]", "timestamp": 13}
+  ],
+  "assertions": [
+    {"selector": "#toast", "status": "passed", "timestamp": 14, "note": "worklog edit -> '수정되었습니다'"},
+    {"selector": "table tbody tr", "status": "passed", "timestamp": 15, "note": "worklog delete rows 2->1"},
+    {"selector": "#toast", "status": "passed", "timestamp": 16, "note": "kpi confirm -> '확정되었습니다', final_score 85"},
+    {"selector": "#toast", "status": "passed", "timestamp": 17, "note": "objection -> '이의신청이 접수되었습니다', status submitted"}
+  ],
+  "server_round_trips": [
+    "POST /auth/login 201",
+    "PUT /work-logs/<uuid> 200",
+    "DELETE /work-logs/<uuid> 200",
+    "POST /kpi-results/<uuid>/objections 201"
+  ],
+  "note": "Live browser automation transcript for G007 console editing UI verification (screenshot: backend/artifacts/g007-directory.png)."
+}

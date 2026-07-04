@@ -232,7 +232,7 @@ class AssetType(str, Enum):
 
 
 # ============================================================================
-# A. ERP 미러 계층 (1개)
+# A. ERP 미러 계층 (3개)
 # ============================================================================
 
 class ErpUser(Base, TimestampMixin, SoftDeleteMixin):
@@ -313,6 +313,70 @@ class ErpUser(Base, TimestampMixin, SoftDeleteMixin):
         Index("idx_erp_user_role", "role"),
         # is_active 인덱스는 SoftDeleteMixin(index=True)이 생성 — 중복 명시 Index 제거(A3-20)
     )
+
+
+class ErpTeam(Base, TimestampMixin, SoftDeleteMixin):
+    # @TASK P2-R1-T1 - ERP 팀 미러 (G005)
+    # @SPEC 04-data-model.md §2.1 (erp_user 미러 패턴 확장 — G005 신설; ERD 갱신 필요)
+    """
+    ERP 팀 정보 (읽기 전용 동기화)
+
+    **동기화**: erp_user와 동일 배치(매시간 증분 + 매일 00:00 KST 전체 대사)
+    **soft-delete**: is_active=false (물리 삭제 금지)
+    """
+    __tablename__ = "erp_team"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+    """ERP teams.id (조인 키)"""
+
+    company_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    """사내 회사 ID (멀티테넌트 스코프)"""
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    """팀명"""
+
+    color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)
+    """팀 색상 (hex, 예: #2563eb)"""
+
+    leader_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    """팀 리더명 (자유텍스트, ERP 표시용)"""
+
+    last_synced_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    """마지막 ERP 동기화 시각 (UTC)"""
+
+
+class ErpPosition(Base, TimestampMixin, SoftDeleteMixin):
+    # @TASK P2-R1-T1 - ERP 직급 미러 (G005)
+    # @SPEC 04-data-model.md §2.1 (erp_user 미러 패턴 확장 — G005 신설; ERD 갱신 필요)
+    """
+    ERP 직급 정보 (읽기 전용 동기화)
+
+    **동기화**: erp_user와 동일 배치(매시간 증분 + 매일 00:00 KST 전체 대사)
+    **soft-delete**: is_active=false (물리 삭제 금지)
+    """
+    __tablename__ = "erp_position"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+    """ERP job_positions.id (조인 키)"""
+
+    company_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    """사내 회사 ID (멀티테넌트 스코프)"""
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    """직급명"""
+
+    level: Mapped[int] = mapped_column(Integer, nullable=False)
+    """서열 (숫자가 클수록 상위)"""
+
+    last_synced_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    """마지막 ERP 동기화 시각 (UTC)"""
+
 
 class AuthCredential(Base, TimestampMixin):
     # @TASK P2-R2-T0 - 로컬 인증 크리덴셜 (D4 자체 JWT)

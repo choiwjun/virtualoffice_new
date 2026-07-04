@@ -4,6 +4,8 @@ from app.models.tables import (
     Base,
     # ── ERP 미러 / 조직 ──
     ErpUser,
+    ErpTeam,
+    ErpPosition,
     AuthCredential,
     OrgGroup,
     TeamZone,
@@ -34,6 +36,8 @@ from app.models.tables import (
 __all__ = [
     "Base",
     "ErpUser",
+    "ErpTeam",
+    "ErpPosition",
     "AuthCredential",
     "OrgGroup",
     "TeamZone",

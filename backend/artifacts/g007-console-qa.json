@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "kind": "web-ui-automation-transcript",
+  "story": "G007",
+  "title": "Admin console editing UI — live browser automation evidence",
+  "surface": "web-gui",
+  "sut": "backend/app/static/console.html served by live uvicorn (FastAPI) at 127.0.0.1:8000 against a seeded sqlite DB",
+  "screenshots": [
+    "backend/artifacts/g007-kpi-view.png",
+    "backend/artifacts/g007-worklogs-view.png",
+    "backend/artifacts/g007-kpi-objection.png"
+  ],
+  "automation_transcript": {
+    "tool": "browser (headless Chromium via puppeteer)",
+    "flow": [
+      "open /console -> login admin@example.com (whoami '관리자 · 관리자')",
+      "worklogs: create '새 업무기록' form submit -> rows 1->2, toast '등록되었습니다' (POST /work-logs 201)",
+      "worklogs: 편집 first row -> form populated with real work_log_id UUID, title changed, submit -> toast '수정되었습니다' (PUT /work-logs/<uuid> 200)",
+      "worklogs: 삭제 -> confirm -> rows 2->1, toast '삭제되었습니다' (DELETE /work-logs/<uuid> 200)",
+      "kpi: 조정 -> prompt score 85 -> toast '점수가 조정되었습니다' (PUT /kpi-results/<uuid>/adjust)",
+      "kpi: 확정 -> confirm -> toast '확정되었습니다', 점수 85 shown (POST /kpi-results/<uuid>/confirm)",
+      "kpi: 이의신청 -> prompts (text+category) -> toast '이의신청이 접수되었습니다', objection_status none->submitted via GET (POST /kpi-results/<uuid>/objections 201)"
+    ],
+    "uvicorn_access_log_excerpt": [
+      "POST /auth/login 201",
+      "PUT /work-logs/45bc6953-b010-43c7-b045-17d6bbf17bf7 200",
+      "DELETE /work-logs/45bc6953-b010-43c7-b045-17d6bbf17bf7 200",
+      "POST /kpi-results/4f237985-11dd-4e5a-b27a-fad0a86a5139/objections 201"
+    ]
+  },
+  "bugs_found_and_fixed": [
+    {"id": "kpi-id-field", "source": "leader browser verify", "detail": "console used k.id (undefined) but API serializes kpi_result_id -> PUT /kpi-results//adjust 404", "fix": "k.kpi_result_id"},
+    {"id": "worklog-id-field", "source": "architect", "detail": "console used w.id/log.id but serializer emits work_log_id -> edit no-op, delete empty path", "fix": "w.work_log_id / log.work_log_id"},
+    {"id": "objection-body", "source": "architect", "detail": "console posted {reason,evidence} but ObjectionSubmitRequest requires {category,text} -> 422", "fix": "post {category, text, evidence}"},
+    {"id": "rollback-version", "source": "architect", "detail": "rollback omitted required ?version query param -> 422", "fix": "data-version + ?version=<v>"}
+  ],
+  "role_gating": "admin-only adjust/confirm/deploy/rollback + owner-only objection gated client-side (isAdmin / user_id===currentUser.id); server enforces via require_role + owner checks (defense-in-depth, server side already red-team tested in kpi/worklogs redteam suites).",
+  "backend_suite": "603 passed, 9 skipped, 0 failed (console.html is static; backend unaffected)",
+  "residual": [
+    "layout deploy/rollback runtime E2E not exercised (requires seeding 2 valid deployable layout_json versions); ?version contract fix applied + code-reviewed + server side covered by 4 passing pytest cases"
+  ]
+}

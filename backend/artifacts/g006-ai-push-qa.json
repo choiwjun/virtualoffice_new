@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-test-report",
+  "story": "G006",
+  "title": "KPI AI narrative provider + ERP push flags QA",
+  "surface": "package-service",
+  "sut": "ai_narrative.py + kpi_push.py + scheduler daily_reports_erp_push + kpi.py confirm wiring",
+  "commands": {
+    "full_suite": "backend/.venv/Scripts/python.exe -m pytest -q",
+    "focused": "backend/.venv/Scripts/python.exe -m pytest tests/services/test_ai_narrative.py tests/services/test_erp_push_flags.py tests/services/test_g006_redteam.py tests/services/test_scheduler.py -q"
+  },
+  "results": {"full_suite": "603 passed, 9 skipped, 0 failed", "focused": "71 passed"},
+  "contract_coverage": [
+    {"obligation": "AI narrative provider: live Claude (httpx) gated + deterministic fallback, never raises (D14-e descriptive only)", "status": "covered"},
+    {"obligation": "D20 pseudonymization: no name/email to external LLM (EMP-{id} only)", "status": "covered"},
+    {"obligation": "kpi ERP push feature-flag (default OFF, local-first) + idempotent backfill", "status": "covered"},
+    {"obligation": "daily_reports ERP push feature-flag + cron wiring (SENT/FAILED)", "status": "covered"},
+    {"obligation": "confirm_kpi_result best-effort non-fatal push", "status": "covered"}
+  ],
+  "adversarial_cases": [
+    {"case": "D20 leakage (name/email never in prompt/output)", "verdict": "passed"},
+    {"case": "live fault injection (timeout/connect/500/429/malformed/empty/oversized/score-injection) -> always fallback, no raise, no numeric score", "verdict": "passed"},
+    {"case": "prompt injection in metric/value", "verdict": "passed"},
+    {"case": "flag OFF -> true no-op (network-guard client asserts zero calls)", "verdict": "passed"},
+    {"case": "flag ON failure -> FAILED / pushed_to_erp stays False (no false positive)", "verdict": "passed"},
+    {"case": "idempotency (2nd push 0 rows/0 calls)", "verdict": "passed"},
+    {"case": "partial-failure batch independence", "verdict": "passed"},
+    {"case": "confirm non-fatal when push fails (200, pushed_to_erp False)", "verdict": "passed"},
+    {"case": "empty base_url + flag ON", "verdict": "passed AFTER FIX (skipped=base_url_missing, no bogus relative POST)"}
+  ],
+  "blockers_found_and_fixed": [
+    {"id": "daily-push-dead-code", "source": "architect MEDIUM", "fix": "wired daily_reports_erp_push into 18:00 cron wrapper (flag-gated, job count unchanged)"},
+    {"id": "empty-base_url-relative-post", "source": "architect LOW + red-team obs", "fix": "base_url_missing skip guard in both push functions"},
+    {"id": "non-2xx-error_message-null", "source": "architect LOW", "fix": "error_message=http_{status} on non-2xx daily_reports"}
+  ],
+  "advisory_open": [
+    "push_confirmed_kpi_to_erp is a global backfill invoked best-effort from confirm (bounded by D21 single-instance volume) — could move to a dedicated batch later",
+    "real Anthropic/ERP calls require ANTHROPIC_API_KEY / erp_push_base_url + live endpoints (G010 human_blocked to exercise end-to-end)"
+  ]
+}

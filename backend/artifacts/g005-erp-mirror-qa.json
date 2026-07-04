@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "package-test-report",
+  "story": "G005",
+  "title": "ERP teams/positions mirror sync QA + red-team evidence",
+  "surface": "package-service",
+  "sut": "backend/app/erp/sync.py (sync_teams/sync_positions) + models ErpTeam/ErpPosition + scheduler/sync trigger wiring",
+  "commands": {
+    "full_suite": "backend/.venv/Scripts/python.exe -m pytest -q",
+    "focused": "backend/.venv/Scripts/python.exe -m pytest tests/test_erp_mirror_sync.py tests/redteam/test_erp_mirror_redteam.py tests/test_erp_sync.py tests/services/test_scheduler.py tests/test_foundation.py tests/test_migrations.py -q"
+  },
+  "results": {"full_suite": "546 passed, 9 skipped, 0 failed"},
+  "honest_scope_note": "Mirror teams + job_positions (fit ErpUser pattern). attendances/leaves kept read-through per dtos.py 'read-through 미저장' (no updated_at) — documented, not reversed. Mirrors populatable via runnable /sync/erp admin trigger + scheduler; read consumer is a follow-up (infra ahead of consumer).",
+  "contract_coverage": [
+    {"obligation": "sync_teams/sync_positions create/update/idempotent + soft-delete + AuditLog (D18 parity with sync_users)", "status": "covered"},
+    {"obligation": "company-scope isolation (no cross-company deletion)", "status": "covered"},
+    {"obligation": "reactivation of previously soft-deleted id", "status": "covered"},
+    {"obligation": "scheduler + /sync/erp trigger populate mirrors", "status": "covered"},
+    {"obligation": "migration auto-flow + table counts (24 models / 25 with alembic_version)", "status": "covered"}
+  ],
+  "adversarial_cases": [
+    {"case": "empty reader full reconciliation soft-deletes all active + audit", "verdict": "passed"},
+    {"case": "company-scope isolation (company B untouched)", "verdict": "passed"},
+    {"case": "idempotency no dup/no audit spam", "verdict": "passed"},
+    {"case": "reactivation of soft-deleted id", "verdict": "passed"},
+    {"case": "already-inactive not re-counted", "verdict": "passed"},
+    {"case": "huge id (10**30) out of int64 range", "verdict": "passed AFTER FIX (_valid_erp_id skips + skipped++, partial reflection; was OverflowError batch crash)"},
+    {"case": "field updates persisted", "verdict": "passed"},
+    {"case": "soft-delete AuditLog fields exact", "verdict": "passed"},
+    {"case": "positions is_active presence-semantics (no audit blind spot)", "verdict": "passed AFTER FIX (is_active=True presence; disappear -> soft-delete+audit once)"}
+  ],
+  "blockers_found_and_fixed": [
+    {"id": "sync-huge-id-overflow-500", "source": "redteam", "fix": "_valid_erp_id int64 range guard in all 3 sync methods; skip + result.skipped, partial batch reflection"},
+    {"id": "positions-is_active-dual-semantics", "source": "redteam WATCH -> promoted", "fix": "sync_positions is_active=True presence (like teams); removes audit blind spot"}
+  ],
+  "advisory_open": [
+    "erp_team/erp_position written (via /sync/erp + scheduler) but not yet READ by an endpoint (GET /teams still read-through) — infra ahead of consumer",
+    "scheduler wrappers return only users SyncResult (team/position counts not surfaced in ErpSyncLog)",
+    "ERD doc (04-data-model.md/erd.md) not yet regenerated for new mirror tables"
+  ]
+}

@@ -96,10 +96,12 @@ async def health() -> dict:
 
 
 # ── 라우터 등록 (점진적) ─────────────────────────────────
-from app.api import audit, auth, erp, kpi, layouts, meetings, seats, sync, worklogs  # noqa: E402
+from app.api import action_items, audit, auth, erp, kpi, layouts, meetings, org_groups, presence, realtime, seats, sync, team_zones, worklogs  # noqa: E402
 
 app.include_router(auth.router)
 app.include_router(erp.router)
+app.include_router(org_groups.router)
+app.include_router(team_zones.router)
 app.include_router(kpi.router)
 app.include_router(layouts.router)
 app.include_router(meetings.router)
@@ -107,3 +109,6 @@ app.include_router(seats.router)
 app.include_router(worklogs.router)
 app.include_router(sync.router)
 app.include_router(audit.router)
+app.include_router(realtime.router)
+app.include_router(presence.router)
+app.include_router(action_items.router)

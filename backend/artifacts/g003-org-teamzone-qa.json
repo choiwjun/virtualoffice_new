@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "kind": "api-test-report",
+  "story": "G003",
+  "title": "org_group + team_zone API QA + red-team evidence",
+  "surface": "api-rest",
+  "sut": "backend/app/api/org_groups.py + backend/app/api/team_zones.py",
+  "commands": {
+    "full_suite": "backend/.venv/Scripts/python.exe -m pytest -q",
+    "focused": "backend/.venv/Scripts/python.exe -m pytest tests/test_org_team_zone_api.py tests/redteam/test_org_team_zone_redteam.py tests/test_org_group_delete_restrict.py -q"
+  },
+  "results": {"full_suite": "441 passed, 9 skipped, 0 failed"},
+  "honest_scope_note": "ERP exposes only flat teams (no hierarchy DTO), so org_group is a locally-managed CRUD tree; sync-teams ensures a leaf PART org_group per ERP team (idempotent). Documented deviation from plan's 'sync full hierarchy from ERP' (unachievable) - flagged for plan-owner ratification.",
+  "contract_coverage": [
+    {"obligation": "org_group CRUD (create/tree/update/delete) admin-gated, cycle protection", "status": "covered"},
+    {"obligation": "sync-teams leaf-per-team idempotent", "status": "covered"},
+    {"obligation": "team_zone CRUD, 409 dup, 404 missing FK", "status": "covered"},
+    {"obligation": "org_group delete referenced by team_zone -> 409 (RESTRICT, FK-on test)", "status": "covered"}
+  ],
+  "adversarial_cases": [
+    {"case": "employee/leader/unauth writes -> 403/401", "verdict": "passed"},
+    {"case": "malformed/non-UUID id -> 404/422 no 500", "verdict": "passed"},
+    {"case": "invalid org type -> 400", "verdict": "passed"},
+    {"case": "parent random UUID -> 404", "verdict": "passed"},
+    {"case": "self-parent + descendant cycle -> 400", "verdict": "passed"},
+    {"case": "sync-teams idempotent + employee 403", "verdict": "passed"},
+    {"case": "team_zone duplicate -> 409", "verdict": "passed"},
+    {"case": "team_zone missing org_group/office/floor -> 404 each", "verdict": "passed"},
+    {"case": "deeply nested polygon (100 levels)", "verdict": "passed AFTER FIX (_validate_polygon depth<=6 -> 400, was pydantic recursion 500)"},
+    {"case": "20000-point flat polygon", "verdict": "passed (accepted, under 1MB cap)"},
+    {"case": "deep 7-level tree nesting", "verdict": "passed (no infinite loop)"},
+    {"case": "filter injection strings -> 422 no 500", "verdict": "passed"},
+    {"case": "delete org_group referenced by team_zone (FK-on)", "verdict": "passed AFTER FIX (IntegrityError -> 409, was unhandled 500 in prod)"}
+  ],
+  "blockers_found_and_fixed": [
+    {"id": "polygon-recursion-500", "source": "redteam", "fix": "_validate_polygon depth<=6 (400) + size<=1MB (413) in create_team_zone"},
+    {"id": "delete-restrict-500", "source": "architect HIGH", "fix": "delete_org_group try/except IntegrityError -> 409 org_group_in_use; verified by FK-on test test_org_group_delete_restrict.py"}
+  ],
+  "advisory_open": [
+    "global conftest PRAGMA foreign_keys=ON deferred to a dedicated harness-hardening pass (broad suite impact)",
+    "team_zone create maps all IntegrityError to 409 (narrow to duplicate-only later)",
+    "no company_id filtering (single-org premise D21)"
+  ]
+}

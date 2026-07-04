@@ -99,7 +99,7 @@ def test_scheduler_jobs_are_single_instance_and_coalesced():
     scheduler = build_scheduler()
     try:
         jobs = scheduler.get_jobs()
-        assert len(jobs) == 4
+        assert len(jobs) == 5
         for job in jobs:
             assert job.max_instances == 1, f"{job.id} max_instances != 1 (단일 인스턴스 중복 실행 방지)"
             assert job.coalesce is True, f"{job.id} coalesce != True (미스파이어 누적 방지)"

@@ -29,6 +29,7 @@ KPI 평가 API (G008) — 조회, 관리자 조정, 확정, 이의신청.
 1:1 대응해 감사 추적이 단순해진다.
 """
 
+import logging
 from datetime import datetime, time, timedelta, timezone
 from decimal import Decimal
 from typing import Optional
@@ -39,6 +40,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.core.deps import CurrentUser, get_current_user, require_role
 from app.db import get_db
 from app.models.tables import (
@@ -57,8 +59,11 @@ from app.services.kpi_scoring import (
     period_key_to_range,
 )
 from app.services.audit_service import record_audit
+from app.services.kpi_push import push_confirmed_kpi_to_erp
 
 router = APIRouter(tags=["kpi"])
+
+logger = logging.getLogger(__name__)
 
 _ADMIN_ROLES = ("admin", "super_admin")
 # D15: 평가 공개 후 이의신청 유예기간. kpi_result에 별도 published_at 컬럼이 없어(04-data-model.md
@@ -308,6 +313,18 @@ async def confirm_kpi_result(
     )
     await db.commit()
     await db.refresh(kr)
+
+    # D17: kpi_erp_push_enabled가 True면 확정 직후 best-effort로 backfill을 시도한다.
+    # 실패해도 confirm 자체는 이미 커밋되어 있으므로 API 응답에 영향을 주지 않는다(다음 backfill
+    # 실행에서 pushed_to_erp=False인 채로 재시도됨 — 멱등).
+    if settings.kpi_erp_push_enabled:
+        try:
+            await push_confirmed_kpi_to_erp(db)
+            await db.commit()
+            await db.refresh(kr)
+        except Exception:  # noqa: BLE001 - 푸시 실패는 confirm 응답을 막지 않는다.
+            logger.warning("confirm_kpi_result: ERP push backfill 실패(non-fatal)", exc_info=True)
+
     return _kpi_result_out(kr)
 
 

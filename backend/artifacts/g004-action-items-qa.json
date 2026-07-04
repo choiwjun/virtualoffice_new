@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "kind": "api-test-report",
+  "story": "G004",
+  "title": "ActionItem CRUD + minute link + KPI ingestion QA",
+  "surface": "api-rest",
+  "sut": "backend/app/api/action_items.py + meetings.py update_meeting_minutes link + kpi ingestion",
+  "commands": {
+    "full_suite": "backend/.venv/Scripts/python.exe -m pytest -q",
+    "focused": "backend/.venv/Scripts/python.exe -m pytest tests/test_action_items_api.py tests/redteam/test_action_items_redteam.py tests/redteam/test_minutes_redteam.py tests/redteam/test_meetings_redteam.py -q"
+  },
+  "results": {"full_suite": "518 passed, 9 skipped, 0 failed", "redteam": "48 passed"},
+  "contract_coverage": [
+    {"obligation": "ActionItem CRUD admin/assignee/host RBAC", "status": "covered"},
+    {"obligation": "status transition table (terminal, completed_at)", "status": "covered"},
+    {"obligation": "minute link creates structured ActionItems idempotently", "status": "covered"},
+    {"obligation": "KPI ingestion: completed ActionItems flow to aggregate_user_period", "status": "covered"}
+  ],
+  "adversarial_cases": [
+    {"case": "non-participant create 403; unauth 401", "verdict": "passed"},
+    {"case": "malformed ids -> 404/422 no 500", "verdict": "passed"},
+    {"case": "invalid status/illegal transition/same-state -> 400, state unchanged", "verdict": "passed"},
+    {"case": "non-assignee non-admin PATCH -> 403 unmutated", "verdict": "passed"},
+    {"case": "cross-user/cross-team read -> 404 no leak", "verdict": "passed"},
+    {"case": "delete by non-host non-admin -> 403", "verdict": "passed"},
+    {"case": "minute-link malformed dicts skipped, idempotent, no corruption", "verdict": "passed"},
+    {"case": "huge-int assignee_user_id on create", "verdict": "passed AFTER FIX (Field le=int64max -> 422, was OverflowError 500)"},
+    {"case": "huge-int owner_id in minute action_items", "verdict": "passed AFTER FIX (range check skips, was OverflowError 500 crashing whole PUT)"},
+    {"case": "PATCH ->completed sets completed_at, terminal re-complete rejected", "verdict": "passed"}
+  ],
+  "blockers_found_and_fixed": [
+    {"id": "create-assignee-overflow-500", "source": "redteam", "fix": "ActionItemCreate.assignee_user_id = Field(ge=1, le=9223372036854775807) -> 422"},
+    {"id": "minute-owner-overflow-500", "source": "redteam", "fix": "minute-link loop rejects bool + out-of-int64-range owner_id (skip as malformed)"}
+  ],
+  "architect": "agent 12-G004-Architect: architecture/product/code all CLEAR, APPROVE, blockers empty (RBAC, transitions, minute-link idempotency+FK guard, KPI ingestion genuinely proven). Only LOW comments. The 2 red-team edge blockers fixed with additive guards after review.",
+  "advisory_open": [
+    "minute idempotency app-level only (no DB unique index) - negligible under D21",
+    "same-state PATCH returns 400 (non-idempotent, by design)",
+    "SQLite conftest lacks FK pragma (minute-link FK guard untested on SQLite)"
+  ]
+}

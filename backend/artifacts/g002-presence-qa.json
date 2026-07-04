@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "api-test-report",
+  "story": "G002",
+  "title": "Presence API + coordinate purge QA + red-team evidence",
+  "surface": "api-rest",
+  "sut": "backend/app/api/presence.py + services/scheduler.py::presence_coordinate_purge",
+  "commands": {
+    "full_suite": "backend/.venv/Scripts/python.exe -m pytest -q",
+    "focused": "backend/.venv/Scripts/python.exe -m pytest tests/redteam/test_presence_redteam.py tests/test_presence_api.py tests/services/test_presence.py -q"
+  },
+  "results": {"full_suite": "408 passed, 9 skipped, 0 failed"},
+  "contract_coverage": [
+    {"obligation": "PUT /presence self upsert-in-place (1 row/user)", "status": "covered"},
+    {"obligation": "PATCH status: 403(non-admin other) -> 400(invalid) -> 404(missing) precedence", "status": "covered"},
+    {"obligation": "GET single RBAC employee=self/leader=team/admin=all; unauthorized->404", "status": "covered"},
+    {"obligation": "GET list RBAC scoping + team_id filter (foreign team ->403)", "status": "covered"},
+    {"obligation": "presence_coordinate_purge deletes updated_at<now-30d, idempotent (D20-a)", "status": "covered"},
+    {"obligation": "build_scheduler registers 5 jobs incl presence_coordinate_purge hour=3", "status": "covered"}
+  ],
+  "adversarial_cases": [
+    {"case": "employee reads other -> 404 (no leak)", "verdict": "passed"},
+    {"case": "leader reads outside team -> 404; own team -> 200", "verdict": "passed"},
+    {"case": "employee patches other -> 403; admin -> 200", "verdict": "passed"},
+    {"case": "invalid status 'pwned' -> 400 (not 422/500)", "verdict": "passed"},
+    {"case": "malformed user_id path (abc, SQLi) -> 422, no 500", "verdict": "passed"},
+    {"case": "huge int user_id (>int64) GET/PATCH", "verdict": "passed AFTER FIX (_guard_user_id -> 404/403, was OverflowError 500)"},
+    {"case": "NaN coord in PUT", "verdict": "passed AFTER FIX (_validate_finite_coords -> 400, was IntegrityError 500)"},
+    {"case": "Infinity/-Infinity coords", "verdict": "passed AFTER FIX (400)"},
+    {"case": "missing floor_id -> 422", "verdict": "passed"},
+    {"case": "leader list other team_id -> 403 no data leak", "verdict": "passed"},
+    {"case": "unauthenticated all endpoints -> 401", "verdict": "passed"},
+    {"case": "purge boundary: 30d kept, 30d+1s deleted, 29d kept, idempotent", "verdict": "passed"}
+  ],
+  "blockers_found_and_fixed": [
+    {"id": "overflow-500", "source": "redteam", "fix": "_guard_user_id(user_id) rejects ids outside [1, int64max] before db.get -> 404 (PATCH: after 403 auth check to keep ownership precedence)"},
+    {"id": "nan-coord-500", "source": "redteam", "fix": "_validate_finite_coords rejects non-finite x/y/z -> 400 invalid_coords"}
+  ],
+  "architect": "agent 5-G002-Architect: architectureStatus/productStatus/codeStatus all CLEAR, APPROVE, blockers empty (reviewed RBAC/upsert-in-place/purge boundary/conventions). Fixes are additive guards validated by red-team re-run.",
+  "advisory_open": [
+    "db.get-then-insert upsert not atomic (mitigated by D21 single-instance)",
+    "purge does SELECT then DELETE (could use rowcount)",
+    "retention clock = updated_at (refreshes on status PATCH) - compliance note"
+  ]
+}

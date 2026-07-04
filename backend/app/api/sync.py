@@ -77,7 +77,12 @@ async def trigger_erp_sync(
     await db.flush()
 
     try:
-        result = await ErpSyncService(db).sync_users(reader, DEFAULT_COMPANY_ID)
+        svc = ErpSyncService(db)
+        result = await svc.sync_users(reader, DEFAULT_COMPANY_ID)
+        # G005: 동일 트리거에서 teams/positions 미러도 채운다(런타임 populate 경로 보장).
+        # 로그 카운트는 users 기준 유지(기존 계약 호환) — 팀/직급은 부수효과로 동기화.
+        await svc.sync_teams(reader, DEFAULT_COMPANY_ID)
+        await svc.sync_positions(reader, DEFAULT_COMPANY_ID)
     except Exception as exc:  # noqa: BLE001 — 동기화 실패는 감시 대상, 응답 자체는 202 유지
         # 정정(G009 architect COMMENT LOW): flush 단계 예외(예: DB 제약 위반)는 세션을
         # PendingRollbackError 상태로 만들어 동일 세션에서 log 갱신·commit이 실패할 수

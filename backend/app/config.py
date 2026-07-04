@@ -75,6 +75,30 @@ class Settings(BaseSettings):
     @property
     def livekit_enabled(self) -> bool:
         return bool(self.livekit_api_key and self.livekit_api_secret)
+    # ── 실시간 WSS 게이트웨이 (G001, D1/D4/D22) ──────────
+    realtime_protocol_version: int = 3
+    """클라이언트-서버 프로토콜 버전(현재 v3만 지원, 핸드셰이크 협상)."""
+    realtime_max_connections: int = 100  # D22 설계 100명
+    """동시 접속 설계 한도. 초과 시 신규 연결 capacity_exceeded 거부."""
+    realtime_handshake_timeout_seconds: float = 30.0
+    """hello 메시지 대기 타임아웃(초). 초과 시 소켓 종료(1000)."""
+    # ── KPI AI 서술 초안 (D14-e, G006) ──────────
+    ai_narrative_provider: str = "fallback"  # 'fallback' | 'claude'
+    """'claude'면 실 Anthropic 호출 시도(anthropic_api_key 필요), 그 외/미설정은 결정론 fallback."""
+    anthropic_api_key: str = ""
+    anthropic_model: str = "claude-opus-4"
+
+    @property
+    def ai_narrative_live(self) -> bool:
+        return self.ai_narrative_provider == "claude" and bool(self.anthropic_api_key)
+
+    # ── ERP 푸시 피처 플래그 (D17 리스크 완화: 기본 로컬 우선 적재, ERP 준비 시 backfill) ──
+    kpi_erp_push_enabled: bool = False
+    """기본 OFF: kpi_result는 로컬 우선 적재 + ERP 준비 시 backfill."""
+    daily_reports_erp_push_enabled: bool = False
+    """기본 OFF: daily_status_push는 로컬 로그만 유지(실 ERP POST 없음)."""
+    erp_push_base_url: str = ""
+    """ERP write API base(kpi_results/reports). 비어있으면 위 두 플래그가 True여도 사실상 무효."""
 
 
 @lru_cache
