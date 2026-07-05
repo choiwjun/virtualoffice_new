@@ -43,8 +43,8 @@ func _ready() -> void:
 	_cam.look_at(pivot.global_position, Vector3.UP)
 	_cam.current = true
 
-	# SDFGI/그림자/IBL 수렴 대기 후 캡처
-	for i in range(45):
+	# SDFGI/그림자/IBL 수렴 대기 후 캡처(SDFGI는 시간적 누적이라 넉넉히)
+	for i in range(120):
 		await get_tree().process_frame
 
 	var img := vp.get_texture().get_image()

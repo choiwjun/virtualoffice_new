@@ -534,12 +534,62 @@ static func populate(layout: Dictionary, parent: Node3D, floor_height: float) ->
 			cch.rotation.y = cy2 + PI
 			placed += 1
 
+	# 8) 브레이크아웃 라운지 — 전면 우측 오픈 공간(빈 마루 완화, 시안의 협업/휴게존)
+	var brk := Vector2(maxx - 6.5, maxy - 2.2)
+	_add_rug(parent, brk.x, brk.y, 4.6, 3.2, floor_height, Color(0.66, 0.74, 0.92))
+	var brt := _instance("coffee_table")
+	if brt:
+		parent.add_child(brt)
+		brt.position = Vector3(brk.x, floor_height, brk.y)
+		placed += 1
+	var brk_seats := [Vector3(-1.5, 0, 0.0), Vector3(1.5, 0, 0.0), Vector3(0, 0, 1.4)]
+	var brk_yaws := [PI * 0.5, -PI * 0.5, PI]
+	for bk in range(brk_seats.size()):
+		var bc := _instance("chair")
+		if bc:
+			parent.add_child(bc)
+			bc.position = Vector3(brk.x, floor_height, brk.y) + brk_seats[bk]
+			bc.rotation.y = brk_yaws[bk]
+			placed += 1
+	var brp := _instance("plant_a")
+	if brp:
+		parent.add_child(brp)
+		brp.position = Vector3(brk.x + 2.6, floor_height, brk.y - 1.0)
+		brp.scale = Vector3(1.15, 1.15, 1.15)
+		placed += 1
+
 	return placed
 
 
 const ANIM_WALK := "CharacterArmature|Walk"
 const ANIM_IDLE := "CharacterArmature|Idle_Neutral"
 const ANIM_WAVE := "CharacterArmature|Wave"
+const ANIM_SIT := "__sit__"  # 실제 앉기 애니메이션 없음 → 스켈레톤 본을 직접 포즈
+
+
+## 좌식 포즈: 애니메이션 없이 다리/팔 본을 직접 회전해 '책상에 앉아 일하는' 모습.
+## Quaternius 리그(Hips/UpperLeg.L·R/LowerLeg.L·R/UpperArm·LowerArm) 기준.
+static func _pose_seated(person: Node3D) -> void:
+	var ap = person.find_child("AnimationPlayer", true, false)
+	if ap:
+		ap.stop()
+	var sk := person.find_child("Skeleton3D", true, false)
+	if sk == null or not (sk is Skeleton3D):
+		return
+	var s := sk as Skeleton3D
+	# 델타 회전을 각 본의 rest(바인드) 방향에 합성해야 함(절대 설정하면 팔다리가 깨짐).
+	# 허벅지 앞으로(수평), 정강이 아래로(무릎 90도). 팔은 자연스러운 rest(A포즈) 유지.
+	var thigh := Quaternion(Vector3(1, 0, 0), deg_to_rad(86))
+	var shin := Quaternion(Vector3(1, 0, 0), deg_to_rad(-96))
+	var pose := {
+		"UpperLeg.L": thigh, "UpperLeg.R": thigh,
+		"LowerLeg.L": shin, "LowerLeg.R": shin,
+	}
+	for bn in pose:
+		var bi := s.find_bone(bn)
+		if bi >= 0:
+			var rest_q := s.get_bone_rest(bi).basis.get_rotation_quaternion()
+			s.set_bone_pose_rotation(bi, rest_q * pose[bn])
 
 ## 사람(Quaternius CC0) 배치 — 시안처럼 통로에 걷고, 리셉션/회의실/라운지에 서 있는 사람. 애니메이션 포즈.
 static func add_people(parent: Node3D, floor_height: float) -> int:
@@ -549,16 +599,20 @@ static func add_people(parent: Node3D, floor_height: float) -> int:
 		[12.5, 11.0, 200.0, 1, ANIM_WALK],  # 중앙 통로 걷기
 		[11.2, 13.7, 20.0, 2, ANIM_WALK],   # 중앙 통로2
 		[13.5, 9.0, 250.0, 3, ANIM_WALK],   # 중앙 통로3
-		[10.0, 5.5, 90.0, 4, ANIM_IDLE],    # A/B존 사이
 		[10.0, 12.0, 90.0, 0, ANIM_IDLE],   # C존 통로
 		[21.5, 10.6, 180.0, 1, ANIM_IDLE],  # 회의실 A 입구
 		[21.3, 16.2, 175.0, 2, ANIM_WALK],  # 회의실 B 근처
 		[25.5, 15.2, 250.0, 3, ANIM_IDLE],  # 라운지
 		[24.0, 7.5, 150.0, 4, ANIM_WALK],   # 우측 오픈
 		[4.2, 2.6, 130.0, 0, ANIM_IDLE],    # 브랜드월 앞
-		[7.5, 3.2, 200.0, 2, ANIM_IDLE],    # A존 데스크 옆
-		[3.5, 12.5, 10.0, 1, ANIM_IDLE],    # C존 데스크 옆
 		[17.5, 6.5, 220.0, 3, ANIM_WALK],   # 우측 통로
+		# 책상에 앉아 일하는 사람(시안 핵심) — 좌석 좌표, facing=책상 방향
+		[3.0, 3.6, 0.0, 4, ANIM_SIT],       # A존 데스크
+		[6.5, 5.4, 180.0, 1, ANIM_SIT],     # A존 데스크(마주)
+		[11.5, 3.6, 0.0, 2, ANIM_SIT],      # B존 데스크
+		[14.5, 5.4, 180.0, 3, ANIM_SIT],    # B존 데스크(마주)
+		[3.0, 11.6, 0.0, 0, ANIM_SIT],      # C존 데스크
+		[6.5, 13.4, 180.0, 2, ANIM_SIT],    # C존 데스크(마주)
 	]
 	var n := 0
 	var idx := 0
@@ -567,13 +621,17 @@ static func add_people(parent: Node3D, floor_height: float) -> int:
 		var person := _instance(mid)
 		if person:
 			parent.add_child(person)
-			person.position = Vector3(float(s[0]), floor_height, float(s[1]))
 			person.rotation.y = deg_to_rad(float(s[2]))
-			# 애니메이션 포즈(걷기/서기/인사) — 위상 오프셋으로 다양화
-			var ap = person.find_child("AnimationPlayer", true, false)
-			if ap:
-				var anim: String = s[4]
-				if ap.has_animation(anim):
+			var anim: String = s[4]
+			if anim == ANIM_SIT:
+				# 앉은 자세: 골반이 좌석높이에 오도록 낮춤(발은 바닥) + 본 포즈
+				person.position = Vector3(float(s[0]), floor_height - 0.4, float(s[1]))
+				_pose_seated(person)
+			else:
+				person.position = Vector3(float(s[0]), floor_height, float(s[1]))
+				# 애니메이션 포즈(걷기/서기/인사) — 위상 오프셋으로 다양화
+				var ap = person.find_child("AnimationPlayer", true, false)
+				if ap and ap.has_animation(anim):
 					ap.play(anim)
 					ap.seek(float(idx) * 0.41, true)
 			n += 1
@@ -670,7 +728,19 @@ static func setup_environment(parent: Node3D) -> void:
 		env.glow_hdr_threshold = 1.9
 		env.ssao_enabled = true
 		env.ssao_radius = 1.5
+		env.ssao_intensity = 2.0
 		env.ssil_enabled = true
+		# SDFGI: 실시간 전역조명(간접 바운스) — 벽/러그/바닥에서 색 번짐, 부드러운 실내 광질.
+		env.sdfgi_enabled = true
+		env.sdfgi_use_occlusion = true
+		env.sdfgi_bounce_feedback = 0.6
+		env.sdfgi_energy = 1.05
+		env.sdfgi_min_cell_size = 0.08
+		# SSR: 폴리시드 바닥에 은은한 반사(프리미엄 마감)
+		env.ssr_enabled = true
+		env.ssr_max_steps = 48
+		env.ssr_fade_in = 0.2
+		env.ssr_fade_out = 3.0
 	var we := WorldEnvironment.new()
 	we.environment = env
 	parent.add_child(we)
