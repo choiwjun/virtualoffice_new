@@ -85,6 +85,19 @@ export default function MeetingMinutesPage() {
     }
   }
 
+  async function summarize() {
+    setBusy(true);
+    try {
+      const s = await MinuteApi.summarize(meetingId);
+      setMinute(s);
+      notify(s.model === "fallback" ? "요약 생성(모델 미설정 시 발췌)" : "AI 요약이 생성되었습니다");
+    } catch (err) {
+      notify(err instanceof ApiError ? (err.status === 404 ? "먼저 회의록을 작성하세요" : err.detail) : "요약 실패");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (loading) return <div className="text-sub">불러오는 중…</div>;
 
   return (
@@ -97,8 +110,18 @@ export default function MeetingMinutesPage() {
             상태: {finalized ? <span className="text-ok">확정</span> : <span className="text-warn">초안</span>} · 회의 {meetingId.slice(0, 8)}…
           </p>
         </div>
-        {!finalized && <button className="btn" onClick={confirm} disabled={busy}>확정</button>}
+        <div className="flex gap-2">
+          <button className="btn-ghost" onClick={summarize} disabled={busy}>AI 요약</button>
+          {!finalized && <button className="btn" onClick={confirm} disabled={busy}>확정</button>}
+        </div>
       </header>
+
+      {minute?.ai_summary && (
+        <div className="card">
+          <h2 className="mb-1 text-sm font-medium">AI 요약</h2>
+          <p className="text-sm text-sub">{minute.ai_summary}</p>
+        </div>
+      )}
 
       {error && <div className="rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">{error}</div>}
 

@@ -520,6 +520,11 @@ export const MinuteApi = {
     apiRequest<MeetingMinute>(`/meetings/${meetingId}/minutes`, { method: "PUT", body }),
   confirm: (meetingId: string) =>
     apiRequest<MeetingMinute>(`/meetings/${meetingId}/minutes/confirm`, { method: "POST" }),
+  summarize: (meetingId: string) =>
+    apiRequest<MeetingMinute & { ai_summary: string; model: string }>(
+      `/meetings/${meetingId}/minutes/summarize`,
+      { method: "POST" },
+    ),
 };
 
 // ── 알림 (P7-R3-T3, admin) ────────────────────────────────

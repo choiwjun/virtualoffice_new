@@ -542,3 +542,29 @@ async def confirm_meeting_minutes(
     await db.commit()
     await db.refresh(minute)
     return {"status": "finalized", **_minute_out(minute)}
+
+
+@router.post("/meetings/{meeting_id}/minutes/summarize")
+async def summarize_meeting_minutes(
+    meeting_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """회의록 AI 요약 생성(P7-R1-T3). minute.ai_summary에 저장. 호스트/참석자/관리자만."""
+    from app.services.meeting_ai_summarizer import minute_to_text, summarize_minute
+
+    meeting = await _get_meeting(db, meeting_id)
+    is_admin = current_user.role in _MINUTE_ADMIN_ROLES
+    is_host = current_user.user_id == meeting.host_user_id
+    if not (is_admin or is_host or await _is_meeting_participant(db, meeting.id, current_user.user_id)):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="minute_summarize_forbidden")
+    minute = await _get_minute(db, meeting)
+    if minute is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="minute_not_found")
+
+    text = minute_to_text(minute.title, minute.summary, minute.decisions, minute.action_items_summary)
+    result = await summarize_minute(text)
+    minute.ai_summary = result["summary"]
+    await db.commit()
+    await db.refresh(minute)
+    return {"ai_summary": minute.ai_summary, "model": result["model"], **_minute_out(minute)}

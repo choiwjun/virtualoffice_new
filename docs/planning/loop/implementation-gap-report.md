@@ -135,15 +135,15 @@
 |---|---|---|
 | P7-R1-T1 다층 내비게이션 | ⬜ | 없음 |
 | P7-R1-T2 구역별 접근권한 | 🟨 | `ZoneAccess` 모델 + `api/zone_access.py`(규칙 CRUD + `user_can_enter_zone` 진입검증 + can-enter API). pytest 통과. UI + Phase4 room-enter 배선만 잔여 (2026-07-05 신설) |
-| P7-R1-T3 회의록 AI 요약 | ⬜ | `meeting_ai_summarizer.py` 없음 |
+| P7-R1-T3 회의록 AI 요약 | ✅ | `services/meeting_ai_summarizer.py`(Claude 실경로+fallback) + `POST /meetings/{id}/minutes/summarize` + **회의록 화면 AI요약 버튼**. pytest+build 통과 (2026-07-05 신설) |
 | P7-R1-T4 조직도 실시간 에디터 | ✅ | **조직도 화면**(React Flow CRUD, E2E ✅) |
 | P7-R1-T5 Events 전용 화면 | ✅ | **이벤트 화면**(`/events`, 회의 날짜별 통합 캘린더·회의록 딥링크, D26 MVP 준수) (2026-07-05 신설) |
 | P7-R1-T6 Whiteboard | ⬜ | 없음 (COULD) |
-| P7-R2-T1 모바일 푸시 알림 | ⬜ | `push_notification.py` 없음 |
+| P7-R2-T1 모바일 푸시 알림 | 🟨 | `services/push_notification.py`(`upcoming_reminders` 회의30분전·액션24h전 스캔 + 전송 가드). pytest 통과. 실 FCM 키·스케줄 연결·per-user opt-in은 런타임/후속 (2026-07-05 신설) |
 | P7-R2-T2 개인화 대시보드 | ✅ | **대시보드 화면**(내 KPI 평균·업무 완료율·예정 회의 집계) (2026-07-05 신설) |
 | P7-R2-T3 실시간 협업 피드 | 🟨 | **활동 피드 화면**(감사로그 기반, admin). 실시간(WS) 갱신은 미구현 (2026-07-05 신설) |
 | P7-R3-T1 감사 로그 | ✅ | `services/audit_service.py`+`api/audit.py`(B-14, 9훅 배선) |
-| P7-R3-T2 클라 자동업데이트 | 🟨 | `GET /api/client/version`(latest/min/required/url, semver 비교) + config. pytest 통과. `updater.gd`·서명검증·실 pak 서빙은 클라/인프라 잔여 (2026-07-05 신설) |
+| P7-R3-T2 클라 자동업데이트 | 🟨 | `GET /api/client/version`(semver·required) + config + **`godot/scenes/updater.gd`**(버전체크·시그널). pytest 통과. 서명검증·실 pak 서빙은 배포 인프라 잔여 (2026-07-05 신설) |
 | P7-R3-T3 ERP 실패 알림+관측 | 🟨 | **알림 채널 구현**: `Notification` 모델 + `notification_service`(DB 영속 + 선택적 Slack 웹훅) + `api/notifications.py` + **알림/감사로그 화면**. 실패 훅 배선(sync 트리거·스케줄러 erp 잡·KPI push). E2E+pytest 통과. 관측 스택(Grafana/Prometheus/Loki/Kuma)만 인프라 범위 잔여 (2026-07-05 신설) |
 | P7-R3-T4 도그푸딩 피드백 | ✅ | `Feedback` 모델 + `api/feedback.py`(제출/목록/상태) + **피드백 화면**(제출·관리자 검토). E2E 통과 (2026-07-05 신설) |
 | P7-R2-V 통합검증 | ⬜ | — |
