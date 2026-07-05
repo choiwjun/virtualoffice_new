@@ -780,11 +780,12 @@ static func setup_environment(parent: Node3D) -> void:
 		env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	else:
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-		env.ambient_light_color = Color(0.60, 0.62, 0.70)
-		env.ambient_light_energy = 0.9
-	# 톤매핑(양 렌더러 공통) — 살짝 낮춰 하이라이트 클리핑 방지
+		env.ambient_light_color = Color(0.58, 0.60, 0.68)
+		env.ambient_light_energy = 0.58  # 저사양(웹)은 필믹 롤오프 없음 → 앰비언트 낮춰 화이트클리핑 방지
+	# 톤매핑 — Forward+는 AgX(필믹), 저사양(웹)은 ACES + 노출/화이트 조정으로 블로우아웃 억제.
 	env.tonemap_mode = (Environment.TONE_MAPPER_AGX if not low_end else Environment.TONE_MAPPER_ACES)
-	env.tonemap_exposure = 1.18
+	env.tonemap_exposure = (1.18 if not low_end else 0.70)
+	env.tonemap_white = (6.0 if not low_end else 9.0)  # 저사양은 화이트 높여 하이라이트 롤오프 지연
 	# 무거운 포스트(색보정/블룸/SSAO/SSIL)는 Forward+에서만.
 	# Compatibility(웹)는 이들 미지원 + 배경(BG_COLOR)을 깨뜨리므로 제외.
 	if not low_end:
@@ -820,7 +821,7 @@ static func setup_environment(parent: Node3D) -> void:
 	var light := DirectionalLight3D.new()
 	light.rotation_degrees = Vector3(-58, -42, 0)
 	light.light_color = Color(1.0, 0.95, 0.86)
-	light.light_energy = 1.3
+	light.light_energy = (1.3 if not low_end else 1.0)
 	light.shadow_enabled = true
 	light.shadow_blur = 1.5
 	light.directional_shadow_max_distance = 80.0
