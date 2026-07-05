@@ -33,7 +33,11 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import CurrentUser, get_current_user
-from app.services.livekit_service import issue_join_token
+import logging
+
+from app.services.livekit_service import create_room, delete_room, issue_join_token
+
+logger = logging.getLogger(__name__)
 from app.db import get_db
 from app.config import settings
 from app.models.tables import (
@@ -254,8 +258,14 @@ async def join_meeting(
 
     await db.commit()
 
+    # D24: FastAPI 경유 LiveKit 룸 생성(단일화). LiveKit 설정 시 실 서버에 룸 생성, 미설정 시 stub.
+    # best-effort — 서버 미가용/미설정이어도 토큰 발급·입장 흐름을 막지 않는다(B-03 격리).
+    try:
+        await create_room(meeting.livekit_room)
+    except Exception:  # noqa: BLE001
+        logger.warning("join_meeting: LiveKit 룸 생성 실패(non-fatal)", exc_info=True)
+
     # 입장 토큰: LiveKit 설정 시 실 AccessToken, 미설정 시 결정적 stub(issue_join_token 단일 진입점).
-    # 실 LiveKit 서버 룸 생성/미디어/Egress/STT는 범위 밖(B-03 환경차단).
     livekit_token = issue_join_token(meeting.livekit_room, str(current_user.user_id))
     return {
         "livekit_token": livekit_token,
@@ -309,6 +319,14 @@ async def cancel_meeting(
         request=request,
     )
     await db.commit()
+
+    # D24: 회의 취소 시 LiveKit 룸 정리(best-effort). 룸 미생성/서버 미가용이어도 취소는 성공.
+    if meeting.livekit_room:
+        try:
+            await delete_room(meeting.livekit_room)
+        except Exception:  # noqa: BLE001
+            logger.warning("cancel_meeting: LiveKit 룸 삭제 실패(non-fatal)", exc_info=True)
+
     return {"status": "cancelled"}
 
 
