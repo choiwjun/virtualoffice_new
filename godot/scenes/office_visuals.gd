@@ -21,6 +21,7 @@ const MODELS := {
 	"cabinet": "res://assets/models/drawer_cabinet/drawer_cabinet.gltf",
 	"sofa2": "res://assets/models/sofa_03/sofa_03.gltf",
 	"pendant": "res://assets/models/modern_ceiling_lamp_01/modern_ceiling_lamp_01.gltf",
+	"round_table": "res://assets/models/round_wooden_table_01/round_wooden_table_01.gltf",
 	# 사람(Quaternius CC0) — 오피스 적합만
 	"person_a": "res://assets/models/people/p09.glb",  # 비즈니스 정장
 	"person_b": "res://assets/models/people/p02.glb",  # 캐주얼 티
@@ -56,12 +57,12 @@ static func apply_floor_material(parent: Node3D) -> void:
 	var rgh := FLOOR_TEX + "rough.jpg"
 	if ResourceLoader.exists(rgh):
 		mat.roughness_texture = load(rgh)
-	# 밝은 오크(시안의 밝은 마루) — 텍스처 × albedo_color
-	mat.albedo_color = Color(0.92, 0.88, 0.82)
+	# 밝은 오크(시안의 밝은 마루) — 텍스처 × albedo_color(>1로 밝게)
+	mat.albedo_color = Color(1.25, 1.16, 1.02)
 	# 마루 타일링(2K 플랭크)
 	mat.uv1_scale = Vector3(7.0, 5.0, 1.0)
 	mat.metallic = 0.0
-	mat.roughness = 0.82  # 약한 무광 광택
+	mat.roughness = 0.8
 	(mesh as MeshInstance3D).material_override = mat
 
 
@@ -232,17 +233,34 @@ static func add_room_led(room: Dictionary, parent: Node3D, floor_height: float) 
 	_box(parent, Vector3(rx + rw * 0.5, fled, ry + rh), Vector3(rw, s, s), led)
 
 
-## 그린 헤지(식재 파티션) — 데스크 클러스터 구분용 낮은 초록 박스.
+## 그린 헤지(식재 파티션) — 낮은 플랜터 박스 + 위에 실제 식물(무성한 그린).
 static func add_hedge(parent: Node3D, cx: float, cz: float, w: float, d: float, floor_height: float) -> void:
+	# 플랜터 박스(콘크리트/우드톤)
 	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(0.20, 0.38, 0.20)
-	m.roughness = 1.0
-	_box(parent, Vector3(cx, floor_height + 0.35, cz), Vector3(w, 0.7, d), m)
-	# 상단 밝은 잎 하이라이트
-	var m2 := StandardMaterial3D.new()
-	m2.albedo_color = Color(0.30, 0.5, 0.28)
-	m2.roughness = 1.0
-	_box(parent, Vector3(cx, floor_height + 0.72, cz), Vector3(w + 0.06, 0.08, d + 0.06), m2)
+	m.albedo_color = Color(0.62, 0.58, 0.52)
+	m.roughness = 0.9
+	_box(parent, Vector3(cx, floor_height + 0.28, cz), Vector3(w + 0.1, 0.56, d + 0.1), m)
+	# 흙
+	var soil := StandardMaterial3D.new()
+	soil.albedo_color = Color(0.18, 0.13, 0.10)
+	_box(parent, Vector3(cx, floor_height + 0.57, cz), Vector3(w - 0.02, 0.04, d - 0.02), soil)
+	# 위에 실제 식물 모델을 길이 방향으로 촘촘히(무성한 그린 divider)
+	var vertical := d > w
+	var span: float = (d if vertical else w)
+	var count := int(clamp(span / 0.9, 2.0, 8.0))
+	for i in range(count):
+		var t := (float(i) + 0.5) / float(count)
+		var px := cx
+		var pz := cz
+		if vertical:
+			pz = cz - d * 0.5 + t * d
+		else:
+			px = cx - w * 0.5 + t * w
+		var pl := _instance(["plant_a", "plant_c", "plant_b"][i % 3])
+		if pl:
+			parent.add_child(pl)
+			pl.position = Vector3(px, floor_height + 0.55, pz)
+			pl.scale = Vector3(0.7, 0.7, 0.7)
 
 
 ## dimensions에서 외곽 벽 4면을 파생 생성(입구는 앞면 중앙을 개방). 레이아웃이 바뀌면 그대로 반영.
@@ -371,7 +389,7 @@ static func populate(layout: Dictionary, parent: Node3D, floor_height: float) ->
 
 	# 3.5) 팀존 러그 + 그린 헤지 파티션(시안의 존 구획 + 무성한 그린)
 	var zi := 0
-	var zone_rug_cols := [Color(0.22, 0.28, 0.40), Color(0.30, 0.30, 0.34), Color(0.20, 0.30, 0.30)]
+	var zone_rug_cols := [Color(0.62, 0.72, 0.95), Color(0.92, 0.90, 0.98), Color(0.70, 0.92, 0.80)]
 	for z in layout.get("zones", []):
 		var poly = z.get("polygon", [])
 		if poly.size() < 3:
@@ -410,7 +428,7 @@ static func populate(layout: Dictionary, parent: Node3D, floor_height: float) ->
 
 	# 라운지: 오른쪽 하단 빈 공간(회의실 아래)에 러그 + 대형 소파 + 커피테이블 + 펜던트
 	var lounge := Vector2(maxx - 5.0, maxy - 4.0)
-	_add_rug(parent, lounge.x, lounge.y, 5.0, 4.0, floor_height, Color(0.24, 0.30, 0.46))
+	_add_rug(parent, lounge.x, lounge.y, 5.0, 4.0, floor_height, Color(0.58, 0.68, 0.92))
 	var sofa := _instance("sofa2")
 	if sofa == null:
 		sofa = _instance("sofa")
@@ -470,25 +488,59 @@ static func populate(layout: Dictionary, parent: Node3D, floor_height: float) ->
 			pl.position = Vector3(pc.x, floor_height, pc.y)
 			placed += 1
 
+	# 6) 벽 갤러리 — 뒷벽 우측에 액자 3개 나란히(시안의 갤러리월)
+	for gi in range(3):
+		var fr := _instance("frame")
+		if fr:
+			parent.add_child(fr)
+			fr.position = Vector3(minx + (maxx - minx) * (0.42 + gi * 0.07), floor_height + 1.85, miny + 0.16)
+			placed += 1
+
+	# 7) 카페존 — 우측 오픈 공간에 러그 + 원형 테이블 + 의자 3개
+	var cafe := Vector2(maxx - 4.5, miny + 6.5)
+	_add_rug(parent, cafe.x, cafe.y, 3.4, 3.4, floor_height, Color(0.85, 0.80, 0.72))
+	var rt := _instance("round_table")
+	if rt:
+		parent.add_child(rt)
+		rt.position = Vector3(cafe.x, floor_height, cafe.y)
+		placed += 1
+	var cyaws := [0.0, 2.1, 4.2]
+	for cy2 in cyaws:
+		var cch := _instance("chair")
+		if cch:
+			parent.add_child(cch)
+			cch.position = Vector3(cafe.x + sin(cy2) * 0.9, floor_height, cafe.y + cos(cy2) * 0.9)
+			cch.rotation.y = cy2 + PI
+			placed += 1
+
 	return placed
 
 
-## 사람(Quaternius CC0) 배치 — 시안처럼 통로·리셉션·회의실·라운지에 서 있는/걷는 사람.
+const ANIM_WALK := "CharacterArmature|Walk"
+const ANIM_IDLE := "CharacterArmature|Idle_Neutral"
+const ANIM_WAVE := "CharacterArmature|Wave"
+
+## 사람(Quaternius CC0) 배치 — 시안처럼 통로에 걷고, 리셉션/회의실/라운지에 서 있는 사람. 애니메이션 포즈.
 static func add_people(parent: Node3D, floor_height: float) -> int:
-	# [x, z, facing_deg, model_index]
+	# [x, z, facing_deg, model_index, anim]
 	var spots := [
-		[15.0, 16.5, 0.0, 0],    # 리셉션 앞(정장)
-		[12.5, 11.0, 200.0, 1],  # 중앙 통로
-		[11.0, 13.5, 20.0, 2],   # 중앙 통로2
-		[10.0, 5.5, 90.0, 3],    # A/B존 사이 통로
-		[10.0, 12.0, 90.0, 4],   # C존 통로
-		[21.5, 10.6, 180.0, 0],  # 회의실 A 입구
-		[21.5, 16.2, 180.0, 1],  # 회의실 B 근처
-		[25.5, 15.5, 250.0, 3],  # 라운지
-		[24.0, 7.5, 150.0, 2],   # 우측 오픈
-		[4.0, 2.6, 130.0, 4],    # 브랜드월 앞
+		[15.0, 15.8, 0.0, 0, ANIM_WAVE],    # 리셉션 앞(정장, 인사)
+		[12.5, 11.0, 200.0, 1, ANIM_WALK],  # 중앙 통로 걷기
+		[11.2, 13.7, 20.0, 2, ANIM_WALK],   # 중앙 통로2
+		[13.5, 9.0, 250.0, 3, ANIM_WALK],   # 중앙 통로3
+		[10.0, 5.5, 90.0, 4, ANIM_IDLE],    # A/B존 사이
+		[10.0, 12.0, 90.0, 0, ANIM_IDLE],   # C존 통로
+		[21.5, 10.6, 180.0, 1, ANIM_IDLE],  # 회의실 A 입구
+		[21.3, 16.2, 175.0, 2, ANIM_WALK],  # 회의실 B 근처
+		[25.5, 15.2, 250.0, 3, ANIM_IDLE],  # 라운지
+		[24.0, 7.5, 150.0, 4, ANIM_WALK],   # 우측 오픈
+		[4.2, 2.6, 130.0, 0, ANIM_IDLE],    # 브랜드월 앞
+		[7.5, 3.2, 200.0, 2, ANIM_IDLE],    # A존 데스크 옆
+		[3.5, 12.5, 10.0, 1, ANIM_IDLE],    # C존 데스크 옆
+		[17.5, 6.5, 220.0, 3, ANIM_WALK],   # 우측 통로
 	]
 	var n := 0
+	var idx := 0
 	for s in spots:
 		var mid: String = PERSON_IDS[int(s[3]) % PERSON_IDS.size()]
 		var person := _instance(mid)
@@ -496,7 +548,15 @@ static func add_people(parent: Node3D, floor_height: float) -> int:
 			parent.add_child(person)
 			person.position = Vector3(float(s[0]), floor_height, float(s[1]))
 			person.rotation.y = deg_to_rad(float(s[2]))
+			# 애니메이션 포즈(걷기/서기/인사) — 위상 오프셋으로 다양화
+			var ap = person.find_child("AnimationPlayer", true, false)
+			if ap:
+				var anim: String = s[4]
+				if ap.has_animation(anim):
+					ap.play(anim)
+					ap.seek(float(idx) * 0.41, true)
 			n += 1
+		idx += 1
 	return n
 
 
@@ -566,7 +626,7 @@ static func setup_environment(parent: Node3D) -> void:
 		sky.sky_material = sky_mat
 		env.sky = sky
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-		env.ambient_light_energy = 0.6  # 밝고 화사한 실내 채광
+		env.ambient_light_energy = 0.78  # 밝고 화사한 실내 채광
 		env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	else:
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
@@ -574,7 +634,7 @@ static func setup_environment(parent: Node3D) -> void:
 		env.ambient_light_energy = 0.9
 	# 톤매핑(양 렌더러 공통) — 살짝 낮춰 하이라이트 클리핑 방지
 	env.tonemap_mode = (Environment.TONE_MAPPER_AGX if not low_end else Environment.TONE_MAPPER_ACES)
-	env.tonemap_exposure = 1.05
+	env.tonemap_exposure = 1.18
 	# 무거운 포스트(색보정/블룸/SSAO/SSIL)는 Forward+에서만.
 	# Compatibility(웹)는 이들 미지원 + 배경(BG_COLOR)을 깨뜨리므로 제외.
 	if not low_end:
