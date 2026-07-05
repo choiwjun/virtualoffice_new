@@ -143,6 +143,87 @@ static func _add_rug(parent: Node3D, cx: float, cz: float, w: float, d: float, f
 	_box(parent, Vector3(cx, floor_height + 0.02, cz), Vector3(w, 0.04, d), m)
 
 
+## 발광 재질(창/천장등/LED). col=발광색, energy=강도.
+static func _emissive(col: Color, energy: float, albedo := Color(0.9, 0.9, 0.9)) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = albedo
+	m.emission_enabled = true
+	m.emission = col
+	m.emission_energy_multiplier = energy
+	return m
+
+
+## 유리(반투명) 재질.
+static func _glass(col := Color(0.62, 0.76, 0.85, 0.12)) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = col
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.roughness = 0.05
+	m.metallic = 0.1
+	return m
+
+
+## 밝은 채광창(벽 상단 발광 패널). 시안의 airy 데이라이트.
+static func build_windows(dim_minx: float, dim_miny: float, dim_maxx: float, dim_maxy: float, parent: Node3D, floor_height: float) -> void:
+	var h := 3.0
+	var win := _emissive(Color(0.95, 0.97, 1.0), 1.7, Color(0.85, 0.9, 1.0))
+	var wy := floor_height + h * 0.62
+	var wh := h * 0.5
+	# 뒷벽(miny) 우측 구간 창 2개
+	var bx := dim_minx + (dim_maxx - dim_minx) * 0.62
+	_box(parent, Vector3(bx, wy, dim_miny + 0.13), Vector3(3.2, wh, 0.04), win)
+	# 좌벽(minx) 하단 창
+	var lz := dim_miny + (dim_maxy - dim_miny) * 0.72
+	_box(parent, Vector3(dim_minx + 0.13, wy, lz), Vector3(0.04, wh, 4.0), win)
+	# 우벽(maxx) 상단 창
+	var rz := dim_miny + (dim_maxy - dim_miny) * 0.3
+	_box(parent, Vector3(dim_maxx - 0.13, wy, rz), Vector3(0.04, wh, 4.5), win)
+
+
+## 천장 조명 패널(그리드) — 은은한 발광(핫스팟 방지 강도). 열린 상단이라 얇은 패널만.
+static func build_ceiling_lights(dim_minx: float, dim_miny: float, dim_maxx: float, dim_maxy: float, parent: Node3D, floor_height: float) -> void:
+	var y := floor_height + 3.0 - 0.04
+	var strip := _emissive(Color(1.0, 0.98, 0.92), 0.9, Color(0.9, 0.9, 0.9))
+	var w := dim_maxx - dim_minx
+	var d := dim_maxy - dim_miny
+	# 룸 길이 방향 선형 LED 3줄(리세스드 천장 조명 느낌)
+	for gz in [0.28, 0.5, 0.72]:
+		_box(parent, Vector3(dim_minx + w * 0.5, y, dim_miny + d * gz), Vector3(w * 0.82, 0.04, 0.16), strip)
+
+
+## 유리방 상/하단 블루 LED 트림(시안의 글로우 엣지). room coords 기준 사각 둘레.
+static func add_room_led(room: Dictionary, parent: Node3D, floor_height: float) -> void:
+	var c: Dictionary = room.get("coords", {})
+	if c.is_empty():
+		return
+	var rx := float(c.get("x", 0.0)); var ry := float(c.get("y", 0.0))
+	var rw := float(c.get("width", 4.0)); var rh := float(c.get("height", 4.0))
+	var led := _emissive(Color(0.25, 0.6, 1.0), 3.2, Color(0.2, 0.5, 0.9))
+	var top := floor_height + 2.85
+	var s := 0.06
+	# 상단 둘레 4변
+	_box(parent, Vector3(rx + rw * 0.5, top, ry), Vector3(rw, s, s), led)
+	_box(parent, Vector3(rx + rw * 0.5, top, ry + rh), Vector3(rw, s, s), led)
+	_box(parent, Vector3(rx, top, ry + rh * 0.5), Vector3(s, s, rh), led)
+	_box(parent, Vector3(rx + rw, top, ry + rh * 0.5), Vector3(s, s, rh), led)
+	# 바닥 라인(앞/뒤)
+	var fled := floor_height + 0.05
+	_box(parent, Vector3(rx + rw * 0.5, fled, ry + rh), Vector3(rw, s, s), led)
+
+
+## 그린 헤지(식재 파티션) — 데스크 클러스터 구분용 낮은 초록 박스.
+static func add_hedge(parent: Node3D, cx: float, cz: float, w: float, d: float, floor_height: float) -> void:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.20, 0.38, 0.20)
+	m.roughness = 1.0
+	_box(parent, Vector3(cx, floor_height + 0.35, cz), Vector3(w, 0.7, d), m)
+	# 상단 밝은 잎 하이라이트
+	var m2 := StandardMaterial3D.new()
+	m2.albedo_color = Color(0.30, 0.5, 0.28)
+	m2.roughness = 1.0
+	_box(parent, Vector3(cx, floor_height + 0.72, cz), Vector3(w + 0.06, 0.08, d + 0.06), m2)
+
+
 ## dimensions에서 외곽 벽 4면을 파생 생성(입구는 앞면 중앙을 개방). 레이아웃이 바뀌면 그대로 반영.
 static func build_perimeter_walls(layout: Dictionary, parent: Node3D, floor_height: float) -> void:
 	var dim: Dictionary = layout.get("dimensions", {})
@@ -206,6 +287,26 @@ static func populate(layout: Dictionary, parent: Node3D, floor_height: float) ->
 	apply_floor_material(parent)
 	build_perimeter_walls(layout, parent, floor_height)
 	build_reception(layout, parent, floor_height)
+	# 채광창 + 천장 조명(밝고 화사한 실내감)
+	var _d0: Dictionary = layout.get("dimensions", {})
+	var wminx := float(_d0.get("min_x", 0.0)); var wminy := float(_d0.get("min_y", 0.0))
+	var wmaxx := float(_d0.get("max_x", wminx + float(_d0.get("width_m", 30.0))))
+	var wmaxy := float(_d0.get("max_y", wminy + float(_d0.get("height_m", 20.0))))
+	build_windows(wminx, wminy, wmaxx, wmaxy, parent, floor_height)
+	# 천장 발광 스트립은 블룸 막대가 되어 제거 — 창+지향광으로 충분히 밝음
+	# 구조 기둥을 밝은 콘크리트로 랩(로더의 어두운 콜라이더 박스 가림)
+	var col_mat := StandardMaterial3D.new()
+	col_mat.albedo_color = Color(0.86, 0.85, 0.82)
+	col_mat.roughness = 0.9
+	for cd in layout.get("colliders", []):
+		var b: Dictionary = cd.get("box", {})
+		if b.is_empty():
+			continue
+		var bx := float(b.get("x", 0.0)) + float(b.get("width", 1.0)) * 0.5
+		var bz := float(b.get("y", 0.0)) + float(b.get("height", 1.0)) * 0.5
+		var bw2 := float(b.get("width", 1.0)) + 0.05
+		var bd2 := float(b.get("height", 1.0)) + 0.05
+		_box(parent, Vector3(bx, floor_height + 1.5, bz), Vector3(bw2, 3.0, bd2), col_mat)
 
 	# 1) 가구(책상) — furniture.coords에 desk 모델 + 모니터(발광 스크린) + 램프
 	for f in layout.get("furniture", []):
@@ -243,6 +344,23 @@ static func populate(layout: Dictionary, parent: Node3D, floor_height: float) ->
 	# 3) 회의실 집기 — 각 room 내부에 테이블 + 의자(오른쪽 빈 공간 채움)
 	for r in layout.get("rooms", []):
 		placed += _furnish_room(r, parent, floor_height)
+
+	# 3.5) 팀존 러그 + 그린 헤지 파티션(시안의 존 구획 + 무성한 그린)
+	var zi := 0
+	var zone_rug_cols := [Color(0.22, 0.28, 0.40), Color(0.30, 0.30, 0.34), Color(0.20, 0.30, 0.30)]
+	for z in layout.get("zones", []):
+		var poly = z.get("polygon", [])
+		if poly.size() < 3:
+			continue
+		var zx0 := 1e9; var zy0 := 1e9; var zx1 := -1e9; var zy1 := -1e9
+		for pt in poly:
+			zx0 = min(zx0, float(pt.get("x", 0.0))); zy0 = min(zy0, float(pt.get("y", 0.0)))
+			zx1 = max(zx1, float(pt.get("x", 0.0))); zy1 = max(zy1, float(pt.get("y", 0.0)))
+		var zcx := (zx0 + zx1) * 0.5; var zcz := (zy0 + zy1) * 0.5
+		_add_rug(parent, zcx, zcz, (zx1 - zx0) - 0.6, (zy1 - zy0) - 0.6, floor_height, zone_rug_cols[zi % zone_rug_cols.size()])
+		# 존 경계 헤지(오른쪽 변) — 통로 쪽 구획
+		add_hedge(parent, zx1 + 0.1, zcz, 0.35, (zy1 - zy0) - 1.0, floor_height)
+		zi += 1
 
 	# 4) 장식 — 벽면 화분, 라운지(소파+커피테이블+러그)
 	var dim: Dictionary = layout.get("dimensions", {})
@@ -360,6 +478,8 @@ static func _furnish_room(room: Dictionary, parent: Node3D, floor_height: float)
 		parent.add_child(proj)
 		proj.position = Vector3(cx, floor_height, ry + 0.3)
 		n += 1
+	# 유리방 블루 LED 트림(시안의 글로우 엣지)
+	add_room_led(room, parent, floor_height)
 	return n
 
 
@@ -386,7 +506,7 @@ static func setup_environment(parent: Node3D) -> void:
 		sky.sky_material = sky_mat
 		env.sky = sky
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-		env.ambient_light_energy = 0.35  # 과다노출 방지(벽 클리핑)
+		env.ambient_light_energy = 0.6  # 밝고 화사한 실내 채광
 		env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	else:
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
@@ -394,7 +514,7 @@ static func setup_environment(parent: Node3D) -> void:
 		env.ambient_light_energy = 0.9
 	# 톤매핑(양 렌더러 공통) — 살짝 낮춰 하이라이트 클리핑 방지
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	env.tonemap_exposure = 0.9
+	env.tonemap_exposure = 1.0
 	# 무거운 포스트(색보정/블룸/SSAO/SSIL)는 Forward+에서만.
 	# Compatibility(웹)는 이들 미지원 + 배경(BG_COLOR)을 깨뜨리므로 제외.
 	if not low_end:
@@ -417,8 +537,8 @@ static func setup_environment(parent: Node3D) -> void:
 	# 키 라이트: 따뜻한 태양광, 부드러운 그림자
 	var light := DirectionalLight3D.new()
 	light.rotation_degrees = Vector3(-58, -42, 0)
-	light.light_color = Color(1.0, 0.96, 0.88)
-	light.light_energy = 1.15
+	light.light_color = Color(1.0, 0.95, 0.86)
+	light.light_energy = 1.55
 	light.shadow_enabled = true
 	light.shadow_blur = 1.5
 	light.directional_shadow_max_distance = 80.0
@@ -428,6 +548,14 @@ static func setup_environment(parent: Node3D) -> void:
 	var fill := DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-32, 138, 0)
 	fill.light_color = Color(0.82, 0.86, 1.0)
-	fill.light_energy = 0.35
+	fill.light_energy = 0.55
 	fill.shadow_enabled = false
 	parent.add_child(fill)
+
+	# 오버헤드 소프트 필(천장 방향) — 실내 균일 채광
+	var top_fill := DirectionalLight3D.new()
+	top_fill.rotation_degrees = Vector3(-88, 20, 0)
+	top_fill.light_color = Color(1.0, 0.98, 0.94)
+	top_fill.light_energy = 0.4
+	top_fill.shadow_enabled = false
+	parent.add_child(top_fill)
