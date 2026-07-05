@@ -85,7 +85,7 @@ img{max-width:100%;border-radius:8px}
 <h4 id="header-상단"><strong>Header (상단)</strong></h4>
 <ul><li><strong>로고 + 회사명</strong>: 클릭 시 대시보드 이동</li><li><strong>Office/Floor 선택 드롭다운</strong>: 사용자가 다중 office 구성 시 전환</li><li><strong>Search Bar</strong>: 직원 이름/팀 검색 → 아바타 강조 + 카메라 이동</li><li><strong>User Profile</strong>: 내 아바타 상태(online/meeting/focus/away) 표시 + 드롭다운 (마이페이지/로그아웃)</li><li><strong>Help</strong>: 단축키, 튜토리얼 링크</li></ul>
 <h4 id="left-sidebar-좌측-사이드바-보조-내비게이션"><strong>Left Sidebar (좌측 사이드바 — 보조 내비게이션)</strong></h4>
-<ul><li><strong>Office Navigation</strong>: 층(floor) 선택, 구역(zone) 필터</li><li><strong>Rooms</strong>: 이용 가능한 회의실 목록 (점유 여부, 예약 시간), 클릭 → 회의실 카메라 이동</li><li><strong>People</strong>: 현재 온라인 직원 목록 (팀별 그룹), 클릭 → 아바타 추적</li><li><strong>Chat</strong>: 미니 채팅 인터페이스 (회의 중 메모/근접 DM만, KPI 반감시 원칙 준수). <strong>본격 채팅은 Phase 7 고도화</strong> — MVP는 회의 메모·근접 DM 수준으로 한정</li><li><strong>Settings</strong>: 아바타 커스터마이징, 알림, 접근성</li></ul>
+<ul><li><strong>Office Navigation</strong>: 층(floor) 선택, 구역(zone) 필터</li><li><strong>Rooms</strong>: 이용 가능한 회의실 목록 (점유 여부, 예약 시간), 클릭 → 회의실 카메라 이동</li><li><strong>People</strong>: 현재 온라인 직원 목록 (팀별 그룹), 클릭 → 아바타 추적</li><li><strong>Chat</strong>: 미니 채팅 인터페이스 (회의 중 메모/근접 DM만, KPI 반감시 원칙 준수). <strong>본격 채팅은 Phase 7 고도화</strong> — MVP는 회의 메모·근접 DM 수준으로 한정</li><li><strong>Settings</strong>: 아바타 커스터마이징, 알림, 접근성</li><li><strong>내비 범위 확정(D26, 2026-07-03 시안)</strong>: MVP 노출 = Office/Rooms/People/Chat(제한)/Settings. <strong>Events·Whiteboard(디지털 협업보드)는 Phase 7</strong>, <strong>Files는 MVP 제외(WON'T)</strong>. 시각 레퍼런스: <code>design/screens/virtual-office-3d-reference.md</code>.</li></ul>
 <h4 id="3d-main-viewport-중앙-메인-렌더링-영역"><strong>3D Main Viewport (중앙 — 메인 렌더링 영역)</strong></h4>
 <p><strong>기하학적 요소:</strong></p>
 <ul><li><strong>로비 (Lobby)</strong>: 입장 포인트, 수직 레이아웃 (스탠딩 바 + 공동 공간)</li><li><strong>브랜드월 (Brand Wall)</strong>: 회사 미션/비전 스크린, 회의 시 이미지 디스플레이</li><li><strong>오픈좌석 (Open Seating)</strong>: 팀별 구역으로 배열, desk/monitor/chair 에셋, seat.coords 기반 배치</li><li><strong>회의실 (Meeting Rooms)</strong>: 투명 유리벽, 내부 테이블/의자, 문 트리거, livekit_room 연결</li><li><strong>라운지 (Lounge)</strong>: 소파/커피테이블, 비포멀 미팅 공간</li><li><strong>집중실 (Focus Room)</strong>: 소음 차단, 좁은 데스크, 진입 제한(자리만큼만)</li><li><strong>폰부스 (Phone Booth)</strong>: 독립 칸막이, 영상통화용</li><li><strong>미니맵 (Minimap)</strong>: 우측 하단 코너, 현재 층 조감도, 아바타 위치, 회의실 점유 표시</li></ul>
@@ -1087,7 +1087,7 @@ Godot Headless Server
 <hr>
 <h2 id="8-변경-이력">8. 변경 이력</h2>
 <div class="table-wrap"><table><thead><tr><th>버전</th><th>일자</th><th>변경 내용</th></tr></thead><tbody><tr><td>1.0</td><td>2026-07-01</td><td>초안</td></tr><tr><td>1.1</td><td>2026-07-02</td><td>00-decisions 반영: D11 웹 3D 미리보기 전면 제거(데스크톱 draft 열람으로 대체), D12 검증 아키텍처(서버 단일 정밀검증·ERROR 배포차단·[무시하고 배포] 제거), 편집기 JSON을 05 스키마와 정합(미터·필드명·doors[]·shape·중복 type 키 수정)·팔레트에 spawn/entrance/glass_wall/door/marker/exit 추가, D5 회의록 STT 초안 흐름·녹음 고지/동의 배너·Godot 작성폼 제거, Godot=보기/웹=작성 경계 원칙 명시, 신규 화면 6종(이의신청·로그인/세션·아바타·권한 매트릭스·자율좌석 점유/반납·동기화 모니터링 콘솔), D22 성능·규모 통일(60fps@GTX1650/100명), 층 단위 버전·롤백(05 정합), 조직도 편집기 P3·채팅 Phase 7 마킹, GPS 표기 제거(D13), Vercel→사내 VM(D21), ENet→WSS(D1)</td></tr></tbody></table></div>
-<div class="meta-foot">원본: <code>06-screens.md</code> · 자동 생성 2026-07-02 · md-to-html</div>
+<div class="meta-foot">원본: <code>06-screens.md</code> · 자동 생성 2026-07-05 · md-to-html</div>
 </main>
 </div>
 

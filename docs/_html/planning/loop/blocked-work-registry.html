@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>환경 차단 작업 레지스트리 (Blocked Work Registry)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">환경 차단 작업 레지스트리 (Blocked Work Registry)</div><div class="sub">blocked-work-registry.md</div><a class="lvl1" href="#환경-차단-작업-레지스트리-blocked-work-registry">환경 차단 작업 레지스트리 (Blocked Work Registry)</a><a class="lvl2" href="#목적">목적</a><a class="lvl2" href="#a-원-기획final-planning-approval-정의-환경차단-phase-후속">A. 원 기획(final-planning-approval) 정의 환경차단 — Phase 후속</a><a class="lvl2" href="#b-관리-api-구현-중-누적된-환경차단-g005g010">B. 관리 API 구현 중 누적된 환경차단 (G005~G010)</a><a class="lvl3" href="#g005-회의-예약">G005 회의 + 예약</a><a class="lvl3" href="#g006-회의록-stt">G006 회의록 + STT</a><a class="lvl3" href="#g008-kpi">G008 KPI</a><a class="lvl3" href="#g009-동기화-감사">G009 동기화 + 감사</a><a class="lvl3" href="#g010-보안-스케줄러">G010 보안 + 스케줄러</a><a class="lvl2" href="#c-잠금-분류-요약">C. 잠금 분류 요약</a><a class="lvl2" href="#d-정책상-남은-결정제품-오너-비준-대기">D. 정책상 남은 결정(제품 오너 비준 대기)</a><a class="lvl2" href="#e-비고">E. 비고</a></nav>
+<main><h1 id="환경-차단-작업-레지스트리-blocked-work-registry">환경 차단 작업 레지스트리 (Blocked Work Registry)</h1>
+<p><strong>스토리</strong>: G011 — 환경 차단 작업을 durable blocker로 등록 <strong>작성</strong>: ultragoal 실행 세션 (관리 API G001~G010 완료 후) <strong>정본 참조</strong>: <code>docs/planning/00-decisions.md</code>, <code>docs/planning/10-roadmap.md</code>, <code>docs/planning/12-tasks.md</code>, <code>docs/planning/loop/final-planning-approval.md</code></p>
+<h2 id="목적">목적</h2>
+<p>관리 API(G001~G010) 구현 중 <strong>이 개발 환경(로컬, PostgreSQL/실 ERP/GPU/Godot/LiveKit 부재)에서 실행·검증이 불가능한 작업</strong>을 코드로 억지 완결하지 않고 여기 durable하게 기록한다. 각 항목은 <strong>실행 불가 사유 + 잠금 분류 + 해소 선행조건 + 코드 측 현재 상태(방어 구현 여부)</strong>를 명시한다.</p>
+<p>분류(status):</p>
+<ul><li><code>human_blocked</code> — 사람의 조치(자격증명 발급, 도메인 구매, 하드웨어/런타임 확보, 제품 정책 비준)가 선행되어야 진행 가능. 자동 진행 불가.</li><li><code>phase_blocked</code> — 로드맵상 후속 Phase(3D/실시간/화상)에 속해 현 관리 API Phase 범위 밖.</li><li><code>followup</code> — 코드로 방어/스캐폴딩은 완료했고, 라이브 환경/후속 스토리에서 검증·활성화만 남음.</li></ul>
+<hr>
+<h2 id="a-원-기획final-planning-approval-정의-환경차단-phase-후속">A. 원 기획(final-planning-approval) 정의 환경차단 — Phase 후속</h2>
+<div class="table-wrap"><table><thead><tr><th>ID</th><th>항목</th><th>분류</th><th>실행 불가 사유</th><th>해소 선행조건</th></tr></thead><tbody><tr><td>B-01</td><td>Godot 3D 클라이언트 (Phase 1)</td><td>phase_blocked (헤드리스 로직 슬라이스 진행 중)</td><td>GPU 렌더링·실 GLB 에셋·에디터 런타임은 부재로 여전히 차단. <strong>헤드리스 GUT로 검증 가능한 로직 슬라이스는 진행</strong>: 아바타 이동/충돌/좌석/근접/A*(<code>scenes/avatar.gd</code>), JWT HS256 검증(<code>server/jwt_verify.gd</code>), <strong>office<em>layout(05 스키마) → 3D 씬 + 아바타용 obstacle</em>cells/seats/spawn 파생 로더(<code>scenes/office_layout_loader.gd</code>)</strong>. 실 GPU 40아바타 FPS·GLB 임포트·export 빌드만 GPU/에셋 차단.</td><td>Godot GPU 빌드/런 환경, 에셋 레지스트리(asset 테이블) 실 GLB/tscn, export 파이프라인</td></tr><tr><td>B-02</td><td>헤드리스 실시간 서버 + 클라이언트 WSS 네트워킹 (Phase 4)</td><td>phase_blocked</td><td>실시간 서버 런타임·WSS 인프라 부재. <code>docs/api/realtime-server-api.yaml</code>은 계약만 존재.</td><td>Phase 4 실시간 서버 구현, presence 좌표 브로드캐스트 인프라</td></tr><tr><td>B-03</td><td>LiveKit 화상 + STT 회의록 런타임 (Phase 5)</td><td>phase_blocked (토큰 발급+배포 스캐폴드 슬라이스는 해소 → B-07)</td><td>LiveKit 서버·Egress·STT 엔진(한국어 화자분리)·AI 후처리 런타임 부재. <strong>회의 입장 토큰(실 AccessToken 조건부 발급) + livekit/coturn compose opt-in 스캐폴드는 완료(B-07)</strong> — 실 서버 룸 생성/화상/STT/AI만 남음.</td><td>LiveKit 서버 배포 + STT 엔진 + AI 요약 파이프라인</td></tr><tr><td>B-04</td><td>선행 스파이크 S1~S4</td><td>phase_blocked</td><td>S1(3D 성능), S2(STT 정확도&lt;5% 누락률, D22), S3(실시간 부하), S4(에셋 파이프라인) — 각 후속 Phase 검증용 스파이크.</td><td>해당 Phase 하드웨어/런타임 확보</td></tr><tr><td>B-05</td><td>ERP 라이브 read-only DB 접속 (OQ10)</td><td>human_blocked</td><td>dailylog PostgreSQL read-only 계정 미발급. 현재 <code>MockErpReader</code>로만 동작(<code>ERP_DATABASE_URL</code> 비어있음).</td><td>ERP DB 계정/접속정보(OQ10) 발급 → <code>ERP_DATABASE_URL</code> 설정 시 <code>PostgresErpReader</code> 자동 전환</td></tr><tr><td>B-06</td><td>공인 도메인 구매 (R-d)</td><td>human_blocked</td><td>도메인 미구매. 외부 공개(Caddy TLS)·CORS 확정 불가.</td><td>도메인 구매 + DNS + Caddy 인증서</td></tr></tbody></table></div>
+<hr>
+<h2 id="b-관리-api-구현-중-누적된-환경차단-g005g010">B. 관리 API 구현 중 누적된 환경차단 (G005~G010)</h2>
+<h3 id="g005-회의-예약">G005 회의 + 예약</h3>
+<div class="table-wrap"><table><thead><tr><th>ID</th><th>항목</th><th>분류</th><th>사유 / 코드 현재 상태</th><th>해소 선행조건</th></tr></thead><tbody><tr><td>B-07</td><td>LiveKit 실 룸 생성/토큰 (D24)</td><td>🟡 부분해소(토큰 발급) · 룸/미디어는 phase_blocked(→B-03)</td><td><strong>토큰 슬라이스 해소</strong>: <code>join</code>이 <code>app/services/livekit_service.issue_join_token</code>으로 발급 — <code>LIVEKIT_API_KEY/SECRET</code> 설정 시 실 LiveKit AccessToken(VideoGrants room<em>join, iss=api</em>key/sub=user_id/room/TTL 6h), 미설정 시 결정적 stub(하위호환). <code>docker-compose</code> livekit/coturn opt-in profile 스캐폴드 추가(<code>docker compose config</code> 검증). 테스트 <code>tests/services/test_livekit_service.py</code>. 실 룸 생성/미디어 연동은 B-03.</td><td>(토큰 해소) 실 LiveKit 서버 룸 생성/미디어는 B-03 런타임</td></tr><tr><td>B-08</td><td>예약 충돌 TOCTOU → DB 배타 제약</td><td>followup</td><td>온프렘 단일 인스턴스 전제라 현재 위험 낮음. 코드 주석으로 명시. 다중 인스턴스 확장 시 PostgreSQL <code>EXCLUDE USING gist (room_id WITH =, tstzrange(scheduled_at, scheduled_end) WITH &amp;&amp;)</code> 승격 필요.</td><td>다중 인스턴스 배포 결정 시 마이그레이션</td></tr></tbody></table></div>
+<h3 id="g006-회의록-stt">G006 회의록 + STT</h3>
+<div class="table-wrap"><table><thead><tr><th>ID</th><th>항목</th><th>분류</th><th>사유 / 코드 현재 상태</th><th>해소 선행조건</th></tr></thead><tbody><tr><td>B-09</td><td>STT 실 파이프라인 (D5, LiveKit Egress→화자분리→AI요약)</td><td>phase_blocked(→B-03/B-04)</td><td><code>stt_draft</code> 저장·조회 계약만 구현. 실 STT 생성은 외부 파이프라인이 채우기 전까지 NULL.</td><td>B-03 LiveKit + STT 엔진, B-04 S2 스파이크</td></tr><tr><td>B-10</td><td>STT 정확도 측정 (누락률&lt;5%, D22) — 계약 <code>test_stt_accuracy_measurement</code> skip</td><td>phase_blocked(→B-04)</td><td>실 STT 없이 정확도 측정 불가. 계약 테스트 skip 유지(reason=Phase4+ S2).</td><td>B-04 S2 스파이크</td></tr></tbody></table></div>
+<h3 id="g008-kpi">G008 KPI</h3>
+<div class="table-wrap"><table><thead><tr><th>ID</th><th>항목</th><th>분류</th><th>사유 / 코드 현재 상태</th><th>해소 선행조건</th></tr></thead><tbody><tr><td>B-11</td><td>KPI AI 서술 초안 실 생성 (D14-e)</td><td>phase_blocked</td><td>정량 점수는 결정론 코드로 완결. AI 서술(<code>ai_draft</code>)은 결정론 placeholder(<code>ai_draft_pending</code>)만. 실 LLM 호출 미연동.</td><td>AI 모델 연동 런타임</td></tr><tr><td>B-12</td><td>확정 KPI ERP push (D15/D17)</td><td>human_blocked(→B-05)</td><td><code>confirm</code>은 <code>final_score</code>/<code>finalized_at</code> 로컬 확정만. 실 ERP push(<code>pushed_to_erp</code>/<code>pushed_at</code>) 미연동.</td><td>B-05 ERP 라이브 DB/API</td></tr><tr><td>B-13</td><td>분기 집계 배치 <code>POST /kpi/aggregate</code> — 계약 <code>test_kpi_quarterly_aggregation</code> skip</td><td>followup(→B-16)</td><td>202 스텁 + <code>aggregate_user_period</code> 로직 구현·단위검증. 실 스케줄 배치 실행은 미검증.</td><td>B-16 스케줄러 런타임</td></tr></tbody></table></div>
+<h3 id="g009-동기화-감사">G009 동기화 + 감사</h3>
+<div class="table-wrap"><table><thead><tr><th>ID</th><th>항목</th><th>분류</th><th>사유 / 코드 현재 상태</th><th>해소 선행조건</th></tr></thead><tbody><tr><td>B-14</td><td>감사 로그 생산자 훅 (<code>audit_service.py</code>)</td><td>✅ resolved (2026-07-03)</td><td><strong>구현 완료</strong>: <code>app/services/audit_service.py</code>(<code>record_audit</code> — 트랜잭션 stage-only, commit/flush 없음) + seats(assign/unassign)·meetings(create/cancel)·kpi(adjust/confirm/objection)·layouts(deploy/rollback) 감사 훅 배선. 도메인 뮤테이션과 <strong>원자적</strong>(commit 이전 stage → 실패 시 동반 롤백). D20 감사추적 컴플라이언스 컨트롤 작동. 테스트 15건(<code>tests/redteam/test_audit_producer_redteam.py</code>, 원자성/멱등/거부 무감사 포함) + architect 세 레인 CLEAR+APPROVE. 전체 회귀 297 passed/28 skipped/0 fail.</td><td>(해소됨) 잔여 LOW 후속은 §D 참조</td></tr><tr><td>B-15</td><td>레거시 <code>POST /api/erp/sync</code> deprecation</td><td>✅ resolved (2026-07-03)</td><td><strong>deprecate + 로깅 통일</strong>: <code>erp.py</code> 레거시 트리거에 <code>deprecated=True</code> + RFC 8594 Deprecation/Link(후속=<code>/sync/erp</code>) 헤더, 하위호환 <code>SyncResultOut</code> 유지하되 정본 <code>sync.py</code>처럼 ErpSyncLog(성공 SUCCESS/실패 FAILED, rollback 후 재기록) 기록 → 모니터링 사각 제거. architect 재리뷰 세 레인 CLEAR.</td><td>(해소됨) 최종 물리 제거는 외부 소비자 이전 후</td></tr></tbody></table></div>
+<h3 id="g010-보안-스케줄러">G010 보안 + 스케줄러</h3>
+<div class="table-wrap"><table><thead><tr><th>ID</th><th>항목</th><th>분류</th><th>사유 / 코드 현재 상태</th><th>해소 선행조건</th></tr></thead><tbody><tr><td>B-16</td><td>APScheduler 상시 실행 + 실 cron 발화 (D17)</td><td>✅ resolved(배포 배선 + 부팅/재시작 검증) · 실시각 발화는 운영 관측</td><td><strong>배포 배선 갭 수정</strong>: <code>docker-compose.yml</code> backend env에 <code>SCHEDULER_ENABLED</code> 주입(배포 문서엔 'true로 설정' 안내가 있었으나 compose 미배선이라 <code>.env</code>→컨테이너 전달이 끊겨 있던 실버그). <code>main.lifespan</code>에 스케줄러 기동/종료 로그 추가(운영 관측). <strong>실 Docker 검증</strong>: <code>SCHEDULER_ENABLED=true</code> 기동 시 로그 <code>APScheduler started: 4 jobs registered</code> + <code>/health</code> 200 + <code>docker restart</code> 후 재기동(재시작 지속성), <code>false</code>(기본)면 미기동(컨테이너는 healthy). 증거: <code>backend/artifacts/b16-docker-scheduler-verify.txt</code>.</td><td>(배선·부팅·재시작 해소) 실제 18:00/21:00 등 <strong>시각 발화</strong>는 배포 후 달력상 관측만 남음(코드·배선·기동은 검증됨)</td></tr><tr><td>B-17</td><td>단일 인스턴스 확정 / PostgreSQL <code>pg_advisory_lock</code> 다중 인스턴스</td><td>✅ resolved(단일 확정) · 다중 이연</td><td><strong>D21 단일 인스턴스 온프렘 확정</strong>: <code>build_scheduler</code> 4잡에 <code>max_instances=1</code>+<code>coalesce=True</code> 명시(중복 실행·미스파이어 누적 방지). <code>advisory_lock</code>은 PostgreSQL만 실행/그외 no-op 유지. 다중 인스턴스 락 경합 실검증은 현 단일 전제라 불필요.</td><td>(단일 해소) 다중 인스턴스 채택 시 PG 배포 검증</td></tr><tr><td>B-18</td><td>공휴일 캘린더 (daily_reports 스킵)</td><td>✅ resolved (2026-07-03)</td><td><strong>정적 공휴일 소스 구현</strong>: <code>app/services/holidays.py</code>(<code>is_kr_holiday</code> — 양력 고정 + 2026~2027 음력/대체공휴일, <strong>제헌절 7/17 재지정</strong> 반영, 외부 API/네트워크 불필요). <code>daily_reports_push</code>가 공휴일 스킵(주말은 cron). 미커버 연도(2028+)는 WARN으로 갱신 촉구. architect 재리뷰 세 레인 CLEAR.</td><td>(해소됨) 2028+ 관보 확정 시 테이블 갱신(WARN이 촉구)</td></tr><tr><td>B-19</td><td>실 ERP 라이브 push (daily<em>status</em>push 전송)</td><td>human_blocked(→B-05)</td><td><code>daily_status_push</code> 레코드 생성(멱등)만. 실 ERP API 전송(<code>erp_response</code>/<code>pushed_at</code> 갱신·재시도)은 MockErpReader로만 검증.</td><td>B-05 ERP 라이브 접속</td></tr><tr><td>B-20</td><td><code>kpi_result.ai_draft</code> JSONB NULL 멱등 — Postgres 검증</td><td>followup</td><td>SQLite에서 <code>is_(JSON.NULL)</code> 멱등 검증 완료. Postgres JSONB SQL NULL vs <code>'null'</code> 동작 미검증.</td><td>PostgreSQL 배포 시 회귀 검증</td></tr><tr><td>B-21</td><td><code>daily_status_push (user_id, push_date, target)</code> UNIQUE 제약</td><td>followup</td><td>현재 SELECT-후-insert 멱등 + advisory lock으로 방어. DB UNIQUE 제약(심층방어)은 미추가(테이블 스키마 변경).</td><td>다중 인스턴스/방어선 강화 시 마이그레이션</td></tr></tbody></table></div>
+<hr>
+<h2 id="c-잠금-분류-요약">C. 잠금 분류 요약</h2>
+<ul><li><strong>human_blocked</strong>(사람 조치 필수): B-05(ERP DB 계정), B-06(도메인), B-12·B-19(ERP push=B-05 종속).</li><li><strong>phase_blocked</strong>(후속 Phase): B-01(Godot), B-02(실시간 WSS), B-03(LiveKit/STT 서버·엔진 — 토큰/스캐폴드 슬라이스는 B-07로 부분해소), B-04(스파이크), B-09·B-10(STT 종속), B-11(AI 서술).</li><li><strong>followup</strong>(코드 방어 완료, 라이브/후속 검증만): B-08(TOCTOU 제약), B-13(분기배치), B-20(JSONB Postgres), B-21(UNIQUE 방어선).</li><li><strong>✅ resolved(구현 완료)</strong>: B-14(감사 생산자 훅, 2026-07-03), <strong>B-15</strong>(레거시 sync deprecate+로깅 통일), <strong>B-16</strong>(스케줄러 상시구동 — compose <code>SCHEDULER_ENABLED</code> 배선 + Docker 부팅/재시작 실검증), <strong>B-17</strong>(단일 인스턴스 확정 max<em>instances=1/coalesce — 다중 PG 검증은 이연), <strong>B-18</strong>(정적 공휴일 소스 + daily</em>reports 스킵, 제헌절 재지정 반영).</li><li><strong>🟡 부분해소</strong>: <strong>B-07</strong>(LiveKit 입장 토큰 실 AccessToken 조건부 발급 + compose livekit/coturn opt-in 스캐폴드 — 실 서버 룸/화상/STT는 B-03 유지).</li></ul>
+<h2 id="d-정책상-남은-결정제품-오너-비준-대기">D. 정책상 남은 결정(제품 오너 비준 대기)</h2>
+<ul><li><del>B-15 레거시 <code>/api/erp/sync</code> deprecation 여부</del> → <strong>결정·반영 완료(2026-07-03)</strong>: deprecate + ErpSyncLog 로깅 통일(제거 아님, 하위호환 유지). 최종 물리 제거는 외부 소비자 이전 후 별도.</li><li><del>B-14 감사 생산자 훅 별도 스토리 착수 필요</del> → <strong>완료(2026-07-03)</strong>. D20 컴플라이언스 컨트롤 활성화됨. 잔여 후속: (1) <del><code>ip_address</code>/<code>user_agent</code> 미배선</del> → <strong>완료</strong> (<code>record_audit</code>가 <code>Request</code>에서 도출, 9개 훅 배선, 전용 테스트 <code>test_audit_captures_client_ip_and_user_agent</code>), (2) 자율석 occupy/release·회의록 confirm은 D20 감사 어휘 밖(이력은 <code>SeatAssignmentHistory</code> 보유 — 스코프 경계, INFO 비차단), (3) staged-후-commit실패(IntegrityError) 롤백 경로 회귀 테스트 보강(LOW 비차단 — 단일 인스턴스 온프렘 전제라 트리거 결정론 확보 어려움).</li><li><strong>B-22 (설계 WATCH, 후속)</strong>: ERP 증분 동기화가 contract §1.3 의사코드의 <code>updated_at</code> 델타가 아니라 <strong>전체 로스터 대조</strong>(<code>erp_incremental_sync</code>==<code>erp_full_reconciliation</code>, <code>sync_users</code> 재사용)로 구현됨. 현재 <code>ErpReader.fetch_users(company_id)</code>가 델타 파라미터 없이 전체 로스터를 반환하는 계약이라 안전·정확(하드삭제 감지 포함)하며 중복코드가 없다 — <strong>의도적 설계 결정</strong>. 단, 향후 실 ERP 리더가 진짜 <code>updated_at</code>-델타(변경분만 반환)를 구현하면 미변경 사용자를 대량 오(誤)soft-delete할 위험 → 델타 리더 도입 시 증분/전체 로직 분리 + 회귀 가드 필요(현재 리더 계약 유지 하에서는 봉쇄, architect G003 F2).</li></ul>
+<h2 id="e-비고">E. 비고</h2>
+<ul><li>G001~G010 관리 API는 모두 계약/레드팀/architect 세 레인 CLEAR로 완료됨. 위 항목들은 관리 API 코드 결함이 아니라 <strong>환경/런타임/후속 Phase 의존</strong>이다.</li><li>코드 측에서는 각 차단 지점에 방어(멱등 upsert, no-op advisory, 결정론 placeholder, 저장-조회 계약 stub)를 구현해 라이브 전환 시 최소 변경으로 활성화되도록 했다.</li></ul>
+<div class="meta-foot">원본: <code>blocked-work-registry.md</code> · 자동 생성 2026-07-05 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>_remaining-work-brief</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">_remaining-work-brief</div><div class="sub">_remaining-work-brief.md</div></nav>
+<main><p>가상오피스 백엔드 관리 API의 승인 기획(docs/planning/00-decisions.md D1~D25, docs/planning/loop/final-planning-approval.md, docs/api/management-api.yaml, docs/planning/12-tasks.md) 대비, 이 개발 환경(Windows 로컬, PostgreSQL/실 ERP/GPU/Godot/LiveKit 부재)에서 실행·검증 가능한 잔여/누락 작업만 마감한다. 관리 API 본체(G001~G011)와 감사 생산자 훅(B-14)은 이미 완료됨.</p>
+<p>공통 제약 (모든 스토리 적용):</p>
+<ul><li>정본(SSOT): docs/planning/00-decisions.md. 충돌 시 정본 우선.</li><li>수용 기준: backend/tests/contract/test<em>management</em>api_stubs.py 의 해당 @pytest.mark.skip 스텁을 활성화·통과. 스텁이 명세/모델과 어긋나면 명세·모델 정본 우선 rigorous 재작성(근거 기록).</li><li>venv/pytest: PY=&quot;$(pwd)/backend/.venv/Scripts/python.exe&quot;; cd backend &amp;&amp; &quot;$PY&quot; -m pytest -q -p no:cacheprovider. 상대경로 exe 직접 실행은 이 환경서 실패하므로 절대경로 변수 필수.</li><li>기존 코드 컨벤션 재사용(app/api/<em>.py 라우터, app/services/</em>, app/erp/*, app/models/tables.py). 병렬 컨벤션 금지.</li><li>회귀 베이스라인 298 passed / 28 skipped / 0 failed 는 절대 회귀하지 않는다.</li><li>환경/후속 Phase 차단 및 정책 대기 작업은 이 브리프 범위 밖이며 docs/planning/loop/blocked-work-registry.md 에 durable 등록되어 있다: Godot 3D(Phase1)·실시간 WSS(Phase4)·LiveKit+STT(Phase5)·STT 정확도 측정(S2)·ERP 라이브 DB(OQ10)·공인 도메인(R-d)·감사로그 5년 보존 파기(D20-e, Phase2, 파괴적)·레거시 POST /api/erp/sync deprecation(API 오너 정책 결정). 이들을 코드로 억지 완결하지 않는다.</li><li>각 스토리 완료 게이트: 타깃 검증 → ai-slop 정리 스윕 → architect 3-레인 리뷰(CLEAR) → executor 레드팀/QA → 전체 회귀 무회귀 → 품질게이트 JSON → checkpoint.</li></ul>
+<p>@goal: 루트 migrations 스테일 alembic 트리 정리 루트 <code>migrations/alembic/versions/0001_kpi_results_table.py</code> 는 alembic.ini/env.py 러너 없이 orphaned 상태이며, 생성 테이블명이 <code>kpi_results</code>(복수)로 모델 정본 <code>kpi_result</code>(단수, backend/app/models/tables.py) 및 실제 스키마 관리 경로 backend/alembic/versions/0001<em>initial</em>schema.py 와 불일치하는 스테일 사(死)artifact다. 실제 DB 스키마는 backend/alembic 로만 관리된다. 이 orphaned 루트 migrations 트리가 어떤 코드/설정/CI에서도 참조되지 않음을 확인한 뒤 정본과 충돌 없이 제거하고, 제거가 백엔드 마이그레이션/부트/테스트를 깨지 않음을 검증한다(전체 회귀 무회귀). 참조가 발견되면 제거 대신 정본(kpi_result 단수, backend/alembic) 정합으로 조정하고 근거를 기록한다. 산출물: 정리 + 근거.</p>
+<p>@goal: KPI 분기 집계 엔드포인트 활성화 POST /kpi/aggregate?period=&lt;YYYY-Q#&gt; 를 202 스텁(batch<em>scheduler</em>not<em>implemented</em>g010)에서 실제 관리자 트리거 동기 집계로 활성화한다. 기존 app/services/kpi<em>scoring.py 의 aggregate</em>user<em>period + period</em>key<em>to</em>range 를 재사용해, 지정 기간에 데이터가 있는 사용자별 quarterly KpiResult(period<em>type=QUARTERLY, period</em>key)를 멱등 upsert 로 산출한다(재호출 시 중복 생성 금지). 실 cron 스케줄 발화는 여전히 환경차단(G011 B-16)이며 여기서는 admin 동기 트리거만 활성화한다. RBAC(admin/super<em>admin 전용, 그 외 403) 유지. backend/tests/contract/test</em>management<em>api</em>stubs.py::TestKPIResultAPI::test<em>kpi</em>quarterly_aggregation 스텁을 실제 계약(집계 결과·멱등·RBAC)으로 rigorous 재작성·활성화·통과.</p>
+<p>@goal: ERP 동기화 전략 검증 활성화 backend/tests/contract/test<em>management</em>api<em>stubs.py::TestSyncAPI::test</em>sync<em>incremental</em>plus<em>daily</em>full 스텁을 활성화해, 기존 app/services/scheduler.py 의 erp<em>incremental</em>sync(증분)·erp<em>full</em>reconciliation(전체 대사) + app/erp/sync.py sync<em>users 의 soft-delete 전략(D18: 하드삭제 감지 시 is</em>active=false, FK RESTRICT+soft-delete)을 MockErpReader 기반으로 검증한다. 새 엔드포인트 신설 없이 기존 서비스 함수 계약을 실증한다(증분 재실행 멱등, 전체 대사 시 미존재 사용자 soft-delete). 스텁이 미구현 batch를 가정하면 실제 서비스 계약 기준으로 재작성.</p>
+<p>@goal: 통합 워크플로우 e2e 활성화 backend/tests/contract/test<em>management</em>api<em>stubs.py::TestIntegrationAPIFlow::test</em>full<em>workflow</em>login<em>to</em>kpi 스텁을 활성화해, 로그인 → 회의 생성/입장(토큰 발급) → 회의록 작성/확정 → KPI 조회/이의신청 크로스컷 e2e 를 기존 구현 엔드포인트로 실증한다. LiveKit 실 룸 생성·실 ERP push 는 환경차단이므로 계약 표면(결정적 room_name/토큰, 모의)까지만 검증한다. 각 단계 상태 전이·RBAC 정합을 단일 워크플로우로 확인한다.</p>
+<div class="meta-foot">원본: <code>_remaining-work-brief.md</code> · 자동 생성 2026-07-05 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

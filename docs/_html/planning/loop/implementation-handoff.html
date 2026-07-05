@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>미구현 작업 Handoff (전체 — 프론트·백엔드·3D·실시간·화상)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">미구현 작업 Handoff (전체 — 프론트·백엔드·3D·실시간·화상)</div><div class="sub">implementation-handoff.md</div><a class="lvl1" href="#미구현-작업-handoff-전체-프론트백엔드3d실시간화상">미구현 작업 Handoff (전체 — 프론트·백엔드·3D·실시간·화상)</a><a class="lvl2" href="#0-현재-구현-현황-스냅샷-재작업-금지-이미-있음">0. 현재 구현 현황 스냅샷 (재작업 금지 — 이미 있음)</a><a class="lvl3" href="#실제-구현테스트-통과-백엔드">✅ 실제 구현·테스트 통과 (백엔드)</a><a class="lvl3" href="#코드만-존재실행-미검증-godot-gpu에디터-부재">⚠️ 코드만 존재·실행 미검증 (Godot — GPU/에디터 부재)</a><a class="lvl3" href="#임시-산출물-정식-아님">🆕 임시 산출물 (정식 아님)</a><a class="lvl2" href="#1-미구현-작업-영역별-재개-단위">1. 미구현 작업 — 영역별 (재개 단위)</a><a class="lvl3" href="#a-웹-프론트엔드-nextjs-전체-미구현-ready">A. 🔴 웹 프론트엔드 (Next.js) — **전체 미구현** [READY]</a><a class="lvl3" href="#b-백엔드-남은-것">B. 🟠 백엔드 — 남은 것</a><a class="lvl3" href="#c-godot-3d-클라이언트-phase-1-골든샘플-미구현-env-gpu에셋">C. 🔴 Godot 3D 클라이언트 (Phase 1 골든샘플) — **미구현** [ENV: GPU/에셋]</a><a class="lvl3" href="#d-실시간-서버-phase-4-미구현-env">D. 🔴 실시간 서버 (Phase 4) — **미구현** [ENV]</a><a class="lvl3" href="#e-화상회의-stt-회의록-phase-5-토큰-stub만-env">E. 🔴 화상회의 + STT 회의록 (Phase 5) — **토큰 stub만** [ENV]</a><a class="lvl3" href="#f-선행-스파이크-s1s4-phase-0-미착수-env">F. 🟠 선행 스파이크 S1~S4 (Phase 0) — **미착수** [ENV]</a><a class="lvl3" href="#g-3d-에셋-파이프라인-미구현-env">G. 🟠 3D 에셋 파이프라인 — **미구현** [ENV]</a><a class="lvl3" href="#h-디자인-시스템-시각-목업-부분-해소레퍼런스-확보-ready">H. 🟡 디자인 시스템 / 시각 목업 — **부분 해소(레퍼런스 확보)** [READY]</a><a class="lvl3" href="#i-devops-배포-하드닝">I. 🟡 DevOps / 배포 하드닝</a><a class="lvl2" href="#2-환경사람-차단-요약-blocked-work-registrymd-참조">2. 환경/사람 차단 요약 (`blocked-work-registry.md` 참조)</a><a class="lvl2" href="#3-권장-재개-순서">3. 권장 재개 순서</a><a class="lvl2" href="#4-실행-환경-규약-필수">4. 실행 환경 규약 (필수)</a></nav>
+<main><h1 id="미구현-작업-handoff-전체-프론트백엔드3d실시간화상">미구현 작업 Handoff (전체 — 프론트·백엔드·3D·실시간·화상)</h1>
+<p><strong>작성일</strong>: 2026-07-03 <strong>목적</strong>: 승인 기획(58주, Phase 0~7) 대비 <strong>실제 구현 현황</strong>과 <strong>남은 전 작업</strong>을 한 문서로 재개 가능하게 정리한다. <strong>정본 참조(SSOT)</strong>: <code>docs/planning/00-decisions.md</code>(D1~D25) · <code>01-prd.md</code> · <code>10-roadmap.md</code> · <code>12-tasks.md</code>(태스크 ID) · <code>06-screens.md</code>(웹 화면) · <code>specs/screens/*.yaml</code> · <code>specs/shared/*.yaml</code> · <code>docs/data-model/office-layout-schema.json</code> <strong>관련 문서</strong>: <code>blocked-work-registry.md</code>(환경/사람 차단 B-01~B-22) · <code>ultragoal-handoff.md</code>(백엔드 관리 API 구현 이력) <strong>🎨 디자인 목표 퀄리티(정본 레퍼런스)</strong>: <code>design/screens/virtual-office-3d-reference.md</code> (+ 원본 시안 <code>design/screens/virtual-office-3d-reference.png</code>) — 실사급 3D 아이소메트릭 오피스 + 다크테마 글래스모피즘 HUD + 인앱 화상. Phase 1 골든샘플·HUD·디자인토큰의 <strong>아트/UX 기준</strong>.</p>
+<blockquote><strong>한 줄 요약</strong>: 태스크 86개 중 실질 완료는 <strong>백엔드 관리 API + 계약/설계</strong>뿐. <strong>웹 프론트엔드(Next.js) 전체와 Godot 3D 클라·실시간 서버·화상/STT는 미구현</strong>이다. 그동안의 &quot;완료&quot; 보고는 백엔드 API 범위였다.</blockquote>
+<hr>
+<h2 id="0-현재-구현-현황-스냅샷-재작업-금지-이미-있음">0. 현재 구현 현황 스냅샷 (재작업 금지 — 이미 있음)</h2>
+<h3 id="실제-구현테스트-통과-백엔드">✅ 실제 구현·테스트 통과 (백엔드)</h3>
+<div class="table-wrap"><table><thead><tr><th>영역</th><th>산출물</th><th>위치</th><th>상태</th></tr></thead><tbody><tr><td>관리 API 라우터 9종</td><td>auth, erp(직원명부), seats, layouts, meetings, work-logs, kpi, sync, audit</td><td><code>backend/app/api/*.py</code></td><td>✅ 341 테스트 통과</td></tr><tr><td>레이아웃 검증(D12)</td><td>JSON Schema + 의미/도달성/성능 파생</td><td><code>backend/app/services/office_layout_validator.py</code></td><td>✅</td></tr><tr><td>서비스</td><td>kpi<em>scoring, scheduler(APScheduler·미발화), audit</em>service, holidays, livekit_service(토큰)</td><td><code>backend/app/services/*.py</code></td><td>✅(일부 stub)</td></tr><tr><td>인증/보안</td><td>JWT HS256, bcrypt, 계정잠금, rate-limit 준비</td><td><code>backend/app/core/*.py</code>, <code>config.py</code></td><td>✅</td></tr><tr><td>DB</td><td>Alembic 0001, 모델 21테이블</td><td><code>backend/alembic/</code>, <code>models/tables.py</code></td><td>✅</td></tr><tr><td>배포</td><td>Docker Compose(사내 서버, Caddy)</td><td><code>docker-compose.yml</code>, <code>docs/deployment/</code></td><td>✅ 설정</td></tr></tbody></table></div>
+<h3 id="코드만-존재실행-미검증-godot-gpu에디터-부재">⚠️ 코드만 존재·실행 미검증 (Godot — GPU/에디터 부재)</h3>
+<div class="table-wrap"><table><thead><tr><th>산출물</th><th>위치</th><th>상태</th></tr></thead><tbody><tr><td>아바타 이동/충돌/좌석/근접/A*</td><td><code>godot/scenes/avatar.gd</code></td><td>⚠️ GUT 테스트 작성, <strong>렌더 미검증</strong></td></tr><tr><td>office_layout 로더(3D 씬+nav 파생)</td><td><code>godot/scenes/office_layout_loader.gd</code></td><td>⚠️ 정적 검증만</td></tr><tr><td>OfficeClient(로드→스폰→백엔드 페치)</td><td><code>godot/scenes/office_client.gd</code></td><td>⚠️ 정적 검증만</td></tr><tr><td>JWT HS256 검증기</td><td><code>godot/server/jwt_verify.gd</code></td><td>⚠️</td></tr></tbody></table></div>
+<h3 id="임시-산출물-정식-아님">🆕 임시 산출물 (정식 아님)</h3>
+<div class="table-wrap"><table><thead><tr><th>산출물</th><th>위치</th><th>비고</th></tr></thead><tbody><tr><td>정적 관리 콘솔(로그인+직원명부+레이아웃 2D 등)</td><td><code>backend/app/static/console.html</code></td><td><strong>임시</strong> — 정식 Next.js 아님. 데모/확인용</td></tr></tbody></table></div>
+<hr>
+<h2 id="1-미구현-작업-영역별-재개-단위">1. 미구현 작업 — 영역별 (재개 단위)</h2>
+<blockquote>우선순위 표기: 🔴=핵심경로(제품 성립 필수) · 🟠=주요 · 🟡=고도화 차단 표기: [ENV]=환경(GPU/서버/엔진) · [HUMAN]=사람 조치(계정·도메인) · [READY]=지금 착수 가능</blockquote>
+<h3 id="a-웹-프론트엔드-nextjs-전체-미구현-ready">A. 🔴 웹 프론트엔드 (Next.js) — <strong>전체 미구현</strong> [READY]</h3>
+<p>정본: <code>06-screens.md</code>, <code>specs/screens/*.yaml</code>, <code>specs/shared/{components,rbac,types}.yaml</code>, 11-tech-stack 스택: Next.js(App Router)+TypeScript+TailwindCSS, Konva.js(좌석2D), React Flow(조직도) <strong>🎨 디자인 언어</strong>: <code>design/screens/virtual-office-3d-reference.md</code> §7 토큰(다크테마·블루 액센트·글래스모피즘·상태색)을 웹 콘솔에도 일관 적용 — 3D 클라와 브랜딩 통일. 임시 <code>console.html</code>이 톤 참고용(정식 대체 아님).</p>
+<ul><li class="task"><input type="checkbox" disabled> <strong>A0. Next.js 앱 스캐폴드</strong> — <code>frontend/</code> 신설(package.json, App Router, Tailwind, tsconfig), API 클라이언트(JWT 저장/자동 refresh/401 session-expired), 레이아웃(사이드바+헤더), RBAC 가드(<code>specs/shared/rbac.yaml</code>)</li><li class="task"><input type="checkbox" disabled> <strong>A1. 로그인/세션</strong> (<code>auth.yaml</code>, 태스크 P2-R2-T0 프론트분) — <code>/login</code>, 401 처리, 세션만료 복구, 성공 시 직원명부 랜딩</li><li class="task"><input type="checkbox" disabled> <strong>A2. 직원명부</strong> (<code>employee-directory.yaml</code>) — <code>/admin/employees</code> 랜딩, 팀/상태 필터, 검색, CSV, 상세 슬라이드, 마지막 동기화 시각</li><li class="task"><input type="checkbox" disabled> <strong>A3. 좌석 배치 편집기</strong> (<code>seat-layout-editor.yaml</code>, P3-R2-T1/T3) — <code>/admin/office-layout</code>, <strong>Konva.js 2D 전용</strong>(벽/좌석/회의실/문개구부/구역), Undo/Redo, 경량검증(범위/겹침) 즉시표시, 서버 정밀검증(D12) ERROR 배포차단, 층 단위 버전/배포/롤백, [데스크톱에서 열기(draft)]</li><li class="task"><input type="checkbox" disabled> <strong>A4. 조직도 편집기</strong> (<code>org-chart-editor.yaml</code>, P7-R1-T4) — <code>/admin/org-chart</code>, <strong>React Flow</strong> 노드그래프(본부/부서/파트/팀), org_group CRUD(팀=리프 read-only), 순환검증</li><li class="task"><input type="checkbox" disabled> <strong>A5. KPI 대시보드</strong> (<code>kpi-dashboard.yaml</code>, P6-R3-T1) — <code>/admin/kpi</code>(관리자 검토·확정)·<code>/kpi</code>(본인 열람) 라우팅 분리, AI 초안 표시, 조정·확정(final_score), ERP push 상태</li><li class="task"><input type="checkbox" disabled> <strong>A6. KPI 이의신청</strong> (<code>kpi-objection.yaml</code>, P6-R3-T4) — 제출(사유필수·7일창) + 관리자 재검토, 상태머신 none→submitted→reviewing→resolved(D15)</li><li class="task"><input type="checkbox" disabled> <strong>A7. 회의 &amp; 회의록</strong> (<code>meetings.yaml</code>, P5-R2-T1/P5-R3-T2) — <code>/meetings</code>, 캘린더(일/주/월), 상세·참석자, 회의록(결정/액션/노트), STT 초안 검토·확정, 액션아이템 대시보드, 동의 배너(D20-b)</li><li class="task"><input type="checkbox" disabled> <strong>A8. 업무기록</strong> (<code>work-log.yaml</code>, P6-R1-T3) — <code>/work-log</code>, 일별 기록(범주/시간/결과물/이슈), 일일 상태 리포트, 기간 요약</li><li class="task"><input type="checkbox" disabled> <strong>A9. 동기화 모니터링</strong> (<code>sync-monitoring.yaml</code>, P7-R3-T3 프론트분) — <code>/admin/sync</code>, ERP동기화·EOD·KPI배치 상태 테이블, 실패이력, 수동 재시도(관리자 전용)</li></ul>
+<blockquote>⚠️ 백엔드 API는 A2/A3/A5/A6/A7/A8/A9 전부 <strong>이미 구현·동작</strong> — 프론트만 붙이면 됨. A1은 백엔드 <code>/auth/*</code> 완비.</blockquote>
+<h3 id="b-백엔드-남은-것">B. 🟠 백엔드 — 남은 것</h3>
+<ul><li class="task"><input type="checkbox" disabled> <strong>B1. AI KPI 서술 초안 실 생성 (Claude)</strong> (P6-R2-T2, blocker B-11) — 현재 결정론 placeholder(<code>ai_draft_pending</code>). Claude API 연동, 실명→사번 가명화(D20). [ENV: AI 키]</li><li class="task"><input type="checkbox" disabled> <strong>B2. ERP 라이브 push</strong> (P6-R3-T3a/c, blocker B-12/B-19) — daily<em>reports 18:00 / kpi</em>results 확정+분기마감 실 전송. 현재 mock. [HUMAN: OQ10 ERP DB 계정]</li><li class="task"><input type="checkbox" disabled> <strong>B3. ERP 라이브 read-only 접속</strong> (blocker B-05) — <code>ERP_DATABASE_URL</code> 설정 시 <code>PostgresErpReader</code> 전환. 현재 <code>MockErpReader</code>. [HUMAN]</li><li class="task"><input type="checkbox" disabled> <strong>B4. 스케줄러 실 cron 발화 관측</strong> (P6-R3-T3a/b, blocker B-16) — 배선·부팅·재시작 검증됨. 실 18:00/21:00 발화는 배포 후 관측만. [ENV: 상시 배포]</li><li class="task"><input type="checkbox" disabled> <strong>B5. 실시간 WSS 게이트웨이</strong> (P4-R1-T2) — Python asyncio WebSocket 게이트웨이(아바타 이동/프레즌스 중계). Phase 4. [ENV/후속]</li><li class="task"><input type="checkbox" disabled> <strong>B6. presence 좌표 30일 파기 배치</strong> (P4-R3-T3, D20-a) — 미구현.</li><li class="task"><input type="checkbox" disabled> <strong>B7. 감사로그 5년 보존/파기</strong> (D20-e, Phase 2, 파괴적) — 정책 대기.</li></ul>
+<h3 id="c-godot-3d-클라이언트-phase-1-골든샘플-미구현-env-gpu에셋">C. 🔴 Godot 3D 클라이언트 (Phase 1 골든샘플) — <strong>미구현</strong> [ENV: GPU/에셋]</h3>
+<p>정본: <code>07-3d-visual-asset-pipeline.md</code>, <code>06-screens.md §1</code>, <code>virtual-office-3d.yaml</code>, 태스크 P1-* <strong>🎨 아트/HUD 타깃</strong>: <code>design/screens/virtual-office-3d-reference.md</code>(실사급 PBR 3D 오피스 + 다크 HUD). C1~C7 수용기준에 <strong>&quot;레퍼런스 대비 시각 일치&quot;</strong> 추가.</p>
+<ul><li class="task"><input type="checkbox" disabled> <strong>C1. 로비/브랜드월/공개영역 모델링</strong> (P1-S1-T1)</li><li class="task"><input type="checkbox" disabled> <strong>C2. 좌석영역(Open/Fixed/Free) 3D 표현</strong> (P1-S1-T2)</li><li class="task"><input type="checkbox" disabled> <strong>C3. 회의실 2개 + 라운지/집중실/폰부스</strong> (P1-S1-T3)</li><li class="task"><input type="checkbox" disabled> <strong>C4. 아바타 모델·애니메이션(5~10)</strong> (P1-S1-T4)</li><li class="task"><input type="checkbox" disabled> <strong>C5. 이름/상태 HUD + 우측 직원정보 패널</strong> (P1-S1-T5)</li><li class="task"><input type="checkbox" disabled> <strong>C6. 하단 회의패널 + 미니맵</strong> (P1-S1-T6)</li><li class="task"><input type="checkbox" disabled> <strong>C7. 골든샘플 통합검증 (60fps GTX1650, 로딩&lt;5s + 레퍼런스 시각 일치)</strong> (P1-S1-V) [ENV]</li><li class="task"><input type="checkbox" disabled> <strong>C8. 로그인 씬</strong> (<code>godot/scenes/ui/login.tscn</code>)</li><li class="task"><input type="checkbox" disabled> <strong>C9. 데스크톱 draft 뷰어</strong> (P3-R2-T2, <code>layout_draft_viewer.tscn</code>)</li><li class="task"><input type="checkbox" disabled> <strong>C10. 클라이언트 WSS 네트워킹·원격아바타 동기화</strong> (P4-R1-T3, blocker B-02) [ENV]</li></ul>
+<blockquote>⚠️ 이동/충돌/좌석/근접/A*·레이아웃 로더·OfficeClient·JWT는 <strong>코드 완성</strong>(§0). 실 GLB 에셋·렌더·네트워킹만 남음.</blockquote>
+<h3 id="d-실시간-서버-phase-4-미구현-env">D. 🔴 실시간 서버 (Phase 4) — <strong>미구현</strong> [ENV]</h3>
+<p>정본: <code>09-realtime-collaboration.md</code>, <code>docs/api/realtime-server-api.yaml</code>, P4-*</p>
+<ul><li class="task"><input type="checkbox" disabled> <strong>D1. Godot 헤드리스 서버 프로젝트·에센셜 로직</strong> (P4-R1-T1)</li><li class="task"><input type="checkbox" disabled> <strong>D2. 아바타 이동 권위 검증(서버)</strong> (P4-R2-T1)</li><li class="task"><input type="checkbox" disabled> <strong>D3. 근접 감지·상호작용 트리거</strong> (P4-R2-T2)</li><li class="task"><input type="checkbox" disabled> <strong>D4. 회의실 점유·진입/퇴장 검증</strong> (P4-R2-T3)</li><li class="task"><input type="checkbox" disabled> <strong>D5. 프레즌스 동기화(위치→DB)·상태전환</strong> (P4-R3-T1/T2)</li></ul>
+<h3 id="e-화상회의-stt-회의록-phase-5-토큰-stub만-env">E. 🔴 화상회의 + STT 회의록 (Phase 5) — <strong>토큰 stub만</strong> [ENV]</h3>
+<p>정본: <code>09</code>, D5/D24, <code>_livekit-slice-brief.md</code>, P5-*, blocker B-03/B-09/B-10</p>
+<ul><li class="task"><input type="checkbox" disabled> <strong>E1. LiveKit + coturn self-host 설치·통합</strong> (P5-R1-T2) — compose 스캐폴드만 존재. [ENV]</li><li class="task"><input type="checkbox" disabled> <strong>E2. WebRTC GDExtension 통합</strong> (P5-R2-T2a, S1 승계) [ENV]</li><li class="task"><input type="checkbox" disabled> <strong>E3. 3D 내 화상 렌더링·참석자 패널</strong> (P5-R2-T2b) [ENV]</li><li class="task"><input type="checkbox" disabled> <strong>E4. 오디오 Egress 수집</strong> (P5-R4-T1) [ENV]</li><li class="task"><input type="checkbox" disabled> <strong>E5. STT + 화자분리 + 회의록 초안</strong> (P5-R4-T2, D5) [ENV]</li><li class="task"><input type="checkbox" disabled> <strong>E6. STT 정확도 측정(누락률&lt;5%)</strong> (P5-R4-T3, D22) [ENV]</li></ul>
+<blockquote>✅ 회의 입장 토큰(실 AccessToken 조건부 발급) + compose opt-in은 완료(B-07).</blockquote>
+<h3 id="f-선행-스파이크-s1s4-phase-0-미착수-env">F. 🟠 선행 스파이크 S1~S4 (Phase 0) — <strong>미착수</strong> [ENV]</h3>
+<ul><li class="task"><input type="checkbox" disabled> <strong>S1. Godot↔LiveKit PoC</strong> (P0-T0.8, 최우선) [ENV]</li><li class="task"><input type="checkbox" disabled> <strong>S2. STT 파이프라인 PoC</strong> (P0-T0.9) [ENV]</li><li class="task"><input type="checkbox" disabled> <strong>S3. 헤드리스 서버 부하</strong> (P0-T0.10) [ENV]</li><li class="task"><input type="checkbox" disabled> <strong>S4. 동적 씬 라이팅 룩 검증</strong> (P0-T0.11) [ENV]</li></ul>
+<h3 id="g-3d-에셋-파이프라인-미구현-env">G. 🟠 3D 에셋 파이프라인 — <strong>미구현</strong> [ENV]</h3>
+<p>정본: <code>07-3d-visual-asset-pipeline.md</code>, <code>docs/3d-design/asset-registry.md</code></p>
+<ul><li class="task"><input type="checkbox" disabled> <strong>G1. GLB 에셋 제작(Blender)·최적화·asset 테이블 등록</strong> — office_layout <code>asset_id</code> 참조 대상 실물.</li><li class="task"><input type="checkbox" disabled> <strong>G2. office_layout → Godot 씬 변환 파이프라인</strong> (P3-R3-T2)</li></ul>
+<h3 id="h-디자인-시스템-시각-목업-부분-해소레퍼런스-확보-ready">H. 🟡 디자인 시스템 / 시각 목업 — <strong>부분 해소(레퍼런스 확보)</strong> [READY]</h3>
+<p>정본: <code>specs/shared/types.yaml</code>(design_tokens), 갭 리포트 A2-20, <strong><code>design/screens/virtual-office-3d-reference.md</code>(신규 시각 레퍼런스)</strong></p>
+<ul><li class="task"><input type="checkbox" disabled> <strong>H1. 디자인 토큰 확정</strong> — 현재 &quot;Tailwind 기본 테마=정본&quot; + 상태색만. 레퍼런스 §7(다크테마·블루 액센트·상태색·라운드·글래스모피즘)을 팔레트/타이포/간격으로 구체화(또는 tokens.yaml). <strong>웹 콘솔·3D HUD 공통 적용(브랜딩 통일)</strong>.</li><li class="task"><input type="checkbox" disabled checked> <strong>H2. 시각 목업/레퍼런스</strong> — ✅ 3D 메인 오피스 고해상 시안 확보(<code>design/screens/virtual-office-3d-reference.{md,png}</code>). 나머지 웹 9화면 시안은 미확보(레퍼런스 토큰 기반 파생 가능).</li><li class="task"><input type="checkbox" disabled checked> <strong>H3. spec ↔ 시안 델타 scope 확정</strong> — ✅ <strong>결정 완료</strong>(<code>loop/scope-decisions-2026-07-03.md</code>, 00-decisions <strong>D26~D30</strong>): 좌측 내비 MVP=Office/Rooms/People/Chat(제한)/Settings, Phase7=Events·Whiteboard(디지털), <strong>Files=MVP 제외</strong>. E키 입장(D27)·플로팅 화상 HUD(D28)·People 상태 그룹핑(D29)·실사급 아트타깃(D30). <code>virtual-office-3d.yaml</code> 반영. ⏳ 후속 propagate: PRD §3 범위표·12-tasks Phase7 태스크·06-screens 서술.</li></ul>
+<h3 id="i-devops-배포-하드닝">I. 🟡 DevOps / 배포 하드닝</h3>
+<ul><li class="task"><input type="checkbox" disabled> <strong>I1. 외부 공개 하드닝</strong> (P2-R4-T1, D21-r) — Caddy 단일진입/rate-limit/fail2ban. compose 일부만.</li><li class="task"><input type="checkbox" disabled> <strong>I2. 클라이언트 자동 업데이트 채널</strong> (P7-R3-T2, D8)</li><li class="task"><input type="checkbox" disabled> <strong>I3. 공인 도메인 구매</strong> (blocker B-06) [HUMAN]</li></ul>
+<hr>
+<h2 id="2-환경사람-차단-요약-blocked-work-registrymd-참조">2. 환경/사람 차단 요약 (<code>blocked-work-registry.md</code> 참조)</h2>
+<ul><li><strong>[HUMAN]</strong>: B-05(ERP DB 계정), B-06(도메인), B-12·B-19(ERP push=B-05 종속), AI 키(B-1).</li><li><strong>[ENV]</strong>: Godot GPU/엔진(C·D·S1·S3·S4·G), LiveKit 서버·STT 엔진(E·S2).</li><li><strong>[READY 즉시 착수]</strong>: <strong>웹 프론트엔드 전체(A)</strong> ← 백엔드 API 완비, 디자인 토큰(H1).</li></ul>
+<hr>
+<h2 id="3-권장-재개-순서">3. 권장 재개 순서</h2>
+<ol><li><strong>웹 프론트엔드(A)</strong> — 백엔드가 이미 동작하므로 가장 빠르게 &quot;보이는 제품&quot; 확보. A0 스캐폴드 → A1 로그인 → A2 직원명부 → A3 좌석편집기(Konva) → A5 KPI → A7 회의 → 나머지.</li><li><strong>디자인 토큰(H1)</strong> — A0와 함께 확정.</li><li><strong>AI 서술(B1)</strong> — 키 확보 시. <strong>ERP 라이브(B2/B3)</strong> — OQ10 계정 확보 시.</li><li><strong>Godot/실시간/화상(C·D·E·S)</strong> — GPU·LiveKit·STT 환경 확보 후. Phase 순차(1→4→5).</li></ol>
+<hr>
+<h2 id="4-실행-환경-규약-필수">4. 실행 환경 규약 (필수)</h2>
+<pre class="code lang-sh"><code># 백엔드 venv/pytest (Windows, 절대경로 필수)
+PY=&quot;$(pwd)/backend/.venv/Scripts/python.exe&quot;
+cd backend &amp;&amp; &quot;$PY&quot; -m pytest -q -p no:cacheprovider   # 회귀 무회귀(341 passed 기준)
+
+# 로컬 개발 서버(SQLite, 프론트 개발용 API)
+DATABASE_URL=&quot;sqlite+aiosqlite:///./dev.db&quot; AUTO_CREATE_TABLES=true ENVIRONMENT=development \
+  &quot;$PY&quot; -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+#  → http://127.0.0.1:8000/docs (API), /console (임시 콘솔), 시드계정 admin@vo.local/Admin123!
+
+# Godot(에디터/GPU 필요 — 이 환경 미가용): GUT
+# godot --headless --path godot -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit</code></pre>
+<ul><li>회귀 베이스라인 <strong>341 passed / 25 skipped / 0 failed</strong> 는 회귀 금지.</li><li>프론트 신규 시 <code>frontend/</code> 디렉터리 + <code>.gitignore</code>에 <code>node_modules/</code>·<code>.next/</code> (이미 있음).</li><li>Godot 실행 불가 항목은 코드/테스트만 작성하고 <strong>에디터 실행 검증은 사용자 몫</strong>으로 표기.</li></ul>
+<div class="meta-foot">원본: <code>implementation-handoff.md</code> · 자동 생성 2026-07-05 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

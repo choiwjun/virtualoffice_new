@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>_ultragoal-brief</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">_ultragoal-brief</div><div class="sub">_ultragoal-brief.md</div></nav>
+<main><p>가상오피스(vituraloffice_new) 백엔드 관리 API 및 운영 로직을 승인된 기획(Ready with Risks, docs/planning/loop/final-planning-approval.md)에 따라 구현한다.</p>
+<p>공통 제약 (모든 스토리 적용):</p>
+<ul><li>정본(SSOT)은 docs/planning/00-decisions.md (D1~D25, F절). 충돌 시 정본이 이긴다.</li><li>계약 테스트가 수용 기준이다: backend/tests/contract/test<em>management</em>api_stubs.py 의 @pytest.mark.skip 을 제거·활성화하고 통과시킨다. 스텁의 assert(상태코드/응답 스키마)를 계약으로 삼되, 스텁이 명세와 어긋나면 명세(docs/api/management-api.yaml + 00-decisions)를 정본으로 고치고 근거를 남긴다.</li><li>TDD: 스텁 활성화 → 구현 → backend/.venv 로 pytest 통과. 기존 32 passed 베이스라인은 절대 회귀하지 않는다.</li><li>기존 코드 컨벤션 재사용: app/api/<em>.py 라우터, app/core/security.py(JWT/bcrypt 완비), app/models/tables.py, app/db.py(async SQLAlchemy), app/erp/</em>. 병렬 컨벤션 금지.</li><li>pytest 실행: <code>&quot;$(pwd)/backend/.venv/Scripts/python.exe&quot; -m pytest</code> (cwd=backend). 상대경로 실행은 이 환경에서 실패하므로 절대경로 변수 사용.</li><li>검증 산출물은 실제 pytest 출력(black-box API test report)을 증거로 사용한다.</li><li>환경 차단 작업(Godot/GPU/LiveKit/STT/ERP 라이브 DB/도메인)은 이 환경에서 실행 불가이므로 코드로 완결하지 말고 durable blocker로 기록한다.</li></ul>
+<p>@goal: 인증 API와 JWT 의존성 배선 POST /auth/login(성공 201 + {token, refresh<em>token, user}, 실패 401), POST /auth/refresh, GET /auth/me 구현. app/core/security.py 의 create</em>access<em>token/decode</em>access<em>token/verify</em>password 재사용. get<em>current</em>user 및 역할기반(RBAC) FastAPI 의존성 신설(app/core/deps.py 확장). refresh token 발급/검증 추가. main.py 에 auth 라우터 등록. test<em>management</em>api_stubs.py 의 TestAuthAPI 5개 케이스 활성화·통과.</p>
+<p>@goal: 직원·팀·조직도 조회 API GET /employees, GET /employees/{id}, GET /teams, GET /org-groups 구현(ERP 미러 테이블 erp<em>user/team/org</em>group 읽기). RBAC 적용, 페이지네이션·필터. 관련 계약 스텁 활성화·통과. ERP 라이브 DB 없이 mock_reader/미러 테이블 기반으로 검증한다.</p>
+<p>@goal: 좌석 배정 API (D10) GET /seats, POST /seats/{id}/assign, POST /seats/{id}/release 구현. 좌석 배타성(seat당 활성 배정 1건, seat.assigned<em>user</em>id + seat<em>assignment</em>history 이력) 강제. test<em>management</em>api_stubs.py 좌석 8개 케이스 활성화·통과.</p>
+<p>@goal: 오피스 레이아웃 API + 서버 검증 + 공식 JSON Schema (D12) GET/POST/PUT 레이아웃 CRUD, 서버측 정밀 검증은 app/services/office<em>layout</em>validator.py 경유(ERROR=배포 불가, WARNING만 무시 가능). 공식 스키마 파일 docs/data-model/office-layout.schema.json 생성(현재 미생성, gap C9). 레이아웃 10개 계약 케이스 활성화·통과.</p>
+<p>@goal: 회의 + 회의실 예약 API (D23/D24) 회의 CRUD, 회의실 예약 충돌 검증(예약제 유지 + FCFS 병행), 명시적 입장 확인 흐름(입장 토큰 발급은 FastAPI 경유; LiveKit 실연동은 환경 차단이므로 토큰 발급 계약만 구현하고 실제 룸 생성은 stub). 회의 8개 계약 케이스 활성화·통과.</p>
+<p>@goal: 회의록 API + STT 스키마 (D5) 회의록 CRUD, meeting<em>minute.stt</em>draft/ai_summary 필드 + status 상태머신(draft→published). 수동 입력 폴백 경로. 회의록 5개 계약 케이스 활성화·통과. STT 실 파이프라인은 환경 차단(별도 blocker).</p>
+<p>@goal: 업무 기록 API (D14) work<em>log CRUD(goal/result</em>url/next<em>action 충실도 필드), daily</em>status. 업무 6개 계약 케이스 활성화·통과.</p>
+<p>@goal: KPI API + 이의신청 상태머신 (D14/D15/D16) kpi<em>result 조회(롱포맷, period</em>type/period<em>key), AI 초안 필드(ai</em>draft) 자리, 관리자 조정(admin<em>adjusted</em>score/admin<em>note), 이의신청 상태머신(none→submitted→reviewing→resolved, D15), final</em>score. 정량 점수는 결정론적 코드 계산(D14-e). KPI 12개 계약 케이스 활성화·통과.</p>
+<p>@goal: 동기화 모니터링 + 감사 로그 API (D18/D20) ERP 동기화 상태/수동트리거 엔드포인트, 동기화 실패 알림 표면, audit_log 조회. 동기화 4개 + 감사 3개 계약 케이스 활성화·통과.</p>
+<p>@goal: 외부공개 보안 하드닝 + 배치 스케줄러 (D21-r/D17/C2) 로그인 rate-limit + 계정 잠금(brute-force 방어, C2), 보안 수용 기준 테스트. APScheduler 기반 배치: daily_reports push 18:00 KST, KPI AI 초안 21:00, ERP 증분 매시간 + 00:00 전체 대사, metric 단위 멱등 upsert + advisory lock. Caddy/배포 문서(docs/deployment/onprem-docker.md) 정합. 배치·보안 단위 테스트 통과.</p>
+<p>@goal: 환경 차단 작업을 durable blocker로 등록 Godot 3D 클라이언트(Phase 1), 헤드리스 실시간 서버 + 클라이언트 WSS 네트워킹(Phase 4), LiveKit 화상 + STT 회의록 런타임(Phase 5), 선행 스파이크 S1~S4, ERP 라이브 read-only DB 접속(OQ10, 계정 대기), 공인 도메인 구매(R-d)를 실행 불가 사유(Godot/GPU/LiveKit/ERP-DB/자격증명 부재)와 함께 docs/planning/loop/blocked-work-registry.md 로 기록하고, human_blocked 로 분류한다. 이 스토리는 문서화가 산출물이며 코드로 완결하지 않는다.</p>
+<div class="meta-foot">원본: <code>_ultragoal-brief.md</code> · 자동 생성 2026-07-05 · md-to-html</div>
+</main>
+</div>
+
+</body></html>
