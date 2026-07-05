@@ -106,7 +106,7 @@
 | P5-R2-T2b 3D 화상 렌더 | ⬜ | 없음 |
 | P5-R3-T1 회의록 저장(액션아이템) | 🟨 | `meetings` minutes + `api/action_items.py` CRUD ✅. `stt_draft`는 저장계약만 NULL(B-09) |
 | P5-R3-T2 회의록 UI(Next.js) | ✅ | `/meetings/[id]/minutes` 에디터(작성·결정사항·확정·STT초안 표시). E2E: 작성 200·확정 finalized·확정후 409 (2026-07-05 신설) |
-| P5-R3-T3 채팅 저장소 | ✅ | `Message` 모델 + `api/messages.py`(/meetings/{id}/messages GET·POST, 타임스탬프). pytest 통과 (2026-07-05 신설) |
+| P5-R3-T3 채팅 저장소 | ✅ | `Message` 모델 + `api/messages.py`(GET·POST, 타임스탬프) + **회의록 화면 채팅 패널**. pytest+build 통과 (2026-07-05 신설) |
 | P5-R4-T1 Egress 오디오 수집 | ⬜ | `egress_service.py` 없음 (B-03) |
 | P5-R4-T2 STT+화자분리+초안 | ⬜ | `stt_service.py`·`minute_drafter.py` 없음 (B-09/B-10) |
 | P5-R4-T3 회의록 검토·확정 UI+정확도 | ⬜ | 없음 |
@@ -137,7 +137,7 @@
 | P7-R1-T2 구역별 접근권한 | 🟨 | `ZoneAccess` 모델 + `api/zone_access.py`(규칙 CRUD + `user_can_enter_zone` 진입검증 + can-enter API). pytest 통과. UI + Phase4 room-enter 배선만 잔여 (2026-07-05 신설) |
 | P7-R1-T3 회의록 AI 요약 | ⬜ | `meeting_ai_summarizer.py` 없음 |
 | P7-R1-T4 조직도 실시간 에디터 | ✅ | **조직도 화면**(React Flow CRUD, E2E ✅) |
-| P7-R1-T5 Events 전용 화면 | ⬜ | 없음(MVP는 회의 캘린더 대체, D26) |
+| P7-R1-T5 Events 전용 화면 | ✅ | **이벤트 화면**(`/events`, 회의 날짜별 통합 캘린더·회의록 딥링크, D26 MVP 준수) (2026-07-05 신설) |
 | P7-R1-T6 Whiteboard | ⬜ | 없음 (COULD) |
 | P7-R2-T1 모바일 푸시 알림 | ⬜ | `push_notification.py` 없음 |
 | P7-R2-T2 개인화 대시보드 | ✅ | **대시보드 화면**(내 KPI 평균·업무 완료율·예정 회의 집계) (2026-07-05 신설) |

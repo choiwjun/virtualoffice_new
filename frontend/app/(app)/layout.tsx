@@ -13,6 +13,7 @@ const NAV = [
   { href: "/org-chart", label: "조직도" },
   { href: "/work-logs", label: "업무기록" },
   { href: "/meetings", label: "회의" },
+  { href: "/events", label: "이벤트" },
   { href: "/spaces", label: "공간 관리" },
   { href: "/users", label: "사용자" },
   { href: "/activity-feed", label: "활동 피드" },

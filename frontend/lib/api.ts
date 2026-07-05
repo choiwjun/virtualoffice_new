@@ -542,3 +542,26 @@ export const NotificationApi = {
   markRead: (id: string) => apiRequest<Notification>(`/notifications/${id}/read`, { method: "PUT" }),
   markAllRead: () => apiRequest<{ marked: number }>("/notifications/read-all", { method: "POST" }),
 };
+
+// ── 회의 채팅 (P5-R3-T3) ──────────────────────────────────
+export interface ChatMessage {
+  message_id: string;
+  meeting_id: string;
+  user_id: number | null;
+  content: string;
+  created_at: string | null;
+}
+
+export const MessageApi = {
+  list: (meetingId: string) => apiRequest<{ messages: ChatMessage[] }>(`/meetings/${meetingId}/messages`),
+  send: (meetingId: string, content: string) =>
+    apiRequest<ChatMessage>(`/meetings/${meetingId}/messages`, { method: "POST", body: { content } }),
+};
+
+// ── 클라이언트 버전 (P7-R3-T2) ────────────────────────────
+export const ClientApi = {
+  version: (current?: string) =>
+    apiRequest<{ latest: string; min: string; current: string | null; url: string | null; required: boolean; up_to_date: boolean }>(
+      `/api/client/version${current ? `?current=${encodeURIComponent(current)}` : ""}`,
+    ),
+};

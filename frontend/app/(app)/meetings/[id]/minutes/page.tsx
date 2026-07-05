@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ApiError, MeetingMinute, MinuteApi } from "@/lib/api";
+import { ApiError, ChatMessage, MeetingMinute, MessageApi, MinuteApi } from "@/lib/api";
 
 export default function MeetingMinutesPage() {
   const params = useParams<{ id: string }>();
@@ -133,7 +133,67 @@ export default function MeetingMinutesPage() {
         )}
       </div>
 
+      <ChatPanel meetingId={meetingId} />
+
       {toast && <div className="fixed bottom-6 right-6 z-50 rounded-md bg-panel2 px-4 py-2 text-sm shadow-lg">{toast}</div>}
+    </div>
+  );
+}
+
+function ChatPanel({ meetingId }: { meetingId: string }) {
+  const [msgs, setMsgs] = useState<ChatMessage[]>([]);
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const d = await MessageApi.list(meetingId);
+      setMsgs(d.messages);
+    } catch {
+      /* 무시 */
+    }
+  }, [meetingId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function send() {
+    if (!text.trim()) return;
+    setBusy(true);
+    try {
+      await MessageApi.send(meetingId, text);
+      setText("");
+      load();
+    } catch {
+      /* 무시 */
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="card space-y-3">
+      <h2 className="text-sm font-medium">회의 채팅</h2>
+      <div className="max-h-64 space-y-2 overflow-y-auto">
+        {msgs.length === 0 && <p className="text-xs text-sub">메시지가 없습니다.</p>}
+        {msgs.map((m) => (
+          <div key={m.message_id} className="rounded-md bg-bg/60 px-3 py-2 text-sm">
+            <span className="text-xs text-sub">#{m.user_id ?? "-"} · {(m.created_at ?? "").replace("T", " ").slice(11, 16)}</span>
+            <div>{m.content}</div>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          className="input"
+          placeholder="메시지 입력"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && send()}
+        />
+        <button className="btn" onClick={send} disabled={busy}>전송</button>
+      </div>
     </div>
   );
 }
