@@ -122,18 +122,18 @@ function OfficeStage({
       <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2">
         <span className="glass px-3 py-1.5 text-xs">
           <span className="font-semibold">가상오피스 · 1F</span>
-          <span className="ml-2 text-sub">{live3d ? "Godot 실시간 엔진" : "실시간 현황"}</span>
+          <span className="ml-2 text-sub">{live3d ? "3D 둘러보기 · Godot" : "실시간 현황"}</span>
         </span>
         <span className="badge glass px-2.5 py-1 text-ok"><span className="h-1.5 w-1.5 rounded-full bg-ok" /> {total} 온라인</span>
       </div>
 
-      {/* 상단 우측: 실시간 3D 토글 */}
+      {/* 상단 우측: 3D 입장/나가기 (현황이 메인, 필요할 때만 입장) */}
       <button
         onClick={() => setLive3d((v) => !v)}
         className="absolute right-4 top-4 flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white shadow-glass hover:bg-brand2"
       >
         <IconVideo className="h-4 w-4" />
-        {live3d ? "현황 화면" : "실시간 3D 입장"}
+        {live3d ? "← 현황으로 나가기" : "3D로 입장 →"}
       </button>
 
       {/* 하단 중앙: 입장 힌트 */}
