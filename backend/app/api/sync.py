@@ -33,6 +33,7 @@ from app.erp.reader import ErpReader
 from app.erp.sync import ErpSyncService
 from app.api.erp import DEFAULT_COMPANY_ID, get_reader
 from app.models.tables import ErpSyncLog, ErpSyncStatus
+from app.services.notification_service import record_notification
 
 router = APIRouter(tags=["sync"])
 
@@ -101,6 +102,16 @@ async def trigger_erp_sync(
             finished_at=datetime.now(timezone.utc),
         )
         db.add(failure_log)
+        # P7-R3-T3: 동기화 실패 시 관리자 콘솔 알림 적재(+웹훅 설정 시 병행 전송). 실패 로그와
+        # 동일 트랜잭션으로 커밋된다(원자성).
+        await record_notification(
+            db,
+            category="sync_failure",
+            severity="error",
+            title="ERP 동기화 실패",
+            message=str(exc),
+            context={"sync_job_id": str(failure_log.id), "run_id": str(failure_log.run_id)},
+        )
         await db.commit()
         return {
             "sync_job_id": str(failure_log.id),

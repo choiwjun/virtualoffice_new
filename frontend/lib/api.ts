@@ -521,3 +521,24 @@ export const MinuteApi = {
   confirm: (meetingId: string) =>
     apiRequest<MeetingMinute>(`/meetings/${meetingId}/minutes/confirm`, { method: "POST" }),
 };
+
+// ── 알림 (P7-R3-T3, admin) ────────────────────────────────
+export interface Notification {
+  notification_id: string;
+  category: string;
+  severity: string;
+  title: string;
+  message: string | null;
+  context: unknown;
+  is_read: boolean;
+  created_at: string | null;
+}
+
+export const NotificationApi = {
+  list: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return apiRequest<{ items: Notification[]; unread_total: number }>(`/notifications${q}`);
+  },
+  markRead: (id: string) => apiRequest<Notification>(`/notifications/${id}/read`, { method: "PUT" }),
+  markAllRead: () => apiRequest<{ marked: number }>("/notifications/read-all", { method: "POST" }),
+};

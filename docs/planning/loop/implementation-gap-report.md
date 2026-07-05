@@ -140,7 +140,7 @@
 | P7-R2-T3 실시간 협업 피드 | 🟨 | **활동 피드 화면**(감사로그 기반, admin). 실시간(WS) 갱신은 미구현 (2026-07-05 신설) |
 | P7-R3-T1 감사 로그 | ✅ | `services/audit_service.py`+`api/audit.py`(B-14, 9훅 배선) |
 | P7-R3-T2 클라 자동업데이트 | ⬜ | `/client/version`·`updater.gd` 없음 |
-| P7-R3-T3 ERP 실패 알림+관측 | ⬜ | 알림채널·Grafana/Prometheus/Loki 없음(`/sync/errors` 조회만 = **동기화 모니터링 화면**) |
+| P7-R3-T3 ERP 실패 알림+관측 | 🟨 | **알림 채널 구현**: `Notification` 모델 + `notification_service`(DB 영속 + 선택적 Slack 웹훅) + `api/notifications.py` + **알림/감사로그 화면**. 실패 훅 배선(sync 트리거·스케줄러 erp 잡·KPI push). E2E+pytest 통과. 관측 스택(Grafana/Prometheus/Loki/Kuma)만 인프라 범위 잔여 (2026-07-05 신설) |
 | P7-R3-T4 도그푸딩 피드백 | ✅ | `Feedback` 모델 + `api/feedback.py`(제출/목록/상태) + **피드백 화면**(제출·관리자 검토). E2E 통과 (2026-07-05 신설) |
 | P7-R2-V 통합검증 | ⬜ | — |
 
@@ -174,7 +174,7 @@
 
 ## 우선순위 (현 환경=코드만 가능 기준)
 1. **[완료 2026-07-05] 웹 화면 잔여**: 회의록 에디터(`/meetings/[id]/minutes`)·이의신청 자가열람(`/kpi-results`)·대시보드·활동 피드·피드백·office/floor/room 관리 API+화면(`/spaces`)·사용자(`/users`) 모두 구현. 백엔드 신설 2종(feedback·spaces 라우터 + Feedback 모델), 프론트 7화면. 검증: 백엔드 pytest 603 passed + 프론트 build 14라우트 + 라이브 API E2E ALL PASS.
-2. **알림/관측**(코드 가능): ERP 동기화 실패 알림채널(P7-R3-T3) 최소구현, 감사로그 화면.
+2. **[완료 2026-07-05] 알림/관측**: ERP/KPI 실패 알림 채널(Notification 모델·서비스·API·실패 훅 배선) + 알림 화면 + 감사로그 화면. 관측 스택(Grafana/Loki 등)은 인프라 범위로 잔여. 검증: pytest 607 passed(신규 알림 4테스트) + build 16라우트 + 라이브 스모크 PASS.
 3. **3D 시각**(GPU 필요, phase-blocked): Phase 1 에셋·씬·HUD·미니맵.
 4. **실환경 런타임**(인프라 필요): LiveKit/STT(B-03), 헤드리스 서버 부하(B-02), 실 cron(B-16), Caddy 하드닝(B-06).
 5. **human-blocked**: ERP dailylog DB 계정(B-05), 공인 도메인(B-06).

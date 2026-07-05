@@ -100,6 +100,15 @@ class Settings(BaseSettings):
     erp_push_base_url: str = ""
     """ERP write API base(kpi_results/reports). 비어있으면 위 두 플래그가 True여도 사실상 무효."""
 
+    # ── 실패 알림 채널 (P7-R3-T3, D18/D21) ──────────────
+    alert_slack_webhook_url: str = ""
+    """ERP 동기화/KPI push 실패 시 알림 전송할 Slack Incoming Webhook. 비어있으면 DB 영속(관리자
+    콘솔 알림)만 하고 외부 전송은 no-op. Grafana/Prometheus/Loki 관측 스택은 인프라 범위(D21)."""
+
+    @property
+    def alert_webhook_enabled(self) -> bool:
+        return bool(self.alert_slack_webhook_url)
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -16,6 +16,8 @@ const NAV = [
   { href: "/spaces", label: "공간 관리" },
   { href: "/users", label: "사용자" },
   { href: "/activity-feed", label: "활동 피드" },
+  { href: "/audit-logs", label: "감사 로그" },
+  { href: "/notifications", label: "알림" },
   { href: "/feedback", label: "피드백" },
   { href: "/sync-monitoring", label: "동기화 모니터링" },
 ];

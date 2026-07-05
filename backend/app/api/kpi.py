@@ -60,6 +60,7 @@ from app.services.kpi_scoring import (
 )
 from app.services.audit_service import record_audit
 from app.services.kpi_push import push_confirmed_kpi_to_erp
+from app.services.notification_service import record_notification
 
 router = APIRouter(tags=["kpi"])
 
@@ -322,8 +323,22 @@ async def confirm_kpi_result(
             await push_confirmed_kpi_to_erp(db)
             await db.commit()
             await db.refresh(kr)
-        except Exception:  # noqa: BLE001 - 푸시 실패는 confirm 응답을 막지 않는다.
+        except Exception as exc:  # noqa: BLE001 - 푸시 실패는 confirm 응답을 막지 않는다.
             logger.warning("confirm_kpi_result: ERP push backfill 실패(non-fatal)", exc_info=True)
+            # P7-R3-T3: 실패 관측 — 푸시 트랜잭션 롤백 후 별도로 알림 적재(confirm은 이미 커밋됨).
+            try:
+                await db.rollback()
+                await record_notification(
+                    db,
+                    category="kpi_push_failure",
+                    severity="error",
+                    title="KPI ERP push 실패",
+                    message=str(exc),
+                    context={"kpi_result_id": str(kr.id)},
+                )
+                await db.commit()
+            except Exception:  # noqa: BLE001
+                logger.warning("confirm_kpi_result: 실패 알림 적재 실패(non-fatal)", exc_info=True)
 
     return _kpi_result_out(kr)
 

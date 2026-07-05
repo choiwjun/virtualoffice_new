@@ -53,6 +53,7 @@ from app.models.tables import (
 )
 from app.services.ai_narrative import generate_narrative
 from app.services.holidays import VARIABLE_COVERED_YEARS, is_kr_holiday
+from app.services.notification_service import record_notification
 
 logger = logging.getLogger(__name__)
 
@@ -374,12 +375,32 @@ def build_scheduler(session_factory=None, reader_factory=None):
                 await kpi_ai_draft_generation(db, KpiPeriodType.DAILY, today.isoformat())
                 await db.commit()
 
+    async def _notify_sync_failure(exc: Exception, job: str) -> None:
+        # P7-R3-T3/D18: 배치 동기화 실패 시 관리자 콘솔 알림 적재(+웹훅). 알림 적재 실패는
+        # 배치 잡을 더 깨뜨리지 않도록 별도 세션에서 best-effort로 커밋한다.
+        try:
+            async with session_factory() as ndb:
+                await record_notification(
+                    ndb,
+                    category="sync_failure",
+                    severity="error",
+                    title=f"ERP 동기화 배치 실패({job})",
+                    message=str(exc),
+                    context={"job": job},
+                )
+                await ndb.commit()
+        except Exception:  # noqa: BLE001
+            logger.warning("스케줄러 실패 알림 적재 실패(non-fatal)", exc_info=True)
+
     async def _run_erp_incremental_sync() -> None:
         async with session_factory() as db:
             reader = reader_factory()
             try:
                 async with advisory_lock(db, key=_stable_job_key("erp_incremental_sync")):
                     await erp_incremental_sync(db, reader)
+            except Exception as exc:  # noqa: BLE001 - 실패 관측(알림) 후 재던짐(APScheduler 로깅)
+                await _notify_sync_failure(exc, "erp_incremental_sync")
+                raise
             finally:
                 await reader.aclose()
 
@@ -389,6 +410,9 @@ def build_scheduler(session_factory=None, reader_factory=None):
             try:
                 async with advisory_lock(db, key=_stable_job_key("erp_full_reconciliation")):
                     await erp_full_reconciliation(db, reader)
+            except Exception as exc:  # noqa: BLE001
+                await _notify_sync_failure(exc, "erp_full_reconciliation")
+                raise
             finally:
                 await reader.aclose()
 

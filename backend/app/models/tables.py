@@ -1561,6 +1561,28 @@ class Feedback(Base, TimestampMixin):
     __table_args__ = (Index("idx_feedback_status_time", "status", "created_at"),)
 
 
+class Notification(Base, TimestampMixin):
+    # @TASK P7-R3-T3 - 실패 알림 채널 (관리자 콘솔 알림)
+    # @SPEC 12-tasks.md P7-R3-T3, 00-decisions.md D18(동기화 실패 알림)/D21(관측)
+    """
+    시스템 알림 (ERP 동기화 실패·KPI push 실패 등). 관리자 콘솔에서 열람·읽음 처리.
+    외부 채널(Slack)은 notification_service가 선택적으로 병행 전송(alert_slack_webhook_url).
+    """
+    __tablename__ = "notification"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    category: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    """sync_failure | kpi_push_failure | daily_push_failure | general"""
+    severity: Mapped[str] = mapped_column(String(20), nullable=False, default="error")
+    """info | warning | error | critical"""
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    context: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
+
+    __table_args__ = (Index("idx_notification_category_time", "category", "created_at"),)
+
+
 class ErpSyncLog(Base, TimestampMixin):
     # @TASK T18.0 - ERP 동기화 실행 이력 (G009)
     # @SPEC 00-decisions.md D18(증분+전체대사), D20(컴플라이언스)
