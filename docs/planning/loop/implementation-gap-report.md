@@ -48,15 +48,15 @@
 ## Phase 1 — 프리미엄 골든 샘플 3D (7) — **시각 전무**
 | Task | 상태 | 근거/갭 |
 |---|---|---|
-| P1-S1-T1 로비/브랜드월 모델링 | ⬜ | `godot/assets/`·`scenes/office/lobby.tscn` 없음 (GLB 0개, B-01) |
-| P1-S1-T2 좌석영역 3D | ⬜ | 없음 |
-| P1-S1-T3 회의실/라운지/집중실/폰부스 | ⬜ | 없음 |
-| P1-S1-T4 아바타 모델·애니메이션 | ⬜ | 없음(로직 `scenes/avatar.gd`만) |
-| P1-S1-T5 이름/상태 HUD+직원패널 | ⬜ | 없음 |
-| P1-S1-T6 회의패널+미니맵 | ⬜ | 없음 |
-| P1-S1-V 통합검증 | ⬜ | GPU 환경 필요 |
+| P1-S1-T1 로비/브랜드월 모델링 | 🟨 | `office_layout_loader`가 layout→3D 구조(바닥/벽/방) **프리미티브 렌더**. 전용 로비·브랜드월 GLB 에셋만 잔여 (2026-07-05 시각메시 추가) |
+| P1-S1-T2 좌석영역 3D | 🟨 | 로더가 좌석 위치를 컬러 메시로 렌더(점유색은 런타임). 실 데스크 GLB만 잔여 |
+| P1-S1-T3 회의실/라운지/집중실/폰부스 | 🟨 | 로더가 방 벽(문 개구부 포함)·유리벽 반투명 렌더. 용도별 GLB 디테일만 잔여 |
+| P1-S1-T4 아바타 모델·애니메이션 | ⬜ | 이동 로직 `avatar.gd`만. Rigged GLB 모델·애니메이션은 아트(GPU) 필요 |
+| P1-S1-T5 이름/상태 HUD+직원패널 | 🟨 | `avatar_hud.gd`(빌보드 Label3D + D13 7상태 아이콘/색). GUT 통과. 직원 우측패널은 UI 잔여 (2026-07-05 신설) |
+| P1-S1-T6 회의패널+미니맵 | 🟨 | `minimap.gd`(top-down 변환+마커, GUT 통과). 하단 회의패널 UI만 잔여 (2026-07-05 신설) |
+| P1-S1-V 통합검증 | ⬜ | 60fps 렌더·10명 동시 = GPU 환경 필요. 로직/씬 구성은 GUT 100 passing |
 
-> Godot 존재분: `scenes/`(avatar·net_client·office_client·office_layout_loader.gd) + `server/`(jwt_verify·server_main·game_server.gd) + GUT 테스트 = **헤드리스 로직 슬라이스만**(에셋·렌더·UI 없음).
+> Godot 존재분: `scenes/`(avatar·net_client·office_client·office_layout_loader·**avatar_hud·minimap·updater**.gd) + `server/`(jwt_verify·server_main·game_server.gd) + GUT 테스트(**102 tests / 100 passing**, Godot 4.7 헤드리스). 로더가 layout→3D를 **프리미티브+머티리얼로 렌더**(GLB 에셋 투입 전 골든샘플 가시화). 실 GLB 아트·아바타 리깅·60fps GPU 렌더만 잔여.
 
 ## Phase 2 — ERP 동기화 & 좌석배정 (11)
 | Task | 상태 | 근거/갭 |
@@ -104,7 +104,7 @@
 | Task | 상태 | 근거/갭 |
 |---|---|---|
 | P5-R1-T1 회의 관리 API | ✅ | `api/meetings.py` 예약충돌(D23)·명시적입장 토큰(D24) (E2E ✅) |
-| P5-R1-T2 LiveKit+coturn self-host | 🟨 | `livekit_service`(입장토큰 + **룸 create/delete 슬라이스**)+compose livekit/coturn opt-in. pytest 통과. 실 LiveKit 서버 미디어는 런타임 B-03 (2026-07-05 룸 슬라이스 추가) |
+| P5-R1-T2 LiveKit+coturn self-host | 🟨 | `livekit_service`(입장토큰+룸 create/delete) + **회의 join→create_room·cancel→delete_room 배선(D24)** + `.env.example` compose값 배선. 실 토큰 오프라인 검증(video.roomJoin). 실 서버 미디어만 배포측 연결 시 활성 (2026-07-05) |
 | P5-R2-T1 회의 UI(Next.js) | 🟨 | **회의 화면**(목록·상태·취소). 대기실/마이크테스트 UI 미구현 |
 | P5-R2-T2a WebRTC GDExtension | ⬜ | 없음 (B-03) |
 | P5-R2-T2b 3D 화상 렌더 | ⬜ | 없음 |
