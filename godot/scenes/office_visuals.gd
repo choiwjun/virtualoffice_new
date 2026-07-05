@@ -6,17 +6,23 @@ extends RefCounted
 ## 조명은 스튜디오 HDRI로 이미지기반(IBL) — 실사급 앰비언트/반사.
 
 const MODELS := {
-	"desk": "res://assets/models/WoodenTable_01/WoodenTable_01.gltf",
-	"chair": "res://assets/models/ArmChair_01/ArmChair_01.gltf",
-	"sofa": "res://assets/models/Sofa_01/Sofa_01.gltf",
-	"coffee_table": "res://assets/models/CoffeeTable_01/CoffeeTable_01.gltf",
-	"plant_a": "res://assets/models/potted_plant_01/potted_plant_01.gltf",
-	"plant_b": "res://assets/models/potted_plant_02/potted_plant_02.gltf",
-	"shelf": "res://assets/models/Shelf_01/Shelf_01.gltf",
+	"desk": "res://assets/models/metal_office_desk/metal_office_desk.gltf",
+	"chair": "res://assets/models/modern_arm_chair_01/modern_arm_chair_01.gltf",
+	"sofa": "res://assets/models/sofa_02/sofa_02.gltf",
+	"coffee_table": "res://assets/models/modern_coffee_table_01/modern_coffee_table_01.gltf",
+	"plant_a": "res://assets/models/potted_plant_04/potted_plant_04.gltf",
+	"plant_b": "res://assets/models/potted_plant_01/potted_plant_01.gltf",
+	"plant_c": "res://assets/models/nettle_plant/nettle_plant.gltf",
+	"shelf": "res://assets/models/wooden_bookshelf_worn/wooden_bookshelf_worn.gltf",
 	"lamp": "res://assets/models/desk_lamp_arm_01/desk_lamp_arm_01.gltf",
+	"clock": "res://assets/models/wall_clock/wall_clock.gltf",
+	"frame": "res://assets/models/hanging_picture_frame_02/hanging_picture_frame_02.gltf",
+	"projector": "res://assets/models/projector_screen/projector_screen.gltf",
+	"cabinet": "res://assets/models/drawer_cabinet/drawer_cabinet.gltf",
 }
 const HDRI := "res://assets/hdri/brown_photostudio_02.hdr"
-const FLOOR_TEX := "res://assets/textures/diagonal_parquet/"
+const FLOOR_TEX := "res://assets/textures/wooden_planks/"
+const WALL_TEX := "res://assets/textures/wood_planks/"
 
 
 ## 로더가 만든 "Floor"에 실사 목재 마루 재질을 입힌다(타일링).
@@ -39,12 +45,12 @@ static func apply_floor_material(parent: Node3D) -> void:
 	var rgh := FLOOR_TEX + "rough.jpg"
 	if ResourceLoader.exists(rgh):
 		mat.roughness_texture = load(rgh)
-	# 과채도 오렌지 완화 — 차분한 우드톤으로 강하게 틴트(텍스처 × albedo_color)
-	mat.albedo_color = Color(0.58, 0.52, 0.47)
-	# 더 촘촘한 마루 타일링(사실감)
-	mat.uv1_scale = Vector3(22.0, 15.0, 1.0)
+	# 밝고 차분한 우드톤(시안의 밝은 마루) — 텍스처 × albedo_color
+	mat.albedo_color = Color(0.86, 0.80, 0.72)
+	# 마루 타일링
+	mat.uv1_scale = Vector3(10.0, 7.0, 1.0)
 	mat.metallic = 0.0
-	mat.roughness = 0.88  # 무광에 가깝게 — 반사 핫스팟 방지
+	mat.roughness = 0.9  # 무광 — 반사 핫스팟 방지
 	(mesh as MeshInstance3D).material_override = mat
 
 
@@ -76,6 +82,25 @@ static func _brand_material(emissive := false) -> StandardMaterial3D:
 		m.emission_enabled = true
 		m.emission = Color(0.39, 0.40, 0.95)
 		m.emission_energy_multiplier = 1.6
+	return m
+
+
+## 우드 슬랫 벽 재질(시안의 ACME 우드월). WALL_TEX 목재 판자 텍스처.
+static func _wood_wall_material() -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	var diff := WALL_TEX + "diffuse.jpg"
+	if ResourceLoader.exists(diff):
+		m.albedo_texture = load(diff)
+	var nrm := WALL_TEX + "normal.jpg"
+	if ResourceLoader.exists(nrm):
+		m.normal_enabled = true
+		m.normal_texture = load(nrm)
+	var rgh := WALL_TEX + "rough.jpg"
+	if ResourceLoader.exists(rgh):
+		m.roughness_texture = load(rgh)
+	m.albedo_color = Color(0.80, 0.66, 0.48)  # 따뜻한 우드톤
+	m.uv1_scale = Vector3(3.0, 2.0, 1.0)
+	m.roughness = 0.7
 	return m
 
 
@@ -143,10 +168,10 @@ static func build_perimeter_walls(layout: Dictionary, parent: Node3D, floor_heig
 	if seg > 0.1:
 		_box(parent, Vector3(minx + seg * 0.5, cy, maxy), Vector3(seg, h, t), mat)
 		_box(parent, Vector3(maxx - seg * 0.5, cy, maxy), Vector3(seg, h, t), mat)
-	# 브랜드월: 뒷벽 좌측에 인디고 패널 + 은은한 발광 스트립(로비 반대편 포인트)
-	var bw: float = min(6.0, w * 0.25)
-	_box(parent, Vector3(minx + bw * 0.5 + 0.5, cy, miny + 0.06), Vector3(bw, h - 0.4, 0.08), _brand_material(false))
-	_box(parent, Vector3(minx + bw * 0.5 + 0.5, floor_height + h - 0.35, miny + 0.10), Vector3(bw, 0.12, 0.06), _brand_material(true))
+	# 브랜드월: 뒷벽 좌측에 우드 슬랫 패널(ACME 우드월) + 상단 은은한 LED 스트립
+	var bw: float = min(9.0, w * 0.35)
+	_box(parent, Vector3(minx + bw * 0.5 + 0.4, cy, miny + 0.10), Vector3(bw, h - 0.2, 0.12), _wood_wall_material())
+	_box(parent, Vector3(minx + bw * 0.5 + 0.4, floor_height + h - 0.25, miny + 0.14), Vector3(bw, 0.08, 0.05), _brand_material(true))
 
 
 ## 리셉션: 입구 안쪽에 L자 카운터 + 뒤 선반. spawn_default(로비) 근처에 배치.
@@ -252,11 +277,47 @@ static func populate(layout: Dictionary, parent: Node3D, floor_height: float) ->
 		parent.add_child(ctable)
 		ctable.position = Vector3(lounge.x, floor_height, lounge.y - 0.3)
 		placed += 1
-	var lplant := _instance("plant_a")
+	var lplant := _instance("plant_c")
 	if lplant:
 		parent.add_child(lplant)
 		lplant.position = Vector3(lounge.x + 2.2, floor_height, lounge.y + 1.4)
 		placed += 1
+
+	# 5) 벽면 데코 — 책장(좌벽) + 서랍장(뒷벽) + 벽시계 + 액자 + 추가 화분
+	var back := miny + 0.35
+	var shelf1 := _instance("shelf")
+	if shelf1:
+		parent.add_child(shelf1)
+		shelf1.position = Vector3(minx + 0.4, floor_height, miny + (maxy - miny) * 0.55)
+		shelf1.rotation.y = -PI * 0.5  # 좌벽을 등지도록
+		placed += 1
+	var cab1 := _instance("cabinet")
+	if cab1:
+		parent.add_child(cab1)
+		cab1.position = Vector3(minx + (maxx - minx) * 0.62, floor_height, back)
+		placed += 1
+	var cab2 := _instance("cabinet")
+	if cab2:
+		parent.add_child(cab2)
+		cab2.position = Vector3(minx + (maxx - minx) * 0.75, floor_height, back)
+		placed += 1
+	var clock := _instance("clock")
+	if clock:
+		parent.add_child(clock)
+		clock.position = Vector3(minx + (maxx - minx) * 0.68, floor_height + 2.2, miny + 0.18)
+		placed += 1
+	var frame := _instance("frame")
+	if frame:
+		parent.add_child(frame)
+		frame.position = Vector3(minx + (maxx - minx) * 0.55, floor_height + 1.8, miny + 0.18)
+		placed += 1
+	# 화분 추가(라운지·중앙 통로)
+	for pc in [Vector2((minx + maxx) * 0.5, miny + 1.0), Vector2(maxx - 2.0, (miny + maxy) * 0.5)]:
+		var pl := _instance("plant_c")
+		if pl:
+			parent.add_child(pl)
+			pl.position = Vector3(pc.x, floor_height, pc.y)
+			placed += 1
 
 	return placed
 
@@ -293,6 +354,12 @@ static func _furnish_room(room: Dictionary, parent: Node3D, floor_height: float)
 			ch.position = Vector3(cx, floor_height, cz) + offs[k]
 			ch.rotation.y = yaws[k]
 			n += 1
+	# 프로젝터 스크린(방 뒷벽 miny 쪽)
+	var proj := _instance("projector")
+	if proj:
+		parent.add_child(proj)
+		proj.position = Vector3(cx, floor_height, ry + 0.3)
+		n += 1
 	return n
 
 
