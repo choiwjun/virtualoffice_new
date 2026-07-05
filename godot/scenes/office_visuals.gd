@@ -19,7 +19,14 @@ const MODELS := {
 	"frame": "res://assets/models/hanging_picture_frame_02/hanging_picture_frame_02.gltf",
 	"projector": "res://assets/models/projector_screen/projector_screen.gltf",
 	"cabinet": "res://assets/models/drawer_cabinet/drawer_cabinet.gltf",
+	# 사람(Quaternius CC0) — 오피스 적합만
+	"person_a": "res://assets/models/people/p09.glb",  # 비즈니스 정장
+	"person_b": "res://assets/models/people/p02.glb",  # 캐주얼 티
+	"person_c": "res://assets/models/people/p03.glb",  # 후디
+	"person_d": "res://assets/models/people/p10.glb",  # 캐주얼
+	"person_e": "res://assets/models/people/p01.glb",  # 캐주얼
 }
+const PERSON_IDS := ["person_a", "person_b", "person_c", "person_d", "person_e"]
 const HDRI := "res://assets/hdri/brown_photostudio_02.hdr"
 const FLOOR_TEX := "res://assets/textures/wooden_planks/"
 const WALL_TEX := "res://assets/textures/wood_planks/"
@@ -345,6 +352,9 @@ static func populate(layout: Dictionary, parent: Node3D, floor_height: float) ->
 	for r in layout.get("rooms", []):
 		placed += _furnish_room(r, parent, floor_height)
 
+	# 3.2) 사람 배치(시안처럼 통로/리셉션/회의실/라운지)
+	placed += add_people(parent, floor_height)
+
 	# 3.5) 팀존 러그 + 그린 헤지 파티션(시안의 존 구획 + 무성한 그린)
 	var zi := 0
 	var zone_rug_cols := [Color(0.22, 0.28, 0.40), Color(0.30, 0.30, 0.34), Color(0.20, 0.30, 0.30)]
@@ -438,6 +448,33 @@ static func populate(layout: Dictionary, parent: Node3D, floor_height: float) ->
 			placed += 1
 
 	return placed
+
+
+## 사람(Quaternius CC0) 배치 — 시안처럼 통로·리셉션·회의실·라운지에 서 있는/걷는 사람.
+static func add_people(parent: Node3D, floor_height: float) -> int:
+	# [x, z, facing_deg, model_index]
+	var spots := [
+		[15.0, 16.5, 0.0, 0],    # 리셉션 앞(정장)
+		[12.5, 11.0, 200.0, 1],  # 중앙 통로
+		[11.0, 13.5, 20.0, 2],   # 중앙 통로2
+		[10.0, 5.5, 90.0, 3],    # A/B존 사이 통로
+		[10.0, 12.0, 90.0, 4],   # C존 통로
+		[21.5, 10.6, 180.0, 0],  # 회의실 A 입구
+		[21.5, 16.2, 180.0, 1],  # 회의실 B 근처
+		[25.5, 15.5, 250.0, 3],  # 라운지
+		[24.0, 7.5, 150.0, 2],   # 우측 오픈
+		[4.0, 2.6, 130.0, 4],    # 브랜드월 앞
+	]
+	var n := 0
+	for s in spots:
+		var mid: String = PERSON_IDS[int(s[3]) % PERSON_IDS.size()]
+		var person := _instance(mid)
+		if person:
+			parent.add_child(person)
+			person.position = Vector3(float(s[0]), floor_height, float(s[1]))
+			person.rotation.y = deg_to_rad(float(s[2]))
+			n += 1
+	return n
 
 
 ## 회의실 하나에 중앙 테이블 + 둘레 의자 배치(coords: 방 좌상단 x,y + width,height).
