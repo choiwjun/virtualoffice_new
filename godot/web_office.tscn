@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cweboffice001"]
+
+[ext_resource type="Script" path="res://web_office.gd" id="1_web"]
+
+[node name="WebOffice" type="Node3D"]
+script = ExtResource("1_web")

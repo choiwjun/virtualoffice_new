@@ -6,3 +6,6 @@ next-env.d.ts
 *.tsbuildinfo
 .env*.local
 .DS_Store
+
+# Godot 웹 export 산출물(빌드물, godot export로 재생성)
+/public/office/
