@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { ApiError, Meeting, MeetingApi } from "@/lib/api";
 import { isAdmin, useAuth } from "@/lib/auth";
 
@@ -93,11 +94,16 @@ export default function MeetingsPage() {
                 시작 {fmt(m.scheduled_at)} · 종료 {fmt(m.scheduled_end)}
               </div>
               <div className="text-xs text-sub">호스트 #{m.host_user_id}</div>
-              {canCancel && (
-                <button className="btn-ghost text-danger" onClick={() => cancel(m)}>
-                  취소
-                </button>
-              )}
+              <div className="flex gap-2 pt-1">
+                <Link className="btn-ghost" href={`/meetings/${m.meeting_id}/minutes`}>
+                  회의록
+                </Link>
+                {canCancel && (
+                  <button className="btn-ghost text-danger" onClick={() => cancel(m)}>
+                    취소
+                  </button>
+                )}
+              </div>
             </article>
           );
         })}

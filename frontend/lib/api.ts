@@ -402,3 +402,122 @@ export const LayoutApi = {
   },
   deploy: (id: string) => apiRequest<OfficeLayout>(`/layouts/${id}/deploy`, { method: "POST" }),
 };
+
+// ── 직원 디렉터리 (erp, prefix /api) ──────────────────────
+export interface Employee {
+  id: number;
+  email: string;
+  name: string;
+  erp_team_id: number;
+  role: string;
+  position: string | null;
+  manager_id: number | null;
+  work_type: string | null;
+  is_active: boolean;
+}
+
+export const EmployeeApi = {
+  list: () => apiRequest<{ items: Employee[]; total: number }>("/api/employees"),
+};
+
+// ── 감사 로그 (활동 피드 소스, admin) ─────────────────────
+export interface AuditLog {
+  id: string;
+  timestamp: string;
+  user_id: number | null;
+  action: string;
+  resource_type: string;
+  resource_id: string;
+  changes: { old: unknown; new: unknown };
+  ip_address: string | null;
+}
+
+export const AuditApi = {
+  list: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return apiRequest<{ logs: AuditLog[]; total: number; limit: number; offset: number }>(`/audit-logs${q}`);
+  },
+};
+
+// ── 피드백 (P7-R3-T4) ─────────────────────────────────────
+export interface Feedback {
+  feedback_id: string;
+  user_id: number | null;
+  type: string;
+  title: string;
+  description: string | null;
+  screenshot_url: string | null;
+  status: string;
+  created_at: string | null;
+}
+
+export const FeedbackApi = {
+  create: (body: { type: string; title: string; description?: string; screenshot_url?: string }) =>
+    apiRequest<Feedback>("/feedback", { method: "POST", body }),
+  list: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return apiRequest<{ items: Feedback[]; total: number }>(`/feedback${q}`);
+  },
+  updateStatus: (id: string, status: string) =>
+    apiRequest<Feedback>(`/feedback/${id}`, { method: "PUT", body: { status } }),
+};
+
+// ── 공간 관리 (offices/floors/rooms, P3-R1-T1) ────────────
+export interface Office {
+  office_id: string;
+  name: string;
+  description: string | null;
+  address: string | null;
+}
+export interface Floor {
+  floor_id: string;
+  office_id: string;
+  level: number;
+  name: string;
+}
+export interface Room {
+  room_id: string;
+  floor_id: string;
+  type: string;
+  name: string;
+  capacity: number;
+  coords: Record<string, unknown>;
+  status: string;
+}
+
+export const SpaceApi = {
+  offices: () => apiRequest<{ offices: Office[] }>("/offices"),
+  createOffice: (body: { name: string; description?: string; address?: string }) =>
+    apiRequest<Office>("/offices", { method: "POST", body }),
+  floors: (officeId: string) => apiRequest<{ floors: Floor[] }>(`/offices/${officeId}/floors`),
+  createFloor: (body: { office_id: string; level: number; name: string }) =>
+    apiRequest<Floor>("/floors", { method: "POST", body }),
+  rooms: (floorId: string) => apiRequest<{ rooms: Room[] }>(`/floors/${floorId}/rooms`),
+  createRoom: (body: { floor_id: string; type: string; name: string; capacity: number; coords: Record<string, unknown> }) =>
+    apiRequest<Room>("/rooms", { method: "POST", body }),
+};
+
+// ── 회의록 (minutes, P5-R3-T2 / P5-R4-T3) ─────────────────
+export interface MeetingMinute {
+  meeting_id: string;
+  minute_id?: string;
+  title: string | null;
+  summary: string | null;
+  decisions: string | null;
+  action_items_summary: string | null;
+  stt_draft: string | null;
+  ai_summary: string | null;
+  status: string; // draft | finalized
+}
+
+export const MinuteApi = {
+  get: (meetingId: string) => apiRequest<MeetingMinute>(`/meetings/${meetingId}/minutes`),
+  sttDraft: (meetingId: string) =>
+    apiRequest<{ meeting_id: string; stt_draft: string | null; status: string }>(
+      `/meetings/${meetingId}/minutes/stt-draft`,
+    ),
+  update: (meetingId: string, body: { title?: string; content?: string; decisions?: string[]; action_items?: unknown[] }) =>
+    apiRequest<MeetingMinute>(`/meetings/${meetingId}/minutes`, { method: "PUT", body }),
+  confirm: (meetingId: string) =>
+    apiRequest<MeetingMinute>(`/meetings/${meetingId}/minutes/confirm`, { method: "POST" }),
+};

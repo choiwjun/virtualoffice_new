@@ -19,7 +19,7 @@ import asyncio
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from uuid import uuid4
@@ -36,13 +36,19 @@ from app.models.tables import (  # noqa: E402
     AuthCredential,
     ErpRole,
     ErpUser,
+    Feedback,
     Floor,
     KpiPeriodType,
     KpiResult,
     KpiSource,
+    Meeting,
+    MeetingStatus,
     Office,
     OfficeLayout,
     OfficeLayoutStatus,
+    Room,
+    RoomStatus,
+    RoomType,
     Seat,
     SeatStatus,
     SeatType,
@@ -153,6 +159,38 @@ async def main() -> None:
                     seat_number=seat.get("seat_id", f"S{i+1:03d}"),
                 )
             )
+
+        # 회의실 + 회의 (회의/회의록 화면용) — layout rooms[0] 좌표 사용
+        room_id = uuid4()
+        lr = (layout.get("rooms") or [{}])[0]
+        lc = lr.get("coords", {"x": 2, "y": 2, "width": 5, "height": 4})
+        db.add(
+            Room(
+                id=room_id,
+                floor_id=floor_id,
+                type=RoomType(lr.get("type", "meeting")) if lr.get("type") in ("meeting", "lobby", "lounge", "focus", "phonebooth") else RoomType.MEETING,
+                name=lr.get("name", "회의실 A"),
+                capacity=lr.get("capacity", 8),
+                coords=lc,
+                status=RoomStatus.ACTIVE,
+            )
+        )
+        now = datetime.now(timezone.utc)
+        db.add(
+            Meeting(
+                room_id=room_id,
+                host_user_id=1,
+                title="주간 스탠드업",
+                description="E2E 시드 회의",
+                scheduled_at=now + timedelta(hours=1),
+                scheduled_end=now + timedelta(hours=2),
+                status=MeetingStatus.SCHEDULED,
+            )
+        )
+
+        # 피드백 2건 (피드백 화면용)
+        db.add(Feedback(user_id=2, type="bug", title="좌석 배정 후 새로고침 필요", description="배정 즉시 반영 안 됨", status="open"))
+        db.add(Feedback(user_id=2, type="feature", title="KPI 카드에 전분기 비교", description="추이 보고 싶음", status="reviewing"))
 
         await db.commit()
 

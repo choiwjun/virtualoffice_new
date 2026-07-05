@@ -1,81 +1,180 @@
-# 구현 갭 리포트 (Implementation Gap Report)
+# 구현 갭 리포트 (전수 감사) — Implementation Gap Audit
 
-**작성**: 2026-07-05 · **기준**: `docs/planning/12-tasks.md`(86 태스크) + `docs/planning/loop/08-derived-gates.md`(REQ-001~011) 대비 **실제 코드 상태**
-**방법**: 태스크 문서 체크박스(2026-07-02 기준, stale)가 아닌 **실 파일 조사** 기준. 이후 커밋(`339ec51 미구현 전 기능 구현`, `d3b4432 G008/G009 런타임 검증`)으로 백엔드가 대거 채워진 상태를 반영.
+**작성**: 2026-07-05 · **범위**: `docs/planning/12-tasks.md`(86 태스크) + `loop/08-derived-gates.md`(REQ-001~011) **전수** vs 실제 소스
+**방법**: 태스크 문서 체크박스(stale)가 아닌 **실 파일/엔드포인트/스케줄러 잡 조사** 기준. 세션 내 라이브 API E2E로 교차검증.
 **정본 교차참조**: `loop/blocked-work-registry.md`(B-01~B-22)
 
----
+## 범례
+- ✅ **완료** — 코드 존재 + (계약/E2E) 동작 검증
+- 🟨 **부분** — 로직 슬라이스/스텁/플래그오프/환경차단(런타임만 남음)
+- ⬜ **미구현** — 해당 소스 없음
 
-## 요약
+## 총평 (태스크 86 기준 개략)
+| 구간 | ✅ | 🟨 | ⬜ |
+|---|---|---|---|
+| 백엔드 관리 API·배치·KPI·감사 | 대부분 | AI/ERP 실연동·실 cron | 일부 API 미노출 |
+| 프론트엔드(Next.js) | 7화면 신규 | 이의신청 자가열람·회의 대기실 | 대시보드·피드·이벤트 등 |
+| 3D(Godot 시각/에셋/서버런타임) | — | 헤드리스 로직 슬라이스 | 에셋·씬·HUD·화상 전부 |
+| 화상/STT(LiveKit) | — | 입장토큰·compose 스캐폴드 | 실 서버·Egress·STT |
+| 인프라/관측/스파이크 | — | compose | Caddy·Grafana·S1~S4 |
 
-| 레이어 | 상태 | 근거 |
-|--------|------|------|
-| 백엔드 관리 API (FastAPI) | ✅ 대부분 구현 | 라우터 14 + 서비스 9 + 테스트 40+ 파일, ~297 passed |
-| Godot 헤드리스 로직 슬라이스 | 🟡 로직만 | client 4 + server 3 GDScript + GUT 테스트 7 |
-| Godot 3D 렌더링/에셋/UI | ❌ 전무 | GLB·씬·HUD·아바타 모델 없음 |
-| 웹 관리 콘솔 (임시 바닐라 SPA) | 🟡 읽기중심 동작 | `backend/app/static/console.html` 647줄·9뷰 (`/console` 서빙) |
-| 프론트엔드 (계획된 Next.js 스택 + 편집기) | ❌ 전무 | `frontend/` 없음. Konva 편집기·React Flow 조직도 없음 |
-| 실시간 서버 런타임 / WSS 인프라 | ❌ 미가동 | 계약·로직만, 실행 인프라 없음 |
-| LiveKit 화상 / STT 회의록 | ❌ 스텁만 | 입장 토큰 발급만, egress/stt 서비스 없음 |
-| AI·ERP 라이브 연동 | 🟡 placeholder | Mock/결정론 stub만 |
-| 스파이크 S1~S4 | ❌ 미실행 | `spikes/` 없음 |
-| 관측/인프라 하드닝 | ❌ 미구현 | Grafana/Caddy 검증·백업 없음 |
-
----
-
-## 1. ✅ 구현 완료 (백엔드 관리 API + Godot 로직 슬라이스)
-
-**백엔드 라우터 14종** (`backend/app/api/`): auth, seats, layouts, erp, sync, realtime, presence, team_zones, org_groups, action_items, meetings, kpi, worklogs, audit
-**백엔드 서비스 9종** (`backend/app/services/`): office_layout_validator, office_layout_to_godot, kpi_scoring, ai_narrative, audit_service, holidays, livekit_service, scheduler, kpi_push
-→ blocked-registry G001~G010 관리 API + B-14~B-18 resolved. 계약/레드팀/architect 3레인 통과.
-
-**Godot 헤드리스 로직** (B-01 부분해소): `godot/scenes/`(avatar, net_client, office_client, office_layout_loader) + `godot/server/`(jwt_verify, server_main, game_server) + GUT 테스트. GPU 없이 검증 가능한 로직만.
+**한 줄 요약**: 백엔드 관리 API·도메인 로직·배치는 **거의 완결**(계약/레드팀/E2E 통과). 갭은 압도적으로 **① 3D 시각(Godot 에셋·씬·화상) ② 실환경 런타임(LiveKit·STT·헤드리스 서버·실 cron·실 ERP DB) ③ 일부 웹 화면**에 몰려 있다. ①②는 GPU·미디어·서버 인프라가 필요한 phase/human blocked, ③은 코드로 즉시 가능.
 
 ---
 
-## 2. ❌ 누락/미구현 상세 (Phase별)
+## Phase 0 — 계약 & 스파이크 (11)
+| Task | 상태 | 근거/갭 |
+|---|---|---|
+| P0-T0.1 실시간 API 계약(WSS) | ✅ | `docs/api/realtime-server-api.yaml` |
+| P0-T0.2 관리·KPI API 계약 | ✅ | `docs/api/management-api.yaml` + 계약 스텁 테스트 |
+| P0-T0.3 데이터모델/ERD | ✅ | `models/tables.py`(~30테이블) + `docs/data-model/erd.md` |
+| P0-T0.4 ERP 계약+kpi_results 마이그레이션 | ✅ | `docs/erp-integration/` + `migrations/alembic/0001_kpi_results_table.py` |
+| P0-T0.5 3D 씬/asset 레지스트리 설계 | ✅ | `docs/3d-design/` |
+| P0-T0.6 office_layout 스키마+검증 | ✅ | `docs/data-model/office-layout-schema.json` + `services/office_layout_validator.py` |
+| P0-T0.7 테스트 프레임워크+CI | ✅ | `tests/conftest.py`·contract·`.github/workflows/test-phase.yaml` |
+| P0-T0.8 스파이크 S1(LiveKit PoC) | ⬜ | `spikes/` 없음 (B-04, GPU/LiveKit env) |
+| P0-T0.9 스파이크 S2(STT PoC) | ⬜ | 없음 (B-04) |
+| P0-T0.10 스파이크 S3(헤드리스 부하) | ⬜ | 없음 (B-04) |
+| P0-T0.11 스파이크 S4(라이팅) | ⬜ | 없음 (B-04) |
 
-### Phase 1 · 3D 골든 샘플 (REQ-001) — 시각 부분 전무
-- 없음: 로비/좌석/회의실 GLB·씬, 아바타 모델 10종·애니메이션 6종, 이름/상태 HUD, 직원정보 패널, 회의 패널, 미니맵, 로그인 씬
-- 60fps·골든샘플 룩·조작 데모 증거 게이트 미충족 · 차단: GPU/GLB/에디터 런타임 (B-01)
+## Phase 1 — 프리미엄 골든 샘플 3D (7) — **시각 전무**
+| Task | 상태 | 근거/갭 |
+|---|---|---|
+| P1-S1-T1 로비/브랜드월 모델링 | ⬜ | `godot/assets/`·`scenes/office/lobby.tscn` 없음 (GLB 0개, B-01) |
+| P1-S1-T2 좌석영역 3D | ⬜ | 없음 |
+| P1-S1-T3 회의실/라운지/집중실/폰부스 | ⬜ | 없음 |
+| P1-S1-T4 아바타 모델·애니메이션 | ⬜ | 없음(로직 `scenes/avatar.gd`만) |
+| P1-S1-T5 이름/상태 HUD+직원패널 | ⬜ | 없음 |
+| P1-S1-T6 회의패널+미니맵 | ⬜ | 없음 |
+| P1-S1-V 통합검증 | ⬜ | GPU 환경 필요 |
 
-### 프론트엔드 — 임시 콘솔은 있으나 계획된 편집기 UI가 없음 🔴 최대 갭
-- **있음**: `backend/app/static/console.html`(단일 파일 바닐라 JS SPA, `/console` 동일오리진 서빙). 9뷰: 직원명부·조직도·좌석배치·레이아웃·KPI·회의·업무기록·동기화·감사로그. 로그인·Bearer 토큰·읽기 테이블 + 일부 액션(KPI adjust/confirm/이의신청, 레이아웃 deploy/rollback)은 `prompt()`/`confirm()` 기반으로 동작.
-- **없음 (스펙 대비)**:
-  - **Konva.js 2D 좌석/배치 편집기**(P3) — 콘솔은 배포본 평면도 **읽기 전용** 캔버스 + 버전 배포/롤백만. 드래그 편집·draft 생성·스냅 그리드·검증 ERROR 게이팅 없음 → **REQ-003 미충족**
-  - **React Flow 조직도 편집기**(P7-R1-T4) — 콘솔은 읽기 테이블만
-  - 계획된 **Next.js(TS)+Tailwind** 앱 자체 부재. 전용 화면(work-log 작성폼, KPI 검토 카드/슬라이더, 이의신청 상태머신 UI, dashboard, activity-feed, meetings 대기실, feedback) 미구현
-→ 백엔드 API는 완비. 임시 콘솔이 읽기/기본액션을 커버하나, **편집기급 UI(REQ-003)와 세련된 검토 UX(REQ-007)는 갭.**
+> Godot 존재분: `scenes/`(avatar·net_client·office_client·office_layout_loader.gd) + `server/`(jwt_verify·server_main·game_server.gd) + GUT 테스트 = **헤드리스 로직 슬라이스만**(에셋·렌더·UI 없음).
 
-### Phase 4 · 실시간 서버 (REQ-004) — 런타임 미가동
-- 코드 슬라이스만, 헤드리스 서버 실행·WSS 상시가동·20명 부하 p95<500ms 검증 없음 (B-02)
+## Phase 2 — ERP 동기화 & 좌석배정 (11)
+| Task | 상태 | 근거/갭 |
+|---|---|---|
+| P2-R1-T1 ERP 동기화 배치 | 🟨 | `scheduler.erp_incremental_sync/full_reconciliation`(로직✅) + `erp/`(mock/postgres reader). 실 cron·실 dailylog는 B-05/B-16. **동기화 실패 알림훅 미배선** |
+| P2-R1-T2 erp_user 마이그레이션/조인키 | ✅ | `ErpUser` + alembic 0001 |
+| P2-R1-T3 org_group 계층 | ✅ | `api/org_groups.py` CRUD+/tree (+웹 조직도 UI) |
+| P2-R1-T4 직원/근태 조회 API | ✅ | `api/erp.py` /employees·/attendances (E2E ✅) |
+| P2-R2-T0 인증(로그인/JWT/role) | ✅ | `api/auth.py`+`core/`(계정잠금 5회) + **로그인 화면**(E2E 401/423 ✅) |
+| P2-R2-T1 team_zone 매핑 | ✅ | `api/team_zones.py` CRUD (UI 미구현) |
+| P2-R2-T2 seat 테이블/배정로직 | ✅ | `Seat`+`SeatAssignmentHistory` (전용 `seat_assignment.py` 없음—인라인) |
+| P2-R2-T3 좌석 배정 API | ✅ | `api/seats.py` assign/occupy/available |
+| P2-R3-T1 아바타 시작위치 매핑 | ⬜ | `services/avatar_spawner.py`·`/avatar-spawn-location` 없음 |
+| P2-R3-T2 presence 테이블 | ✅ | `Presence` + `api/presence.py` |
+| P2-R4-T1 외부공개 하드닝(Caddy) | ⬜ | `docker-compose.yml` 존재하나 **Caddy 리버스프록시·rate-limit·fail2ban 미구성**. HG-SEC 게이트 미충족(도그푸딩 차단, B-06) |
+| P2-R3-V 통합검증 | ⬜ | — |
 
-### Phase 5 · 화상/STT (REQ-005/006) — 스텁만
-- 없음: egress_service, stt_service, minute_drafter, LiveKit 실 룸 생성, Godot 화상 렌더, STT 정확도 측정
-- 있음: 입장 토큰 조건부 발급(B-07)만. stt_draft 저장 계약만, 실 STT NULL (B-09/B-10)
+## Phase 3 — 배치 편집기 (7)
+| Task | 상태 | 근거/갭 |
+|---|---|---|
+| P3-R1-T1 office/floor/room 관리 API | ✅ | `api/spaces.py` offices/floors/rooms CRUD + **공간 관리 화면**(E2E: 층 중복 409·비관리자 403) (2026-07-05 신설) |
+| P3-R1-T2 office_layout 버전관리+검증 API | ✅ | `api/layouts.py` create/validate/deploy/rollback/history (E2E ✅) |
+| P3-R2-T1 Konva 2D 편집 UI | ✅ | **좌석·배치 편집기**(정본 seat/furniture 정합·스냅·검증 E2E ✅). 단 좌석 중심(zone/room 편집은 범위 밖) |
+| P3-R2-T2 데스크톱 draft 뷰어 | ⬜ | Godot draft 뷰어·딥링크 없음 |
+| P3-R2-T3 검증+배포/롤백 UI | ✅ | 편집기 검증 ERROR 게이팅+배포 + 콘솔 롤백 |
+| P3-R3-T1 office_layout 직렬화 | 🟨 | 전용 `office_layout_serializer.py` 없음(검증기가 dict 직접 처리) |
+| P3-R3-T2 office_layout→Godot 변환 | 🟨 | `services/office_layout_to_godot.py` + `scenes/office_layout_loader.gd` 존재(GPU 임포트 미검증) |
+| P3-R3-V 통합검증 | ⬜ | — |
 
-### Phase 6 · KPI/ERP push (REQ-007/008) — AI·ERP 실연동 없음
-- 정량 KPI·이의신청·배치는 코드 완결. 실 LLM 미연동(ai_draft placeholder, B-11), 실 ERP push 미연동(Mock만, B-12/B-19 human_blocked)
+## Phase 4 — 실시간 서버 (10)
+| Task | 상태 | 근거/갭 |
+|---|---|---|
+| P4-R1-T1 Godot 헤드리스 서버 프로젝트 | 🟨 | `godot/server/*.gd` 로직. 별도 `godot-server/` 런타임 프로젝트·`--headless` 실행 미검증(B-02) |
+| P4-R1-T2 WSS 게이트웨이 | 🟨 | `api/realtime.py` `/ws`(in-memory, protocol_version 협상). 실 부하 20명 p95 미검증 |
+| P4-R1-T3 Godot 클라 WSS 네트워킹 | 🟨 | `scenes/net_client.gd` 슬라이스(GPU/실행 env-blocked) |
+| P4-R2-T1 아바타 이동 권위 | 🟨 | `server/game_server.gd` 로직 |
+| P4-R2-T2 근접 감지 | 🟨 | 로직 슬라이스 |
+| P4-R2-T3 회의실 점유 | 🟨 | 로직 슬라이스 |
+| P4-R3-T1 프레즌스 동기화(Godot→DB) | 🟨 | presence 테이블·PUT 있음. **내부 `/presence-sync`(서버권위 push)·Godot 수집 루프 미구현** |
+| P4-R3-T2 실시간 상태전환 | 🟨 | `api/presence.py` PUT status ✅(수동). 자동전이 일부 |
+| P4-R3-T3 presence 30일 파기 | ✅ | `scheduler.presence_coordinate_purge`(03:00 KST) |
+| P4-R3-V 통합검증 | ⬜ | — |
 
-### Phase 7 · 고도화
-- push_notification, 피드백 API, 클라 자동업데이트(updater.gd+버전 API), ERP 실패 알림 채널, 관측 스택(Grafana/Prometheus/Loki/Uptime Kuma) 미구현
+## Phase 5 — 회의/화상 + STT (11)
+| Task | 상태 | 근거/갭 |
+|---|---|---|
+| P5-R1-T1 회의 관리 API | ✅ | `api/meetings.py` 예약충돌(D23)·명시적입장 토큰(D24) (E2E ✅) |
+| P5-R1-T2 LiveKit+coturn self-host | 🟨 | `livekit_service.issue_join_token`+compose opt-in 스캐폴드(B-07). **실 LiveKit 서버·룸생성 ⬜(B-03)** |
+| P5-R2-T1 회의 UI(Next.js) | 🟨 | **회의 화면**(목록·상태·취소). 대기실/마이크테스트 UI 미구현 |
+| P5-R2-T2a WebRTC GDExtension | ⬜ | 없음 (B-03) |
+| P5-R2-T2b 3D 화상 렌더 | ⬜ | 없음 |
+| P5-R3-T1 회의록 저장(액션아이템) | 🟨 | `meetings` minutes + `api/action_items.py` CRUD ✅. `stt_draft`는 저장계약만 NULL(B-09) |
+| P5-R3-T2 회의록 UI(Next.js) | ✅ | `/meetings/[id]/minutes` 에디터(작성·결정사항·확정·STT초안 표시). E2E: 작성 200·확정 finalized·확정후 409 (2026-07-05 신설) |
+| P5-R3-T3 채팅 저장소 | ⬜ | Message 저장/조회 없음 |
+| P5-R4-T1 Egress 오디오 수집 | ⬜ | `egress_service.py` 없음 (B-03) |
+| P5-R4-T2 STT+화자분리+초안 | ⬜ | `stt_service.py`·`minute_drafter.py` 없음 (B-09/B-10) |
+| P5-R4-T3 회의록 검토·확정 UI+정확도 | ⬜ | 없음 |
+| P5-R3-V 통합검증 | ⬜ | — |
 
-### Phase 0 스파이크 — S1~S4 전부 미실행 (`spikes/` 없음, B-04)
+## Phase 6 — KPI 산출·검토·ERP Push (13)
+| Task | 상태 | 근거/갭 |
+|---|---|---|
+| P6-R1-T1 work_log 저장소 | ✅ | `WorkLog` 모델 |
+| P6-R1-T2 work_log CRUD API | ✅ | `api/worklogs.py` (E2E ✅) |
+| P6-R1-T3 work_log UI | ✅ | **업무기록 화면**(작성/수정/삭제 E2E ✅) |
+| P6-R2-T1 KPI 산출 로직 | ✅ | `services/kpi_scoring.py` 결정론 8메트릭 |
+| P6-R2-T2 AI 초안 생성 | 🟨 | `services/ai_narrative.py`(fallback). 실 Claude 미연동(B-11, `ai_narrative_provider=claude`+키 필요) |
+| P6-R2-T3 kpi_result 저장소 | ✅ | `KpiResult`(D16 롱포맷) |
+| P6-R3-T1 관리자 KPI 검토 UI | ✅ | **KPI 검토 화면**(카드·AI초안·조정슬라이더 E2E ✅) |
+| P6-R3-T2 KPI 검토/조정 API | ✅ | `api/kpi.py` adjust/confirm (E2E ✅) |
+| P6-R3-T3a daily_reports push 배치 | ✅ | `scheduler.daily_reports_push`(18:00 mon-fri·공휴일 스킵). 실 ERP POST는 flag-off(B-19) |
+| P6-R3-T3b KPI AI 초안 야간배치 | ✅ | `scheduler.kpi_ai_draft_generation`(21:00) |
+| P6-R3-T3c kpi_results ERP push | 🟨 | `services/kpi_push.py`(flag-off, 실 ERP B-12) |
+| P6-R3-T4 이의신청 상태머신 UI | ✅ | 백엔드 상태머신 ✅ + **내 평가 화면(`/kpi-results`)** 자가열람·이의신청·상태뱃지·7일만료(410) 처리 (2026-07-05 신설) |
+| P6-R4-T1 분기 집계 | ✅ | `api/kpi.py` `/kpi/aggregate` + `kpi_scoring.aggregate_user_period` (E2E redteam) |
+| P6-R3-V 통합검증 | ⬜ | — |
+
+## Phase 7 — 고도화 (14)
+| Task | 상태 | 근거/갭 |
+|---|---|---|
+| P7-R1-T1 다층 내비게이션 | ⬜ | 없음 |
+| P7-R1-T2 구역별 접근권한 | ⬜ | `ZoneAccess` 모델만, API/UI/로직 없음 |
+| P7-R1-T3 회의록 AI 요약 | ⬜ | `meeting_ai_summarizer.py` 없음 |
+| P7-R1-T4 조직도 실시간 에디터 | ✅ | **조직도 화면**(React Flow CRUD, E2E ✅) |
+| P7-R1-T5 Events 전용 화면 | ⬜ | 없음(MVP는 회의 캘린더 대체, D26) |
+| P7-R1-T6 Whiteboard | ⬜ | 없음 (COULD) |
+| P7-R2-T1 모바일 푸시 알림 | ⬜ | `push_notification.py` 없음 |
+| P7-R2-T2 개인화 대시보드 | ✅ | **대시보드 화면**(내 KPI 평균·업무 완료율·예정 회의 집계) (2026-07-05 신설) |
+| P7-R2-T3 실시간 협업 피드 | 🟨 | **활동 피드 화면**(감사로그 기반, admin). 실시간(WS) 갱신은 미구현 (2026-07-05 신설) |
+| P7-R3-T1 감사 로그 | ✅ | `services/audit_service.py`+`api/audit.py`(B-14, 9훅 배선) |
+| P7-R3-T2 클라 자동업데이트 | ⬜ | `/client/version`·`updater.gd` 없음 |
+| P7-R3-T3 ERP 실패 알림+관측 | ⬜ | 알림채널·Grafana/Prometheus/Loki 없음(`/sync/errors` 조회만 = **동기화 모니터링 화면**) |
+| P7-R3-T4 도그푸딩 피드백 | ✅ | `Feedback` 모델 + `api/feedback.py`(제출/목록/상태) + **피드백 화면**(제출·관리자 검토). E2E 통과 (2026-07-05 신설) |
+| P7-R2-V 통합검증 | ⬜ | — |
 
 ---
 
-## 3. 🔒 사람 조치 대기 (human_blocked)
-- B-05: ERP dailylog read-only DB 계정 미발급 (OQ10) → Mock만
-- B-06: 공인 도메인 미구매 → Caddy TLS/외부공개 확정 불가
-- HG-SEC/HG-BACKUP 게이트: 외부공개 하드닝·백업 복원 리허설 미완 (도그푸딩 전 필수)
+## 파생 게이트 (REQ-001~011) 대응 요약
+| REQ | 대상 | 상태 |
+|---|---|---|
+| REQ-001 3D 클라이언트 | Godot Forward+ 렌더·조작 | ⬜ 시각 전무(로직 슬라이스만, GPU 필요) |
+| REQ-002 ERP read-only 동기화 | upsert/soft-delete/read-through | 🟨 로직·mock ✅, 실 dailylog(B-05)·실 cron(B-16) |
+| REQ-003 좌석/배치 편집기 | Konva 2D·ERROR 배포게이팅 | ✅ 웹 편집기(E2E: 검증 게이팅·정본 스키마 배포 검증). draft 데스크톱 반영은 ⬜ |
+| REQ-004 실시간 서버 | 헤드리스 권위·WSS·20명 p95 | 🟨 게이트웨이·로직 슬라이스, 런타임 부하 미검증(B-02) |
+| REQ-005 회의/화상 | LiveKit 자동 join·지연 | 🟨 토큰·API, 실 화상 ⬜(B-03). **OQ13(ERP 회의실 관계) 미결** |
+| REQ-006 회의록 STT | 녹음→STT→초안→확정 | ⬜ 저장계약만(B-09/10) |
+| REQ-007 KPI+AI+이의신청 | 결정론 점수·상태머신 | ✅ 정량·상태머신·검토 UI(E2E). AI 서술 실 LLM 🟨(B-11) |
+| REQ-008 EOD ERP Push | 18:00 daily·KPI 확정 push | 🟨 배치 로직 ✅, 실 ERP 전송 flag-off(B-12/19) |
+| REQ-009 층/구역 권한(SHOULD) | 다층·zone RBAC | ⬜ |
+| REQ-010 회의록 AI 요약(SHOULD) | ai_summary | ⬜ |
+| REQ-011 조직도 에디터(SHOULD) | org_group CRUD | ✅ (React Flow) |
+
+## 공통 게이트
+| 게이트 | 상태 |
+|---|---|
+| HG-SEC 외부공개 하드닝 | ⬜ Caddy/rate-limit 미구성 — **도그푸딩 시작 전 필수 미충족** |
+| HG-AUTH 인증 | ✅ 로그인+JWT+role+잠금(E2E) |
+| HG-TEST 테스트 | ✅ backend pytest green(~297) + 프론트 build/tsc |
+| HG-DATA 마이그레이션 | ✅ alembic 0001(pre-prod 규약) |
+| HG-BACKUP 백업 리허설 | ⬜ pg_dump 복원 리허설 미수행 |
 
 ---
 
-## 4. 착수 우선순위 (현 환경=코드만 가능 기준)
-
-1. **[1차 착수 완료 2026-07-05] 프론트엔드(Next.js 웹콘솔)** — `frontend/` 신규 부트스트랩(Next.js 14 App Router + TS + Tailwind + Konva). `npm run build`·`tsc --noEmit`·런타임 스모크(3라우트 200) 통과.
-   - 구현: `/login`(JWT·401/423 잠금 안내 = HG-AUTH), `/kpi-review`(카드·AI초안·조정슬라이더·확정·이의신청 모달 = REQ-007), `/seat-editor`(Konva 2D 드래그·스냅 0.5m·**검증 ERROR 배포 게이팅** = REQ-003).
-   - 후속: 직원명부·조직도(React Flow)·회의·업무기록·동기화·감사로그 화면 이관(현재 임시 console.html 커버). 실 데이터 E2E는 백엔드 기동 + 시드 후 검증 필요.
-2. 3D 시각/에셋 — GPU 환경 필요 (phase_blocked)
-3. 화상/STT·실시간 런타임 — LiveKit/서버 인프라 필요 (phase_blocked)
-4. ERP 계정·도메인 확보 (human_blocked)
+## 우선순위 (현 환경=코드만 가능 기준)
+1. **[완료 2026-07-05] 웹 화면 잔여**: 회의록 에디터(`/meetings/[id]/minutes`)·이의신청 자가열람(`/kpi-results`)·대시보드·활동 피드·피드백·office/floor/room 관리 API+화면(`/spaces`)·사용자(`/users`) 모두 구현. 백엔드 신설 2종(feedback·spaces 라우터 + Feedback 모델), 프론트 7화면. 검증: 백엔드 pytest 603 passed + 프론트 build 14라우트 + 라이브 API E2E ALL PASS.
+2. **알림/관측**(코드 가능): ERP 동기화 실패 알림채널(P7-R3-T3) 최소구현, 감사로그 화면.
+3. **3D 시각**(GPU 필요, phase-blocked): Phase 1 에셋·씬·HUD·미니맵.
+4. **실환경 런타임**(인프라 필요): LiveKit/STT(B-03), 헤드리스 서버 부하(B-02), 실 cron(B-16), Caddy 하드닝(B-06).
+5. **human-blocked**: ERP dailylog DB 계정(B-05), 공인 도메인(B-06).

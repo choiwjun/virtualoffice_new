@@ -6,11 +6,17 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 
 const NAV = [
+  { href: "/dashboard", label: "대시보드" },
   { href: "/kpi-review", label: "KPI 검토" },
+  { href: "/kpi-results", label: "내 평가" },
   { href: "/seat-editor", label: "좌석·배치 편집기" },
   { href: "/org-chart", label: "조직도" },
   { href: "/work-logs", label: "업무기록" },
   { href: "/meetings", label: "회의" },
+  { href: "/spaces", label: "공간 관리" },
+  { href: "/users", label: "사용자" },
+  { href: "/activity-feed", label: "활동 피드" },
+  { href: "/feedback", label: "피드백" },
   { href: "/sync-monitoring", label: "동기화 모니터링" },
 ];
 

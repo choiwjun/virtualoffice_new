@@ -1532,6 +1532,35 @@ class AuditLog(Base):
     )
 
 
+class Feedback(Base, TimestampMixin):
+    # @TASK P7-R3-T4 - 도그푸딩 피드백 수집
+    # @SPEC 01-prd.md(사용성 성공 기준), 12-tasks.md P7-R3-T4
+    """
+    사내 도그푸딩 피드백 (버그/기능/일반). 누구나 제출, 관리자 검토.
+    """
+    __tablename__ = "feedback"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    user_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        ForeignKey("erp_user.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    """제출자 (nullable=탈퇴 후 SET NULL)"""
+    type: Mapped[str] = mapped_column(String(20), nullable=False, default="general")
+    """bug | feature | general"""
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    screenshot_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="open", index=True)
+    """open | reviewing | resolved"""
+
+    user: Mapped[Optional["ErpUser"]] = relationship("ErpUser")
+
+    __table_args__ = (Index("idx_feedback_status_time", "status", "created_at"),)
+
+
 class ErpSyncLog(Base, TimestampMixin):
     # @TASK T18.0 - ERP 동기화 실행 이력 (G009)
     # @SPEC 00-decisions.md D18(증분+전체대사), D20(컴플라이언스)
