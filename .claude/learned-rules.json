@@ -1,0 +1,28 @@
+[
+  {
+    "id": "fix-1783241326290",
+    "timestamp": "2026-07-05T08:48:46.290Z",
+    "commit": "fix(web): 오피스 뷰 라벨 명확화 — 현황(메인) vs 3D 입장 구분",
+    "patterns": [
+      {
+        "file_pattern": "frontend/app/(app)/dashboard/page.tsx",
+        "bad_code": "<span className=\"ml-2 text-sub\">{live3d ? \"Godot 실시간 엔진\" : \"실시간 현황\"}</span>",
+        "description": "fix: 커밋에서 제거된 패턴"
+      },
+      {
+        "file_pattern": "frontend/app/(app)/dashboard/page.tsx",
+        "bad_code": "{/* 상단 우측: 실시간 3D 토글 */}",
+        "description": "fix: 커밋에서 제거된 패턴"
+      },
+      {
+        "file_pattern": "frontend/app/(app)/dashboard/page.tsx",
+        "bad_code": "{live3d ? \"현황 화면\" : \"실시간 3D 입장\"}",
+        "description": "fix: 커밋에서 제거된 패턴"
+      }
+    ],
+    "files": [
+      "frontend/app/(app)/dashboard/page.tsx"
+    ],
+    "severity": "block"
+  }
+]
