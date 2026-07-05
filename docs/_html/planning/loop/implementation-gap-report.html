@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>구현 갭 리포트 (Implementation Gap Report)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">구현 갭 리포트 (Implementation Gap Report)</div><div class="sub">implementation-gap-report.md</div><a class="lvl1" href="#구현-갭-리포트-implementation-gap-report">구현 갭 리포트 (Implementation Gap Report)</a><a class="lvl2" href="#요약">요약</a><a class="lvl2" href="#1-구현-완료-백엔드-관리-api-godot-로직-슬라이스">1. ✅ 구현 완료 (백엔드 관리 API + Godot 로직 슬라이스)</a><a class="lvl2" href="#2-누락미구현-상세-phase별">2. ❌ 누락/미구현 상세 (Phase별)</a><a class="lvl3" href="#phase-1-3d-골든-샘플-req-001-시각-부분-전무">Phase 1 · 3D 골든 샘플 (REQ-001) — 시각 부분 전무</a><a class="lvl3" href="#프론트엔드-임시-콘솔은-있으나-계획된-편집기-ui가-없음-최대-갭">프론트엔드 — 임시 콘솔은 있으나 계획된 편집기 UI가 없음 🔴 최대 갭</a><a class="lvl3" href="#phase-4-실시간-서버-req-004-런타임-미가동">Phase 4 · 실시간 서버 (REQ-004) — 런타임 미가동</a><a class="lvl3" href="#phase-5-화상stt-req-005006-스텁만">Phase 5 · 화상/STT (REQ-005/006) — 스텁만</a><a class="lvl3" href="#phase-6-kpierp-push-req-007008-aierp-실연동-없음">Phase 6 · KPI/ERP push (REQ-007/008) — AI·ERP 실연동 없음</a><a class="lvl3" href="#phase-7-고도화">Phase 7 · 고도화</a><a class="lvl3" href="#phase-0-스파이크-s1s4-전부-미실행-spikes-없음-b-04">Phase 0 스파이크 — S1~S4 전부 미실행 (`spikes/` 없음, B-04)</a><a class="lvl2" href="#3-사람-조치-대기-human_blocked">3. 🔒 사람 조치 대기 (human_blocked)</a><a class="lvl2" href="#4-착수-우선순위-현-환경코드만-가능-기준">4. 착수 우선순위 (현 환경=코드만 가능 기준)</a></nav>
+<main><h1 id="구현-갭-리포트-implementation-gap-report">구현 갭 리포트 (Implementation Gap Report)</h1>
+<p><strong>작성</strong>: 2026-07-05 · <strong>기준</strong>: <code>docs/planning/12-tasks.md</code>(86 태스크) + <code>docs/planning/loop/08-derived-gates.md</code>(REQ-001~011) 대비 <strong>실제 코드 상태</strong> <strong>방법</strong>: 태스크 문서 체크박스(2026-07-02 기준, stale)가 아닌 <strong>실 파일 조사</strong> 기준. 이후 커밋(<code>339ec51 미구현 전 기능 구현</code>, <code>d3b4432 G008/G009 런타임 검증</code>)으로 백엔드가 대거 채워진 상태를 반영. <strong>정본 교차참조</strong>: <code>loop/blocked-work-registry.md</code>(B-01~B-22)</p>
+<hr>
+<h2 id="요약">요약</h2>
+<div class="table-wrap"><table><thead><tr><th>레이어</th><th>상태</th><th>근거</th></tr></thead><tbody><tr><td>백엔드 관리 API (FastAPI)</td><td>✅ 대부분 구현</td><td>라우터 14 + 서비스 9 + 테스트 40+ 파일, ~297 passed</td></tr><tr><td>Godot 헤드리스 로직 슬라이스</td><td>🟡 로직만</td><td>client 4 + server 3 GDScript + GUT 테스트 7</td></tr><tr><td>Godot 3D 렌더링/에셋/UI</td><td>❌ 전무</td><td>GLB·씬·HUD·아바타 모델 없음</td></tr><tr><td>웹 관리 콘솔 (임시 바닐라 SPA)</td><td>🟡 읽기중심 동작</td><td><code>backend/app/static/console.html</code> 647줄·9뷰 (<code>/console</code> 서빙)</td></tr><tr><td>프론트엔드 (계획된 Next.js 스택 + 편집기)</td><td>❌ 전무</td><td><code>frontend/</code> 없음. Konva 편집기·React Flow 조직도 없음</td></tr><tr><td>실시간 서버 런타임 / WSS 인프라</td><td>❌ 미가동</td><td>계약·로직만, 실행 인프라 없음</td></tr><tr><td>LiveKit 화상 / STT 회의록</td><td>❌ 스텁만</td><td>입장 토큰 발급만, egress/stt 서비스 없음</td></tr><tr><td>AI·ERP 라이브 연동</td><td>🟡 placeholder</td><td>Mock/결정론 stub만</td></tr><tr><td>스파이크 S1~S4</td><td>❌ 미실행</td><td><code>spikes/</code> 없음</td></tr><tr><td>관측/인프라 하드닝</td><td>❌ 미구현</td><td>Grafana/Caddy 검증·백업 없음</td></tr></tbody></table></div>
+<hr>
+<h2 id="1-구현-완료-백엔드-관리-api-godot-로직-슬라이스">1. ✅ 구현 완료 (백엔드 관리 API + Godot 로직 슬라이스)</h2>
+<p><strong>백엔드 라우터 14종</strong> (<code>backend/app/api/</code>): auth, seats, layouts, erp, sync, realtime, presence, team<em>zones, org</em>groups, action<em>items, meetings, kpi, worklogs, audit <strong>백엔드 서비스 9종</strong> (<code>backend/app/services/</code>): office</em>layout<em>validator, office</em>layout<em>to</em>godot, kpi<em>scoring, ai</em>narrative, audit<em>service, holidays, livekit</em>service, scheduler, kpi_push → blocked-registry G001~G010 관리 API + B-14~B-18 resolved. 계약/레드팀/architect 3레인 통과.</p>
+<p><strong>Godot 헤드리스 로직</strong> (B-01 부분해소): <code>godot/scenes/</code>(avatar, net<em>client, office</em>client, office<em>layout</em>loader) + <code>godot/server/</code>(jwt<em>verify, server</em>main, game_server) + GUT 테스트. GPU 없이 검증 가능한 로직만.</p>
+<hr>
+<h2 id="2-누락미구현-상세-phase별">2. ❌ 누락/미구현 상세 (Phase별)</h2>
+<h3 id="phase-1-3d-골든-샘플-req-001-시각-부분-전무">Phase 1 · 3D 골든 샘플 (REQ-001) — 시각 부분 전무</h3>
+<ul><li>없음: 로비/좌석/회의실 GLB·씬, 아바타 모델 10종·애니메이션 6종, 이름/상태 HUD, 직원정보 패널, 회의 패널, 미니맵, 로그인 씬</li><li>60fps·골든샘플 룩·조작 데모 증거 게이트 미충족 · 차단: GPU/GLB/에디터 런타임 (B-01)</li></ul>
+<h3 id="프론트엔드-임시-콘솔은-있으나-계획된-편집기-ui가-없음-최대-갭">프론트엔드 — 임시 콘솔은 있으나 계획된 편집기 UI가 없음 🔴 최대 갭</h3>
+<ul><li><strong>있음</strong>: <code>backend/app/static/console.html</code>(단일 파일 바닐라 JS SPA, <code>/console</code> 동일오리진 서빙). 9뷰: 직원명부·조직도·좌석배치·레이아웃·KPI·회의·업무기록·동기화·감사로그. 로그인·Bearer 토큰·읽기 테이블 + 일부 액션(KPI adjust/confirm/이의신청, 레이아웃 deploy/rollback)은 <code>prompt()</code>/<code>confirm()</code> 기반으로 동작.</li><li><strong>없음 (스펙 대비)</strong>:<ul><li><strong>Konva.js 2D 좌석/배치 편집기</strong>(P3) — 콘솔은 배포본 평면도 <strong>읽기 전용</strong> 캔버스 + 버전 배포/롤백만. 드래그 편집·draft 생성·스냅 그리드·검증 ERROR 게이팅 없음 → <strong>REQ-003 미충족</strong></li><li><strong>React Flow 조직도 편집기</strong>(P7-R1-T4) — 콘솔은 읽기 테이블만</li><li>계획된 <strong>Next.js(TS)+Tailwind</strong> 앱 자체 부재. 전용 화면(work-log 작성폼, KPI 검토 카드/슬라이더, 이의신청 상태머신 UI, dashboard, activity-feed, meetings 대기실, feedback) 미구현</li></ul></li></ul>
+<p>→ 백엔드 API는 완비. 임시 콘솔이 읽기/기본액션을 커버하나, <strong>편집기급 UI(REQ-003)와 세련된 검토 UX(REQ-007)는 갭.</strong></p>
+<h3 id="phase-4-실시간-서버-req-004-런타임-미가동">Phase 4 · 실시간 서버 (REQ-004) — 런타임 미가동</h3>
+<ul><li>코드 슬라이스만, 헤드리스 서버 실행·WSS 상시가동·20명 부하 p95&lt;500ms 검증 없음 (B-02)</li></ul>
+<h3 id="phase-5-화상stt-req-005006-스텁만">Phase 5 · 화상/STT (REQ-005/006) — 스텁만</h3>
+<ul><li>없음: egress<em>service, stt</em>service, minute_drafter, LiveKit 실 룸 생성, Godot 화상 렌더, STT 정확도 측정</li><li>있음: 입장 토큰 조건부 발급(B-07)만. stt_draft 저장 계약만, 실 STT NULL (B-09/B-10)</li></ul>
+<h3 id="phase-6-kpierp-push-req-007008-aierp-실연동-없음">Phase 6 · KPI/ERP push (REQ-007/008) — AI·ERP 실연동 없음</h3>
+<ul><li>정량 KPI·이의신청·배치는 코드 완결. 실 LLM 미연동(ai<em>draft placeholder, B-11), 실 ERP push 미연동(Mock만, B-12/B-19 human</em>blocked)</li></ul>
+<h3 id="phase-7-고도화">Phase 7 · 고도화</h3>
+<ul><li>push_notification, 피드백 API, 클라 자동업데이트(updater.gd+버전 API), ERP 실패 알림 채널, 관측 스택(Grafana/Prometheus/Loki/Uptime Kuma) 미구현</li></ul>
+<h3 id="phase-0-스파이크-s1s4-전부-미실행-spikes-없음-b-04">Phase 0 스파이크 — S1~S4 전부 미실행 (<code>spikes/</code> 없음, B-04)</h3>
+<hr>
+<h2 id="3-사람-조치-대기-human_blocked">3. 🔒 사람 조치 대기 (human_blocked)</h2>
+<ul><li>B-05: ERP dailylog read-only DB 계정 미발급 (OQ10) → Mock만</li><li>B-06: 공인 도메인 미구매 → Caddy TLS/외부공개 확정 불가</li><li>HG-SEC/HG-BACKUP 게이트: 외부공개 하드닝·백업 복원 리허설 미완 (도그푸딩 전 필수)</li></ul>
+<hr>
+<h2 id="4-착수-우선순위-현-환경코드만-가능-기준">4. 착수 우선순위 (현 환경=코드만 가능 기준)</h2>
+<ol><li><strong>[1차 착수 완료 2026-07-05] 프론트엔드(Next.js 웹콘솔)</strong> — <code>frontend/</code> 신규 부트스트랩(Next.js 14 App Router + TS + Tailwind + Konva). <code>npm run build</code>·<code>tsc --noEmit</code>·런타임 스모크(3라우트 200) 통과.<ul><li>구현: <code>/login</code>(JWT·401/423 잠금 안내 = HG-AUTH), <code>/kpi-review</code>(카드·AI초안·조정슬라이더·확정·이의신청 모달 = REQ-007), <code>/seat-editor</code>(Konva 2D 드래그·스냅 0.5m·<strong>검증 ERROR 배포 게이팅</strong> = REQ-003).</li><li>후속: 직원명부·조직도(React Flow)·회의·업무기록·동기화·감사로그 화면 이관(현재 임시 console.html 커버). 실 데이터 E2E는 백엔드 기동 + 시드 후 검증 필요.</li></ul></li><li>3D 시각/에셋 — GPU 환경 필요 (phase_blocked)</li><li>화상/STT·실시간 런타임 — LiveKit/서버 인프라 필요 (phase_blocked)</li><li>ERP 계정·도메인 확보 (human_blocked)</li></ol>
+<div class="meta-foot">원본: <code>implementation-gap-report.md</code> · 자동 생성 2026-07-05 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

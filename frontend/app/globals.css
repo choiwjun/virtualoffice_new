@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-bg text-ink;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium
+      bg-brand text-white transition-colors hover:opacity-90 disabled:opacity-40
+      disabled:cursor-not-allowed;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium
+      border border-panel2 bg-transparent text-ink hover:bg-panel2/40 disabled:opacity-40;
+  }
+  .card {
+    @apply rounded-lg border border-panel2 bg-panel p-4;
+  }
+  .input {
+    @apply w-full rounded-md border border-panel2 bg-bg px-3 py-2 text-sm text-ink
+      outline-none focus:border-brand;
+  }
+  .badge {
+    @apply inline-block rounded px-2 py-0.5 text-xs font-medium;
+  }
+}
