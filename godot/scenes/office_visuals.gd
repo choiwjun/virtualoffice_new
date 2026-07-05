@@ -57,12 +57,16 @@ static func apply_floor_material(parent: Node3D) -> void:
 	var rgh := FLOOR_TEX + "rough.jpg"
 	if ResourceLoader.exists(rgh):
 		mat.roughness_texture = load(rgh)
-	# 밝은 오크(시안의 밝은 마루) — 텍스처 × albedo_color(>1로 밝게)
-	mat.albedo_color = Color(1.25, 1.16, 1.02)
+	# 밝은 오크(시안의 밝은 마루) — 과도한 화이트닝은 텍스처를 날리므로 절제(1.08).
+	mat.albedo_color = Color(1.08, 1.02, 0.92)
 	# 마루 타일링(2K 플랭크)
 	mat.uv1_scale = Vector3(7.0, 5.0, 1.0)
 	mat.metallic = 0.0
-	mat.roughness = 0.8
+	mat.roughness = 0.72
+	# 폴리시드 우드 광택(프리미엄 바닥 반사) — 넓고 부드러운 sheen(날카로운 핫스팟 방지)
+	mat.clearcoat_enabled = true
+	mat.clearcoat = 0.2
+	mat.clearcoat_roughness = 0.45
 	(mesh as MeshInstance3D).material_override = mat
 
 
@@ -84,8 +88,17 @@ static func _wall_material() -> StandardMaterial3D:
 		if ResourceLoader.exists(PLASTER_TEX + "normal.jpg"):
 			m.normal_enabled = true; m.normal_texture = load(PLASTER_TEX + "normal.jpg"); m.normal_scale = 0.4
 		m.uv1_scale = Vector3(6.0, 4.0, 1.0)
-	m.albedo_color = Color(0.80, 0.78, 0.75)  # 따뜻한 오프화이트(순백 클리핑 방지)
-	m.roughness = 0.95
+	m.albedo_color = Color(0.88, 0.86, 0.82)  # 밝고 따뜻한 오프화이트(피처월 화사하게)
+	m.roughness = 0.9
+	m.metallic = 0.0
+	return m
+
+
+## 컷어웨이 낮은 턱(돌하우스 앞/좌 엣지) — 깨끗한 웜 크림 트림(프리미엄 플로어 엣지).
+static func _sill_material() -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.90, 0.88, 0.84)
+	m.roughness = 0.6
 	m.metallic = 0.0
 	return m
 
@@ -191,15 +204,16 @@ static func build_windows(dim_minx: float, dim_miny: float, dim_maxx: float, dim
 	var win := _emissive(Color(0.95, 0.97, 1.0), 1.7, Color(0.85, 0.9, 1.0))
 	var wy := floor_height + h * 0.62
 	var wh := h * 0.5
-	# 뒷벽(miny) 우측 구간 창 2개
+	# 뒷벽(miny) — 전체높이 피처월이라 넓은 채광창 2구간
 	var bx := dim_minx + (dim_maxx - dim_minx) * 0.62
-	_box(parent, Vector3(bx, wy, dim_miny + 0.13), Vector3(3.2, wh, 0.04), win)
-	# 좌벽(minx) 하단 창
-	var lz := dim_miny + (dim_maxy - dim_miny) * 0.72
-	_box(parent, Vector3(dim_minx + 0.13, wy, lz), Vector3(0.04, wh, 4.0), win)
-	# 우벽(maxx) 상단 창
+	_box(parent, Vector3(bx, wy, dim_miny + 0.13), Vector3(3.4, wh, 0.04), win)
+	var bx2 := dim_minx + (dim_maxx - dim_minx) * 0.86
+	_box(parent, Vector3(bx2, wy, dim_miny + 0.13), Vector3(3.0, wh, 0.04), win)
+	# 우벽(maxx) — 전체높이 피처월, 상·하 채광창(좌벽 창은 컷어웨이로 이전)
 	var rz := dim_miny + (dim_maxy - dim_miny) * 0.3
 	_box(parent, Vector3(dim_maxx - 0.13, wy, rz), Vector3(0.04, wh, 4.5), win)
+	var rz2 := dim_miny + (dim_maxy - dim_miny) * 0.68
+	_box(parent, Vector3(dim_maxx - 0.13, wy, rz2), Vector3(0.04, wh, 4.0), win)
 
 
 ## 천장 조명 패널(그리드) — 은은한 발광(핫스팟 방지 강도). 열린 상단이라 얇은 패널만.
@@ -278,16 +292,23 @@ static func build_perimeter_walls(layout: Dictionary, parent: Node3D, floor_heig
 	var d := maxy - miny
 	var cx := (minx + maxx) * 0.5
 	var cz := (miny + maxy) * 0.5
-	# 뒷벽(miny), 좌벽(minx), 우벽(maxx) — 전체 길이
+	# 돌하우스 컷어웨이: 카메라(전면-좌측)에 가까운 앞벽(maxy)·좌벽(minx)은 무릎높이 낮은 턱으로,
+	# 먼 뒷벽(miny)·우벽(maxx)은 전체높이 피처월로 유지 → 시안처럼 트인 아이소 뷰.
+	var low := 0.4
+	var low_cy := floor_height + low * 0.5
+	var sill := _sill_material()
+	# 뒷벽(miny) — 전체높이 피처월(브랜드/갤러리)
 	_box(parent, Vector3(cx, cy, miny), Vector3(w, h, t), mat)
-	_box(parent, Vector3(minx, cy, cz), Vector3(t, h, d), mat)
+	# 우벽(maxx) — 전체높이 피처월
 	_box(parent, Vector3(maxx, cy, cz), Vector3(t, h, d), mat)
-	# 앞벽(maxy) — 중앙 4m 입구 개방 → 좌/우 두 조각
+	# 좌벽(minx) — 낮은 턱(컷어웨이)
+	_box(parent, Vector3(minx, low_cy, cz), Vector3(t + 0.06, low, d), sill)
+	# 앞벽(maxy) — 낮은 턱, 중앙 입구 개방
 	var gap := 4.0
 	var seg := (w - gap) * 0.5
 	if seg > 0.1:
-		_box(parent, Vector3(minx + seg * 0.5, cy, maxy), Vector3(seg, h, t), mat)
-		_box(parent, Vector3(maxx - seg * 0.5, cy, maxy), Vector3(seg, h, t), mat)
+		_box(parent, Vector3(minx + seg * 0.5, low_cy, maxy), Vector3(seg, low, t + 0.06), sill)
+		_box(parent, Vector3(maxx - seg * 0.5, low_cy, maxy), Vector3(seg, low, t + 0.06), sill)
 	# 브랜드월: 뒷벽 좌측에 우드 슬랫 패널(ACME 우드월) + 상단 은은한 LED 스트립
 	var bw: float = min(9.0, w * 0.35)
 	_box(parent, Vector3(minx + bw * 0.5 + 0.4, cy, miny + 0.10), Vector3(bw, h - 0.2, 0.12), _wood_wall_material())
@@ -644,9 +665,9 @@ static func setup_environment(parent: Node3D) -> void:
 		env.adjustment_contrast = 1.08
 		env.adjustment_saturation = 1.18  # AgX 탈채도 보정(생기)
 		env.glow_enabled = true
-		env.glow_intensity = 0.18
-		env.glow_bloom = 0.05
-		env.glow_hdr_threshold = 1.4
+		env.glow_intensity = 0.15
+		env.glow_bloom = 0.04
+		env.glow_hdr_threshold = 1.9
 		env.ssao_enabled = true
 		env.ssao_radius = 1.5
 		env.ssil_enabled = true
@@ -658,7 +679,7 @@ static func setup_environment(parent: Node3D) -> void:
 	var light := DirectionalLight3D.new()
 	light.rotation_degrees = Vector3(-58, -42, 0)
 	light.light_color = Color(1.0, 0.95, 0.86)
-	light.light_energy = 1.55
+	light.light_energy = 1.3
 	light.shadow_enabled = true
 	light.shadow_blur = 1.5
 	light.directional_shadow_max_distance = 80.0
