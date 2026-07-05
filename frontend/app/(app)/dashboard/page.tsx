@@ -8,7 +8,7 @@ import {
   IconSearch, IconPlus, IconChevron, IconMic, IconVideo, IconScreen, IconHand, IconPhone,
 } from "@/components/icons";
 
-/** 시안형 오피스 뷰: 중앙 3D(Godot WASM) + 우측 People 패널 + 하단 입장 힌트 + 플로팅 회의 패널 */
+/** 시안형 오피스 뷰(하이브리드): 고품질 오피스 렌더 배경 + 실시간 HTML 오버레이(사람/룸/회의) + 실시간 3D 토글 */
 export default function OfficePage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -25,11 +25,7 @@ export default function OfficePage() {
     })();
   }, []);
 
-  const liveMeeting = useMemo(
-    () => meetings.find((m) => m.status === "in_progress") ?? null,
-    [meetings],
-  );
-  // 회의 중 = 진행 중 회의 호스트, 나머지 재직자는 In Office
+  const liveMeeting = useMemo(() => meetings.find((m) => m.status === "in_progress") ?? null, [meetings]);
   const inMeetingIds = useMemo(
     () => new Set(meetings.filter((m) => m.status === "in_progress").map((m) => m.host_user_id)),
     [meetings],
@@ -39,35 +35,10 @@ export default function OfficePage() {
 
   return (
     <div className="flex h-full min-h-0">
-      {/* 중앙: 3D 오피스 + HUD */}
       <section className="relative min-w-0 flex-1 p-4">
-        <div className="relative h-full overflow-hidden rounded-2xl border border-panel2/60 bg-bg2">
-          <OfficeCanvas />
-
-          {/* 상단 좌측: 오피스 라벨 */}
-          <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2">
-            <span className="glass px-3 py-1.5 text-xs">
-              <span className="font-semibold">가상오피스 · 1F</span>
-              <span className="ml-2 text-sub">Godot 실시간</span>
-            </span>
-            <span className="badge glass px-2.5 py-1 text-ok">
-              <span className="h-1.5 w-1.5 rounded-full bg-ok" /> {employees.length} 온라인
-            </span>
-          </div>
-
-          {/* 하단 중앙: 입장 힌트 */}
-          <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2">
-            <div className="glass flex items-center gap-2 px-4 py-2.5 text-sm text-sub">
-              룸에 다가가 <kbd className="rounded border border-panel2 bg-bg px-2 py-0.5 text-xs text-ink">E</kbd> 를 눌러 입장
-            </div>
-          </div>
-
-          {/* 하단 우측: 진행 중 회의 플로팅 패널 */}
-          {liveMeeting && <MeetingPanel meeting={liveMeeting} participants={inMeeting} />}
-        </div>
+        <OfficeStage employees={inOffice} liveMeeting={liveMeeting} meetingParticipants={inMeeting} total={employees.length} />
       </section>
 
-      {/* 우측: People 패널 */}
       <aside className="hidden w-72 shrink-0 flex-col gap-3 overflow-y-auto p-4 pl-0 lg:flex">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">피플 <span className="text-sub">({employees.length})</span></h2>
@@ -76,7 +47,6 @@ export default function OfficePage() {
             <button className="icon-btn h-8 w-8"><IconPlus className="h-4 w-4" /></button>
           </div>
         </div>
-
         <PeopleGroup title="회의 중" tone="brand" people={inMeeting} statusLabel="회의 중" />
         <PeopleGroup title="오피스 내" tone="ok" people={inOffice} statusLabel={(e) => e.position ?? e.role} />
       </aside>
@@ -84,31 +54,101 @@ export default function OfficePage() {
   );
 }
 
-/** Godot WASM 3D 캔버스(지연 로드 — 87MB, 입장 클릭 시 iframe 로드). */
-function OfficeCanvas() {
-  const [entered, setEntered] = useState(false);
-  if (entered) {
-    return <iframe src="/office/index.html" title="가상오피스 3D" className="h-full w-full border-0" allow="autoplay; fullscreen" />;
-  }
+// 렌더 이미지 좌표(%) — 책상/룸 앵커(office-render.png 기준 수동 정렬)
+const DESK_ANCHORS = [
+  { x: 24, y: 60 }, { x: 31, y: 68 }, { x: 20, y: 72 }, { x: 29, y: 80 },
+  { x: 37, y: 54 }, { x: 41, y: 62 }, { x: 34, y: 48 }, { x: 45, y: 74 },
+  { x: 15, y: 66 }, { x: 26, y: 52 }, { x: 39, y: 82 }, { x: 48, y: 58 },
+];
+const ROOMS = [
+  { name: "회의실 A", x: 57, y: 36, cap: 6 },
+  { name: "회의실 B", x: 73, y: 42, cap: 4 },
+];
+
+function OfficeStage({
+  employees, liveMeeting, meetingParticipants, total,
+}: {
+  employees: Employee[];
+  liveMeeting: Meeting | null;
+  meetingParticipants: Employee[];
+  total: number;
+}) {
+  const [live3d, setLive3d] = useState(false);
+
   return (
-    <button
-      onClick={() => setEntered(true)}
-      className="group flex h-full w-full flex-col items-center justify-center gap-4
-        bg-[radial-gradient(ellipse_at_center,#141a28_0%,#0a0e17_70%)] text-center"
-    >
-      <div className="grid h-20 w-20 place-items-center rounded-full bg-brand/20 text-3xl text-brand ring-1 ring-brand/40
-        transition-transform group-hover:scale-110">▶</div>
-      <div>
-        <div className="text-base font-semibold">3D 오피스 입장</div>
-        <div className="mt-1 max-w-sm text-xs text-sub">
-          데이터 기반 실시간 3D(Godot 엔진). 좌석·조직 배치가 바뀌면 그대로 반영됩니다.
+    <div className="relative h-full overflow-hidden rounded-2xl border border-panel2/60 bg-bg2">
+      {live3d ? (
+        <iframe src="/office/index.html" title="가상오피스 3D" className="h-full w-full border-0" allow="autoplay; fullscreen" />
+      ) : (
+        <>
+          {/* 고품질 오피스 렌더 배경 */}
+          <img src="/office-render.png" alt="가상오피스" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-bg/40 via-transparent to-bg/20" />
+
+          {/* 룸 상태 라벨 */}
+          {ROOMS.map((r) => {
+            const occ = liveMeeting && liveMeeting.title.includes(r.name.slice(-1)) ? meetingParticipants.length : 0;
+            return (
+              <div key={r.name} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${r.x}%`, top: `${r.y}%` }}>
+                <div className="glass whitespace-nowrap px-2.5 py-1.5 text-xs">
+                  <div className="font-medium">{r.name}</div>
+                  <div className="flex items-center gap-1 text-sub">
+                    <span className={`h-1.5 w-1.5 rounded-full ${occ > 0 ? "bg-ok" : "bg-sub/50"}`} />
+                    {occ > 0 ? `${occ}명 회의 중` : `정원 ${r.cap}`}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* 사람 핀(오피스 내 직원 — 책상 앵커에 배치) */}
+          {employees.slice(0, DESK_ANCHORS.length).map((e, i) => (
+            <div key={e.id} className="absolute -translate-x-1/2 -translate-y-full" style={{ left: `${DESK_ANCHORS[i].x}%`, top: `${DESK_ANCHORS[i].y}%` }}>
+              <div className="flex flex-col items-center gap-1">
+                <div className="glass flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium">
+                  <span className="h-1.5 w-1.5 rounded-full bg-ok" />
+                  {e.name}
+                </div>
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-brand/30 text-xs font-semibold text-white shadow-glass ring-2 ring-brand/60">
+                  {e.name?.[0] ?? "?"}
+                </span>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* 상단 좌측: 오피스 라벨 */}
+      <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2">
+        <span className="glass px-3 py-1.5 text-xs">
+          <span className="font-semibold">가상오피스 · 1F</span>
+          <span className="ml-2 text-sub">{live3d ? "Godot 실시간 엔진" : "실시간 현황"}</span>
+        </span>
+        <span className="badge glass px-2.5 py-1 text-ok"><span className="h-1.5 w-1.5 rounded-full bg-ok" /> {total} 온라인</span>
+      </div>
+
+      {/* 상단 우측: 실시간 3D 토글 */}
+      <button
+        onClick={() => setLive3d((v) => !v)}
+        className="absolute right-4 top-4 flex items-center gap-1.5 rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white shadow-glass hover:bg-brand2"
+      >
+        <IconVideo className="h-4 w-4" />
+        {live3d ? "현황 화면" : "실시간 3D 입장"}
+      </button>
+
+      {/* 하단 중앙: 입장 힌트 */}
+      <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2">
+        <div className="glass flex items-center gap-2 px-4 py-2.5 text-sm text-sub">
+          룸에 다가가 <kbd className="rounded border border-panel2 bg-bg px-2 py-0.5 text-xs text-ink">E</kbd> 를 눌러 입장
         </div>
       </div>
-    </button>
+
+      {/* 하단 우측: 진행 중 회의 플로팅 패널 */}
+      {liveMeeting && <MeetingPanel meeting={liveMeeting} participants={meetingParticipants} />}
+    </div>
   );
 }
 
-/** 진행 중 회의 플로팅 패널(참석자 이니셜 타일 + 컨트롤바). 실 화상은 회의 화면에서. */
 function MeetingPanel({ meeting, participants }: { meeting: Meeting; participants: Employee[] }) {
   const tiles = participants.length ? participants.slice(0, 5) : [{ id: 0, name: meeting.title } as Employee];
   return (
@@ -135,9 +175,7 @@ function MeetingPanel({ meeting, participants }: { meeting: Meeting; participant
             <Ic className="h-4 w-4" />
           </button>
         ))}
-        <button className="grid h-8 w-8 place-items-center rounded-full bg-danger text-white">
-          <IconPhone className="h-4 w-4" />
-        </button>
+        <button className="grid h-8 w-8 place-items-center rounded-full bg-danger text-white"><IconPhone className="h-4 w-4" /></button>
       </div>
     </div>
   );
@@ -146,10 +184,7 @@ function MeetingPanel({ meeting, participants }: { meeting: Meeting; participant
 function PeopleGroup({
   title, tone, people, statusLabel,
 }: {
-  title: string;
-  tone: "brand" | "ok";
-  people: Employee[];
-  statusLabel: string | ((e: Employee) => string);
+  title: string; tone: "brand" | "ok"; people: Employee[]; statusLabel: string | ((e: Employee) => string);
 }) {
   const [open, setOpen] = useState(true);
   const dot = tone === "brand" ? "bg-brand" : "bg-ok";
@@ -169,9 +204,7 @@ function PeopleGroup({
               </span>
               <div className="min-w-0 flex-1 leading-tight">
                 <div className="truncate text-sm">{e.name}</div>
-                <div className="truncate text-[11px] text-sub">
-                  {typeof statusLabel === "function" ? statusLabel(e) : statusLabel}
-                </div>
+                <div className="truncate text-[11px] text-sub">{typeof statusLabel === "function" ? statusLabel(e) : statusLabel}</div>
               </div>
             </li>
           ))}
