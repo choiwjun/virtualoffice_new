@@ -19,6 +19,8 @@ const MODELS := {
 	"frame": "res://assets/models/hanging_picture_frame_02/hanging_picture_frame_02.gltf",
 	"projector": "res://assets/models/projector_screen/projector_screen.gltf",
 	"cabinet": "res://assets/models/drawer_cabinet/drawer_cabinet.gltf",
+	"sofa2": "res://assets/models/sofa_03/sofa_03.gltf",
+	"pendant": "res://assets/models/modern_ceiling_lamp_01/modern_ceiling_lamp_01.gltf",
 	# 사람(Quaternius CC0) — 오피스 적합만
 	"person_a": "res://assets/models/people/p09.glb",  # 비즈니스 정장
 	"person_b": "res://assets/models/people/p02.glb",  # 캐주얼 티
@@ -28,8 +30,10 @@ const MODELS := {
 }
 const PERSON_IDS := ["person_a", "person_b", "person_c", "person_d", "person_e"]
 const HDRI := "res://assets/hdri/brown_photostudio_02.hdr"
-const FLOOR_TEX := "res://assets/textures/wooden_planks/"
+const FLOOR_TEX := "res://assets/textures/acg_woodfloor/"   # ambientCG WoodFloor043 2K
 const WALL_TEX := "res://assets/textures/wood_planks/"
+const PLASTER_TEX := "res://assets/textures/acg_plaster/"    # ambientCG Plaster003 2K
+const CARPET_TEX := "res://assets/textures/acg_carpet/"      # ambientCG Carpet012 2K
 
 
 ## 로더가 만든 "Floor"에 실사 목재 마루 재질을 입힌다(타일링).
@@ -52,12 +56,12 @@ static func apply_floor_material(parent: Node3D) -> void:
 	var rgh := FLOOR_TEX + "rough.jpg"
 	if ResourceLoader.exists(rgh):
 		mat.roughness_texture = load(rgh)
-	# 밝고 차분한 우드톤(시안의 밝은 마루) — 텍스처 × albedo_color
-	mat.albedo_color = Color(0.86, 0.80, 0.72)
-	# 마루 타일링
-	mat.uv1_scale = Vector3(10.0, 7.0, 1.0)
+	# 밝은 오크(시안의 밝은 마루) — 텍스처 × albedo_color
+	mat.albedo_color = Color(0.92, 0.88, 0.82)
+	# 마루 타일링(2K 플랭크)
+	mat.uv1_scale = Vector3(7.0, 5.0, 1.0)
 	mat.metallic = 0.0
-	mat.roughness = 0.9  # 무광 — 반사 핫스팟 방지
+	mat.roughness = 0.82  # 약한 무광 광택
 	(mesh as MeshInstance3D).material_override = mat
 
 
@@ -71,10 +75,15 @@ static func _instance(id: String) -> Node3D:
 	return packed.instantiate()
 
 
-## 따뜻한 오프화이트 벽 재질(외곽 벽/리셉션 카운터 공용).
+## 따뜻한 오프화이트 벽 재질(외곽 벽/리셉션 카운터 공용) — 플라스터 텍스처.
 static func _wall_material() -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(0.74, 0.72, 0.69)  # 따뜻한 오프화이트(순백 클리핑 방지)
+	if ResourceLoader.exists(PLASTER_TEX + "diffuse.jpg"):
+		m.albedo_texture = load(PLASTER_TEX + "diffuse.jpg")
+		if ResourceLoader.exists(PLASTER_TEX + "normal.jpg"):
+			m.normal_enabled = true; m.normal_texture = load(PLASTER_TEX + "normal.jpg"); m.normal_scale = 0.4
+		m.uv1_scale = Vector3(6.0, 4.0, 1.0)
+	m.albedo_color = Color(0.80, 0.78, 0.75)  # 따뜻한 오프화이트(순백 클리핑 방지)
 	m.roughness = 0.95
 	m.metallic = 0.0
 	return m
@@ -142,9 +151,14 @@ static func _add_monitor(parent: Node3D, x: float, z: float, floor_height: float
 	_box(parent, Vector3(x, top + 0.30, z + 0.255), Vector3(0.56, 0.31, 0.01), screen)
 
 
-## 평평한 러그(바닥 위 얇은 박스).
+## 평평한 러그(바닥 위 얇은 박스) — 카펫 텍스처 + 존 컬러 틴트.
 static func _add_rug(parent: Node3D, cx: float, cz: float, w: float, d: float, floor_height: float, col: Color) -> void:
 	var m := StandardMaterial3D.new()
+	if ResourceLoader.exists(CARPET_TEX + "diffuse.jpg"):
+		m.albedo_texture = load(CARPET_TEX + "diffuse.jpg")
+		if ResourceLoader.exists(CARPET_TEX + "normal.jpg"):
+			m.normal_enabled = true; m.normal_texture = load(CARPET_TEX + "normal.jpg")
+		m.uv1_scale = Vector3(w * 0.5, d * 0.5, 1.0)
 	m.albedo_color = col
 	m.roughness = 1.0
 	_box(parent, Vector3(cx, floor_height + 0.02, cz), Vector3(w, 0.04, d), m)
@@ -381,24 +395,33 @@ static func populate(layout: Dictionary, parent: Node3D, floor_height: float) ->
 	var plant_spots := [
 		Vector2(minx + 1.0, miny + 1.0), Vector2(maxx - 1.0, miny + 1.0),
 		Vector2(minx + 1.0, maxy - 1.0), Vector2(maxx - 1.0, maxy - 1.0),
-		Vector2(minx + 1.0, (miny + maxy) * 0.5),
+		Vector2(minx + 1.0, (miny + maxy) * 0.5), Vector2(maxx - 1.2, (miny + maxy) * 0.62),
+		Vector2((minx + maxx) * 0.5, miny + 0.9), Vector2(maxx - 1.2, miny + 5.0),
+		Vector2(minx + 9.6, miny + 8.6), Vector2(maxx - 5.2, maxy - 1.2),
 	]
 	var i := 0
 	for p in plant_spots:
-		var plant := _instance("plant_a" if i % 2 == 0 else "plant_b")
+		var plant := _instance(["plant_a", "plant_b", "plant_c"][i % 3])
 		if plant:
 			parent.add_child(plant)
 			plant.position = Vector3(p.x, floor_height, p.y)
 			placed += 1
 		i += 1
 
-	# 라운지: 오른쪽 하단 빈 공간(회의실 아래)에 러그 + 소파 + 커피테이블
+	# 라운지: 오른쪽 하단 빈 공간(회의실 아래)에 러그 + 대형 소파 + 커피테이블 + 펜던트
 	var lounge := Vector2(maxx - 5.0, maxy - 4.0)
-	_add_rug(parent, lounge.x, lounge.y, 5.0, 4.0, floor_height, Color(0.20, 0.24, 0.34))
-	var sofa := _instance("sofa")
+	_add_rug(parent, lounge.x, lounge.y, 5.0, 4.0, floor_height, Color(0.24, 0.30, 0.46))
+	var sofa := _instance("sofa2")
+	if sofa == null:
+		sofa = _instance("sofa")
 	if sofa:
 		parent.add_child(sofa)
-		sofa.position = Vector3(lounge.x, floor_height, lounge.y + 1.2)
+		sofa.position = Vector3(lounge.x, floor_height, lounge.y + 1.3)
+		placed += 1
+	var pend := _instance("pendant")
+	if pend:
+		parent.add_child(pend)
+		pend.position = Vector3(lounge.x, floor_height + 2.6, lounge.y)
 		placed += 1
 	var ctable := _instance("coffee_table")
 	if ctable:
@@ -550,16 +573,16 @@ static func setup_environment(parent: Node3D) -> void:
 		env.ambient_light_color = Color(0.60, 0.62, 0.70)
 		env.ambient_light_energy = 0.9
 	# 톤매핑(양 렌더러 공통) — 살짝 낮춰 하이라이트 클리핑 방지
-	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	env.tonemap_exposure = 1.0
+	env.tonemap_mode = (Environment.TONE_MAPPER_AGX if not low_end else Environment.TONE_MAPPER_ACES)
+	env.tonemap_exposure = 1.05
 	# 무거운 포스트(색보정/블룸/SSAO/SSIL)는 Forward+에서만.
 	# Compatibility(웹)는 이들 미지원 + 배경(BG_COLOR)을 깨뜨리므로 제외.
 	if not low_end:
 		env.tonemap_white = 6.0
 		env.adjustment_enabled = true
 		env.adjustment_brightness = 1.0
-		env.adjustment_contrast = 1.06
-		env.adjustment_saturation = 0.96  # 과채도 방지(바닥 오렌지 억제)
+		env.adjustment_contrast = 1.08
+		env.adjustment_saturation = 1.18  # AgX 탈채도 보정(생기)
 		env.glow_enabled = true
 		env.glow_intensity = 0.18
 		env.glow_bloom = 0.05
