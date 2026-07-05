@@ -42,3 +42,36 @@ def issue_join_token(room: str, identity: str, name: Optional[str] = None) -> st
 
     # 미설정 fallback: 기존 stub과 동일 형식(계약 무회귀).
     return create_access_token({"sub": identity, "room": room, "video": "join"})
+
+
+async def create_room(room: str, *, max_participants: int = 0) -> dict:
+    """LiveKit 룸 생성(FastAPI 경유 단일화, D24). 미설정 시 결정적 stub 반환(런타임 B-03).
+
+    반환: {room, created: bool, live: bool} — live=True면 실 LiveKit 서버에 생성됨.
+    """
+    if settings.livekit_enabled and settings.livekit_url:
+        from livekit import api  # 지연 임포트
+
+        lkapi = api.LiveKitAPI(settings.livekit_url, settings.livekit_api_key, settings.livekit_api_secret)
+        try:
+            await lkapi.room.create_room(
+                api.CreateRoomRequest(name=room, max_participants=max_participants or 0)
+            )
+        finally:
+            await lkapi.aclose()
+        return {"room": room, "created": True, "live": True}
+    return {"room": room, "created": True, "live": False}
+
+
+async def delete_room(room: str) -> dict:
+    """LiveKit 룸 삭제(회의 종료 시). 미설정 시 결정적 stub."""
+    if settings.livekit_enabled and settings.livekit_url:
+        from livekit import api
+
+        lkapi = api.LiveKitAPI(settings.livekit_url, settings.livekit_api_key, settings.livekit_api_secret)
+        try:
+            await lkapi.room.delete_room(api.DeleteRoomRequest(room=room))
+        finally:
+            await lkapi.aclose()
+        return {"room": room, "deleted": True, "live": True}
+    return {"room": room, "deleted": True, "live": False}

@@ -67,7 +67,7 @@
 | P2-R2-T3 좌석 배정 API | ✅ | `api/seats.py` assign/occupy/available |
 | P2-R3-T1 아바타 시작위치 매핑 | ✅ | `services/avatar_spawner.py` + `GET /api/users/{id}/avatar-spawn-location`(좌석→스폰·로비폴백). pytest 통과 (2026-07-05 신설) |
 | P2-R3-T2 presence 테이블 | ✅ | `Presence` + `api/presence.py` |
-| P2-R4-T1 외부공개 하드닝(Caddy) | ⬜ | `docker-compose.yml` 존재하나 **Caddy 리버스프록시·rate-limit·fail2ban 미구성**. HG-SEC 게이트 미충족(도그푸딩 차단, B-06) |
+| P2-R4-T1 외부공개 하드닝(Caddy) | 🟨 | `Caddyfile`(단일진입·보안헤더·타임아웃·본문상한·TLS ACME) + compose `edge` 프로필 caddy 서비스(`compose config` 검증). 실 포트스캔·rate-limit 부하·fail2ban·도메인은 배포 후 HG-SEC/B-06 (2026-07-05 신설) |
 | P2-R3-V 통합검증 | ⬜ | — |
 
 ## Phase 3 — 배치 편집기 (7)
@@ -100,15 +100,15 @@
 | Task | 상태 | 근거/갭 |
 |---|---|---|
 | P5-R1-T1 회의 관리 API | ✅ | `api/meetings.py` 예약충돌(D23)·명시적입장 토큰(D24) (E2E ✅) |
-| P5-R1-T2 LiveKit+coturn self-host | 🟨 | `livekit_service.issue_join_token`+compose opt-in 스캐폴드(B-07). **실 LiveKit 서버·룸생성 ⬜(B-03)** |
+| P5-R1-T2 LiveKit+coturn self-host | 🟨 | `livekit_service`(입장토큰 + **룸 create/delete 슬라이스**)+compose livekit/coturn opt-in. pytest 통과. 실 LiveKit 서버 미디어는 런타임 B-03 (2026-07-05 룸 슬라이스 추가) |
 | P5-R2-T1 회의 UI(Next.js) | 🟨 | **회의 화면**(목록·상태·취소). 대기실/마이크테스트 UI 미구현 |
 | P5-R2-T2a WebRTC GDExtension | ⬜ | 없음 (B-03) |
 | P5-R2-T2b 3D 화상 렌더 | ⬜ | 없음 |
 | P5-R3-T1 회의록 저장(액션아이템) | 🟨 | `meetings` minutes + `api/action_items.py` CRUD ✅. `stt_draft`는 저장계약만 NULL(B-09) |
 | P5-R3-T2 회의록 UI(Next.js) | ✅ | `/meetings/[id]/minutes` 에디터(작성·결정사항·확정·STT초안 표시). E2E: 작성 200·확정 finalized·확정후 409 (2026-07-05 신설) |
 | P5-R3-T3 채팅 저장소 | ✅ | `Message` 모델 + `api/messages.py`(GET·POST, 타임스탬프) + **회의록 화면 채팅 패널**. pytest+build 통과 (2026-07-05 신설) |
-| P5-R4-T1 Egress 오디오 수집 | ⬜ | `egress_service.py` 없음 (B-03) |
-| P5-R4-T2 STT+화자분리+초안 | ⬜ | `stt_service.py`·`minute_drafter.py` 없음 (B-09/B-10) |
+| P5-R4-T1 Egress 오디오 수집 | 🟨 | `services/egress_service.py`(LiveKit Egress 가드 + 동의자 수집 D20, 스텁). 실 서버 런타임 B-03 (2026-07-05 신설) |
+| P5-R4-T2 STT+화자분리+초안 | 🟨 | `services/minute_drafter.py`(**전사→결정사항·액션아이템·기한 추출 실로직**+가명처리 D20) + `stt_service.py`(인터페이스+누락률 측정). pytest 통과. 실 STT 엔진 런타임 B-03/B-10 (2026-07-05 신설) |
 | P5-R4-T3 회의록 검토·확정 UI+정확도 | ⬜ | 없음 |
 | P5-R3-V 통합검증 | ⬜ | — |
 
@@ -119,7 +119,7 @@
 | P6-R1-T2 work_log CRUD API | ✅ | `api/worklogs.py` (E2E ✅) |
 | P6-R1-T3 work_log UI | ✅ | **업무기록 화면**(작성/수정/삭제 E2E ✅) |
 | P6-R2-T1 KPI 산출 로직 | ✅ | `services/kpi_scoring.py` 결정론 8메트릭 |
-| P6-R2-T2 AI 초안 생성 | 🟨 | `services/ai_narrative.py`(fallback). 실 Claude 미연동(B-11, `ai_narrative_provider=claude`+키 필요) |
+| P6-R2-T2 AI 초안 생성 | 🟨 | `services/ai_narrative.py` — **Anthropic Claude 실 호출 경로 완비**(가명처리 D20 + 파싱 + 실패 fallback). `ai_narrative_provider=claude`+`anthropic_api_key` 런타임 설정 시 즉시 활성(코드 완성, 키만 잔여) |
 | P6-R2-T3 kpi_result 저장소 | ✅ | `KpiResult`(D16 롱포맷) |
 | P6-R3-T1 관리자 KPI 검토 UI | ✅ | **KPI 검토 화면**(카드·AI초안·조정슬라이더 E2E ✅) |
 | P6-R3-T2 KPI 검토/조정 API | ✅ | `api/kpi.py` adjust/confirm (E2E ✅) |

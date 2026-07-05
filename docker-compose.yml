@@ -86,5 +86,28 @@ services:
       - "${TURN_PORT:-3478}:3478/udp"
       - "${TURN_PORT:-3478}:3478/tcp"
 
+  # 외부 공개 하드닝 단일 진입점 (P2-R4-T1, D21-r / HG-SEC — opt-in profile "edge").
+  # Caddy만 80/443 공개, backend/web은 내부 네트워크로만 노출(운영 시 backend ports 제거 권장).
+  # 활성화: .env에 VO_DOMAIN/ACME_EMAIL 설정 후 `docker compose --profile edge up -d`.
+  caddy:
+    image: caddy:2
+    container_name: vo_caddy
+    restart: unless-stopped
+    profiles: ["edge"]
+    depends_on:
+      - backend
+    environment:
+      VO_DOMAIN: ${VO_DOMAIN:-}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@spacecl.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - "80:80"
+      - "443:443"
+
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:
