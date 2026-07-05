@@ -55,10 +55,85 @@ static func _instance(id: String) -> Node3D:
 	return packed.instantiate()
 
 
+## 회색 벽 재질(외곽 벽/리셉션 카운터 공용).
+static func _wall_material() -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.82, 0.82, 0.86)
+	m.roughness = 0.9
+	m.metallic = 0.0
+	return m
+
+
+## 축 정렬 박스(위치=바닥에 놓이는 하단 기준). 시각 전용(충돌은 로더가 담당).
+static func _box(parent: Node3D, center: Vector3, size: Vector3, mat: Material) -> void:
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = size
+	mi.mesh = bm
+	mi.material_override = mat
+	mi.position = center
+	parent.add_child(mi)
+
+
+## dimensions에서 외곽 벽 4면을 파생 생성(입구는 앞면 중앙을 개방). 레이아웃이 바뀌면 그대로 반영.
+static func build_perimeter_walls(layout: Dictionary, parent: Node3D, floor_height: float) -> void:
+	var dim: Dictionary = layout.get("dimensions", {})
+	var minx := float(dim.get("min_x", 0.0))
+	var miny := float(dim.get("min_y", 0.0))
+	var maxx := float(dim.get("max_x", minx + float(dim.get("width_m", 30.0))))
+	var maxy := float(dim.get("max_y", miny + float(dim.get("height_m", 20.0))))
+	var h := 3.0
+	var t := 0.2
+	var cy := floor_height + h * 0.5
+	var mat := _wall_material()
+	var w := maxx - minx
+	var d := maxy - miny
+	var cx := (minx + maxx) * 0.5
+	var cz := (miny + maxy) * 0.5
+	# 뒷벽(miny), 좌벽(minx), 우벽(maxx) — 전체 길이
+	_box(parent, Vector3(cx, cy, miny), Vector3(w, h, t), mat)
+	_box(parent, Vector3(minx, cy, cz), Vector3(t, h, d), mat)
+	_box(parent, Vector3(maxx, cy, cz), Vector3(t, h, d), mat)
+	# 앞벽(maxy) — 중앙 4m 입구 개방 → 좌/우 두 조각
+	var gap := 4.0
+	var seg := (w - gap) * 0.5
+	if seg > 0.1:
+		_box(parent, Vector3(minx + seg * 0.5, cy, maxy), Vector3(seg, h, t), mat)
+		_box(parent, Vector3(maxx - seg * 0.5, cy, maxy), Vector3(seg, h, t), mat)
+
+
+## 리셉션: 입구 안쪽에 L자 카운터 + 뒤 선반. spawn_default(로비) 근처에 배치.
+static func build_reception(layout: Dictionary, parent: Node3D, floor_height: float) -> void:
+	var dim: Dictionary = layout.get("dimensions", {})
+	var maxy := float(dim.get("max_y", float(dim.get("height_m", 20.0))))
+	var minx := float(dim.get("min_x", 0.0))
+	var maxx := float(dim.get("max_x", float(dim.get("width_m", 30.0))))
+	var cx := (minx + maxx) * 0.5
+	var mat := _wall_material()
+	var top := floor_height + 1.1
+	# 입구 안쪽(로비) 카운터 — 정면 + 측면
+	var fz := maxy - 3.0
+	_box(parent, Vector3(cx, floor_height + 0.55, fz), Vector3(3.2, 1.1, 0.5), mat)
+	_box(parent, Vector3(cx - 1.6, floor_height + 0.55, fz - 1.0), Vector3(0.5, 1.1, 2.0), mat)
+	# 카운터 상판(밝은 나무톤)
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color(0.55, 0.40, 0.26)
+	wood.roughness = 0.6
+	_box(parent, Vector3(cx, top, fz), Vector3(3.4, 0.06, 0.6), wood)
+	# 뒤 선반(GLB)
+	var shelf := _instance("shelf")
+	if shelf:
+		parent.add_child(shelf)
+		shelf.position = Vector3(cx, floor_height, fz - 1.6)
+		shelf.rotation.y = PI
+
+
 ## 레이아웃 furniture(=책상)·seat(=의자)·장식(화분/소파)을 GLB로 배치한다.
 static func populate(layout: Dictionary, parent: Node3D, floor_height: float) -> int:
 	var placed := 0
 	apply_floor_material(parent)
+	build_perimeter_walls(layout, parent, floor_height)
+	build_reception(layout, parent, floor_height)
 
 	# 1) 가구(책상) — furniture.coords에 desk 모델
 	for f in layout.get("furniture", []):
@@ -136,7 +211,7 @@ static func setup_environment(parent: Node3D) -> void:
 		sky.sky_material = sky_mat
 		env.sky = sky
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-		env.ambient_light_energy = 0.9
+		env.ambient_light_energy = 0.5
 		env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	else:
 		env.ambient_light_color = Color(0.7, 0.72, 0.8)
@@ -149,6 +224,6 @@ static func setup_environment(parent: Node3D) -> void:
 
 	var light := DirectionalLight3D.new()
 	light.rotation_degrees = Vector3(-52, -38, 0)
-	light.light_energy = 1.3
+	light.light_energy = 1.05
 	light.shadow_enabled = true
 	parent.add_child(light)

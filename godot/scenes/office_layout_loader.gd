@@ -24,7 +24,7 @@ const FLOOR_THICKNESS := 0.2    ## 바닥 슬래브 두께(m)
 const COLOR_FLOOR := Color(0.10, 0.11, 0.13)
 const COLOR_WALL := Color(0.20, 0.22, 0.27)
 const COLOR_FURNITURE := Color(0.96, 0.62, 0.11)
-const COLOR_ROOM := Color(0.39, 0.40, 0.95, 0.35)  ## 유리벽 반투명
+const COLOR_ROOM := Color(0.60, 0.74, 0.82, 0.16)  ## 유리벽 반투명(옅은 청록)
 const COLOR_SEAT := Color(0.13, 0.77, 0.37)
 const COLOR_SPAWN := Color(0.94, 0.27, 0.27)
 
