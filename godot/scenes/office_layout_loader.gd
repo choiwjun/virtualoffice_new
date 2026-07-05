@@ -20,6 +20,14 @@ const WALL_HEIGHT := 3.0        ## 방 벽/콜라이더 배치 높이(m)
 const WALL_THICKNESS := 0.2     ## 방 벽 두께(m)
 const FLOOR_THICKNESS := 0.2    ## 바닥 슬래브 두께(m)
 
+## 골든 샘플 시각 팔레트(P1). GLB 에셋 투입 전까지 프리미티브+머티리얼로 렌더한다.
+const COLOR_FLOOR := Color(0.10, 0.11, 0.13)
+const COLOR_WALL := Color(0.20, 0.22, 0.27)
+const COLOR_FURNITURE := Color(0.96, 0.62, 0.11)
+const COLOR_ROOM := Color(0.39, 0.40, 0.95, 0.35)  ## 유리벽 반투명
+const COLOR_SEAT := Color(0.13, 0.77, 0.37)
+const COLOR_SPAWN := Color(0.94, 0.27, 0.27)
+
 ## build() 산출물 -----------------------------------------------------------
 ## build() 산출물. Vector3 pos는 y=floor_height 평면(D25: layout y → Godot z).
 var seats: Array = []              ## [{ id, pos:Vector3, facing, assigned:bool, seat_db_id }]
@@ -291,6 +299,7 @@ func _build_floor(layout: Dictionary) -> void:
 	body.add_child(cs)
 	add_child(body)
 	body.position = Vector3(min_x + w / 2.0, floor_height - FLOOR_THICKNESS / 2.0, min_y + h / 2.0)
+	_attach_box_mesh(body, Vector3(w, FLOOR_THICKNESS, h), COLOR_FLOOR)
 
 
 func _build_colliders(layout: Dictionary) -> void:
@@ -311,7 +320,7 @@ func _build_rooms(layout: Dictionary) -> void:
 		})
 		var seg := 0
 		for r in wall_segments(room):
-			_add_solid("Wall_%s_%d" % [rid, seg], r, WALL_HEIGHT)
+			_add_solid("Wall_%s_%d" % [rid, seg], r, WALL_HEIGHT, "room")
 			seg += 1
 
 
@@ -329,7 +338,7 @@ func _build_furniture(layout: Dictionary) -> void:
 			float(c.get("y", 0.0)) - depth / 2.0,
 			w, depth,
 		)
-		_add_solid("Furniture_%s" % str(f.get("furniture_id", "")), rect, height)
+		_add_solid("Furniture_%s" % str(f.get("furniture_id", "")), rect, height, "furniture")
 
 
 func _build_seats(layout: Dictionary) -> void:
@@ -339,6 +348,7 @@ func _build_seats(layout: Dictionary) -> void:
 		m.name = "Seat_%s" % str(s["id"])
 		add_child(m)
 		m.position = Vector3(s["pos"].x, floor_height, s["pos"].z)
+		_attach_box_mesh(m, Vector3(0.5, 0.1, 0.5), COLOR_SEAT)
 
 
 func _build_spawns(layout: Dictionary) -> void:
@@ -348,10 +358,11 @@ func _build_spawns(layout: Dictionary) -> void:
 		m.name = "Spawn_%s" % str(sp["id"])
 		add_child(m)
 		m.position = Vector3(sp["pos"].x, floor_height, sp["pos"].z)
+		_attach_box_mesh(m, Vector3(0.3, 0.1, 0.3), COLOR_SPAWN)
 
 
-## Rect2(2D) + 높이로 정적 충돌체를 만들어 self에 부착.
-func _add_solid(node_name: String, rect: Rect2, height: float) -> StaticBody3D:
+## Rect2(2D) + 높이로 정적 충돌체를 만들어 self에 부착. kind로 시각 머티리얼 색을 지정.
+func _add_solid(node_name: String, rect: Rect2, height: float, kind := "wall") -> StaticBody3D:
 	var center := Vector3(
 		rect.position.x + rect.size.x / 2.0,
 		floor_height + height / 2.0,
@@ -360,4 +371,32 @@ func _add_solid(node_name: String, rect: Rect2, height: float) -> StaticBody3D:
 	var size := Vector3(maxf(rect.size.x, 0.01), height, maxf(rect.size.y, 0.01))
 	var body := OfficeBuilder.wall(self, center, size)
 	body.name = node_name
+	_attach_box_mesh(body, size, _color_for(kind))
 	return body
+
+
+## 정적 팔레트에서 kind별 색 반환.
+static func _color_for(kind: String) -> Color:
+	match kind:
+		"furniture": return COLOR_FURNITURE
+		"room": return COLOR_ROOM
+		"floor": return COLOR_FLOOR
+		"seat": return COLOR_SEAT
+		"spawn": return COLOR_SPAWN
+		_: return COLOR_WALL
+
+
+## body에 BoxMesh MeshInstance3D + StandardMaterial3D(색)를 부착(골든 샘플 렌더).
+static func _attach_box_mesh(body: Node3D, size: Vector3, color: Color) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.name = "Mesh"
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	mi.mesh = mesh
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	if color.a < 1.0:
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mi.material_override = mat
+	body.add_child(mi)
+	return mi
