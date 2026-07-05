@@ -39,10 +39,10 @@ def test_upgrade_head_creates_all_tables(tmp_path, monkeypatch):
 
     tables = _table_names(db_path)
     assert "alembic_version" in tables
-    # 대표 테이블 표본 + 총수 (26 모델 + alembic_version, feedback/notification 포함)
-    for expected in ("erp_user", "kpi_result", "office_layout", "presence", "meeting", "feedback", "notification"):
+    # 대표 테이블 표본 + 총수 (28 모델 + alembic_version, feedback/notification/zone_access/message 포함)
+    for expected in ("erp_user", "kpi_result", "office_layout", "presence", "meeting", "feedback", "notification", "zone_access", "message"):
         assert expected in tables, f"missing: {expected}"
-    assert len(tables) == 27
+    assert len(tables) == 29
 
 
 def test_downgrade_base_drops_all_tables(tmp_path, monkeypatch):

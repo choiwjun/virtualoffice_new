@@ -38,8 +38,8 @@ async def test_health_endpoint(async_client):
 def test_all_tables_registered():
     # 04-data-model.md: 20개 핵심 테이블 + auth_credential(G001) + erp_sync_log(G009)
     # + erp_team + erp_position(G005 미러 확장) = 24 + feedback(P7-R3-T4) = 25
-    # + notification(P7-R3-T3) = 26
-    assert len(Base.metadata.tables) == 26
+    # + notification(P7-R3-T3) = 26 + zone_access(P7-R1-T2) + message(P5-R3-T3) = 28
+    assert len(Base.metadata.tables) == 28
     assert "erp_user" in Base.metadata.tables
     assert "kpi_result" in Base.metadata.tables
 

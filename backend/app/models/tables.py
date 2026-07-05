@@ -1561,6 +1561,51 @@ class Feedback(Base, TimestampMixin):
     __table_args__ = (Index("idx_feedback_status_time", "status", "created_at"),)
 
 
+class Message(Base):
+    # @TASK P5-R3-T3 - 회의 채팅 메시지 저장소
+    # @SPEC 12-tasks.md P5-R3-T3
+    """회의 컨텍스트 채팅 메시지(선택 기능). 타임스탬프 기록."""
+    __tablename__ = "message"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    meeting_id: Mapped[UUID] = mapped_column(
+        ForeignKey("meeting.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("erp_user.id", ondelete="SET NULL"), nullable=True
+    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), index=True
+    )
+
+    __table_args__ = (Index("idx_message_meeting_time", "meeting_id", "created_at"),)
+
+
+class ZoneAccess(Base, TimestampMixin):
+    # @TASK P7-R1-T2 - 구역별 접근 권한 (zone-based access control)
+    # @SPEC 12-tasks.md P7-R1-T2
+    """
+    구역(team_zone) 접근 권한. role 기반(또는 user 지정)으로 view/enter/manage 부여.
+    진입 검증(room enter 차단)은 이 규칙을 참조한다. 규칙이 없는 구역은 기본 허용(개방).
+    """
+    __tablename__ = "zone_access"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    zone_id: Mapped[UUID] = mapped_column(
+        ForeignKey("team_zone.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    role: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    """employee|leader|admin|super_admin — role 단위 규칙(user_id와 택일)"""
+    user_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("erp_user.id", ondelete="CASCADE"), nullable=True
+    )
+    permission: Mapped[str] = mapped_column(String(20), nullable=False, default="enter")
+    """view|enter|manage"""
+
+    __table_args__ = (Index("idx_zone_access_zone", "zone_id", "permission"),)
+
+
 class Notification(Base, TimestampMixin):
     # @TASK P7-R3-T3 - 실패 알림 채널 (관리자 콘솔 알림)
     # @SPEC 12-tasks.md P7-R3-T3, 00-decisions.md D18(동기화 실패 알림)/D21(관측)

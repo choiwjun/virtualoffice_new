@@ -109,6 +109,14 @@ class Settings(BaseSettings):
     def alert_webhook_enabled(self) -> bool:
         return bool(self.alert_slack_webhook_url)
 
+    # ── Godot 클라이언트 자동 업데이트 채널 (P7-R3-T2, D8) ──────
+    client_latest_version: str = "0.1.0"
+    """최신 배포 클라이언트 버전(semver)."""
+    client_min_version: str = "0.1.0"
+    """이 버전 미만은 강제 업데이트(required=true)."""
+    client_download_url: str = ""
+    """클라이언트 빌드/pak 다운로드 URL(공인 도메인/Let's Encrypt, 미설정 시 빈 값)."""
+
 
 @lru_cache
 def get_settings() -> Settings:

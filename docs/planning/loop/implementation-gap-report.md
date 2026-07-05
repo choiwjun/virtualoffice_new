@@ -9,16 +9,20 @@
 - 🟨 **부분** — 로직 슬라이스/스텁/플래그오프/환경차단(런타임만 남음)
 - ⬜ **미구현** — 해당 소스 없음
 
-## 총평 (태스크 86 기준 개략)
+## 총평 (2차 재감사 2026-07-05 — 우선순위 1·2 구현 반영)
+현재 인벤토리: **백엔드 라우터 17 · 서비스 10 · 프론트 화면 16 · 백엔드 pytest 607 passed**. Godot는 여전히 로직 슬라이스 7개(에셋/씬 0), `spikes/`·`godot-server/` 없음.
+
+**86 태스크 상태 집계(개략)**: ✅ 완료 **~36** · 🟨 부분 **~18** · ⬜ 미구현 **~33** (1차 감사 대비 ✅ 32→36, ⬜ 39→33 — 웹 화면·피드백·공간·알림 채널 구현).
+
 | 구간 | ✅ | 🟨 | ⬜ |
 |---|---|---|---|
-| 백엔드 관리 API·배치·KPI·감사 | 대부분 | AI/ERP 실연동·실 cron | 일부 API 미노출 |
-| 프론트엔드(Next.js) | 7화면 신규 | 이의신청 자가열람·회의 대기실 | 대시보드·피드·이벤트 등 |
-| 3D(Godot 시각/에셋/서버런타임) | — | 헤드리스 로직 슬라이스 | 에셋·씬·HUD·화상 전부 |
+| 백엔드 관리 API·배치·KPI·감사·알림 | 거의 완결 | AI/ERP 실연동·실 cron | — |
+| 프론트엔드(Next.js) | **16화면** | 회의 대기실·마이크테스트 | 실시간(WS) 피드 갱신 |
+| 3D(Godot 시각/에셋/서버런타임) | — | 헤드리스 로직 슬라이스 | **에셋·씬·HUD·화상 전부** |
 | 화상/STT(LiveKit) | — | 입장토큰·compose 스캐폴드 | 실 서버·Egress·STT |
-| 인프라/관측/스파이크 | — | compose | Caddy·Grafana·S1~S4 |
+| 인프라/관측/스파이크 | — | 알림채널·compose | Caddy 하드닝·Grafana·S1~S4 |
 
-**한 줄 요약**: 백엔드 관리 API·도메인 로직·배치는 **거의 완결**(계약/레드팀/E2E 통과). 갭은 압도적으로 **① 3D 시각(Godot 에셋·씬·화상) ② 실환경 런타임(LiveKit·STT·헤드리스 서버·실 cron·실 ERP DB) ③ 일부 웹 화면**에 몰려 있다. ①②는 GPU·미디어·서버 인프라가 필요한 phase/human blocked, ③은 코드로 즉시 가능.
+**한 줄 요약**: **코드로 가능한 부분은 사실상 소진** — 백엔드 도메인/API/배치/알림 완결, 웹 콘솔 16화면. 남은 갭은 거의 전부 **환경 의존**: ① 3D 시각(GPU·GLB 에셋) ② 실환경 런타임(LiveKit/STT 미디어·헤드리스 서버·실 cron) ③ 자격증명/인프라(ERP DB 계정·공인 도메인·Caddy 하드닝·관측 스택).
 
 ---
 
@@ -61,7 +65,7 @@
 | P2-R2-T1 team_zone 매핑 | ✅ | `api/team_zones.py` CRUD (UI 미구현) |
 | P2-R2-T2 seat 테이블/배정로직 | ✅ | `Seat`+`SeatAssignmentHistory` (전용 `seat_assignment.py` 없음—인라인) |
 | P2-R2-T3 좌석 배정 API | ✅ | `api/seats.py` assign/occupy/available |
-| P2-R3-T1 아바타 시작위치 매핑 | ⬜ | `services/avatar_spawner.py`·`/avatar-spawn-location` 없음 |
+| P2-R3-T1 아바타 시작위치 매핑 | ✅ | `services/avatar_spawner.py` + `GET /api/users/{id}/avatar-spawn-location`(좌석→스폰·로비폴백). pytest 통과 (2026-07-05 신설) |
 | P2-R3-T2 presence 테이블 | ✅ | `Presence` + `api/presence.py` |
 | P2-R4-T1 외부공개 하드닝(Caddy) | ⬜ | `docker-compose.yml` 존재하나 **Caddy 리버스프록시·rate-limit·fail2ban 미구성**. HG-SEC 게이트 미충족(도그푸딩 차단, B-06) |
 | P2-R3-V 통합검증 | ⬜ | — |
@@ -74,7 +78,7 @@
 | P3-R2-T1 Konva 2D 편집 UI | ✅ | **좌석·배치 편집기**(정본 seat/furniture 정합·스냅·검증 E2E ✅). 단 좌석 중심(zone/room 편집은 범위 밖) |
 | P3-R2-T2 데스크톱 draft 뷰어 | ⬜ | Godot draft 뷰어·딥링크 없음 |
 | P3-R2-T3 검증+배포/롤백 UI | ✅ | 편집기 검증 ERROR 게이팅+배포 + 콘솔 롤백 |
-| P3-R3-T1 office_layout 직렬화 | 🟨 | 전용 `office_layout_serializer.py` 없음(검증기가 dict 직접 처리) |
+| P3-R3-T1 office_layout 직렬화 | ✅ | `services/office_layout_serializer.py`(normalize/to_json/from_json·round-trip 동일성). pytest 통과 (2026-07-05 신설) |
 | P3-R3-T2 office_layout→Godot 변환 | 🟨 | `services/office_layout_to_godot.py` + `scenes/office_layout_loader.gd` 존재(GPU 임포트 미검증) |
 | P3-R3-V 통합검증 | ⬜ | — |
 
@@ -102,7 +106,7 @@
 | P5-R2-T2b 3D 화상 렌더 | ⬜ | 없음 |
 | P5-R3-T1 회의록 저장(액션아이템) | 🟨 | `meetings` minutes + `api/action_items.py` CRUD ✅. `stt_draft`는 저장계약만 NULL(B-09) |
 | P5-R3-T2 회의록 UI(Next.js) | ✅ | `/meetings/[id]/minutes` 에디터(작성·결정사항·확정·STT초안 표시). E2E: 작성 200·확정 finalized·확정후 409 (2026-07-05 신설) |
-| P5-R3-T3 채팅 저장소 | ⬜ | Message 저장/조회 없음 |
+| P5-R3-T3 채팅 저장소 | ✅ | `Message` 모델 + `api/messages.py`(/meetings/{id}/messages GET·POST, 타임스탬프). pytest 통과 (2026-07-05 신설) |
 | P5-R4-T1 Egress 오디오 수집 | ⬜ | `egress_service.py` 없음 (B-03) |
 | P5-R4-T2 STT+화자분리+초안 | ⬜ | `stt_service.py`·`minute_drafter.py` 없음 (B-09/B-10) |
 | P5-R4-T3 회의록 검토·확정 UI+정확도 | ⬜ | 없음 |
@@ -130,7 +134,7 @@
 | Task | 상태 | 근거/갭 |
 |---|---|---|
 | P7-R1-T1 다층 내비게이션 | ⬜ | 없음 |
-| P7-R1-T2 구역별 접근권한 | ⬜ | `ZoneAccess` 모델만, API/UI/로직 없음 |
+| P7-R1-T2 구역별 접근권한 | 🟨 | `ZoneAccess` 모델 + `api/zone_access.py`(규칙 CRUD + `user_can_enter_zone` 진입검증 + can-enter API). pytest 통과. UI + Phase4 room-enter 배선만 잔여 (2026-07-05 신설) |
 | P7-R1-T3 회의록 AI 요약 | ⬜ | `meeting_ai_summarizer.py` 없음 |
 | P7-R1-T4 조직도 실시간 에디터 | ✅ | **조직도 화면**(React Flow CRUD, E2E ✅) |
 | P7-R1-T5 Events 전용 화면 | ⬜ | 없음(MVP는 회의 캘린더 대체, D26) |
@@ -139,7 +143,7 @@
 | P7-R2-T2 개인화 대시보드 | ✅ | **대시보드 화면**(내 KPI 평균·업무 완료율·예정 회의 집계) (2026-07-05 신설) |
 | P7-R2-T3 실시간 협업 피드 | 🟨 | **활동 피드 화면**(감사로그 기반, admin). 실시간(WS) 갱신은 미구현 (2026-07-05 신설) |
 | P7-R3-T1 감사 로그 | ✅ | `services/audit_service.py`+`api/audit.py`(B-14, 9훅 배선) |
-| P7-R3-T2 클라 자동업데이트 | ⬜ | `/client/version`·`updater.gd` 없음 |
+| P7-R3-T2 클라 자동업데이트 | 🟨 | `GET /api/client/version`(latest/min/required/url, semver 비교) + config. pytest 통과. `updater.gd`·서명검증·실 pak 서빙은 클라/인프라 잔여 (2026-07-05 신설) |
 | P7-R3-T3 ERP 실패 알림+관측 | 🟨 | **알림 채널 구현**: `Notification` 모델 + `notification_service`(DB 영속 + 선택적 Slack 웹훅) + `api/notifications.py` + **알림/감사로그 화면**. 실패 훅 배선(sync 트리거·스케줄러 erp 잡·KPI push). E2E+pytest 통과. 관측 스택(Grafana/Prometheus/Loki/Kuma)만 인프라 범위 잔여 (2026-07-05 신설) |
 | P7-R3-T4 도그푸딩 피드백 | ✅ | `Feedback` 모델 + `api/feedback.py`(제출/목록/상태) + **피드백 화면**(제출·관리자 검토). E2E 통과 (2026-07-05 신설) |
 | P7-R2-V 통합검증 | ⬜ | — |
