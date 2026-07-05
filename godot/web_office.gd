@@ -25,13 +25,14 @@ func _ready() -> void:
 	VisualsScript.setup_environment(self)
 	VisualsScript.populate(layout, self, loader.floor_height)
 
-	# 아이소 카메라 리그(마우스 오빗)
+	# 아이소 카메라 리그(마우스 오빗) — 방이 화면을 채우도록 타이트 프레이밍
 	_pivot = Node3D.new()
-	_pivot.position = Vector3(15.0, 0.0, 10.0)
+	_pivot.position = Vector3(14.0, 0.5, 9.0)
 	add_child(_pivot)
 	_cam = Camera3D.new()
 	_pivot.add_child(_cam)
-	_cam.position = Vector3(0.0, 20.0, 26.0)
+	_cam.fov = 46.0
+	_cam.position = Vector3(-16.0, 13.0, 16.0)
 	_cam.look_at(_pivot.global_position, Vector3.UP)
 	_cam.current = true
 
