@@ -48,15 +48,17 @@
 ## Phase 1 — 프리미엄 골든 샘플 3D (7) — **시각 전무**
 | Task | 상태 | 근거/갭 |
 |---|---|---|
-| P1-S1-T1 로비/브랜드월 모델링 | 🟨 | `office_layout_loader`가 layout→3D 구조(바닥/벽/방) **프리미티브 렌더**. 전용 로비·브랜드월 GLB 에셋만 잔여 (2026-07-05 시각메시 추가) |
-| P1-S1-T2 좌석영역 3D | 🟨 | 로더가 좌석 위치를 컬러 메시로 렌더(점유색은 런타임). 실 데스크 GLB만 잔여 |
-| P1-S1-T3 회의실/라운지/집중실/폰부스 | 🟨 | 로더가 방 벽(문 개구부 포함)·유리벽 반투명 렌더. 용도별 GLB 디테일만 잔여 |
+| P1-S1-T1 로비/브랜드월 모델링 | ✅ | `office_visuals`가 dimensions 파생 **외곽 벽(입구 개방)+L자 리셉션 카운터/선반** 생성 + **목재 마루 PBR**(diagonal_parquet). 데이터 기반(레이아웃 변경 자동 반영). Forward+/웹 WebGL2 렌더 검증 (2026-07-05) |
+| P1-S1-T2 좌석영역 3D | ✅ | `office_visuals`가 furniture→**실 CC0 데스크 GLB**, seat→**의자 GLB**(facing 회전) 인스턴싱 + 데스크램프. 점유색은 런타임. Forward+/웹 렌더 검증 (2026-07-05) |
+| P1-S1-T3 회의실/라운지/집중실/폰부스 | 🟨 | 로더가 방 벽(문 개구부)·유리벽 옅은 청록 반투명 렌더 + `office_visuals` 라운지(소파+커피테이블 GLB)·화분. 용도별 세부 GLB 디테일만 잔여 |
 | P1-S1-T4 아바타 모델·애니메이션 | ⬜ | 이동 로직 `avatar.gd`만. Rigged GLB 모델·애니메이션은 아트(GPU) 필요 |
 | P1-S1-T5 이름/상태 HUD+직원패널 | 🟨 | `avatar_hud.gd`(빌보드 Label3D + D13 7상태 아이콘/색). GUT 통과. 직원 우측패널은 UI 잔여 (2026-07-05 신설) |
 | P1-S1-T6 회의패널+미니맵 | 🟨 | `minimap.gd`(top-down 변환+마커, GUT 통과). 하단 회의패널 UI만 잔여 (2026-07-05 신설) |
 | P1-S1-V 통합검증 | ⬜ | 60fps 렌더·10명 동시 = GPU 환경 필요. 로직/씬 구성은 GUT 100 passing |
 
-> Godot 존재분: `scenes/`(avatar·net_client·office_client·office_layout_loader·**avatar_hud·minimap·updater**.gd) + `server/`(jwt_verify·server_main·game_server.gd) + GUT 테스트(**102 tests / 100 passing**, Godot 4.7 헤드리스). 로더가 layout→3D를 **프리미티브+머티리얼로 렌더**(GLB 에셋 투입 전 골든샘플 가시화). 실 GLB 아트·아바타 리깅·60fps GPU 렌더만 잔여.
+> Godot 존재분: `scenes/`(avatar·net_client·office_client·office_layout_loader·**office_visuals·office_builder·avatar_hud·minimap·updater**.gd) + `web_office.gd/.tscn`(웹 임베드 뷰어) + `server/`(jwt_verify·server_main·game_server.gd) + GUT 테스트. **office_visuals가 데이터 기반으로 CC0 GLB 가구/의자/화분/소파 인스턴싱 + 외곽벽·리셉션·목재마루 + HDRI IBL 조명** → 좌석·조직 배치 변경 시 자동 반영. **Godot Web export(WASM/WebGL2)를 `frontend/public/office/`로 산출 → Next.js 대시보드 중앙 iframe 임베드**(D31). Forward+ 데스크톱 + 실제 Chrome WebGL2 부팅 양쪽 렌더 검증(2026-07-05). 잔여: 아바타 리깅 GLB·60fps 실측(GPU 환경).
+
+> **웹 3D 임베드 + 시안 대시보드(D31, 2026-07-05)**: Godot 엔진을 웹에 임베드(Three.js 재구현 아님)하라는 사용자 지시로 D11의 WASM 미사용 조항 폐기. `office_visuals.gd`(CC0 GLB + HDRI + 외곽벽/리셉션/마루), `sample_office_layout.json` 3팀존 12책상 확장, Web export preset(nothreads), 대시보드(`/dashboard`)를 시안형 단일페이지로 재도장(중앙 3D iframe + 재직직원·오늘일정·진행업무·KPI 원형게이지·알림, 실데이터). 검증: tsc 0에러·next build·헤드리스 로그인→대시보드 캡처·웹 Godot 부팅 렌더.
 
 ## Phase 2 — ERP 동기화 & 좌석배정 (11)
 | Task | 상태 | 근거/갭 |

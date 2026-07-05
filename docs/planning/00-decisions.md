@@ -29,7 +29,7 @@
 | **D8** | 에셋 전달 = **클라이언트 빌드(pak) 동봉** | 에셋 카탈로그는 클라이언트에 포함(임포트 최적화·VRAM 압축·LOD 적용). layout JSON은 `asset_id` 참조만. 신규 에셋 추가 = 클라이언트 자동 업데이트 채널로 배포. 산출물 포맷 `.tscn`(임포트 완료본) | 런타임 glb 다운로드/CDN, Draco·meshopt 압축(Godot 미지원) |
 | **D9** | room = **파라메트릭 생성** | 벽 세그먼트 + **door opening(문 개구부) 필드 신설** — 방 콜리전에 출입구 구멍 정의. 프리팹은 가구·소품만 | 회의실 골조 프리팹(고정 크기), 개구부 없는 solid box 콜리전 |
 | **D10** | 좌석 배정 = **layout JSON에서 분리** | layout JSON은 공간 구조만(좌석 위치·타입·방향). 좌석↔직원 배정은 DB(`seat.assigned_user_id` 현재값 + `seat_assignment_history` 이력) — 04 정본과 명명 통일(2026-07-02). 배정 변경은 레이아웃 재배포 불필요. seat에 `facing`(도 단위) 필드 추가, seat↔furniture 상호 참조(`furniture_id`) 추가 | 배정 포함 blob 전체 재배포 |
-| **D11** | 웹 3D 미리보기 = **제거** | 편집기는 Konva.js 2D 전용. 정밀 확인은 저장 후 **데스크톱 클라이언트 draft 모드**로 열람. WASM/HTML5 export 미사용(PRD WON'T 준수) | Godot HTML5 export iframe, WebSocket 픽셀 스트리밍 |
+| **D11** (⚠️ **D31이 부분 대체** 2026-07-05) | 웹 3D 미리보기 = **제거** | 편집기는 Konva.js 2D 전용(유지). 정밀 확인은 저장 후 **데스크톱 클라이언트 draft 모드**로 열람(유지). ~~WASM/HTML5 export 미사용~~ → **D31로 폐기: Godot WASM을 웹 대시보드에 임베드 채택** | Godot HTML5 export iframe(→D31로 채택됨), WebSocket 픽셀 스트리밍 |
 | **D12** | 레이아웃 검증 = **서버(FastAPI) 단일 정밀 검증** | 공식 JSON Schema 파일 제공. 도달성(A*) 포함 정밀 검증은 서버 1곳. 웹 편집기는 경량 체크(범위/겹침)만. **ERROR는 배포 불가**(`[무시하고 배포]` 버튼 제거), WARNING만 무시 가능 | 웹/서버/Godot 3중 검증 구현 |
 | **D25** | 좌표계 = **top_left 단일 고정, 미터 단위** | `coordinate_origin`은 `top_left` 하나만 허용. Godot 매핑: `Vector3(x, floor_height, y)` (+X 동, +Z 남). 회전·facing 단위는 **도(degree), 시계방향, 기준축 +X**. 층별 `floor_height` 오프셋 규칙 명시 | origin 3종 허용, 단위/방향 미정의 |
 
@@ -80,6 +80,7 @@
 | **D28** | 인앱 화상 HUD = **플로팅 드래그 패널** | 그리드 비디오 타일 + 컨트롤바(마이크/카메라/화면공유/리액션/손들기/종료). 06 footer 회의 컨트롤을 이 패널로 구체화(Phase 5, E3). 회의록 **작성**은 여전히 웹(D5 경계) | 고정 footer 전용 |
 | **D29** | 우측 People 패널 = **상태 섹션 그룹핑** | 필터(all/online/meeting/focus/away)를 섹션 그룹(**In Office / In a Meeting / Online / Away**)으로 표현 + 호스트 왕관 배지 | 단일 목록+필터만 |
 | **D30** | 시각 품질 기준(아트 타깃) = **시안 레퍼런스** | `design/screens/virtual-office-3d-reference.md`(실사급 PBR + 다크 글래스모피즘 HUD)를 Phase 1 골든샘플 수용기준으로 고정(D22 60fps와 병행). 웹 콘솔·3D HUD 디자인토큰 공통 | 텍스트 품질기준만 |
+| **D31** (2026-07-05 — 사용자 지시로 D11 부분 대체) | 웹 3D = **Godot 엔진 WASM/HTML5 임베드 채택** (Three.js 재구현 아님) | 사용자가 시안 퀄리티의 3D를 **웹 대시보드 중앙에 임베드**하도록 방향 전환. Godot Web export(nothreads, WebGL2/Compatibility)를 `frontend/public/office/`로 산출 → Next.js가 `/office/index.html` iframe으로 임베드. 씬은 **데이터 기반**(`office_layout_loader`가 layout JSON에서 구조·콜리전, `office_visuals`가 CC0 GLB 가구/의자/화분·외곽벽·리셉션·목재마루·HDRI IBL 배치) → 좌석·조직 배치 변경 시 자동 반영. 좌석 편집기 정밀 확인용 데스크톱 draft(D11)는 유지, 웹 임베드는 뷰어·대시보드 용도. 성능: iframe 지연 로드(입장 클릭), 데스크톱 Forward+ > 웹 Compatibility 품질차 수용. **D11의 "WASM/HTML5 export 미사용" 조항만 폐기**, 편집기 Konva 2D 전용(D11)·서버 단일 검증(D12)은 유지 | ~~D11: WASM/HTML5 export 전면 미사용~~, Three.js 웹 재구현, WebSocket 픽셀 스트리밍 |
 
 ---
 
