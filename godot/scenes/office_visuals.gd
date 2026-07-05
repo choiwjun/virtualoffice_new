@@ -134,6 +134,72 @@ static func _wood_wall_material() -> StandardMaterial3D:
 	return m
 
 
+## 절차적 모던 아트 텍스처(갤러리월 캔버스용) — 색면+기하 구성(Bauhaus 톤).
+static func _make_art_texture(idx: int) -> ImageTexture:
+	var W := 256
+	var H := 320
+	var img := Image.create(W, H, false, Image.FORMAT_RGB8)
+	# 팔레트(브랜드 인디고/블루 + 웜 액센트)
+	var palettes := [
+		[Color(0.93, 0.92, 0.88), Color(0.20, 0.35, 0.72), Color(0.94, 0.55, 0.22), Color(0.15, 0.17, 0.24)],
+		[Color(0.96, 0.94, 0.90), Color(0.16, 0.55, 0.62), Color(0.88, 0.30, 0.34), Color(0.22, 0.26, 0.34)],
+		[Color(0.91, 0.90, 0.86), Color(0.30, 0.32, 0.60), Color(0.55, 0.72, 0.45), Color(0.18, 0.20, 0.28)],
+	]
+	var pal: Array = palettes[idx % palettes.size()]
+	img.fill(pal[0])
+	# 구성 변형(인덱스별로 다른 기하)
+	var m := idx % 3
+	if m == 0:
+		_fill_rect(img, 0.10, 0.12, 0.55, 0.5, pal[1])
+		_fill_rect(img, 0.40, 0.45, 0.5, 0.42, pal[2])
+		_fill_rect(img, 0.12, 0.70, 0.30, 0.18, pal[3])
+	elif m == 1:
+		_fill_rect(img, 0.0, 0.0, 1.0, 0.34, pal[1])
+		_fill_circle(img, 0.66, 0.60, 0.24, pal[2])
+		_fill_rect(img, 0.10, 0.78, 0.80, 0.10, pal[3])
+	else:
+		_fill_rect(img, 0.08, 0.10, 0.36, 0.78, pal[3])
+		_fill_rect(img, 0.50, 0.14, 0.40, 0.34, pal[2])
+		_fill_rect(img, 0.50, 0.55, 0.40, 0.32, pal[1])
+	return ImageTexture.create_from_image(img)
+
+
+static func _fill_rect(img: Image, fx: float, fy: float, fw: float, fh: float, col: Color) -> void:
+	var W := img.get_width(); var H := img.get_height()
+	var x0 := int(fx * W); var y0 := int(fy * H)
+	var x1 := int((fx + fw) * W); var y1 := int((fy + fh) * H)
+	for y in range(max(0, y0), min(H, y1)):
+		for x in range(max(0, x0), min(W, x1)):
+			img.set_pixel(x, y, col)
+
+
+static func _fill_circle(img: Image, fx: float, fy: float, fr: float, col: Color) -> void:
+	var W := img.get_width(); var H := img.get_height()
+	var cx := fx * W; var cy := fy * H; var r := fr * W
+	for y in range(H):
+		for x in range(W):
+			if Vector2(x - cx, y - cy).length() <= r:
+				img.set_pixel(x, y, col)
+
+
+## 벽 갤러리 캔버스: 어두운 프레임 + 아트 텍스처 패널(살짝 발광으로 또렷하게).
+static func _add_wall_art(parent: Node3D, cx: float, cy: float, cz: float, w: float, h: float, idx: int) -> void:
+	# 프레임은 벽쪽(뒤), 캔버스는 앞으로 돌출 → 카메라(+z)에서 아트가 프레임에 안 가림.
+	var frame_mat := StandardMaterial3D.new()
+	frame_mat.albedo_color = Color(0.10, 0.10, 0.12)
+	frame_mat.roughness = 0.5
+	_box(parent, Vector3(cx, cy, cz), Vector3(w + 0.10, h + 0.10, 0.03), frame_mat)
+	var art := StandardMaterial3D.new()
+	var tex := _make_art_texture(idx)
+	art.albedo_texture = tex
+	art.roughness = 0.9
+	# 뒷벽은 직사광이 약함 → 자기발광을 충분히 줘 아트 색이 또렷(과하지 않게).
+	art.emission_enabled = true
+	art.emission_texture = tex
+	art.emission_energy_multiplier = 0.9
+	_box(parent, Vector3(cx, cy, cz + 0.045), Vector3(w, h, 0.02), art)
+
+
 ## 축 정렬 박스(위치=바닥에 놓이는 하단 기준). 시각 전용(충돌은 로더가 담당).
 static func _box(parent: Node3D, center: Vector3, size: Vector3, mat: Material) -> void:
 	var mi := MeshInstance3D.new()
@@ -509,13 +575,11 @@ static func populate(layout: Dictionary, parent: Node3D, floor_height: float) ->
 			pl.position = Vector3(pc.x, floor_height, pc.y)
 			placed += 1
 
-	# 6) 벽 갤러리 — 뒷벽 우측에 액자 3개 나란히(시안의 갤러리월)
-	for gi in range(3):
-		var fr := _instance("frame")
-		if fr:
-			parent.add_child(fr)
-			fr.position = Vector3(minx + (maxx - minx) * (0.42 + gi * 0.07), floor_height + 1.85, miny + 0.16)
-			placed += 1
+	# 6) 벽 갤러리 — 뒷벽(브랜드월과 첫 창 사이)에 아트 캔버스 3점(시안의 갤러리월)
+	var art_x := [11.0, 13.6, 16.2]
+	for gi in range(art_x.size()):
+		_add_wall_art(parent, art_x[gi], floor_height + 1.85, miny + 0.12, 1.35, 1.75, gi)
+		placed += 1
 
 	# 7) 카페존 — 우측 오픈 공간에 러그 + 원형 테이블 + 의자 3개
 	var cafe := Vector2(maxx - 4.5, miny + 6.5)
@@ -578,12 +642,19 @@ static func _pose_seated(person: Node3D) -> void:
 		return
 	var s := sk as Skeleton3D
 	# 델타 회전을 각 본의 rest(바인드) 방향에 합성해야 함(절대 설정하면 팔다리가 깨짐).
-	# 허벅지 앞으로(수평), 정강이 아래로(무릎 90도). 팔은 자연스러운 rest(A포즈) 유지.
+	# 다리: 허벅지 앞으로(수평)·정강이 아래로(무릎 90도).
+	# 팔: 위팔 살짝 앞으로 내리고 아래팔을 앞으로 굽혀 '책상 위 타이핑' 자세.
 	var thigh := Quaternion(Vector3(1, 0, 0), deg_to_rad(86))
 	var shin := Quaternion(Vector3(1, 0, 0), deg_to_rad(-96))
+	# 위팔은 rest(자연스러운 옆내림) 유지, 아래팔만 앞으로 굽혀 책상 위로(팔꿈치 굴곡).
+	var fore_arm := Quaternion(Vector3(1, 0, 0), deg_to_rad(72))
+	# 상체를 살짝 앞으로 숙여 '일하는' 자세
+	var lean := Quaternion(Vector3(1, 0, 0), deg_to_rad(12))
 	var pose := {
 		"UpperLeg.L": thigh, "UpperLeg.R": thigh,
 		"LowerLeg.L": shin, "LowerLeg.R": shin,
+		"LowerArm.L": fore_arm, "LowerArm.R": fore_arm,
+		"Abdomen": lean,
 	}
 	for bn in pose:
 		var bi := s.find_bone(bn)

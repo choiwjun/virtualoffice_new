@@ -15,11 +15,19 @@ var _layout: Dictionary
 
 
 func _ready() -> void:
+	# 라이트맵 베이킹은 런타임 스크립트에 미노출(에디터 GPU 전용) → 데이터기반 런타임 렌더와 비호환.
+	# 대신 실현 가능한 최상단 광질: 2x 슈퍼샘플링(SSAA) + 고해상 소프트섀도 + 최대 GI.
+	ProjectSettings.set_setting("rendering/lights_and_shadows/directional_shadow/size", 8192)
+	ProjectSettings.set_setting("rendering/lights_and_shadows/directional_shadow/soft_shadow_filter_quality", 5)
+	ProjectSettings.set_setting("rendering/lights_and_shadows/positional_shadow/soft_shadow_filter_quality", 5)
 	get_window().size = Vector2i(CAP_W, CAP_H)
 	var vp := get_viewport()
 	vp.msaa_3d = Viewport.MSAA_8X
-	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED
 	vp.use_taa = false
+	# 3D 내부를 2배 해상도로 렌더 후 다운샘플(슈퍼샘플링) — 라이트맵급 크리스프/AA.
+	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	vp.scaling_3d_scale = 2.0
 
 	var LoaderScript := load("res://scenes/office_layout_loader.gd")
 	var loader = LoaderScript.new()
