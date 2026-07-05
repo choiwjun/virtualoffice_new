@@ -8,26 +8,56 @@
 
 body {
   @apply bg-bg text-ink;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* 스크롤바 — 다크 톤 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-panel2;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium
-      bg-brand text-white transition-colors hover:opacity-90 disabled:opacity-40
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium
+      bg-brand text-white transition-colors hover:bg-brand2 disabled:opacity-40
       disabled:cursor-not-allowed;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium
-      border border-panel2 bg-transparent text-ink hover:bg-panel2/40 disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium
+      border border-panel2 bg-transparent text-ink hover:bg-panel3 disabled:opacity-40;
   }
   .card {
-    @apply rounded-lg border border-panel2 bg-panel p-4;
+    @apply rounded-2xl border border-panel2/70 bg-panel/90 p-4 shadow-panel;
+  }
+  /* 글래스모피즘 표면(플로팅 패널/HUD) */
+  .glass {
+    @apply rounded-2xl border border-white/10 bg-bg2/70 shadow-glass backdrop-blur-md;
   }
   .input {
-    @apply w-full rounded-md border border-panel2 bg-bg px-3 py-2 text-sm text-ink
-      outline-none focus:border-brand;
+    @apply w-full rounded-lg border border-panel2 bg-bg px-3 py-2 text-sm text-ink
+      outline-none placeholder:text-sub focus:border-brand;
   }
   .badge {
-    @apply inline-block rounded px-2 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+  /* 좌측 내비 항목 */
+  .nav-item {
+    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-sub
+      transition-colors hover:bg-panel3 hover:text-ink;
+  }
+  .nav-item-active {
+    @apply bg-brand text-white shadow-[0_4px_16px_rgba(59,130,246,0.35)] hover:bg-brand hover:text-white;
+  }
+  /* 상단바 아이콘 버튼 */
+  .icon-btn {
+    @apply grid h-9 w-9 place-items-center rounded-lg border border-panel2/70 bg-panel/60
+      text-sub transition-colors hover:bg-panel3 hover:text-ink;
   }
 }
