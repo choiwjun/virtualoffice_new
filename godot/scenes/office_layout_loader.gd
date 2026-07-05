@@ -36,6 +36,10 @@ var rooms_out: Array = []          ## [{ id, name, type, coords }]
 var obstacle_cells: Array[Vector2i] = []  ## A* 1m 격자 차단 셀(콜라이더+가구+방벽−문)
 var floor_height: float = 0.0
 
+## true면 가구/좌석을 프리미티브 박스로 렌더(기본). false면 시각 메시 생략(충돌만) —
+## 실 GLB 에셋(office_visuals.gd)이 대신 배치할 때 사용.
+var primitive_furniture: bool = true
+
 
 # ============================================================================
 # 진입점
@@ -338,7 +342,7 @@ func _build_furniture(layout: Dictionary) -> void:
 			float(c.get("y", 0.0)) - depth / 2.0,
 			w, depth,
 		)
-		_add_solid("Furniture_%s" % str(f.get("furniture_id", "")), rect, height, "furniture")
+		_add_solid("Furniture_%s" % str(f.get("furniture_id", "")), rect, height, "furniture", primitive_furniture)
 
 
 func _build_seats(layout: Dictionary) -> void:
@@ -348,7 +352,8 @@ func _build_seats(layout: Dictionary) -> void:
 		m.name = "Seat_%s" % str(s["id"])
 		add_child(m)
 		m.position = Vector3(s["pos"].x, floor_height, s["pos"].z)
-		_attach_box_mesh(m, Vector3(0.5, 0.1, 0.5), COLOR_SEAT)
+		if primitive_furniture:
+			_attach_box_mesh(m, Vector3(0.5, 0.1, 0.5), COLOR_SEAT)
 
 
 func _build_spawns(layout: Dictionary) -> void:
@@ -362,7 +367,7 @@ func _build_spawns(layout: Dictionary) -> void:
 
 
 ## Rect2(2D) + 높이로 정적 충돌체를 만들어 self에 부착. kind로 시각 머티리얼 색을 지정.
-func _add_solid(node_name: String, rect: Rect2, height: float, kind := "wall") -> StaticBody3D:
+func _add_solid(node_name: String, rect: Rect2, height: float, kind := "wall", visual := true) -> StaticBody3D:
 	var center := Vector3(
 		rect.position.x + rect.size.x / 2.0,
 		floor_height + height / 2.0,
@@ -371,7 +376,8 @@ func _add_solid(node_name: String, rect: Rect2, height: float, kind := "wall") -
 	var size := Vector3(maxf(rect.size.x, 0.01), height, maxf(rect.size.y, 0.01))
 	var body := OfficeBuilder.wall(self, center, size)
 	body.name = node_name
-	_attach_box_mesh(body, size, _color_for(kind))
+	if visual:
+		_attach_box_mesh(body, size, _color_for(kind))
 	return body
 
 
