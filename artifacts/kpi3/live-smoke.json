@@ -1,0 +1,10 @@
+{"schemaVersion":1,"kind":"api-package-test-report","surface":"api","description":"운영허브 ③ 라이브 스모크(work_log/meetings/KPI)",
+ "checks":[
+  {"name":"work_log POST","evidence":"POST /api/work-logs 201 (auth 토큰)","verdict":"passed"},
+  {"name":"work_log GET","evidence":"GET /api/work-logs 200 목록","verdict":"passed"},
+  {"name":"meeting create","evidence":"POST /api/meetings 201","verdict":"passed"},
+  {"name":"kpi compute deterministic","evidence":"POST /api/kpi-results/compute → 8 metric(04 §2.5 정본 어휘), 2회 재계산 collaboration_score 동일 24.5(감사요건)","verdict":"passed"},
+  {"name":"kpi metrics canonical","evidence":"work_completed_count/work_quality_score/minutes_authored_count/action_items_completed/action_items_ontime_rate/report_fidelity_score/collaboration_score/quarterly_total","verdict":"passed"},
+  {"name":"kpi adjust+finalize","evidence":"POST adjust 200, finalize 200 (final_score=80, finalized_at set)","verdict":"passed"},
+  {"name":"objection state machine D15","evidence":"none→submitted→reviewing→resolved (objection_status=resolved 확인)","verdict":"passed"}
+ ]}
