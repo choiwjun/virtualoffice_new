@@ -29,6 +29,12 @@ http://localhost:8090 {
 	handle /api/wa/livekit-token {
 		reverse_proxy backend:8000
 	}
+	# FastAPI 백엔드 인증 엔드포인트 (웹콘솔, D4 JWT HS256)
+	# /api/* strip_prefix 블록보다 먼저 매칭되어야 하므로 앞에 배치.
+	handle /api/auth/* {
+		reverse_proxy backend:8000
+	}
+
 
 	handle /api/* {
 		uri strip_prefix /api
