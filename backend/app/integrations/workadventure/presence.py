@@ -76,6 +76,7 @@ class WaEventKind(str, Enum):
     ENTER_ZONE = "enter_zone"    # 플레이어가 존 진입
     LEAVE_ZONE = "leave_zone"    # 플레이어가 존 이탈
     VARIABLE   = "variable"      # WA.state.saveVariable 변경 이벤트
+    IDLE       = "idle"          # 클라이언트 5분 무입력 감지 → AWAY (D13)
 
 
 @dataclass(frozen=True)
@@ -130,6 +131,8 @@ _EVENT_TO_STATUS: list[tuple[WaEvent, PresenceStatus]] = [
     (WaEvent(kind=WaEventKind.VARIABLE, variable_name=VARIABLE_PRESENCE, variable_value="external"), PresenceStatus.EXTERNAL),
     # 변수 클리어 → ONLINE (이후 위치 기반 존 이벤트가 재정의)
     (WaEvent(kind=WaEventKind.VARIABLE, variable_name=VARIABLE_PRESENCE, variable_value=""),         PresenceStatus.ONLINE),
+    # 클라이언트 유휴 감지 → AWAY (D13: 5분 무입력, presence.js 클라이언트 송신)
+    (WaEvent(kind=WaEventKind.IDLE), PresenceStatus.AWAY),
 ]
 
 
