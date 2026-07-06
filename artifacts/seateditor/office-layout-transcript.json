@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "surface": "web",
+  "finalUrl": "http://localhost:3000/admin/office-layout",
+  "actions": [
+    {
+      "type": "goto",
+      "timestamp": "2026-07-06T23:17:09.219Z",
+      "selector": "a[href=/login]",
+      "url": "http://localhost:3000/login"
+    },
+    {
+      "type": "type",
+      "timestamp": "2026-07-06T23:17:09.459Z",
+      "selector": "#email",
+      "value": "alice@virtualoffice.local"
+    },
+    {
+      "type": "type",
+      "timestamp": "2026-07-06T23:17:09.515Z",
+      "selector": "#password",
+      "value": "***"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-06T23:17:10.067Z",
+      "selector": "button[type=submit]",
+      "note": "login submit"
+    },
+    {
+      "type": "goto",
+      "timestamp": "2026-07-06T23:17:14.632Z",
+      "selector": "a[href=/admin/office-layout]",
+      "url": "http://localhost:3000/admin/office-layout"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-06T23:17:17.651Z",
+      "selector": "button:현재 배치로 초안 생성",
+      "ok": true
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-06T23:17:21.160Z",
+      "selector": "button:검증",
+      "ok": true
+    },
+    {
+      "type": "screenshot",
+      "timestamp": "2026-07-06T23:17:24.712Z",
+      "path": "artifacts/seateditor/office-layout-validated.png"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "editor page loaded",
+      "status": "passed",
+      "detail": "좌석 배치 편집기 heading present",
+      "timestamp": "2026-07-06T23:17:17.636Z"
+    },
+    {
+      "name": "create-draft clickable",
+      "status": "passed",
+      "detail": "draft create button enabled+clicked",
+      "timestamp": "2026-07-06T23:17:17.651Z"
+    },
+    {
+      "name": "validate clickable",
+      "status": "passed",
+      "detail": "validate button present+clicked",
+      "timestamp": "2026-07-06T23:17:21.160Z"
+    },
+    {
+      "name": "validated status shown",
+      "status": "passed",
+      "detail": "toast/badge shows validated (errors 0)",
+      "timestamp": "2026-07-06T23:17:24.663Z"
+    },
+    {
+      "name": "zero validation errors",
+      "status": "passed",
+      "detail": "toast reports 오류 0",
+      "timestamp": "2026-07-06T23:17:24.663Z"
+    }
+  ]
+}

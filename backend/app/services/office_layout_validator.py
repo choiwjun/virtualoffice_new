@@ -46,12 +46,18 @@ except ImportError:  # pragma: no cover - 런타임 의존성 누락 방어
 
 # 공식 JSON Schema 파일 경로 (docs 정본). 배포 패키지에서는
 # backend/app/schemas/office_layout.schema.json 로 복사되어 참조될 수 있음(05 §3.0).
-SCHEMA_PATH = (
-    Path(__file__).resolve().parents[3]
-    / "docs"
-    / "data-model"
-    / "office-layout-schema.json"
-)
+def _resolve_schema_path() -> Path:
+    """공식 스키마 경로 해석.
+
+    배포 이미지(build context=backend/)에는 backend/app/schemas/ 로 동봉되고,
+    로컬/모노레포에서는 docs/data-model/ 정본을 참조한다. 존재하는 첫 경로 사용.
+    """
+    packaged = Path(__file__).resolve().parents[1] / "schemas" / "office-layout-schema.json"
+    docs = Path(__file__).resolve().parents[3] / "docs" / "data-model" / "office-layout-schema.json"
+    return packaged if packaged.exists() else docs
+
+
+SCHEMA_PATH = _resolve_schema_path()
 
 DRAW_CALL_BUDGET = 200          # §3.4 드로우콜 예산 초과 → ERROR
 POLYGON_BUDGET = 1_500_000      # §3.4 폴리곤 예산 초과 → WARNING (07 §1.2 기준 상한)
@@ -530,7 +536,7 @@ def _validate_reachability(layout: dict[str, Any], result: ValidationResult) -> 
 
     # 스폰 셀 집합에서 BFS
     spawns = layout.get("spawn_points", []) or []
-    sources = [grid.cell(sp.get("coords", {})) for sp in spawns]
+    sources = [grid.cell_of(sp.get("coords", {})) for sp in spawns]
     sources = [c for c in sources if c and grid.walkable(*c)]
     if not sources:
         result.warn(
@@ -752,7 +758,7 @@ class _CollisionGrid:
         grid._mark_room_walls(layout)
         return grid
 
-    def cell(self, coords: dict[str, Any]) -> Optional[tuple[int, int]]:
+    def cell_of(self, coords: dict[str, Any]) -> Optional[tuple[int, int]]:
         if "x" not in coords or "y" not in coords:
             return None
         c = int((coords["x"] - self.min_x) / self.cell)
@@ -833,7 +839,7 @@ class _CollisionGrid:
         목표 좌표 셀 또는 인접 8셀 중 reachable에 포함된 셀 반환(없으면 None).
         좌석/문 중심이 벽 셀 위에 놓일 수 있어 이웃까지 허용한다.
         """
-        target = self.cell(coords)
+        target = self.cell_of(coords)
         if target is None:
             return None
         tr, tc = target

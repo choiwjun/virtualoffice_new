@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isAdmin } from '@/lib/auth';
 import type { SeatBox } from '@/components/office/SeatCanvas';
+import { buildOfficeLayout } from '@/lib/officeLayout';
 
 const SeatCanvas = dynamic(() => import('@/components/office/SeatCanvas'), {
   ssr: false,
@@ -45,6 +46,8 @@ export default function OfficeLayoutPage() {
   const allowed = isAdmin(me);
   const [seats, setSeats] = useState<SeatBox[]>([]);
   const [floorId, setFloorId] = useState<string | null>(null);
+  const [floorName, setFloorName] = useState<string | null>(null);
+  const [floorLevel, setFloorLevel] = useState<number | null>(null);
   const [officeId, setOfficeId] = useState<string | null>(null);
   const [layouts, setLayouts] = useState<LayoutRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +69,8 @@ export default function OfficeLayoutPage() {
         api.get<LayoutRow[]>('/api/office-layouts').catch(() => [] as LayoutRow[]),
       ]);
       setFloorId(floors[0]?.id ?? null);
+      setFloorName(floors[0]?.name ?? null);
+      setFloorLevel(floors[0]?.level ?? null);
       setOfficeId(floors[0]?.office_id ?? null);
       setLayouts(lays);
       setSeats(apiSeats.filter((s) => s.status !== 'disabled').map(toBox));
@@ -124,9 +129,17 @@ export default function OfficeLayoutPage() {
   const createDraft = async () => {
     if (!officeId || !floorId) { flash('office/floor 없음'); return; }
     try {
-      const seatJson = seats.map((s) => ({ seat_id: s.id, x: s.x, y: s.y, type: s.type }));
-      await api.post('/api/office-layouts', { office_id: officeId, floor_id: floorId, json: { version: '1.0', seats: seatJson } });
-      flash('레이아웃 초안 생성됨');
+
+      const json = buildOfficeLayout({
+        officeId,
+        floorId,
+        floorName: floorName ?? undefined,
+        floorLevel: floorLevel ?? undefined,
+        seats: seats.map((s) => ({ id: s.id, x: s.x, y: s.y, type: s.type })),
+        createdBy: me?.id ?? 0,
+      });
+      await api.post('/api/office-layouts', { office_id: officeId, floor_id: floorId, json });
+      flash('스키마-유효 레이아웃 초안 생성됨 · 검증하세요');
       load();
     } catch (e) {
       flash(e instanceof ApiError ? `초안 생성 실패 (${e.status})` : '오류');
