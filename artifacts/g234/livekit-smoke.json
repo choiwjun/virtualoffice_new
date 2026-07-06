@@ -1,0 +1,2 @@
+{"detail":[{"type":"missing","loc":["body","user_id"],"msg":"Field required","input":{"employee_id":1001,"email":"alice@virtualoffice.local","room_name":"meeting-room-1","meeting_id":1}},{"type":"uuid_type","loc":["body","meeting_id"],"msg":"UUID input should be a string, bytes or UUID object","input":1}]}
+[422]

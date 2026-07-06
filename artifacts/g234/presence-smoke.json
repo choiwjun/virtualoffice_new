@@ -1,0 +1,7 @@
+{"schemaVersion":1,"kind":"api-live-smoke","endpoint":"POST /api/wa/presence","surface":"api",
+ "results":[
+  {"zone":"meeting_room","request":{"employee_id":1001,"kind":"enter_zone","zone_name":"meeting_room"},"response":{"resolved_status":"meeting"},"verdict":"passed"},
+  {"zone":"desk","request":{"employee_id":1001,"kind":"enter_zone","zone_name":"desk"},"response":{"resolved_status":"working"},"verdict":"passed"},
+  {"zone":"focus_room","request":{"employee_id":1001,"kind":"enter_zone","zone_name":"focus_room"},"response":{"resolved_status":"focus"},"verdict":"passed"},
+  {"event":"idle","request":{"employee_id":1001,"kind":"idle"},"response":{"resolved_status":"away"},"verdict":"passed"}
+ ]}
