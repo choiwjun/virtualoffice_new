@@ -60,6 +60,12 @@ const MENU_ITEMS: MenuItem[] = [
     roles: ['admin', 'super_admin'],
     icon: '🔄',
   },
+  {
+    href: '/admin/audit',
+    label: '감사 로그',
+    roles: ['admin', 'super_admin'],
+    icon: '📜',
+  },
 ];
 
 interface SidebarProps {

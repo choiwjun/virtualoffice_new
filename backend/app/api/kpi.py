@@ -39,6 +39,7 @@ from app.models.tables import (
     KpiResult,
 )
 from app.services.kpi_engine import compute_and_upsert_kpi
+from app.services.audit import record_audit
 
 router = APIRouter(prefix="/api/kpi-results", tags=["kpi"])
 
@@ -271,6 +272,14 @@ async def adjust_kpi_result(
 
     await db.commit()
     await db.refresh(r)
+    await record_audit(
+        db,
+        user_id=user.user_id,
+        action="kpi_adjusted",
+        entity_type="kpi_result",
+        entity_id=str(r.id),
+        new_value={"admin_adjusted_score": float(body.admin_adjusted_score), "admin_note": body.admin_note},
+    )
     return _to_out(r)
 
 
@@ -322,6 +331,14 @@ async def finalize_kpi_result(
 
     await db.commit()
     await db.refresh(r)
+    await record_audit(
+        db,
+        user_id=user.user_id,
+        action="kpi_finalized",
+        entity_type="kpi_result",
+        entity_id=str(r.id),
+        new_value={"final_score": float(r.final_score)},
+    )
     return _to_out(r)
 
 
@@ -386,6 +403,14 @@ async def submit_objection(
 
     await db.commit()
     await db.refresh(r)
+    await record_audit(
+        db,
+        user_id=user.user_id,
+        action="kpi_objection_submitted",
+        entity_type="kpi_result",
+        entity_id=str(r.id),
+        new_value={"category": body.category},
+    )
     return _to_out(r)
 
 
@@ -446,3 +471,47 @@ async def review_objection(
     await db.commit()
     await db.refresh(r)
     return _to_out(r)
+
+
+class ObjectionOut(BaseModel):
+    result_id: str
+    metric: str
+    period_type: str
+    period_key: str
+    objection_status: str
+    category: Optional[str] = None
+    text: Optional[str] = None
+    evidence: Optional[str] = None
+    submitted_at: Optional[str] = None
+    resolved_at: Optional[str] = None
+    admin_note: Optional[str] = None
+    final_score: Optional[float] = None
+
+
+@router.get("/{result_id}/objections", response_model=ObjectionOut)
+async def get_objection(
+    result_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ObjectionOut:
+    """이의신청 내역 조회 (본인 또는 관리자). 없으면 objection_status=none."""
+    r = await _get_result_or_404(db, result_id)
+    if user.role not in _ADMIN_ROLES and r.user_id != user.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    obj_status = r.objection_status.value if hasattr(r.objection_status, "value") else r.objection_status
+    detail = r.objection_detail or {}
+    return ObjectionOut(
+        result_id=str(r.id),
+        metric=r.metric,
+        period_type=r.period_type.value if hasattr(r.period_type, "value") else r.period_type,
+        period_key=r.period_key,
+        objection_status=obj_status,
+        category=detail.get("category"),
+        text=detail.get("text"),
+        evidence=detail.get("evidence"),
+        submitted_at=r.objection_submitted_at.isoformat() if r.objection_submitted_at else None,
+        resolved_at=r.objection_resolved_at.isoformat() if r.objection_resolved_at else None,
+        admin_note=r.admin_note,
+        final_score=float(r.final_score) if r.final_score is not None else None,
+    )

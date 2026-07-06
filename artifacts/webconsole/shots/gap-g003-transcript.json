@@ -1,0 +1,477 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "startedAt": "2026-07-06T13:42:54.639Z",
+  "actions": [
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T13:42:55.472Z",
+      "name": "login"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T13:42:56.341Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T13:42:56.682Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T13:42:57.009Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T13:42:57.028Z"
+    },
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T13:43:00.808Z",
+      "name": "/admin/sync"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/erp-sync/status",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:00.933Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/erp-sync/failures",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:00.937Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/erp-sync/failures",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:00.955Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/erp-sync/status",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:00.963Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/erp/sync",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:03.944Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/erp/sync",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:03.996Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/erp-sync/failures",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:04.013Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/erp-sync/status",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:04.018Z"
+    },
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T13:43:08.021Z",
+      "name": "/admin/office-layout"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/floors",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:08.142Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:08.142Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/office-layouts",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:08.145Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:08.167Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/floors",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:08.169Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/office-layouts",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:08.172Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/office-layouts",
+      "status": 201,
+      "timestamp": "2026-07-06T13:43:12.203Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/office-layouts",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:12.218Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/floors",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:12.223Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:12.225Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/office-layouts/05ad0696-84ad-42a5-b460-8254a7ff6687/validate",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:14.202Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/office-layouts/05ad0696-84ad-42a5-b460-8254a7ff6687/validate",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:14.212Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:14.231Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/floors",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:14.234Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/office-layouts",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:14.234Z"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "sync page renders (not locked)",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T13:43:14.234Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "erp-sync/status GET 200",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T13:43:14.234Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "erp-sync/failures GET 200",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T13:43:14.234Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "erp/sync POST 200",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T13:43:14.234Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "status reloaded after sync",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T13:43:14.234Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "office-layouts GET 200",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T13:43:14.234Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "layout draft POST 201",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T13:43:14.234Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "layout validate POST 200",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T13:43:14.234Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "D12 lifecycle visible (레이아웃 버전)",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T13:43:14.234Z"
+    }
+  ],
+  "api": [
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T13:42:56.341Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T13:42:56.682Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T13:42:57.009Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T13:42:57.028Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/erp-sync/status",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:00.933Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/erp-sync/failures",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:00.937Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/erp-sync/failures",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:00.955Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/erp-sync/status",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:00.963Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/erp/sync",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:03.944Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/erp/sync",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:03.996Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/erp-sync/failures",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:04.013Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/erp-sync/status",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:04.018Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/floors",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:08.142Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:08.142Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/office-layouts",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:08.145Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:08.167Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/floors",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:08.169Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/office-layouts",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:08.172Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/office-layouts",
+      "status": 201,
+      "timestamp": "2026-07-06T13:43:12.203Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/office-layouts",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:12.218Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/floors",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:12.223Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:12.225Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/office-layouts/05ad0696-84ad-42a5-b460-8254a7ff6687/validate",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:14.202Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/office-layouts/05ad0696-84ad-42a5-b460-8254a7ff6687/validate",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:14.212Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:14.231Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/floors",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:14.234Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/office-layouts",
+      "status": 200,
+      "timestamp": "2026-07-06T13:43:14.234Z"
+    }
+  ],
+  "endedAt": "2026-07-06T13:43:16.274Z"
+}

@@ -1,14 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isAdmin } from '@/lib/auth';
 import { formatKst } from '@/lib/kpi';
 
-interface SyncResult {
+interface SyncLog {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
   created: number;
   updated: number;
   deactivated: number;
+  status: string;
+  trigger: string;
+  error: string | null;
+}
+interface SyncStatus {
+  last_run: SyncLog | null;
+  total_runs: number;
+  failure_count: number;
 }
 interface Attendance {
   user_id: number;
@@ -18,16 +29,14 @@ interface Attendance {
   work_type: string;
 }
 
-interface SyncRun extends SyncResult {
-  at: string;
-}
-
 export default function SyncMonitoringPage() {
   const me = getUser();
   const allowed = isAdmin(me);
-  const [runs, setRuns] = useState<SyncRun[]>([]);
+  const [status, setStatus] = useState<SyncStatus | null>(null);
+  const [failures, setFailures] = useState<SyncLog[]>([]);
+  const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
-  const [syncError, setSyncError] = useState('');
+  const [msg, setMsg] = useState('');
 
   const today = new Date().toISOString().split('T')[0];
   const [start, setStart] = useState(today);
@@ -37,14 +46,36 @@ export default function SyncMonitoringPage() {
   const [attError, setAttError] = useState('');
   const [attLoaded, setAttLoaded] = useState(false);
 
+  const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 2500); };
+
+  const loadStatus = useCallback(async () => {
+    if (!allowed) return;
+    setLoading(true);
+    try {
+      const [st, fl] = await Promise.all([
+        api.get<SyncStatus>('/api/erp-sync/status'),
+        api.get<SyncLog[]>('/api/erp-sync/failures').catch(() => [] as SyncLog[]),
+      ]);
+      setStatus(st);
+      setFailures(fl);
+    } catch {
+      /* handled by empty state */
+    } finally {
+      setLoading(false);
+    }
+  }, [allowed]);
+
+  useEffect(() => { loadStatus(); }, [loadStatus]);
+
   async function runSync() {
     setSyncing(true);
-    setSyncError('');
     try {
-      const res = await api.post<SyncResult>('/api/erp/sync', {});
-      setRuns((prev) => [{ ...res, at: new Date().toISOString() }, ...prev]);
+      await api.post('/api/erp/sync', {});
+      flash('동기화 완료');
+      await loadStatus();
     } catch (e) {
-      setSyncError(e instanceof ApiError ? (e.status === 403 ? '관리자 권한이 필요합니다.' : `동기화 실패 (${e.status})`) : '서버 오류');
+      flash(e instanceof ApiError ? (e.status === 403 ? '관리자 권한 필요' : `동기화 실패 (${e.status})`) : '서버 오류');
+      await loadStatus();
     } finally {
       setSyncing(false);
     }
@@ -76,47 +107,67 @@ export default function SyncMonitoringPage() {
     );
   }
 
+  const last = status?.last_run ?? null;
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-gray-800">동기화 모니터링</h1>
-        <p className="text-xs text-gray-400">ERP → 플랫폼 사용자 동기화 및 근태 read-through</p>
-      </div>
-
-      {/* Sync trigger */}
-      <section className="bg-white border border-gray-200 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-700 text-sm">ERP 사용자 동기화</h2>
-          <button
-            onClick={runSync}
-            disabled={syncing}
-            className="px-4 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {syncing ? '동기화 중...' : '지금 동기화'}
-          </button>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-800">동기화 모니터링</h1>
+          <p className="text-xs text-gray-400">ERP → 플랫폼 사용자 동기화 로그 (erp_sync_log) 및 근태 read-through</p>
         </div>
-        {syncError && <p className="text-sm text-red-600 mb-2">{syncError}</p>}
-        {runs.length === 0 ? (
-          <p className="text-xs text-gray-400">아직 실행된 동기화가 없습니다. &quot;지금 동기화&quot;를 눌러 트리거하세요.</p>
+        <button onClick={runSync} disabled={syncing} className="px-4 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50">
+          {syncing ? '동기화 중...' : '지금 동기화'}
+        </button>
+      </div>
+      {msg && <div className="px-3 py-2 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">{msg}</div>}
+
+      {/* Status summary */}
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: '총 실행', value: status?.total_runs ?? '—', color: 'text-gray-800' },
+          { label: '실패', value: status?.failure_count ?? '—', color: (status?.failure_count ?? 0) > 0 ? 'text-red-600' : 'text-gray-800' },
+          { label: '최근 결과', value: last ? (last.status === 'success' ? '성공' : '실패') : '—', color: last?.status === 'success' ? 'text-green-600' : 'text-gray-800' },
+          { label: '최근 실행(KST)', value: last ? formatKst(last.started_at) : '—', color: 'text-gray-600', small: true },
+        ].map((c) => (
+          <div key={c.label} className="bg-white border border-gray-200 rounded-xl p-3">
+            <div className="text-xs text-gray-400">{c.label}</div>
+            <div className={`mt-1 font-bold ${c.color} ${c.small ? 'text-xs' : 'text-2xl'}`}>{loading ? '…' : c.value}</div>
+          </div>
+        ))}
+      </section>
+
+      {/* Last run detail */}
+      {last && (
+        <section className="bg-white border border-gray-200 rounded-xl p-4">
+          <h2 className="font-semibold text-gray-700 text-sm mb-2">최근 동기화 결과</h2>
+          <div className="flex gap-6 text-sm">
+            <span className="text-green-600">생성 +{last.created}</span>
+            <span className="text-blue-600">갱신 {last.updated}</span>
+            <span className="text-amber-600">비활성화 {last.deactivated}</span>
+            <span className="text-gray-400">트리거 {last.trigger}</span>
+          </div>
+        </section>
+      )}
+
+      {/* Failures */}
+      <section className="bg-white border border-gray-200 rounded-xl p-4">
+        <h2 className="font-semibold text-gray-700 text-sm mb-2">실패 이력 (erp_sync_log)</h2>
+        {loading ? (
+          <p className="text-xs text-gray-400">불러오는 중...</p>
+        ) : failures.length === 0 ? (
+          <p className="text-xs text-gray-400">실패 이력이 없습니다.</p>
         ) : (
           <table className="w-full text-sm">
             <thead className="text-xs text-gray-400">
-              <tr>
-                <th className="text-left py-1.5 font-medium">실행 시각 (KST)</th>
-                <th className="text-right py-1.5 font-medium">생성</th>
-                <th className="text-right py-1.5 font-medium">갱신</th>
-                <th className="text-right py-1.5 font-medium">비활성화</th>
-                <th className="text-center py-1.5 font-medium">결과</th>
-              </tr>
+              <tr><th className="text-left py-1.5">시각 (KST)</th><th className="text-left py-1.5">트리거</th><th className="text-left py-1.5">오류</th></tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {runs.map((r, i) => (
-                <tr key={i}>
-                  <td className="py-2 text-gray-700">{formatKst(r.at)}</td>
-                  <td className="py-2 text-right text-green-600">+{r.created}</td>
-                  <td className="py-2 text-right text-blue-600">{r.updated}</td>
-                  <td className="py-2 text-right text-amber-600">{r.deactivated}</td>
-                  <td className="py-2 text-center"><span className="text-xs px-1.5 py-0.5 rounded bg-green-100 text-green-700">성공</span></td>
+              {failures.map((f) => (
+                <tr key={f.id}>
+                  <td className="py-2 text-gray-600">{formatKst(f.started_at)}</td>
+                  <td className="py-2 text-gray-500">{f.trigger}</td>
+                  <td className="py-2 text-red-600 text-xs">{f.error ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -145,13 +196,7 @@ export default function SyncMonitoringPage() {
         ) : (
           <table className="w-full text-sm">
             <thead className="text-xs text-gray-400">
-              <tr>
-                <th className="text-left py-1.5 font-medium">user</th>
-                <th className="text-left py-1.5 font-medium">일자</th>
-                <th className="text-left py-1.5 font-medium">출근</th>
-                <th className="text-left py-1.5 font-medium">퇴근</th>
-                <th className="text-left py-1.5 font-medium">근무형태</th>
-              </tr>
+              <tr><th className="text-left py-1.5">user</th><th className="text-left py-1.5">일자</th><th className="text-left py-1.5">출근</th><th className="text-left py-1.5">퇴근</th><th className="text-left py-1.5">근무형태</th></tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {attendances.map((a, i) => (
@@ -166,15 +211,6 @@ export default function SyncMonitoringPage() {
             </tbody>
           </table>
         )}
-      </section>
-
-      {/* Stub: sync log / daily_status_push (no GET endpoint yet) */}
-      <section className="bg-gray-50 border border-dashed border-gray-300 rounded-xl p-4">
-        <h2 className="font-semibold text-gray-500 text-sm mb-1">동기화 로그 · ERP 전송 큐 (erp_sync_log / daily_status_push)</h2>
-        <p className="text-xs text-gray-400">
-          상세 실패 이력·재시도 큐 테이블은 백엔드 조회 엔드포인트(GET /api/erp/sync-logs, /api/daily-status-push)가 도입되면 연결됩니다.
-          현재 백엔드는 동기화 트리거 결과(생성/갱신/비활성화 카운트)와 KPI 확정 시 daily_status_push 적재만 지원합니다. (스텁)
-        </p>
       </section>
     </div>
   );

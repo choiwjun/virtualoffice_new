@@ -22,7 +22,7 @@ from pydantic import BaseModel
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import CurrentUser, get_current_user
+from app.core.deps import CurrentUser, get_current_user, require_role
 from app.db import get_db
 from app.models.tables import (
     Meeting,
@@ -31,6 +31,7 @@ from app.models.tables import (
     MeetingStatus,
     Room,
 )
+from app.services.audit import record_audit
 
 router = APIRouter(prefix="/api", tags=["meetings"])
 
@@ -333,3 +334,87 @@ async def list_participants(
     )
     participants = result.scalars().all()
     return [_participant_out(p) for p in participants]
+
+
+# ---------------------------------------------------------------------------
+# 회의 수정/취소 (관리자·리더) — management-api.yaml
+# ---------------------------------------------------------------------------
+
+_MTG_ADMIN = ("admin", "super_admin", "leader")
+
+
+class MeetingUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    scheduled_at: Optional[datetime] = None
+    room_id: Optional[str] = None
+
+
+@router.put("/meetings/{meeting_id}", response_model=MeetingOut)
+async def update_meeting(
+    meeting_id: str,
+    body: MeetingUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_role(*_MTG_ADMIN)),
+) -> MeetingOut:
+    """PUT /api/meetings/{id} — 회의 수정 (D23 시간겹침 재검증, 취소된 회의 제외·자기 자신 제외)."""
+    meeting = await _get_meeting_or_404(meeting_id, db)
+    if meeting.status == MeetingStatus.CANCELLED:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="meeting_cancelled")
+
+    new_room = meeting.room_id
+    if body.room_id is not None:
+        try:
+            new_room = UUID(body.room_id)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid room_id")
+    new_time = meeting.scheduled_at
+    if body.scheduled_at is not None:
+        new_time = body.scheduled_at
+        if new_time.tzinfo is None:
+            new_time = new_time.replace(tzinfo=timezone.utc)
+
+    # D23: 동일 room·동일 시각 다른 회의 겹침 재검증 (자기 자신 제외)
+    if body.room_id is not None or body.scheduled_at is not None:
+        clash = (
+            await db.execute(
+                select(Meeting).where(
+                    and_(
+                        Meeting.room_id == new_room,
+                        Meeting.id != meeting.id,
+                        Meeting.status != MeetingStatus.CANCELLED,
+                        Meeting.scheduled_at == new_time,
+                    )
+                )
+            )
+        ).scalar_one_or_none()
+        if clash is not None:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="room_time_conflict")
+
+    if body.title is not None:
+        meeting.title = body.title
+    if body.description is not None:
+        meeting.description = body.description
+    meeting.room_id = new_room
+    meeting.scheduled_at = new_time
+    meeting.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(meeting)
+    await record_audit(db, user_id=user.user_id, action="meeting_updated", entity_type="meeting", entity_id=str(meeting.id), new_value={"title": meeting.title, "scheduled_at": meeting.scheduled_at.isoformat()})
+    return _meeting_out(meeting)
+
+
+@router.delete("/meetings/{meeting_id}", response_model=MeetingOut)
+async def cancel_meeting(
+    meeting_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_role(*_MTG_ADMIN)),
+) -> MeetingOut:
+    """DELETE /api/meetings/{id} — 회의 취소 (soft, status=cancelled)."""
+    meeting = await _get_meeting_or_404(meeting_id, db)
+    meeting.status = MeetingStatus.CANCELLED
+    meeting.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(meeting)
+    await record_audit(db, user_id=user.user_id, action="meeting_cancelled", entity_type="meeting", entity_id=str(meeting.id))
+    return _meeting_out(meeting)

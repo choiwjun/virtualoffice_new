@@ -9,18 +9,18 @@ ERP 기반 리소스 API (리소스 지향, 화면 비종속).
 단일 조직(company_id=1) 전제 — 멀티테넌트는 "완성 이후"(Won't, 이번 버전).
 """
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import AsyncGenerator, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.core.deps import CurrentUser, get_current_user, require_role
 from app.db import get_db
 from app.erp.reader import ErpReader, get_erp_reader
 from app.erp.sync import ErpSyncService
-from app.models.tables import ErpUser
+from app.models.tables import ErpSyncLog, ErpUser
 
 router = APIRouter(prefix="/api", tags=["erp"])
 
@@ -106,12 +106,79 @@ async def trigger_erp_sync(
     reader: ErpReader = Depends(get_reader),
     _: CurrentUser = Depends(require_role("admin", "super_admin")),
 ):
-    svc = ErpSyncService(db)
-    result = await svc.sync_users(reader, DEFAULT_COMPANY_ID)
-    await db.commit()
-    return SyncResultOut(
-        created=result.created, updated=result.updated, deactivated=result.deactivated
+    started = datetime.now(timezone.utc)
+    log = ErpSyncLog(started_at=started, trigger="manual")
+    db.add(log)
+    try:
+        svc = ErpSyncService(db)
+        result = await svc.sync_users(reader, DEFAULT_COMPANY_ID)
+        log.created = result.created
+        log.updated = result.updated
+        log.deactivated = result.deactivated
+        log.status = "success"
+        log.finished_at = datetime.now(timezone.utc)
+        await db.commit()
+        return SyncResultOut(
+            created=result.created, updated=result.updated, deactivated=result.deactivated
+        )
+    except Exception as exc:  # noqa: BLE001 - 실패도 로그에 기록
+        await db.rollback()
+        db.add(ErpSyncLog(started_at=started, trigger="manual", status="failed", error=str(exc)[:1000], finished_at=datetime.now(timezone.utc)))
+        await db.commit()
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="erp_sync_failed")
+
+
+# ── 동기화 로그 조회 (관리자) — management-api /erp-sync/* ────
+class SyncLogOut(BaseModel):
+    id: str
+    started_at: str
+    finished_at: Optional[str] = None
+    created: int
+    updated: int
+    deactivated: int
+    status: str
+    trigger: str
+    error: Optional[str] = None
+
+
+class SyncStatusOut(BaseModel):
+    last_run: Optional[SyncLogOut] = None
+    total_runs: int
+    failure_count: int
+
+
+def _log_out(l: ErpSyncLog) -> "SyncLogOut":
+    def _iso(dt):
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
+    return SyncLogOut(
+        id=str(l.id), started_at=_iso(l.started_at), finished_at=_iso(l.finished_at),
+        created=l.created, updated=l.updated, deactivated=l.deactivated,
+        status=l.status, trigger=l.trigger, error=l.error,
     )
+
+
+@router.get("/erp-sync/status", response_model=SyncStatusOut)
+async def erp_sync_status(
+    db=Depends(get_db),
+    _: CurrentUser = Depends(require_role("admin", "super_admin")),
+) -> SyncStatusOut:
+    last = (await db.execute(select(ErpSyncLog).order_by(ErpSyncLog.started_at.desc()).limit(1))).scalar_one_or_none()
+    total = (await db.execute(select(func.count()).select_from(ErpSyncLog))).scalar_one()
+    fails = (await db.execute(select(func.count()).select_from(ErpSyncLog).where(ErpSyncLog.status == "failed"))).scalar_one()
+    return SyncStatusOut(last_run=_log_out(last) if last else None, total_runs=total, failure_count=fails)
+
+
+@router.get("/erp-sync/failures", response_model=list[SyncLogOut])
+async def erp_sync_failures(
+    db=Depends(get_db),
+    _: CurrentUser = Depends(require_role("admin", "super_admin")),
+) -> list[SyncLogOut]:
+    rows = (await db.execute(select(ErpSyncLog).where(ErpSyncLog.status == "failed").order_by(ErpSyncLog.started_at.desc()).limit(50))).scalars().all()
+    return [_log_out(r) for r in rows]
 
 
 # ── 근태 read-through ─────────────────────────────────────

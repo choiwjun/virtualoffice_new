@@ -33,11 +33,13 @@ export default function SeatCanvas({
   width,
   height,
   onMove,
+  onDelete,
 }: {
   seats: SeatBox[];
   width: number;
   height: number;
   onMove: (id: string, x: number, y: number) => void;
+  onDelete?: (id: string) => void;
 }) {
   // floor grid lines
   const grid: number[][] = [];
@@ -59,6 +61,8 @@ export default function SeatCanvas({
             y={s.y}
             draggable
             onDragEnd={(e) => onMove(s.id, Math.round(e.target.x()), Math.round(e.target.y()))}
+            onDblClick={() => onDelete?.(s.id)}
+            onDblTap={() => onDelete?.(s.id)}
           >
             <Rect
               width={W}

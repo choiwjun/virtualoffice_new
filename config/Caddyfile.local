@@ -35,6 +35,10 @@ http://localhost:8090 {
 		reverse_proxy backend:8000
 	}
 
+	handle /api/floors* {
+		reverse_proxy backend:8000
+	}
+
 	handle /api/seats* {
 		reverse_proxy backend:8000
 	}
@@ -79,6 +83,28 @@ http://localhost:8090 {
 	}
 
 	handle /api/erp/* {
+		reverse_proxy backend:8000
+	}
+
+	# FastAPI 백엔드 디렉터리·감사 API (management-api 갭 보강) — /api/* 앞에 배치
+	handle /api/teams* {
+		reverse_proxy backend:8000
+	}
+
+	handle /api/org-groups* {
+		reverse_proxy backend:8000
+	}
+
+	handle /api/audit-logs* {
+		reverse_proxy backend:8000
+	}
+
+	# FastAPI 백엔드 오피스 레이아웃(D12)·ERP 동기화 로그 API — /api/* 앞
+	handle /api/office-layouts* {
+		reverse_proxy backend:8000
+	}
+
+	handle /api/erp-sync* {
 		reverse_proxy backend:8000
 	}
 

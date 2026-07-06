@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
-import { getUser } from '@/lib/auth';
+import { getUser, isLeaderOrAbove } from '@/lib/auth';
 import { formatKst } from '@/lib/kpi';
 
 interface Meeting {
@@ -152,6 +152,19 @@ export default function MeetingsPage() {
     }
   }
 
+  async function cancelMeeting() {
+    if (!selected) return;
+    if (!window.confirm(`"${selected.title}" 회의를 취소하시겠습니까?`)) return;
+    try {
+      await api.delete(`/api/meetings/${selected.id}`);
+      setSelected(null);
+      fetchMeetings();
+      flash('회의가 취소되었습니다.');
+    } catch (err) {
+      flash(err instanceof ApiError ? `취소 실패 (${err.status})` : '오류');
+    }
+  }
+
   async function finalizeMinute(id: string) {
     try {
       const updated = await api.post<Minute>(`/api/meeting-minutes/${id}/finalize`, {});
@@ -238,7 +251,14 @@ export default function MeetingsPage() {
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="font-semibold text-gray-800">{selected.title}</h2>
-              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <div className="flex items-center gap-2">
+                {isLeaderOrAbove(me) && selected.status !== 'cancelled' && (
+                  <button onClick={cancelMeeting} className="text-xs px-2 py-1 border border-red-300 text-red-600 rounded hover:bg-red-50">
+                    회의 취소
+                  </button>
+                )}
+                <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              </div>
             </div>
             <div className="px-6 py-4 space-y-4 text-sm">
               <div className="text-gray-500 text-xs">

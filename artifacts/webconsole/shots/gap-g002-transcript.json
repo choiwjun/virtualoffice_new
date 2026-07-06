@@ -1,0 +1,425 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "startedAt": "2026-07-06T13:19:17.505Z",
+  "actions": [
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T13:19:18.305Z",
+      "name": "login"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:19.135Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:19.474Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:19.784Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:19.818Z"
+    },
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T13:19:23.642Z",
+      "name": "/admin/office-layout"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/floors",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:23.735Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:23.736Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/floors",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:23.759Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:23.759Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/seats",
+      "status": 201,
+      "timestamp": "2026-07-06T13:19:27.826Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/seats",
+      "status": 201,
+      "timestamp": "2026-07-06T13:19:29.370Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/seats/340224b1-e842-464e-b4be-34c1e933c1f8",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:31.156Z"
+    },
+    {
+      "type": "request",
+      "method": "PUT",
+      "url": "/api/seats/340224b1-e842-464e-b4be-34c1e933c1f8",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:31.221Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/meetings?scheduled_from=2020-01-01T00:00:00Z&scheduled_to=2030-01-01T00:00:00Z",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:32.861Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/meetings?scheduled_from=2020-01-01T00:00:00Z&scheduled_to=2030-01-01T00:00:00Z",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:32.870Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/meetings",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:32.879Z"
+    },
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T13:19:32.934Z",
+      "name": "/meetings"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/meetings",
+      "status": 201,
+      "timestamp": "2026-07-06T13:19:32.934Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/meetings?scheduled_from=2026-07-05T00%3A00%3A00.000Z&scheduled_to=2026-07-11T23%3A59%3A59.000Z",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:33.069Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/meetings?scheduled_from=2026-07-05T00%3A00%3A00.000Z&scheduled_to=2026-07-11T23%3A59%3A59.000Z",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:33.088Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/meetings/788313c4-227e-430e-81f5-10fecfd44b95/participants",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:36.122Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/meeting-minutes?meeting_id=788313c4-227e-430e-81f5-10fecfd44b95",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:36.137Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/meetings/788313c4-227e-430e-81f5-10fecfd44b95/participants",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:36.145Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/meeting-minutes?meeting_id=788313c4-227e-430e-81f5-10fecfd44b95",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:36.151Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/meetings/788313c4-227e-430e-81f5-10fecfd44b95",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:37.755Z"
+    },
+    {
+      "type": "request",
+      "method": "DELETE",
+      "url": "/api/meetings/788313c4-227e-430e-81f5-10fecfd44b95",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:37.786Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/meetings?scheduled_from=2026-07-05T00%3A00%3A00.000Z&scheduled_to=2026-07-11T23%3A59%3A59.000Z",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:37.799Z"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "floors API 200",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T13:19:37.799Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "seat create POST 200 (>=1)",
+      "status": "passed",
+      "detail": "posts=2",
+      "timestamp": "2026-07-06T13:19:37.799Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "seat drag PUT coords 200 (>=1)",
+      "status": "passed",
+      "detail": "puts=1",
+      "timestamp": "2026-07-06T13:19:37.799Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "found a room_id for meeting create",
+      "status": "passed",
+      "detail": "2e211cb6-0efd-4363-8199-c097525fccd4",
+      "timestamp": "2026-07-06T13:19:37.799Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "meeting detail opened",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T13:19:37.799Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "meeting cancel DELETE 200",
+      "status": "passed",
+      "detail": "dels=1",
+      "timestamp": "2026-07-06T13:19:37.799Z"
+    }
+  ],
+  "api": [
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:19.135Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:19.474Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:19.784Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:19.818Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/floors",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:23.735Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:23.736Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/floors",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:23.759Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:23.759Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/seats",
+      "status": 201,
+      "timestamp": "2026-07-06T13:19:27.826Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/seats",
+      "status": 201,
+      "timestamp": "2026-07-06T13:19:29.370Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/seats/340224b1-e842-464e-b4be-34c1e933c1f8",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:31.156Z"
+    },
+    {
+      "type": "request",
+      "method": "PUT",
+      "url": "/api/seats/340224b1-e842-464e-b4be-34c1e933c1f8",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:31.221Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/meetings?scheduled_from=2020-01-01T00:00:00Z&scheduled_to=2030-01-01T00:00:00Z",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:32.861Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/meetings?scheduled_from=2020-01-01T00:00:00Z&scheduled_to=2030-01-01T00:00:00Z",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:32.870Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/meetings",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:32.879Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/meetings",
+      "status": 201,
+      "timestamp": "2026-07-06T13:19:32.934Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/meetings?scheduled_from=2026-07-05T00%3A00%3A00.000Z&scheduled_to=2026-07-11T23%3A59%3A59.000Z",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:33.069Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/meetings?scheduled_from=2026-07-05T00%3A00%3A00.000Z&scheduled_to=2026-07-11T23%3A59%3A59.000Z",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:33.088Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/meetings/788313c4-227e-430e-81f5-10fecfd44b95/participants",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:36.122Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/meeting-minutes?meeting_id=788313c4-227e-430e-81f5-10fecfd44b95",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:36.137Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/meetings/788313c4-227e-430e-81f5-10fecfd44b95/participants",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:36.145Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/meeting-minutes?meeting_id=788313c4-227e-430e-81f5-10fecfd44b95",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:36.151Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/meetings/788313c4-227e-430e-81f5-10fecfd44b95",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:37.755Z"
+    },
+    {
+      "type": "request",
+      "method": "DELETE",
+      "url": "/api/meetings/788313c4-227e-430e-81f5-10fecfd44b95",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:37.786Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/meetings?scheduled_from=2026-07-05T00%3A00%3A00.000Z&scheduled_to=2026-07-11T23%3A59%3A59.000Z",
+      "status": 200,
+      "timestamp": "2026-07-06T13:19:37.799Z"
+    }
+  ],
+  "endedAt": "2026-07-06T13:19:40.254Z"
+}

@@ -91,3 +91,9 @@ app.include_router(work_logs.router)          # /api/work-logs (G001, Lane A)
 app.include_router(meetings.router)           # /api/meetings* — 회의 예약·조회·참석 (G002, Lane B)
 app.include_router(meeting_minutes.router)    # /api/meeting-minutes* — 회의록·액션아이템 (G002, Lane B)
 app.include_router(kpi.router)                # /api/kpi-results/* — KPI 계산·검토·이의신청 (G003, Lane C)
+from app.api import directory  # noqa: E402  Gaps: teams/org-groups
+from app.api import audit  # noqa: E402  Gaps: audit-logs
+app.include_router(directory.router)          # /api/teams, /api/org-groups (management-api)
+app.include_router(audit.router)              # /api/audit-logs (D20-e, admin)
+from app.api import office_layouts  # noqa: E402  Gaps: office-layouts (D12)
+app.include_router(office_layouts.router)     # /api/office-layouts/* (D12 검증·배포·롤백)

@@ -23,9 +23,10 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import CurrentUser, get_current_user
+from app.core.deps import CurrentUser, get_current_user, require_role
 from app.db import get_db
-from app.models.tables import Seat, SeatAssignmentHistory, SeatStatus, SeatType
+from app.models.tables import Floor, Seat, SeatAssignmentHistory, SeatStatus, SeatType
+from app.services.audit import record_audit
 
 router = APIRouter(prefix="/api", tags=["seats"])
 
@@ -243,3 +244,137 @@ async def release_seat(
         ),
         status=seat.status.value,
     )
+
+
+# ---------------------------------------------------------------------------
+# 좌석 CRUD (관리자) — management-api.yaml /seats
+# ---------------------------------------------------------------------------
+
+_ADMIN = ("admin", "super_admin", "leader")
+
+
+def _seat_out(s: Seat) -> SeatOut:
+    return SeatOut(
+        id=str(s.id),
+        floor_id=str(s.floor_id),
+        type=s.type.value if hasattr(s.type, "value") else s.type,
+        status=s.status.value if hasattr(s.status, "value") else s.status,
+        assigned_user_id=s.assigned_user_id,
+        seat_number=s.seat_number,
+        coords=s.coords,
+    )
+
+
+class SeatCreate(BaseModel):
+    floor_id: str
+    type: str = "free"
+    coords: dict = {"x": 0, "y": 0}
+    seat_number: Optional[str] = None
+    status: Optional[str] = None
+
+
+class SeatUpdate(BaseModel):
+    type: Optional[str] = None
+    coords: Optional[dict] = None
+    seat_number: Optional[str] = None
+    status: Optional[str] = None
+
+
+class FloorOut(BaseModel):
+    id: str
+    office_id: str
+    level: int
+    name: Optional[str] = None
+
+
+@router.get("/floors", response_model=list[FloorOut])
+async def list_floors(
+    db: AsyncSession = Depends(get_db),
+    _: CurrentUser = Depends(get_current_user),
+) -> list[FloorOut]:
+    """GET /api/floors — 층 목록 (좌석 편집기 floor 선택용)."""
+    rows = (await db.execute(select(Floor).order_by(Floor.level))).scalars().all()
+    return [FloorOut(id=str(f.id), office_id=str(f.office_id), level=f.level, name=getattr(f, "name", None)) for f in rows]
+
+
+@router.post("/seats", response_model=SeatOut, status_code=status.HTTP_201_CREATED)
+async def create_seat(
+    body: SeatCreate,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_role(*_ADMIN)),
+) -> SeatOut:
+    """POST /api/seats — 좌석 생성 (관리자). D10: 배정정보 미포함."""
+    try:
+        fid = UUID(body.floor_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid floor_id")
+    try:
+        seat_type = SeatType(body.type)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="invalid seat type")
+    seat_status = SeatStatus(body.status) if body.status else SeatStatus.AVAILABLE
+    seat = Seat(floor_id=fid, type=seat_type, coords=body.coords, seat_number=body.seat_number, status=seat_status)
+    db.add(seat)
+    await db.flush()
+    await db.commit()
+    await db.refresh(seat)
+    await record_audit(db, user_id=user.user_id, action="seat_created", entity_type="seat", entity_id=str(seat.id), new_value={"floor_id": str(fid), "type": seat.type.value})
+    return _seat_out(seat)
+
+
+async def _get_seat_or_404(seat_id: str, db: AsyncSession) -> Seat:
+    try:
+        sid = UUID(seat_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid seat_id")
+    seat = (await db.execute(select(Seat).where(Seat.id == sid))).scalar_one_or_none()
+    if seat is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="seat_not_found")
+    return seat
+
+
+@router.put("/seats/{seat_id}", response_model=SeatOut)
+async def update_seat(
+    seat_id: str,
+    body: SeatUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_role(*_ADMIN)),
+) -> SeatOut:
+    """PUT /api/seats/{seat_id} — 좌석 수정 (관리자). 좌표 드래그 저장 포함."""
+    seat = await _get_seat_or_404(seat_id, db)
+    if body.type is not None:
+        try:
+            seat.type = SeatType(body.type)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="invalid seat type")
+    if body.coords is not None:
+        seat.coords = body.coords
+    if body.seat_number is not None:
+        seat.seat_number = body.seat_number
+    if body.status is not None:
+        try:
+            seat.status = SeatStatus(body.status)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="invalid seat status")
+    seat.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(seat)
+    await record_audit(db, user_id=user.user_id, action="seat_updated", entity_type="seat", entity_id=str(seat.id), new_value={"coords": seat.coords, "status": seat.status.value})
+    return _seat_out(seat)
+
+
+@router.delete("/seats/{seat_id}", response_model=SeatOut)
+async def delete_seat(
+    seat_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_role(*_ADMIN)),
+) -> SeatOut:
+    """DELETE /api/seats/{seat_id} — 좌석 비활성화 (soft, status=disabled). 배정 해제."""
+    seat = await _get_seat_or_404(seat_id, db)
+    seat.status = SeatStatus.DISABLED
+    seat.assigned_user_id = None
+    seat.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(seat)
+    await record_audit(db, user_id=user.user_id, action="seat_deleted", entity_type="seat", entity_id=str(seat.id))
+    return _seat_out(seat)

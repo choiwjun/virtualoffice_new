@@ -1428,3 +1428,26 @@ class AuditLog(Base):
         Index("idx_audit_log_entity", "entity_type", "entity_id"),
         Index("idx_audit_log_action_time", "action", "created_at"),
     )
+
+
+class ErpSyncLog(Base):
+    """ERP 동기화 실행 로그 (management-api: /erp-sync/status·/failures).
+
+    각 POST /api/erp/sync 실행마다 1건 적재. 실패 시 status=failed + error.
+    """
+
+    __tablename__ = "erp_sync_log"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), index=True
+    )
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    updated: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    deactivated: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="success", index=True)
+    """success | failed"""
+    trigger: Mapped[str] = mapped_column(String(20), nullable=False, default="manual")
+    """manual | scheduled"""
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

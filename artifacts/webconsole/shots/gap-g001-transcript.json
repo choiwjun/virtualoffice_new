@@ -1,0 +1,245 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "startedAt": "2026-07-06T12:52:17.616Z",
+  "actions": [
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T12:52:18.749Z",
+      "name": "login"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:19.720Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:20.048Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:20.409Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:20.430Z"
+    },
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T12:52:24.229Z",
+      "name": "/admin/audit"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/audit-logs?limit=30&offset=0",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:24.352Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/audit-logs?limit=30&offset=0",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:24.373Z"
+    },
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T12:52:27.445Z",
+      "name": "/admin/org-chart"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/org-groups",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:27.522Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:27.555Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/org-groups",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:27.556Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/teams",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:31.621Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/teams",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:31.632Z"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "audit page renders (not locked)",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T12:52:31.632Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "audit-logs GET 200",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T12:52:31.632Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "audit shows kpi_finalized entry",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T12:52:31.632Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "org-groups GET 200",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T12:52:31.632Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "org-chart shows org groups (개발본부/플랫폼개발부)",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T12:52:31.632Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "org-chart React Flow rendered",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T12:52:31.632Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "teams API also available",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T12:52:31.632Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "GET /api/teams 200 (in-app fetch)",
+      "status": "passed",
+      "detail": "200",
+      "timestamp": "2026-07-06T12:52:31.632Z"
+    }
+  ],
+  "api": [
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:19.720Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:20.048Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:20.409Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:20.430Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/audit-logs?limit=30&offset=0",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:24.352Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/audit-logs?limit=30&offset=0",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:24.373Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/org-groups",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:27.522Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:27.555Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/org-groups",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:27.556Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/teams",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:31.621Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/teams",
+      "status": 200,
+      "timestamp": "2026-07-06T12:52:31.632Z"
+    }
+  ],
+  "endedAt": "2026-07-06T12:52:31.633Z"
+}
