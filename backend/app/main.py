@@ -67,6 +67,7 @@ async def root_openid_configuration(request: Request) -> JSONResponse:
 
 # ── 라우터 등록 (점진적) ─────────────────────────────────
 from app.api import erp  # noqa: E402
+from app.api import auth  # noqa: E402
 from app.api import wa_livekit  # noqa: E402
 from app.api import wa_presence  # noqa: E402
 from app.integrations.workadventure import oidc as wa_oidc  # noqa: E402
@@ -75,4 +76,5 @@ app.include_router(erp.router)
 app.include_router(wa_oidc.router)         # /oidc/* — OIDC Provider (D26, D4 공존)
 app.include_router(wa_presence.router)     # /api/wa/presence — presence 수집
 app.include_router(wa_livekit.router)      # /api/wa/livekit-token — LiveKit 토큰 (D24, G004)
+app.include_router(auth.router)             # /api/auth/* — 웹콘솔 인증 (D4)
 # TODO(Phase 2+): seats, meetings, kpi 라우터
