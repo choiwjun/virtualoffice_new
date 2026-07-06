@@ -158,3 +158,158 @@ docker exec vo_db pg_dump -U postgres virtualoffice | gzip > /backup/vo_$(date +
 - [x] ~~도메인~~ → **추후 구매 예정** (2026-07-02) — 데드라인: 외부 접속 개시 전 (§3.1 임시 운용안 참조)
 - [ ] 서버 PC 사양 (RAM 16GB+ 권장 / 디스크 SSD 256GB+)
 - [ ] 백업 목적지 (NAS? 다른 PC? — 서버 PC 외부여야 함)
+
+---
+
+## 8. WorkAdventure self-host 스택 (D26, 2026-07-06)
+
+> **D26 전환** — Godot 네이티브 클라이언트·헤드리스 서버 노선 보류. 가상오피스 본체 = **WorkAdventure self-host (AGPL-3.0 + Commons Clause, 사내 도그푸딩 한정 적법)**.  
+> §1 서비스 표의 `godot-server` 예정 항목은 보류됨.
+
+### 8.1 추가된 서비스 구성
+
+| 서비스 | 이미지 | 역할 | 포트(내부) |
+|---|---|---|---|
+| `wa-play` | `thecodingmachine/workadventure-play:v1.21.5` | 정적 에셋·WebSocket pusher | 3000(HTTP), 3001(WS) |
+| `wa-back` | `thecodingmachine/workadventure-back:v1.21.5` | 룸 상태 관리, gRPC API | 8080(HTTP), 50051(gRPC) |
+| `wa-map-storage` | `thecodingmachine/workadventure-map-storage:v1.21.5` | TMJ 맵 파일 저장·편집 | 3000(HTTP), 50053(gRPC) |
+| `wa-uploader` | `thecodingmachine/workadventure-uploader:v1.21.5` | 채팅 파일 업로드 | 8080 |
+| `wa-icon` | `matthiasluedtke/iconserver:v3.21.0` | iframe 파비콘 프록시 | 8080 |
+| `wa-redis` | `redis:6` | 스크립팅 API 변수·채팅 세션 저장 | 6379(내부) |
+| `livekit` | `livekit/livekit-server:v1.7.2` | SFU (4인 이상 버블 화상/음성) | 7880, 7881/TCP, 50000-50200/UDP |
+| `coturn` | `coturn/coturn:4.6.2` | TURN 릴레이 (P2P WebRTC) | 3478/UDP+TCP, 5349/TCP |
+| `caddy` | `caddy:2-alpine` | TLS 종단·역방향 프록시 | 80, 443 |
+
+**업데이트된 아키텍처 다이어그램**:
+```
+[직원 브라우저]                   [사내 서버 PC - Docker Compose]
+ WorkAdventure 클라이언트 ──WSS──▶  caddy:443 ─▶ wa-play:3000/3001
+                          ──HTTPS─▶  caddy:443 ─▶ wa-back:8080 (REST /api)
+                          ──HTTPS─▶  caddy:443 ─▶ wa-map-storage:3000 (/map-storage)
+                          ──HTTPS─▶  caddy:443 ─▶ livekit:7880 (livekit.도메인)
+                          ──WebRTC─▶ livekit:7881/UDP50000-50200 (SFU 직결)
+                          ──TURN──▶  coturn:3478/UDP (P2P 릴레이)
+                          ──TURNS─▶  coturn:5349/TCP (TURN-TLS 폴백)
+ 관리 브라우저            ──HTTPS─▶  caddy:443 ─▶ backend:8000 (api.도메인)
+                                      backend ──OIDC──▶ wa-play (ERP 사용자 SSO)
+                                      backend ──read-only──▶ [ERP dailylog PG]
+                                      wa-back ──gRPC──▶ wa-map-storage
+                                      wa-back, wa-play ──▶ wa-redis
+                                      wa-back ──gRPC──▶ livekit:7880
+                                      db(postgres:17, pgdata 볼륨)
+```
+
+### 8.2 도메인·DNS 요구사항
+
+WorkAdventure는 **3개 A레코드** 필요 (단일 서버 공인 IP 가리킴):
+
+| A레코드 | 역할 | 예시 |
+|---|---|---|
+| `office.example.com` | WorkAdventure 메인 (WA_DOMAIN) | `WA_DOMAIN=office.example.com` |
+| `api.office.example.com` | FastAPI 백엔드·OIDC Provider (WA_API_DOMAIN) | `WA_API_DOMAIN=api.office.example.com` |
+| `livekit.office.example.com` | LiveKit SFU 공개 엔드포인트 (LIVEKIT_DOMAIN) | `LIVEKIT_DOMAIN=livekit.office.example.com` |
+
+Caddy가 3개 도메인 모두 Let's Encrypt 인증서를 자동 발급·갱신한다.  
+도메인 구매 전 임시 운용: Caddyfile에서 `tls {$ACME_EMAIL}` 를 제거하고 IP:포트 직접 접속.
+
+### 8.3 포트 개방 업데이트 (D21-r §3.2 갱신)
+
+| 포트 | 용도 | 방화벽 |
+|---|---|---|
+| 443/TCP | HTTPS + WSS (Caddy, 모든 도메인) | ✅ 개방 |
+| 80/TCP | Let's Encrypt ACME challenge + HTTPS 리다이렉트 | ✅ 개방 |
+| 7881/TCP | LiveKit RTC over TCP (UDP 차단 클라이언트 폴백) | ✅ 개방 |
+| 50000-50200/UDP | LiveKit WebRTC 직결 (품질 최우선) | ✅ 개방 |
+| 3478/UDP+TCP | coturn TURN/STUN (표준 P2P 릴레이) | ✅ 개방 |
+| 5349/TCP | coturn TURN-TLS (D21-r 폴백 — 5349를 443으로 전환하려면 §8.6 참조) | ✅ 개방 |
+| 5432, 8000, 6379 | DB·백엔드·Redis | ❌ 내부 전용 |
+
+### 8.4 초기 설치 절차
+
+```bash
+git clone https://github.com/choiwjun/virtualoffice_new.git && cd virtualoffice_new
+
+# 1. 환경변수 설정
+cp .env.example .env
+# .env 필수 항목 채우기:
+#   WA_DOMAIN, WA_API_DOMAIN, LIVEKIT_DOMAIN
+#   WA_SECRET_KEY (openssl rand -hex 32)
+#   WA_MAP_STORAGE_PASSWORD
+#   WA_OIDC_CLIENT_ID, WA_OIDC_CLIENT_SECRET, WA_OIDC_ISSUER
+#   LIVEKIT_API_KEY, LIVEKIT_API_SECRET
+#   COTURN_STATIC_SECRET (openssl rand -hex 32)
+#   WA_TURN_SERVER=turn:<도메인>:5349
+#   ACME_EMAIL
+
+# 2. coturn 정적 시크릿 교체 (REPLACE_WITH_COTURN_STATIC_SECRET → .env의 COTURN_STATIC_SECRET 값)
+sed -i "s/REPLACE_WITH_COTURN_STATIC_SECRET/$(grep COTURN_STATIC_SECRET .env | cut -d= -f2)/" config/coturn.conf
+# 또는 직접 텍스트 편집기로 config/coturn.conf 수정
+
+# 3. 기동
+docker-compose up -d --build
+
+# 4. 헬스 확인
+curl https://${WA_DOMAIN}/
+docker-compose ps
+docker-compose logs wa-play --tail 50
+```
+
+### 8.5 맵 초기 업로드
+
+WorkAdventure는 첫 기동 후 맵 파일이 없으면 빈 공간만 표시된다.  
+기본 오피스 맵을 map-storage에 업로드하려면:
+
+```bash
+# map-starter-kit 클론 후 업로드 (map-storage Basic 인증 사용)
+git clone https://github.com/workadventure/map-starter-kit /tmp/wa-map
+cd /tmp/wa-map
+# WA 공식 업로드 절차: https://docs.workadventu.re/map-building/tiled-editor/publish/wa-hosted
+# 또는 curl로 직접:
+curl -u admin:${WA_MAP_STORAGE_PASSWORD} \
+     -F "file=@office.tmj" \
+     https://${WA_DOMAIN}/map-storage/upload
+
+# 업로드 후 .env에서 WA_START_ROOM_URL 업데이트:
+# WA_START_ROOM_URL=/~/office.wam   (wam 파일 기준)
+docker-compose up -d wa-play  # play 서버 재기동으로 새 URL 반영
+```
+
+### 8.6 TURN-TLS 443 폴백 (D21-r)
+
+일부 제한적 네트워크(기업 방화벽)는 5349도 차단한다. 이 경우 TURN-TLS를 443 포트로 서비스해야 한다.  
+Caddy가 443을 이미 점유하므로 **단일 IP** 서버에서는 다음 중 하나를 선택:
+
+| 방법 | 난이도 | 설명 |
+|---|---|---|
+| **sslh (TCP multiplexer)** | ★★☆ | sslh이 443으로 들어오는 트래픽을 HTTPS(→Caddy:443) 또는 TURN(→coturn:5349)으로 분기. |
+| **보조 IP 바인딩** | ★☆☆ | 서버에 IP 2개 할당. Caddy는 IP1:443, coturn은 IP2:443. config/coturn.conf에서 `alt-tls-listening-port=443` 활성화. |
+| **5349 유지** | ★☆☆ | 대부분의 기업망은 5349 허용. 443 폴백 없이 5349 TURN-TLS만으로 운용. |
+
+도그푸딩 단계에서는 **5349 유지**로 시작하고, 실제 연결 불가 사례가 나오면 sslh를 도입한다.
+
+### 8.7 리소스 계획 갱신 (WA 스택 포함)
+
+| 서비스 그룹 | RAM 추정 | 비고 |
+|---|---|---|
+| db + backend | ~1.0GB | |
+| caddy + wa-redis + wa-icon + wa-uploader | ~0.5GB | |
+| wa-play + wa-back + wa-map-storage | ~1.5GB | Node.js 기반 |
+| livekit | ~0.8GB | SFU, 20명 동시 화상 |
+| coturn | ~0.2GB | TURN 릴레이 |
+| **합계** | **~4.0GB** | **8GB RAM이면 여유 있음, 4GB는 빠듯** |
+
+디스크: 맵 파일(wa_maps 볼륨) + 채팅 업로드 파일(wa-redis) → SSD 256GB+ 권장.
+
+### 8.8 WA 버전 업그레이드
+
+```bash
+# .env에서 WA_VERSION을 새 버전으로 변경 (예: v1.22.0)
+# 릴리스 노트 확인: https://github.com/workadventure/workadventure/releases
+vim .env  # WA_VERSION=v1.22.0
+
+# 재기동 (이미지 pull + 컨테이너 교체)
+docker-compose up -d --force-recreate wa-play wa-back wa-map-storage wa-uploader
+docker-compose logs -f wa-play  # 정상 기동 확인
+```
+
+> ⚠️ WA_VERSION과 docker-compose.yml의 이미지 태그가 항상 일치해야 함. 메이저 버전 업그레이드 시 릴리스 노트에서 환경변수 변경사항 필수 확인.
