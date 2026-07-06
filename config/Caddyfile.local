@@ -48,6 +48,15 @@ http://localhost:8090 {
 	handle /api/auth/* {
 		reverse_proxy backend:8000
 	}
+	# FastAPI 백엔드 회의/회의록 엔드포인트 (G002, Lane B) — /api/wa 뒤, /api/* 앞
+	handle /api/meetings* {
+		reverse_proxy backend:8000
+	}
+
+	handle /api/meeting-minutes* {
+		reverse_proxy backend:8000
+	}
+
 
 
 	handle /api/* {

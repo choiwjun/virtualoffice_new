@@ -73,6 +73,8 @@ from app.api import seats  # noqa: E402
 from app.api import wa_livekit  # noqa: E402
 from app.api import wa_presence  # noqa: E402
 from app.integrations.workadventure import oidc as wa_oidc  # noqa: E402
+from app.api import meetings  # noqa: E402
+from app.api import meeting_minutes  # noqa: E402
 
 app.include_router(erp.router)
 app.include_router(wa_oidc.router)           # /oidc/* — OIDC Provider (D26, D4 공존)
@@ -81,4 +83,6 @@ app.include_router(presence_stream.router)    # /api/wa/presence/stream — SSE 
 app.include_router(wa_livekit.router)         # /api/wa/livekit-token — LiveKit 토큰 (D24, G004)
 app.include_router(auth.router)               # /api/auth/* — 웹콘솔 인증 (D4)
 app.include_router(seats.router)              # /api/seats, /api/seat-assignments (D10, §3.11)
-# TODO(Phase 2+): meetings, work-logs, kpi 라우터
+app.include_router(meetings.router)         # /api/meetings* — 회의 예약·조회·참석 (G002, Lane B)
+app.include_router(meeting_minutes.router)  # /api/meeting-minutes* — 회의록·액션아이템 (G002, Lane B)
+# TODO(Phase 2+): work-logs, kpi 라우터
