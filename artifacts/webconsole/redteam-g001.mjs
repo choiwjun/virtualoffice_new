@@ -1,0 +1,20 @@
+import puppeteer from 'puppeteer';
+import fs from 'fs';
+const BASE = 'http://localhost:3000';
+const OUT = '/out';
+const r = { asserts: [] };
+const assert = (n, ok, d = '') => { r.asserts.push({ n, ok, d }); console.log(ok ? 'PASS' : 'FAIL', n, d); if (!ok) r.failed = true; };
+const b = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+const p = await b.newPage();
+// fresh context, no token in localStorage
+await p.goto(`${BASE}/work-log`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+await new Promise((x) => setTimeout(x, 3500));
+const url = p.url();
+assert('unauth /work-log bounces to /login', url.includes('/login'), url);
+await p.goto(`${BASE}/admin/employees`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+await new Promise((x) => setTimeout(x, 3500));
+const url2 = p.url();
+assert('unauth /admin/employees bounces to /login', url2.includes('/login'), url2);
+await p.screenshot({ path: `${OUT}/g001-05-unauth-bounce.png` });
+fs.writeFileSync(`${OUT}/g001-redteam.json`, JSON.stringify(r, null, 2));
+await b.close();

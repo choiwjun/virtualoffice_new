@@ -69,6 +69,19 @@ http://localhost:8090 {
 	}
 
 
+	# FastAPI 백엔드 ERP 리소스 API (직원 디렉터리·근태·동기화, erp.router prefix=/api) — 웹콘솔 ④ 연동, /api/* 앞에 배치
+	handle /api/employees* {
+		reverse_proxy backend:8000
+	}
+
+	handle /api/attendances* {
+		reverse_proxy backend:8000
+	}
+
+	handle /api/erp/* {
+		reverse_proxy backend:8000
+	}
+
 	handle /api/* {
 		uri strip_prefix /api
 		reverse_proxy wa-back:8080

@@ -1,0 +1,404 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "startedAt": "2026-07-06T08:55:47.499Z",
+  "actions": [
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:48.756Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:49.057Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:49.211Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:49.225Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1001&period_type=quarterly&period_key=2026-Q3",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:53.321Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:53.331Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1001&period_type=quarterly&period_key=2026-Q3",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:53.332Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results/compute",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:55.859Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/kpi-results/compute",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:55.952Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/finalize",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:59.439Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/finalize",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:59.485Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1001",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:02.010Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1001",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:02.030Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/objections",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:05.707Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/objections",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:05.753Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:08.302Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1003",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:08.329Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1002",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:08.330Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1003",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:08.350Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1002",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:08.354Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1001",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:08.357Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/objections/review",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:11.802Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/objections/review",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:11.828Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/objections/review",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:15.217Z"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "KPI finalize 200 (확정)",
+      "status": "passed",
+      "detail": "[{\"type\":\"request\",\"method\":\"OPTIONS\",\"url\":\"/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/finalize\",\"status\":200,\"timestamp\":\"2026-07-06T08:55:59.439Z\"},{\"type\":\"request\",\"method\":\"POST\",\"url\":\"/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/finalize\",\"status\":200,\"timestamp\":\"2026-07-06T08:55:59.485Z\"}]",
+      "timestamp": "2026-07-06T08:56:15.217Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "finalized result available for objection",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T08:56:15.217Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "objection submit POST 200 (none->submitted)",
+      "status": "passed",
+      "detail": "[{\"type\":\"request\",\"method\":\"OPTIONS\",\"url\":\"/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/objections\",\"status\":200,\"timestamp\":\"2026-07-06T08:56:05.707Z\"},{\"type\":\"request\",\"method\":\"POST\",\"url\":\"/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/objections\",\"status\":200,\"timestamp\":\"2026-07-06T08:56:05.753Z\"}]",
+      "timestamp": "2026-07-06T08:56:15.217Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "objection appears in admin review list",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T08:56:15.217Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "objection advance (submitted->reviewing) 200",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T08:56:15.217Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "objection resolve (reviewing->resolved) 200",
+      "status": "passed",
+      "detail": "review calls=3",
+      "timestamp": "2026-07-06T08:56:15.217Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "resolved state visible",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T08:56:15.217Z"
+    }
+  ],
+  "api": [
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:48.756Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:49.057Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:49.211Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:49.225Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1001&period_type=quarterly&period_key=2026-Q3",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:53.321Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:53.331Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1001&period_type=quarterly&period_key=2026-Q3",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:53.332Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results/compute",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:55.859Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/kpi-results/compute",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:55.952Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/finalize",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:59.439Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/finalize",
+      "status": 200,
+      "timestamp": "2026-07-06T08:55:59.485Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1001",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:02.010Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1001",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:02.030Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/objections",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:05.707Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/objections",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:05.753Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:08.302Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1003",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:08.329Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1002",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:08.330Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1003",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:08.350Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1002",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:08.354Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1001",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:08.357Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/objections/review",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:11.802Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/objections/review",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:11.828Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/kpi-results/f43dcd8f-3c8f-45d1-aad2-841372d14373/objections/review",
+      "status": 200,
+      "timestamp": "2026-07-06T08:56:15.217Z"
+    }
+  ],
+  "endedAt": "2026-07-06T08:56:17.761Z"
+}

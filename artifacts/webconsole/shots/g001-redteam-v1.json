@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "actions": [
+    {
+      "type": "assert",
+      "selector": "location",
+      "name": "unauth /work-log bounces to /login",
+      "status": "passed",
+      "timestamp": "2026-07-06T08:10:00.000Z"
+    },
+    {
+      "type": "assert",
+      "selector": "location",
+      "name": "unauth /admin/employees bounces to /login",
+      "status": "passed",
+      "timestamp": "2026-07-06T08:10:00.000Z"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "assert",
+      "selector": "location",
+      "name": "unauth /work-log bounces to /login",
+      "status": "passed",
+      "timestamp": "2026-07-06T08:10:00.000Z"
+    },
+    {
+      "type": "assert",
+      "selector": "location",
+      "name": "unauth /admin/employees bounces to /login",
+      "status": "passed",
+      "timestamp": "2026-07-06T08:10:00.000Z"
+    }
+  ],
+  "asserts": [
+    {
+      "n": "unauth /work-log bounces to /login",
+      "ok": true,
+      "d": "http://localhost:3000/login"
+    },
+    {
+      "n": "unauth /admin/employees bounces to /login",
+      "ok": true,
+      "d": "http://localhost:3000/login"
+    }
+  ]
+}

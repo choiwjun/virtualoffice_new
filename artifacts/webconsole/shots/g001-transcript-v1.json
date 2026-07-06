@@ -1,0 +1,376 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "actions": [
+    {
+      "type": "type",
+      "selector": "#email",
+      "value": "alice",
+      "timestamp": "2026-07-06T08:08:09.193Z"
+    },
+    {
+      "type": "type",
+      "selector": "#password",
+      "value": "***",
+      "timestamp": "2026-07-06T08:08:09.193Z"
+    },
+    {
+      "type": "click",
+      "selector": "button[type=submit]",
+      "timestamp": "2026-07-06T08:08:09.193Z"
+    },
+    {
+      "type": "waitForSelector",
+      "selector": "table",
+      "timestamp": "2026-07-06T08:08:09.193Z"
+    },
+    {
+      "type": "type",
+      "selector": "input[placeholder]",
+      "value": "앨리스",
+      "timestamp": "2026-07-06T08:08:09.193Z"
+    },
+    {
+      "type": "nav",
+      "name": "goto /login",
+      "timestamp": "2026-07-06T08:08:10.242Z"
+    },
+    {
+      "type": "step",
+      "name": "wrong password attempt",
+      "timestamp": "2026-07-06T08:08:11.363Z"
+    },
+    {
+      "type": "step",
+      "name": "correct login",
+      "timestamp": "2026-07-06T08:08:14.291Z"
+    },
+    {
+      "type": "step",
+      "name": "after login",
+      "timestamp": "2026-07-06T08:08:18.142Z"
+    },
+    {
+      "type": "nav",
+      "name": "goto /work-log",
+      "timestamp": "2026-07-06T08:08:20.648Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 401,
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/work-logs?start_date=2026-07-06&end_date=2026-07-06",
+      "status": 200,
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/work-logs/summary?period_type=daily&start_date=2026-07-06&end_date=2026-07-06",
+      "status": 200,
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/work-logs/summary?period_type=daily&start_date=2026-07-06&end_date=2026-07-06",
+      "status": 200,
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/work-logs?start_date=2026-07-06&end_date=2026-07-06",
+      "status": 200,
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "login form renders",
+      "status": "passed",
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "wrong password shows error",
+      "status": "passed",
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "redirected to /admin/employees",
+      "status": "passed",
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "employees: 김앨리스 present",
+      "status": "passed",
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "employees: 이밥 present",
+      "status": "passed",
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "employees: 박찰리 present",
+      "status": "passed",
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "sidebar shows admin menus (조직도)",
+      "status": "passed",
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "search filters to 김앨리스",
+      "status": "passed",
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "work-log reachable (not bounced to login)",
+      "status": "passed",
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "work-log renders content",
+      "status": "passed",
+      "timestamp": "2026-07-06T08:08:27.309Z"
+    }
+  ],
+  "startedAt": "2026-07-06T08:08:09.193Z",
+  "steps": [
+    {
+      "t": "2026-07-06T08:08:10.242Z",
+      "name": "goto /login"
+    },
+    {
+      "t": "2026-07-06T08:08:11.363Z",
+      "name": "wrong password attempt"
+    },
+    {
+      "t": "2026-07-06T08:08:14.291Z",
+      "name": "correct login"
+    },
+    {
+      "t": "2026-07-06T08:08:18.142Z",
+      "name": "after login",
+      "url": "http://localhost:3000/admin/employees"
+    },
+    {
+      "t": "2026-07-06T08:08:20.648Z",
+      "name": "goto /work-log"
+    }
+  ],
+  "api": [
+    {
+      "method": "OPTIONS",
+      "url": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "OPTIONS",
+      "url": "/api/employees",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200
+    },
+    {
+      "method": "OPTIONS",
+      "url": "/api/work-logs?start_date=2026-07-06&end_date=2026-07-06",
+      "status": 200
+    },
+    {
+      "method": "OPTIONS",
+      "url": "/api/work-logs/summary?period_type=daily&start_date=2026-07-06&end_date=2026-07-06",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/work-logs/summary?period_type=daily&start_date=2026-07-06&end_date=2026-07-06",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/work-logs?start_date=2026-07-06&end_date=2026-07-06",
+      "status": 200
+    }
+  ],
+  "console": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+  ],
+  "asserts": [
+    {
+      "name": "login form renders",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "wrong password shows error",
+      "ok": true,
+      "detail": "(no match)"
+    },
+    {
+      "name": "redirected to /admin/employees",
+      "ok": true,
+      "detail": "http://localhost:3000/admin/employees"
+    },
+    {
+      "name": "employees: 김앨리스 present",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "employees: 이밥 present",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "employees: 박찰리 present",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "sidebar shows admin menus (조직도)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "search filters to 김앨리스",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "work-log reachable (not bounced to login)",
+      "ok": true,
+      "detail": "http://localhost:3000/work-log"
+    },
+    {
+      "name": "work-log renders content",
+      "ok": true,
+      "detail": "len=348"
+    }
+  ],
+  "endedAt": "2026-07-06T08:08:27.309Z"
+}

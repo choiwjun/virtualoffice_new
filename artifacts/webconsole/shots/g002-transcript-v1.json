@@ -1,0 +1,407 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "startedAt": "2026-07-06T08:54:15.087Z",
+  "actions": [
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T08:54:16.546Z",
+      "name": "login"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:17.241Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:17.544Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:17.769Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:17.783Z"
+    },
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T08:54:21.742Z",
+      "name": "/admin/kpi"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:21.827Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1001&period_type=quarterly&period_key=2026-Q3",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:21.827Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1001&period_type=quarterly&period_key=2026-Q3",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:21.890Z"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-06T08:54:24.331Z",
+      "selector": "button:compute"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results/compute",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:24.358Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/kpi-results/compute",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:24.674Z"
+    },
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T08:54:28.438Z",
+      "name": "/kpi"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1001&period_type=quarterly&period_key=2026-Q3",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:28.517Z"
+    },
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T08:54:30.982Z",
+      "name": "/meetings"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/meetings?scheduled_from=2026-07-05T00%3A00%3A00.000Z&scheduled_to=2026-07-11T23%3A59%3A59.000Z",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:31.033Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/meetings?scheduled_from=2026-07-05T00%3A00%3A00.000Z&scheduled_to=2026-07-11T23%3A59%3A59.000Z",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:31.084Z"
+    },
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T08:54:34.658Z",
+      "name": "/kpi/objection"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1001",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:34.811Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1001",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:34.878Z"
+    },
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T08:54:37.287Z",
+      "name": "/admin/kpi/objections"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:37.461Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1002",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:37.475Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1003",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:37.480Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1001",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:37.483Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1002",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:37.526Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1003",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:37.526Z"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "admin/kpi renders (not locked)",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T08:54:37.526Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "compute POST 200",
+      "status": "passed",
+      "detail": "[{\"type\":\"request\",\"method\":\"OPTIONS\",\"url\":\"/api/kpi-results/compute\",\"status\":200,\"timestamp\":\"2026-07-06T08:54:24.358Z\"},{\"type\":\"request\",\"method\":\"POST\",\"url\":\"/api/kpi-results/compute\",\"status\":200,\"timestamp\":\"2026-07-06T08:54:24.674Z\"}]",
+      "timestamp": "2026-07-06T08:54:37.526Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "metric rows shown (협업 종합 or 분기 종합)",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T08:54:37.526Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "my /kpi renders",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T08:54:37.526Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "my kpi list GET 200",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T08:54:37.526Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "/meetings renders",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T08:54:37.526Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "meetings GET 200",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T08:54:37.526Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "meeting create modal opens",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T08:54:37.526Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "/kpi/objection renders",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T08:54:37.526Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "/admin/kpi/objections renders (not locked)",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T08:54:37.526Z"
+    }
+  ],
+  "api": [
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:17.241Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:17.544Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:17.769Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:17.783Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:21.827Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1001&period_type=quarterly&period_key=2026-Q3",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:21.827Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1001&period_type=quarterly&period_key=2026-Q3",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:21.890Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results/compute",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:24.358Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/kpi-results/compute",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:24.674Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1001&period_type=quarterly&period_key=2026-Q3",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:28.517Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/meetings?scheduled_from=2026-07-05T00%3A00%3A00.000Z&scheduled_to=2026-07-11T23%3A59%3A59.000Z",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:31.033Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/meetings?scheduled_from=2026-07-05T00%3A00%3A00.000Z&scheduled_to=2026-07-11T23%3A59%3A59.000Z",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:31.084Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1001",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:34.811Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1001",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:34.878Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:37.461Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1002",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:37.475Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/kpi-results?user_id=1003",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:37.480Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1001",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:37.483Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1002",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:37.526Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/kpi-results?user_id=1003",
+      "status": 200,
+      "timestamp": "2026-07-06T08:54:37.526Z"
+    }
+  ],
+  "endedAt": "2026-07-06T08:54:40.417Z"
+}

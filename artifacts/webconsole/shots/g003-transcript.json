@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "startedAt": "2026-07-06T09:10:01.087Z",
+  "actions": [
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T09:10:01.747Z",
+      "name": "login"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:02.427Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:02.735Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:02.942Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:02.949Z"
+    },
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T09:10:06.926Z",
+      "name": "/admin/org-chart"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:07.019Z"
+    },
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T09:10:11.089Z",
+      "name": "/admin/office-layout"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:11.148Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:11.167Z"
+    },
+    {
+      "type": "nav",
+      "timestamp": "2026-07-06T09:10:17.719Z",
+      "name": "/admin/sync"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/erp/sync",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:20.381Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/erp/sync",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:20.578Z"
+    }
+  ],
+  "assertions": [
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "org-chart: React Flow rendered",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T09:10:20.578Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "org-chart: company/team/employee nodes",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T09:10:20.578Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "org-chart: employees API 200",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T09:10:20.578Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "office-layout: Konva canvas rendered",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T09:10:20.578Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "office-layout: seats API 200",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T09:10:20.578Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "office-layout: seats added + drag exercised",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T09:10:20.578Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "sync page renders (not locked)",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T09:10:20.578Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "erp sync POST 200",
+      "status": "passed",
+      "detail": "[{\"type\":\"request\",\"method\":\"OPTIONS\",\"url\":\"/api/erp/sync\",\"status\":200,\"timestamp\":\"2026-07-06T09:10:20.381Z\"},{\"type\":\"request\",\"method\":\"POST\",\"url\":\"/api/erp/sync\",\"status\":200,\"timestamp\":\"2026-07-06T09:10:20.578Z\"}]",
+      "timestamp": "2026-07-06T09:10:20.578Z"
+    },
+    {
+      "type": "assert",
+      "selector": "body",
+      "name": "sync result row shown",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-06T09:10:20.578Z"
+    }
+  ],
+  "api": [
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:02.427Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:02.735Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:02.942Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:02.949Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/employees",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:07.019Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:11.148Z"
+    },
+    {
+      "type": "request",
+      "method": "GET",
+      "url": "/api/seats",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:11.167Z"
+    },
+    {
+      "type": "request",
+      "method": "OPTIONS",
+      "url": "/api/erp/sync",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:20.381Z"
+    },
+    {
+      "type": "request",
+      "method": "POST",
+      "url": "/api/erp/sync",
+      "status": 200,
+      "timestamp": "2026-07-06T09:10:20.578Z"
+    }
+  ],
+  "endedAt": "2026-07-06T09:10:23.444Z"
+}
