@@ -51,7 +51,7 @@ services:
       AUTHENTICATION_USER: admin
       AUTHENTICATION_PASSWORD: localadmin
       MAP_STORAGE_API_TOKEN: *wa_secret
-      PUSHER_URL: http://localhost:8090/
+      PUSHER_URL: http://localhost:8090
       PATH_PREFIX: /map-storage
 
   wa-back:
@@ -86,7 +86,7 @@ services:
     environment:
       SECRET_KEY: *wa_secret
       API_URL: wa-back:50051
-      PUSHER_URL: http://localhost:8090/
+      PUSHER_URL: http://localhost:8090
       FRONT_URL: /
       INTERNAL_MAP_STORAGE_URL: http://wa-map-storage:3000
       PUBLIC_MAP_STORAGE_URL: http://localhost:8090/map-storage

@@ -467,15 +467,34 @@ async def token(
     grant_type: str = Form(...),
     code: str = Form(...),
     redirect_uri: str = Form(...),
-    client_id: str = Form(...),
+    client_id: str = Form(default=""),
     client_secret: str = Form(default=""),
+    code_verifier: str = Form(default=""),  # PKCE — openid-client가 전송(수용). RFC 7636
 ) -> JSONResponse:
     """
     Token Endpoint — Authorization Code → ID Token 교환.
     WorkAdventure가 Authorization Code를 받은 후 이 엔드포인트를 호출한다.
+    클라이언트 인증은 client_secret_post(form) 및 client_secret_basic(Authorization 헤더)
+    둘 다 지원한다(openid-client 기본값은 client_secret_basic). RFC 6749 §2.3.1.
     """
     if grant_type != "authorization_code":
         raise HTTPException(status_code=400, detail="unsupported_grant_type")
+
+    # client_secret_basic 폴백: Authorization: Basic base64(urlencode(id):urlencode(secret))
+    if not client_id:
+        import base64
+        import urllib.parse
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Basic "):
+            try:
+                decoded = base64.b64decode(auth_header[6:]).decode("utf-8")
+                raw_id, _, raw_secret = decoded.partition(":")
+                client_id = urllib.parse.unquote_plus(raw_id)
+                client_secret = client_secret or urllib.parse.unquote_plus(raw_secret)
+            except Exception:  # noqa: BLE001 — 잘못된 Basic 헤더는 아래 invalid_client로 귀결
+                pass
+    if not client_id:
+        raise HTTPException(status_code=400, detail="invalid_client: missing client_id")
 
     auth_code = _code_store.pop(code, None)
     if auth_code is None:
