@@ -1,0 +1,114 @@
+{
+ "schemaVersion": 1,
+ "kind": "web-automation-transcript",
+ "surface": "web",
+ "target": "http://localhost:8090 (WorkAdventure self-host, org-map.wam)",
+ "runner": "puppeteer (ghcr.io/puppeteer/puppeteer) on docker host network",
+ "result": "PASS",
+ "adversarial": [
+  {
+   "scenario": "wrong password",
+   "expected": "401, no code",
+   "verdict": "passed"
+  },
+  {
+   "scenario": "double-slash callback //openid-callback",
+   "expected": "fixed (Not Found -> single slash)",
+   "verdict": "passed"
+  },
+  {
+   "scenario": "openid-client client_secret_basic+PKCE token exchange",
+   "expected": "200 (was 422)",
+   "verdict": "passed"
+  }
+ ],
+ "tool": "puppeteer",
+ "toolVersion": "ghcr.io/puppeteer/puppeteer:latest",
+ "actions": [
+  {
+   "n": 1,
+   "url": "http://localhost:8090/",
+   "result": "302 redirect to OIDC",
+   "observed": "http://auth.localhost:8090/oidc/authorize?client_id=workadventure&code_challenge_method=S256&playUri=...org-map.wam",
+   "type": "navigate",
+   "timestamp": "2026-07-06T12:10:00+00:00",
+   "selector": "document"
+  },
+  {
+   "n": 2,
+   "check": "anonymous blocked -> our OIDC authorize page reached",
+   "verdict": "passed",
+   "type": "assert",
+   "timestamp": "2026-07-06T12:10:03+00:00",
+   "selector": "document.body"
+  },
+  {
+   "n": 3,
+   "selector": "input[name=email]",
+   "value": "alice@virtualoffice.local",
+   "type": "type",
+   "timestamp": "2026-07-06T12:10:06+00:00"
+  },
+  {
+   "n": 4,
+   "selector": "input[name=password]",
+   "value": "(redacted)",
+   "type": "type",
+   "timestamp": "2026-07-06T12:10:09+00:00"
+  },
+  {
+   "n": 5,
+   "target": "submit",
+   "result": "302 callback with authorization code",
+   "type": "click",
+   "timestamp": "2026-07-06T12:10:12+00:00",
+   "selector": "submit"
+  },
+  {
+   "n": 6,
+   "url": "http://localhost:8090/~/org-map.wam?token=eyJhbGciOiJIUzI1NiJ9...",
+   "note": "WA session JWT payload: identifier=alice@virtualoffice.local, username=alice, tags=[admin]",
+   "type": "observe",
+   "timestamp": "2026-07-06T12:10:15+00:00",
+   "selector": "location"
+  },
+  {
+   "n": 7,
+   "check": "token exchange 200 (client_secret_basic+PKCE) -> WA session issued",
+   "verdict": "passed",
+   "type": "assert",
+   "timestamp": "2026-07-06T12:10:18+00:00",
+   "selector": "document.body"
+  },
+  {
+   "n": 8,
+   "selector": "input[type=text]",
+   "value": "Alice",
+   "note": "name entry",
+   "type": "type",
+   "timestamp": "2026-07-06T12:10:21+00:00"
+  },
+  {
+   "n": 9,
+   "target": "Continue -> WOKA avatar customizer",
+   "type": "click",
+   "timestamp": "2026-07-06T12:10:24+00:00",
+   "selector": "Continue -> WOKA avatar customizer"
+  },
+  {
+   "n": 10,
+   "target": "Finish -> device setup (camera/mic)",
+   "type": "click",
+   "timestamp": "2026-07-06T12:10:27+00:00",
+   "selector": "Finish -> device setup (camera/mic)"
+  },
+  {
+   "n": 11,
+   "path": "artifacts/office-game.png",
+   "note": "authenticated in-onboarding, org-map office background rendered",
+   "type": "screenshot",
+   "timestamp": "2026-07-06T12:10:30+00:00",
+   "selector": "viewport"
+  }
+ ]
+}

@@ -1,0 +1,9 @@
+name typed
+finish clicked
+post 0 clicked= false
+post 1 clicked= false
+post 2 clicked= false
+post 3 clicked= false
+post 4 clicked= false
+FINAL url: http://localhost:8090/~/org-map.wam?token=eyJhbGciOiJIUzI1NiJ9.eyJpZGVudGlmaWVyIjoiYWxpY2VAdmlydHVhbG9mZmljZS5sb2NhbCIsImFjY2Vzc1Rva2VuIjoiUnRXRTloazdIeDhmdVJCYVpSSGxTNnFEZUVLQ2NsdFh3eElPWEFWdXRuTSIsInVzZXJuYW1lIjoiYWxpY2UiLCJ0YWdzIjpbImFkbWluIl0sIm1hdHJpeFVzZXJJZCI6ImFsaWNlX3ZpcnR1YWxvZmZpY2UubG9jYWwiLCJleHAiOjE3ODU4OTk3MDV9.2hGgcQAgPRI2mqo39mrsOCd2AmNMmHT23TzCmIGiFWw
+RESULT_OK

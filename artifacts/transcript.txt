@@ -1,0 +1,5 @@
+landing url: http://auth.localhost:8090/oidc/authorize?client_id=workadventure&scope=openid%20profile%20email&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A8090%2Fopenid-callback&state=d0aa4813-6819-471a-9f21-d2fff70b47b0&playUri=http%3A%2F%2Flocalhost%3A8090%2F%7E%2Forg-map.wam&code_challenge=MIUrWgSyrihj4V_1VqjH9103Uunkny2bzx2w5NKbBo8&code_challenge_method=S256
+on oidc authorize page: true
+OIDC login form present -> filling alice
+after login url: http://localhost:8090/~/org-map.wam?token=eyJhbGciOiJIUzI1NiJ9.eyJpZGVudGlmaWVyIjoiYWxpY2VAdmlydHVhbG9mZmljZS5sb2NhbCIsImFjY2Vzc1Rva2VuIjoidTNObnhrdEFJZHRSQ2hiQXc5U291YlRPZ3dMSzBxRlhYRmdTWF9ZRGpBQSIsInVzZXJuYW1lIjoiYWxpY2UiLCJ0YWdzIjpbImFkbWluIl0sIm1hdHJpeFVzZXJJZCI6ImFsaWNlX3ZpcnR1YWxvZmZpY2UubG9jYWwiLCJleHAiOjE3ODU4OTkzOTZ9.RgDxdy5WBcCpZDTF9cU_hCGRW29pbLs8N9Y1oBumrR4
+RESULT_OK
