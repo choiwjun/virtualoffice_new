@@ -43,13 +43,11 @@
 
 ### 범위
 #### 계약 설계
-- 실시간 서버 API 계약(WebSocket(WSS) 프로토콜 + REST fallback, D1)
+- FastAPI 연동 계약(OIDC provider·presence 수집·Room API 브리지) — 실시간 동기화 프로토콜은 WA 내장 WSS 사용(D1·D26), 자체 프로토콜 설계 없음
 - 관리·업무·KPI REST 계약, 데이터 모델/ERD, ERP 연동 계약(`POST /api/kpi-results`)
-- office_layout JSON Schema, 3D 씬 구조/asset 레지스트리, 테스트 프레임워크·CI 초안
+- TMJ 맵 스키마·맵 제너레이터 규약(구 office_layout JSON Schema·3D 씬 구조 대체, D26), 테스트 프레임워크·CI 초안
 
 #### 스파이크 (실패 시 폴백 확정)
-| 순번 | 스파이크 | 검증 내용 | 실패 시 폴백 |
-|------|---------|----------|-------------|
 > ⚠️ **D26 갱신**: S1(Godot↔LiveKit)·S3(헤드리스 서버)·S4(라이팅 룩) 취소. S2(STT 파이프라인)만 유지.
 
 | 순번 | 스파이크 | 검증 내용 | 실패 시 폴백 | D26 상태 |
@@ -1053,41 +1051,41 @@ graph LR
     style P7 fill:#ffe0b2
 ```
 
-**Gantt 타임라인** (58주, 시작 2026-07-06 → 완성 2027-08-16, 15% 버퍼 포함):
+**Gantt 타임라인** (45주, 시작 2026-07-06 → 완성 2027-05-17, D26 재산정):
 
 ```mermaid
 gantt
-    title Virtual Office 로드맵 (58주)
+    title Virtual Office 로드맵 (45주, D26)
     dateFormat YYYY-MM-DD
 
-    Phase 0 (계약·스파이크) :p0, 2026-07-06, 28d
-    Phase 1 (골든 샘플 3D)  :p1, after p0, 84d
-    Phase 2 (ERP 동기화)    :p2, after p1, 49d
-    Phase 3 (배치 편집기)   :p3, after p2, 42d
-    Phase 4 (실시간 서버)   :p4, after p3, 56d
-    Phase 5 (회의/STT)      :p5, after p4, 56d
-    Phase 6 (KPI/ERP push)  :p6, after p5, 49d
-    Phase 7 (고도화)        :p7, after p6, 42d
+    Phase 0 (계약·스파이크 S2)      :p0, 2026-07-06, 28d
+    Phase 1 (WA self-host 구축)     :p1, after p0, 28d
+    Phase 2 (ERP·Presence 연동)     :p2, after p1, 35d
+    Phase 3 (맵 제너레이터·좌석)    :p3, after p2, 35d
+    Phase 4 (WA 연동 완성·E2E)      :p4, after p3, 42d
+    Phase 5 (회의/STT)              :p5, after p4, 56d
+    Phase 6 (KPI/ERP push)          :p6, after p5, 49d
+    Phase 7 (고도화)                :p7, after p6, 42d
 
-    milestone Phase 1 완료 :crit, m1, 2026-10-26, 1d
-    milestone Phase 4 완료 (실시간) :crit, m4, 2027-03-22, 1d
-    milestone Phase 6 완료 (KPI) :crit, m6, 2027-07-05, 1d
-    milestone 프로젝트 완성 :crit, m7, 2027-08-16, 1d
+    milestone Phase 1 완료 (WA 가동) :crit, m1, 2026-08-31, 1d
+    milestone Phase 4 완료 (연동 E2E) :crit, m4, 2026-12-21, 1d
+    milestone Phase 6 완료 (KPI) :crit, m6, 2027-04-05, 1d
+    milestone 프로젝트 완성 :crit, m7, 2027-05-17, 1d
 ```
 
-**Phase별 캘린더 (검산 완료, 합계 58주 = 406일)**:
+**Phase별 캘린더 (검산 완료, 합계 45주 = 315일)**:
 
 | Phase | 기간 | 시작 | 종료 |
 |-------|------|------|------|
 | 0 | 4주 | 2026-07-06 | 2026-08-02 |
-| 1 | 12주 | 2026-08-03 | 2026-10-25 |
-| 2 | 7주 | 2026-10-26 | 2026-12-13 |
-| 3 | 6주 | 2026-12-14 | 2027-01-24 |
-| 4 | 8주 | 2027-01-25 | 2027-03-21 |
-| 5 | 8주 | 2027-03-22 | 2027-05-16 |
-| 6 | 7주 | 2027-05-17 | 2027-07-04 |
-| 7 | 6주 | 2027-07-05 | 2027-08-15 |
-| **완성** | | | **2027-08-16** |
+| 1 | 4주 | 2026-08-03 | 2026-08-30 |
+| 2 | 5주 | 2026-08-31 | 2026-10-04 |
+| 3 | 5주 | 2026-10-05 | 2026-11-08 |
+| 4 | 6주 | 2026-11-09 | 2026-12-20 |
+| 5 | 8주 | 2026-12-21 | 2027-02-14 |
+| 6 | 7주 | 2027-02-15 | 2027-04-04 |
+| 7 | 6주 | 2027-04-05 | 2027-05-16 |
+| **완성** | | | **2027-05-17** |
 
 ---
 
@@ -1166,15 +1164,15 @@ gantt
 - 02-trd-architecture.md (기술 요구사항)
 - 03-erp-integration.md (ERP 연동 계약)
 - 05-office-layout-schema.md (office_layout 상세)
-- 13-risks-open-questions.md (검증 간트 = 58주 일정 기준선)
+- 13-risks-open-questions.md (검증 간트 — 원 58주 기준선. D26 이후 45주 기준 재검증 필요)
 
 ### Downstream documents affected
 - 12-tasks.md (Task ID 파생: P1-T1 ~ P7-T?)
 
 ### Open questions
 - ERP dev 브랜치 병합 일정 (git 접근권한 보유로 자체 작업, Phase 6 착수 시점 확정 필요)
-- Godot 네이티브 빌드 서명 (Windows code signing — 자체 서명+설치 시 신뢰 등록 또는 공인 code signing cert 구매 검토. TLS용 사내 PKI는 D21-r로 폐기 — 2026-07-02)
-- 3D 에셋 라이선스 (상용 사용 허가 확인)
+- ~~Godot 네이티브 빌드 서명~~ — **D26으로 취소** (WA는 브라우저 접속, 클라이언트 배포 없음)
+- ~~3D 에셋 라이선스~~ — **D26으로 대체**: 2D 타일셋/아바타 에셋 라이선스 확인(WA 기본 에셋 + Tiled 타일셋 CC0 우선)
 
 > 확정 종결: 실시간 프로토콜=WebSocket(WSS, D1), LiveKit 인프라=사내 VM self-host(D21), 회의실 예약=예약+FCFS 병행(D23).
 
