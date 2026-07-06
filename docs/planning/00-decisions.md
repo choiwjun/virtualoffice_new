@@ -1,9 +1,10 @@
 # 00-decisions.md: 확정 결정 로그 (Single Source of Truth)
 
 **프로젝트**: vituraloffice_new (가상오피스 운영 플랫폼)
-**버전**: v1.0
+**버전**: v1.1
 **작성일**: 2026-07-02
-**상태**: 확정 (2026-07-02 기획 문서 전면 검토 후 사용자 승인)
+**최종 갱신**: 2026-07-06 (D26 WorkAdventure 전환 결정 추가)
+**상태**: 확정 (2026-07-02 기획 문서 전면 검토 후 사용자 승인 / 2026-07-06 D26 추가 사용자 승인)
 
 > 이 문서는 01~13 모든 기획 문서가 참조하는 **정본(canonical) 결정 모음**이다.
 > 다른 문서와 이 문서가 충돌하면 **이 문서가 이긴다**. 결정 변경 시 이 문서를 먼저 수정하고 파급 문서를 갱신한다.
@@ -15,21 +16,21 @@
 | ID | 결정 | 내용 | 폐기되는 대안 |
 |----|------|------|-------------|
 | **D1** | 실시간 프로토콜 = **WebSocket(WSS)** | TLS 내장, 재택 근무자 방화벽/VPN 통과 용이. 재접속 시 sequence_num 기반 스냅샷 재수신. OQ4 확정 종결 | ENet(UDP), "ENet TCP"(존재하지 않는 조합) |
-| **D2** | 구현 언어 = **GDScript** | 클라이언트·헤드리스 서버 모두 GDScript. 산출물 확장자 `.gd` | C#(.cs) 표기 전부 |
+| **D2** ⚠️보류(D26) | 구현 언어 = **GDScript** | 클라이언트·헤드리스 서버 모두 GDScript. 산출물 확장자 `.gd` — **D26으로 보류: WorkAdventure 전환으로 Godot 클라이언트·헤드리스 서버 노선 중단. 확장 코드는 TypeScript(scripting API)/Python(FastAPI)** | C#(.cs) 표기 전부 |
 | **D3** | 게임서버 데이터 접근 = **FastAPI 경유 단일화** | 게임서버는 DB(자체/ERP) 직접 접근 금지. presence는 게임서버 메모리 권위 + 1~5초 주기 배치 push(FastAPI) | 100ms 주기 PostgreSQL 직접 쓰기, 게임서버의 ERP 직접 조회 |
-| **D4** | 인증 = **FastAPI 발급 자체 JWT** | HS256 + **자체 시크릿(ERP와 미공유)**. 게임서버는 WSS 핸드셰이크에서 JWT 검증만. 평문 email/password를 게임서버로 보내지 않음. 핸드셰이크에 `protocol_version` 협상 포함(미지원 버전 거부 + 업데이트 안내) | 게임서버 직접 로그인, "HS256 + ERP 공개키 검증"(암호학적 불성립), ERP 시크릿 공유 |
+| **D4** | 인증 = **FastAPI 발급 자체 JWT** | HS256 + **자체 시크릿(ERP와 미공유)**. 게임서버는 WSS 핸드셰이크에서 JWT 검증만. 평문 email/password를 게임서버로 보내지 않음. 핸드셰이크에 `protocol_version` 협상 포함(미지원 버전 거부 + 업데이트 안내) — **D26: WorkAdventure는 OIDC로 연동(oidc.py 브리지). D4 자체 JWT와 공존** | 게임서버 직접 로그인, "HS256 + ERP 공개키 검증"(암호학적 불성립), ERP 시크릿 공유 |
 | **D5** | 회의록 = **STT 자동 생성 정식 포함** (사용자 확정) | LiveKit Egress(트랙별 오디오) → STT(화자분리) → 회의록 초안 자동 생성 → 참석자/호스트 검토·확정. 수동 입력은 폴백. PRD "누락률 <5%" 기준 유지, 측정 방법 명시(테스트 회의 N회 대비 수동 전사 대조) | 수동 입력 전용 설계 |
-| **D6** | 일정 기준선 = **58주** (사용자 확정) | 13-risks 검증 간트를 기준선으로 로드맵 재산정. 시작 2026-07-06, 완성 목표 **2027년 하반기(2027-08 경)**. Phase 5에 STT 파이프라인 포함 재추정. "26주/2026-12-28" 표기 전부 폐기 | 26주 로드맵 |
+| **D6** | 일정 기준선 = **58주** (사용자 확정) | 13-risks 검증 간트를 기준선으로 로드맵 재산정. 시작 2026-07-06, 완성 목표 **2027년 하반기(2027-08 경)**. Phase 5에 STT 파이프라인 포함 재추정. "26주/2026-12-28" 표기 전부 폐기 — **D26: Phase 1~4는 WorkAdventure 연동 구조로 재편(4~6주), 총 기간 58주 유지** | 26주 로드맵 |
 
 ## B. 3D/에셋/레이아웃 확정
 
 | ID | 결정 | 내용 | 폐기되는 대안 |
 |----|------|------|-------------|
-| **D7** | 라이팅 = **실시간 직접광 + ReflectionProbe + SSAO** | 라이트맵 베이킹 배제(JSON 동적 씬과 양립 불가). SDFGI는 고사양 PC용 옵션 토글. 기준 사양: **GTX 1650급 60fps / 내장그래픽(Iris Xe급) 30fps** | 라이트맵 베이크 파이프라인, "RTX 4060 최소" 요구 |
-| **D8** | 에셋 전달 = **클라이언트 빌드(pak) 동봉** | 에셋 카탈로그는 클라이언트에 포함(임포트 최적화·VRAM 압축·LOD 적용). layout JSON은 `asset_id` 참조만. 신규 에셋 추가 = 클라이언트 자동 업데이트 채널로 배포. 산출물 포맷 `.tscn`(임포트 완료본) | 런타임 glb 다운로드/CDN, Draco·meshopt 압축(Godot 미지원) |
-| **D9** | room = **파라메트릭 생성** | 벽 세그먼트 + **door opening(문 개구부) 필드 신설** — 방 콜리전에 출입구 구멍 정의. 프리팹은 가구·소품만 | 회의실 골조 프리팹(고정 크기), 개구부 없는 solid box 콜리전 |
+| **D7** ⚠️보류(D26) | 라이팅 = **실시간 직접광 + ReflectionProbe + SSAO** | 라이트맵 베이킹 배제(JSON 동적 씬과 양립 불가). SDFGI는 고사양 PC용 옵션 토글. 기준 사양: **GTX 1650급 60fps / 내장그래픽(Iris Xe급) 30fps** — **D26으로 보류: WorkAdventure 2D(Phaser) 기반. 3D 렌더러 불필요** | 라이트맵 베이크 파이프라인, "RTX 4060 최소" 요구 |
+| **D8** ⚠️보류(D26) | 에셋 전달 = **클라이언트 빌드(pak) 동봉** | 에셋 카탈로그는 클라이언트에 포함(임포트 최적화·VRAM 압축·LOD 적용). layout JSON은 `asset_id` 참조만. 신규 에셋 추가 = 클라이언트 자동 업데이트 채널로 배포. 산출물 포맷 `.tscn`(임포트 완료본) — **D26으로 보류: WorkAdventure는 TMJ 맵+타일셋 PNG 에셋 구조** | 런타임 glb 다운로드/CDN, Draco·meshopt 압축(Godot 미지원) |
+| **D9** ⚠️보류(D26) | room = **파라메트릭 생성** | 벽 세그먼트 + **door opening(문 개구부) 필드 신설** — 방 콜리전에 출입구 구멍 정의. 프리팹은 가구·소품만 — **D26으로 보류: WorkAdventure는 Tiled JSON(TMJ) 맵 구조로 대체** | 회의실 골조 프리팹(고정 크기), 개구부 없는 solid box 콜리전 |
 | **D10** | 좌석 배정 = **layout JSON에서 분리** | layout JSON은 공간 구조만(좌석 위치·타입·방향). 좌석↔직원 배정은 DB(`seat.assigned_user_id` 현재값 + `seat_assignment_history` 이력) — 04 정본과 명명 통일(2026-07-02). 배정 변경은 레이아웃 재배포 불필요. seat에 `facing`(도 단위) 필드 추가, seat↔furniture 상호 참조(`furniture_id`) 추가 | 배정 포함 blob 전체 재배포 |
-| **D11** | 웹 3D 미리보기 = **제거** | 편집기는 Konva.js 2D 전용. 정밀 확인은 저장 후 **데스크톱 클라이언트 draft 모드**로 열람. WASM/HTML5 export 미사용(PRD WON'T 준수) | Godot HTML5 export iframe, WebSocket 픽셀 스트리밍 |
+| **D11** ⚠️일부대체(D26) | 웹 3D 미리보기 = **제거** | 편집기는 Konva.js 2D 전용. 정밀 확인은 저장 후 **데스크톱 클라이언트 draft 모드**로 열람. WASM/HTML5 export 미사용(PRD WON'T 준수) — **D26으로 일부 대체: 맵 편집기는 Tiled 또는 map-storage 내장 UI로 대체. Konva.js 좌석 배치 파트 재검토** | Godot HTML5 export iframe, WebSocket 픽셀 스트리밍 |
 | **D12** | 레이아웃 검증 = **서버(FastAPI) 단일 정밀 검증** | 공식 JSON Schema 파일 제공. 도달성(A*) 포함 정밀 검증은 서버 1곳. 웹 편집기는 경량 체크(범위/겹침)만. **ERROR는 배포 불가**(`[무시하고 배포]` 버튼 제거), WARNING만 무시 가능 | 웹/서버/Godot 3중 검증 구현 |
 | **D25** | 좌표계 = **top_left 단일 고정, 미터 단위** | `coordinate_origin`은 `top_left` 하나만 허용. Godot 매핑: `Vector3(x, floor_height, y)` (+X 동, +Z 남). 회전·facing 단위는 **도(degree), 시계방향, 기준축 +X**. 층별 `floor_height` 오프셋 규칙 명시 | origin 3종 허용, 단위/방향 미정의 |
 
@@ -62,12 +63,35 @@
 
 ## F. Phase 0 스파이크 (신설 필수)
 
-| 순번 | 스파이크 | 검증 내용 | 실패 시 폴백 |
-|------|---------|----------|-------------|
-| S1 | **Godot ↔ LiveKit PoC** (최우선) | GDScript + WebRTC GDExtension으로 LiveKit 룸 접속·오디오/비디오 수신 검증. Rust SDK 래핑 대안 포함 | 회의 화면만 임베디드 브라우저/외부 창 분리 |
-| S2 | STT 파이프라인 PoC | LiveKit Egress → STT(화자분리) → 회의록 초안 품질 측정(한국어) | 수동 회의록 + AI 요약으로 격하(PRD 기준 하향 재협의) |
-| S3 | 헤드리스 서버 부하 | GDScript 헤드리스 + PhysicsServer3D, 20명 시뮬레이션 CPU/메모리 측정 | tick 하향(10Hz), 물리 간소화 |
-| S4 | 동적 씬 라이팅 룩 검증 | D7 조합(실시간광+ReflectionProbe+SSAO)으로 골든 샘플 룩 확인 | SDFGI 옵션 기본화 + 기준 사양 상향 재협의 |
+> ⚠️ **D26 갱신**: S1·S3·S4는 D26(WorkAdventure 전환)으로 취소. S2(STT 파이프라인)는 유지.
+
+| 순번 | 스파이크 | 검증 내용 | 실패 시 폴백 | D26 상태 |
+|------|---------|----------|-------------|---------|
+| S1 | **Godot ↔ LiveKit PoC** | GDScript + WebRTC GDExtension으로 LiveKit 룸 접속·오디오/비디오 수신 검증. Rust SDK 래핑 대안 포함 | 회의 화면만 임베디드 브라우저/외부 창 분리 | **취소** (WorkAdventure LiveKit 네이티브 통합) |
+| S2 | STT 파이프라인 PoC | LiveKit Egress → STT(화자분리) → 회의록 초안 품질 측정(한국어) | 수동 회의록 + AI 요약으로 격하(PRD 기준 하향 재협의) | **유지** |
+| S3 | 헤드리스 서버 부하 | GDScript 헤드리스 + PhysicsServer3D, 20명 시뮬레이션 CPU/메모리 측정 | tick 하향(10Hz), 물리 간소화 | **취소** (Godot 헤드리스 노선 보류) |
+| S4 | 동적 씬 라이팅 룩 검증 | D7 조합(실시간광+ReflectionProbe+SSAO)으로 골든 샘플 룩 확인 | SDFGI 옵션 기본화 + 기준 사양 상향 재협의 | **취소** (3D 렌더러 노선 보류) |
+
+---
+
+## G. WorkAdventure 전환 (D26, 2026-07-06)
+
+| ID | 결정 | 내용 | 폐기되는 대안 |
+|----|------|------|-------------|
+| **D26** | 가상오피스 본체 = **WorkAdventure self-host** | AGPL-3.0+Commons Clause. 사내 도그푸딩 한정 적법, B2B 판매 시 Enterprise 라이선스 또는 재구현 필요. Godot 네이티브 클라이언트·헤드리스 서버(D2/D7/D8/D9/D11 일부) 노선 **보류**. 확장은 scripting API/iframe/OIDC/Room API만 사용, WorkAdventure 소스 직접 수정 금지. | Godot 4 네이티브 3D 클라이언트, Godot 헤드리스 서버 |
+
+### D26 연동 보류/폐기 결정 목록
+
+| 결정 ID | 원 내용 요약 | 상태 | 사유 |
+|---------|------------|------|------|
+| **D2** | 구현 언어 = GDScript (클라이언트·헤드리스 서버) | **보류** | WorkAdventure 전환. 확장 코드는 TypeScript(scripting API)/Python(FastAPI 연동) |
+| **D7** | 라이팅 = 실시간 직접광+ReflectionProbe+SSAO | **보류** | WorkAdventure 2D(Phaser) 기반. 3D 렌더러 불필요 |
+| **D8** | 에셋 전달 = 클라이언트 빌드(pak) 동봉 | **보류** | WorkAdventure는 TMJ 맵+타일셋 PNG 에셋 구조 |
+| **D9** | room = 파라메트릭 생성(벽 세그먼트+door opening) | **보류** | WorkAdventure는 Tiled JSON(TMJ) 맵 구조로 대체 |
+| **D11(일부)** | 편집기 = Konva.js 2D 전용, 데스크톱 draft 모드 | **대체** | 맵 편집기는 Tiled 또는 map-storage 내장 UI. Konva.js 좌석 배치 파트 재검토 |
+| **F-S1** | Godot ↔ LiveKit PoC | **취소** | WorkAdventure가 LiveKit 네이티브 통합하므로 PoC 불필요 |
+| **F-S3** | 헤드리스 서버 부하 PoC | **취소** | Godot 헤드리스 노선 보류 |
+| **F-S4** | 동적 씬 라이팅 룩 검증 | **취소** | 3D 렌더러 노선 보류 |
 
 ---
 
@@ -82,7 +106,8 @@
 - [x] 07-3d-visual-asset-pipeline.md — D7, D8, D9, 시간 재추정
 - [x] 08-kpi-logic.md — D14, D15, D16, D17, D20
 - [x] 09-realtime-collaboration.md — D1, D3, D4, D13, D24, D22
-- [x] 10-roadmap.md — D6(58주 재산정), D5(STT 태스크), F(스파이크), GDScript
-- [x] 11-tech-stack.md — D1, D2, D21, 버전 표기 정정(FastAPI 0.115+, PyJWT 등)
+- [x] 10-roadmap.md — D6(58주 재산정), D5(STT 태스크), F(스파이크), GDScript / **D26 반영**: Phase 1~4를 WorkAdventure 연동 4~6주로 재편, STT·KPI Phase 유지
+- [x] 11-tech-stack.md — D1, D2, D21, 버전 표기 정정(FastAPI 0.115+, PyJWT 등) / **D26 반영**: 2.1(3D 클라이언트)/2.2(실시간 서버) 절을 WorkAdventure 스택으로 교체
 - [x] 12-tasks.md — D6, F(Phase 0 스파이크), GDScript, D22, 누락 태스크(이의신청·분기집계·감사로그·STT)
 - [x] 13-risks-open-questions.md — OQ4/OQ11 확정 종결, 신규 리스크(LiveKit 통합·STT·개인정보/노동법), 스테일 OQ 정리
+- [ ] specs/screens/virtual-office-3d.yaml — **D26 반영**: 상단에 전환 주석 추가

@@ -1,3 +1,23 @@
+# ============================================================
+# D26 전환 주석 (2026-07-06)
+# ============================================================
+# 이 스펙은 원래 Godot 4 네이티브 3D 클라이언트(platform: godot-native)를
+# 기술하고 있었으나, D26(WorkAdventure self-host 전환) 결정에 따라
+# 아래 사항이 변경된다:
+#
+#   - platform: godot-native → workadventure-web
+#   - 3D 아바타·Forward+ 렌더러 → WorkAdventure 2D 아바타(Phaser)
+#   - 헤드리스 서버(GDScript) → WorkAdventure back (WA 내장)
+#   - WASD 이동 → WA 네이티브 이동 (scripting API 확장만 허용)
+#   - presence 7종(D13): WA zone 이벤트 + scripting API 변수로 매핑
+#   - 이 파일의 data_requirements·interactions·layout은 재사용 가능
+#     (presence 필드, ERP 연동 구조, 회의실 zone 개념 동일)
+#
+# 정본: docs/planning/00-decisions.md — D26
+# 라이선스 경계: WorkAdventure 소스 수정 금지.
+#   확장은 scripting API / iframe / OIDC / Room API 만.
+# ============================================================
+
 version: "2.0"
 
 screen:
