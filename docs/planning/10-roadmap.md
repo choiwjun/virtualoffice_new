@@ -3,14 +3,16 @@
 ## 개발 로드맵: Virtual Office 운영 플랫폼
 
 **프로젝트**: 가상오피스 운영 플랫폼 (vituraloffice_new)  
-**버전**: v2.0  
-**목표**: 완성 — 스펙 7단계 전체를 체계적으로 구현  
+**버전**: v3.0  
+**목표**: 완성 — WorkAdventure self-host 기반 가상오피스 + STT·KPI·ERP 통합  
 **첫 사용**: 사내 도그푸딩 (단일 조직, 단일 company_id 기준)  
 **개발 규모**: 1인 개발 + AI 협업, 최고 품질 우선  
-**최종 업데이트**: 2026-07-02  
-**정본 기준**: `00-decisions.md` (D1~D25, F절 스파이크) — 충돌 시 정본이 우선
+**최종 업데이트**: 2026-07-06 (D26 WorkAdventure 전환 반영)  
+**정본 기준**: `00-decisions.md` (D1~D26, F절) — 충돌 시 정본이 우선
 
 > **변경 요약 (v2.0, 2026-07-02)**: 전체 일정을 **58주 기준**으로 재산정(D6, 시작 2026-07-06 → 완성 **2027-08-16, 2027년 하반기**), "26주/2026-12-28" 표기 전면 폐기. Phase 0(계약+스파이크 S1~S4) 신설, Phase 5에 회의록 STT 파이프라인(D5) 포함, 실시간 프로토콜 WebSocket(WSS) 확정(D1), presence 7종(D13)·seat.status enum·ERP 엔드포인트(`POST /api/kpi-results`) 통일, EOD 순환 모순 해소(D17), 3D 미리보기 제거·데스크톱 draft 모드로 대체(D11), 성능 수치 100명 설계(D22).
+>
+> **변경 요약 (v3.0, 2026-07-06)**: **D26** WorkAdventure self-host 전환 반영. Phase 1~4를 WorkAdventure 연동 구조(각 4~6주)로 재편. Godot 3D 클라이언트·헤드리스 서버 노선 보류. Phase 0 스파이크 S1·S3·S4 취소, S2(STT) 유지. Phase 5~7(STT·KPI·고도화) 유지.
 
 ---
 
@@ -18,16 +20,16 @@
 
 | 단계 | 이름 | 주요 산출물 | 예상 기간 | 의존성 |
 |------|------|-----------|---------|--------|
-| 0 | 계약 & 스파이크 | API/데이터/ERP 계약 + 스파이크 S1~S4(F절) | 4주 | 없음 |
-| 1 | 프리미엄 골든 샘플 3D | Godot 클라이언트 + 샘플 씬 | 12주 | 0 |
-| 2 | ERP 동기화 + 좌석/구역 | 동기화 모듈 + 데이터 매핑 | 7주 | 1 |
-| 3 | 사무실 배치 편집기 | 2D 편집 + 데스크톱 draft 열람 + office_layout | 6주 | 2 |
-| 4 | 실시간 가상오피스 | Godot 헤드리스 서버 + 멀티플레이어(WSS) | 8주 | 3 |
-| 5 | 회의/화상회의 + 회의록 STT | LiveKit 통합 + STT 회의록/액션아이템 | 8주 | 4 |
+| 0 | 계약 & 스파이크 | API/데이터/ERP 계약 + 스파이크 S2(STT, D26으로 S1·S3·S4 취소) | 4주 | 없음 |
+| 1 ⭐ | **WorkAdventure self-host 구축** | WA 스택(play/back/map-storage/redis/LiveKit/coturn) 배포 + OIDC 연동(D4 공존) | 4주 | 0 |
+| 2 ⭐ | **ERP 동기화 + Presence 연동** | ERP 미러 동기화 + D13 presence 7종 WA 매핑 + scripting API | 5주 | 1 |
+| 3 ⭐ | **맵 제너레이터 + 좌석 배치** | TMJ 맵 생성기(조직→맵) + 팀 구역/좌석 레이아웃 + map-storage 배포 | 5주 | 2 |
+| 4 ⭐ | **WorkAdventure 연동 완성** | Room API 회의 명시 입장(D24) + scripting 고급 연동 + E2E 검증 | 6주 | 3 |
+| 5 | 회의/화상회의 + 회의록 STT | LiveKit 통합(WA 네이티브) + STT 회의록/액션아이템(D5, S2 PoC 기반) | 8주 | 4 |
 | 6 | 업무결과·KPI 산출 | KPI 산출 + AI 초안 + ERP push | 7주 | 5 + ERP dev 브랜치 |
 | 7 | 고도화 | 층 추가·권한·AI요약·모바일 | 6주 | 6 |
 
-**총 예상 기간**: **58주** (시작 2026-07-06 → 완성 2027-08-16, **2027년 하반기**) — 1인 개발 + AI 협업 기준, 13-risks 검증 간트를 기준선으로 재산정하고 **15% 버퍼 포함**. Phase 5의 8주에는 회의록 STT 파이프라인(+3주, D5)이 반영됨.
+**총 예상 기간**: **45주** (시작 2026-07-06 → 완성 약 2027-05, **2027년 상반기**) — D26 WorkAdventure 전환으로 Godot 3D 구현 기간 단축. 1인 개발 + AI 협업 기준. Phase 5의 8주에는 회의록 STT 파이프라인(D5, S2 PoC 기반)이 반영됨.
 
 > **핵심 원칙**: 각 단계는 **독립 데모 가능** (이전 단계 완료 후 즉시 테스트/검증 가능). 순차 빌드이며 각 단계마다 사용자 가치 제공. 1인 개발이므로 Phase 병렬화는 하지 않고 **순차 원칙**을 따른다(13-risks R7).
 
@@ -41,17 +43,19 @@
 
 ### 범위
 #### 계약 설계
-- 실시간 서버 API 계약(WebSocket(WSS) 프로토콜 + REST fallback, D1)
+- FastAPI 연동 계약(OIDC provider·presence 수집·Room API 브리지) — 실시간 동기화 프로토콜은 WA 내장 WSS 사용(D1·D26), 자체 프로토콜 설계 없음
 - 관리·업무·KPI REST 계약, 데이터 모델/ERD, ERP 연동 계약(`POST /api/kpi-results`)
-- office_layout JSON Schema, 3D 씬 구조/asset 레지스트리, 테스트 프레임워크·CI 초안
+- TMJ 맵 스키마·맵 제너레이터 규약(구 office_layout JSON Schema·3D 씬 구조 대체, D26), 테스트 프레임워크·CI 초안
 
 #### 스파이크 (실패 시 폴백 확정)
-| 순번 | 스파이크 | 검증 내용 | 실패 시 폴백 |
-|------|---------|----------|-------------|
-| **S1** | **Godot ↔ LiveKit PoC** (최우선) | GDScript + WebRTC GDExtension으로 LiveKit 룸 접속·오디오/비디오 수신 검증(Rust SDK 래핑 대안 포함) | 회의 화면만 임베디드 브라우저/외부 창 분리 |
-| **S2** | STT 파이프라인 PoC | LiveKit Egress → STT(화자분리) → 회의록 초안 품질 측정(한국어) | 수동 회의록 + AI 요약으로 격하(PRD 기준 하향 재협의) |
-| **S3** | 헤드리스 서버 부하 | GDScript 헤드리스 + PhysicsServer3D, 20명 시뮬레이션 CPU/메모리 측정 | tick 하향(10Hz), 물리 간소화 |
-| **S4** | 동적 씬 라이팅 룩 검증 | D7 조합(실시간광+ReflectionProbe+SSAO)으로 골든 샘플 룩 확인 | SDFGI 옵션 기본화 + 기준 사양 상향 재협의 |
+> ⚠️ **D26 갱신**: S1(Godot↔LiveKit)·S3(헤드리스 서버)·S4(라이팅 룩) 취소. S2(STT 파이프라인)만 유지.
+
+| 순번 | 스파이크 | 검증 내용 | 실패 시 폴백 | D26 상태 |
+|------|---------|----------|-------------|---------|
+| ~~S1~~ | ~~Godot ↔ LiveKit PoC~~ | ~~GDScript + WebRTC GDExtension으로 LiveKit 룸 접속·오디오/비디오 수신 검증~~ | ~~회의 화면만 임베디드 브라우저 분리~~ | **취소** |
+| **S2** | STT 파이프라인 PoC | LiveKit Egress → STT(화자분리) → 회의록 초안 품질 측정(한국어) | 수동 회의록 + AI 요약으로 격하(PRD 기준 하향 재협의) | **유지** |
+| ~~S3~~ | ~~헤드리스 서버 부하~~ | ~~GDScript 헤드리스 + PhysicsServer3D, 20명 시뮬레이션~~ | ~~tick 하향(10Hz), 물리 간소화~~ | **취소** |
+| ~~S4~~ | ~~동적 씬 라이팅 룩 검증~~ | ~~D7 조합(실시간광+ReflectionProbe+SSAO)으로 골든 샘플 룩 확인~~ | ~~SDFGI 옵션 기본화 + 기준 사양 상향 재협의~~ | **취소** |
 
 ### 산출물
 ```
@@ -77,586 +81,207 @@ backend/tests/conftest.py, .github/workflows/test-phase.yaml
 
 ---
 
-## Phase 1: 프리미엄 골든 샘플 3D
+## Phase 1: WorkAdventure self-host 구축 ⭐D26
+
+> **D26 전환**: 기존 "프리미엄 골든 샘플 3D (Godot 클라이언트)" 단계를 대체.
 
 ### 목표
-- Godot 4 네이티브 클라이언트의 **품질 기준 확정**
-- 3D 가상오피스의 핵심 구성요소(공간·아바타·UI) 완성도 검증
-- 향후 모든 단계의 기준이 될 "참고 구현" 확보
+- WorkAdventure self-host 스택(play/back/map-storage/redis/LiveKit/coturn) 온프렘 배포 완료
+- FastAPI OIDC 브리지로 ERP 사용자가 WorkAdventure에 로그인 (D4 자체 JWT와 공존)
+- 기본 TMJ 맵(샘플 오피스) 배포 및 멀티유저 입장 검증
 
 ### 범위
-#### 3D 공간
-- **로비**: 진입점, 브랜드 월, 안내판
-- **오픈 좌석 구역**: 격자형 책상(20석), 팀 색상 표시, 상태 표시
-- **회의실**: 유리벽 2개 회의실(각 6인), 예약/점유 상태 시각화
-- **라운지**: 소파/테이블, 비포멀 협업 공간
-- **집중실/포커스존**: 개인 작업 공간
-- **폰부스**: 사적 통화 공간
-- **미니맵**: 2D 평면도, 실시간 프레즌스 표시
 
-#### 아바타 & 상호작용
-- **아바타**: 5~10명 플레이어(다양한 피부색/성별/복장), 자연스러운 애니메이션
-  - 유휴(idle), 걷기(walk), 달리기(run), 앉기(sit), 제스처(wave/thumbs-up)
-- **이름/상태 HUD**: 각 아바타 위의 부동 레이블
-  - 직원명, 직급/팀 배지, 상태(온라인/회의중/집중중/외근/퇴근)
-- **근접 인터랙션**: 거리 기반 협업 신호 (귀속말, 협업 제안 UI)
+#### WorkAdventure 스택 배포 (D21-r: Docker Compose, Caddy, Let's Encrypt)
+- `workadventure/play` — 클라이언트 서빙 + Room API
+- `workadventure/back` — 게임 상태 서버(WebSocket 권위)
+- `workadventure/map-storage` — TMJ 맵 파일 서버
+- `redis` — WA back 상태 캐시
+- `livekit` — 화상회의 SFU (WA 네이티브 통합)
+- `coturn` — TURN 릴레이(TURN-TLS 443 폴백, VPN 없음)
 
-#### UI 패널
-- **우측 직원 패널**: 현재 사무실 내 직원 목록, 클릭하면 아바타 추적
-- **하단 회의실 패널**: 진행 중인 회의 표시, 참가자 리스트
-- **상단 스테이터스**: 나의 현재 상태, 빠른 상태 변경 버튼
+#### OIDC 연동 (D4 공존)
+- `backend/app/integrations/workadventure/oidc.py` — FastAPI를 OIDC Provider로 노출
+  - Authorization Code Flow: `/oauth/authorize`, `/oauth/token`, `/oauth/userinfo`, `/.well-known/openid-configuration`
+  - ERP 사용자(erp_user) → OIDC 클레임 매핑(sub=erp_user.id, name, email, groups)
+  - D4 자체 JWT(HS256)와 공존: OIDC 토큰은 WA 전용, 내부 API는 D4 JWT 유지
 
-#### 시각적 품질
-- Forward+ 렌더러로 PBR 재료, 고품질 라이팅
-- 조명: 자연광(창문), 인공등(LED), 실시간 그림자
-- CC0 에셋 활용 + 자체 오피스 키트(Blender GLB/glTF 최적화)
-- 라이팅: 실시간 직접광 + ReflectionProbe + SSAO (라이트맵 베이킹 배제, D7). 기준 사양 GTX 1650급 60fps / 내장그래픽 30fps
+#### 샘플 맵 배포
+- 소규모 TMJ 맵(로비 + 오픈 좌석 20개) 수동 제작 → map-storage 배포
+- 기본 타일셋(캐릭터 이동, 회의실 zone) 검증
 
 ### 산출물
 ```
-backend/
-  ├── app/
-  │   ├── models/
-  │   │   ├── erp_user.py (ERP 사용자 미러, read-only)
-  │   │   ├── presence.py (실시간 위치/상태)
-  │   │   └── asset.py (에셋 레지스트리)
-  │   ├── api/
-  │   │   ├── erp_sync.py (ERP 읽기 초기화)
-  │   │   ├── presence.py (게임서버 배치 push 수신 엔드포인트, internal — D3)
-  │   │   └── asset.py (에셋 메타 조회)
-  │   └── services/
-  │       └── erp_reader.py (ERP 직접 DB 읽기)
-  ├── schema.sql (DB 초기화)
-  └── requirements.txt
-
-godot_client/
-  ├── scenes/
-  │   ├── office/
-  │   │   ├── lobby.tscn
-  │   │   ├── seating_area.tscn
-  │   │   ├── meeting_rooms.tscn
-  │   │   ├── lounge.tscn
-  │   │   ├── focus_zone.tscn
-  │   │   └── phone_booths.tscn
-  │   └── avatar/
-  │       ├── avatar.gd
-  │       ├── avatar_animator.gd
-  │       └── avatar_hud.gd
-  ├── ui/
-  │   ├── employee_panel.tscn
-  │   ├── meeting_panel.tscn
-  │   ├── minimap.tscn
-  │   └── status_bar.tscn
-  ├── assets/
-  │   ├── models/ (GLB/glTF 최적화 에셋)
-  │   ├── materials/ (PBR)
-  │   └── textures/
-  └── project.godot
-
-frontend/
-  ├── pages/
-  │   └── dashboard.tsx (Godot 클라이언트 다운로드, 실행 가이드)
-  └── components/
-      └── clientStatus.tsx (클라이언트 버전/구성 상태)
+docker-compose.yml        (WA 스택 통합, Lane B)
+.env.example              (WA 환경변수 포함)
+backend/app/integrations/workadventure/oidc.py
+backend/tests/test_wa_oidc.py
+maps/sample_office.tmj    (샘플 맵)
+docs/deployment/onprem-docker.md  (WA 섹션 추가, Lane B)
 ```
 
 ### 의존성
-- Phase 0 완료 (계약 + 스파이크 S1~S4, 특히 S4 라이팅 룩 승인)
+- Phase 0 완료 (계약 + S2 STT PoC 진행)
 
 ### 수용 기준
-- [ ] Godot 4 클라이언트 빌드 성공 (Forward+ 렌더러, 기준 사양 GTX 1650급 60fps / 내장그래픽 30fps, D22)
-- [ ] 로비~폰부스 전체 공간 렌더링 (글리치 없음, 광도감 정상)
-- [ ] 아바타 5명 이상 동시 표시 (이름/상태 HUD 정확)
-- [ ] 우측 직원 패널, 하단 회의실 패널 표시/상호작용 정상
-- [ ] 미니맵 실시간 동기 (FPS 저하 <5%)
-- [ ] 에셋 라이선스/귀속 정확 (asset.py 레지스트리 완성)
+- [ ] `docker compose config` 문법 검증 통과, 모든 WA 서비스 정의 포함
+- [ ] OIDC Discovery endpoint(`/.well-known/openid-configuration`) 정상 응답
+- [ ] ERP 사용자 계정으로 WorkAdventure 로그인 성공 (OIDC 인증 흐름)
+- [ ] 샘플 맵에서 2명 이상 동시 아바타 이동 확인
 
 ### 독립 데모
-**"Godot 멀티플레이어 없이 스크립트로 아바타 움직이기"** — 서버 연동 전 로컬 시뮬레이션으로 3D 품질 즉시 검증 가능. 실시간 동기화는 Phase 4에서.
+**"ERP 계정으로 WorkAdventure 사무실 입장"** — OIDC 로그인 + 샘플 맵 멀티유저 데모.
 
 ---
 
-## Phase 2: ERP 동기화 + 좌석/구역
+## Phase 2: ERP 동기화 + Presence 연동 ⭐D26
+
+> **D26 전환**: 기존 "ERP 동기화 + 좌석/구역 (Godot 기반)" 단계를 대체.
 
 ### 목표
-- ERP(Space-Daily/DailyLog)에서 **직원·조직·근태 읽기 통로 개설**
-- 우리 플랫폼의 좌석/구역 데이터 모델 확정
-- **아바타 시작위치** → 배정된 좌석으로 자동 연결
+- ERP 직원·조직·근태 동기화 (D18) — 구조는 이전과 동일, Godot 의존성 제거
+- D13 presence 7종을 WorkAdventure 상태/이벤트와 매핑
+- scripting API로 focus/external 상태 WorkAdventure 변수 반영
 
 ### 범위
-#### ERP 동기화 (Read-only)
-- **users**: 직원명, 직급, 팀, 역할, 근무설정(work_type/hours), 연락처
-- **teams**: 팀명, 리더
-- **job_positions**: 직급명, 서열
-- **attendances**: 일일 출퇴근, 근태 상태 (read-only Postgres 직접 접근)
-- **leaves**: 휴가/휴직
 
-#### 우리 플랫폼 데이터 모델
-```sql
--- ERP 미러
-CREATE TABLE erp_user (
-  id BIGINT PRIMARY KEY,  -- ERP users.id (조인 키)
-  company_id INT NOT NULL,
-  email VARCHAR(255) NOT NULL,
-  name VARCHAR(255),
-  erp_team_id INT,
-  role VARCHAR(50),  -- [employee|leader|admin]
-  position VARCHAR(255),
-  position_id INT,
-  manager_id BIGINT,
-  slack_user_id VARCHAR(255),
-  github_username VARCHAR(255),
-  jira_email VARCHAR(255),
-  work_type VARCHAR(50),
-  work_hours INT,
-  last_synced_at TIMESTAMP,
-  UNIQUE(company_id, email)
-);
+#### ERP 동기화 (D18, 기존 스펙 유지)
+- erp_user, org_group, team_zone, seat, attendance_cache 동기화
+- 매시간 증분 + 매일 00:00 KST 전체 대사 (APScheduler)
+- soft-delete, 알림 채널 연동
 
--- 상위 조직 그룹 (우리 추가)
-CREATE TABLE org_group (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  type VARCHAR(50),  -- [division|department|part]
-  parent_id INT,
-  color VARCHAR(7),
-  sort_order INT,
-  FOREIGN KEY (parent_id) REFERENCES org_group(id)
-);
+#### Presence 매핑 (D13 → WorkAdventure)
+- `backend/app/integrations/workadventure/presence.py`
 
--- 팀 ↔ 구역 매핑
-CREATE TABLE team_zone (
-  id SERIAL PRIMARY KEY,
-  erp_team_id INT NOT NULL,
-  org_group_id INT,
-  office_id INT NOT NULL,
-  floor_id INT NOT NULL,
-  zone_label VARCHAR(255),
-  color VARCHAR(7),
-  polygon_coords JSONB,
-  FOREIGN KEY (org_group_id) REFERENCES org_group(id),
-  UNIQUE(erp_team_id, office_id, floor_id)
-);
+| D13 Status | WorkAdventure 표현 방식 |
+|-----------|------------------------|
+| offline | WA 연결 끊김 (disconnect event) |
+| online | WA 연결 + 초기 변수 `status=online` |
+| working | WA zone 진입 (team 구역) → `status=working` |
+| meeting | WA meeting zone 진입 → `status=meeting` |
+| focus | scripting API 변수 `focusMode=true` → `status=focus` |
+| away | WA idle timer(5분) → `status=away` |
+| external | scripting API 변수 `external=true` → `status=external` (수동 전환) |
 
--- 좌석
-CREATE TABLE seat (
-  id SERIAL PRIMARY KEY,
-  floor_id INT NOT NULL,
-  team_zone_id INT,
-  type VARCHAR(50),  -- [fixed|free|temp|partner]
-  assigned_user_id BIGINT,
-  coords POINT,
-  facing INT,  -- 도(degree), 시계방향, 기준축 +X (D25)
-  status VARCHAR(50),  -- [available|occupied|reserved|maintenance] (12-tasks와 통일)
-  FOREIGN KEY (assigned_user_id) REFERENCES erp_user(id)
-);
+- FastAPI WebSocket push → WA scripting API (Room API 경유)
+- presence DB 배치 push (1~5초 주기, D3 정신 유지)
 
--- 근무 기록 (ERP attendances 캐시)
-CREATE TABLE attendance_cache (
-  id SERIAL PRIMARY KEY,
-  user_id BIGINT NOT NULL,
-  work_date DATE NOT NULL,
-  check_in_at TIMESTAMP,
-  check_out_at TIMESTAMP,
-  work_type VARCHAR(50),
-  last_synced_at TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES erp_user(id),
-  UNIQUE(user_id, work_date)
-);
-```
-
-#### 동기화 메커니즘 (D18)
-- **배치 스케줄러**: **매시간 증분(updated_at 기준) + 매일 00:00 KST 전체 대사** (APScheduler)
-  - ERP read-only DB에서 delta 읽기 (last_synced_at 기준)
-  - erp_user, attendance_cache 업데이트
-  - 전체 대사에서 하드 삭제 감지 → `is_active=false` **soft-delete** (미러 FK는 RESTRICT + soft-delete로 평가 기록 영구성 보장)
-  - 동기화 실패 시 자동 알림(관리자 콘솔 + 알림 채널)
-- **API 엔드포인트**:
-  - GET `/api/sync/status` — 마지막 동기화 시점, 상태
-  - GET `/api/erp-user` — 모든 직원 (필터: team_id, role, status)
-  - GET `/api/erp-user/{id}` — 개별 직원 상세
-  - GET `/api/team-zone/{office_id}/{floor_id}` — 구역 정보
-  - GET `/api/seat/{floor_id}` — 좌석 목록
-
-#### 좌석 배정 규칙
-- **고정 좌석(fixed)**: erp_user.id → assigned_user_id (관리자 설정)
-- **자율 좌석(free)**: assigned_user_id = NULL (출근 시 선택)
-- **임시/협력사(temp/partner)**: 예약 또는 방문객 배정
-
-#### 아바타 시작 위치 연결
-```
-erp_user.id
-  └→ seat.assigned_user_id
-      └→ seat.coords
-          └→ Godot 클라이언트 spawn position
-```
+#### 아바타 시작위치
+- erp_user → seat.coords → WA spawn position (TMJ 맵 좌표 변환)
 
 ### 산출물
 ```
-backend/
-  ├── app/
-  │   ├── models/
-  │   │   ├── erp_user.py
-  │   │   ├── org_group.py
-  │   │   ├── team_zone.py
-  │   │   ├── seat.py
-  │   │   └── attendance_cache.py
-  │   ├── api/
-  │   │   ├── erp_user.py (GET 엔드포인트)
-  │   │   ├── team_zone.py
-  │   │   ├── seat.py
-  │   │   └── sync.py (상태 조회)
-  │   ├── services/
-  │   │   ├── erp_reader.py (동기화 로직)
-  │   │   ├── erp_db.py (read-only 커넥션)
-  │   │   └── seat_assignment.py (배정 규칙)
-  │   └── jobs/
-  │       └── daily_erp_sync.py (APScheduler)
-  ├── alembic/
-  │   └── versions/
-  │       └── 0001_initial_schema.py
-  └── config/
-      └── erp_connection.py (ERP read-only DB 자격증명)
-
-frontend/
-  ├── pages/
-  │   ├── admin/
-  │   │   ├── erp-sync-status.tsx (동기화 모니터링)
-  │   │   ├── team-zones.tsx (구역 관리, 맵 편집)
-  │   │   └── seat-assignment.tsx (좌석 배정)
-  │   └── dashboard.tsx (업데이트: 직원 리스트 조회)
-  └── lib/
-      ├── erp-api.ts (API 클라이언트)
-      └── team-zone-map.ts (좌석/구역 2D 시각화)
-
-tests/
-  ├── test_erp_sync.py (동기화 로직)
-  ├── test_seat_assignment.py
-  └── test_api_endpoints.py
+backend/app/integrations/workadventure/presence.py
+backend/app/services/erp_sync.py  (WA 의존성 제거 버전)
+backend/tests/test_wa_presence.py
 ```
 
 ### 의존성
-- Phase 1 완료 (Godot 클라이언트 기본 구조 확정)
-- ERP 접근 자격증명 (read-only 계정, DB 직접 접근)
+- Phase 1 완료
 
 ### 수용 기준
-- [ ] ERP read-only DB 연결 성공 (테스트: 100명 이상 users 읽기)
-- [ ] 동기화 배치 정상 실행 (매시간 증분 + 매일 00:00 전체 대사 로그 기록 — D18)
-- [ ] erp_user, team_zone, seat 테이블 일관성 (FK 제약 통과)
-- [ ] GET `/api/erp-user` 응답 시간 <500ms (100명 기준)
-- [ ] 고정 좌석 배정 시 Godot 클라이언트 spawn 위치 정확 (오차 <1m)
-- [ ] 자율 좌석 선택 UI 동작 (assigned_user_id NULL → assigned)
+- [ ] presence 7종 상태 전환이 WA 클라이언트에 실시간 반영 (1~5초 이내)
+- [ ] focus/external 상태가 scripting API 변수로 WA에 노출
+- [ ] ERP 동기화 배치 정상 동작 (매시간 증분, 00:00 KST 전체 대사)
+- [ ] pytest `test_wa_presence.py` 통과
 
 ### 독립 데모
-**"좌석 배정 대시보드"** — 아바타 없이 우리 UI에서 직원·팀·좌석 시각화. 팀별 구역색, 직원명, 배정 상태만으로도 조직 구조 검증 가능.
+**"ERP 팀 구조가 WA 맵에 반영되고 presence 상태가 실시간 동기화"**
 
 ---
 
-## Phase 3: 사무실 배치 편집기
+## Phase 3: 맵 제너레이터 + 좌석 배치 ⭐D26
+
+> **D26 전환**: 기존 "사무실 배치 편집기 (Konva.js 2D 전용)" 단계를 대체.
 
 ### 목표
-- **office_layout JSON 구조 확정** (스키마 상세는 05-office-layout-schema.md 참조)
-- 관리자가 **2D 편집(Konva.js) + 검증 + 배포/롤백**을 할 수 있는 엔드-투-엔드 도구 완성. 정밀 확인은 저장 후 **데스크톱 클라이언트 draft 모드**로 열람(웹 3D 미리보기 제거, D11)
-- 사무실 구조 **코드 대신 DB/JSON으로 구동** (재사용성·변경 용이성)
+- 조직 데이터(팀·인원수) → TMJ 맵 자동 생성 (D12 정신: FastAPI 서버 단일 검증)
+- 팀 구역/좌석 TMJ 레이어 자동 주입, map-storage 배포
+- 슬롯 용량 초과 시 검증 에러
 
 ### 범위
-#### office_layout 데이터 모델
-```sql
-CREATE TABLE office (
-  id SERIAL PRIMARY KEY,
-  company_id INT NOT NULL,
-  name VARCHAR(255),
-  description TEXT
-);
 
-CREATE TABLE floor (
-  id SERIAL PRIMARY KEY,
-  office_id INT NOT NULL,
-  level INT,  -- 1, 2, 3, ...
-  name VARCHAR(255),  -- "1F", "2F Open", ...
-  minimap_config JSONB,  -- {"zoom": 1.0, "origin": [x, y]}
-  FOREIGN KEY (office_id) REFERENCES office(id)
-);
+#### 맵 제너레이터 (`backend/app/services/map_generator.py`)
+- 수제 셸 TMJ + 팀 구역 슬롯 주입 구조
+- 팀 구역: 타일 색상, 좌석 위치, 팀 라벨, WA zone 메타데이터
+- 슬롯 용량 초과(팀 인원 > 좌석 수) → ValidationError (D12)
+- 생성된 TMJ → map-storage API 업로드 자동화
 
-CREATE TABLE office_layout (
-  id SERIAL PRIMARY KEY,
-  office_id INT NOT NULL,
-  floor_id INT NOT NULL,
-  version INT,
-  status VARCHAR(50),  -- [draft|validated|deployed|archived]
-  json JSONB,  -- 구조 blob
-  created_at TIMESTAMP,
-  deployed_at TIMESTAMP,
-  FOREIGN KEY (office_id) REFERENCES office(id),
-  FOREIGN KEY (floor_id) REFERENCES floor(id),
-  UNIQUE(office_id, floor_id, version)
-);
+#### 관리 API
+- `POST /api/maps/generate` — 조직 데이터로 맵 생성·배포
+- `GET /api/maps/{map_id}` — 맵 메타 조회
+- `POST /api/maps/{map_id}/validate` — 맵 검증(D12)
 
-CREATE TABLE room (
-  id SERIAL PRIMARY KEY,
-  floor_id INT NOT NULL,
-  type VARCHAR(50),  -- [lobby|meeting|lounge|focus|phonebooth]
-  name VARCHAR(255),
-  capacity INT,
-  coords JSONB,  -- {x, y, width, height, rotation}
-  enter_trigger JSONB,  -- 진입 트리거 영역
-  livekit_room VARCHAR(255),  -- LiveKit 방 이름 (optional, 회의실만)
-  FOREIGN KEY (floor_id) REFERENCES floor(id)
-);
-```
-
-office_layout JSON 스키마:
-```json
-{
-  "version": 1,
-  "floor_id": 1,
-  "dimensions": {
-    "width": 100,
-    "height": 80,
-    "unit": "meters"
-  },
-  "zones": [
-    {
-      "id": "zone-1",
-      "name": "개발팀",
-      "type": "seating",
-      "coords": {"x": 0, "y": 0, "width": 50, "height": 40},
-      "color": "#FF5733",
-      "seats": [
-        {"id": "seat-1-1", "coords": {"x": 5, "y": 5}, "type": "fixed", "facing": 90}
-      ]
-    }
-  ],
-  "rooms": [
-    {
-      "id": "room-meeting-1",
-      "name": "회의실 A",
-      "type": "meeting",
-      "capacity": 6,
-      "coords": {"x": 50, "y": 0, "width": 20, "height": 30},
-      "livekit_room": "meeting-a"
-    }
-  ],
-  "colliders": [
-    {"id": "wall-1", "start": [0, 0], "end": [100, 0], "type": "wall"}
-  ]
-}
-```
-
-#### 2D 편집기 (Konva.js)
-- **캔버스**: office_layout 시각화
-  - 드래그로 구역/좌석/방 이동/크기 조정
-  - 우클릭 컨텍스트: 삭제, 복제, 속성 편집
-  - 그리드 스냅 (옵션)
-- **우측 패널**:
-  - 구역/방/좌석 목록 (필터, 선택)
-  - 선택 항목 속성 폼 (이름, 용량, 색상, LiveKit 방 등)
-  - 좌석 대량 배정 (CSV import)
-- **버전 관리**:
-  - 모든 편집은 "draft" 상태 (자동 저장)
-  - "Validate" 버튼 → **서버(FastAPI) 단일 정밀 검증**(도달성 A* 포함, D12). 웹 편집기는 경량 체크(범위/겹침)만. **ERROR는 배포 불가**, WARNING만 무시 가능
-  - "Deploy" → 상태 = deployed, timestamp 기록
-  - "Rollback" → 이전 version으로 복원
-  - "데스크톱 draft 열람" → 저장된 draft 레이아웃을 데스크톱 클라이언트에서 draft 모드로 로드해 정밀 확인
-
-#### 데스크톱 draft 모드 열람 (웹 3D 미리보기 대체, D11)
-- 웹 편집기는 Konva.js 2D 전용. WASM/HTML5 export 미사용(PRD WON'T 준수)
-- 정밀 3D 확인은 저장 후 **데스크톱 클라이언트를 draft 모드로 실행**하여 해당 office_layout 버전을 로드
-- 충돌·개구부(door opening) 등 시각 확인은 네이티브 클라이언트에서 수행
-
-#### 검증 엔진
-```python
-def validate_layout(office_layout_json):
-    # 제약:
-    # 1. 모든 객체가 office 범위 내
-    # 2. 객체 간 겹침 없음 (합법적 겹침 제외: 방 진입, 좌석 미세 중첩)
-    # 3. LiveKit 방 이름 고유성
-    # 4. (배정 검증은 DB측 — layout JSON에 배정 없음, D10)
-    # 5. 각 방의 수용 인원 ≥ 0
-    errors = []
-    warnings = []
-    return {"valid": len(errors) == 0, "errors": errors, "warnings": warnings}
-```
+#### 편집기 (Tiled 외부 도구 + map-storage)
+- 수동 커스텀: Tiled 앱으로 TMJ 편집 → map-storage API 업로드
+- Konva.js는 좌석 배정 UI(seat↔user 매핑)로 역할 축소
 
 ### 산출물
 ```
-frontend/
-  ├── pages/
-  │   └── admin/
-  │       ├── layout-editor.tsx (메인 페이지)
-  │       ├── 2d-canvas.tsx (Konva.js 캔버스)
-  │       ├── properties-panel.tsx (우측 속성 폼)
-  │       ├── version-history.tsx (배포 이력)
-  │       └── draft-open-guide.tsx (데스크톱 draft 모드 열람 안내)
-  └── lib/
-      ├── office-layout-schema.ts (타입 정의)
-      ├── layout-validator.ts (검증 로직)
-      └── konva-shapes.ts (도형 렌더링)
-
-backend/
-  ├── app/
-  │   ├── models/
-  │   │   ├── office.py
-  │   │   ├── floor.py
-  │   │   ├── office_layout.py
-  │   │   └── room.py
-  │   ├── api/
-  │   │   └── layout.py (CRUD + validate + deploy + rollback)
-  │   ├── services/
-  │   │   ├── layout_validator.py (정밀 검증: 범위/겹침/도달성 A*, D12)
-  │   │   ├── layout_generator.py (JSON → Godot 씬 변환)
-  │   │   └── layout_versioning.py (v1, v2, ... 관리)
-  ├── alembic/
-  │   └── versions/
-  │       └── 0002_office_layout_tables.py
-  └── tests/
-      ├── test_layout_validator.py
-      └── test_layout_deploy.py
-
-godot_client/
-  ├── scenes/
-  │   └── layout_draft_viewer.tscn (--draft 모드: 저장된 draft 레이아웃 열람)
-  └── scripts/
-      └── layout_loader.gd (office_layout JSON 로드)
+backend/app/services/map_generator.py
+backend/app/api/maps.py
+backend/tests/test_map_generator.py
 ```
 
 ### 의존성
-- Phase 1, Phase 2 완료 (Godot 기본, erp_user/seat 테이블)
+- Phase 2 완료
 
 ### 수용 기준
-- [ ] office_layout JSON 스키마 정규화 (상호참조, 외래키 일관성)
-- [ ] 2D 편집기 로드/저장 성능 <2s (500개 좌석 기준)
-- [ ] 서버 정밀 검증 엔진 모든 제약 통과 (테스트: 겹침/범위/FK/도달성 케이스 각 3개, D12)
-- [ ] 데스크톱 draft 모드 열람: 저장된 draft 레이아웃 로드 성공 (로딩 <5초)
-- [ ] Deploy 성공 후 상태 = deployed, timestamp 기록
-- [ ] Rollback으로 이전 version 복원 정상
-- [ ] CSV import로 100개 좌석 대량 배정 성공
+- [ ] 팀 5개·인원 30명 조직 데이터로 TMJ 맵 자동 생성 성공
+- [ ] 슬롯 초과 시 ValidationError 반환 (pytest 확인)
+- [ ] 생성된 맵이 WA map-storage에 배포되어 클라이언트에서 로드
+- [ ] pytest `test_map_generator.py` 통과
 
 ### 독립 데모
-**"배치도 편집·배포"** — Godot 없이 2D 캔버스에서 구역/좌석 배치, 검증, 배포. 정밀 3D 확인은 데스크톱 draft 모드로 열람.
+**"조직도 API 호출 한 번으로 팀 구역이 WA 맵에 자동 생성"**
 
 ---
 
-## Phase 4: 실시간 가상오피스 (Godot 서버)
+## Phase 4: WorkAdventure 연동 완성 ⭐D26
+
+> **D26 전환**: 기존 "실시간 가상오피스 (Godot 헤드리스 서버 + WSS)" 단계를 대체.
 
 ### 목표
-- **Godot 4 헤드리스 멀티플레이어 서버** 구축 (권위 모델)
-- 아바타 이동, 프레즌스(presence), 회의실 점유, 근접 상호작용 모두 서버 검증
-- **WebSocket(WSS) 기반 동기화** (D1: TLS 내장, 재택 방화벽/VPN 통과 용이. ENet 폐기)
+- D24 명시적 회의 입장 확인(입장 다이얼로그 → Room API 토큰 발급)
+- scripting API 고급 연동(팀 알림, 상태 배지, 커스텀 UI 패널)
+- E2E 도그푸딩 검증: 20명 동시 접속, presence E2E p95 < 500ms (D22)
 
 ### 범위
-#### Godot 헤드리스 서버
-- 오피스 씬 로드 (office_layout JSON → Godot 씬 재사용)
-- 플레이어 연결/퇴장 처리
-- 아바타 이동 입력 검증 (collision 확인)
-- 프레즌스 상태 갱신 (**7종 확정, D13**: offline / online / working / meeting / focus / away / external). away 자동 전이 5분(기본값). GPS 기반 상태(trip_moving/trip_arrived/returning) 삭제
-- 회의실 점유 검증 (room.capacity 초과 방지)
-- 근접 인터랙션 감지 (거리 < 5m → UI 신호)
 
-#### 프레즌스 동기화
-```sql
-CREATE TABLE presence (
-  user_id BIGINT PRIMARY KEY,
-  office_id INT NOT NULL,
-  floor_id INT NOT NULL,
-  x FLOAT,
-  y FLOAT,
-  status VARCHAR(50),  -- 7종 (D13): [offline|online|working|meeting|focus|away|external]
-  updated_at TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES erp_user(id)
-);
-```
+#### 명시적 회의 입장 (D24)
+- WA meeting zone 진입 → FastAPI Room API 호출 → LiveKit 토큰 발급
+- 입장 다이얼로그: 클릭 → LiveKit 화상 연결 (자동 연결 금지)
+- scripting API 이벤트 훅으로 구현
 
-API:
-- POST `/api/presence/update` — 게임서버→FastAPI 배치 push (internal, 1~5초 주기 — D3). 클라이언트 이동은 WSS 경유(게임서버 권위, collision 검사는 게임서버)
-- GET `/api/presence/{office_id}` — 현재 출근자 목록 (실시간)
-- WS `/ws/presence` — 프레즌스 실시간 푸시 (구독자)
+#### scripting API 고급 연동
+- 팀 구역 진입 시 팀 알림 배너 표시
+- 아바타 위의 presence 상태 배지(custom bubble)
+- 우측 직원 패널 iframe(React) — 현재 접속자·상태 목록
+- 외근/출장(external) 수동 전환 토글 UI
 
-#### 멀티플레이어 동기화 (WebSocket/WSS, D1)
-- **프로토콜**: **WebSocket(WSS)** — TLS 내장, 재택 근무자 방화벽/VPN 통과 용이. 재접속 시 sequence_num 기반 스냅샷 재수신. 핸드셰이크에 `protocol_version` 협상 포함(미지원 버전 거부, D4)
-- **서버 tick**: 20Hz (D22)
-- **동기화 항목**:
-  - 플레이어 위치 (서버 tick 20Hz, E2E p95 < 500ms)
-  - 애니메이션 상태 (change-driven)
-  - 회의실 점유/진입 (1Hz)
-  - 채팅/근접 신호 (real-time)
-
-#### 충돌 시스템
-- Godot 씬의 collider (office_layout JSON → collider JSONB 변환)
-- 서버에서 이동 검증: 새 좌표가 collider와 충돌하면 거부 + 마지막 유효 위치로 클라이언트 correction
-
-#### 회의실 상태 머신
-```
-states: [available, reserved, in_session, maintenance]
-on_user_enter(user_id):
-  if occupants < capacity:
-    occupants += 1
-    broadcast update
-  else:
-    reject (capacity exceeded)
-on_user_exit(user_id):
-  occupants -= 1
-  if occupants == 0:
-    state = available
-```
+#### E2E 검증
+- 도그푸딩 20명 동시 접속 부하 테스트 시나리오
+- presence 상태 전환 E2E 측정 (p95 < 500ms, D22)
+- OIDC 로그인 → 맵 로드 → 아바타 이동 → 회의 입장 전체 흐름
 
 ### 산출물
 ```
-godot_server/
-  ├── scenes/
-  │   ├── office_server.tscn (메인 씬)
-  │   └── shared/
-  │       └── (offfice 씬 재사용: Phase 1에서 복사)
-  ├── scripts/
-  │   ├── server.gd (main entry)
-  │   ├── player_manager.gd (플레이어 연결/퇴장)
-  │   ├── presence_syncer.gd (프레즌스 업데이트)
-  │   ├── collision_validator.gd (이동 검증)
-  │   ├── meeting_room_manager.gd (회의실 상태)
-  │   └── network_protocol.gd (WebSocket 직렬화 + protocol_version 협상)
-  ├── config/
-  │   └── server_config.gd (포트, 최대 플레이어, 오피스 ID)
-  └── docker/
-      └── Dockerfile (헤드리스 빌드)
-
-backend/
-  ├── app/
-  │   ├── models/
-  │   │   └── presence.py
-  │   ├── api/
-  │   │   └── presence.py
-  │   ├── websocket/
-  │   │   └── presence_gateway.py (Godot 서버 ↔ 백엔드 브릿지)
-  │   └── services/
-  │       └── presence_service.py
-  ├── tests/
-  │   ├── test_presence_sync.py
-  │   ├── test_collision.py
-  │   └── test_meeting_room.py
-
-godot_client/
-  ├── scenes/
-  │   └── multiplayer_office.tscn (서버 연결)
-  └── scripts/
-      ├── client_network.gd (WebSocket/WSS 클라이언트)
-      ├── avatar_controller.gd (입력 → 서버 전송)
-      └── remote_avatar.gd (다른 플레이어 시각화)
+backend/app/api/rooms.py  (LiveKit Room API, D24)
+frontend/components/EmployeePanel.tsx  (iframe 패널)
+scripts/e2e_load_test.py  (20명 시뮬레이션)
 ```
 
 ### 의존성
-- Phase 1, 2, 3 완료 (Godot, erp_user, office_layout)
+- Phase 3 완료
 
 ### 수용 기준
-- [ ] Godot 헤드리스 빌드 성공 (docker run으로 시작)
-- [ ] 도그푸딩 검증 20명 동시 연결 성공 (설계 목표 100명, D22)
-- [ ] 아바타 동기화 E2E(입력→원격 표시) p95 < 500ms (서버 tick 20Hz, D22)
-- [ ] 프레즌스 브로드캐스트 정상 (팬아웃 O(N²) 명시, 100명 초과 시 AOI 필터링+바이너리 직렬화 검토)
-- [ ] 회의실 용량 초과 시 거부 정상 (테스트: 6인 회의실 7번째 진입 거부)
-- [ ] 클라이언트 disconnect 후 서버에서 자동 제거 (<30s)
-- [ ] 충돌 검증 오류 없음 (테스트: 벽, 가구와 충돌 시도)
+- [ ] 회의 입장 다이얼로그 → LiveKit 토큰 발급 → 화상 연결 E2E 성공 (D24)
+- [ ] scripting API custom bubble로 presence 상태 배지 표시
+- [ ] 20명 동시 접속 시 p95 < 500ms presence 동기화 (D22)
+- [ ] 도그푸딩 준비 완료(사내 직원 20명 입장 가능)
 
 ### 독립 데모
-**"멀티플레이어 아바타 이동"** — 실제 웹 백엔드 없이 Godot 서버만으로 3명 이상 아바타 동시 이동 시각화. 회의실 점유 상태 표시.
+**"도그푸딩 세션: 팀 전원이 WA 사무실에서 presence·회의·상태 동기화 체험"**
 
 ---
 
@@ -1426,41 +1051,41 @@ graph LR
     style P7 fill:#ffe0b2
 ```
 
-**Gantt 타임라인** (58주, 시작 2026-07-06 → 완성 2027-08-16, 15% 버퍼 포함):
+**Gantt 타임라인** (45주, 시작 2026-07-06 → 완성 2027-05-17, D26 재산정):
 
 ```mermaid
 gantt
-    title Virtual Office 로드맵 (58주)
+    title Virtual Office 로드맵 (45주, D26)
     dateFormat YYYY-MM-DD
 
-    Phase 0 (계약·스파이크) :p0, 2026-07-06, 28d
-    Phase 1 (골든 샘플 3D)  :p1, after p0, 84d
-    Phase 2 (ERP 동기화)    :p2, after p1, 49d
-    Phase 3 (배치 편집기)   :p3, after p2, 42d
-    Phase 4 (실시간 서버)   :p4, after p3, 56d
-    Phase 5 (회의/STT)      :p5, after p4, 56d
-    Phase 6 (KPI/ERP push)  :p6, after p5, 49d
-    Phase 7 (고도화)        :p7, after p6, 42d
+    Phase 0 (계약·스파이크 S2)      :p0, 2026-07-06, 28d
+    Phase 1 (WA self-host 구축)     :p1, after p0, 28d
+    Phase 2 (ERP·Presence 연동)     :p2, after p1, 35d
+    Phase 3 (맵 제너레이터·좌석)    :p3, after p2, 35d
+    Phase 4 (WA 연동 완성·E2E)      :p4, after p3, 42d
+    Phase 5 (회의/STT)              :p5, after p4, 56d
+    Phase 6 (KPI/ERP push)          :p6, after p5, 49d
+    Phase 7 (고도화)                :p7, after p6, 42d
 
-    milestone Phase 1 완료 :crit, m1, 2026-10-26, 1d
-    milestone Phase 4 완료 (실시간) :crit, m4, 2027-03-22, 1d
-    milestone Phase 6 완료 (KPI) :crit, m6, 2027-07-05, 1d
-    milestone 프로젝트 완성 :crit, m7, 2027-08-16, 1d
+    milestone Phase 1 완료 (WA 가동) :crit, m1, 2026-08-31, 1d
+    milestone Phase 4 완료 (연동 E2E) :crit, m4, 2026-12-21, 1d
+    milestone Phase 6 완료 (KPI) :crit, m6, 2027-04-05, 1d
+    milestone 프로젝트 완성 :crit, m7, 2027-05-17, 1d
 ```
 
-**Phase별 캘린더 (검산 완료, 합계 58주 = 406일)**:
+**Phase별 캘린더 (검산 완료, 합계 45주 = 315일)**:
 
 | Phase | 기간 | 시작 | 종료 |
 |-------|------|------|------|
 | 0 | 4주 | 2026-07-06 | 2026-08-02 |
-| 1 | 12주 | 2026-08-03 | 2026-10-25 |
-| 2 | 7주 | 2026-10-26 | 2026-12-13 |
-| 3 | 6주 | 2026-12-14 | 2027-01-24 |
-| 4 | 8주 | 2027-01-25 | 2027-03-21 |
-| 5 | 8주 | 2027-03-22 | 2027-05-16 |
-| 6 | 7주 | 2027-05-17 | 2027-07-04 |
-| 7 | 6주 | 2027-07-05 | 2027-08-15 |
-| **완성** | | | **2027-08-16** |
+| 1 | 4주 | 2026-08-03 | 2026-08-30 |
+| 2 | 5주 | 2026-08-31 | 2026-10-04 |
+| 3 | 5주 | 2026-10-05 | 2026-11-08 |
+| 4 | 6주 | 2026-11-09 | 2026-12-20 |
+| 5 | 8주 | 2026-12-21 | 2027-02-14 |
+| 6 | 7주 | 2027-02-15 | 2027-04-04 |
+| 7 | 6주 | 2027-04-05 | 2027-05-16 |
+| **완성** | | | **2027-05-17** |
 
 ---
 
@@ -1539,15 +1164,15 @@ gantt
 - 02-trd-architecture.md (기술 요구사항)
 - 03-erp-integration.md (ERP 연동 계약)
 - 05-office-layout-schema.md (office_layout 상세)
-- 13-risks-open-questions.md (검증 간트 = 58주 일정 기준선)
+- 13-risks-open-questions.md (검증 간트 — 원 58주 기준선. D26 이후 45주 기준 재검증 필요)
 
 ### Downstream documents affected
 - 12-tasks.md (Task ID 파생: P1-T1 ~ P7-T?)
 
 ### Open questions
 - ERP dev 브랜치 병합 일정 (git 접근권한 보유로 자체 작업, Phase 6 착수 시점 확정 필요)
-- Godot 네이티브 빌드 서명 (Windows code signing — 자체 서명+설치 시 신뢰 등록 또는 공인 code signing cert 구매 검토. TLS용 사내 PKI는 D21-r로 폐기 — 2026-07-02)
-- 3D 에셋 라이선스 (상용 사용 허가 확인)
+- ~~Godot 네이티브 빌드 서명~~ — **D26으로 취소** (WA는 브라우저 접속, 클라이언트 배포 없음)
+- ~~3D 에셋 라이선스~~ — **D26으로 대체**: 2D 타일셋/아바타 에셋 라이선스 확인(WA 기본 에셋 + Tiled 타일셋 CC0 우선)
 
 > 확정 종결: 실시간 프로토콜=WebSocket(WSS, D1), LiveKit 인프라=사내 VM self-host(D21), 회의실 예약=예약+FCFS 병행(D23).
 

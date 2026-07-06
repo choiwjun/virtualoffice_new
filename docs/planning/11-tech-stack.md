@@ -4,10 +4,12 @@
 - **대상**: 개발팀(L3+), 아키텍처 리뷰어
 - **목적**: 가상오피스 플랫폼 기술 스택 확정 및 근거 문서화
 - **유효 범위**: 단일 조직(단일 company_id) 도그푸딩 버전
-- **버전**: v1.2
-- **마지막 갱신**: 2026-07-02 (배포·네트워크 확정 및 정합 패치 반영)
+- **버전**: v2.0
+- **마지막 갱신**: 2026-07-06 (D26 WorkAdventure 전환 — 2.1/2.2절 교체)
 
 > 본 문서의 모든 결정은 **00-decisions.md(정본)** 를 따른다. 충돌 시 정본이 이긴다. 변경 이력은 하단 참조.
+>
+> ⚠️ **D26 (2026-07-06)**: 2.1절(3D 클라이언트)·2.2절(실시간 서버)을 WorkAdventure self-host 스택으로 교체. Godot/GDScript 노선 보류.
 
 ---
 
@@ -39,45 +41,58 @@
 
 ## 2. 기술 스택 상세
 
-### 2.1 3D 클라이언트 (데스크톱)
+### 2.1 가상오피스 클라이언트 — WorkAdventure ⭐D26
+
+> ⚠️ **D26**: 기존 "3D 클라이언트 (Godot 4 Forward+)" 절 대체. Godot 노선 보류.
 
 ```
-Layer        | Component              | Version | License | Why
--------------|------------------------|---------|---------|-------------------------------------------
-3D Runtime   | Godot (네이티브)      | 4.3+    | MIT     | Forward+ 렌더러 품질, 자체호스팅 서버 가능
-Language     | GDScript (확정, D2)    | -       | MIT     | 클라이언트·헤드리스 서버 모두 GDScript. 산출물 .gd
-Physics/Nav | Godot 내장             | -       | MIT     | 충돌검증, 회의실 점유, 근접상호작용
-UI/HUD      | Godot Control          | -       | MIT     | 이름/상태 HUD, 직원패널, 회의패널
-Networking  | Godot Multiplayer      | -       | MIT     | WebSocket(WSS) 단일 기반 동기화 (D1)
-Rendering   | Forward+               | -       | MIT     | 광원·그림자·후처리. Deferred 대비 품질↑
+Layer        | Component                      | Version  | License              | Why
+-------------|--------------------------------|----------|----------------------|--------------------------------------------------
+클라이언트   | WorkAdventure (play)           | latest   | AGPL-3.0+CC          | 2D 웹 기반 가상오피스, 브라우저 직접 접근, 자체호스팅
+프레임워크   | Phaser 3                       | 3.x      | MIT                  | WA 내부 2D 렌더러 (수정 금지 — 라이선스 경계)
+확장 API    | WA scripting API               | -        | -                    | 커스텀 UI, 상태 변수, zone 이벤트 (iframe/JS)
+UI 확장     | React + iframe 패널            | 18+      | MIT                  | 직원 패널, presence 상태 배지 (WA 외부 iframe)
+맵 포맷     | TMJ (Tiled JSON)               | -        | -                    | map-storage 서버 업로드, 조직→맵 자동 생성
+인증        | OIDC (FastAPI 브리지)          | -        | -                    | ERP 사용자 → WA 로그인 (D4 자체 JWT 공존)
 ```
+
+**라이선스 경계** (D26):
+- WorkAdventure 소스 직접 수정 금지
+- 확장은 scripting API / iframe / OIDC / Room API 만 사용
+- 사내 도그푸딩: AGPL-3.0 적법. B2B 판매 시 Enterprise 라이선스 또는 재구현 필요
 
 **근거**:
-- Unreal Engine: C++ 컴파일 → 도그푸딩 리스테 시간↑, 팀 규모 오버
-- Unity: 유니버설 라이선스 → 비즈니스 복잡성
-- Three.js(웹): WASM export 시 렌더러 성능 저하 → 최고품질 목표 위배
-- **결정**: Godot 4 Forward+ 네이티브 데스크톱 **확정**
+- Gather.town: 클라우드 종속, ERP 통합 불가
+- 자체 Godot 3D: 12주+ 개발 비용, 라이브 협업 인프라 구축 부담
+- **결정**: WorkAdventure self-host **확정**(D26)
 
 ---
 
-### 2.2 실시간 서버 (가상오피스 권위)
+### 2.2 실시간 서버 — WorkAdventure Back + FastAPI ⭐D26
+
+> ⚠️ **D26**: 기존 "실시간 서버 (Godot 4 헤드리스)" 절 대체. Godot 헤드리스 노선 보류.
 
 ```
-Layer        | Component              | Role          | Language | Why
--------------|------------------------|---------------|----------|-------------------
-Server App   | Godot 4 헤드리스       | 게임 월드     | GDScript | 동일 엔진, 오피스 씬 재사용(렌더러 미로드)
-Networking   | WebSocket(WSS)         | 동기화 프로토 | -        | TLS 내장, 재택 접속성, 순서·신뢰성 (D1)
-Authority    | 서버 Side (메모리 권위)| 검증          | -        | 아바타 이동, 충돌, 회의실 점유
-State        | 메모리 권위 + 1~5초 배치 push(FastAPI 경유) | 근접·상태 | - | DB 직접 접근 금지, FastAPI 단일화 (D3)
+Layer        | Component                      | Role                | Language   | Why
+-------------|--------------------------------|---------------------|------------|----------------------------------
+WA 게임서버  | WorkAdventure (back)           | 아바타·zone 권위    | Node.js    | WA 내장 실시간 서버, WebSocket(WSS) 내장
+상태 캐시    | Redis                          | WA back 세션 캐시   | -          | 아바타 위치·room 상태 임시 저장
+Presence 권위| FastAPI (우리)                 | D13 7종 상태 권위   | Python     | WA scripting API push, 배치 DB 저장 (D3)
+맵 서버      | WorkAdventure (map-storage)    | TMJ 맵 파일 서빙    | Node.js    | 맵 업로드·버전 관리 API
+Room API     | WorkAdventure Room API         | 회의 제어           | REST/WS    | 명시적 입장(D24), LiveKit 토큰 발급
+TURN         | coturn                         | WebRTC 릴레이       | C          | TURN-TLS 443 폴백, VPN 없음(D21-r)
 ```
 
-**근거**:
-- Node.js: 게임 물리·3D 공간 검증 로직 → 결국 GDScript와 중복개발
-- **Presence vs Attendance 분리**: 공식 출퇴근(ERP read-only) ≠ 3D 프레즌스(우리 소유, 로그인·위치·회의실 등 트리거). 가상오피스 장애가 근태에 영향 없음(격리 원칙), 근태는 ERP 원본 명확화.
-  - 3D 프레즌스 = **7종(D13)**: `offline / online / working / meeting / focus / away / external`. 트리거: 로그인→online, 좌석/팀 구역 도착→working, 회의실 입장→meeting, **5분** 무입력→away, 집중모드 토글→focus, 외근/출장 수동→external, 로그아웃→offline. GPS 기반 trip_*·returning은 폐기
-  - 3D 화면: "ERP상 오늘 check_in된 직원" 읽기 병기 표시
-  - 옵션(v1.x): "3D 로그인 시 ERP check_in 자동" 훅 가능하되 ERP 원본·수동 폴백 유지
-- **결정**: Godot 4 헤드리스 서버 **확정**, 동기화는 **WebSocket(WSS) 단일**(D1)
+**Presence vs Attendance 분리** (D13, D3 정신 유지):
+- WA back = 아바타 이동·zone 점유 권위 (WA 내장)
+- FastAPI = D13 presence 7종 권위 (`offline/online/working/meeting/focus/away/external`)
+  - WA zone 진입/퇴장 이벤트 → scripting API 훅 → FastAPI push → DB 저장 (1~5초 주기)
+  - focus/external: scripting API 변수로 WA에 노출, FastAPI DB 단일 저장
+  - away: WA idle 타이머(5분) 이벤트 → FastAPI 전이 (D13)
+  - GPS 기반 trip_*/returning 폐기 (D13/D20-c)
+- ERP 출퇴근 = ERP read-only (가상오피스 장애가 근태에 영향 없음, 격리 원칙)
+
+**결정**: WorkAdventure back + FastAPI presence 권위 이중 구조 **확정**(D26). WebSocket(WSS) 내장(D1).
 
 ---
 

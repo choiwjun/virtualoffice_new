@@ -1,12 +1,15 @@
 # 01-prd.md: 제품 요구사항(PRD)
 
 **프로젝트**: vituraloffice_new (가상오피스 운영 플랫폼)  
-**버전**: v3.3  
+**버전**: v3.4  
 **작성일**: 2026-07-02  
+**최종 갱신**: 2026-07-06 (D26 WorkAdventure 전환 반영)  
 **상태**: 확정(사용자 인터뷰 기반 + 00-decisions.md 정합)  
-**정본 기준**: `00-decisions.md` (D1~D25, F절) — 충돌 시 정본이 우선
+**정본 기준**: `00-decisions.md` (D1~D26, F절) — 충돌 시 정본이 우선
 
 > **변경 요약 (v3.3, 2026-07-02)**: 회의록 STT 자동 초안을 정식 MUST 범위로 명시(D5), 성공/품질 수용 기준에 측정 방법 병기(수동 전사 대조, p95, 측정 구간, 기준 하드웨어 GTX 1650급, D22), 범위표의 P0~P3 컬럼을 단계(#1~#7)로 변경(MoSCoW와 표기 충돌 해소), 일정 개요에 58주·완성 2027년 하반기 명시(D6), 확정된 Open question 정리, 리스크 3건(Godot-LiveKit 통합·STT 정확도·개인정보/노동법) 추가(D20/F).
+>
+> **변경 요약 (v3.4, 2026-07-06)**: **D26** WorkAdventure 전환 반영. MUST 범위표에서 Godot 3D 클라이언트·Godot 헤드리스 서버 항목을 WorkAdventure self-host로 교체. WON'T 항목에 Godot WASM export 보류 추가.
 
 ---
 
@@ -69,11 +72,13 @@ ERP가 분기별 인사평가 자료 수집
 
 | 카테고리 | 항목 | 단계 | 근거 |
 |---------|------|------|------|
-| **MUST** | 3D 클라이언트 (Godot 4 Forward+) | #1 | 스펙 #1: 품질 기준 샘플 |
+| **MUST** | **WorkAdventure self-host 구축** (play/back/map-storage/redis/LiveKit/coturn) | #1 ⭐D26 | D26: WA self-host가 가상오피스 본체 |
+| **MUST** | **OIDC 연동** (FastAPI→WA, D4 자체 JWT 공존) | #1 ⭐D26 | D4/D26: ERP 사용자 WA 로그인 |
 | **MUST** | ERP 동기화 (직원·조직·근태) | #2 | 스펙 #2: 기초 데이터 |
-| **MUST** | 좌석/office_layout 편집기 | #3 | 스펙 #3: 운영 가편성 |
-| **MUST** | 실시간 서버 (Godot 헤드리스) | #4 | 스펙 #4: 아바타·프레즌스 |
-| **MUST** | 회의/화상회의 (LiveKit) | #5 | 스펙 #5: 협업 기록 |
+| **MUST** | **Presence 7종 WA 매핑** (D13 scripting API 연동) | #2 ⭐D26 | D13/D26: WA 상태 이벤트와 D13 7종 매핑 |
+| **MUST** | **TMJ 맵 제너레이터** (조직→WA 맵 자동 생성, D12 검증) | #3 ⭐D26 | D12/D26: 서버 단일 검증, 슬롯 초과 에러 |
+| **MUST** | **회의 명시적 입장** (Room API, D24) | #4 ⭐D26 | D24/D26: 자동 연결 금지, LiveKit 토큰 발급 |
+| **MUST** | 회의/화상회의 (LiveKit — WA 네이티브 통합) | #5 | 스펙 #5: 협업 기록 |
 | **MUST** | **회의록 STT 자동 초안** (LiveKit Egress→STT→화자분리→검토·확정) | #5 | 스펙 #5: 회의록 자동화 (D5 확정) |
 | **MUST** | KPI 산출 + AI 서술 초안 + 관리자 검토·이의신청 | #6 | 스펙 #6: ERP 연동 결과 |
 | **MUST** | 배치 (daily_reports 18:00 / KPI 확정 시 ERP push) | #6 | 스펙 #7: 폐쇄 루프 (D17) |
@@ -87,7 +92,8 @@ ERP가 분기별 인사평가 자료 수집
 | **WON'T** | 대규모 조직 확장 (성능 최적화) | 완성 이후 | 현재 스코프 = 단일 조직 |
 | **WON'T** | HR 재구축 (급여·휴가·근태 시스템) | 삭제됨 | ERP가 Source of Truth |
 | **WON'T** | 자체 리포트/역량평가 시스템 | 삭제됨 | ERP developer_evaluations와 역할 분담 |
-| **WON'T** | 웹 3D WASM export (품질 한계) | 배제됨 | 최고품질 = Godot Forward+ 필수 → 데스크톱 설치형만 |
+| **WON'T** | Godot 네이티브 3D 클라이언트 | 보류됨(D26) | WorkAdventure self-host로 전환(D26). 3D 노선 재검토는 B2B 확장 이후 |
+| **WON'T** | 웹 3D WASM export (품질 한계) | 배제됨 | 최고품질 = Godot Forward+ 필수 → 보류(D26) |
 
 ---
 
@@ -188,10 +194,10 @@ ERP가 분기별 인사평가 자료 수집
 ## 7. 성공 기준 & 수용 조건
 
 ### 기술적 성공 기준
-- [ ] 3D 클라이언트가 Godot 4 Forward+ 렌더러로 구현되고, 설정된 품질 기준(로비·회의실·아바타·HUD) 샘플 완성
+- [ ] **WorkAdventure self-host** 스택(play/back/map-storage/redis/LiveKit/coturn) Docker Compose 배포 완료 (D21-r, D26)
 - [ ] ERP 직원·조직·근태 읽기 동기화 완전 자동화 (**매시간 증분 + 매일 00:00 KST 전체 대사**, D18)
 - [ ] office_layout JSON 기반 좌석·회의실 배치가 앱 빌드 없이 배포/롤백 가능
-- [ ] 실시간 서버(Godot 헤드리스)에서 **도그푸딩 검증 20명(설계 100명)**의 동시 접속·아바타 이동·프레즌스 동기화 검증 (D22)
+- [ ] **WorkAdventure** 도그푸딩 검증 20명(설계 100명) 동시 접속·아바타 이동·presence 7종 동기화 검증 (D22/D26)
 - [ ] LiveKit 화상회의 통합 및 **회의록 STT 자동 초안 생성**(Egress→STT→화자분리→검토·확정) 테스트 완료 (D5)
 - [ ] 관리자 확정 KPI(final_score)가 ERP로 push되고(관리자 확정 이벤트 + 분기 마감), ERP 분기평가에 반영되는 엔드-투-엔드 검증 (D15/D17)
 
@@ -222,15 +228,15 @@ ERP가 분기별 인사평가 자료 수집
 
 ## 8. 개발 로드맵 개요 (Phase 0 + 7단계 → 세부 구현은 10-roadmap.md / 12-tasks.md)
 
-**총 기간(D6)**: **58주** — 시작 2026-07-06 → 완성 **2027-08-16 (2027년 하반기)**. 13-risks 검증 간트를 기준선으로 재산정, 15% 버퍼 포함. Phase 5의 회의록 STT 파이프라인(+3주) 반영. ("26주" 표기 폐기)
+**총 기간(D6, D26 재산정)**: **45주** — 시작 2026-07-06 → 완성 **2027-05-17 (2027년 상반기)**. D26 WorkAdventure 전환으로 Phase 1~4 단축(58주→45주). Phase 5의 회의록 STT 파이프라인 반영. ("26주"·"58주 Godot 기준선" 표기 폐기)
 
 | 단계 | 이름 | 목표 | 주요 결과물 |
 |-----|------|------|----------|
-| **#0** | 계약 & 스파이크 | 계약 확정 + 기술 리스크 검증 | API/데이터/ERP 계약, 스파이크 S1~S4(F절) |
-| **#1** | 프리미엄 골든 샘플 3D | 품질 기준 확정 | 로비·회의실·아바타·HUD |
-| **#2** | ERP 동기화 + 좌석 연결 | 기초 데이터 플로우 | 직원·조직 미러, 아바타 시작위치 |
-| **#3** | 사무실 배치 편집기 | 운영 자동화 | office_layout JSON 편집·배포(데스크톱 draft 열람) |
-| **#4** | 실시간 가상오피스 | 협업 핵심 | 아바타 이동·프레즌스(7종)·회의실 (WSS) |
+| **#0** | 계약 & 스파이크 | 계약 확정 + 기술 리스크 검증 | API/데이터/ERP 계약, 스파이크 S2(STT — S1·S3·S4는 D26으로 취소) |
+| **#1** | WorkAdventure self-host 구축 | WA 스택 가동 + 인증 | WA(play/back/map-storage)·LiveKit·coturn·Caddy 배포, OIDC 연동(D4 공존) |
+| **#2** | ERP 동기화 + Presence 연동 | 기초 데이터 플로우 | 직원·조직 미러, D13 presence 7종 WA 매핑(scripting API) |
+| **#3** | 맵 제너레이터 + 좌석 배치 | 운영 자동화 | 조직→TMJ 맵 자동 생성·map-storage 배포, 팀 구역/좌석 |
+| **#4** | WorkAdventure 연동 완성 | 협업 핵심 | Room API 회의 명시 입장(D24)·scripting 고급 연동·E2E 검증 |
 | **#5** | 회의/화상회의 + 회의록 STT | 기록 자동화 | LiveKit·STT 회의록·액션아이템 |
 | **#6** | KPI 산출 + AI 서술 초안 | 평가 폐쇄루프 | KPI 대시보드·이의신청·ERP 연동 쓰기 |
 | **#7** | 고도화 | 운영 완성도 | 층·권한·요약·감사로그·자동업데이트 |
@@ -240,7 +246,7 @@ ERP가 분기별 인사평가 자료 수집
 ## Loop Metadata
 
 ### Upstream documents referenced
-- **00-decisions.md (정본 결정 로그 D1~D25, F절 — 최우선 기준)**
+- **00-decisions.md (정본 결정 로그 D1~D26, F절 — 최우선 기준)**
 - 사용자 v3.2 개발기획서 (2026-07-01 인터뷰 기록)
 - 03-erp-integration.md (ERP 연동 설계)
 

@@ -12,7 +12,7 @@
 #
 # 사용:
 #   cp .env.example .env   # 시크릿·도메인·키 설정
-#   cp config/coturn.conf config/coturn.conf  # REPLACE_WITH_COTURN_STATIC_SECRET 교체
+#   $EDITOR config/coturn.conf     # REPLACE_WITH_COTURN_STATIC_SECRET 교체
 #   docker-compose up -d --build
 #   curl https://${WA_DOMAIN}/  # Caddy TLS 후
 
