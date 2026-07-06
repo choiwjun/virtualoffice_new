@@ -320,6 +320,11 @@ def generate_office_map(
     # collision 레이어 (벽 기반 통행 불가)
     collision_layer = _make_tile_layer(6, "collision", map_width, map_height, tile_gid=0, fill=False)
 
+    # floorLayer — WorkAdventure 필수 오브젝트 레이어 (MapValidator 검증 항목, error 레벨)
+    # 빈 objectgroup: 레이어 이름·타입 규약만 충족하면 됨
+    floor_obj_layer = _make_object_layer(7, "floorLayer")
+
+
     tmj: dict[str, Any] = {
         "version": "1.6",
         "tiledversion": "1.10.1",
@@ -331,13 +336,14 @@ def generate_office_map(
         "tilewidth": px,
         "tileheight": px,
         "infinite": False,
-        "nextlayerid": 10,
+        "nextlayerid": 11,
         "nextobjectid": _NEXT_OBJECT_ID + 1,
         "tilesets": [_make_tileset_stub()],
         "layers": [
             floor_layer,
             wall_layer,
             collision_layer,
+            floor_obj_layer,
             zones_layer,
             seats_layer,
             start_layer,

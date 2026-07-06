@@ -182,6 +182,18 @@ class TestGenerateOfficeMapLayers:
     def test_zones_layer_is_objectgroup(self, single_team, default_config):
         layers = self._layers_by_name(generate_office_map(single_team, default_config))
         assert layers["zones"]["type"] == "objectgroup"
+    def test_has_floor_obj_layer(self, single_team, default_config):
+        """WA MapValidator 필수: 'floorLayer' 타입 objectgroup 존재."""
+        layers = self._layers_by_name(generate_office_map(single_team, default_config))
+        assert "floorLayer" in layers
+        assert layers["floorLayer"]["type"] == "objectgroup"
+
+    def test_tileset_has_image_field(self, single_team, default_config):
+        """WA MapValidator 필수: tileset에 image 필드 존재 (collection-of-images 아님)."""
+        result = generate_office_map(single_team, default_config)
+        for ts in result["tilesets"]:
+            assert "image" in ts, f"tileset '{ts.get('name')}' image 필드 없음"
+
 
     def test_floor_data_length_matches_map_size(self, single_team, default_config):
         result = generate_office_map(single_team, default_config)
