@@ -49,6 +49,8 @@ from app.services.map_generator import MapConfig, TeamSpec, generate_office_map
 MAP_STORAGE_URL = "http://localhost:8090/map-storage"
 MAP_AUTH = ("admin", "localadmin")
 MAP_FILENAME = "org-map.tmj"
+PRESENCE_JS_SRC = Path(__file__).parent.parent / "wa_maps" / "scripts" / "presence.js"
+PRESENCE_JS_DEST = "scripts/presence.js"  # map-storage 내 상대 경로 (TMJ script 프로퍼티와 동기화)
 TILESET_FILENAME = "tileset.png"
 
 # 샘플 조직 (개발팀 6명, 디자인팀 4명, 경영지원 3명)
@@ -114,11 +116,23 @@ def _make_minimal_png(width: int = 128, height: int = 128) -> bytes:
 # ---------------------------------------------------------------------------
 
 def _build_zip(tmj_bytes: bytes, png_bytes: bytes) -> bytes:
-    """TMJ + tileset PNG를 ZIP 아카이브로 묶기."""
+    """TMJ + tileset PNG + presence.js 를 ZIP 아카이브로 묶기.
+
+    map-storage 업로드 후 접근 경로:
+      TMJ    : http://localhost:8090/map-storage/org-map.tmj
+      PNG    : http://localhost:8090/map-storage/tileset.png
+      스크립트 : http://localhost:8090/map-storage/scripts/presence.js
+    TMJ script 프로퍼티 "scripts/presence.js" (상대 URL)가 이 경로를 가리킴.
+    """
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr(MAP_FILENAME, tmj_bytes)
         zf.writestr(TILESET_FILENAME, png_bytes)
+        # presence.js: WA scripting 파일 — scripts/ 서브디렉토리로 업로드
+        if PRESENCE_JS_SRC.exists():
+            zf.writestr(PRESENCE_JS_DEST, PRESENCE_JS_SRC.read_text(encoding="utf-8"))
+        else:
+            print(f"  [WARN] presence.js not found at {PRESENCE_JS_SRC} — 스크립트 없이 계속")
     return buf.getvalue()
 
 
@@ -187,7 +201,8 @@ def main() -> None:
     print("\n[3] ZIP 패키징...")
     zip_bytes = _build_zip(tmj_bytes, png_bytes)
     print(f"  ZIP 크기 : {len(zip_bytes):,} bytes")
-    print(f"  포함 파일: {MAP_FILENAME}, {TILESET_FILENAME}")
+    script_ok = PRESENCE_JS_SRC.exists()
+    print(f"  포함 파일: {MAP_FILENAME}, {TILESET_FILENAME}" + (f", {PRESENCE_JS_DEST}" if script_ok else " [presence.js 없음]"))
 
     # 4. map-storage 업로드
     print(f"\n[4] map-storage 업로드...")

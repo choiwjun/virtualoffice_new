@@ -141,6 +141,26 @@ class TestGenerateOfficeMapStructure:
         result = generate_office_map(three_teams, default_config)
         tc = next(p for p in result["properties"] if p["name"] == "team_count")
         assert tc["value"] == 3
+    def test_script_property_exists(self, single_team, default_config):
+        """WA scripting: map 레벨 'script' 프로퍼티가 TMJ properties에 존재."""
+        result = generate_office_map(single_team, default_config)
+        prop_names = {p["name"] for p in result["properties"]}
+        assert "script" in prop_names, "'script' 프로퍼티 없음 — WA scripting 연결 불가"
+
+    def test_script_property_default_value(self, single_team, default_config):
+        """기본 script URL이 'scripts/presence.js' (map-storage 상대 경로)."""
+        result = generate_office_map(single_team, default_config)
+        script_prop = next(p for p in result["properties"] if p["name"] == "script")
+        assert script_prop["value"] == "scripts/presence.js"
+        assert script_prop["type"] == "string"
+
+    def test_script_property_custom_url(self, single_team, default_config):
+        """script_url 파라미터로 커스텀 URL 지정 가능."""
+        custom = "http://localhost:8090/map-storage/scripts/presence.js"
+        result = generate_office_map(single_team, default_config, script_url=custom)
+        script_prop = next(p for p in result["properties"] if p["name"] == "script")
+        assert script_prop["value"] == custom
+
 
     def test_empty_teams_raises(self, default_config):
         with pytest.raises(MapGeneratorError, match="비어"):
@@ -229,10 +249,11 @@ class TestZoneInjection:
         for field in ("id", "name", "x", "y", "width", "height", "type"):
             assert field in zone, f"zone 필드 '{field}' 없음"
 
-    def test_zone_type_is_zone(self, single_team, default_config):
+    def test_zone_type_is_area(self, single_team, default_config):
+        """WA.room.area.onEnter() 연동: zone 오브젝트 type="area" 필수."""
         result = generate_office_map(single_team, default_config)
         zone = self._zones(result)[0]
-        assert zone["type"] == "zone"
+        assert zone["type"] == "area"
 
     def test_zone_has_team_name_property(self, single_team, default_config):
         result = generate_office_map(single_team, default_config)
@@ -249,7 +270,7 @@ class TestZoneInjection:
         assert props["headcount"] == 3
 
     def test_zone_has_zone_property(self, single_team, default_config):
-        """scripting API onEnterZone() 연동용 'zone' 프로퍼티 존재."""
+        """WA area API: WA.room.area.onEnter(name) 연동용 'zone' 프로퍼티 존재."""
         result = generate_office_map(single_team, default_config)
         zone = self._zones(result)[0]
         props = {p["name"]: p["value"] for p in zone.get("properties", [])}

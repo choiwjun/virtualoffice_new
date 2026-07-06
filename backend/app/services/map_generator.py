@@ -200,6 +200,7 @@ from typing import Optional  # noqa: E402 (conditional import 정리)
 def generate_office_map(
     teams: list[TeamSpec],
     config: Optional[MapConfig] = None,
+    script_url: str = "scripts/presence.js",
 ) -> dict[str, Any]:
     """
     조직 데이터 → WorkAdventure 호환 TMJ 맵 생성.
@@ -207,6 +208,9 @@ def generate_office_map(
     Args:
         teams: 팀 명세 목록 (name, headcount, color).
         config: 맵 생성 파라미터. None이면 기본값 사용.
+        script_url: WA scripting 파일 URL (map 레벨 'script' 프로퍼티).
+                    상대경로 사용 시 TMJ 파일 위치 기준으로 해석됨.
+                    기본: "scripts/presence.js" (map-storage 업로드 시 scripts/ 서브디렉토리)
 
     Returns:
         TMJ JSON 딕셔너리 (json.dumps로 직렬화 가능).
@@ -283,7 +287,7 @@ def generate_office_map(
         zone_w_px = config.zone_width * px
         zone_h_px = config.zone_height * px
 
-        # 팀 구역 오브젝트 (zone)
+        # 팀 구역 오브젝트 (WA area class → WA.room.area.onEnter() 연동)
         safe_zone_name = f"{_safe_zone_name(team.name)}_{idx}"
         zones_layer["objects"].append(
             _make_rect_object(
@@ -293,12 +297,12 @@ def generate_office_map(
                 y=zone_y_px,
                 width=zone_w_px,
                 height=zone_h_px,
-                obj_type="zone",
+                obj_type="area",
                 color=team.color,
                 properties=[
                     {"name": "team_name", "type": "string", "value": team.name},
                     {"name": "headcount", "type": "int", "value": team.headcount},
-                    # WorkAdventure 존 연동: scripting API에서 onEnterZone(safe_zone_name) 사용
+                    # WA area API: presence.js에서 WA.room.area.onEnter(safe_zone_name) 사용
                     {"name": "zone", "type": "string", "value": safe_zone_name},
                     # presence.js가 zone_type을 읽어 desk/meeting_room/focus_room 구분
                     {"name": "zone_type", "type": "string", "value": "desk"},
@@ -353,8 +357,9 @@ def generate_office_map(
         "properties": [
             {"name": "generator", "type": "string", "value": "virtualoffice-map-generator"},
             {"name": "team_count", "type": "int", "value": len(teams)},
-            # WA scripting: 맵 로드 시 자동 실행할 JS 파일 URL (presence.js)
-            {"name": "script", "type": "string", "value": "/wa_maps/scripts/presence.js"},
+            # WA scripting: 맵 로드 시 자동 실행할 JS 파일 URL (presence.js).
+            # 상대 URL: TMJ 위치(map-storage/org-map.tmj) 기준 → map-storage/scripts/presence.js
+            {"name": "script", "type": "string", "value": script_url},
         ],
     }
     return tmj

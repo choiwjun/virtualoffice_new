@@ -19,6 +19,17 @@ http://localhost:8090 {
 		reverse_proxy wa-play:3001
 	}
 
+	# FastAPI 백엔드 presence 엔드포인트 (same-origin 유지 — WA iframe 스크립트가 호출)
+	# /api/* 일반 라우트(wa-back)보다 먼저 매칭되어야 하므로 앞에 배치.
+	handle /api/wa/presence {
+		reverse_proxy backend:8000
+	}
+
+	# FastAPI 백엔드 LiveKit 토큰 엔드포인트 (wa-livekit.router)
+	handle /api/wa/livekit-token {
+		reverse_proxy backend:8000
+	}
+
 	handle /api/* {
 		uri strip_prefix /api
 		reverse_proxy wa-back:8080

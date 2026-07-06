@@ -129,17 +129,20 @@ WA.onInit().then(async () => {
     await postPresence(employeeId, "connect");
 
     // -----------------------------------------------------------------------
-    // Zone 진입/이탈 이벤트 구독
-    // WA.room.onEnterZone / onLeaveZone: zone 오브젝트(type="zone") 기반.
+    // Area 진입/이탈 이벤트 구독
+    // WA.room.area.onEnter / onLeave: Tiled 오브젝트(class="area"/type="area") 기반.
+    // map_generator.py가 obj_type="area"로 생성한 zone 오브젝트와 매핑.
     // zone_type 프로퍼티를 백엔드 zone_name으로 사용.
     // -----------------------------------------------------------------------
     for (const [zoneName, zoneType] of zoneTypeByName.entries()) {
-        WA.room.onEnterZone(zoneName).subscribe(() => {
+        WA.room.area.onEnter(zoneName).subscribe(({ reason }) => {
+            if (reason === "initial") return; // 구독 시점 이미 존 내 → 무시
             bumpActivity();
             postPresence(employeeId, "enter_zone", { zone_name: zoneType });
         });
 
-        WA.room.onLeaveZone(zoneName).subscribe(() => {
+        WA.room.area.onLeave(zoneName).subscribe(({ reason }) => {
+            if (reason === "initial") return;
             bumpActivity();
             postPresence(employeeId, "leave_zone", { zone_name: zoneType });
         });
