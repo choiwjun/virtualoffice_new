@@ -28,11 +28,9 @@ from __future__ import annotations
 
 import io
 import json
-import struct
 import sys
-import zlib
-import zipfile
 from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile
 
 import httpx
 
@@ -41,6 +39,7 @@ _BACKEND_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(_BACKEND_ROOT))
 
 from app.services.map_generator import MapConfig, TeamSpec, generate_office_map
+from scripts.generate_tileset import generate_tileset
 
 # ---------------------------------------------------------------------------
 # 상수
@@ -77,38 +76,14 @@ SAMPLE_CONFIG = MapConfig(
 # 최소 유효 PNG 생성 (WA MapValidator tileset image 검증 통과용)
 # ---------------------------------------------------------------------------
 
-def _make_minimal_png(width: int = 128, height: int = 128) -> bytes:
+def _make_tileset_png() -> bytes:
     """
-    단색(회색) PNG 이미지 바이트 생성.
-    WA map-storage의 ZipFileFetcher는 파일 존재만 확인하므로
-    실제 픽셀 내용 무관 — 최소 유효 PNG면 충분.
-    실 운영 시 실제 타일 이미지로 교체.
+    Generate a recognizable office tileset PNG.
+    
+    Uses the tileset generator to create a multi-tile PNG with distinct colors
+    for floor, wall, desk, meeting zones, etc.
     """
-    def png_chunk(chunk_type: bytes, data: bytes) -> bytes:
-        length = len(data)
-        chunk = chunk_type + data
-        return struct.pack(">I", length) + chunk + struct.pack(">I", zlib.crc32(chunk) & 0xFFFFFFFF)
-
-    # PNG signature
-    sig = b"\x89PNG\r\n\x1a\n"
-
-    # IHDR: width, height, bit_depth=8, color_type=2 (RGB), ...
-    ihdr_data = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
-    ihdr = png_chunk(b"IHDR", ihdr_data)
-
-    # IDAT: raw scanlines, each row prefixed with filter byte 0
-    raw_rows = []
-    for _ in range(height):
-        row = b"\x00" + b"\x80\x80\x80" * width  # filter=None, RGB gray
-        raw_rows.append(row)
-    raw_data = b"".join(raw_rows)
-    compressed = zlib.compress(raw_data, 9)
-    idat = png_chunk(b"IDAT", compressed)
-
-    # IEND
-    iend = png_chunk(b"IEND", b"")
-
-    return sig + ihdr + idat + iend
+    return generate_tileset(tile_size=32, columns=4, rows=4)
 
 
 # ---------------------------------------------------------------------------
@@ -125,7 +100,7 @@ def _build_zip(tmj_bytes: bytes, png_bytes: bytes) -> bytes:
     TMJ script 프로퍼티 "scripts/presence.js" (상대 URL)가 이 경로를 가리킴.
     """
     buf = io.BytesIO()
-    with zipfile.ZipFile(buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+    with ZipFile(buf, mode="w", compression=ZIP_DEFLATED) as zf:
         zf.writestr(MAP_FILENAME, tmj_bytes)
         zf.writestr(TILESET_FILENAME, png_bytes)
         # presence.js: WA scripting 파일 — scripts/ 서브디렉토리로 업로드
@@ -193,8 +168,8 @@ def main() -> None:
     print(f"  TMJ 크기 : {len(tmj_bytes):,} bytes")
 
     # 2. 최소 PNG 생성
-    print("\n[2] 타일셋 PNG 생성 중 (128x128 플레이스홀더)...")
-    png_bytes = _make_minimal_png(128, 128)
+    print("\n[2] 타일셋 PNG 생성 중 (4x4 multi-tile 128x128)...")
+    png_bytes = _make_tileset_png()
     print(f"  PNG 크기 : {len(png_bytes):,} bytes")
 
     # 3. ZIP 패키징

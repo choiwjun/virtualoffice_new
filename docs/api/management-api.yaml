@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Virtual Office 관리·업무·KPI API
-  version: 1.0.0
+  version: 1.1.0
   description: |
     가상오피스 운영 플랫폼의 REST API 명세서
 
@@ -85,7 +85,7 @@ paths:
                   format: password
                   description: ERP 비밀번호
       responses:
-        '201':
+        '200':
           description: 로그인 성공
           content:
             application/json:
@@ -528,7 +528,7 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /seat-assignments/{assignment_id}/release:
+  /seat-assignments/{seat_id}/release:
     post:
       tags:
         - 좌석 배치 (Seat Assignment)
@@ -536,7 +536,7 @@ paths:
       description: 자율좌석 점유 직원이 퇴근/오프라인 시 호출
       operationId: releaseSeatAssignment
       parameters:
-        - name: assignment_id
+        - name: seat_id
           in: path
           required: true
           schema:
@@ -1120,7 +1120,7 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-    put:
+    patch:
       tags:
         - 회의록 (Meeting Minute)
       summary: 회의록 수정 (draft 상태)
@@ -1303,7 +1303,7 @@ paths:
           $ref: '#/components/responses/ServerError'
 
   /work-logs/{log_id}:
-    put:
+    patch:
       tags:
         - 업무기록 (Work Log)
       summary: 업무기록 수정
@@ -1444,7 +1444,7 @@ paths:
           $ref: '#/components/responses/ServerError'
 
   /kpi-results/{result_id}/adjust:
-    put:
+    post:
       tags:
         - KPI 평가 (KPI Result)
       summary: KPI 점수 조정 (관리자 전용)
@@ -1606,7 +1606,7 @@ paths:
           $ref: '#/components/responses/ServerError'
 
   /kpi-results/{result_id}/objections/review:
-    put:
+    post:
       tags:
         - KPI 평가 (KPI Result)
       summary: 이의신청 재검토 (관리자 전용)
@@ -1708,7 +1708,7 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
-  /erp-sync/trigger:
+  /erp/sync:
     post:
       tags:
         - ERP 동기화 (ERP Integration)

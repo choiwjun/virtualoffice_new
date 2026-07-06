@@ -6,8 +6,8 @@
 엔드포인트: POST /api/auth/login, POST /api/auth/refresh, GET /api/auth/me.
 """
 
-from datetime import timedelta
-from typing import Optional
+from datetime import timedelta, datetime, timezone
+from typing import Dict, Optional, Tuple
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -26,6 +26,44 @@ from app.db import get_db
 from app.models.tables import ErpUser
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+# ── 로그인 백오프 (HG-AUTH: 5회 실패 시 5분 잠금) ──────────────────────
+_login_attempts: Dict[str, Tuple[int, datetime]] = {}  # email -> (fail_count, locked_until)
+
+def _check_login_backoff(email: str) -> None:
+    """로그인 백오프 체크 — 5회 실패 시 HTTPException 발생."""
+    if email in _login_attempts:
+        fail_count, locked_until = _login_attempts[email]
+        now = datetime.now(timezone.utc)
+        if fail_count >= 5 and now < locked_until:
+            remaining = int((locked_until - now).total_seconds())
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Too many failed login attempts. Try again in {remaining} seconds.",
+            )
+
+def _record_login_failure(email: str) -> None:
+    """로그인 실패 기록 — 5회 누적 시 5분 잠금."""
+    now = datetime.now(timezone.utc)
+    if email in _login_attempts:
+        fail_count, locked_until = _login_attempts[email]
+        # 잠금 만료 후 첫 실패 → 카운트 리셋
+        if fail_count >= 5 and now >= locked_until:
+            _login_attempts[email] = (1, now)
+        else:
+            new_count = fail_count + 1
+            if new_count >= 5:
+                # 5회 실패 → 5분 잠금
+                _login_attempts[email] = (new_count, now + timedelta(minutes=5))
+            else:
+                _login_attempts[email] = (new_count, locked_until)
+    else:
+        _login_attempts[email] = (1, now)
+
+def _clear_login_attempts(email: str) -> None:
+    """로그인 성공 시 백오프 카운터 초기화."""
+    if email in _login_attempts:
+        del _login_attempts[email]
+
 
 
 # ── 요청/응답 스키마 ────────────────────────────────────────────────────────
@@ -107,7 +145,11 @@ async def login(
 
     ErpUser.password_hash(bcrypt)로 검증. 실패 시 401.
     평문 비밀번호 로깅 금지(D4).
+    HG-AUTH: 5회 실패 시 5분 잠금.
     """
+    # 백오프 체크 (5회 실패 시 429)
+    _check_login_backoff(payload.email)
+    
     result = await db.execute(
         select(ErpUser).where(
             ErpUser.email == payload.email,
@@ -122,8 +164,12 @@ async def login(
         or user.password_hash is None
         or not verify_password(payload.password, user.password_hash)
     ):
+        _record_login_failure(payload.email)
         raise _credentials_exc()
 
+    # 성공 → 백오프 카운터 초기화
+    _clear_login_attempts(payload.email)
+    
     token, expires_in = _build_token(user)
     return TokenResponse(
         access_token=token,

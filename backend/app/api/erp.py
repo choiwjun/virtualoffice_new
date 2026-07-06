@@ -193,3 +193,65 @@ async def list_attendances(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_date_range")
     dtos = await reader.fetch_attendances(DEFAULT_COMPANY_ID, start, end)
     return [AttendanceOut(**vars(d)) for d in dtos]
+# ── EOD Push 조회 (관리자) ──────────────────────────────────────
+
+class DailyStatusPushOut(BaseModel):
+    id: str
+    user_id: int
+    push_date: str
+    target: str
+    payload: dict
+    status: str
+    pushed_at: Optional[str] = None
+    run_id: Optional[str] = None
+    error: Optional[str] = None
+
+
+@router.get("/daily-status-push", response_model=list[DailyStatusPushOut])
+async def list_daily_status_push(
+    user_id: Optional[int] = Query(None, description="사용자 ID 필터"),
+    status_filter: Optional[str] = Query(None, alias="status", description="상태 필터 (pending/sent/failed)"),
+    limit: int = Query(100, le=500, description="최대 결과 수"),
+    db=Depends(get_db),
+    _: CurrentUser = Depends(require_role("admin", "super_admin")),
+) -> list[DailyStatusPushOut]:
+    """GET /api/daily-status-push — ERP 전송 큐 조회 (관리자, REQ-008)."""
+    from app.models.tables import DailyStatusPush
+    
+    query = select(DailyStatusPush).order_by(DailyStatusPush.created_at.desc())
+    
+    if user_id:
+        query = query.where(DailyStatusPush.user_id == user_id)
+    
+    if status_filter:
+        from app.models.tables import DailyStatusPushStatus
+        try:
+            status_enum = DailyStatusPushStatus(status_filter)
+            query = query.where(DailyStatusPush.status == status_enum)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_status")
+    
+    query = query.limit(limit)
+    rows = (await db.execute(query)).scalars().all()
+    
+    def _iso(dt):
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
+    
+    return [
+        DailyStatusPushOut(
+            id=str(r.id),
+            user_id=r.user_id,
+            push_date=r.push_date.isoformat(),
+            target=r.target.value,
+            payload=r.payload,
+            status=r.status.value,
+            pushed_at=_iso(r.pushed_at),
+            run_id=str(r.run_id) if r.run_id else None,
+            error=r.error_message,
+        )
+        for r in rows
+    ]

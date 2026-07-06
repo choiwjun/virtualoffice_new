@@ -108,6 +108,16 @@ http://localhost:8090 {
 		reverse_proxy backend:8000
 	}
 
+	# FastAPI 백엔드 맵 생성/검증 API (Lane B: WA 맵 제너레이터) — /api/* 앞
+	handle /api/maps* {
+		reverse_proxy backend:8000
+	}
+
+	# FastAPI 백엔드 ERP 전송 큐 조회 (Lane A: daily-status-push) — /api/* 앞
+	handle /api/daily-status-push* {
+		reverse_proxy backend:8000
+	}
+
 	handle /api/* {
 		uri strip_prefix /api
 		reverse_proxy wa-back:8080

@@ -20,11 +20,19 @@ from app.config import settings
 async def lifespan(app: FastAPI):
     # dev/도그푸딩: 테이블 자동 생성 (운영은 Alembic). Docker 최초 기동 편의.
     if settings.auto_create_tables:
-        from app.db import Base, engine
-
+        from app.db import engine
+        from app.models.tables import Base
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+    
+    # D17/D18: APScheduler 배치 시작 (KPI 18:00/21:00, ERP 매시간)
+    from app.services.scheduler import start_scheduler, stop_scheduler
+    start_scheduler()
+    
     yield
+    
+    # 종료 시 스케줄러 정리
+    stop_scheduler()
 
 
 app = FastAPI(
@@ -97,3 +105,5 @@ app.include_router(directory.router)          # /api/teams, /api/org-groups (man
 app.include_router(audit.router)              # /api/audit-logs (D20-e, admin)
 from app.api import office_layouts  # noqa: E402  Gaps: office-layouts (D12)
 app.include_router(office_layouts.router)     # /api/office-layouts/* (D12 검증·배포·롤백)
+from app.api import maps  # noqa: E402  Lane A: map generator API
+app.include_router(maps.router)              # /api/maps/* (generate/validate, REQ-003)

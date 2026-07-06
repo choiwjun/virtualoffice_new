@@ -378,3 +378,60 @@ async def delete_seat(
     await db.refresh(seat)
     await record_audit(db, user_id=user.user_id, action="seat_deleted", entity_type="seat", entity_id=str(seat.id))
     return _seat_out(seat)
+# ── 배정 이력 조회 (관리자) ───────────────────────────────────────────────────
+
+class SeatAssignmentHistoryOut(BaseModel):
+    id: str
+    seat_id: str
+    user_id: int
+    assigned_at: str
+    unassigned_at: Optional[str] = None
+    assigned_by_id: Optional[int] = None
+    unassigned_by_id: Optional[int] = None
+    reason: Optional[str] = None
+
+
+@router.get("/seat-assignments", response_model=list[SeatAssignmentHistoryOut])
+async def list_seat_assignments(
+    seat_id: Optional[str] = Query(None, description="좌석 ID 필터"),
+    user_id: Optional[int] = Query(None, description="사용자 ID 필터"),
+    limit: int = Query(100, le=500, description="최대 결과 수"),
+    db=Depends(get_db),
+    _: CurrentUser = Depends(require_role(*_ADMIN)),
+) -> list[SeatAssignmentHistoryOut]:
+    """GET /api/seat-assignments — 좌석 배정 이력 조회 (관리자, management-api)."""
+    query = select(SeatAssignmentHistory).order_by(SeatAssignmentHistory.assigned_at.desc())
+    
+    if seat_id:
+        try:
+            query = query.where(SeatAssignmentHistory.seat_id == UUID(seat_id))
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_seat_id")
+    
+    if user_id:
+        query = query.where(SeatAssignmentHistory.user_id == user_id)
+    
+    query = query.limit(limit)
+    rows = (await db.execute(query)).scalars().all()
+    
+    def _iso(dt):
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            from datetime import timezone
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
+    
+    return [
+        SeatAssignmentHistoryOut(
+            id=str(r.id),
+            seat_id=str(r.seat_id),
+            user_id=r.user_id,
+            assigned_at=_iso(r.assigned_at),
+            unassigned_at=_iso(r.unassigned_at),
+            assigned_by_id=r.assigned_by,
+            unassigned_by_id=None,
+            reason=r.reason,
+        )
+        for r in rows
+    ]

@@ -274,11 +274,14 @@ class TestMapGeneratorZoneTypeProperty:
     """map_generator가 생성하는 zone 오브젝트에 zone_type 프로퍼티 포함 검증."""
 
     def _zones(self, teams=None):
+        """Get team zones (excluding meeting zones)."""
         if teams is None:
             teams = [TeamSpec(name="개발팀", headcount=2)]
         tmj = generate_office_map(teams)
         zones_layer = next(l for l in tmj["layers"] if l["name"] == "zones")
-        return zones_layer["objects"]
+        # Filter for team zones only (those with team_name property)
+        return [obj for obj in zones_layer["objects"]
+                if any(p.get("name") == "team_name" for p in obj.get("properties", []))]
 
     def test_zone_has_zone_type_property(self):
         """zone 오브젝트에 'zone_type' 프로퍼티가 존재해야 함."""

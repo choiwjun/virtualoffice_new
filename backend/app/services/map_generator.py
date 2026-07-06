@@ -274,6 +274,17 @@ def generate_office_map(
         )
     )
 
+    # 회의실 존 주입 (로비 영역, D24 명시 입장)
+    _inject_meeting_zones(
+        zones_layer=zones_layer,
+        floor_layer=floor_layer,
+        map_width=map_width,
+        entry_area_height=config.entry_area_height,
+        margin_tiles=config.margin_tiles,
+        px=px,
+        count=3,
+    )
+
     # 팀 구역 주입
     for idx, team in enumerate(teams):
         col = idx % config.zones_per_row
@@ -309,6 +320,17 @@ def generate_office_map(
                 ],
             )
         )
+
+        # 팀 구역 바닥 타일 색상 변경 (GID 3 = desk area)
+        floor_data: list[int] = floor_layer["data"]
+        for dy in range(config.zone_height):
+            for dx in range(config.zone_width):
+                tile_x = zone_x_tile + dx
+                tile_y = zone_y_tile + dy
+                if 0 <= tile_x < map_width and 0 <= tile_y < map_height:
+                    idx = tile_y * map_width + tile_x
+                    if idx < len(floor_data):
+                        floor_data[idx] = 3  # GID 3 = desk area tile
 
         # 좌석 오브젝트 생성
         _inject_seats(
@@ -454,3 +476,77 @@ def _inject_border_walls(wall_layer: dict[str, Any], width: int, height: int) ->
     for y in range(height):
         data[y * width] = wall_gid               # 좌측
         data[y * width + (width - 1)] = wall_gid  # 우측
+
+
+def _inject_meeting_zones(
+    zones_layer: dict[str, Any],
+    floor_layer: dict[str, Any],
+    map_width: int,
+    entry_area_height: int,
+    margin_tiles: int,
+    px: int,
+    count: int = 3,
+) -> None:
+    """
+    로비 영역에 회의실 존 주입 (D24 명시 입장 지원).
+    
+    Args:
+        zones_layer: zones 오브젝트 레이어
+        floor_layer: floor 타일 레이어 (회의실 바닥 타일 GID 4 적용)
+        map_width: 맵 너비 (tiles)
+        entry_area_height: 로비 영역 높이 (tiles)
+        margin_tiles: 여백 (tiles)
+        px: 타일 픽셀 크기
+        count: 생성할 회의실 수 (기본 3개)
+    """
+    # 회의실 크기 (tiles)
+    meeting_w = 4
+    meeting_h = 3
+    
+    # 로비 영역 내 균등 배치
+    total_w = map_width - 2 * margin_tiles
+    spacing = total_w // (count + 1)
+    
+    meeting_names = ["meeting_room_1", "meeting_room_2", "meeting_room_3"]
+    meeting_colors = ["#90EE90", "#98D8C8", "#87CEEB"]  # 녹색, 청록, 하늘색
+    
+    for i in range(count):
+        # 위치 계산 (픽셀 단위)
+        zone_x_tile = margin_tiles + (i + 1) * spacing - meeting_w // 2
+        zone_y_tile = margin_tiles
+        
+        zone_x_px = zone_x_tile * px
+        zone_y_px = zone_y_tile * px
+        zone_w_px = meeting_w * px
+        zone_h_px = meeting_h * px
+        
+        # 회의실 바닥 타일 색상 변경 (GID 4 = 회의실 타일)
+        floor_data: list[int] = floor_layer["data"]
+        for dy in range(meeting_h):
+            for dx in range(meeting_w):
+                tile_x = zone_x_tile + dx
+                tile_y = zone_y_tile + dy
+                if 0 <= tile_x < map_width and 0 <= tile_y < entry_area_height:
+                    idx = tile_y * map_width + tile_x
+                    if idx < len(floor_data):
+                        floor_data[idx] = 4  # GID 4 = meeting room floor
+        
+        # 회의실 존 오브젝트 생성
+        room_name = meeting_names[i] if i < len(meeting_names) else f"meeting_room_{i+1}"
+        zones_layer["objects"].append(
+            _make_rect_object(
+                oid=_next_oid(),
+                name=room_name,
+                x=zone_x_px,
+                y=zone_y_px,
+                width=zone_w_px,
+                height=zone_h_px,
+                obj_type="area",
+                color=meeting_colors[i] if i < len(meeting_colors) else "#90EE90",
+                properties=[
+                    {"name": "zone_type", "type": "string", "value": "meeting_room"},
+                    {"name": "capacity", "type": "int", "value": 8},
+                    {"name": "room_name", "type": "string", "value": room_name},
+                ],
+            )
+        )

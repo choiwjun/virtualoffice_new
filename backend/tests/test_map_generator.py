@@ -232,6 +232,14 @@ class TestGenerateOfficeMapLayers:
 
 class TestZoneInjection:
     def _zones(self, result):
+        """Get team zones (excluding meeting zones)."""
+        layer = next(l for l in result["layers"] if l["name"] == "zones")
+        # Filter for team zones only (those with team_name property)
+        return [obj for obj in layer["objects"] 
+                if any(p.get("name") == "team_name" for p in obj.get("properties", []))]
+    
+    def _all_zones(self, result):
+        """Get all zones (team zones + meeting zones)."""
         layer = next(l for l in result["layers"] if l["name"] == "zones")
         return layer["objects"]
 
@@ -280,6 +288,22 @@ class TestZoneInjection:
         result = generate_office_map(three_teams, default_config)
         zone_names = [z["name"] for z in self._zones(result)]
         assert len(zone_names) == len(set(zone_names)), "존 이름 중복"
+
+    def test_map_has_meeting_zones(self, single_team, default_config):
+        """맵 생성 시 회의실 존이 추가됨 (D24 명시 입장 지원)."""
+        result = generate_office_map(single_team, default_config)
+        all_zones = self._all_zones(result)
+        meeting_zones = [z for z in all_zones 
+                        if any(p.get("name") == "zone_type" and p.get("value") == "meeting_room" 
+                               for p in z.get("properties", []))]
+        assert len(meeting_zones) == 3, "3개의 회의실 존이 있어야 함"
+        
+        # 각 회의실이 적절한 프로퍼티를 가져야 함
+        for mz in meeting_zones:
+            props = {p["name"]: p["value"] for p in mz.get("properties", [])}
+            assert props["zone_type"] == "meeting_room"
+            assert "room_name" in props
+            assert "capacity" in props
 
     def test_zone_has_nonzero_dimensions(self, single_team, default_config):
         result = generate_office_map(single_team, default_config)
