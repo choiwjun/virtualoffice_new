@@ -44,6 +44,12 @@ class Settings(BaseSettings):
 
     # ── CORS (Next.js 웹 관리콘솔) ──
     cors_origins: list[str] = ["http://localhost:3000"]
+    # ── LiveKit SFU (D24: 명시적 입장, G004) ──
+    # 운영: .env에서 실제 api_key / api_secret 주입 (이 기본값은 로컬 개발 전용)
+    livekit_api_key: str = "devkey"
+    livekit_api_secret: str = "devsecret01234567890123456789012345"  # ≥32자
+    livekit_url: str = "http://localhost:7880"
+    livekit_token_expiry_seconds: int = 3600  # 1시간
 
     @property
     def is_production(self) -> bool:

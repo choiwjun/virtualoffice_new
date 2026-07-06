@@ -29,6 +29,10 @@ services:
       WA_OIDC_CLIENT_ID: workadventure
       WA_OIDC_CLIENT_SECRET: local-dev-oidc-secret
       WA_OIDC_BASE_URL: http://auth.localhost:8090
+      # LiveKit 자격증명 (D24: /api/wa/livekit-token 토큰 발급용)
+      LIVEKIT_API_KEY: devkey
+      LIVEKIT_API_SECRET: "devsecret01234567890123456789012345"
+      LIVEKIT_URL: "http://livekit:7880"
     volumes:
       # SQLite 파일 영속화 (컨테이너 재기동 시 데이터 유지)
       - backend_sqlite:/data
@@ -151,6 +155,22 @@ services:
         # WA play 컨테이너: auth.localhost → Docker DNS alias → caddy → backend.
         aliases:
           - auth.localhost
+
+  # ── LiveKit SFU (D24: 명시적 입장 토큰 발급, 로컬 시그널링 검증) ──────────
+  # 로컬 TLS 제약으로 미디어 릴레이 없음; 토큰 발급·WebSocket 시그널링만 검증.
+  # 프로덕션: docker-compose.yml의 livekit 서비스에서 외부 IP + coturn 사용.
+  livekit:
+    image: livekit/livekit-server:v1.7.2
+    container_name: volocal_livekit
+    restart: unless-stopped
+    command: --config /etc/livekit/livekit.local.yaml --bind 0.0.0.0
+    ports:
+      - "127.0.0.1:7880:7880"
+    environment:
+      # LIVEKIT_KEYS 형식: "<api_key>: <api_secret>"
+      LIVEKIT_KEYS: "devkey: devsecret01234567890123456789012345"
+    volumes:
+      - ./config/livekit.local.yaml:/etc/livekit/livekit.local.yaml:ro
 
 volumes:
   backend_sqlite:
