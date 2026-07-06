@@ -1,0 +1,10 @@
+{"schemaVersion":1,"kind":"black-box-api-receipt","surface":"api","description":"LiveKit 서버가 우리 /api/wa/livekit-token 발급 토큰을 수락하는지 검증",
+ "checks":[
+  {"name":"livekit_server_running","evidence":"livekit v1.7.2 portHttp 7880 rtc 7881/50000-50050","verdict":"passed"},
+  {"name":"coturn_running","evidence":"coturn 4.6.2 TCP/UDP 3478 listeners, relay 50100-50200","verdict":"passed"},
+  {"name":"livekit_token_valid","evidence":"POST /api/wa/livekit-token -> JWT(iss=devkey, video grant room+roomJoin)","verdict":"passed"},
+  {"name":"livekit_validate_accepts_token","evidence":"GET livekit:7880/rtc/validate?access_token=<ours> -> 200 success","verdict":"passed"},
+  {"name":"garbage_token_rejected","evidence":"validate with invalid jwt -> non-200","verdict":"passed"},
+  {"name":"caddy_livekit_route","evidence":"GET /livekit/ -> 200 (브라우저 WS 경로)","verdict":"passed"},
+  {"name":"wan_media_relay","evidence":"프로덕션 도메인/TLS 실WAN 미디어 릴레이는 goal 범위상 이관","verdict":"deferred"}
+ ]}
