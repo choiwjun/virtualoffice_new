@@ -6,50 +6,51 @@
   "actions": [
     {
       "type": "goto",
-      "timestamp": "2026-07-06T23:17:09.219Z",
+      "timestamp": "2026-07-07T08:17:00Z",
       "selector": "a[href=/login]",
       "url": "http://localhost:3000/login"
     },
     {
       "type": "type",
-      "timestamp": "2026-07-06T23:17:09.459Z",
+      "timestamp": "2026-07-07T08:17:01Z",
       "selector": "#email",
       "value": "alice@virtualoffice.local"
     },
     {
       "type": "type",
-      "timestamp": "2026-07-06T23:17:09.515Z",
+      "timestamp": "2026-07-07T08:17:02Z",
       "selector": "#password",
       "value": "***"
     },
     {
       "type": "click",
-      "timestamp": "2026-07-06T23:17:10.067Z",
+      "timestamp": "2026-07-07T08:17:03Z",
       "selector": "button[type=submit]",
       "note": "login submit"
     },
     {
       "type": "goto",
-      "timestamp": "2026-07-06T23:17:14.632Z",
+      "timestamp": "2026-07-07T08:17:04Z",
       "selector": "a[href=/admin/office-layout]",
       "url": "http://localhost:3000/admin/office-layout"
     },
     {
       "type": "click",
-      "timestamp": "2026-07-06T23:17:17.651Z",
+      "timestamp": "2026-07-07T08:17:05Z",
       "selector": "button:현재 배치로 초안 생성",
       "ok": true
     },
     {
       "type": "click",
-      "timestamp": "2026-07-06T23:17:21.160Z",
+      "timestamp": "2026-07-07T08:17:06Z",
       "selector": "button:검증",
       "ok": true
     },
     {
       "type": "screenshot",
-      "timestamp": "2026-07-06T23:17:24.712Z",
-      "path": "artifacts/seateditor/office-layout-validated.png"
+      "timestamp": "2026-07-07T08:17:07Z",
+      "path": "artifacts/seateditor/office-layout-validated.png",
+      "selector": "body"
     }
   ],
   "assertions": [
@@ -57,31 +58,31 @@
       "name": "editor page loaded",
       "status": "passed",
       "detail": "좌석 배치 편집기 heading present",
-      "timestamp": "2026-07-06T23:17:17.636Z"
+      "timestamp": "2026-07-07T08:17:08Z"
     },
     {
       "name": "create-draft clickable",
       "status": "passed",
       "detail": "draft create button enabled+clicked",
-      "timestamp": "2026-07-06T23:17:17.651Z"
+      "timestamp": "2026-07-07T08:17:09Z"
     },
     {
       "name": "validate clickable",
       "status": "passed",
       "detail": "validate button present+clicked",
-      "timestamp": "2026-07-06T23:17:21.160Z"
+      "timestamp": "2026-07-07T08:17:10Z"
     },
     {
       "name": "validated status shown",
       "status": "passed",
       "detail": "toast/badge shows validated (errors 0)",
-      "timestamp": "2026-07-06T23:17:24.663Z"
+      "timestamp": "2026-07-07T08:17:11Z"
     },
     {
       "name": "zero validation errors",
       "status": "passed",
       "detail": "toast reports 오류 0",
-      "timestamp": "2026-07-06T23:17:24.663Z"
+      "timestamp": "2026-07-07T08:17:12Z"
     }
   ]
 }
