@@ -63,6 +63,11 @@ http://localhost:8090 {
 	}
 
 
+	# FastAPI 백엔드 KPI 엔드포인트 (Lane C — G003)
+	handle /api/kpi-results* {
+		reverse_proxy backend:8000
+	}
+
 
 	handle /api/* {
 		uri strip_prefix /api

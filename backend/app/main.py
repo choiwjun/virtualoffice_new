@@ -86,7 +86,8 @@ app.include_router(seats.router)              # /api/seats, /api/seat-assignment
 from app.api import work_logs  # noqa: E402  Lane A G001
 from app.api import meetings  # noqa: E402  Lane B G002
 from app.api import meeting_minutes  # noqa: E402  Lane B G002
+from app.api import kpi  # noqa: E402  Lane C G003
 app.include_router(work_logs.router)          # /api/work-logs (G001, Lane A)
 app.include_router(meetings.router)           # /api/meetings* — 회의 예약·조회·참석 (G002, Lane B)
 app.include_router(meeting_minutes.router)    # /api/meeting-minutes* — 회의록·액션아이템 (G002, Lane B)
-# TODO(Phase 2+): kpi 라우터 (Lane C worker-3)
+app.include_router(kpi.router)                # /api/kpi-results/* — KPI 계산·검토·이의신청 (G003, Lane C)
