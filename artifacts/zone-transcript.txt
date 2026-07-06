@@ -1,0 +1,16 @@
+CONSOLE: Autofocus processing was blocked because a document already has a focused element.
+logged in
+onboard 0 clicked= Continue
+onboard 1 clicked= Build your WOKA
+onboard 2 clicked= Back to default WOKA
+onboard 3 clicked= Build your WOKA
+onboard 4 clicked= Back to default WOKA
+onboard 5 clicked= Build your WOKA
+onboard 6 clicked= Back to default WOKA
+onboard 7 clicked= Build your WOKA
+onboard 8 clicked= Back to default WOKA
+onboard 9 clicked= Build your WOKA
+onboard 10 clicked= Back to default WOKA
+onboard 11 clicked= Build your WOKA
+in-game url: http://localhost:8090/~/org-map.wam?token=eyJhbGciOiJIUzI1NiJ9.eyJpZGVudGlmaWVyIjoiYWxpY2VAdmlydHVhbG9mZmljZS5sb2NhbCIsImFjY2Vzc1Rva2VuIjoiXzFRaFVQeWRFSFZFWEJENTU4QnV6aUFvcEVvZE5HXzdZcE1RZWY0eXpHdyIsInVzZXJuYW1lIjoiYWxpY2UiLCJ0YWdzIjpbImFkbWluIl0sIm1hdHJpeFVzZXJJZCI6ImFsaWNlX3ZpcnR1YWxvZmZpY2UubG9jYWwiLCJleHAiOjE3ODU5MDQyNzN9.EQoekYWGJmEBeeCXmTt5s33Ylk2JXMETNJS1jBfnn98
+RESULT_OK

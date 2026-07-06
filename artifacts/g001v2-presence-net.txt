@@ -1,0 +1,33 @@
+C[log]: %c %c %c %c %c WorkAdventure / Phaser v3.86.0 (WebGL | Web Audio) %c https://phaser.io/v385/ background: #ff0000 background: #ffff00 background: #00ff00 background: #00ffff color: #ffffff; background:
+C[warn]: [.WebGL-0x3b6c00176c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+C[warn]: [.WebGL-0x3b6c00176c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+C[warn]: [.WebGL-0x3b6c00176c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+C[warn]: [.WebGL-0x3b6c00176c00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+C[info]: Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+C[info]: Map  ~/org-map.wam  resolves to URL  
+C[warn]: Scene key not found: EmptyScene
+C[error]: Failed to load resource: the server responded with a status of 404 (Not Found)
+C[log]: %c %c %c %c %c WorkAdventure / Phaser v3.86.0 (WebGL | Web Audio) %c https://phaser.io/v385/ background: #ff0000 background: #ffff00 background: #00ff00 background: #00ffff color: #ffffff; background:
+C[info]: Map  ~/org-map.wam  resolves to URL  
+C[info]: Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+C[info]: Storage may be cleared by the UA under storage pressure.
+C[info]: Service Worker registered:  [object ServiceWorkerRegistration]
+C[info]: Autofocus processing was blocked because a document already has a focused element.
+C[warn]: The resource http://localhost:8090/assets/Workadventure-C_1IyOip.gif was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropr
+C[warn]: Cannot load previous WOKA textures: Error: No valid Woka collection found for the saved texture ID
+C[error]: Failed to load resource: the server responded with a status of 404 (Not Found)
+C[debug]: [AudioContextManager] Created new AudioContext with default sample rate
+C[info]: starting http://localhost:8090/~/org-map.wam
+C[error]: Failed to load resource: the server responded with a status of 404 (Not Found)
+C[error]: Error while loading entity collection http://localhost:8090/map-storageassets/entities/entities.json Error: Failed to fetch http://localhost:8090/map-storageassets/entities/entities.json: Not Found
+C[info]: EntityEditorTool subscribeToGameMapFrontWrapperEvents
+C[info]: EntityEditorTool subscribeToGameMapFrontWrapperEvents
+C[info]: Loading map related script at  http://localhost:8090/map-storage/scripts/presence.js
+C[info]: Socket has been opened
+NET: GET http://localhost:8090/local-script?script=http%3A%2F%2Flocalhost%3A8090%2Fmap-storage%2Fsc -> 200
+NET: GET http://localhost:8090/map-storage/scripts/presence.js -> 200
+C[warn]: This map is missing a layer named "start" that contains the available default start positions.
+NET: OPTIONS http://localhost:8090/api/wa/presence -> 200
+NET: POST http://localhost:8090/api/wa/presence -> 200
+C[error]: An error occurred server side: Your map does not seem accessible from the WorkAdventure servers. Is it behind a firewall or a proxy? Your map should be accessible from the WorkAdventure servers. If yo
+final url: http://localhost:8090/~/org-map.wam

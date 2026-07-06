@@ -1,0 +1,16 @@
+{
+ "schemaVersion":1,"kind":"web-automation-transcript","tool":"puppeteer","toolVersion":"ghcr.io/puppeteer/puppeteer:latest",
+ "surface":"web","target":"http://localhost:8090 org-map.wam (WA sandboxed map script presence.js)",
+ "actions":[
+  {"n":1,"type":"navigate","selector":"document","url":"http://localhost:8090/","timestamp":"2026-07-06T05:20:00Z","result":"OIDC login then in-game org-map.wam"},
+  {"n":2,"type":"observe","selector":"console","timestamp":"2026-07-06T05:20:30Z","result":"WA console: 'Loading map related script at http://localhost:8090/map-storage/scripts/presence.js'"},
+  {"n":3,"type":"network","selector":"GET","timestamp":"2026-07-06T05:20:31Z","url":"/map-storage/scripts/presence.js","result":"200 (WA loads presence.js)"},
+  {"n":4,"type":"network","selector":"OPTIONS","timestamp":"2026-07-06T05:20:32Z","url":"/api/wa/presence","result":"200 (CORS preflight passes for sandboxed origin null)"},
+  {"n":5,"type":"network","selector":"POST","timestamp":"2026-07-06T05:20:33Z","url":"/api/wa/presence","result":"200 (presence.js WA.onInit -> postPresence connect succeeded)"}
+ ],
+ "result":"PASS",
+ "bugsFixed":[
+  {"bug":"CORS preflight 404 for sandboxed WA map script (origin null)","fix":"backend CORS_ORIGINS += null, http://localhost:8090"},
+  {"bug":"Caddy stale config: /api/wa/presence fell through to /api/* (wa-back 404)","fix":"caddy restart to load /api/wa/presence handle"}
+ ]
+}
