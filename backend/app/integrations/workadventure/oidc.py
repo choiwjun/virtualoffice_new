@@ -26,10 +26,10 @@ FastAPI OIDC Provider Bridge — WorkAdventure 로그인 연동.
   6. tags 클레임으로 WorkAdventure RBAC 제어 (admin → WA 지도 편집 권한)
 
 ■ WorkAdventure docker-compose.yml 주입 환경변수 (→ Lane B 참조)
-  OIDC_CLIENT_ID      = wa-client            (settings.wa_oidc_client_id)
-  OIDC_CLIENT_SECRET  = <secret>             (settings.wa_oidc_client_secret)
-  OIDC_DISCOVERY_URL  = https://<api>/oidc   (자동 suffix: /.well-known/openid-configuration)
-  OIDC_SCOPE          = openid profile email
+  OPENID_CLIENT_ID      = workadventure       (settings.wa_oidc_client_id)
+  OPENID_CLIENT_SECRET  = <secret>            (settings.wa_oidc_client_secret)
+  OPENID_CLIENT_ISSUER  = http://auth.localhost:8090  (자동 suffix: /.well-known/openid-configuration)
+  OPENID_SCOPE          = openid profile email
 
 참조:
   - 00-decisions.md: D4(자체 JWT HS256), D26(WorkAdventure self-host), D3(FastAPI 경유 단일화)
@@ -37,7 +37,6 @@ FastAPI OIDC Provider Bridge — WorkAdventure 로그인 연동.
   - RFC 6749 (OAuth 2.0), RFC 7519 (JWT), OpenID Connect Core 1.0
 """
 
-import hashlib
 import secrets
 import time
 from dataclasses import dataclass, field
@@ -47,10 +46,13 @@ from typing import Any, Optional
 import jwt  # PyJWT — RS256은 cryptography 백엔드 필요
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from fastapi import APIRouter, Form, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
+from app.db import get_db
+from app.core.security import verify_password
 
 # ---------------------------------------------------------------------------
 # RSA 키 쌍 (OIDC ID Token RS256 서명용)
@@ -89,6 +91,7 @@ class AuthCode:
     email: str
     name: str
     role: str            # employee | leader | admin
+    nonce: Optional[str] = None
     issued_at: float = field(default_factory=time.time)
     expires_in: int = 300  # 5분
 
@@ -99,13 +102,41 @@ class AuthCode:
 _code_store: dict[str, AuthCode] = {}
 
 # ---------------------------------------------------------------------------
+# In-memory Access Token Store (UserInfo 조회용)
+# ---------------------------------------------------------------------------
+# key = access_token (str), value = dict with user info
+
+@dataclass
+class AccessTokenEntry:
+    """Access Token 내용물 (1시간 유효)."""
+    employee_id: int
+    email: str
+    name: str
+    role: str
+    issued_at: float = field(default_factory=time.time)
+    expires_in: int = 3600  # 1시간
+
+    def is_expired(self) -> bool:
+        return time.time() > self.issued_at + self.expires_in
+
+
+_access_token_store: dict[str, AccessTokenEntry] = {}
+
+# ---------------------------------------------------------------------------
 # 설정 상수 (settings에 없는 값은 여기서 기본값)
 # ---------------------------------------------------------------------------
-_ISSUER: str = "https://api.virtualoffice.internal/oidc"  # 운영 시 settings 로드
+# _ISSUER는 요청 base_url에서 동적 생성 (단일 URL 원칙 — context doc 참조).
+# 단, _sign_id_token 등 내부 함수는 호출측에서 issuer를 주입받는다.
 _ID_TOKEN_EXPIRE_HOURS: int = 1
 _SUPPORTED_SCOPES: list[str] = ["openid", "profile", "email"]
 _RESPONSE_TYPES: list[str] = ["code"]
 _GRANT_TYPES: list[str] = ["authorization_code"]
+
+
+def _derive_issuer(request: Request) -> str:
+    """요청 base_url 기반 OIDC issuer URL 생성."""
+    return str(request.base_url).rstrip("/") + "/oidc"
+
 
 # ---------------------------------------------------------------------------
 # FastAPI Router
@@ -120,9 +151,9 @@ router = APIRouter(prefix="/oidc", tags=["oidc"])
 async def openid_configuration(request: Request) -> JSONResponse:
     """
     OIDC Discovery Document (RFC 8414).
-    WorkAdventure가 OIDC_DISCOVERY_URL 에서 이 문서를 조회한다.
+    WorkAdventure가 OPENID_CLIENT_ISSUER + /.well-known/openid-configuration 로 조회한다.
     """
-    base = str(request.base_url).rstrip("/") + "/oidc"
+    base = _derive_issuer(request)
     return JSONResponse({
         "issuer": base,
         "authorization_endpoint": f"{base}/authorize",
@@ -134,8 +165,13 @@ async def openid_configuration(request: Request) -> JSONResponse:
         "grant_types_supported": _GRANT_TYPES,
         "subject_types_supported": ["public"],
         "id_token_signing_alg_values_supported": ["RS256"],
-        "claims_supported": ["sub", "iss", "aud", "exp", "iat", "email", "name", "tags"],
-        "token_endpoint_auth_methods_supported": ["client_secret_post", "client_secret_basic"],
+        "claims_supported": [
+            "sub", "iss", "aud", "exp", "iat",
+            "email", "name", "preferred_username", "tags",
+        ],
+        "token_endpoint_auth_methods_supported": [
+            "client_secret_post", "client_secret_basic",
+        ],
     })
 
 
@@ -183,64 +219,168 @@ async def authorize(
     nonce: Optional[str] = Query(default=None),
 ) -> HTMLResponse:
     """
-    OIDC Authorization Endpoint (Authorization Code Flow).
-
-    GET 요청: 로그인 HTML 폼 반환.
-    POST 요청: 자격증명 검증 → Authorization Code 발급 → redirect_uri로 전송.
-
-    스켈레톤: HTML 폼은 최소 구현. 운영 시 Next.js 로그인 페이지로 교체 권장.
+    OIDC Authorization Endpoint — GET: 로그인 HTML 폼 반환.
+    POST: authorize_submit 엔드포인트가 처리.
     """
     if response_type != "code":
         raise HTTPException(status_code=400, detail="unsupported_response_type")
 
-    # 로그인 폼 렌더링 (스켈레톤 — 운영 시 실제 UI로 교체)
-    form_html = f"""
-    <!DOCTYPE html>
-    <html lang="ko">
-    <head><meta charset="utf-8"><title>가상오피스 로그인</title></head>
-    <body>
-      <h2>가상오피스 로그인</h2>
-      <form method="POST" action="/oidc/authorize/submit">
-        <input type="hidden" name="client_id" value="{client_id}">
-        <input type="hidden" name="redirect_uri" value="{redirect_uri}">
-        <input type="hidden" name="state" value="{state or ''}">
-        <input type="hidden" name="nonce" value="{nonce or ''}">
-        <label>이메일: <input type="email" name="email"></label><br>
-        <label>비밀번호: <input type="password" name="password"></label><br>
-        <button type="submit">로그인</button>
-      </form>
-    </body>
-    </html>
-    """
+    # HTML 이스케이프 (XSS 방지 최소 조치)
+    def esc(s: str) -> str:
+        return (s or "").replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")
+
+    form_html = f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>가상오피스 로그인</title>
+  <style>
+    body {{ font-family: sans-serif; display: flex; justify-content: center;
+            align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }}
+    .card {{ background: #fff; padding: 2rem; border-radius: 8px;
+             box-shadow: 0 2px 8px rgba(0,0,0,.15); min-width: 320px; }}
+    h2 {{ margin: 0 0 1.5rem; font-size: 1.4rem; text-align: center; }}
+    label {{ display: block; margin-bottom: 1rem; }}
+    label span {{ display: block; margin-bottom: .3rem; font-size: .9rem; color: #555; }}
+    input[type=email], input[type=password] {{
+      width: 100%; padding: .5rem; box-sizing: border-box;
+      border: 1px solid #ccc; border-radius: 4px; }}
+    button {{ width: 100%; padding: .75rem; margin-top: .5rem; background: #4a7cf6;
+              color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }}
+    button:hover {{ background: #3a6ce6; }}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>가상오피스 로그인</h2>
+    <form method="POST" action="/oidc/authorize/submit">
+      <input type="hidden" name="client_id" value="{esc(client_id)}">
+      <input type="hidden" name="redirect_uri" value="{esc(redirect_uri)}">
+      <input type="hidden" name="state" value="{esc(state or '')}">
+      <input type="hidden" name="nonce" value="{esc(nonce or '')}">
+      <label>
+        <span>이메일</span>
+        <input type="email" name="email" required autocomplete="email">
+      </label>
+      <label>
+        <span>비밀번호</span>
+        <input type="password" name="password" required autocomplete="current-password">
+      </label>
+      <button type="submit">로그인</button>
+    </form>
+  </div>
+</body>
+</html>"""
     return HTMLResponse(form_html)
 
 
 @router.post("/authorize/submit")
 async def authorize_submit(
+    request: Request,
     client_id: str = Form(...),
     redirect_uri: str = Form(...),
     state: str = Form(default=""),
     nonce: str = Form(default=""),
     email: str = Form(...),
     password: str = Form(...),
+    db: AsyncSession = Depends(get_db),
 ) -> RedirectResponse:
     """
     Authorization Code 발급 (폼 제출 처리).
-
-    스켈레톤: 사용자 조회는 실제 DB 쿼리로 교체 필요.
-    현재는 FastAPI get_db 의존성이 없어 DB 접근 불가 → 운영 시 Depends(get_db) 주입.
+    ErpUser 테이블에서 email로 조회 후 bcrypt 비밀번호 검증.
     """
-    # TODO(Phase 2): DB에서 email 로 ErpUser 조회 후 비밀번호 검증
-    # from app.models.tables import ErpUser
-    # from app.core.security import verify_password
-    # user = await db.execute(select(ErpUser).where(ErpUser.email == email))
-    # if not user or not verify_password(password, user.password_hash): ...
+    from app.models.tables import ErpUser
 
-    # 스켈레톤: 항상 실패 처리 (실제 구현 전 placeholder)
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="DB 사용자 조회 미구현 — get_db Depends 주입 후 활성화",
+    result = await db.execute(
+        select(ErpUser).where(
+            ErpUser.email == email,
+            ErpUser.is_active == True,  # noqa: E712
+        )
     )
+    user = result.scalar_one_or_none()
+
+    # 사용자 없거나 password_hash 미설정이면 인증 실패
+    if user is None or not user.password_hash:
+        return HTMLResponse(
+            _render_login_form(client_id, redirect_uri, state, nonce, error="이메일 또는 비밀번호가 올바르지 않습니다."),
+            status_code=401,
+        )
+
+    if not verify_password(password, user.password_hash):
+        return HTMLResponse(
+            _render_login_form(client_id, redirect_uri, state, nonce, error="이메일 또는 비밀번호가 올바르지 않습니다."),
+            status_code=401,
+        )
+
+    code = _issue_code(
+        client_id=client_id,
+        redirect_uri=redirect_uri,
+        employee_id=user.id,
+        email=user.email,
+        name=user.name,
+        role=user.role.value if hasattr(user.role, "value") else str(user.role),
+        nonce=nonce or None,
+    )
+
+    sep = "&" if "?" in redirect_uri else "?"
+    location = f"{redirect_uri}{sep}code={code}"
+    if state:
+        location += f"&state={state}"
+    return RedirectResponse(location, status_code=302)
+
+
+def _render_login_form(
+    client_id: str,
+    redirect_uri: str,
+    state: str,
+    nonce: str,
+    error: Optional[str] = None,
+) -> str:
+    """로그인 폼 HTML (에러 메시지 포함 버전)."""
+    def esc(s: str) -> str:
+        return (s or "").replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")
+
+    error_html = f'<p style="color:red;margin-bottom:.5rem">{esc(error)}</p>' if error else ""
+    return f"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>가상오피스 로그인</title>
+  <style>
+    body {{ font-family: sans-serif; display:flex; justify-content:center;
+            align-items:center; min-height:100vh; margin:0; background:#f5f5f5; }}
+    .card {{ background:#fff; padding:2rem; border-radius:8px;
+             box-shadow:0 2px 8px rgba(0,0,0,.15); min-width:320px; }}
+    h2 {{ margin:0 0 1.5rem; text-align:center; }}
+    label {{ display:block; margin-bottom:1rem; }}
+    label span {{ display:block; margin-bottom:.3rem; font-size:.9rem; color:#555; }}
+    input[type=email],input[type=password] {{
+      width:100%; padding:.5rem; box-sizing:border-box;
+      border:1px solid #ccc; border-radius:4px; }}
+    button {{ width:100%; padding:.75rem; margin-top:.5rem;
+              background:#4a7cf6; color:#fff; border:none;
+              border-radius:4px; cursor:pointer; font-size:1rem; }}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>가상오피스 로그인</h2>
+    {error_html}
+    <form method="POST" action="/oidc/authorize/submit">
+      <input type="hidden" name="client_id" value="{esc(client_id)}">
+      <input type="hidden" name="redirect_uri" value="{esc(redirect_uri)}">
+      <input type="hidden" name="state" value="{esc(state)}">
+      <input type="hidden" name="nonce" value="{esc(nonce)}">
+      <label><span>이메일</span>
+        <input type="email" name="email" required></label>
+      <label><span>비밀번호</span>
+        <input type="password" name="password" required></label>
+      <button type="submit">로그인</button>
+    </form>
+  </div>
+</body>
+</html>"""
 
 
 def _issue_code(
@@ -250,6 +390,7 @@ def _issue_code(
     email: str,
     name: str,
     role: str,
+    nonce: Optional[str] = None,
 ) -> str:
     """Authorization Code 생성 및 저장소 등록."""
     code = secrets.token_urlsafe(32)
@@ -261,6 +402,7 @@ def _issue_code(
         email=email,
         name=name,
         role=role,
+        nonce=nonce,
     )
     return code
 
@@ -273,6 +415,7 @@ def _sign_id_token(
     name: str,
     role: str,
     audience: str,
+    issuer: str = "http://localhost:8000/oidc",
     nonce: Optional[str] = None,
 ) -> str:
     """
@@ -280,7 +423,8 @@ def _sign_id_token(
 
     WorkAdventure 전용 클레임:
       - tags: role이 admin이면 ["admin"] → WA 지도 편집 권한 제어
-      - email, name: WA 닉네임/아바타 표시용
+      - preferred_username: WA 닉네임 표시용 (OPENID_USERNAME_CLAIM=preferred_username)
+      - email, name: WA 아바타 표시용
 
     D4 자체 JWT와의 차이점:
       - 알고리즘: RS256 (D4는 HS256)
@@ -291,13 +435,14 @@ def _sign_id_token(
     expire = now + timedelta(hours=_ID_TOKEN_EXPIRE_HOURS)
 
     claims: dict[str, Any] = {
-        "iss": _ISSUER,
+        "iss": issuer,
         "sub": subject,
         "aud": audience,
         "iat": int(now.timestamp()),
         "exp": int(expire.timestamp()),
         "email": email,
         "name": name,
+        "preferred_username": email.split("@")[0],
         "tags": ["admin"] if role == "admin" else [],
     }
     if nonce:
@@ -318,6 +463,7 @@ def _sign_id_token(
 
 @router.post("/token")
 async def token(
+    request: Request,
     grant_type: str = Form(...),
     code: str = Form(...),
     redirect_uri: str = Form(...),
@@ -341,17 +487,25 @@ async def token(
     if auth_code.client_id != client_id:
         raise HTTPException(status_code=400, detail="invalid_client")
 
+    issuer = _derive_issuer(request)
     id_token = _sign_id_token(
         subject=str(auth_code.employee_id),
         email=auth_code.email,
         name=auth_code.name,
         role=auth_code.role,
         audience=client_id,
+        issuer=issuer,
+        nonce=auth_code.nonce,
     )
 
     # Access Token: 불투명 토큰 (WA에서 /userinfo 호출용)
     access_token = secrets.token_urlsafe(32)
-    # TODO: access_token을 Redis 등에 저장하여 /userinfo 에서 검증
+    _access_token_store[access_token] = AccessTokenEntry(
+        employee_id=auth_code.employee_id,
+        email=auth_code.email,
+        name=auth_code.name,
+        role=auth_code.role,
+    )
 
     return JSONResponse({
         "token_type": "Bearer",
@@ -367,13 +521,33 @@ async def token(
 async def userinfo(request: Request) -> JSONResponse:
     """
     UserInfo Endpoint — Access Token으로 사용자 정보 반환.
-    스켈레톤: access_token → 사용자 조회 미구현 (Redis/DB 연동 필요).
+    WA가 Authorization ヘッダーで Bearer access_token을 보낸다.
     """
-    # TODO: Authorization 헤더에서 access_token 추출 → Redis 조회 → 사용자 정보 반환
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="userinfo 조회 미구현 — access_token 저장소 연동 필요",
-    )
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="missing_token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token = auth_header[len("Bearer "):]
+    entry = _access_token_store.get(access_token)
+    if entry is None or entry.is_expired():
+        _access_token_store.pop(access_token, None)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="invalid_token",
+            headers={"WWW-Authenticate": "Bearer error=\"invalid_token\""},
+        )
+
+    return JSONResponse({
+        "sub": str(entry.employee_id),
+        "email": entry.email,
+        "name": entry.name,
+        "preferred_username": entry.email.split("@")[0],
+        "tags": ["admin"] if entry.role == "admin" else [],
+    })
 
 
 # ---------------------------------------------------------------------------
@@ -395,6 +569,7 @@ def issue_code_for_test(
     role: str,
     client_id: str = "test-client",
     redirect_uri: str = "https://example.com/callback",
+    nonce: Optional[str] = None,
 ) -> str:
     """테스트 전용 — Authorization Code 직접 발급 (폼 제출 없이)."""
     return _issue_code(
@@ -404,4 +579,5 @@ def issue_code_for_test(
         email=email,
         name=name,
         role=role,
+        nonce=nonce,
     )

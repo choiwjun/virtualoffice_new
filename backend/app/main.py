@@ -8,8 +8,9 @@ FastAPI 앱 엔트리포인트.
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app import __version__
 from app.config import settings
@@ -53,8 +54,23 @@ async def health() -> dict:
     }
 
 
+# ── OIDC Discovery 루트 별칭 ──────────────────────────────────────────────
+# WA가 OPENID_CLIENT_ISSUER(= http://auth.localhost:8090) + /.well-known/openid-configuration
+# 를 조회하므로 루트 경로에도 마운트한다.
+# 실제 로직은 /oidc/.well-known/openid-configuration 핸들러에 위임.
+@app.get("/.well-known/openid-configuration", tags=["oidc"], include_in_schema=False)
+async def root_openid_configuration(request: Request) -> JSONResponse:
+    """루트 OIDC Discovery 별칭 — WA OPENID_CLIENT_ISSUER 호환."""
+    from app.integrations.workadventure.oidc import openid_configuration
+    return await openid_configuration(request)
+
+
 # ── 라우터 등록 (점진적) ─────────────────────────────────
 from app.api import erp  # noqa: E402
+from app.api import wa_presence  # noqa: E402
+from app.integrations.workadventure import oidc as wa_oidc  # noqa: E402
 
 app.include_router(erp.router)
+app.include_router(wa_oidc.router)         # /oidc/* — OIDC Provider (D26, D4 공존)
+app.include_router(wa_presence.router)     # /api/wa/presence — presence 수집
 # TODO(Phase 2+): seats, meetings, kpi 라우터

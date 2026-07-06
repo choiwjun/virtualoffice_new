@@ -288,6 +288,8 @@ class ErpUser(Base, TimestampMixin, SoftDeleteMixin):
         nullable=True
     )
     """마지막 ERP 동기화 시각 (UTC)"""
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    """로컬 개발 OIDC 인증용 bcrypt 해시 (ERP 동기화 무관 — dev/도그푸딩 전용)."""
 
     # 관계 (self-FK 표준: many-to-one 스칼라 쪽에 remote_side=[id], 컬렉션 쪽은 없음)
     managed_users: Mapped[List["ErpUser"]] = relationship(
