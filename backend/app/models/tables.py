@@ -1094,6 +1094,8 @@ class WorkLog(Base, TimestampMixin):
     """발생한 이슈 (자유텍스트 배열)"""
     next_action: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     """다음 액션 (follow-up)"""
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    """완료 전환 시각 (UTC). status=completed 전이 시 자동 기록 (D14-a)."""
 
     # 관계
     user: Mapped["ErpUser"] = relationship("ErpUser")

@@ -48,6 +48,11 @@ http://localhost:8090 {
 	handle /api/auth/* {
 		reverse_proxy backend:8000
 	}
+	# FastAPI 백엔드 업무로그 API (G001 Lane A) — /api/* strip_prefix 앞에 배치
+	handle /api/work-logs* {
+		reverse_proxy backend:8000
+	}
+
 
 
 	handle /api/* {

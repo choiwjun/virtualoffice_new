@@ -81,4 +81,6 @@ app.include_router(presence_stream.router)    # /api/wa/presence/stream — SSE 
 app.include_router(wa_livekit.router)         # /api/wa/livekit-token — LiveKit 토큰 (D24, G004)
 app.include_router(auth.router)               # /api/auth/* — 웹콘솔 인증 (D4)
 app.include_router(seats.router)              # /api/seats, /api/seat-assignments (D10, §3.11)
-# TODO(Phase 2+): meetings, work-logs, kpi 라우터
+from app.api import work_logs  # noqa: E402  Lane A G001
+app.include_router(work_logs.router)          # /api/work-logs (G001, Lane A)
+# TODO(Phase 2+): meetings, meeting-minutes, kpi 라우터 (Lane B worker-2, Lane C worker-3)
