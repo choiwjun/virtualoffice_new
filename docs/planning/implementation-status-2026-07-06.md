@@ -103,6 +103,8 @@
 
 ## 4. 다음 작업 우선순위
 
+> **2026-07-06 업데이트 (커밋 `079501a`·`4d8dc56`, `$team` 3-lane 실행 후 리더 통합)**: A그룹 8개 중 **7개 완료**. ①WA맵 회사 디자인(실제 다색 tileset+바닥/책상/회의/벽 GID 구분, map-storage 배포+브라우저 렌더 검증) ②APScheduler(KPI 18:00/21:00·ERP 매시간, 컨테이너 기동 확인) ③조회API 2종(live) ⑤maps generate/validate(live) ⑥로그인 5회 백오프(429) ⑦계약 v1.1 정렬 ⑧D26 폐기잔재 삭제. **미완 1개**: ④좌석편집기→공식 office_layout 스키마 draft(프론트, 미착수). WAM areas는 TMJ zones+presence.js로 부분 처리(전용 .wam areas 파일 미생성). 검증: pytest 392 passed/0 failed, npm build EXIT=0, API 스모크 live.
+
 ### A. 현 범위 즉시 구현 가능 (외부 의존 없음)
 1. **WA 맵 개선** (체감 최대) — `map_generator`가 알아볼 수 있는 타일셋(바닥/벽/책상/회의존 색구분) 생성 + WAM `areas` 배선(회의존 D24) + start/entities 정합. 재생성→map-storage 재배포→렌더 검증.
 2. **APScheduler 배치** — KPI 18:00/21:00(D17), ERP 매시간+00:00 대사(D18). FastAPI lifespan에 스케줄러 등록, 수동 트리거 유지.
