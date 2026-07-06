@@ -177,16 +177,16 @@ class TestPresenceJsExists:
         assert "WA.onInit" in content, "WA.onInit() 호출 없음"
 
     def test_presence_js_contains_on_enter_zone(self):
-        """presence.js가 WA.room.onEnterZone 구독을 포함해야 함."""
+        """presence.js가 WA.room.area.onEnter 구독을 포함해야 함 (WA 현행 area API)."""
         js_path = pathlib.Path(__file__).parent.parent / "wa_maps" / "scripts" / "presence.js"
         content = js_path.read_text(encoding="utf-8")
-        assert "onEnterZone" in content, "WA.room.onEnterZone 구독 없음"
+        assert "area.onEnter" in content, "WA.room.area.onEnter() 구독 없음 — WA area API 필수"
 
     def test_presence_js_contains_on_leave_zone(self):
-        """presence.js가 WA.room.onLeaveZone 구독을 포함해야 함."""
+        """presence.js가 WA.room.area.onLeave 구독을 포함해야 함 (WA 현행 area API)."""
         js_path = pathlib.Path(__file__).parent.parent / "wa_maps" / "scripts" / "presence.js"
         content = js_path.read_text(encoding="utf-8")
-        assert "onLeaveZone" in content, "WA.room.onLeaveZone 구독 없음"
+        assert "area.onLeave" in content, "WA.room.area.onLeave() 구독 없음 — WA area API 필수"
 
     def test_presence_js_no_gps_code(self):
         """presence.js에 GPS API 코드 없음 (D20-c) — 코멘트 제외."""
