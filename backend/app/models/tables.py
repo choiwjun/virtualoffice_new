@@ -746,21 +746,21 @@ class Presence(Base):
         primary_key=True
     )
     """ERP user.id (PK)"""
-    office_id: Mapped[UUID] = mapped_column(
+    office_id: Mapped[Optional[UUID]] = mapped_column(
         ForeignKey("office.id", ondelete="RESTRICT"),
-        nullable=False,
+        nullable=True,
         index=True
     )
     """현재 오피스"""
-    floor_id: Mapped[UUID] = mapped_column(
+    floor_id: Mapped[Optional[UUID]] = mapped_column(
         ForeignKey("floor.id", ondelete="RESTRICT"),
-        nullable=False,
+        nullable=True,
         index=True
     )
     """현재 층"""
-    x: Mapped[float] = mapped_column(Float, nullable=False)
-    y: Mapped[float] = mapped_column(Float, nullable=False)
-    z: Mapped[float] = mapped_column(Float, nullable=False)
+    x: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    y: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    z: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     """3D 위치 (월드좌표)"""
     status: Mapped[PresenceStatus] = mapped_column(
         SQLEnum(PresenceStatus),
@@ -784,8 +784,8 @@ class Presence(Base):
 
     # 관계
     user: Mapped["ErpUser"] = relationship("ErpUser")
-    office: Mapped["Office"] = relationship("Office")
-    floor: Mapped["Floor"] = relationship("Floor")
+    office: Mapped[Optional["Office"]] = relationship("Office")
+    floor: Mapped[Optional["Floor"]] = relationship("Floor")
 
     __table_args__ = (
         Index("idx_presence_office_floor", "office_id", "floor_id"),
