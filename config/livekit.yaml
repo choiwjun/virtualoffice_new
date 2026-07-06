@@ -1,0 +1,30 @@
+# LiveKit SFU 서버 설정 — 가상오피스 (WorkAdventure 화상/음성 그룹 통화)
+# D26: WorkAdventure self-host + LiveKit native 통합
+# 이미지: livekit/livekit-server:v1.7.2
+#
+# API 키/시크릿은 LIVEKIT_KEYS 환경변수로 주입 (이 파일에 기재 금지).
+# 형식: LIVEKIT_KEYS="<api_key>: <api_secret>"
+# 예:   LIVEKIT_KEYS="APIxxxxxxxx: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# HTTP API 포트 (Caddy가 ${LIVEKIT_DOMAIN}으로 역방향 프록시)
+port: 7880
+
+# WebRTC 설정
+rtc:
+  # TCP 폴백 포트 (UDP가 차단된 클라이언트용)
+  tcp_port: 7881
+  # UDP RTC 포트 범위 — 방화벽에서 개방 필요 (D21-r §3.2)
+  port_range_start: 50000
+  port_range_end: 50200
+  # 단일 공인 IP 서버: true로 설정해야 클라이언트에 올바른 ICE 후보 제공
+  # (STUN self-discovery 비활성 시 external_ip 직접 지정)
+  use_external_ip: true
+  # external_ip: "YOUR_PUBLIC_IP_HERE"  # use_external_ip=false 시 직접 지정
+
+# 로깅
+logging:
+  level: info
+  pion_level: error
+
+# 동시 20명 도그푸딩 규모에서는 기본값으로 충분
+# 300명 이상이면 livekit docs 참조 (node exporter, multi-node 등)
