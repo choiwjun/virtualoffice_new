@@ -300,6 +300,8 @@ def generate_office_map(
                     {"name": "headcount", "type": "int", "value": team.headcount},
                     # WorkAdventure 존 연동: scripting API에서 onEnterZone(safe_zone_name) 사용
                     {"name": "zone", "type": "string", "value": safe_zone_name},
+                    # presence.js가 zone_type을 읽어 desk/meeting_room/focus_room 구분
+                    {"name": "zone_type", "type": "string", "value": "desk"},
                 ],
             )
         )
@@ -351,6 +353,8 @@ def generate_office_map(
         "properties": [
             {"name": "generator", "type": "string", "value": "virtualoffice-map-generator"},
             {"name": "team_count", "type": "int", "value": len(teams)},
+            # WA scripting: 맵 로드 시 자동 실행할 JS 파일 URL (presence.js)
+            {"name": "script", "type": "string", "value": "/wa_maps/scripts/presence.js"},
         ],
     }
     return tmj
