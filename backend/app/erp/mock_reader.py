@@ -3,6 +3,7 @@ MockErpReader — 목 기반 개발용 인메모리 ERP 데이터.
 
 실 dailylog 스키마(2026-07-02 검증)를 반영한 소규모 조직 시드:
 - 1개 회사(company_id=1), 2개 팀, 직급 3단계, 직원 5명(보고라인 포함).
+- 조직 그룹 2개(본부 1 + 팀 1).
 실 DB 전환 시 이 클래스는 교체되고 SyncService/조회 로직은 무변경.
 """
 
@@ -11,10 +12,12 @@ from datetime import date, datetime, timezone
 from app.erp.dtos import (
     ErpAttendanceDTO,
     ErpLeaveDTO,
+    OrgGroupDTO,
     ErpPositionDTO,
     ErpTeamDTO,
     ErpUserDTO,
 )
+from app.erp.reader import ErpReader
 
 _COMPANY_ID = 1
 
@@ -47,14 +50,23 @@ _USERS = [
                manager_id=4, default_work_type="office", default_work_hours=8, is_active=True),
 ]
 
+_ORG_GROUPS = [
+    OrgGroupDTO(id=1, company_id=1, name="기술본부", type="division", parent_id=None),
+    OrgGroupDTO(id=2, company_id=1, name="제품팀", type="department", parent_id=1),
+]
 
-class MockErpReader:
-    """ErpReader 구현 (in-memory). company_id 미스매치 시 빈 리스트."""
 
-    def __init__(self, users=None, teams=None, positions=None):
+class MockErpReader(ErpReader):
+    """ErpReader 구현 (in-memory). company_id 미스매치 시 빈 리스트.
+
+    MockErpSource = MockErpReader (서비스 레이어에서 동일 명칭 사용 가능).
+    """
+
+    def __init__(self, users=None, teams=None, positions=None, org_groups=None):
         self._users = list(users) if users is not None else list(_USERS)
         self._teams = list(teams) if teams is not None else list(_TEAMS)
         self._positions = list(positions) if positions is not None else list(_POSITIONS)
+        self._org_groups = list(org_groups) if org_groups is not None else list(_ORG_GROUPS)
 
     async def fetch_users(self, company_id: int) -> list[ErpUserDTO]:
         return [u for u in self._users if u.company_id == company_id]
@@ -64,6 +76,9 @@ class MockErpReader:
 
     async def fetch_positions(self, company_id: int) -> list[ErpPositionDTO]:
         return [p for p in self._positions if p.company_id == company_id]
+
+    async def fetch_org_groups(self, company_id: int) -> list[OrgGroupDTO]:
+        return [g for g in self._org_groups if g.company_id == company_id]
 
     async def fetch_attendances(self, company_id: int, start: date, end: date) -> list[ErpAttendanceDTO]:
         # 활성 사용자 각각 start일에 출근 1건 (범위 필터 데모)
@@ -84,3 +99,7 @@ class MockErpReader:
 
     async def aclose(self) -> None:
         return None
+
+
+# 공개 별칭 (services/erp_sync.py 문서와 일치)
+MockErpSource = MockErpReader

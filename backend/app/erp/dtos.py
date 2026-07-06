@@ -76,3 +76,17 @@ class ErpLeaveDTO:
     start_date: date
     end_date: date
     status: str  # pending | approved | rejected | on_hold
+
+@dataclass(frozen=True)
+class OrgGroupDTO:
+    """ERP 조직 그룹 계층 (부서/본부 — ERP 측 department/division 매핑).
+
+    우리 org_group 테이블 seed 용도. ERP 실 스키마에 따라 fetch 구현 조정.
+    컬럼 화이트리스트(D20-f): id/company_id/name/type/parent_id만 수집.
+    """
+
+    id: int
+    company_id: int
+    name: str                   # "엔지니어링 본부", "마케팅 팀"
+    type: str                   # division | department | part
+    parent_id: Optional[int]    # null = 루트
