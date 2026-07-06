@@ -241,3 +241,28 @@ async def test_login_backoff_cleared_on_success(client, db_session, seed_users):
     # 6회째 → 429
     resp = await client.post("/api/auth/login", json={"email": email, "password": wrong_password})
     assert resp.status_code == 429
+
+
+# ── Lifespan / Scheduler 기동 (회귀 방지: 스케줄러 import·start/stop) ──────────
+
+@pytest.mark.asyncio
+async def test_lifespan_starts_and_stops_scheduler():
+    """app lifespan이 스케줄러를 오류 없이 start/stop (컨테이너 크래시 회귀 방지)."""
+    from app.main import app
+
+    async with app.router.lifespan_context(app):
+        pass  # startup(scheduler 시작) 성공 = import·등록 정상
+    # shutdown(scheduler 정지)까지 예외 없이 완료
+
+
+@pytest.mark.asyncio
+async def test_scheduler_registers_expected_jobs():
+    """스케줄러에 KPI/ERP 배치 잡이 등록된다 (D17/D18)."""
+    import app.services.scheduler as sched
+
+    sched.start_scheduler()
+    try:
+        jobs = sched._scheduler.get_jobs()
+        assert len(jobs) >= 2, f"expected KPI/ERP batch jobs, got {len(jobs)}"
+    finally:
+        sched.stop_scheduler()

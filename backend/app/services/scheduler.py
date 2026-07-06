@@ -14,7 +14,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import select
 
-from app.db import async_session_maker
+from app.db import SessionLocal
 from app.erp.reader import get_erp_reader
 from app.erp.sync import ErpSyncService
 from app.models.tables import ErpSyncLog, ErpUser
@@ -33,7 +33,7 @@ DEFAULT_COMPANY_ID = 1
 async def _kpi_batch_job() -> None:
     """KPI 자동계산: 전체 active 직원 대상 daily/weekly/monthly."""
     print("[Scheduler] KPI batch started")
-    async with async_session_maker() as db:
+    async with SessionLocal() as db:
         try:
             # 활성 직원 전체
             users = (
@@ -64,7 +64,7 @@ async def _kpi_batch_job() -> None:
 async def _erp_sync_batch_job() -> None:
     """ERP 동기화: 매시간 증분 + 00:00 전체 대사."""
     print("[Scheduler] ERP sync batch started")
-    async with async_session_maker() as db:
+    async with SessionLocal() as db:
         started = datetime.now(timezone.utc)
         log = ErpSyncLog(started_at=started, trigger="scheduled")
         db.add(log)
