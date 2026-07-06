@@ -68,13 +68,17 @@ async def root_openid_configuration(request: Request) -> JSONResponse:
 # ── 라우터 등록 (점진적) ─────────────────────────────────
 from app.api import erp  # noqa: E402
 from app.api import auth  # noqa: E402
+from app.api import presence_stream  # noqa: E402
+from app.api import seats  # noqa: E402
 from app.api import wa_livekit  # noqa: E402
 from app.api import wa_presence  # noqa: E402
 from app.integrations.workadventure import oidc as wa_oidc  # noqa: E402
 
 app.include_router(erp.router)
-app.include_router(wa_oidc.router)         # /oidc/* — OIDC Provider (D26, D4 공존)
-app.include_router(wa_presence.router)     # /api/wa/presence — presence 수집
-app.include_router(wa_livekit.router)      # /api/wa/livekit-token — LiveKit 토큰 (D24, G004)
-app.include_router(auth.router)             # /api/auth/* — 웹콘솔 인증 (D4)
-# TODO(Phase 2+): seats, meetings, kpi 라우터
+app.include_router(wa_oidc.router)           # /oidc/* — OIDC Provider (D26, D4 공존)
+app.include_router(wa_presence.router)        # /api/wa/presence — presence 수집·저장
+app.include_router(presence_stream.router)    # /api/wa/presence/stream — SSE 브로드캐스트
+app.include_router(wa_livekit.router)         # /api/wa/livekit-token — LiveKit 토큰 (D24, G004)
+app.include_router(auth.router)               # /api/auth/* — 웹콘솔 인증 (D4)
+app.include_router(seats.router)              # /api/seats, /api/seat-assignments (D10, §3.11)
+# TODO(Phase 2+): meetings, work-logs, kpi 라우터

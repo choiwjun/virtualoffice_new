@@ -13,11 +13,15 @@
 
 import os
 import pathlib
+from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 
+from app.db import Base, get_db
 from app.main import app
 from app.services.map_generator import MapConfig, TeamSpec, generate_office_map
 
@@ -27,11 +31,27 @@ from app.services.map_generator import MapConfig, TeamSpec, generate_office_map
 # ---------------------------------------------------------------------------
 
 @pytest_asyncio.fixture
-async def client() -> AsyncClient:
-    """DB 없이도 동작하는 간단 클라이언트 (wa_presence 엔드포인트는 DB 비의존)."""
+async def client() -> AsyncGenerator[AsyncClient, None]:
+    """인메모리 SQLite DB 오버라이드 포함 클라이언트 (wa_presence → DB 저장 필요)."""
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    async def _override_get_db() -> AsyncGenerator[AsyncSession, None]:
+        async with session_factory() as session:
+            yield session
+
+    app.dependency_overrides[get_db] = _override_get_db
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
+    app.dependency_overrides.clear()
+    await engine.dispose()
 
 
 # ---------------------------------------------------------------------------
