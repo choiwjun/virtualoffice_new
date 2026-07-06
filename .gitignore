@@ -72,3 +72,6 @@ temp/
 .claude/handoffs/
 .claude/analysis/
 .claude/docs/
+
+# GJC runtime state (세션·팀·컨텍스트 — 런타임 소유, 저장소 제외)
+.gjc/
