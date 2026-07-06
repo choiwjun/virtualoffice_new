@@ -71,10 +71,16 @@ services:
     volumes:
       - wa_redis_data:/data
 
+  # ── WorkAdventure 이미지 태그 정책 ──────────────────────────────────
+  # WA는 semver 이미지 태그를 제공하지 않음 (v1.x.x 태그는 DockerHub에 존재하지 않음).
+  # master-<sha> 핀 정책: master 브랜치의 특정 커밋 SHA를 이미지 태그로 사용.
+  # 현재 핀: master-e69f61a09a7ac2c502301c6649c1f3cb0aa78103 (2026-07 검증 완료)
+  # 업그레이드: github.com/workadventure/workadventure Actions 에서 최신 sha 확인 후 교체.
+  #
   # ── WorkAdventure: map-storage (TMJ 맵 파일 저장·편집) ───────────
   # 의존성 순서: map-storage → (wa-back 의존). back은 map-storage 주소 필요.
   wa-map-storage:
-    image: thecodingmachine/workadventure-map-storage:${WA_VERSION:-v1.21.5}
+    image: thecodingmachine/workadventure-map-storage:${WA_VERSION:-master-e69f61a09a7ac2c502301c6649c1f3cb0aa78103}
     container_name: vo_wa_map_storage
     restart: unless-stopped
     environment:
@@ -93,7 +99,7 @@ services:
 
   # ── WorkAdventure: back 서버 (룸 상태 관리·gRPC API) ─────────────
   wa-back:
-    image: thecodingmachine/workadventure-back:${WA_VERSION:-v1.21.5}
+    image: thecodingmachine/workadventure-back:${WA_VERSION:-master-e69f61a09a7ac2c502301c6649c1f3cb0aa78103}
     container_name: vo_wa_back
     restart: unless-stopped
     depends_on:
@@ -124,7 +130,7 @@ services:
 
   # ── WorkAdventure: play 서버 (정적 에셋·WebSocket pusher) ─────────
   wa-play:
-    image: thecodingmachine/workadventure-play:${WA_VERSION:-v1.21.5}
+    image: thecodingmachine/workadventure-play:${WA_VERSION:-master-e69f61a09a7ac2c502301c6649c1f3cb0aa78103}
     container_name: vo_wa_play
     restart: unless-stopped
     depends_on:
@@ -178,7 +184,7 @@ services:
 
   # ── WorkAdventure: uploader (채팅 파일 업로드) ────────────────────
   wa-uploader:
-    image: thecodingmachine/workadventure-uploader:${WA_VERSION:-v1.21.5}
+    image: thecodingmachine/workadventure-uploader:${WA_VERSION:-master-e69f61a09a7ac2c502301c6649c1f3cb0aa78103}
     container_name: vo_wa_uploader
     restart: unless-stopped
     depends_on:

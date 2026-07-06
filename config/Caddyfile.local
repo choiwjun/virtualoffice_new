@@ -1,0 +1,57 @@
+# Caddyfile.local — 로컬 확인 전용 (커밋/배포 대상 아님)
+# http 단일 오리진, TLS 없음(localhost = secure context). WA UI/맵/이동 미리보기용.
+# auth.localhost:8090 블록: OIDC 디스커버리·토큰 엔드포인트를 backend:8000에 위임.
+{
+	admin off
+	auto_https off
+}
+
+# ── WA 메인 스택 — http://localhost:8090 ──────────────────────────────
+# host를 localhost로 한정해 auth.localhost:8090 사이트 블록과 충돌하지 않도록 함.
+http://localhost:8090 {
+	# WebSocket (play pusher)
+	@ws {
+		path /ws/*
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+	handle @ws {
+		reverse_proxy wa-play:3001
+	}
+
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy wa-back:8080
+	}
+
+	handle /map-storage/* {
+		uri strip_prefix /map-storage
+		reverse_proxy wa-map-storage:3000
+	}
+
+	handle /uploader/* {
+		uri strip_prefix /uploader
+		reverse_proxy wa-uploader:8080
+	}
+
+	handle /icon/* {
+		uri strip_prefix /icon
+		reverse_proxy wa-icon:8080
+	}
+	handle /lettericons/* {
+		reverse_proxy wa-icon:8080
+	}
+
+	handle {
+		reverse_proxy wa-play:3000
+	}
+}
+
+# ── OIDC Provider — http://auth.localhost:8090 ────────────────────────
+# FastAPI backend(port 8000)를 OIDC Provider로 노출.
+# WA play 컨테이너와 브라우저 양쪽에서 동일 URL로 접근 가능:
+#   브라우저: auth.localhost → 127.0.0.1:8090(published) → 이 블록 → backend:8000
+#   WA 컨테이너: auth.localhost → Docker DNS(caddy alias) → 이 블록 → backend:8000
+http://auth.localhost:8090 {
+	reverse_proxy backend:8000
+}
