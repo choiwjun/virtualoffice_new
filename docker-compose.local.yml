@@ -1,0 +1,155 @@
+# docker-compose.local.yml — 로컬 확인 전용 (커밋/배포 대상 아님)
+# 목적: WorkAdventure UI/맵/이동을 로컬 브라우저에서 미리보기.
+# 프로덕션 docker-compose.yml(공개 도메인+Let's Encrypt+LiveKit+coturn)과 별개.
+# OIDC: FastAPI backend가 auth.localhost:8090 으로 노출됨 (Caddy 역방향 프록시).
+# 접속: http://localhost:8090  (localhost = secure context → 카메라 없이 UI 확인 가능)
+#
+# 기동(Rancher Desktop, WSL):
+#   DEXE="/mnt/c/Users/wj941/AppData/Local/Programs/Rancher Desktop/resources/resources/win32/bin/docker.exe"
+#   "$DEXE" compose -f docker-compose.local.yml up -d
+
+x-wa-secret: &wa_secret "local-dev-secret-key-not-for-production-0123456789abcdef"
+
+services:
+
+  # ── FastAPI 백엔드 (OIDC Provider + presence·KPI 도메인) ─────────────
+  # Lane B(D26): OIDC Provider를 로컬 스택에 연결.
+  # auth.localhost:8090 → caddy → backend:8000 경로로 WA play가 OIDC 디스커버리에 접근.
+  backend:
+    build: ./backend
+    container_name: volocal_backend
+    restart: unless-stopped
+    environment:
+      # SQLite로 로컬 실증 (프로덕션은 PostgreSQL+asyncpg)
+      DATABASE_URL: sqlite+aiosqlite:////data/dev.db
+      AUTO_CREATE_TABLES: "true"
+      JWT_SECRET_KEY: local-dev-jwt-secret-not-for-production
+      ENVIRONMENT: development
+      # WorkAdventure OIDC 클라이언트 자격증명 (wa-play와 동일하게 설정)
+      WA_OIDC_CLIENT_ID: workadventure
+      WA_OIDC_CLIENT_SECRET: local-dev-oidc-secret
+      WA_OIDC_BASE_URL: http://auth.localhost:8090
+    volumes:
+      # SQLite 파일 영속화 (컨테이너 재기동 시 데이터 유지)
+      - backend_sqlite:/data
+    expose:
+      - "8000"
+
+  wa-redis:
+    image: redis:6
+    container_name: volocal_wa_redis
+    restart: unless-stopped
+
+  wa-map-storage:
+    image: thecodingmachine/workadventure-map-storage:master
+    container_name: volocal_wa_map_storage
+    restart: unless-stopped
+    environment:
+      API_URL: wa-back:50051
+      SECRET_KEY: *wa_secret
+      ENABLE_BASIC_AUTHENTICATION: "true"
+      AUTHENTICATION_USER: admin
+      AUTHENTICATION_PASSWORD: localadmin
+      MAP_STORAGE_API_TOKEN: *wa_secret
+      PUSHER_URL: http://localhost:8090/
+      PATH_PREFIX: /map-storage
+
+  wa-back:
+    image: thecodingmachine/workadventure-back:master
+    container_name: volocal_wa_back
+    restart: unless-stopped
+    depends_on:
+      - wa-redis
+      - wa-map-storage
+    environment:
+      SECRET_KEY: *wa_secret
+      PLAY_URL: http://localhost:8090
+      MAP_STORAGE_URL: wa-map-storage:50053
+      INTERNAL_MAP_STORAGE_URL: http://wa-map-storage:3000
+      PUBLIC_MAP_STORAGE_URL: http://localhost:8090/map-storage
+      REDIS_HOST: wa-redis
+      STUN_SERVER: stun:stun.l.google.com:19302
+      MAX_PER_GROUP: "4"
+      ENABLE_MAP_EDITOR: "true"
+      ENABLE_CHAT: "true"
+      STORE_VARIABLES_FOR_LOCAL_MAPS: "true"
+
+  wa-play:
+    image: thecodingmachine/workadventure-play:master
+    container_name: volocal_wa_play
+    restart: unless-stopped
+    depends_on:
+      - wa-back
+      - wa-map-storage
+      - wa-redis
+      - backend
+    environment:
+      SECRET_KEY: *wa_secret
+      API_URL: wa-back:50051
+      PUSHER_URL: http://localhost:8090/
+      FRONT_URL: /
+      INTERNAL_MAP_STORAGE_URL: http://wa-map-storage:3000
+      PUBLIC_MAP_STORAGE_URL: http://localhost:8090/map-storage
+      MAP_STORAGE_API_TOKEN: *wa_secret
+      REDIS_HOST: wa-redis
+      ICON_URL: /icon
+      UPLOADER_URL: /uploader
+      STUN_SERVER: stun:stun.l.google.com:19302
+      MAX_PER_GROUP: "4"
+      MAX_USERNAME_LENGTH: "20"
+      ENABLE_MAP_EDITOR: "true"
+      MAP_EDITOR_ALLOW_ALL_USERS: "true"
+      START_ROOM_URL: /_/global/workadventure.github.io/map-starter-kit/office.tmj
+      ENABLE_CHAT: "true"
+      ENABLE_CHAT_UPLOAD: "true"
+      ENABLE_CHAT_ONLINE_LIST: "true"
+      # ── OIDC 설정 (D26 Lane B) — FastAPI backend를 OIDC Provider로 사용 ──
+      # auth.localhost:8090 → caddy(alias) → backend:8000 으로 동일 URL 접근 가능.
+      # 브라우저: auth.localhost → 127.0.0.1:8090(published port) → caddy → backend.
+      # WA play 컨테이너: auth.localhost → Docker DNS(caddy alias) → caddy → backend.
+      DISABLE_ANONYMOUS: "true"
+      OPENID_CLIENT_ID: workadventure
+      OPENID_CLIENT_SECRET: local-dev-oidc-secret
+      OPENID_CLIENT_ISSUER: http://auth.localhost:8090
+      OPENID_SCOPE: "openid profile email"
+      OPENID_USERNAME_CLAIM: preferred_username
+
+  wa-uploader:
+    image: thecodingmachine/workadventure-uploader:master
+    container_name: volocal_wa_uploader
+    restart: unless-stopped
+    depends_on:
+      - wa-redis
+    environment:
+      UPLOADER_URL: http://localhost:8090/uploader
+      REDIS_HOST: wa-redis
+      ENABLE_CHAT_UPLOAD: "true"
+      UPLOAD_MAX_FILESIZE: "10485760"
+
+  wa-icon:
+    image: matthiasluedtke/iconserver:v3.21.0
+    container_name: volocal_wa_icon
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: volocal_caddy
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8090:8090"
+    volumes:
+      - ./config/Caddyfile.local:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - wa-play
+      - wa-back
+      - backend
+    networks:
+      default:
+        # auth.localhost → 이 caddy 컨테이너로 해석됨 (컨테이너 내부 DNS).
+        # 브라우저: auth.localhost → 127.0.0.1:8090(published) → caddy → backend.
+        # WA play 컨테이너: auth.localhost → Docker DNS alias → caddy → backend.
+        aliases:
+          - auth.localhost
+
+volumes:
+  backend_sqlite:
