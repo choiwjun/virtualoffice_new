@@ -53,6 +53,15 @@ http://localhost:8090 {
 		reverse_proxy wa-icon:8080
 	}
 
+	# ── LiveKit SFU WebSocket — /livekit/* ─────────────────────────────
+	# 브라우저가 ws://localhost:8090/livekit/* 로 LiveKit WebSocket에 연결.
+	# wa-back은 http://livekit:7880 (Docker 내부 DNS) 직접 사용 → 이 경로는 브라우저 전용.
+	# 로컬 제약: HTTP (TLS 없음). 프로덕션에서는 wss:// 도메인으로 교체.
+	handle /livekit/* {
+		uri strip_prefix /livekit
+		reverse_proxy livekit:7880
+	}
+
 	handle {
 		reverse_proxy wa-play:3000
 	}

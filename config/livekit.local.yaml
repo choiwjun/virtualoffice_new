@@ -13,9 +13,9 @@ rtc:
   tcp_port: 7881
   # 로컬 개발: 외부 IP 불필요 — 루프백으로 충분
   use_external_ip: false
-  # UDP 포트 범위: 로컬이므로 최소 범위로 설정 (방화벽 개방 불필요)
+  # UDP 포트 범위: coturn(50100-50200)과 겹치지 않는 범위 사용
   port_range_start: 50000
-  port_range_end: 50020
+  port_range_end: 50050
 
 # 로깅
 logging:

@@ -77,6 +77,20 @@ services:
       ENABLE_MAP_EDITOR: "true"
       ENABLE_CHAT: "true"
       STORE_VARIABLES_FOR_LOCAL_MAPS: "true"
+      # ── LiveKit 통합 (WA 네이티브 그룹 버블 음성, D26) ──────────────────
+      # LIVEKIT_HOST: wa-back↔livekit 내부 통신 (Docker DNS). 토큰 발급·룸 관리용.
+      # 로컬: 브라우저는 ws://localhost:7880 직접 접속(7880 포트 게시).
+      # 프로덕션: LIVEKIT_HOST=wss://<공개 도메인> 으로 교체 필요.
+      LIVEKIT_HOST: "http://livekit:7880"
+      LIVEKIT_API_KEY: devkey
+      LIVEKIT_API_SECRET: "devsecret01234567890123456789012345"
+      MAX_USERS_FOR_WEBRTC: "4"
+      # ── TURN 서버 (로컬 coturn, D21-r TURN 폴백) ────────────────────────
+      # wa-back이 TURN_STATIC_AUTH_SECRET으로 시간 제한 자격증명을 생성해 브라우저에 전달.
+      # 브라우저: turn:localhost:3478 (coturn 컨테이너 포트 게시) 로 ICE 릴레이 시도.
+      # 프로덕션 실WAN 미디어 릴레이는 이관 명시 (D21-r).
+      TURN_SERVER: "turn:localhost:3478"
+      TURN_STATIC_AUTH_SECRET: "local-dev-coturn-secret"
 
   wa-play:
     image: thecodingmachine/workadventure-play:master
@@ -166,11 +180,28 @@ services:
     command: --config /etc/livekit/livekit.local.yaml --bind 0.0.0.0
     ports:
       - "127.0.0.1:7880:7880"
+      - "127.0.0.1:7881:7881"
+
     environment:
       # LIVEKIT_KEYS 형식: "<api_key>: <api_secret>"
       LIVEKIT_KEYS: "devkey: devsecret01234567890123456789012345"
     volumes:
       - ./config/livekit.local.yaml:/etc/livekit/livekit.local.yaml:ro
 
+  # ── coturn STUN/TURN (로컬, D21-r TURN 폴백 검증) ────────────────────────
+  # 목적: 브라우저 WebRTC ICE 후보 릴레이 검증 (로컬 단일 머신, NAT 없음).
+  # wa-back이 TURN_STATIC_AUTH_SECRET으로 자격증명 생성 → 브라우저가 turn:localhost:3478 사용.
+  # 프로덕션 실WAN 미디어 릴레이(공인 IP + TLS 5349)는 docker-compose.yml 이관 명시.
+  coturn:
+    image: coturn/coturn:4.6.2
+    container_name: volocal_coturn
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3478:3478/tcp"
+      - "127.0.0.1:3478:3478/udp"
+      - "127.0.0.1:50100-50200:50100-50200/udp"
+    volumes:
+      - ./config/coturn.local.conf:/etc/coturn/turnserver.conf:ro
+    command: -c /etc/coturn/turnserver.conf
 volumes:
   backend_sqlite:
