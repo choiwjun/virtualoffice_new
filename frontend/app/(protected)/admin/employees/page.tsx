@@ -72,7 +72,7 @@ export default function EmployeesPage() {
 
   // Derived: unique teams from data
   const teams = useMemo(() => {
-    const ids = [...new Set(employees.map((e) => e.erp_team_id))].sort((a, b) => a - b);
+    const ids = Array.from(new Set(employees.map((e) => e.erp_team_id))).sort((a, b) => a - b);
     return ids;
   }, [employees]);
 
