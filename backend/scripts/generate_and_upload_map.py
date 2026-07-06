@@ -1,0 +1,245 @@
+"""
+조직 맵 생성 → map-storage 업로드 스크립트.
+
+샘플 조직 (개발팀 6명, 디자인팀 4명, 경영지원 3명) TMJ를 생성하고
+실행 중인 map-storage(http://localhost:8090/map-storage)에 업로드.
+
+업로드 방식:
+  POST /map-storage/upload  (multipart/form-data)
+    - file: ZIP 아카이브 (org-map.tmj + tileset.png 포함)
+    - directory: (선택, 빈 문자열 → 루트)
+  인증: Basic admin/localadmin
+
+WA MapValidator 요구사항 (upload 시 서버 사이드 검증):
+  - floorLayer objectgroup 필수 (error)
+  - tileset image 파일 ZIP 내 포함 필수 (error)
+  - orientation = orthogonal 필수 (error)
+
+업로드 후 접근 URL:
+  파일 서빙: http://localhost:8090/map-storage/<filename>.tmj
+  WA 룸   : http://localhost:8090/_/global/localhost:8090/map-storage/<filename>.tmj
+
+참조:
+  - docs/planning/00-decisions.md D12 (좌석 배치 자동화), D26 (WorkAdventure)
+  - WA MapStorage UploadController 소스 (postUpload → ZipFileFetcher → MapValidator)
+"""
+
+from __future__ import annotations
+
+import io
+import json
+import struct
+import sys
+import zlib
+import zipfile
+from pathlib import Path
+
+import httpx
+
+# 프로젝트 루트를 sys.path에 추가 (backend/ 기준 실행 시)
+_BACKEND_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(_BACKEND_ROOT))
+
+from app.services.map_generator import MapConfig, TeamSpec, generate_office_map
+
+# ---------------------------------------------------------------------------
+# 상수
+# ---------------------------------------------------------------------------
+
+MAP_STORAGE_URL = "http://localhost:8090/map-storage"
+MAP_AUTH = ("admin", "localadmin")
+MAP_FILENAME = "org-map.tmj"
+TILESET_FILENAME = "tileset.png"
+
+# 샘플 조직 (개발팀 6명, 디자인팀 4명, 경영지원 3명)
+SAMPLE_TEAMS = [
+    TeamSpec(name="개발팀", headcount=6, color="#4A90E2"),
+    TeamSpec(name="디자인팀", headcount=4, color="#7ED321"),
+    TeamSpec(name="경영지원", headcount=3, color="#F5A623"),
+]
+
+# 디폴트 MapConfig: seat_cols=4, seat_rows=2 → max 8 → 개발팀 6 ≤ 8 OK
+SAMPLE_CONFIG = MapConfig(
+    tile_size=32,
+    zone_width=12,   # 조금 넓게 (6인 팀 좌석 여유)
+    zone_height=8,
+    zones_per_row=3,
+    seat_cols=4,
+    seat_rows=2,
+    margin_tiles=2,
+    entry_area_height=4,
+)
+
+
+# ---------------------------------------------------------------------------
+# 최소 유효 PNG 생성 (WA MapValidator tileset image 검증 통과용)
+# ---------------------------------------------------------------------------
+
+def _make_minimal_png(width: int = 128, height: int = 128) -> bytes:
+    """
+    단색(회색) PNG 이미지 바이트 생성.
+    WA map-storage의 ZipFileFetcher는 파일 존재만 확인하므로
+    실제 픽셀 내용 무관 — 최소 유효 PNG면 충분.
+    실 운영 시 실제 타일 이미지로 교체.
+    """
+    def png_chunk(chunk_type: bytes, data: bytes) -> bytes:
+        length = len(data)
+        chunk = chunk_type + data
+        return struct.pack(">I", length) + chunk + struct.pack(">I", zlib.crc32(chunk) & 0xFFFFFFFF)
+
+    # PNG signature
+    sig = b"\x89PNG\r\n\x1a\n"
+
+    # IHDR: width, height, bit_depth=8, color_type=2 (RGB), ...
+    ihdr_data = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    ihdr = png_chunk(b"IHDR", ihdr_data)
+
+    # IDAT: raw scanlines, each row prefixed with filter byte 0
+    raw_rows = []
+    for _ in range(height):
+        row = b"\x00" + b"\x80\x80\x80" * width  # filter=None, RGB gray
+        raw_rows.append(row)
+    raw_data = b"".join(raw_rows)
+    compressed = zlib.compress(raw_data, 9)
+    idat = png_chunk(b"IDAT", compressed)
+
+    # IEND
+    iend = png_chunk(b"IEND", b"")
+
+    return sig + ihdr + idat + iend
+
+
+# ---------------------------------------------------------------------------
+# ZIP 패키징
+# ---------------------------------------------------------------------------
+
+def _build_zip(tmj_bytes: bytes, png_bytes: bytes) -> bytes:
+    """TMJ + tileset PNG를 ZIP 아카이브로 묶기."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(MAP_FILENAME, tmj_bytes)
+        zf.writestr(TILESET_FILENAME, png_bytes)
+    return buf.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# 업로드
+# ---------------------------------------------------------------------------
+
+def upload_map(zip_bytes: bytes, directory: str = "") -> httpx.Response:
+    """map-storage에 ZIP 업로드 (POST /upload)."""
+    files = {"file": (f"{MAP_FILENAME[:-4]}.zip", zip_bytes, "application/zip")}
+    data = {"directory": directory}
+    with httpx.Client(auth=MAP_AUTH, timeout=30.0) as client:
+        resp = client.post(
+            f"{MAP_STORAGE_URL}/upload",
+            files=files,
+            data=data,
+        )
+    return resp
+
+
+# ---------------------------------------------------------------------------
+# 검증
+# ---------------------------------------------------------------------------
+
+def verify_map_accessible(filename: str = MAP_FILENAME) -> httpx.Response:
+    """업로드된 TMJ 파일이 HTTP 200으로 서빙되는지 확인."""
+    url = f"{MAP_STORAGE_URL}/{filename}"
+    with httpx.Client(timeout=10.0) as client:
+        resp = client.get(url)
+    return resp
+
+
+def verify_play_room(filename: str = MAP_FILENAME) -> httpx.Response:
+    """WA play가 해당 room URL로 HTML을 서빙하는지 확인."""
+    room_url = f"http://localhost:8090/_/global/localhost:8090/map-storage/{filename}"
+    with httpx.Client(timeout=10.0, follow_redirects=True) as client:
+        resp = client.get(room_url)
+    return resp
+
+
+# ---------------------------------------------------------------------------
+# 메인
+# ---------------------------------------------------------------------------
+
+def main() -> None:
+    print("=" * 60)
+    print("조직 맵 생성·업로드 스크립트")
+    print("=" * 60)
+
+    # 1. TMJ 생성
+    print("\n[1] TMJ 생성 중...")
+    tmj = generate_office_map(SAMPLE_TEAMS, SAMPLE_CONFIG)
+    tmj_bytes = json.dumps(tmj, ensure_ascii=False, indent=2).encode("utf-8")
+    layers = [l["name"] for l in tmj["layers"]]
+    print(f"  팀 수    : {len(SAMPLE_TEAMS)}")
+    print(f"  맵 크기  : {tmj['width']}x{tmj['height']} tiles")
+    print(f"  레이어   : {layers}")
+    print(f"  TMJ 크기 : {len(tmj_bytes):,} bytes")
+
+    # 2. 최소 PNG 생성
+    print("\n[2] 타일셋 PNG 생성 중 (128x128 플레이스홀더)...")
+    png_bytes = _make_minimal_png(128, 128)
+    print(f"  PNG 크기 : {len(png_bytes):,} bytes")
+
+    # 3. ZIP 패키징
+    print("\n[3] ZIP 패키징...")
+    zip_bytes = _build_zip(tmj_bytes, png_bytes)
+    print(f"  ZIP 크기 : {len(zip_bytes):,} bytes")
+    print(f"  포함 파일: {MAP_FILENAME}, {TILESET_FILENAME}")
+
+    # 4. map-storage 업로드
+    print(f"\n[4] map-storage 업로드...")
+    print(f"  URL : POST {MAP_STORAGE_URL}/upload")
+    print(f"  인증: Basic {MAP_AUTH[0]}/*****")
+    upload_resp = upload_map(zip_bytes)
+    print(f"  응답 코드: {upload_resp.status_code}")
+    print(f"  응답 본문: {upload_resp.text[:300]}")
+
+    if upload_resp.status_code not in (200, 201):
+        print(f"\n[ERROR] 업로드 실패 (HTTP {upload_resp.status_code})")
+        sys.exit(1)
+    print("  ✓ 업로드 성공")
+
+    # 5. 파일 접근 검증
+    print(f"\n[5] 파일 접근 검증...")
+    tmj_url = f"{MAP_STORAGE_URL}/{MAP_FILENAME}"
+    access_resp = verify_map_accessible()
+    print(f"  URL : GET {tmj_url}")
+    print(f"  응답 코드: {access_resp.status_code}")
+    if access_resp.status_code == 200:
+        print(f"  ✓ TMJ 파일 HTTP 200 확인")
+        content = access_resp.json()
+        print(f"  맵 크기 : {content.get('width')}x{content.get('height')}")
+        print(f"  레이어 수: {len(content.get('layers', []))}")
+    else:
+        print(f"  [WARN] TMJ 파일 접근 실패 (HTTP {access_resp.status_code})")
+
+    # 6. WA play room URL 검증
+    print(f"\n[6] WA play room URL 검증...")
+    room_url = f"http://localhost:8090/_/global/localhost:8090/map-storage/{MAP_FILENAME}"
+    play_resp = verify_play_room()
+    print(f"  URL : GET {room_url}")
+    print(f"  응답 코드: {play_resp.status_code}")
+    content_type = play_resp.headers.get("content-type", "")
+    print(f"  Content-Type: {content_type}")
+    if play_resp.status_code == 200 and "text/html" in content_type:
+        print(f"  ✓ WA play HTML 서빙 확인")
+    elif play_resp.status_code == 200:
+        print(f"  ✓ HTTP 200 (Content-Type: {content_type})")
+    else:
+        print(f"  [INFO] play room: HTTP {play_resp.status_code} (익명 비활성화 환경에서는 리다이렉트 예상)")
+
+    print("\n" + "=" * 60)
+    print("완료 요약")
+    print("=" * 60)
+    print(f"  TMJ 파일  : {tmj_url}")
+    print(f"  WA 룸 URL : {room_url}")
+    print(f"  업로드    : HTTP {upload_resp.status_code}")
+    print(f"  파일 접근 : HTTP {access_resp.status_code}")
+    print(f"  play 룸   : HTTP {play_resp.status_code}")
+
+
+if __name__ == "__main__":
+    main()
