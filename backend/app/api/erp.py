@@ -255,3 +255,57 @@ async def list_daily_status_push(
         )
         for r in rows
     ]
+
+# ── EOD Push 생성 (일일 상태 리포트, 본인) ──────────────────────────────
+
+class DailyStatusPushCreate(BaseModel):
+    today_plan: str = ""
+    in_progress: str = ""
+    blockers: str = ""
+    tomorrow_plan: str = ""
+    push_date: Optional[str] = None
+
+
+@router.post("/daily-status-push", response_model=DailyStatusPushOut, status_code=status.HTTP_201_CREATED)
+async def create_daily_status_push(
+    body: DailyStatusPushCreate,
+    db=Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> DailyStatusPushOut:
+    """POST /api/daily-status-push — 일일 상태 리포트 큐잉 (본인, REQ-008/D18)."""
+    import uuid as _uuid
+    from datetime import date as _date
+    from app.models.tables import (
+        DailyStatusPush,
+        DailyStatusPushStatus,
+        DailyStatusPushTarget,
+    )
+
+    pd = _date.fromisoformat(body.push_date) if body.push_date else _date.today()
+    row = DailyStatusPush(
+        id=_uuid.uuid4(),
+        user_id=user.user_id,
+        push_date=pd,
+        target=DailyStatusPushTarget.ERP_DAILY_REPORTS,
+        payload={
+            "today_plan": body.today_plan,
+            "in_progress": body.in_progress,
+            "blockers": body.blockers,
+            "tomorrow_plan": body.tomorrow_plan,
+        },
+        status=DailyStatusPushStatus.PENDING,
+    )
+    db.add(row)
+    await db.commit()
+    await db.refresh(row)
+    return DailyStatusPushOut(
+        id=str(row.id),
+        user_id=row.user_id,
+        push_date=row.push_date.isoformat(),
+        target=row.target.value,
+        payload=row.payload,
+        status=row.status.value,
+        pushed_at=None,
+        run_id=None,
+        error=None,
+    )

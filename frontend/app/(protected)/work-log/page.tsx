@@ -132,6 +132,47 @@ export default function WorkLogPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
+  // 일일 상태 리포트 (daily_status_push, REQ-008)
+  const [report, setReport] = useState({ today_plan: '', in_progress: '', blockers: '', tomorrow_plan: '' });
+  const [reportSaving, setReportSaving] = useState(false);
+  const [reportMsg, setReportMsg] = useState('');
+
+  async function submitReport() {
+    setReportSaving(true);
+    setReportMsg('');
+    try {
+      await api.post('/api/daily-status-push', report);
+      setReportMsg('✅ 일일 상태 리포트가 큐잉되었습니다.');
+      setReport({ today_plan: '', in_progress: '', blockers: '', tomorrow_plan: '' });
+    } catch (err) {
+      setReportMsg(err instanceof ApiError ? `저장 실패 (${err.status})` : '저장 오류');
+    } finally {
+      setReportSaving(false);
+    }
+  }
+
+  async function copyYesterday() {
+    const y = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      const prev = await api.get<WorkLog[]>(`/api/work-logs?start_date=${y}&end_date=${y}`);
+      if (prev.length === 0) { setError('어제 복사할 업무가 없습니다.'); return; }
+      for (const w of prev) {
+        await api.post('/api/work-logs', {
+          title: w.title,
+          work_date: today,
+          category: w.category,
+          goal: w.goal,
+          est_minutes: w.est_minutes,
+          status: 'started',
+        });
+      }
+      fetchData();
+    } catch (err) {
+      setError(err instanceof ApiError ? `복사 실패 (${err.status})` : '복사 오류');
+    }
+  }
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -314,6 +355,24 @@ export default function WorkLogPage() {
             </div>
           </div>
 
+          {/* 완료도 진행바 (progress-bar) + 완료율 */}
+          {summary.total_count > 0 && (
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                <span>완료율</span>
+                <span className="font-semibold text-gray-700">
+                  {Math.round((summary.completed_count / summary.total_count) * 100)}% · 실제 {formatMinutes(summary.total_actual_minutes)}
+                </span>
+              </div>
+              <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-green-500 transition-all"
+                  style={{ width: `${Math.round((summary.completed_count / summary.total_count) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Category distribution */}
           {Object.keys(summary.categories).length > 0 && (
             <div className="mt-3 pt-3 border-t border-gray-100">
@@ -334,6 +393,44 @@ export default function WorkLogPage() {
           )}
         </div>
       )}
+
+      {/* 일일 상태 리포트 (daily-status-form → POST /api/daily-status-push) */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-gray-700">일일 상태 리포트</h2>
+          <span className="text-xs text-gray-400">EOD ERP 전송 큐 (daily_status_push)</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {(
+            [
+              ['today_plan', '오늘 할 일'],
+              ['in_progress', '진행중 업무'],
+              ['blockers', '블로커'],
+              ['tomorrow_plan', '내일 계획'],
+            ] as const
+          ).map(([k, label]) => (
+            <div key={k}>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+              <textarea
+                value={report[k]}
+                onChange={(e) => setReport({ ...report, [k]: e.target.value })}
+                rows={2}
+                className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 mt-3">
+          <button
+            onClick={submitReport}
+            disabled={reportSaving}
+            className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {reportSaving ? '전송 중...' : '일일 리포트 제출'}
+          </button>
+          {reportMsg && <span className="text-xs text-gray-500">{reportMsg}</span>}
+        </div>
+      </div>
 
       {/* Filters */}
       <div className="flex items-center gap-3">
@@ -389,12 +486,20 @@ export default function WorkLogPage() {
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
             <span className="text-5xl">📋</span>
             <p className="text-sm">아직 등록된 업무가 없습니다.</p>
-            <button
-              onClick={openCreateModal}
-              className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors"
-            >
-              업무 추가하기
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={openCreateModal}
+                className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors"
+              >
+                업무 추가하기
+              </button>
+              <button
+                onClick={copyYesterday}
+                className="px-4 py-2 border border-gray-300 text-gray-600 text-sm rounded-md hover:bg-gray-50 transition-colors"
+              >
+                어제 복사하기
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-2">

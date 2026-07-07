@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "surface": "web",
+  "finalUrl": "http://localhost:3000/work-log",
+  "actions": [
+    {
+      "type": "login",
+      "timestamp": "2026-07-07T01:31:59.304Z",
+      "selector": "body"
+    },
+    {
+      "type": "goto",
+      "timestamp": "2026-07-07T01:32:02.678Z",
+      "selector": "a[href=/work-log]"
+    },
+    {
+      "type": "type",
+      "timestamp": "2026-07-07T01:32:05.781Z",
+      "selector": "textarea",
+      "note": "daily report fields"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-07T01:32:05.784Z",
+      "selector": "button:일일 리포트 제출",
+      "ok": true
+    },
+    {
+      "type": "screenshot",
+      "timestamp": "2026-07-07T01:32:09.273Z",
+      "selector": "body",
+      "path": "artifacts/specconf/worklog.jpg"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "work-log loaded",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T01:32:05.681Z"
+    },
+    {
+      "name": "daily-status-form present",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T01:32:05.681Z"
+    },
+    {
+      "name": "4 report textareas",
+      "status": "passed",
+      "detail": "found 4 textareas",
+      "timestamp": "2026-07-07T01:32:05.699Z"
+    },
+    {
+      "name": "submit clickable",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T01:32:05.785Z"
+    },
+    {
+      "name": "queued confirmation",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T01:32:08.789Z"
+    },
+    {
+      "name": "progress/report elements",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T01:32:08.789Z"
+    }
+  ]
+}
