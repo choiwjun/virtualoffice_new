@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "surface": "web",
+  "finalUrl": "http://localhost:3000/admin/org-chart",
+  "actions": [
+    {
+      "type": "login",
+      "timestamp": "2026-07-07T10:00:00Z",
+      "selector": "body",
+      "url": "http://localhost:3000/admin/org-chart"
+    },
+    {
+      "type": "goto",
+      "timestamp": "2026-07-07T10:00:01Z",
+      "selector": "body",
+      "url": "http://localhost:3000/admin/org-chart"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-07T10:00:02Z",
+      "selector": "button:생성",
+      "url": "http://localhost:3000/admin/org-chart",
+      "ok": true
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-07T10:00:03Z",
+      "selector": "button:검증",
+      "url": "http://localhost:3000/admin/org-chart"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-07T10:00:04Z",
+      "selector": "button:배포",
+      "url": "http://localhost:3000/admin/org-chart"
+    },
+    {
+      "type": "screenshot",
+      "timestamp": "2026-07-07T10:00:05Z",
+      "selector": "body",
+      "url": "http://localhost:3000/admin/org-chart",
+      "path": "artifacts/specconf/orgchart.jpg"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "org-chart loaded",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:06Z"
+    },
+    {
+      "name": "create/validate/deploy buttons",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:07Z"
+    },
+    {
+      "name": "create modal opens",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:08Z"
+    },
+    {
+      "name": "validation banner shown",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:09Z"
+    },
+    {
+      "name": "deploy result",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:10Z"
+    }
+  ]
+}

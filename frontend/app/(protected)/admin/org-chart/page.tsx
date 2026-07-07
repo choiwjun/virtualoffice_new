@@ -30,6 +30,44 @@ export default function OrgChartPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
+  const [banner, setBanner] = useState<{ valid: boolean; errors: { code: string; message: string }[]; warnings: unknown[] } | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [busy, setBusy] = useState('');
+
+  const reload = () => {
+    api.get<{ items: OrgGroup[]; total: number }>('/api/org-groups').then((d) => setOrgGroups(d.items)).catch(() => {});
+  };
+
+  async function validateOrg() {
+    setBusy('validate');
+    setBanner(null);
+    try {
+      const res = await api.post<{ valid: boolean; errors: { code: string; message: string }[]; warnings: unknown[] }>('/api/org-groups/validate', {});
+      setBanner(res);
+    } catch (e) {
+      setToast(e instanceof ApiError ? `검증 실패 (${e.status})` : '오류');
+    } finally {
+      setBusy('');
+    }
+  }
+
+  async function deployOrg() {
+    setBusy('deploy');
+    try {
+      await api.post('/api/org-groups/deploy', {});
+      setToast('배포 완료 (검증 통과)');
+      setBanner({ valid: true, errors: [], warnings: [] });
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409) {
+        setToast('검증 실패로 배포 차단 — 오류를 먼저 해결하세요');
+        validateOrg();
+      } else {
+        setToast(e instanceof ApiError ? `배포 실패 (${e.status})` : '오류');
+      }
+    } finally {
+      setBusy('');
+    }
+  }
 
   useEffect(() => {
     if (!allowed) return;
@@ -80,22 +118,27 @@ export default function OrgChartPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => setToast('검증: 모든 구성원이 팀에 배정됨 (로컬 검증). 배포 API는 후속.')}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50"
-          >
-            검증
+          <button onClick={() => setShowCreate(true)} className="px-3 py-1.5 text-sm border border-indigo-300 text-indigo-600 rounded-md hover:bg-indigo-50">+ 조직 그룹</button>
+          <button onClick={validateOrg} disabled={busy === 'validate'} className="px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50">
+            {busy === 'validate' ? '검증 중...' : '검증'}
           </button>
-          <button
-            onClick={() => setToast('배포는 백엔드 조직 배포 엔드포인트 도입 후 연결됩니다 (현재 로컬 편집).')}
-            className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-          >
-            배포
+          <button onClick={deployOrg} disabled={busy === 'deploy'} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50">
+            {busy === 'deploy' ? '배포 중...' : '배포'}
           </button>
         </div>
       </div>
       {toast && (
         <div className="mx-6 mt-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-700">{toast}</div>
+      )}
+      {banner && (
+        <div className={`mx-6 mt-3 px-3 py-2 rounded-md text-xs border ${banner.valid ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+          {banner.valid ? '✅ 검증 통과 — 순환참조·미매핑 오류 없음 (배포 가능)' : (
+            <div>
+              <div className="font-semibold mb-1">❌ 검증 실패 ({banner.errors.length}건)</div>
+              <ul className="list-disc pl-4">{banner.errors.map((e, i) => <li key={i}>{e.message}</li>)}</ul>
+            </div>
+          )}
+        </div>
       )}
       <div className="flex-1 min-h-0 flex gap-0">
         {/* 조직 그룹 계층 패널 (GET /api/org-groups) */}
@@ -125,6 +168,79 @@ export default function OrgChartPage() {
           ) : (
             <OrgChartFlow employees={employees} />
           )}
+        </div>
+      </div>
+      {showCreate && (
+        <CreateOrgGroupModal
+          groups={orgGroups}
+          onClose={() => setShowCreate(false)}
+          onCreated={() => { setShowCreate(false); reload(); setToast('조직 그룹이 생성되었습니다.'); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function CreateOrgGroupModal({ groups, onClose, onCreated }: { groups: { id: string; name: string }[]; onClose: () => void; onCreated: () => void }) {
+  const [name, setName] = useState('');
+  const [type, setType] = useState('department');
+  const [parentId, setParentId] = useState('');
+  const [color, setColor] = useState('#6366f1');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+
+  async function save() {
+    if (!name.trim()) { setErr('이름은 필수입니다.'); return; }
+    setSaving(true);
+    setErr('');
+    try {
+      await api.post('/api/org-groups', { name: name.trim(), type, parent_id: parentId || null, color });
+      onCreated();
+    } catch (e) {
+      setErr(e instanceof ApiError ? `생성 실패 (${e.status})` : '서버 오류');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-800">조직 그룹 생성</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+        </div>
+        <div className="px-6 py-4 space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">이름 (필수)</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">유형</label>
+              <select value={type} onChange={(e) => setType(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="division">본부</option>
+                <option value="department">부서</option>
+                <option value="part">파트</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">색상</label>
+              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-full h-9 border border-gray-300 rounded-md" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">상위 그룹</label>
+            <select value={parentId} onChange={(e) => setParentId(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">(최상위)</option>
+              {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </select>
+          </div>
+          {err && <p className="text-sm text-red-600">{err}</p>}
+          <div className="flex gap-2 pt-1">
+            <button onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">취소</button>
+            <button onClick={save} disabled={saving} className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50">{saving ? '생성 중...' : '생성'}</button>
+          </div>
         </div>
       </div>
     </div>
