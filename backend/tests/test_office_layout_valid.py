@@ -83,3 +83,38 @@ def test_seat_without_matching_furniture_errors():
     result = validate_office_layout(layout)
     assert any("SEAT" in e.as_dict()["code"] or "FURNITURE" in e.as_dict()["code"]
                for e in result.errors), [e.as_dict() for e in result.errors]
+
+
+def _room_zone_wall_layout() -> dict:
+    """officeLayout.ts 확장 빌더(rooms/zones/walls)와 동일 형태."""
+    base = _editor_shaped_layout([(40, 300), (170, 300), (300, 300)])
+    # 방 1개 (남측 문 + entrance 내부)
+    rx, ry, rw, rh = 12.0, 2.0, 6.0, 5.0
+    base["rooms"] = [{
+        "room_id": "R_001", "name": "회의실 1", "type": "meeting", "capacity": 6,
+        "capacity_mode": "by_room", "max_concurrent_users": 6,
+        "coords": {"x": rx, "y": ry, "width": rw, "height": rh},
+        "entrance": {"trigger_x": rx + rw / 2 - 0.5, "trigger_y": ry + rh - 1.0, "trigger_width": 1.0, "trigger_height": 0.5, "entry_direction": "south"},
+        "doors": [{"door_id": "D_001", "wall": "south", "offset": rw / 2, "width": 1.2, "door_type": "glass_single"}],
+    }]
+    base["zones"] = [{"zone_id": "Z_001", "label": "구역 1", "type": "team", "color": "#3498db",
+        "polygon": [{"x": 2.0, "y": 2.0}, {"x": 9.0, "y": 2.0}, {"x": 9.0, "y": 5.0}, {"x": 2.0, "y": 5.0}]}]
+    base["colliders"] = [{"collider_id": "C_001", "shape": "box", "box": {"x": 0.4, "y": 0.4, "width": 0.4, "height": 4.0}, "physics": {"block_avatar": True}, "description": "벽 1"}]
+    # dimensions 확장
+    base["dimensions"] = {"width_m": 20.0, "height_m": 10.0, "min_x": 0, "max_x": 20.0, "min_y": 0, "max_y": 10.0, "unit": "meter"}
+    return base
+
+
+def test_room_zone_wall_layout_validates():
+    """편집기 방/구역/벽 포함 layout이 ERROR 0으로 통과(배포 가능)."""
+    result = validate_office_layout(_room_zone_wall_layout())
+    codes = [e.as_dict()["code"] for e in result.errors]
+    assert result.errors == [], f"unexpected errors: {codes}"
+
+
+def test_room_missing_door_errors():
+    """방에 문(door)이 없으면 ERROR (음성 케이스)."""
+    layout = _room_zone_wall_layout()
+    layout["rooms"][0]["doors"] = []
+    result = validate_office_layout(layout)
+    assert len(result.errors) > 0

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isAdmin } from '@/lib/auth';
-import type { SeatBox } from '@/components/office/SeatCanvas';
+import type { SeatBox, ShapeBox, Selection } from '@/components/office/SeatCanvas';
 import { buildOfficeLayout } from '@/lib/officeLayout';
 
 const SeatCanvas = dynamic(() => import('@/components/office/SeatCanvas'), {
@@ -55,6 +55,63 @@ export default function OfficeLayoutPage() {
   const [toast, setToast] = useState('');
   const [size, setSize] = useState({ w: 800, h: 520 });
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  // 편집 요소 (방/구역/벽) + 선택 + undo/redo 히스토리
+  const [rooms, setRooms] = useState<ShapeBox[]>([]);
+  const [zones, setZones] = useState<ShapeBox[]>([]);
+  const [walls, setWalls] = useState<ShapeBox[]>([]);
+  const [selected, setSelected] = useState<Selection>(null);
+  const [history, setHistory] = useState<{ rooms: ShapeBox[]; zones: ShapeBox[]; walls: ShapeBox[] }[]>([
+    { rooms: [], zones: [], walls: [] },
+  ]);
+  const [histIdx, setHistIdx] = useState(0);
+
+  const commit = (next: { rooms: ShapeBox[]; zones: ShapeBox[]; walls: ShapeBox[] }) => {
+    setRooms(next.rooms);
+    setZones(next.zones);
+    setWalls(next.walls);
+    const trimmed = history.slice(0, histIdx + 1);
+    const nh = [...trimmed, next];
+    setHistory(nh);
+    setHistIdx(nh.length - 1);
+  };
+  const applyHist = (idx: number) => {
+    const s = history[idx];
+    setRooms(s.rooms);
+    setZones(s.zones);
+    setWalls(s.walls);
+    setSelected(null);
+  };
+  const undo = () => { if (histIdx > 0) { const n = histIdx - 1; setHistIdx(n); applyHist(n); } };
+  const redo = () => { if (histIdx < history.length - 1) { const n = histIdx + 1; setHistIdx(n); applyHist(n); } };
+
+  let _sid = 0;
+  const nid = () => `${Date.now()}-${_sid++}`;
+  const addRoom = () => commit({ rooms: [...rooms, { id: nid(), x: 60 + rooms.length * 30, y: 60 + rooms.length * 30, w: 180, h: 140, label: `회의실 ${rooms.length + 1}` }], zones, walls });
+  const addZone = () => commit({ rooms, zones: [...zones, { id: nid(), x: 80 + zones.length * 30, y: 80 + zones.length * 30, w: 220, h: 130, label: `구역 ${zones.length + 1}`, color: '#3498db' }], walls });
+  const addWall = () => commit({ rooms, zones, walls: [...walls, { id: nid(), x: 40, y: 40 + walls.length * 30, w: 20, h: 220, label: '' }] });
+  const moveShape = (kind: 'room' | 'zone' | 'wall', id: string, x: number, y: number) => {
+    const upd = (arr: ShapeBox[]) => arr.map((s) => (s.id === id ? { ...s, x, y } : s));
+    commit({ rooms: kind === 'room' ? upd(rooms) : rooms, zones: kind === 'zone' ? upd(zones) : zones, walls: kind === 'wall' ? upd(walls) : walls });
+  };
+  const deleteSelected = () => {
+    if (!selected || selected.kind === 'seat') return;
+    const rm = (arr: ShapeBox[]) => arr.filter((s) => s.id !== selected.id);
+    commit({ rooms: selected.kind === 'room' ? rm(rooms) : rooms, zones: selected.kind === 'zone' ? rm(zones) : zones, walls: selected.kind === 'wall' ? rm(walls) : walls });
+    setSelected(null);
+  };
+  const relabelSelected = (label: string) => {
+    if (!selected || selected.kind === 'seat') return;
+    const up = (arr: ShapeBox[]) => arr.map((s) => (s.id === selected.id ? { ...s, label } : s));
+    setRooms(selected.kind === 'room' ? up(rooms) : rooms);
+    setZones(selected.kind === 'zone' ? up(zones) : zones);
+    setWalls(selected.kind === 'wall' ? up(walls) : walls);
+  };
+  const selectedShape = (): ShapeBox | null => {
+    if (!selected || selected.kind === 'seat') return null;
+    const arr = selected.kind === 'room' ? rooms : selected.kind === 'zone' ? zones : walls;
+    return arr.find((s) => s.id === selected.id) ?? null;
+  };
 
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2200); };
 
@@ -136,6 +193,9 @@ export default function OfficeLayoutPage() {
         floorName: floorName ?? undefined,
         floorLevel: floorLevel ?? undefined,
         seats: seats.map((s) => ({ id: s.id, x: s.x, y: s.y, type: s.type })),
+        rooms: rooms.map((r) => ({ id: r.id, x: r.x, y: r.y, w: r.w, h: r.h, name: r.label })),
+        zones: zones.map((z) => ({ id: z.id, x: z.x, y: z.y, w: z.w, h: z.h, label: z.label, color: z.color })),
+        walls: walls.map((w) => ({ id: w.id, x: w.x, y: w.y, w: w.w, h: w.h })),
         createdBy: me?.id ?? 0,
       });
       await api.post('/api/office-layouts', { office_id: officeId, floor_id: floorId, json });
@@ -185,29 +245,81 @@ export default function OfficeLayoutPage() {
           <h1 className="text-lg font-bold text-gray-800">좌석 배치 편집기</h1>
           <p className="text-xs text-gray-400">2D 평면도 (D11) · 드래그=좌표 저장 · 더블클릭=삭제 · 좌석 {seats.length}개{floorId ? '' : ' · 층 없음'}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={addSeat} disabled={!floorId} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-40">
-            + 좌석 추가
-          </button>
+        <div className="flex items-center gap-1.5">
+          <button onClick={addSeat} disabled={!floorId} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-40">+ 좌석</button>
+          <button onClick={addRoom} className="px-3 py-1.5 text-sm border border-purple-300 text-purple-600 rounded-md hover:bg-purple-50">+ 방</button>
+          <button onClick={addZone} className="px-3 py-1.5 text-sm border border-blue-300 text-blue-600 rounded-md hover:bg-blue-50">+ 구역</button>
+          <button onClick={addWall} className="px-3 py-1.5 text-sm border border-amber-700 text-amber-800 rounded-md hover:bg-amber-50">+ 벽</button>
+          <button onClick={undo} disabled={histIdx === 0} className="px-2 py-1.5 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-40" title="실행취소">↶</button>
+          <button onClick={redo} disabled={histIdx >= history.length - 1} className="px-2 py-1.5 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-40" title="다시실행">↷</button>
           <button onClick={load} className="px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">새로고침</button>
         </div>
       </div>
       {toast && <div className="mx-6 mt-3 px-3 py-2 bg-green-50 border border-green-200 rounded-md text-xs text-green-700">{toast}</div>}
-      <div ref={wrapRef} className="flex-1 min-h-0 m-4 border border-gray-200 rounded-xl overflow-hidden bg-white relative">
-        {loading ? (
-          <div className="h-full flex items-center justify-center text-gray-400 text-sm">불러오는 중...</div>
-        ) : error ? (
-          <div className="h-full flex items-center justify-center text-red-600 text-sm">{error}</div>
-        ) : (
-          <>
-            {seats.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 text-gray-400 text-sm">
-                좌석이 없습니다. &quot;+ 좌석 추가&quot;로 배치를 시작하세요.
-              </div>
-            )}
-            <SeatCanvas seats={seats} width={size.w} height={size.h} onMove={move} onDelete={removeSeat} />
-          </>
-        )}
+      <div className="flex-1 min-h-0 m-4 flex gap-3">
+        <div ref={wrapRef} className="flex-1 min-h-0 border border-gray-200 rounded-xl overflow-hidden bg-white relative">
+          {loading ? (
+            <div className="h-full flex items-center justify-center text-gray-400 text-sm">불러오는 중...</div>
+          ) : error ? (
+            <div className="h-full flex items-center justify-center text-red-600 text-sm">{error}</div>
+          ) : (
+            <>
+              {seats.length + rooms.length + zones.length + walls.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 text-gray-400 text-sm">
+                  좌석/방/구역/벽 도구로 배치를 시작하세요.
+                </div>
+              )}
+              <SeatCanvas
+                seats={seats}
+                rooms={rooms}
+                zones={zones}
+                walls={walls}
+                width={size.w}
+                height={size.h}
+                onMove={move}
+                onDelete={removeSeat}
+                onMoveShape={moveShape}
+                onSelect={setSelected}
+                selected={selected}
+              />
+            </>
+          )}
+        </div>
+        {/* 속성 + 레이어 패널 */}
+        <div className="w-60 flex-shrink-0 flex flex-col gap-3 overflow-y-auto">
+          <div className="border border-gray-200 rounded-xl bg-white p-3">
+            <div className="text-xs font-semibold text-gray-500 mb-2">속성</div>
+            {(() => {
+              const sh = selectedShape();
+              if (!selected) return <p className="text-xs text-gray-400">요소를 선택하세요.</p>;
+              if (selected.kind === 'seat') return <p className="text-xs text-gray-500">좌석 선택됨 (더블클릭=삭제)</p>;
+              if (!sh) return <p className="text-xs text-gray-400">—</p>;
+              return (
+                <div className="space-y-2">
+                  <div className="text-xs text-gray-500">{selected.kind === 'room' ? '방' : selected.kind === 'zone' ? '구역' : '벽'}</div>
+                  <input value={sh.label ?? ''} onChange={(e) => relabelSelected(e.target.value)} placeholder="이름" className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <div className="text-[11px] text-gray-400">위치 {sh.x},{sh.y} · 크기 {sh.w}×{sh.h}</div>
+                  <button onClick={deleteSelected} className="w-full px-2 py-1 text-xs border border-red-300 text-red-600 rounded hover:bg-red-50">삭제</button>
+                </div>
+              );
+            })()}
+          </div>
+          <div className="border border-gray-200 rounded-xl bg-white p-3">
+            <div className="text-xs font-semibold text-gray-500 mb-2">레이어 · 좌석 {seats.length} / 방 {rooms.length} / 구역 {zones.length} / 벽 {walls.length}</div>
+            <ul className="space-y-1 text-xs">
+              {zones.map((z) => (
+                <li key={z.id} className={`flex items-center gap-1 cursor-pointer ${selected?.id === z.id ? 'text-indigo-600 font-medium' : 'text-gray-600'}`} onClick={() => setSelected({ kind: 'zone', id: z.id })}>
+                  <span className="w-2 h-2 rounded-sm" style={{ background: z.color ?? '#3498db' }} />{z.label}
+                </li>
+              ))}
+              {rooms.map((r) => (
+                <li key={r.id} className={`flex items-center gap-1 cursor-pointer ${selected?.id === r.id ? 'text-indigo-600 font-medium' : 'text-gray-600'}`} onClick={() => setSelected({ kind: 'room', id: r.id })}>
+                  <span className="w-2 h-2 rounded-sm bg-purple-400" />{r.label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
       {/* 오피스 레이아웃 버전 (D12 검증·배포) */}
       <div className="flex-shrink-0 mx-4 mb-4 border border-gray-200 rounded-xl bg-white p-3 max-h-52 overflow-y-auto">

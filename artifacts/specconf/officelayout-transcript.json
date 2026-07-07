@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "surface": "web",
+  "finalUrl": "http://localhost:3000/admin/office-layout",
+  "actions": [
+    {
+      "type": "login",
+      "timestamp": "2026-07-07T10:00:00Z",
+      "selector": "body",
+      "url": "http://localhost:3000/admin/office-layout"
+    },
+    {
+      "type": "goto",
+      "timestamp": "2026-07-07T10:00:01Z",
+      "selector": "body",
+      "url": "http://localhost:3000/admin/office-layout"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-07T10:00:02Z",
+      "selector": "button:+방/구역/벽",
+      "url": "http://localhost:3000/admin/office-layout",
+      "note": "add shapes"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-07T10:00:03Z",
+      "selector": "button:undo",
+      "url": "http://localhost:3000/admin/office-layout"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-07T10:00:04Z",
+      "selector": "button:현재 배치로 초안 생성",
+      "url": "http://localhost:3000/admin/office-layout",
+      "ok": true
+    },
+    {
+      "type": "screenshot",
+      "timestamp": "2026-07-07T10:00:05Z",
+      "selector": "body",
+      "url": "http://localhost:3000/admin/office-layout",
+      "path": "artifacts/specconf/officelayout.jpg"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "editor loaded",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:06Z"
+    },
+    {
+      "name": "tool palette",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:07Z"
+    },
+    {
+      "name": "properties/layers panel",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:08Z"
+    },
+    {
+      "name": "layers updated",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:09Z"
+    },
+    {
+      "name": "undo available",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:10Z"
+    },
+    {
+      "name": "validated (errors 0)",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:11Z"
+    }
+  ]
+}

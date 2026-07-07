@@ -24,12 +24,43 @@ export interface EditorSeat {
   type?: string;
 }
 
+export interface EditorRoom {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  name?: string;
+  type?: string; // meeting|lobby|lounge|focus|phonebooth
+}
+
+export interface EditorZone {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  label?: string;
+  color?: string;
+}
+
+export interface EditorWall {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 export interface BuildLayoutInput {
   officeId: string; // UUID (office.id)
   floorId: string; // UUID (floor.id)
   floorName?: string;
   floorLevel?: number;
   seats: EditorSeat[];
+  rooms?: EditorRoom[];
+  zones?: EditorZone[];
+  walls?: EditorWall[];
   createdBy: number; // erp_user.id
   pxPerMeter?: number;
 }
@@ -67,10 +98,37 @@ export function buildOfficeLayout(input: BuildLayoutInput): Record<string, unkno
     my: round3(s.y / px),
   }));
 
-  const maxX = seatsM.reduce((m, s) => Math.max(m, s.mx), 0);
-  const maxY = seatsM.reduce((m, s) => Math.max(m, s.my), 0);
-  const width = round3(maxX + 2) || 10;
-  const height = round3(maxY + 2) || 10;
+  const roomsM = (input.rooms ?? []).map((r) => ({
+    id: r.id, name: r.name, type: r.type,
+    x: round3(r.x / px), y: round3(r.y / px),
+    w: Math.max(2, round3(r.w / px)), h: Math.max(2, round3(r.h / px)),
+  }));
+  const zonesM = (input.zones ?? []).map((z) => ({
+    id: z.id, label: z.label, color: z.color,
+    x: round3(z.x / px), y: round3(z.y / px),
+    w: Math.max(1, round3(z.w / px)), h: Math.max(1, round3(z.h / px)),
+  }));
+  const wallsM = (input.walls ?? []).map((w) => ({
+    x: round3(w.x / px), y: round3(w.y / px),
+    w: Math.max(0.2, round3(w.w / px)), h: Math.max(0.2, round3(w.h / px)),
+  }));
+
+  const extentX = Math.max(
+    0,
+    ...seatsM.map((s) => s.mx),
+    ...roomsM.map((r) => r.x + r.w),
+    ...zonesM.map((z) => z.x + z.w),
+    ...wallsM.map((w) => w.x + w.w),
+  );
+  const extentY = Math.max(
+    0,
+    ...seatsM.map((s) => s.my),
+    ...roomsM.map((r) => r.y + r.h),
+    ...zonesM.map((z) => z.y + z.h),
+    ...wallsM.map((w) => w.y + w.h),
+  );
+  const width = round3(extentX + 2) || 10;
+  const height = round3(extentY + 2) || 10;
 
   const furniture = seatsM.map((s, i) => ({
     furniture_id: `F_${String(i + 1).padStart(3, '0')}`,
@@ -85,6 +143,51 @@ export function buildOfficeLayout(input: BuildLayoutInput): Record<string, unkno
     coords: { x: s.mx, y: s.my },
     facing: 180,
     furniture_id: `F_${String(i + 1).padStart(3, '0')}`,
+  }));
+
+  const ROOM_TYPES = ['meeting', 'lobby', 'lounge', 'focus', 'phonebooth'];
+  const rooms = roomsM.map((r, i) => {
+    const doorWidth = Math.min(1.2, round3(r.w * 0.5));
+    return {
+      room_id: `R_${String(i + 1).padStart(3, '0')}`,
+      name: r.name || `회의실 ${i + 1}`,
+      type: ROOM_TYPES.includes(r.type ?? '') ? r.type : 'meeting',
+      capacity: 6,
+      capacity_mode: 'by_room',
+      max_concurrent_users: 6,
+      coords: { x: r.x, y: r.y, width: r.w, height: r.h },
+      entrance: {
+        trigger_x: round3(r.x + r.w / 2 - 0.5),
+        trigger_y: round3(r.y + r.h - 1.0),
+        trigger_width: 1.0,
+        trigger_height: 0.5,
+        entry_direction: 'south',
+      },
+      doors: [
+        { door_id: `D_${String(i + 1).padStart(3, '0')}`, wall: 'south', offset: round3(r.w / 2), width: doorWidth, door_type: 'glass_single' },
+      ],
+    };
+  });
+
+  const zones = zonesM.map((z, i) => ({
+    zone_id: `Z_${String(i + 1).padStart(3, '0')}`,
+    label: z.label || `구역 ${i + 1}`,
+    type: 'team',
+    color: z.color || '#3498db',
+    polygon: [
+      { x: z.x, y: z.y },
+      { x: round3(z.x + z.w), y: z.y },
+      { x: round3(z.x + z.w), y: round3(z.y + z.h) },
+      { x: z.x, y: round3(z.y + z.h) },
+    ],
+  }));
+
+  const colliders = wallsM.map((w, i) => ({
+    collider_id: `C_${String(i + 1).padStart(3, '0')}`,
+    shape: 'box',
+    box: { x: w.x, y: w.y, width: w.w, height: w.h },
+    physics: { block_avatar: true },
+    description: `벽 ${i + 1}`,
   }));
 
   const spawn =
@@ -115,11 +218,11 @@ export function buildOfficeLayout(input: BuildLayoutInput): Record<string, unkno
       unit_system: 'metric',
     },
     dimensions: { width_m: width, height_m: height, min_x: 0, max_x: width, min_y: 0, max_y: height, unit: 'meter' },
-    zones: [],
-    rooms: [],
+    zones,
+    rooms,
     seats,
     furniture,
-    colliders: [],
+    colliders,
     spawn_points: [{ spawn_id: 'SP_DEFAULT', type: 'lobby', coords: spawn, facing: 90 }],
     spawn_default: { spawn_id: 'SP_DEFAULT' },
   };
