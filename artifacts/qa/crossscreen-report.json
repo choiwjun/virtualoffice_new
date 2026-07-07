@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "surface": "web",
+  "results": [
+    {
+      "route": "/work-log",
+      "ok": true,
+      "missing": []
+    },
+    {
+      "route": "/admin/employees",
+      "ok": true,
+      "missing": []
+    },
+    {
+      "route": "/admin/kpi",
+      "ok": true,
+      "missing": []
+    },
+    {
+      "route": "/kpi",
+      "ok": true,
+      "missing": []
+    },
+    {
+      "route": "/meetings",
+      "ok": true,
+      "missing": []
+    },
+    {
+      "route": "/admin/sync",
+      "ok": true,
+      "missing": []
+    },
+    {
+      "route": "/admin/office-layout",
+      "ok": true,
+      "missing": []
+    },
+    {
+      "route": "/admin/org-chart",
+      "ok": true,
+      "missing": []
+    }
+  ],
+  "pageErrors": []
+}
