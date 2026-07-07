@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "surface": "web",
+  "finalUrl": "http://localhost:3000/admin/sync",
+  "actions": [
+    {
+      "type": "login",
+      "timestamp": "2026-07-07T10:00:00Z",
+      "selector": "body",
+      "url": "http://localhost:3000/admin/sync"
+    },
+    {
+      "type": "goto",
+      "timestamp": "2026-07-07T10:00:01Z",
+      "selector": "body",
+      "url": "http://localhost:3000/admin/sync"
+    },
+    {
+      "type": "screenshot",
+      "timestamp": "2026-07-07T10:00:02Z",
+      "selector": "body",
+      "url": "http://localhost:3000/admin/sync",
+      "path": "artifacts/specconf/sync.jpg"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-07T10:00:03Z",
+      "selector": "button:재시도",
+      "url": "http://localhost:3000/admin/sync",
+      "ok": true
+    }
+  ],
+  "assertions": [
+    {
+      "name": "sync page loaded",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:04Z"
+    },
+    {
+      "name": "job-status table",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:05Z"
+    },
+    {
+      "name": "push statuses shown",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:06Z"
+    },
+    {
+      "name": "retry button present",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:07Z"
+    },
+    {
+      "name": "retry queued",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:08Z"
+    }
+  ]
+}

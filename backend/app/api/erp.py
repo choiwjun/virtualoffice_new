@@ -343,3 +343,36 @@ async def create_daily_status_push(
         run_id=None,
         error=None,
     )
+
+
+# ── EOD Push 재시도 (실패 → pending, 관리자) ────────────────────────────
+
+@router.post("/daily-status-push/{push_id}/retry", response_model=DailyStatusPushOut)
+async def retry_daily_status_push(
+    push_id: str,
+    db=Depends(get_db),
+    _: CurrentUser = Depends(require_role("admin", "super_admin")),
+) -> DailyStatusPushOut:
+    """POST /api/daily-status-push/{id}/retry — 실패한 전송을 pending으로 재큐잉 (관리자, REQ-008)."""
+    import uuid as _uuid
+    from app.models.tables import DailyStatusPush, DailyStatusPushStatus
+
+    try:
+        pid = _uuid.UUID(push_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_id")
+    row = (await db.execute(select(DailyStatusPush).where(DailyStatusPush.id == pid))).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="push_not_found")
+    if row.status != DailyStatusPushStatus.FAILED:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="only_failed_can_retry")
+    row.status = DailyStatusPushStatus.PENDING
+    row.retry_count = (row.retry_count or 0) + 1
+    row.error_message = None
+    await db.commit()
+    await db.refresh(row)
+    return DailyStatusPushOut(
+        id=str(row.id), user_id=row.user_id, push_date=row.push_date.isoformat(),
+        target=row.target.value, payload=row.payload, status=row.status.value,
+        pushed_at=None, run_id=str(row.run_id) if row.run_id else None, error=row.error_message,
+    )

@@ -28,12 +28,23 @@ interface Attendance {
   check_out_at: string | null;
   work_type: string;
 }
+interface DailyPush {
+  id: string;
+  user_id: number;
+  push_date: string;
+  target: string;
+  status: string;
+  pushed_at: string | null;
+  error: string | null;
+}
 
 export default function SyncMonitoringPage() {
   const me = getUser();
   const allowed = isAdmin(me);
   const [status, setStatus] = useState<SyncStatus | null>(null);
   const [failures, setFailures] = useState<SyncLog[]>([]);
+  const [pushes, setPushes] = useState<DailyPush[]>([]);
+  const [retrying, setRetrying] = useState('');
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [msg, setMsg] = useState('');
@@ -52,12 +63,14 @@ export default function SyncMonitoringPage() {
     if (!allowed) return;
     setLoading(true);
     try {
-      const [st, fl] = await Promise.all([
+      const [st, fl, ps] = await Promise.all([
         api.get<SyncStatus>('/api/erp-sync/status'),
         api.get<SyncLog[]>('/api/erp-sync/failures').catch(() => [] as SyncLog[]),
+        api.get<DailyPush[]>('/api/daily-status-push').catch(() => [] as DailyPush[]),
       ]);
       setStatus(st);
       setFailures(fl);
+      setPushes(ps);
     } catch {
       /* handled by empty state */
     } finally {
@@ -78,6 +91,19 @@ export default function SyncMonitoringPage() {
       await loadStatus();
     } finally {
       setSyncing(false);
+    }
+  }
+
+  async function retryPush(id: string) {
+    setRetrying(id);
+    try {
+      await api.post(`/api/daily-status-push/${id}/retry`, {});
+      flash('재시도 큐잉됨 (pending)');
+      await loadStatus();
+    } catch (e) {
+      flash(e instanceof ApiError ? `재시도 실패 (${e.status})` : '서버 오류');
+    } finally {
+      setRetrying('');
     }
   }
 
@@ -168,6 +194,60 @@ export default function SyncMonitoringPage() {
                   <td className="py-2 text-gray-600">{formatKst(f.started_at)}</td>
                   <td className="py-2 text-gray-500">{f.trigger}</td>
                   <td className="py-2 text-red-600 text-xs">{f.error ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      {/* EOD Push / KPI 배치 작업 상태 (job-status-table) */}
+      <section className="bg-white border border-gray-200 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-semibold text-gray-700 text-sm">전송 작업 상태 (daily_status_push)</h2>
+          <span className="text-xs text-gray-400">
+            {pushes.length}건 · 대기 {pushes.filter((p) => p.status === 'pending').length} · 완료 {pushes.filter((p) => p.status === 'sent').length} · 실패 {pushes.filter((p) => p.status === 'failed').length}
+          </span>
+        </div>
+        {loading ? (
+          <p className="text-xs text-gray-400">불러오는 중...</p>
+        ) : pushes.length === 0 ? (
+          <p className="text-xs text-gray-400">전송 작업이 없습니다.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="text-xs text-gray-400">
+              <tr>
+                <th className="text-left py-1.5">날짜</th>
+                <th className="text-left py-1.5">대상</th>
+                <th className="text-left py-1.5">사용자</th>
+                <th className="text-center py-1.5">상태</th>
+                <th className="text-left py-1.5">오류</th>
+                <th className="text-right py-1.5">액션</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {pushes.map((p) => (
+                <tr key={p.id}>
+                  <td className="py-2 text-gray-600">{p.push_date}</td>
+                  <td className="py-2 text-gray-500 text-xs">{p.target === 'erp_kpi_results' ? 'KPI' : '일일리포트'}</td>
+                  <td className="py-2 text-gray-500">{p.user_id}</td>
+                  <td className="py-2 text-center">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${p.status === 'sent' ? 'bg-green-100 text-green-700' : p.status === 'failed' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>
+                      {p.status === 'sent' ? '완료' : p.status === 'failed' ? '실패' : '대기'}
+                    </span>
+                  </td>
+                  <td className="py-2 text-red-600 text-xs truncate max-w-xs">{p.error ?? '—'}</td>
+                  <td className="py-2 text-right">
+                    {p.status === 'failed' && (
+                      <button
+                        onClick={() => retryPush(p.id)}
+                        disabled={retrying === p.id}
+                        className="text-xs px-2 py-0.5 border border-indigo-300 text-indigo-600 rounded hover:bg-indigo-50 disabled:opacity-40"
+                      >
+                        {retrying === p.id ? '재시도 중...' : '재시도'}
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -64,3 +64,36 @@ async def test_invalid_target_rejected(async_client, admin_auth_headers):
     """알 수 없는 target은 400."""
     r = await async_client.post("/api/daily-status-push", headers=admin_auth_headers, json={"target": "bogus"})
     assert r.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_retry_failed_push(async_client, admin_auth_headers, auth_headers, db_session):
+    """실패한 push를 재시도하면 pending + retry_count 증가."""
+    import uuid
+    from app.models.tables import DailyStatusPush, DailyStatusPushStatus, DailyStatusPushTarget
+    row = DailyStatusPush(
+        id=uuid.uuid4(), user_id=1003, push_date=__import__("datetime").date.today(),
+        target=DailyStatusPushTarget.ERP_DAILY_REPORTS, payload={"x": 1},
+        status=DailyStatusPushStatus.FAILED, error_message="boom", retry_count=0,
+    )
+    db_session.add(row)
+    await db_session.commit()
+    r = await async_client.post(f"/api/daily-status-push/{row.id}/retry", headers=admin_auth_headers)
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "pending"
+
+
+@pytest.mark.asyncio
+async def test_retry_only_failed(async_client, admin_auth_headers, db_session):
+    """pending 상태는 재시도 불가(409)."""
+    import uuid
+    from app.models.tables import DailyStatusPush, DailyStatusPushStatus, DailyStatusPushTarget
+    row = DailyStatusPush(
+        id=uuid.uuid4(), user_id=1003, push_date=__import__("datetime").date.today(),
+        target=DailyStatusPushTarget.ERP_DAILY_REPORTS, payload={"x": 1},
+        status=DailyStatusPushStatus.PENDING,
+    )
+    db_session.add(row)
+    await db_session.commit()
+    r = await async_client.post(f"/api/daily-status-push/{row.id}/retry", headers=admin_auth_headers)
+    assert r.status_code == 409
