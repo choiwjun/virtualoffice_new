@@ -1,0 +1,27 @@
+{
+  "architectReview": {"architectureStatus":"CLEAR","productStatus":"CLEAR","codeStatus":"CLEAR","recommendation":"APPROVE",
+    "evidence":"Architecture: employees 엔드포인트가 Presence/Seat를 in() 배치조회로 조인(N+1 회피), EmployeeOut에 선택 필드 2개 추가(하위호환). Product: employee-directory.yaml 컬럼(좌석·상태)·status 필터 복원, presence 배지·좌석번호 표시(스크린샷). Code: 타입 안전(build EXIT=0), 조인 테스트(존재/부재) 추가, ai-slop 없음.",
+    "commands":["git show HEAD","pytest tests/test_employees_presence_seat.py"],"blockers":[]},
+  "executorQa": {"status":"passed","e2eStatus":"passed","redTeamStatus":"passed",
+    "evidence":"웹 E2E 5/5: 좌석/상태 컬럼 헤더, status 필터, presence 배지 렌더. API: presence·seat 조인(존재→meeting/1-A-07, 부재→null) 2 passed. 전체 pytest 401 passed, build EXIT=0.",
+    "e2eCommands":["node employees-e2e.mjs (puppeteer --network host)"],
+    "redTeamCommands":["pytest tests/test_employees_presence_seat.py::test_employees_presence_seat_null_when_absent"],
+    "artifactRefs":[
+      {"id":"web-transcript","kind":"web-automation-transcript","path":"artifacts/specconf/employees-transcript.json","description":"직원명부 좌석/상태 컬럼+필터 트랜스크립트"},
+      {"id":"web-shot","kind":"screenshot","path":"artifacts/specconf/employees.jpg","description":"좌석·상태(presence 배지) 컬럼 + status 필터 스크린샷"},
+      {"id":"api-report","kind":"api-package-test-report","path":"artifacts/specconf/junit-employees.xml","description":"presence/seat 조인 junit"}
+    ],
+    "contractCoverage":[
+      {"id":"cc-1","contractRef":"employee-directory.yaml#seat+status columns","obligation":"좌석·presence상태 컬럼 표시","status":"covered","surfaceEvidenceRefs":["se-web","se-api"],"adversarialCaseRefs":["ac-null"]},
+      {"id":"cc-2","contractRef":"employee-directory.yaml#status-filter","obligation":"presence 상태 필터","status":"covered","surfaceEvidenceRefs":["se-web"],"adversarialCaseRefs":["ac-null"]}
+    ],
+    "surfaceEvidence":[
+      {"id":"se-web","contractRef":"employee-directory GUI","surface":"web","invocation":"puppeteer /admin/employees","verdict":"passed","artifactRefs":["web-transcript","web-shot"]},
+      {"id":"se-api","contractRef":"GET /api/employees","surface":"api","invocation":"pytest httpx","verdict":"passed","artifactRefs":["api-report"]}
+    ],
+    "adversarialCases":[
+      {"id":"ac-null","contractRef":"employees join","scenario":"presence/seat 없는 직원","expectedBehavior":"presence_status·seat_number = null (오프라인 표시)","verdict":"passed","artifactRefs":["api-report"]}
+    ],
+    "blockers":[]},
+  "iteration": {"status":"passed","evidence":"ai-slop blocking 0. 전체 재실행 클린: pytest 401 passed, build EXIT=0, 웹+API E2E 통과.","fullRerun":true,"rerunCommands":["pytest tests/ --ignore=tests/test_migrations.py","npm run build","node employees-e2e.mjs"],"blockers":[]}
+}

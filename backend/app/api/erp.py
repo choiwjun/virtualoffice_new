@@ -48,6 +48,8 @@ class EmployeeOut(BaseModel):
     manager_id: Optional[int] = None
     work_type: Optional[str] = None
     is_active: bool
+    presence_status: Optional[str] = None
+    seat_number: Optional[str] = None
 
 
 class SyncResultOut(BaseModel):
@@ -77,7 +79,31 @@ async def list_employees(
             .order_by(ErpUser.id)
         )
     ).scalars().all()
-    return rows
+    from app.models.tables import Presence, Seat
+
+    ids = [r.id for r in rows]
+    presence_map: dict[int, str] = {}
+    seat_map: dict[int, Optional[str]] = {}
+    if ids:
+        for p in (await db.execute(select(Presence).where(Presence.user_id.in_(ids)))).scalars().all():
+            presence_map[p.user_id] = p.status.value if hasattr(p.status, "value") else str(p.status)
+        for s in (await db.execute(select(Seat).where(Seat.assigned_user_id.in_(ids)))).scalars().all():
+            if s.assigned_user_id is not None:
+                seat_map[s.assigned_user_id] = s.seat_number
+
+    def _s(v):
+        return v.value if hasattr(v, "value") else v
+
+    return [
+        EmployeeOut(
+            id=r.id, email=r.email, name=r.name, erp_team_id=r.erp_team_id,
+            role=_s(r.role), position=r.position, position_id=r.position_id,
+            manager_id=r.manager_id, work_type=_s(r.work_type), is_active=r.is_active,
+            presence_status=presence_map.get(r.id),
+            seat_number=seat_map.get(r.id),
+        )
+        for r in rows
+    ]
 
 
 @router.get("/employees/{employee_id}", response_model=EmployeeOut)

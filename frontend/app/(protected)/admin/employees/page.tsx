@@ -14,6 +14,8 @@ interface Employee {
   manager_id: number | null;
   work_type: string | null;
   is_active: boolean;
+  presence_status: string | null;
+  seat_number: string | null;
 }
 
 const TEAM_LABELS: Record<number, string> = {
@@ -32,6 +34,16 @@ const ROLE_LABELS: Record<string, string> = {
   employee: '직원',
 };
 
+const PRESENCE_LABELS: Record<string, { label: string; color: string }> = {
+  online: { label: '온라인', color: 'bg-green-100 text-green-700' },
+  working: { label: '업무중', color: 'bg-emerald-100 text-emerald-700' },
+  meeting: { label: '회의중', color: 'bg-blue-100 text-blue-700' },
+  focus: { label: '집중', color: 'bg-amber-100 text-amber-700' },
+  away: { label: '자리비움', color: 'bg-gray-100 text-gray-500' },
+  external: { label: '외근', color: 'bg-purple-100 text-purple-700' },
+  offline: { label: '오프라인', color: 'bg-gray-100 text-gray-400' },
+};
+
 const PAGE_SIZE = 15;
 
 export default function EmployeesPage() {
@@ -43,6 +55,7 @@ export default function EmployeesPage() {
   // Filters
   const [teamFilter, setTeamFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
 
   // Detail panel
@@ -88,8 +101,11 @@ export default function EmployeesPage() {
         (e) => e.name.toLowerCase().includes(q) || e.email.toLowerCase().includes(q),
       );
     }
+    if (statusFilter) {
+      list = list.filter((e) => (e.presence_status ?? 'offline') === statusFilter);
+    }
     return list;
-  }, [employees, teamFilter, searchQuery]);
+  }, [employees, teamFilter, searchQuery, statusFilter]);
 
   // Paginated
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -99,7 +115,7 @@ export default function EmployeesPage() {
   // Reset page when filter changes
   useEffect(() => {
     setPage(1);
-  }, [teamFilter, searchQuery]);
+  }, [teamFilter, searchQuery, statusFilter]);
 
   // CSV export
   function exportCsv() {
@@ -164,6 +180,18 @@ export default function EmployeesPage() {
             <option key={id} value={String(id)}>
               {TEAM_LABELS[id] ?? `팀 ${id}`}
             </option>
+          ))}
+        </select>
+
+        {/* Status filter (presence) */}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="">전체 상태</option>
+          {Object.entries(PRESENCE_LABELS).map(([k, v]) => (
+            <option key={k} value={k}>{v.label}</option>
           ))}
         </select>
 
@@ -254,6 +282,12 @@ export default function EmployeesPage() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
                         직급
                       </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                        좌석
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                        상태
+                      </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
                         이메일
                       </th>
@@ -279,6 +313,16 @@ export default function EmployeesPage() {
                           {TEAM_LABELS[emp.erp_team_id] ?? `팀 ${emp.erp_team_id}`}
                         </td>
                         <td className="px-4 py-3 text-gray-600">{emp.position ?? '—'}</td>
+                        <td className="px-4 py-3 text-gray-600 text-xs">{emp.seat_number ?? '—'}</td>
+                        <td className="px-4 py-3">
+                          {emp.presence_status ? (
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${PRESENCE_LABELS[emp.presence_status]?.color ?? 'bg-gray-100 text-gray-500'}`}>
+                              {PRESENCE_LABELS[emp.presence_status]?.label ?? emp.presence_status}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">오프라인</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-gray-500 text-xs">{emp.email}</td>
                         <td className="px-4 py-3">
                           <span

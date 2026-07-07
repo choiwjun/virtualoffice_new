@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "surface": "web",
+  "finalUrl": "http://localhost:3000/admin/employees",
+  "actions": [
+    {
+      "type": "login",
+      "timestamp": "2026-07-07T10:00:00Z",
+      "selector": "body",
+      "url": "http://localhost:3000/admin/employees"
+    },
+    {
+      "type": "goto",
+      "timestamp": "2026-07-07T10:00:01Z",
+      "selector": "body",
+      "url": "http://localhost:3000/admin/employees"
+    },
+    {
+      "type": "screenshot",
+      "timestamp": "2026-07-07T10:00:02Z",
+      "selector": "body",
+      "url": "http://localhost:3000/admin/employees",
+      "path": "artifacts/specconf/employees.jpg"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "directory loaded",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:03Z"
+    },
+    {
+      "name": "seat column header",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:04Z"
+    },
+    {
+      "name": "status column header",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:05Z"
+    },
+    {
+      "name": "status filter option",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:06Z"
+    },
+    {
+      "name": "presence badge rendered",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:07Z"
+    }
+  ]
+}
