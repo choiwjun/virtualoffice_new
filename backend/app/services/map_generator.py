@@ -550,3 +550,43 @@ def _inject_meeting_zones(
                 ],
             )
         )
+
+
+# ---------------------------------------------------------------------------
+# WorkAdventure WAM 생성 (회의존 → 인터랙티브 area, D24 명시 입장 배선)
+# ---------------------------------------------------------------------------
+
+def generate_wam(tmj: dict[str, Any], map_url: str = "./org-map.tmj") -> dict[str, Any]:
+    """TMJ의 zones objectgroup을 WorkAdventure .wam areas로 변환.
+
+    각 존을 focusable area로 등록해 WA 클라이언트가 이름있는 상호작용 영역으로 인식하게 한다
+    (회의존 D24 명시 입장은 presence.js가 TMJ zones objectgroup의 zone_type/room_name을 읽어 트리거).
+    WA MapValidator 준수: mapUrl 필수, area 프로퍼티는 허용 discriminator(focusable)만 사용.
+    빈 zones면 areas=[] (구조상 유효한 WAM).
+    """
+    import uuid as _uuid
+
+    areas: list[dict[str, Any]] = []
+    for layer in tmj.get("layers", []):
+        if layer.get("type") != "objectgroup" or layer.get("name") != "zones":
+            continue
+        for obj in layer.get("objects", []):
+            areas.append({
+                "id": str(_uuid.uuid4()),
+                "name": obj.get("name", "zone"),
+                "visible": True,
+                "x": float(obj.get("x", 0)),
+                "y": float(obj.get("y", 0)),
+                "width": float(obj.get("width", 0)),
+                "height": float(obj.get("height", 0)),
+                "properties": [
+                    {"id": str(_uuid.uuid4()), "type": "focusable", "zoomMargin": 0.35},
+                ],
+            })
+    return {
+        "version": "1.0.0",
+        "mapUrl": map_url,
+        "areas": areas,
+        "entities": {},
+        "entityCollections": [],
+    }

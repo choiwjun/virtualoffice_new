@@ -252,6 +252,55 @@ async def release_seat(
 
 _ADMIN = ("admin", "super_admin", "leader")
 
+class ReassignRequest(BaseModel):
+    user_id: int
+    reason: Optional[str] = None
+
+
+@router.put("/seat-assignments/{seat_id}", response_model=SeatAssignmentOut)
+async def reassign_seat(
+    seat_id: str,
+    body: ReassignRequest,
+    current_user: CurrentUser = Depends(require_role(*_ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> SeatAssignmentOut:
+    """PUT /api/seat-assignments/{seat_id} — 배정 수정(관리자): 좌석을 다른 사원에게 재배정.
+
+    현재 열린 history를 닫고(unassigned_at) 새 배정 history를 연다. seat.assigned_user_id 갱신.
+    """
+    try:
+        seat_uuid = UUID(seat_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid seat_id")
+    seat = (await db.execute(select(Seat).where(Seat.id == seat_uuid))).scalar_one_or_none()
+    if seat is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="seat_not_found")
+    if seat.status == SeatStatus.DISABLED:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="seat_disabled")
+
+    now = datetime.now(timezone.utc)
+    # 기존 열린 history 닫기
+    prev = (await db.execute(
+        select(SeatAssignmentHistory)
+        .where(SeatAssignmentHistory.seat_id == seat_uuid, SeatAssignmentHistory.unassigned_at.is_(None))
+        .order_by(SeatAssignmentHistory.assigned_at.desc())
+        .limit(1)
+    )).scalar_one_or_none()
+    if prev is not None:
+        prev.unassigned_at = now
+
+    seat.assigned_user_id = body.user_id
+    seat.status = SeatStatus.OCCUPIED
+    db.add(SeatAssignmentHistory(
+        seat_id=seat_uuid, user_id=body.user_id, assigned_at=now,
+        assigned_by=current_user.user_id, reason=body.reason or "reassigned",
+    ))
+    await db.flush()
+    await db.commit()
+    return SeatAssignmentOut(
+        seat_id=str(seat.id), user_id=body.user_id, assigned_at=now.isoformat(), status=seat.status.value,
+    )
+
 
 def _seat_out(s: Seat) -> SeatOut:
     return SeatOut(

@@ -1,5 +1,12 @@
 # 3D 씬 구조 설계 (scene-structure.md)
 
+> **[D26 전환 — 2026-07-06]** 이 문서는 Godot 4 네이티브 3D 노선 기준으로 작성되었습니다.
+> D26 결정으로 가상오피스 본체는 **WorkAdventure self-host(2D Phaser · TMJ 맵 · 타일셋 PNG · 내장 WSS)**로 전환되었습니다.
+> 아래 Godot/GDScript/pak/ReflectionProbe/Forward+/GTX1650 등 렌더러·씬·에셋 세부는 **역사적 설계 참고용(보류)**이며,
+> 현행 구현은 WorkAdventure 스택을 따릅니다. 현행 정본: docs/planning/10-roadmap.md(v3.0), 05-office-layout-schema.md,
+> backend/app/services/map_generator.py, config/(Caddyfile.local·livekit·coturn).
+
+
 **문서 버전**: 1.0  
 **작성일**: 2026-07-02  
 **담당**: 3d-engine-specialist  

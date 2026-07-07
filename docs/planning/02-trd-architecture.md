@@ -1,5 +1,10 @@
 # 기술 아키텍처(TRD) — 가상오피스 운영 플랫폼
 
+> **[D26 전환 — 2026-07-06]** 이 문서의 Godot 헤드리스 서버 / GDScript / 3D 렌더러 품질수치(60fps@GTX1650 등) 관련 절은
+> D26으로 **WorkAdventure self-host 스택으로 대체**되었습니다(게임서버=wa-back, 실시간=WA 내장 WSS, 클라=브라우저). 해당 절은 역사적 참고용이며,
+> 현행 정본은 docs/planning/10-roadmap.md(v3.0)와 docker-compose.yml/config/*를 따릅니다.
+
+
 **문서 ID**: 02-trd-architecture.md  
 **버전**: v1.2  
 **작성일**: 2026-07-02 (최초 2026-07-01)  

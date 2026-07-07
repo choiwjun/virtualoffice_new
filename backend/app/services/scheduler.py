@@ -7,7 +7,7 @@ D18: ERP 매시간+00:00 KST 증분 동기화
 수동 트리거는 기존 API 유지 (POST /api/kpi-results/compute, POST /api/erp/sync).
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -17,7 +17,7 @@ from sqlalchemy import select
 from app.db import SessionLocal
 from app.erp.reader import get_erp_reader
 from app.erp.sync import ErpSyncService
-from app.models.tables import ErpSyncLog, ErpUser
+from app.models.tables import ErpSyncLog, ErpUser, Presence
 from app.services.kpi_engine import compute_and_upsert_kpi
 
 if TYPE_CHECKING:
@@ -97,6 +97,25 @@ async def _erp_sync_batch_job() -> None:
             print(f"[Scheduler] ERP sync failed: {exc}")
 
 
+async def _presence_purge_job() -> None:
+    """D20-a: presence 좌표 30일 파기 — updated_at 30일 초과 행의 x/y/z를 NULL 처리."""
+    print("[Scheduler] presence purge started")
+    from sqlalchemy import update as _update
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+    async with SessionLocal() as db:
+        try:
+            res = await db.execute(
+                _update(Presence)
+                .where(Presence.updated_at < cutoff, Presence.x.isnot(None))
+                .values(x=None, y=None, z=None)
+            )
+            await db.commit()
+            print(f"[Scheduler] presence purge completed: {res.rowcount} rows anonymized")
+        except Exception as exc:
+            await db.rollback()
+            print(f"[Scheduler] presence purge failed: {exc}")
+
 # ──────────────────────────────────────────────────────────────────────────────
 # 스케줄러 초기화
 # ──────────────────────────────────────────────────────────────────────────────
@@ -136,9 +155,18 @@ def start_scheduler() -> None:
         name="ERP hourly sync",
         replace_existing=True,
     )
+
+    # D20-a: presence 좌표 30일 파기 — 매일 03:00 KST
+    _scheduler.add_job(
+        _presence_purge_job,
+        CronTrigger(hour=3, minute=0, timezone="Asia/Seoul"),
+        id="presence_purge",
+        name="Presence 30d coord purge",
+        replace_existing=True,
+    )
     
     _scheduler.start()
-    print("[Scheduler] Started: KPI 18:00/21:00, ERP hourly:00")
+    print("[Scheduler] Started: KPI 18:00/21:00, ERP hourly:00, presence purge 03:00")
 
 
 def stop_scheduler() -> None:

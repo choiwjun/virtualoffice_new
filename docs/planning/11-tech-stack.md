@@ -1,5 +1,10 @@
 # 11. 기술 스택 결정
 
+> **[D26 전환 — 2026-07-06]** 이 문서의 Godot 헤드리스 서버 / GDScript / 3D 렌더러 품질수치(60fps@GTX1650 등) 관련 절은
+> D26으로 **WorkAdventure self-host 스택으로 대체**되었습니다(게임서버=wa-back, 실시간=WA 내장 WSS, 클라=브라우저). 해당 절은 역사적 참고용이며,
+> 현행 정본은 docs/planning/10-roadmap.md(v3.0)와 docker-compose.yml/config/*를 따릅니다.
+
+
 ## 문서 개요
 - **대상**: 개발팀(L3+), 아키텍처 리뷰어
 - **목적**: 가상오피스 플랫폼 기술 스택 확정 및 근거 문서화

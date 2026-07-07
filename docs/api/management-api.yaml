@@ -19,6 +19,27 @@ info:
     - employee: 본인 데이터 조회 및 이의신청 제출만
     - leader: 팀 직원 데이터 조회·관리 (팀 한정)
     - admin: 전체 기능
+
+    ---
+    **구현 정합 부록 (v1.1, 2026-07-07 audit)** — 이 명세와 실제 구현(backend/app/api)의 차이. 구현이 정본.
+
+    경로/메서드 드리프트(명세 → 실제):
+    - `/users`, `/users/{user_id}` → `/employees`, `/employees/{employee_id}` (페이지네이션 envelope 없이 bare 배열)
+    - `PUT /kpi-results/{id}/adjust`, `PUT /kpi-results/{id}/objections/review` → `POST`
+    - `PUT /work-logs/{id}`, `PUT /meeting-minutes/{id}`, `PUT /meetings/{id}` → `PATCH`
+    - `POST /seat-assignments/{assignment_id}/release` → `.../{seat_id}/release`
+    - `/erp-sync/trigger` → `/erp/sync`; `POST /auth/login` 성공 코드 200(명세 201 암묵)
+
+    구현되었으나 이 문서 paths에 미기재(실제 사용 가능):
+    - 인증: `GET /auth/me`
+    - 직원/ERP: `GET /attendances`, `GET /daily-status-push`, `POST /daily-status-push`, `POST /daily-status-push/{id}/retry`
+    - 좌석: `GET /floors`, `POST /seats`, `PUT /seats/{id}`, `DELETE /seats/{id}`, `GET /seat-assignments`, `PUT /seat-assignments/{seat_id}`
+    - 조직: `POST /org-groups`, `PUT /org-groups/{id}`, `DELETE /org-groups/{id}`, `POST /org-groups/validate`, `POST /org-groups/deploy`
+    - 회의록: `POST/GET /meeting-minutes/{id}/action-items`, `PATCH /meeting-minutes/{id}/action-items/{item_id}`
+    - KPI: `GET /kpi-results/{id}/objections`
+    - 감사: `GET /audit-logs`
+    - 맵: `POST /maps/generate`, `POST /maps/validate`
+    - WA: `POST /wa/presence`, `GET /wa/presence/stream`, `POST /wa/livekit-token`
   contact:
     name: Virtual Office 개발팀
   license:
