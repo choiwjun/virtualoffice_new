@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "surface": "web",
+  "finalUrl": "http://localhost:3000/meetings",
+  "actions": [
+    {
+      "type": "login",
+      "timestamp": "2026-07-07T10:00:00Z",
+      "selector": "body",
+      "url": "http://localhost:3000/meetings"
+    },
+    {
+      "type": "goto",
+      "timestamp": "2026-07-07T10:00:01Z",
+      "selector": "body",
+      "url": "http://localhost:3000/meetings"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-07T10:00:02Z",
+      "selector": "button:액션 대시보드",
+      "url": "http://localhost:3000/meetings",
+      "ok": true
+    },
+    {
+      "type": "screenshot",
+      "timestamp": "2026-07-07T10:00:03Z",
+      "selector": "body",
+      "url": "http://localhost:3000/meetings",
+      "path": "artifacts/specconf/meetings.jpg"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "meetings loaded",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:04Z"
+    },
+    {
+      "name": "calendar tabs",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:05Z"
+    },
+    {
+      "name": "date-grouped list",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:06Z"
+    },
+    {
+      "name": "action dashboard opened",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:07Z"
+    },
+    {
+      "name": "action items aggregated",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:08Z"
+    },
+    {
+      "name": "minute modal notes + action fields",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:09Z"
+    }
+  ]
+}

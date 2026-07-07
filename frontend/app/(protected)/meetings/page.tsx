@@ -92,6 +92,25 @@ export default function MeetingsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [showMinute, setShowMinute] = useState(false);
   const [toast, setToast] = useState('');
+  const [showDash, setShowDash] = useState(false);
+  const [dash, setDash] = useState<{ item: ActionItem; meeting: string }[]>([]);
+  const [dashLoading, setDashLoading] = useState(false);
+
+  const loadDash = useCallback(async () => {
+    setDashLoading(true);
+    try {
+      const collected: { item: ActionItem; meeting: string }[] = [];
+      for (const m of meetings) {
+        const mins = await api.get<Minute[]>(`/api/meeting-minutes?meeting_id=${m.id}`).catch(() => [] as Minute[]);
+        if (mins.length === 0) continue;
+        const items = await api.get<ActionItem[]>(`/api/meeting-minutes/${mins[0].id}/action-items`).catch(() => [] as ActionItem[]);
+        for (const it of items) collected.push({ item: it, meeting: m.title });
+      }
+      setDash(collected);
+    } finally {
+      setDashLoading(false);
+    }
+  }, [meetings]);
 
   const flash = (m: string) => {
     setToast(m);
@@ -186,12 +205,20 @@ export default function MeetingsPage() {
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-xl font-bold text-gray-800">회의 / 회의록</h1>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700"
-        >
-          + 회의 예약
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { const n = !showDash; setShowDash(n); if (n) loadDash(); }}
+            className="px-4 py-2 border border-gray-300 text-gray-600 text-sm font-medium rounded-md hover:bg-gray-50"
+          >
+            {showDash ? '액션 대시보드 닫기' : '액션 대시보드'}
+          </button>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700"
+          >
+            + 회의 예약
+          </button>
+        </div>
       </div>
       <div className="flex gap-1 mt-3 mb-4">
         {(['day', 'week', 'month'] as RangeTab[]).map((t) => (
@@ -204,6 +231,36 @@ export default function MeetingsPage() {
           </button>
         ))}
       </div>
+
+      {showDash && (
+        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-semibold text-gray-700">액션 아이템 대시보드</span>
+            <span className="text-xs text-gray-400">
+              {dash.length}건 · 완료 {dash.filter((d) => d.item.status === 'completed').length} · 진행 {dash.filter((d) => d.item.status !== 'completed').length}
+            </span>
+          </div>
+          {dashLoading ? (
+            <p className="text-xs text-gray-400">불러오는 중...</p>
+          ) : dash.length === 0 ? (
+            <p className="text-xs text-gray-400">이 기간의 액션 아이템이 없습니다.</p>
+          ) : (
+            <div className="space-y-1">
+              {dash.map(({ item, meeting }) => (
+                <div key={item.id} className="flex items-center gap-2 text-sm border-b border-gray-50 last:border-0 py-1">
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.status === 'completed' ? 'bg-green-500' : 'bg-amber-400'}`} />
+                  <span className="text-gray-800 flex-1 truncate">{item.title}</span>
+                  <span className="text-xs text-gray-400 truncate">{meeting}</span>
+                  <span className="text-xs text-gray-400">~{item.due_date}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${item.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {item.status === 'completed' ? '완료' : '진행'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {toast && <div className="mb-3 px-3 py-2 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">{toast}</div>}
 
@@ -411,23 +468,41 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
 }
 
 function CreateMinuteModal({ meetingId, onClose, onCreated }: { meetingId: string; onClose: () => void; onCreated: () => void }) {
+  const me = getUser();
   const [title, setTitle] = useState('');
   const [summary, setSummary] = useState('');
   const [decisions, setDecisions] = useState('');
+  const [notes, setNotes] = useState('');
+  const [items, setItems] = useState<{ title: string; due_date: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
+
+  const addItem = () => setItems((prev) => [...prev, { title: '', due_date: new Date().toISOString().split('T')[0] }]);
+  const setItem = (i: number, patch: Partial<{ title: string; due_date: string }>) =>
+    setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
+  const removeItem = (i: number) => setItems((prev) => prev.filter((_, idx) => idx !== i));
 
   async function save() {
     if (!decisions.trim()) { setErr('결정 사항은 필수입니다.'); return; }
     setSaving(true);
     setErr('');
     try {
-      await api.post('/api/meeting-minutes', {
+      const minute = await api.post<{ id: string }>('/api/meeting-minutes', {
         meeting_id: meetingId,
         title: title.trim() || null,
         summary: summary.trim() || null,
         decisions,
+        notes: notes.trim() || null,
       });
+      // 액션 아이템 생성 (POST /api/meeting-minutes/{id}/action-items)
+      for (const it of items) {
+        if (!it.title.trim()) continue;
+        await api.post(`/api/meeting-minutes/${minute.id}/action-items`, {
+          title: it.title.trim(),
+          assignee_user_id: me?.id ?? 0,
+          due_date: it.due_date,
+        });
+      }
       onCreated();
     } catch (e) {
       setErr(e instanceof ApiError ? `작성 실패 (${e.status})` : '서버 오류');
@@ -438,7 +513,7 @@ function CreateMinuteModal({ meetingId, onClose, onCreated }: { meetingId: strin
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="font-semibold text-gray-800">회의록 작성</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
@@ -455,6 +530,26 @@ function CreateMinuteModal({ meetingId, onClose, onCreated }: { meetingId: strin
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">결정 사항 (필수)</label>
             <textarea value={decisions} onChange={(e) => setDecisions(e.target.value)} rows={3} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">노트</label>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm font-medium text-gray-700">액션 아이템</label>
+              <button type="button" onClick={addItem} className="text-xs text-indigo-600 hover:underline">+ 추가</button>
+            </div>
+            {items.length === 0 && <p className="text-xs text-gray-400">액션 아이템 없음</p>}
+            <div className="space-y-2">
+              {items.map((it, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input value={it.title} onChange={(e) => setItem(i, { title: e.target.value })} placeholder="할 일" className="flex-1 border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <input type="date" value={it.due_date} onChange={(e) => setItem(i, { due_date: e.target.value })} className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <button type="button" onClick={() => removeItem(i)} className="text-gray-400 hover:text-red-500 text-sm">×</button>
+                </div>
+              ))}
+            </div>
           </div>
           {err && <p className="text-sm text-red-600">{err}</p>}
           <div className="flex gap-2 pt-1">
