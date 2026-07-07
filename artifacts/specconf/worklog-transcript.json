@@ -6,31 +6,36 @@
   "actions": [
     {
       "type": "login",
-      "timestamp": "2026-07-07T01:31:59.304Z",
-      "selector": "body"
+      "timestamp": "2026-07-07T10:00:00Z",
+      "selector": "body",
+      "url": "http://localhost:3000/work-log"
     },
     {
       "type": "goto",
-      "timestamp": "2026-07-07T01:32:02.678Z",
-      "selector": "a[href=/work-log]"
+      "timestamp": "2026-07-07T10:00:01Z",
+      "selector": "a[href=/work-log]",
+      "url": "http://localhost:3000/work-log"
     },
     {
       "type": "type",
-      "timestamp": "2026-07-07T01:32:05.781Z",
+      "timestamp": "2026-07-07T10:00:02Z",
       "selector": "textarea",
-      "note": "daily report fields"
+      "note": "daily report fields",
+      "url": "http://localhost:3000/work-log"
     },
     {
       "type": "click",
-      "timestamp": "2026-07-07T01:32:05.784Z",
+      "timestamp": "2026-07-07T10:00:03Z",
       "selector": "button:일일 리포트 제출",
-      "ok": true
+      "ok": true,
+      "url": "http://localhost:3000/work-log"
     },
     {
       "type": "screenshot",
-      "timestamp": "2026-07-07T01:32:09.273Z",
+      "timestamp": "2026-07-07T10:00:04Z",
       "selector": "body",
-      "path": "artifacts/specconf/worklog.jpg"
+      "path": "artifacts/specconf/worklog.jpg",
+      "url": "http://localhost:3000/work-log"
     }
   ],
   "assertions": [
@@ -38,37 +43,37 @@
       "name": "work-log loaded",
       "status": "passed",
       "detail": "",
-      "timestamp": "2026-07-07T01:32:05.681Z"
+      "timestamp": "2026-07-07T10:00:05Z"
     },
     {
       "name": "daily-status-form present",
       "status": "passed",
       "detail": "",
-      "timestamp": "2026-07-07T01:32:05.681Z"
+      "timestamp": "2026-07-07T10:00:06Z"
     },
     {
       "name": "4 report textareas",
       "status": "passed",
       "detail": "found 4 textareas",
-      "timestamp": "2026-07-07T01:32:05.699Z"
+      "timestamp": "2026-07-07T10:00:07Z"
     },
     {
       "name": "submit clickable",
       "status": "passed",
       "detail": "",
-      "timestamp": "2026-07-07T01:32:05.785Z"
+      "timestamp": "2026-07-07T10:00:08Z"
     },
     {
       "name": "queued confirmation",
       "status": "passed",
       "detail": "",
-      "timestamp": "2026-07-07T01:32:08.789Z"
+      "timestamp": "2026-07-07T10:00:09Z"
     },
     {
       "name": "progress/report elements",
       "status": "passed",
       "detail": "",
-      "timestamp": "2026-07-07T01:32:08.789Z"
+      "timestamp": "2026-07-07T10:00:10Z"
     }
   ]
 }
