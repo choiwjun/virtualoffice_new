@@ -117,6 +117,57 @@ export default function AdminKpiPage() {
     }
   }
 
+  const [tab, setTab] = useState<'detail' | 'ranking'>('detail');
+  const [ranking, setRanking] = useState<{ name: string; email: string; score: number | null }[]>([]);
+  const [rankLoading, setRankLoading] = useState(false);
+  const [pushing, setPushing] = useState(false);
+
+  async function exportErp() {
+    const finals = results.filter((r) => r.finalized_at && r.metric === 'quarterly_total');
+    if (finals.length === 0) { flash('확정된 종합 점수가 없습니다'); return; }
+    setPushing(true);
+    try {
+      for (const r of finals) {
+        await api.post('/api/daily-status-push', {
+          user_id: r.user_id,
+          target: 'erp_kpi_results',
+          payload: { metric: r.metric, final_score: r.final_score, period_key: r.period_key },
+        });
+      }
+      flash('ERP 전송 큐잉 완료 (erp_kpi_results)');
+    } catch (e) {
+      flash(e instanceof ApiError ? `푸시 실패 (${e.status})` : '오류');
+    } finally {
+      setPushing(false);
+    }
+  }
+
+  const loadRanking = useCallback(async () => {
+    if (!employees.length) return;
+    setRankLoading(true);
+    try {
+      const target = employees.find((e) => e.id === targetId);
+      const mates = employees.filter((e) => e.erp_team_id === target?.erp_team_id);
+      const rows = await Promise.all(
+        mates.map(async (e) => {
+          const rs = await api
+            .get<KpiResult[]>(`/api/kpi-results?user_id=${e.id}&period_type=${periodType}&period_key=${periodKey}`)
+            .catch(() => [] as KpiResult[]);
+          const total = rs.find((x) => x.metric === 'quarterly_total');
+          return { name: e.name, email: e.email, score: total?.final_score ?? total?.value ?? null };
+        }),
+      );
+      rows.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+      setRanking(rows);
+    } finally {
+      setRankLoading(false);
+    }
+  }, [employees, targetId, periodType, periodKey]);
+
+  useEffect(() => {
+    if (allowed && tab === 'ranking') loadRanking();
+  }, [tab, loadRanking, allowed]);
+
   if (!allowed) {
     return (
       <div className="p-6">
@@ -189,6 +240,13 @@ export default function AdminKpiPage() {
         >
           {busy === 'compute' ? '계산 중...' : 'KPI 계산 실행'}
         </button>
+        <button
+          onClick={exportErp}
+          disabled={pushing}
+          className="px-4 py-2 text-sm border border-indigo-300 text-indigo-600 rounded-md hover:bg-indigo-50 disabled:opacity-50"
+        >
+          {pushing ? '전송 중...' : '내보내기 (ERP 푸시)'}
+        </button>
       </div>
 
       {toast && (
@@ -198,7 +256,62 @@ export default function AdminKpiPage() {
         <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">{error}</div>
       )}
 
-      {loading ? (
+      {/* Tab navigation */}
+      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit mb-4">
+        {([['detail', '지표 상세'], ['ranking', '팀 랭킹']] as const).map(([k, label]) => (
+          <button
+            key={k}
+            onClick={() => setTab(k)}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md ${tab === k ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-600'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* AI 초안 (ai-draft-display) */}
+      {tab === 'detail' && sorted.length > 0 && (() => {
+        const withDraft = sorted.find((r) => r.ai_draft);
+        return (
+          <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
+            <div className="text-sm font-semibold text-gray-700 mb-2">AI 평가 초안</div>
+            {withDraft ? (
+              <div className="text-sm text-gray-600 whitespace-pre-wrap">
+                {typeof withDraft.ai_draft === 'string' ? withDraft.ai_draft : JSON.stringify(withDraft.ai_draft, null, 2)}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400">AI 초안이 아직 없습니다. 21:00 야간 배치(D17)에서 생성됩니다.</p>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* 팀 랭킹 (team-summary-section) */}
+      {tab === 'ranking' && (
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <div className="text-sm font-semibold text-gray-700 mb-3">팀 랭킹 (종합점수)</div>
+          {rankLoading ? (
+            <p className="text-xs text-gray-400">불러오는 중...</p>
+          ) : ranking.length === 0 ? (
+            <p className="text-xs text-gray-400">팀 데이터가 없습니다.</p>
+          ) : (
+            <ol className="space-y-1">
+              {ranking.map((m, i) => (
+                <li key={m.email} className="flex items-center justify-between text-sm py-1 border-b border-gray-50 last:border-0">
+                  <span className="flex items-center gap-2">
+                    <span className={`w-5 text-center text-xs font-bold ${i < 3 ? 'text-indigo-600' : 'text-gray-400'}`}>{i + 1}</span>
+                    <span className="text-gray-800">{m.name}</span>
+                    <span className="text-xs text-gray-400">{m.email}</span>
+                  </span>
+                  <span className="font-semibold text-gray-800">{m.score != null ? m.score.toFixed(1) : '—'}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
+
+      {tab === 'detail' && (loading ? (
         <div className="text-center py-16 text-gray-400 text-sm">불러오는 중...</div>
       ) : sorted.length === 0 ? (
         <div className="text-center py-16 text-gray-400 text-sm">
@@ -213,6 +326,7 @@ export default function AdminKpiPage() {
                 <th className="text-right px-4 py-2.5 font-medium">원점수</th>
                 <th className="text-right px-4 py-2.5 font-medium">조정</th>
                 <th className="text-right px-4 py-2.5 font-medium">최종</th>
+                <th className="px-4 py-2.5 font-medium">진행도</th>
                 <th className="text-center px-4 py-2.5 font-medium">상태</th>
                 <th className="text-right px-4 py-2.5 font-medium">액션</th>
               </tr>
@@ -224,11 +338,25 @@ export default function AdminKpiPage() {
                   <td className="px-4 py-2.5 text-right text-gray-600">{formatScore(r.value)}</td>
                   <td className="px-4 py-2.5 text-right text-gray-600">{formatScore(r.admin_adjusted_score)}</td>
                   <td className="px-4 py-2.5 text-right font-semibold text-gray-800">{formatScore(r.final_score)}</td>
+                  <td className="px-4 py-2.5 w-40">
+                    {(() => {
+                      const pct = Math.max(0, Math.min(100, r.final_score ?? r.value ?? 0));
+                      const color = pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-400' : 'bg-red-400';
+                      return (
+                        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                          <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td className="px-4 py-2.5 text-center">
                     {r.finalized_at ? (
                       <span className="text-xs text-green-600" title={formatKst(r.finalized_at)}>확정</span>
                     ) : (
                       <span className="text-xs text-gray-400">미확정</span>
+                    )}
+                    {r.pushed_to_erp && (
+                      <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-blue-100 text-blue-600" title={formatKst(r.pushed_at)}>ERP↑</span>
                     )}
                   </td>
                   <td className="px-4 py-2.5 text-right whitespace-nowrap">
@@ -252,7 +380,7 @@ export default function AdminKpiPage() {
             </tbody>
           </table>
         </div>
-      )}
+      ))}
     </div>
   );
 }

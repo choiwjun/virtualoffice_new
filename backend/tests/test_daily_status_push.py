@@ -43,3 +43,24 @@ async def test_daily_status_push_requires_auth(async_client):
     """미인증은 401."""
     r = await async_client.post("/api/daily-status-push", json={"today_plan": "x"})
     assert r.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_kpi_erp_push_target(async_client, admin_auth_headers):
+    """KPI ERP 푸시: target=erp_kpi_results + payload override로 큐잉."""
+    r = await async_client.post(
+        "/api/daily-status-push",
+        headers=admin_auth_headers,
+        json={"target": "erp_kpi_results", "payload": {"metric": "quarterly_total", "final_score": 88.5, "period_key": "2026-Q3"}},
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["target"] == "erp_kpi_results"
+    assert body["payload"]["final_score"] == 88.5
+
+
+@pytest.mark.asyncio
+async def test_invalid_target_rejected(async_client, admin_auth_headers):
+    """알 수 없는 target은 400."""
+    r = await async_client.post("/api/daily-status-push", headers=admin_auth_headers, json={"target": "bogus"})
+    assert r.status_code == 400

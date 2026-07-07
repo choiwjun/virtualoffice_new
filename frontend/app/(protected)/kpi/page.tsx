@@ -119,9 +119,21 @@ export default function MyKpiPage() {
                   원점수 {formatScore(r.value)}
                   {r.final_score !== null && r.final_score !== r.value && ` · 최종 ${formatScore(r.final_score)}`}
                 </div>
+                <div className="mt-2 h-1.5 w-full bg-white/70 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${(() => { const pp = Math.max(0, Math.min(100, r.final_score ?? r.value ?? 0)); return pp >= 80 ? 'bg-green-500' : pp >= 50 ? 'bg-amber-400' : 'bg-red-400'; })()}`}
+                    style={{ width: `${Math.max(0, Math.min(100, r.final_score ?? r.value ?? 0))}%` }}
+                  />
+                </div>
                 {r.finalized_at && (
                   <div className="mt-2 text-[11px] text-green-600">확정 {formatKst(r.finalized_at)}</div>
                 )}
+                {r.ai_draft ? (
+                  <div className="mt-2 text-[11px] text-gray-500 border-t border-gray-100 pt-1 whitespace-pre-wrap line-clamp-3">
+                    <span className="text-gray-400">AI 초안: </span>
+                    {typeof r.ai_draft === 'string' ? r.ai_draft : JSON.stringify(r.ai_draft)}
+                  </div>
+                ) : null}
               </div>
             );
           })}

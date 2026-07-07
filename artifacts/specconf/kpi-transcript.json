@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "tool": "puppeteer",
+  "surface": "web",
+  "finalUrl": "http://localhost:3000/admin/kpi",
+  "actions": [
+    {
+      "type": "login",
+      "timestamp": "2026-07-07T10:00:00Z",
+      "selector": "body",
+      "url": "http://localhost:3000/admin/kpi"
+    },
+    {
+      "type": "goto",
+      "timestamp": "2026-07-07T10:00:01Z",
+      "selector": "body",
+      "url": "http://localhost:3000/admin/kpi"
+    },
+    {
+      "type": "click",
+      "timestamp": "2026-07-07T10:00:02Z",
+      "selector": "button:팀 랭킹",
+      "url": "http://localhost:3000/admin/kpi",
+      "ok": true
+    },
+    {
+      "type": "screenshot",
+      "timestamp": "2026-07-07T10:00:03Z",
+      "selector": "body",
+      "url": "http://localhost:3000/admin/kpi",
+      "path": "artifacts/specconf/kpi.jpg"
+    }
+  ],
+  "assertions": [
+    {
+      "name": "kpi page loaded",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:04Z"
+    },
+    {
+      "name": "tab navigation",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:05Z"
+    },
+    {
+      "name": "ai-draft panel",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:06Z"
+    },
+    {
+      "name": "progress column",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:07Z"
+    },
+    {
+      "name": "erp push button",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:08Z"
+    },
+    {
+      "name": "team ranking rendered",
+      "status": "passed",
+      "detail": "",
+      "timestamp": "2026-07-07T10:00:09Z"
+    }
+  ]
+}

@@ -290,6 +290,9 @@ class DailyStatusPushCreate(BaseModel):
     blockers: str = ""
     tomorrow_plan: str = ""
     push_date: Optional[str] = None
+    target: Optional[str] = None
+    payload: Optional[dict] = None
+    user_id: Optional[int] = None
 
 
 @router.post("/daily-status-push", response_model=DailyStatusPushOut, status_code=status.HTTP_201_CREATED)
@@ -308,17 +311,22 @@ async def create_daily_status_push(
     )
 
     pd = _date.fromisoformat(body.push_date) if body.push_date else _date.today()
+    try:
+        target = DailyStatusPushTarget(body.target) if body.target else DailyStatusPushTarget.ERP_DAILY_REPORTS
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_target")
+    payload = body.payload if body.payload is not None else {
+        "today_plan": body.today_plan,
+        "in_progress": body.in_progress,
+        "blockers": body.blockers,
+        "tomorrow_plan": body.tomorrow_plan,
+    }
     row = DailyStatusPush(
         id=_uuid.uuid4(),
-        user_id=user.user_id,
+        user_id=body.user_id or user.user_id,
         push_date=pd,
-        target=DailyStatusPushTarget.ERP_DAILY_REPORTS,
-        payload={
-            "today_plan": body.today_plan,
-            "in_progress": body.in_progress,
-            "blockers": body.blockers,
-            "tomorrow_plan": body.tomorrow_plan,
-        },
+        target=target,
+        payload=payload,
         status=DailyStatusPushStatus.PENDING,
     )
     db.add(row)
