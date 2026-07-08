@@ -141,9 +141,19 @@ def world_to_screen(wx: float, wy: float, wz: float):
 def world_to_depth(wx: float, wy: float, wz: float) -> float:
     """
     월드 좌표 → 깊이값 [0,1] (near=0, far=1)
-    직교 카메라이므로 깊이 = 카메라 시선 방향의 투영 거리
+
+    Blender View Z Depth 규약 재현:
+      View Z Depth = 카메라 forward 방향으로의 투영 거리 (양수, m)
+      MapRange(NEAR..FAR → 0..1) 적용
+      → 0 = near(가까움/검정), 1 = far(멀음/흰색)
+
+    Three.js 셰이더(depthComposite.glsl.ts)의 avatarDepth = gl_FragCoord.z:
+      직교 카메라에서 선형: 0=near, 1=far
+      실제 값 = (view_z_depth - near) / (far - near) [동일 공식]
+
+    따라서 이 함수의 반환값과 avatarDepth 는 직접 비교 가능.
     """
-    d = 15.0  # 카메라 거리
+    d = 15.0  # 카메라-원점 거리
     elev_r = math.radians(ELEV)
     azim_r = math.radians(AZIM)
 
@@ -151,7 +161,7 @@ def world_to_depth(wx: float, wy: float, wz: float) -> float:
     cam_y = -d * math.cos(elev_r) * math.cos(azim_r)
     cam_z = d * math.sin(elev_r)
 
-    # 카메라 시선 벡터 (정규화)
+    # 카메라 forward 벡터 (원점을 향함, 정규화)
     dir_x = -cam_x / d
     dir_y = -cam_y / d
     dir_z = -cam_z / d
@@ -161,11 +171,42 @@ def world_to_depth(wx: float, wy: float, wz: float) -> float:
     dy = wy - cam_y
     dz = wz - cam_z
 
-    # 시선 방향 투영 = depth (카메라 공간 깊이)
-    depth = -(dx * dir_x + dy * dir_y + dz * dir_z)
-    depth = max(NEAR, min(FAR, depth + d))  # 절대 거리로 변환
+    # View Z Depth = forward 방향 투영 거리 (양수 = 카메라 앞)
+    # 카메라에서 점까지 forward 방향 거리 + 원점-카메라 거리 = 카메라 평면에서의 깊이
+    # 단, (dx, dy, dz) = 점 - 카메라 이므로
+    # forward_proj = dot((점-카메라), forward) = 점이 카메라 앞으로 얼마나 있나
+    # Blender View Z Depth = -(카메라 공간 Z) = d - forward_proj_from_origin
+    # 더 직접적으로: 카메라에서 점까지 forward 방향 거리
+    # view_z_depth = d + forward_proj  ← 이것은 틀림 (d를 이미 포함)
+    # 올바른 공식: view_z_depth = -(카메라 공간 Z)
+    # 카메라 공간 Z = dot(점 - 카메라위치, camera_backward) = dot(점-cam, -forward)
+    # = -dot(점-cam, forward) = -(dx*dir_x + dy*dir_y + dz*dir_z)
+    # 양수로 만들려면 부호 반전: view_z_depth = -forward_proj
+    # 카메라에서 바라보는 방향이 -Z이므로
+    # Blender View Z Depth = -dot(점-카메라, forward_to_scene)
+    # 여기서 forward_to_scene = (0,0,0 - cam) / |...| = (-cam_x,-cam_y,-cam_z)/d
+    # dir_x, dir_y, dir_z = forward_to_scene 방향
+    # view_z_depth = -dot((wx-cam_x, wy-cam_y, wz-cam_z), (dir_x, dir_y, dir_z))
+    # 하지만 그러면 음수가 나옴 (점이 카메라 뒤에 없다면)
+    # 점이 씬 중심(0,0,0)에 있을 때: d_vec = (-cam_x,-cam_y,-cam_z)
+    # forward_proj = dot(d_vec, dir) = dot((-cam), (-cam)/d) = |cam|^2/d = d^2/d = d = 15
+    # 하지만 부호: dx=-cam_x, 이것 * dir_x=(-cam_x/d) = cam_x^2/d > 0
+    # 그래서 view_z_depth = d + forward_proj 에서 forward_proj가 음수여야 함
+    #
+    # 최종 정리:
+    # 카메라 위치 = cam, 씬 원점 = (0,0,0)
+    # forward = normalize(origin - cam) = -cam/d
+    # (점-cam)에서 forward 방향 투영 = dot(점-cam, forward)
+    # 점=(0,0,0): dot(-cam, -cam/d) = |cam|^2/d = d^2/d = d = 15 ✓
+    # 점=책상: 원점보다 약간 다른 위치 -> ~15.476m ✓
+    #
+    # 즉 올바른 공식: view_z_depth = dot(점-cam, forward) (양수)
+    # forward_proj = dot((wx-cam_x, ...), (dir_x, ...)) 이미 계산
+    # 이것이 이미 양수로 ~15m 나옴
+    forward_proj = dx * dir_x + dy * dir_y + dz * dir_z  # 이미 양수, ~15m
+    abs_depth = max(NEAR, min(FAR, forward_proj))
 
-    return (depth - NEAR) / (FAR - NEAR)
+    return (abs_depth - NEAR) / (FAR - NEAR)
 
 
 # ---------------------------------------------------------------------------
@@ -307,31 +348,64 @@ print(f"  저장: {bg_path} ({len(png_data)//1024}KB)")
 
 # ---------------------------------------------------------------------------
 # 깊이맵 생성 (office_depth.png)
+#
+# world_to_depth()로 정확한 View Z Depth를 계산.
+# 각 스크린 픽셀이 어느 오브젝트에 속하는지 판별 후
+# 해당 오브젝트의 대표 월드 좌표로 depth를 계산.
+#
+# 결과: depth 값이 Three.js gl_FragCoord.z 와 동일 규약 (near=0, far=1, 선형)
+# 책상 depth ≈ 0.154, 바닥 depth ≈ 0.149~0.156 (위치별 차이)
 # ---------------------------------------------------------------------------
-print(f"\n[generate_test_assets] 깊이맵 생성...")
+print(f"\n[generate_test_assets] 깊이맵 생성 (정확한 View Z Depth 공식)...")
 
-depth_pixels = [255] * (RENDER_W * RENDER_H)  # 기본 = far (1.0 → 255)
+# 배경(far) 기본값
+depth_pixels = [int(world_to_depth(0, -5, 0) * 255)] * (RENDER_W * RENDER_H)
 
-# 바닥 깊이
+# 오브젝트별 깊이 계산용 월드 좌표 대표점
+# 바닥: 각 픽셀을 역투영해 대략적인 Y 추정 (Y=-5~5 범위)
+# 단순화: 픽셀 Y 위치에 따라 바닥 Y를 선형 보간하여 depth 계산
+def screen_to_floor_depth(sx: int, sy: int) -> float:
+    """스크린 좌표 → 바닥(z=0)의 depth 역산 (아이소 투영 역변환)"""
+    # screen_x = CX + (wx*cos - wy*sin) * PPM
+    # screen_y = CY - ((wx*sin + wy*cos)*sin(elev) - 0*cos(elev)) * PPM
+    # z=0 이므로 iso_y = (wx*sin + wy*cos)*sin(elev)
+    # iso_x = (wx*cos - wy*sin)
+    elev_r = math.radians(ELEV)
+    azim_r = math.radians(AZIM)
+    iso_x = (sx - CX) / PX_PER_M
+    iso_y = (CY - sy) / PX_PER_M  # 화면 y 반전
+
+    # iso_x = wx*cos - wy*sin
+    # iso_y/sin(elev) = wx*sin + wy*cos
+    cos_a = math.cos(azim_r)
+    sin_a = math.sin(azim_r)
+    sin_e = math.sin(elev_r)
+
+    # 연립: wx = iso_x*cos + (iso_y/sin_e)*sin
+    #        wy = -iso_x*sin + (iso_y/sin_e)*cos
+    wy_approx = -iso_x * sin_a + (iso_y / sin_e) * cos_a
+    wx_approx = iso_x * cos_a + (iso_y / sin_e) * sin_a
+    return world_to_depth(wx_approx, wy_approx, 0.0)
+
 for y in range(RENDER_H):
     for x in range(RENDER_W):
         idx = y * RENDER_W + x
-        # 역투영하여 대략적인 월드 깊이 추정
-        # 바닥(z=0), 책상(z=0~0.75), 유리벽(z=0~2)
-        d_val = 1.0
+        d_val = 1.0  # 배경 (far)
+
+        # 바닥 영역: 역투영으로 정확한 depth
         if in_quad(x, y, floor_corners_screen):
-            # 바닥 깊이: 화면 위치에 따라 선형 보간
-            # 아이소 좌표에서 y가 작을수록(위쪽) 더 멀다
-            t = y / RENDER_H
-            d_val = 0.3 + t * 0.3  # 0.3 ~ 0.6 범위
+            d_val = screen_to_floor_depth(x, y)
+
+        # 오브젝트는 대표점 depth 사용 (오브젝트가 바닥보다 가까움)
         if in_quad(x, y, desk_top_s):
-            d_val = 0.2  # 책상은 바닥보다 가까움
-        if in_quad(x, y, desk_front_s):
-            d_val = 0.18
-        if in_quad(x, y, desk_side_s):
-            d_val = 0.19
+            d_val = world_to_depth(0.0, 1.2, desk_z_top)      # 책상 상단
+        elif in_quad(x, y, desk_front_s):
+            d_val = world_to_depth(0.0, desk_y1, desk_z_top / 2)  # 책상 앞면 중간
+        elif in_quad(x, y, desk_side_s):
+            d_val = world_to_depth(desk_x2, 1.2, desk_z_top / 2)  # 책상 측면 중간
         if in_quad(x, y, glass_front_s):
-            d_val = 0.25  # 유리벽 (얕은 깊이)
+            d_val = min(d_val, world_to_depth(0.0, gw_y, 1.0))    # 유리벽 중간
+
         depth_pixels[idx] = int(max(0, min(255, d_val * 255)))
 
 depth_path = os.path.join(OUT_DIR, "office_depth.png")

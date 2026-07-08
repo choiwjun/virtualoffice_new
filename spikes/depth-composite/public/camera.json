@@ -1,0 +1,89 @@
+{
+  "camera_type": "ORTHO",
+  "source": "generate_test_assets.py (Blender \uc5c6\uc744 \ub54c \ub354\ubbf8)",
+  "ortho_scale": 8.0,
+  "ortho_w": 14.222222222222221,
+  "ortho_h": 8.0,
+  "aspect": 1.7777777777777777,
+  "render_w": 1920,
+  "render_h": 1080,
+  "clip_near": 0.1,
+  "clip_far": 100.0,
+  "elevation_deg": 35.264389682754654,
+  "azimuth_deg": 45.0,
+  "camera_position": [
+    8.660254037844387,
+    -8.660254037844387,
+    8.660254037844386
+  ],
+  "camera_rotation_euler_xyz_rad": [
+    0.9553166181245093,
+    0.0,
+    0.7853981633974483
+  ],
+  "camera_rotation_euler_xyz_deg": [
+    54.735610317245346,
+    0.0,
+    45.0
+  ],
+  "view_matrix_row_major": [
+    0.7071067811865476,
+    0.7071067811865476,
+    -0.0,
+    -0.0,
+    -0.408248290463863,
+    0.408248290463863,
+    0.8164965809277261,
+    -0.0,
+    0.5773502691896258,
+    -0.5773502691896258,
+    0.5773502691896257,
+    -15.0,
+    0,
+    0,
+    0,
+    1
+  ],
+  "projection_matrix_row_major": [
+    0.140625,
+    0,
+    0,
+    0,
+    0,
+    0.25,
+    0,
+    0,
+    0,
+    0,
+    -0.02002002002002002,
+    -1.002002002002002,
+    0,
+    0,
+    0,
+    1
+  ],
+  "world_matrix_row_major": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "threejs_notes": {
+    "coordinate_system": "Blender Y-forward Z-up \u2192 Three.js Y-up Z-forward \ubcc0\ud658 \ud544\uc694",
+    "axis_remap": "Blender(x,y,z) \u2192 Three.js(x,z,-y)",
+    "ortho_half_w": 7.111111111111111,
+    "ortho_half_h": 4.0
+  }
+}

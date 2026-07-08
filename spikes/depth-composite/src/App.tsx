@@ -4,30 +4,38 @@
  * @SPEC docs/planning/16-render-spike-and-roadmap.md#A.3
  *
  * 레이아웃:
- *  - Canvas (fullscreen) — R3F 씬
- *  - HUD overlay — 아바타 위치 표시 + 이동 컨트롤 슬라이더
- *  - 수용기준 체크리스트 (좌하단)
+ *  - 배경 div: office_bg.png CSS background-image (풀스크린)
+ *  - Canvas (투명, fullscreen) — R3F 씬 (아바타 + 와이어프레임)
+ *  - HUD overlay — 아바타 위치 + 슬라이더
+ *
+ * 배경을 CSS로 깔고 Canvas를 투명하게 올리는 이유:
+ *  BackgroundQuad(planeGeometry)는 직교카메라 ortho 볼륨과 정렬 맞추기가
+ *  복잡하고 오류가 많음. CSS background-size:cover 가 확실히 풀스크린을 보장.
+ *  깊이합성 셰이더는 office_depth.png를 screenUV로 샘플하므로 배경 표시 방식과 무관.
  */
 
 import { Suspense, useState, useEffect, useCallback } from "react";
 import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
-import { DepthCompositeScene, AVATAR_INIT } from "./components/DepthCompositeScene";
+import {
+  DepthCompositeScene,
+  AVATAR_INIT,
+  AVATAR_INIT_S,
+  sliderToAvatarPos,
+} from "./components/DepthCompositeScene";
 import type { CameraJson } from "./types/camera";
 
-// 에셋 경로 (Vite가 public/ 또는 상대 경로로 서빙)
-const BG_URL = "../../render-pipeline/out/office_bg.png";
-const DEPTH_URL = "../../render-pipeline/out/office_depth.png";
-const CAMERA_JSON_URL = "../../render-pipeline/out/camera.json";
+// 에셋 경로 (public/에 복사됨 — build_office.py 산출물)
+const BG_URL = "/office_bg.png";
+const DEPTH_URL = "/office_depth.png";
+const CAMERA_JSON_URL = "/camera.json";
 
-// 카메라 JSON 동기 로드 (fetch + useState 조합)
 async function loadCameraJson(url: string): Promise<CameraJson> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`camera.json 로드 실패: ${res.status}`);
   return res.json();
 }
 
-// 로딩 폴백 컴포넌트
 function LoadingScreen() {
   return (
     <div
@@ -54,18 +62,25 @@ function LoadingScreen() {
 // HUD 오버레이
 interface HudProps {
   avatarPos: [number, number, number];
-  zSlider: number;
-  onZSlider: (v: number) => void;
+  sliderS: number;
+  onSliderS: (v: number) => void;
   onReset: () => void;
 }
 
-function Hud({ avatarPos, zSlider, onZSlider, onReset }: HudProps) {
+function Hud({ avatarPos, sliderS, onSliderS, onReset }: HudProps) {
   const [x, y, z] = avatarPos;
 
-  // 책상 앞/뒤 판정 (Three.js Z: 책상이 Z=-1.2 근처)
-  // 아바타 Z > -0.5 → 앞, Z < -1.9 → 뒤
+  // 앞/뒤 판정: sliderS 기준
+  // s < -0.3: 책상 앞 (카메라 가까운 쪽)
+  // s > +0.3: 책상 뒤 (카메라 먼 쪽)
   const deskStatus =
-    z > -0.5 ? "책상 앞 (보여야 함)" : z < -1.9 ? "책상 뒤 (가려져야 함)" : "책상 근처";
+    sliderS < -0.3
+      ? "책상 앞 — 온전히 보여야 함"
+      : sliderS > 0.3
+      ? "책상 뒤 — 가려져야 함 (하반신 discard)"
+      : "책상 동일 깊이";
+
+  const statusColor = sliderS < -0.3 ? "#4f4" : sliderS > 0.3 ? "#f84" : "#fa0";
 
   return (
     <>
@@ -75,7 +90,7 @@ function Hud({ avatarPos, zSlider, onZSlider, onReset }: HudProps) {
           position: "fixed",
           top: 12,
           left: 12,
-          background: "rgba(0,0,0,0.7)",
+          background: "rgba(0,0,0,0.75)",
           color: "#eee",
           padding: "12px 16px",
           borderRadius: 8,
@@ -83,33 +98,32 @@ function Hud({ avatarPos, zSlider, onZSlider, onReset }: HudProps) {
           fontSize: 12,
           lineHeight: 1.8,
           userSelect: "none",
-          minWidth: 260,
+          minWidth: 280,
         }}
       >
         <div style={{ color: "#4af", fontWeight: "bold", marginBottom: 6 }}>
-          Phase 0 — 깊이합성 스파이크
+          Phase 0 — 깊이합성 오클루전 스파이크
         </div>
 
-        <div style={{ color: "#aaa", marginBottom: 8 }}>
-          이동: WASD / 방향키 &nbsp;|&nbsp; 높이: Q(위) E(아래)
-        </div>
-
-        {/* Z축 슬라이더 (책상 앞뒤) */}
-        <div style={{ marginBottom: 6 }}>
+        {/* Z축 슬라이더: 책상 앞 ↔ 뒤 */}
+        <div style={{ marginBottom: 8 }}>
           <div style={{ color: "#fa0", marginBottom: 2 }}>
-            Z축 슬라이더 (책상 앞 ↔ 뒤)
+            슬라이더: 책상 앞(−) ↔ 책상 뒤(+)
           </div>
           <input
+            id="slider-s"
             type="range"
             min={-3}
             max={3}
             step={0.05}
-            value={zSlider}
-            onChange={(e) => onZSlider(parseFloat(e.target.value))}
+            value={sliderS}
+            onChange={(e) => onSliderS(parseFloat(e.target.value))}
             style={{ width: "100%" }}
           />
-          <div style={{ fontSize: 11, color: "#888" }}>
-            Z = {zSlider.toFixed(2)} &nbsp; (책상: Z ≈ -1.2)
+          <div style={{ fontSize: 11, color: "#888", display: "flex", justifyContent: "space-between" }}>
+            <span>← 앞 (보임)</span>
+            <span>s = {sliderS.toFixed(2)}</span>
+            <span>뒤 (가려짐) →</span>
           </div>
         </div>
 
@@ -126,33 +140,38 @@ function Hud({ avatarPos, zSlider, onZSlider, onReset }: HudProps) {
             fontSize: 12,
           }}
         >
-          위치 초기화
+          초기화 (s = {AVATAR_INIT_S})
         </button>
       </div>
 
-      {/* 우상단: 아바타 위치 */}
+      {/* 우상단: 아바타 위치 + 상태 */}
       <div
         style={{
           position: "fixed",
           top: 12,
           right: 12,
-          background: "rgba(0,0,0,0.7)",
+          background: "rgba(0,0,0,0.75)",
           color: "#eee",
           padding: "12px 16px",
           borderRadius: 8,
           fontFamily: "monospace",
           fontSize: 12,
           lineHeight: 1.8,
-          minWidth: 220,
+          minWidth: 240,
         }}
       >
         <div style={{ color: "#4af", fontWeight: "bold", marginBottom: 4 }}>
           아바타 위치 (Three.js)
         </div>
         <div>X: {x.toFixed(3)}</div>
-        <div>Y: {y.toFixed(3)}</div>
+        <div>Y: {y.toFixed(3)} (발 높이)</div>
         <div>Z: {z.toFixed(3)}</div>
-        <div style={{ marginTop: 6, color: "#fa0" }}>{deskStatus}</div>
+        <div style={{ marginTop: 6, color: statusColor, fontWeight: "bold" }}>
+          {deskStatus}
+        </div>
+        <div style={{ marginTop: 4, color: "#666", fontSize: 10 }}>
+          슬라이더 s={sliderS.toFixed(2)}, 이동방향 XZ(0.707,0.707)
+        </div>
       </div>
 
       {/* 좌하단: 수용기준 */}
@@ -161,7 +180,7 @@ function Hud({ avatarPos, zSlider, onZSlider, onReset }: HudProps) {
           position: "fixed",
           bottom: 12,
           left: 12,
-          background: "rgba(0,0,0,0.7)",
+          background: "rgba(0,0,0,0.75)",
           color: "#eee",
           padding: "12px 16px",
           borderRadius: 8,
@@ -173,18 +192,16 @@ function Hud({ avatarPos, zSlider, onZSlider, onReset }: HudProps) {
         <div style={{ color: "#4af", fontWeight: "bold", marginBottom: 4 }}>
           수용기준 (docs/16 §A.3)
         </div>
-        <div>[ ] 책상 앞 → 아바타 온전히 보임</div>
-        <div>[ ] 책상 뒤 → 아바타 정확히 가려짐 (≤2px 오차)</div>
-        <div>[ ] 발 위치 = 배경 바닥과 좌표 정합</div>
-        <div>[ ] 스크린샷 3종 저장 (evidence/)</div>
-        <div
-          style={{ marginTop: 6, color: "#f84", fontSize: 10 }}
-        >
-          육안확인필요: Blender 없어 더미 에셋 사용
+        <div>[ ] 책상 앞(s&lt;0) → 아바타 온전히 보임</div>
+        <div>[ ] 책상 뒤(s&gt;0) → 하반신이 책상에 가려짐</div>
+        <div>[ ] 배경 office_bg.png 풀스크린 표시</div>
+        <div>[ ] 스크린샷 2종 저장 (evidence/)</div>
+        <div style={{ marginTop: 6, color: "#888", fontSize: 10 }}>
+          깊이 bias=0.001 | near=0.1, far=100 | 씬깊이~0.15
         </div>
       </div>
 
-      {/* 우하단: 조작 안내 */}
+      {/* 우하단: 범례 */}
       <div
         style={{
           position: "fixed",
@@ -199,20 +216,20 @@ function Hud({ avatarPos, zSlider, onZSlider, onReset }: HudProps) {
           lineHeight: 1.7,
         }}
       >
-        <div>orange dot = 발 위치 마커</div>
-        <div>orange wire = 책상 영역</div>
-        <div>blue wire = 유리벽 영역</div>
+        <div style={{ color: "#f84" }}>orange wire = 책상 (Blender y=1.2)</div>
+        <div style={{ color: "#48f" }}>blue wire = 유리벽 (Blender y=-0.5)</div>
+        <div style={{ color: "#f44" }}>red disk = 아바타 발 마커</div>
+        <div style={{ color: "#6cf" }}>blue body = 아바타 (깊이합성 적용)</div>
       </div>
     </>
   );
 }
 
-// 메인 앱 — camera.json 로드 후 씬 마운트
 export default function App() {
   const [camData, setCamData] = useState<CameraJson | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [sliderS, setSliderS] = useState<number>(AVATAR_INIT_S);
   const [avatarPos, setAvatarPos] = useState<[number, number, number]>(AVATAR_INIT);
-  const [zSlider, setZSlider] = useState(AVATAR_INIT[2]);
 
   // camera.json 로드 (마운트 1회)
   useEffect(() => {
@@ -221,14 +238,15 @@ export default function App() {
       .catch((err) => setLoadError(String(err)));
   }, []);
 
-  const handleZSlider = useCallback((v: number) => {
-    setZSlider(v);
-    setAvatarPos((prev) => [prev[0], prev[1], v]);
+  // 슬라이더 변경 → 아바타 위치 갱신
+  const handleSliderS = useCallback((s: number) => {
+    setSliderS(s);
+    setAvatarPos(sliderToAvatarPos(s));
   }, []);
 
   const handleReset = useCallback(() => {
+    setSliderS(AVATAR_INIT_S);
     setAvatarPos(AVATAR_INIT);
-    setZSlider(AVATAR_INIT[2]);
   }, []);
 
   if (loadError) {
@@ -261,41 +279,67 @@ export default function App() {
 
   return (
     <>
+      {/*
+       * 배경 레이어: office_bg.png 풀스크린 CSS background
+       * Canvas를 transparent로 하고 그 아래에 깔아 확실히 풀스크린 표시.
+       * Canvas background=transparent 이므로 이 배경이 보임.
+       */}
+      <div
+        id="bg-layer"
+        style={{
+          position: "fixed",
+          inset: 0,
+          backgroundImage: `url(${BG_URL})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          zIndex: 0,
+        }}
+      />
+
+      {/*
+       * R3F Canvas: 투명 배경으로 배경 div 위에 올라감
+       * camera는 camera.json 값으로 useEffect 내에서 덮어씀
+       */}
       <Canvas
         orthographic
         camera={{
-          // 초기값 — useEffect에서 camera.json으로 덮어씀
-          left: -7.11,
-          right: 7.11,
-          top: 4,
-          bottom: -4,
+          left: -7.111,
+          right: 7.111,
+          top: 4.0,
+          bottom: -4.0,
           near: 0.1,
           far: 100,
-          position: [8.66, 8.66, -8.66],
+          position: [8.66, 8.66, 8.66],
         }}
         gl={{
           antialias: true,
-          toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.0,
+          alpha: true,        // 캔버스 배경 투명
+          toneMapping: THREE.NoToneMapping,
         }}
-        style={{ position: "fixed", inset: 0 }}
+        style={{ position: "fixed", inset: 0, zIndex: 1 }}
       >
         <Suspense fallback={null}>
           <DepthCompositeScene
             camData={camData}
-            bgUrl={BG_URL}
             depthUrl={DEPTH_URL}
             avatarPos={avatarPos}
+            depthBias={0.001}
           />
         </Suspense>
       </Canvas>
 
-      <Hud
-        avatarPos={avatarPos}
-        zSlider={zSlider}
-        onZSlider={handleZSlider}
-        onReset={handleReset}
-      />
+      {/* HUD: Canvas 위에 올라감 */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 2, pointerEvents: "none" }}>
+        <div style={{ pointerEvents: "auto" }}>
+          <Hud
+            avatarPos={avatarPos}
+            sliderS={sliderS}
+            onSliderS={handleSliderS}
+            onReset={handleReset}
+          />
+        </div>
+      </div>
     </>
   );
 }

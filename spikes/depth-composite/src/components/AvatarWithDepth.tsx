@@ -25,7 +25,12 @@ interface AvatarWithDepthProps {
   position: [number, number, number];
   /** office_depth.png 텍스처 */
   depthTexture: THREE.Texture;
-  /** 깊이 판정 편향 (기본 0.005: 경계 떨림 방지) */
+  /**
+   * 깊이 판정 편향
+   * near=0.1, far=100 씬에서 책상 깊이~0.154, 아바타 이동 1m = depth±0.01
+   * bias=0.001: 경계 떨림 방지하면서 오클루전 정확도 유지
+   * (구 기본값 0.005는 차이 0.0046인 씬에서 오클루전을 억제했음)
+   */
   depthBias?: number;
 }
 
