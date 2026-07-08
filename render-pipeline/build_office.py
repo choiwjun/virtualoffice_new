@@ -7,16 +7,31 @@ Phase 0 Depth-Composite Spike — Blender Headless Render Script
 @SPEC docs/3d-design/photoreal-web-strategy.md#2-4
 
 Usage:
-  "C:\Program Files\Blender Foundation\Blender 5.1\blender.exe" \
+  "C:\\Program Files\\Blender Foundation\\Blender 5.1\\blender.exe" \\
     --background --python render-pipeline/build_office.py
 
   # 출력 경로 override (optional)
   blender --background --python render-pipeline/build_office.py -- --out ./render-pipeline/out
 
 산출물:
-  out/office_bg.png       — Cycles Color 패스 (포토리얼 배경)
-  out/office_depth.png    — Z Depth 패스 (선형화, 0=near 1=far, grayscale)
+  out/office_bg.png       — Cycles Color 패스 (포토리얼 배경, RGBA)
+  out/office_depth.png    — Z Depth 패스 (선형화, 0=near 1=far, grayscale 16bit)
   out/camera.json         — 카메라 행렬·ortho scale·near/far·위치·회전
+
+Blender 5.1 API 변경 대응:
+  - Material blend_method/shadow_method 제거됨 (Cycles 불필요)
+  - bpy.data.worlds["World"] → get-or-create 패턴
+  - scene.node_tree/use_nodes 폐지 → compositing_node_group 방식
+  - CompositorNodeComposite 폐지 → 컬러는 scene.render.filepath 저장
+  - CompositorNodeOutputFile.format → OPEN_EXR_MULTILAYER 전용
+    → depth는 material_override + View Z Depth Emission 2차 렌더로 해결
+
+Depth 인코딩 규약 (R3F 셰이더 정합):
+  - 0.0 = near (카메라에 가까움, 검정)
+  - 1.0 = far  (카메라에서 멀리, 흰색)
+  - ShaderNode Camera Data "View Z Depth" → Map Range(near..far → 0..1) → Emission
+  - 이는 depthComposite.glsl.ts의 bgDepth=0(near)..1(far) 규약과 일치
+  - 직교 카메라 gl_FragCoord.z: 0=near, 1=far (동일 방향)
 """
 
 import bpy
@@ -78,8 +93,8 @@ def make_material_glass(name: str) -> bpy.types.Material:
     """반투명 유리 머티리얼"""
     mat = bpy.data.materials.new(name=name)
     mat.use_nodes = True
-    mat.blend_method = "BLEND"
-    mat.shadow_method = "NONE"
+    # blend_method/shadow_method는 EEVEE 전용이며 Blender 5.1에서 제거됨.
+    # 렌더 엔진이 Cycles이므로 BSDF transmission/alpha로 유리를 표현.
     bsdf = mat.node_tree.nodes["Principled BSDF"]
     bsdf.inputs["Base Color"].default_value = (0.7, 0.85, 1.0, 1.0)
     bsdf.inputs["Roughness"].default_value = 0.05
@@ -97,7 +112,7 @@ mat_floor = make_material_opaque("MatFloor", (0.85, 0.82, 0.78))
 floor.data.materials.append(mat_floor)
 
 # -- 책상 --
-#  center: (0, 1, 0.375)  ← 아바타가 X 방향으로 통과할 때 책상 앞/뒤 테스트용
+#  center: (0, 1.2, 0.375)  ← 아바타가 X 방향으로 통과할 때 책상 앞/뒤 테스트용
 bpy.ops.mesh.primitive_cube_add(size=1, location=(0.0, 1.2, 0.375))
 desk = bpy.context.object
 desk.name = "Desk"
@@ -128,7 +143,6 @@ mat_glass = make_material_glass("MatGlass")
 glass_wall.data.materials.append(mat_glass)
 
 # -- 격자 타일 바닥 (좌표 정합 확인용 그리드 라인) --
-# Freestyle 또는 간단한 Grid 사용
 bpy.ops.mesh.primitive_grid_add(x_subdivisions=10, y_subdivisions=10, size=10, location=(0, 0, 0.001))
 grid = bpy.context.object
 grid.name = "FloorGrid"
@@ -158,8 +172,11 @@ fill.data.energy = 200
 fill.data.size = 4.0
 fill.rotation_euler = (math.radians(60), 0, math.radians(30))
 
-# World (HDRI 대신 단색)
-world = bpy.data.worlds["World"]
+# World (HDRI 대신 단색) — 시작 파일에 World가 없으면 생성
+world = bpy.data.worlds.get("World")
+if world is None:
+    world = bpy.data.worlds.new("World")
+bpy.context.scene.world = world
 world.use_nodes = True
 bg_node = world.node_tree.nodes["Background"]
 bg_node.inputs["Color"].default_value = (0.75, 0.82, 0.95, 1.0)
@@ -171,7 +188,7 @@ bg_node.inputs["Strength"].default_value = 0.8
 #    아이소메트릭 표준: elevation = arctan(1/sqrt(2)) ≈ 35.264°
 #    azimuth 45° 방향(우상-좌하 대각)
 #
-#    카메라 위치: 씬 중심(0,0,0)에서 iso 방향으로 d=12 떨어진 지점
+#    카메라 위치: 씬 중심(0,0,0)에서 iso 방향으로 d=15 떨어진 지점
 # ---------------------------------------------------------------------------
 bpy.ops.object.camera_add()
 cam_obj = bpy.context.object
@@ -202,7 +219,7 @@ cam_obj.location = (cam_x, cam_y, cam_z)
 
 # 카메라가 원점(0,0,0)을 향하도록 회전
 # Blender 방향: -Z = 렌더 방향
-# 회전 = (90-ELEV, 0, AZIM)  in Euler XYZ
+# 회전 = (90-ELEV, 0, AZIM) in Euler XYZ
 cam_obj.rotation_euler = (
     math.radians(90 - ELEV),  # X
     0.0,                        # Y
@@ -210,6 +227,9 @@ cam_obj.rotation_euler = (
 )
 
 scene.camera = cam_obj
+
+NEAR = cam.clip_start  # 0.1
+FAR  = cam.clip_end    # 100.0
 
 # ---------------------------------------------------------------------------
 # 5. 렌더 설정 (Cycles)
@@ -223,64 +243,107 @@ scene.render.resolution_x = RENDER_W
 scene.render.resolution_y = RENDER_H
 scene.render.resolution_percentage = 100
 
+# compositing_node_group: 컬러 렌더 시에는 None (컴포지터 비활성화)
+# Blender 5.1에서 CompositorNodeComposite 폐지 → 렌더 결과를 직접 filepath로 저장
+scene.compositing_node_group = None
+
 # ---------------------------------------------------------------------------
-# 6. 패스 설정 (Color + Z Depth)
+# 6-A. 1차 렌더: 컬러 (office_bg.png)
+#      Cycles 일반 렌더 → scene.render.filepath 저장
 # ---------------------------------------------------------------------------
-scene.view_layers[0].use_pass_z = True
-scene.view_layers[0].use_pass_combined = True
-
-# Compositor nodes
-scene.use_nodes = True
-tree = scene.node_tree
-for node in tree.nodes:
-    tree.nodes.remove(node)
-
-rl_node = tree.nodes.new("CompositorNodeRLayers")
-rl_node.location = (0, 0)
-
-# Color 출력 (office_bg.png)
-composite_color = tree.nodes.new("CompositorNodeComposite")
-composite_color.location = (400, 100)
-tree.links.new(rl_node.outputs["Image"], composite_color.inputs["Image"])
-
-# Depth 출력 — 선형 Z를 [0,1]로 정규화
-#   normalize: (Z - near) / (far - near)
-#   Blender Depth 패스는 near~far 범위의 실제 거리값
-normalize = tree.nodes.new("CompositorNodeNormalize")
-normalize.location = (250, -200)
-tree.links.new(rl_node.outputs["Depth"], normalize.inputs[0])
-
-file_output = tree.nodes.new("CompositorNodeOutputFile")
-file_output.location = (500, -200)
-file_output.base_path = OUT_DIR
-file_output.format.file_format = "PNG"
-file_output.format.color_mode = "BW"
-file_output.format.color_depth = "16"
-file_output.file_slots[0].path = "office_depth_raw"
-tree.links.new(normalize.outputs[0], file_output.inputs[0])
-
-# 메인 렌더 출력 경로 (Color)
 scene.render.filepath = os.path.join(OUT_DIR, "office_bg.png")
 scene.render.image_settings.file_format = "PNG"
 scene.render.image_settings.color_mode = "RGBA"
 scene.render.image_settings.color_depth = "8"
 
-# ---------------------------------------------------------------------------
-# 7. 렌더 실행
-# ---------------------------------------------------------------------------
-print(f"[build_office] 렌더 시작 → {OUT_DIR}")
+print(f"[build_office] 1차 렌더(컬러) 시작 → {scene.render.filepath}")
 bpy.ops.render.render(write_still=True)
-
-# Depth 파일 이름 정리 (Blender가 프레임 번호를 붙임)
-import glob
-depth_files = sorted(glob.glob(os.path.join(OUT_DIR, "office_depth_raw*.png")))
-if depth_files:
-    final_depth = os.path.join(OUT_DIR, "office_depth.png")
-    os.replace(depth_files[-1], final_depth)
-    print(f"[build_office] Depth 저장: {final_depth}")
+print(f"[build_office] office_bg.png 저장 완료")
 
 # ---------------------------------------------------------------------------
-# 8. camera.json export
+# 6-B. 2차 렌더: Depth (office_depth.png)
+#
+#      Blender 5.1 CompositorNodeOutputFile은 OPEN_EXR_MULTILAYER 전용.
+#      → 대안: view_layer.material_override 로 씬 전체를 depth 재질로 교체하여
+#              2차 렌더링 수행.
+#
+#      Depth 재질 구성:
+#        ShaderNodeCameraData ("View Z Depth") → ShaderNodeMapRange(NEAR..FAR → 0..1)
+#        → ShaderNodeEmission (강도 1.0)
+#        → ShaderNodeOutputMaterial
+#
+#      Depth 인코딩 규약:
+#        0.0 = near (카메라에 가까움, 검정)  ← 픽셀값 0
+#        1.0 = far  (카메라에서 멀리, 흰색)  ← 픽셀값 255/65535
+#
+#      R3F 셰이더 정합 (depthComposite.glsl.ts):
+#        bgDepth = texture2D(uOfficeDepth, screenUV).r  → 0=near, 1=far
+#        avatarDepth = gl_FragCoord.z                   → 0=near, 1=far (직교카메라 선형)
+#        if (avatarDepth > bgDepth + bias) → discard
+#        → 동일 방향이므로 정합됨
+# ---------------------------------------------------------------------------
+
+# Depth 전용 재질 생성
+depth_mat = bpy.data.materials.new("DepthOverrideMat")
+depth_mat.use_nodes = True
+nt = depth_mat.node_tree
+
+# 기존 노드 제거
+for node in list(nt.nodes):
+    nt.nodes.remove(node)
+
+# Camera Data 노드 (View Z Depth: 실제 거리, m 단위)
+cam_data_node = nt.nodes.new("ShaderNodeCameraData")
+cam_data_node.location = (-600, 0)
+
+# Map Range: NEAR..FAR (m) → 0..1
+# "View Z Depth" 출력 = outputs[1] (Blender 5.1 확인됨)
+map_range_node = nt.nodes.new("ShaderNodeMapRange")
+map_range_node.location = (-300, 0)
+map_range_node.inputs["From Min"].default_value = NEAR
+map_range_node.inputs["From Max"].default_value = FAR
+map_range_node.inputs["To Min"].default_value = 0.0
+map_range_node.inputs["To Max"].default_value = 1.0
+map_range_node.clamp = True
+
+# Emission
+emission_node = nt.nodes.new("ShaderNodeEmission")
+emission_node.location = (0, 0)
+emission_node.inputs["Strength"].default_value = 1.0
+
+# Material Output (Surface)
+out_node = nt.nodes.new("ShaderNodeOutputMaterial")
+out_node.location = (300, 0)
+
+# 링크 연결
+# CameraData outputs[1] = "View Z Depth"
+nt.links.new(cam_data_node.outputs["View Z Depth"], map_range_node.inputs["Value"])
+nt.links.new(map_range_node.outputs["Result"], emission_node.inputs["Color"])
+nt.links.new(emission_node.outputs["Emission"], out_node.inputs["Surface"])
+
+# view_layer.material_override 설정
+view_layer = scene.view_layers[0]
+view_layer.material_override = depth_mat
+
+# Depth 렌더는 컴포지터 불필요
+scene.compositing_node_group = None
+
+# Depth 렌더 설정 (BW 16bit PNG)
+depth_path = os.path.join(OUT_DIR, "office_depth.png")
+scene.render.filepath = depth_path
+scene.render.image_settings.file_format = "PNG"
+scene.render.image_settings.color_mode = "BW"
+scene.render.image_settings.color_depth = "16"
+
+print(f"[build_office] 2차 렌더(Depth) 시작 → {depth_path}")
+bpy.ops.render.render(write_still=True)
+print(f"[build_office] office_depth.png 저장 완료")
+
+# material_override 해제 (씬 복원, 필요시)
+view_layer.material_override = None
+
+# ---------------------------------------------------------------------------
+# 7. camera.json export
 # ---------------------------------------------------------------------------
 import mathutils
 
@@ -295,13 +358,11 @@ view_mat = world_mat.inverted()
 aspect = RENDER_W / RENDER_H
 ortho_h = ORTHO_SCALE
 ortho_w = ORTHO_SCALE * aspect
-near = cam.clip_start
-far = cam.clip_end
 
 proj_mat = [
     [2 / ortho_w,  0,           0,                          0],
     [0,            2 / ortho_h, 0,                          0],
-    [0,            0,          -2 / (far - near),  -(far + near) / (far - near)],
+    [0,            0,          -2 / (FAR - NEAR),  -(FAR + NEAR) / (FAR - NEAR)],
     [0,            0,           0,                          1],
 ]
 
@@ -313,8 +374,8 @@ camera_data = {
     "aspect": aspect,
     "render_w": RENDER_W,
     "render_h": RENDER_H,
-    "clip_near": near,
-    "clip_far": far,
+    "clip_near": NEAR,
+    "clip_far": FAR,
     "elevation_deg": ELEV,
     "azimuth_deg": AZIM,
     "camera_position": list(cam_obj.location),
@@ -330,15 +391,37 @@ camera_data = {
         "axis_remap": "Blender(x,y,z) → Three.js(x,z,-y)",
         "ortho_half_w": ortho_w / 2,
         "ortho_half_h": ortho_h / 2,
+    },
+    # Depth 인코딩 메타데이터
+    "depth_encoding": {
+        "method": "material_override_emission",
+        "convention": "0=near(black), 1=far(white)",
+        "near_m": NEAR,
+        "far_m": FAR,
+        "color_depth_bits": 16,
+        "shader_node": "ShaderNodeCameraData.View_Z_Depth → MapRange(near..far→0..1) → Emission",
+        "r3f_shader_compat": "depthComposite.glsl.ts bgDepth=0(near)..1(far) 정합됨",
     }
 }
 
 json_path = os.path.join(OUT_DIR, "camera.json")
 with open(json_path, "w", encoding="utf-8") as f:
-    json.dump(camera_data, f, indent=2)
+    json.dump(camera_data, f, indent=2, ensure_ascii=False)
 
 print(f"[build_office] camera.json 저장: {json_path}")
 print("[build_office] 완료!")
-print(f"  Color  → {scene.render.filepath}")
-print(f"  Depth  → {os.path.join(OUT_DIR, 'office_depth.png')}")
+print(f"  Color  → {os.path.join(OUT_DIR, 'office_bg.png')}")
+print(f"  Depth  → {depth_path}")
 print(f"  Camera → {json_path}")
+
+# 산출물 크기 확인
+for fname in ["office_bg.png", "office_depth.png", "camera.json"]:
+    fpath = os.path.join(OUT_DIR, fname)
+    if os.path.exists(fpath):
+        size = os.path.getsize(fpath)
+        mtime = os.path.getmtime(fpath)
+        import time
+        ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(mtime))
+        print(f"  [{fname}] {size:,} bytes @ {ts}")
+    else:
+        print(f"  [{fname}] NOT FOUND!")
