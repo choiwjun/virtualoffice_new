@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { getToken, getUser, logout, User } from '@/lib/auth';
 import Sidebar from '@/components/Sidebar';
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [checked, setChecked] = useState(false);
 
@@ -26,6 +27,12 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
         <div className="text-gray-400 text-sm">로딩 중...</div>
       </div>
     );
+  }
+
+  // /office(및 하위)는 자체 D27 셸(좌내비+3D 뷰포트+우패널)이 전체 화면을 채움
+  // → 콘솔 Sidebar/header 미표시(이중 사이드바 제거). 인증 체크는 위에서 이미 통과.
+  if (pathname?.startsWith('/office')) {
+    return <div className="h-screen w-screen overflow-hidden">{children}</div>;
   }
 
   const role = user?.role ?? 'employee';
