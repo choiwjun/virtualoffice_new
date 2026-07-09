@@ -13,6 +13,13 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
   {
+    // D27: 앱 내 R3F 실시간 3D 오피스(WA 외부앱 대체)
+    href: '/office',
+    label: '가상 오피스',
+    roles: ['admin', 'super_admin', 'leader', 'employee'],
+    icon: '🏢',
+  },
+  {
     href: '/admin/employees',
     label: '직원명부',
     roles: ['admin', 'super_admin', 'leader', 'employee'],
