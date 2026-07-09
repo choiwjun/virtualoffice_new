@@ -78,6 +78,8 @@ async def seed(session: AsyncSession) -> None:
     for data in SEED_USERS:
         password = data.pop("password")
         pw_hash = hash_password(password)
+        # 로그인은 is_active==True인 계정만 통과(app/api/auth.py). 재시드 시에도 활성 보장.
+        data.setdefault("is_active", True)
 
         result = await session.execute(
             select(ErpUser).where(ErpUser.id == data["id"])
