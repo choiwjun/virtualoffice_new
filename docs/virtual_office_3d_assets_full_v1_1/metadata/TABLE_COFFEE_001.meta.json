@@ -1,0 +1,72 @@
+{
+  "asset_id": "TABLE_COFFEE_001",
+  "name": "Coffee table",
+  "category": "lounge",
+  "type": "table",
+  "priority": "MVP",
+  "file": "models/lounge/TABLE_COFFEE_001.glb",
+  "unit": "meter",
+  "pivot": "BOTTOM_CENTER",
+  "up_axis": "Z",
+  "dimensions_m": {
+    "width": 1.1,
+    "depth": 0.6,
+    "height": 0.4075
+  },
+  "placement": {
+    "snap_to_floor": true,
+    "grid_size": 0.1,
+    "rotatable": true
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.204
+    ],
+    "size": [
+      1.1,
+      0.6,
+      0.4075
+    ]
+  },
+  "interaction": {
+    "can_inspect": true,
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        0.204
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "rendering": {
+    "cast_shadow": true,
+    "receive_shadow": true,
+    "lod_group": "LOW",
+    "pbr": {
+      "baseColor": true,
+      "normal": true,
+      "roughness": true,
+      "metallic": true,
+      "textures_embedded": true,
+      "baked_lighting_forbidden": true
+    }
+  },
+  "qa": {
+    "actual_triangles": 204,
+    "max_triangles": 1400,
+    "texture_max_size": 1024,
+    "pbr_required": true,
+    "baked_lighting_forbidden": true,
+    "result": "PASS"
+  },
+  "version": "1.0.0",
+  "format": "glb"
+}

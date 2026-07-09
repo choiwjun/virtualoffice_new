@@ -52,9 +52,10 @@ img{max-width:100%;border-radius:8px}
 </style>
 </head><body>
 <div class="layout">
-<nav class="toc"><div class="brand">erd.md: 엔티티 관계도 (ERD)</div><div class="sub">erd.md</div><a class="lvl1" href="#erdmd-엔티티-관계도-erd">erd.md: 엔티티 관계도 (ERD)</a><a class="lvl2" href="#전체-er-다이어그램-mermaid">전체 ER 다이어그램 (Mermaid)</a><a class="lvl2" href="#다이어그램-범례">다이어그램 범례</a><a class="lvl2" href="#13개-주요-테이블-개요">13개 주요 테이블 개요</a><a class="lvl3" href="#a-erp-미러-계층-1개">A. ERP 미러 계층 (1개)</a><a class="lvl3" href="#b-조직구역공간-계층-6개">B. 조직·구역·공간 계층 (6개)</a><a class="lvl3" href="#c-좌석현위치-계층-5개">C. 좌석·현위치 계층 (5개)</a><a class="lvl3" href="#d-협업회의-계층-4개">D. 협업·회의 계층 (4개)</a><a class="lvl3" href="#e-업무kpi연동-계층-3개">E. 업무·KPI·연동 계층 (3개)</a><a class="lvl3" href="#f-자산감시감사-계층-2개">F. 자산·감시·감사 계층 (2개)</a><a class="lvl2" href="#핵심-설계-결정사항">핵심 설계 결정사항</a><a class="lvl3" href="#1-erp-동기화-d18">1. ERP 동기화 (D18)</a><a class="lvl3" href="#2-presence-상태-7종-d13">2. Presence 상태 7종 (D13)</a><a class="lvl3" href="#3-좌석-배정-분리-d10">3. 좌석 배정 분리 (D10)</a><a class="lvl3" href="#4-kpi-스키마-정본-d16">4. KPI 스키마 정본 (D16)</a><a class="lvl3" href="#5-회의-회의록-단방향-fk">5. 회의 &amp; 회의록 (단방향 FK)</a><a class="lvl3" href="#6-soft-delete-restrict-d18">6. Soft-Delete &amp; RESTRICT (D18)</a><a class="lvl3" href="#7-타임존-d19">7. 타임존 (D19)</a><a class="lvl3" href="#8-컴플라이언스-d20">8. 컴플라이언스 (D20)</a><a class="lvl2" href="#주요-인덱스-전략">주요 인덱스 전략</a><a class="lvl2" href="#13개-테이블-필드-매핑-요약">13개 테이블 필드 매핑 요약</a><a class="lvl3" href="#1-erp_user-erp-동기화">1. erp_user (ERP 동기화)</a><a class="lvl3" href="#2-org_group-조직-계층">2. org_group (조직 계층)</a><a class="lvl3" href="#3-team_zone-팀구역-매핑">3. team_zone (팀↔구역 매핑)</a><a class="lvl3" href="#4-office-사무실">4. office (사무실)</a><a class="lvl3" href="#5-floor-층">5. floor (층)</a><a class="lvl3" href="#6-office_layout-레이아웃-버전">6. office_layout (레이아웃 버전)</a><a class="lvl3" href="#7-room-회의실라운지-등">7. room (회의실·라운지 등)</a><a class="lvl3" href="#8-seat-좌석">8. seat (좌석)</a><a class="lvl3" href="#9-seat_assignment_history-좌석-배정-이력">9. seat_assignment_history (좌석 배정 이력)</a><a class="lvl3" href="#10-user_team_history-팀-이동-이력-new">10. user_team_history (팀 이동 이력) — NEW</a><a class="lvl3" href="#11-presence-실시간-상태">11. presence (실시간 상태)</a><a class="lvl3" href="#12-meeting-회의">12. meeting (회의)</a><a class="lvl3" href="#12a-meeting_participant-회의-참석자">12a. meeting_participant (회의 참석자)</a><a class="lvl3" href="#12b-meeting_minute-회의록">12b. meeting_minute (회의록)</a><a class="lvl3" href="#12c-action_item-액션아이템">12c. action_item (액션아이템)</a><a class="lvl3" href="#13-work_log-업무-기록">13. work_log (업무 기록)</a><a class="lvl3" href="#14-kpi_result-kpi-평가-결과-정본">14. kpi_result (KPI 평가 결과 — 정본)</a><a class="lvl3" href="#15-daily_status_push-배치-로그">15. daily_status_push (배치 로그)</a><a class="lvl3" href="#16-asset-3d-에셋">16. asset (3D 에셋)</a><a class="lvl3" href="#17-audit_log-감사">17. audit_log (감사)</a><a class="lvl2" href="#14개-enum-타입">14개 Enum 타입</a><a class="lvl2" href="#다음-단계">다음 단계</a></nav>
+<nav class="toc"><div class="brand">erd.md: 엔티티 관계도 (ERD)</div><div class="sub">erd.md</div><a class="lvl1" href="#erdmd-엔티티-관계도-erd">erd.md: 엔티티 관계도 (ERD)</a><a class="lvl2" href="#전체-er-다이어그램-mermaid">전체 ER 다이어그램 (Mermaid)</a><a class="lvl2" href="#다이어그램-범례">다이어그램 범례</a><a class="lvl2" href="#18개-주요-테이블-개요">18개 주요 테이블 개요</a><a class="lvl3" href="#a-erp-미러-계층-1개">A. ERP 미러 계층 (1개)</a><a class="lvl3" href="#b-조직구역공간-계층-6개">B. 조직·구역·공간 계층 (6개)</a><a class="lvl3" href="#c-좌석현위치-계층-5개">C. 좌석·현위치 계층 (5개)</a><a class="lvl3" href="#d-협업회의-계층-4개">D. 협업·회의 계층 (4개)</a><a class="lvl3" href="#e-업무kpi연동-계층-3개">E. 업무·KPI·연동 계층 (3개)</a><a class="lvl3" href="#f-자산감시감사-계층-2개">F. 자산·감시·감사 계층 (2개)</a><a class="lvl3" href="#g-공지-계층-1개-d27-신설">G. 공지 계층 (1개, D27 신설)</a><a class="lvl2" href="#핵심-설계-결정사항">핵심 설계 결정사항</a><a class="lvl3" href="#1-erp-동기화-d18">1. ERP 동기화 (D18)</a><a class="lvl3" href="#2-presence-상태-7종-d13">2. Presence 상태 7종 (D13)</a><a class="lvl3" href="#3-좌석-배정-분리-d10">3. 좌석 배정 분리 (D10)</a><a class="lvl3" href="#4-kpi-스키마-정본-d16">4. KPI 스키마 정본 (D16)</a><a class="lvl3" href="#5-회의-회의록-단방향-fk">5. 회의 &amp; 회의록 (단방향 FK)</a><a class="lvl3" href="#6-soft-delete-restrict-d18">6. Soft-Delete &amp; RESTRICT (D18)</a><a class="lvl3" href="#7-타임존-d19">7. 타임존 (D19)</a><a class="lvl3" href="#8-컴플라이언스-d20">8. 컴플라이언스 (D20)</a><a class="lvl2" href="#주요-인덱스-전략">주요 인덱스 전략</a><a class="lvl2" href="#18개-테이블-필드-매핑-요약">18개 테이블 필드 매핑 요약</a><a class="lvl3" href="#1-erp_user-erp-동기화">1. erp_user (ERP 동기화)</a><a class="lvl3" href="#2-org_group-조직-계층">2. org_group (조직 계층)</a><a class="lvl3" href="#3-team_zone-팀구역-매핑">3. team_zone (팀↔구역 매핑)</a><a class="lvl3" href="#4-office-사무실">4. office (사무실)</a><a class="lvl3" href="#5-floor-층">5. floor (층)</a><a class="lvl3" href="#6-office_layout-레이아웃-버전">6. office_layout (레이아웃 버전)</a><a class="lvl3" href="#7-room-회의실라운지-등">7. room (회의실·라운지 등)</a><a class="lvl3" href="#8-seat-좌석">8. seat (좌석)</a><a class="lvl3" href="#9-seat_assignment_history-좌석-배정-이력">9. seat_assignment_history (좌석 배정 이력)</a><a class="lvl3" href="#10-user_team_history-팀-이동-이력-new">10. user_team_history (팀 이동 이력) — NEW</a><a class="lvl3" href="#11-presence-실시간-상태">11. presence (실시간 상태)</a><a class="lvl3" href="#12-meeting-회의">12. meeting (회의)</a><a class="lvl3" href="#12a-meeting_participant-회의-참석자">12a. meeting_participant (회의 참석자)</a><a class="lvl3" href="#12b-meeting_minute-회의록">12b. meeting_minute (회의록)</a><a class="lvl3" href="#12c-action_item-액션아이템">12c. action_item (액션아이템)</a><a class="lvl3" href="#13-work_log-업무-기록">13. work_log (업무 기록)</a><a class="lvl3" href="#14-kpi_result-kpi-평가-결과-정본">14. kpi_result (KPI 평가 결과 — 정본)</a><a class="lvl3" href="#15-daily_status_push-배치-로그">15. daily_status_push (배치 로그)</a><a class="lvl3" href="#16-asset-3d-에셋">16. asset (3D 에셋)</a><a class="lvl3" href="#17-audit_log-감사">17. audit_log (감사)</a><a class="lvl3" href="#18-announcement-공지-d27-신설-04-data-model-27-요약">18. announcement (공지 — D27 신설, 04-data-model §2.7 요약)</a><a class="lvl2" href="#16개-enum-타입">16개 Enum 타입</a><a class="lvl2" href="#다음-단계">다음 단계</a></nav>
 <main><h1 id="erdmd-엔티티-관계도-erd">erd.md: 엔티티 관계도 (ERD)</h1>
-<p><strong>작성일</strong>: 2026-07-02 <strong>상태</strong>: 확정 (Phase 0, P0-T0.3) <strong>정본 참조</strong>: <code>04-data-model.md</code> §1</p>
+<blockquote>🟡 <strong>D27 부분 개정(2026-07-09) — announcement 추가·Godot 잔재 정정 완료.</strong> 상세 스키마 정본은 <code>04-data-model.md</code>. 본 문서는 요약 뷰.</blockquote>
+<p><strong>작성일</strong>: 2026-07-02 <strong>최종 갱신</strong>: 2026-07-09 (D27 부분 개정) <strong>상태</strong>: 확정 (Phase 0, P0-T0.3) <strong>정본 참조</strong>: <code>04-data-model.md</code> §1</p>
 <blockquote><strong>ERD 주석</strong>:  - <code>ERP_TEAMS</code>는 ERP 원본 테이블(우리 DB 아님, read-only 참조)이며 <code>team_zone.erp_team_id</code>가 이를 가리킨다. - <code>MEETING ↔ MEETING_MINUTE</code>는 <strong>단방향</strong>(meeting<em>minute.meeting</em>id → meeting.id)만 유지한다 — meeting.meeting<em>minute</em>id 역방향 FK는 폐기(순환 참조 방지). - <code>USER_TEAM_HISTORY</code>는 분기 중 팀 이동자의 KPI 벤치마크 왜곡을 막기 위해 신설한다(D18). - 모든 timestamp 컬럼은 <strong>UTC 저장, 표시 시 KST 변환</strong>(D19).</blockquote>
 <hr>
 <h2 id="전체-er-다이어그램-mermaid">전체 ER 다이어그램 (Mermaid)</h2>
@@ -92,12 +93,13 @@ img{max-width:100%;border-radius:8px}
     ERP_USER ||--o{ DAILY_STATUS_PUSH : &quot;EOD푸시&quot;
     ERP_USER ||--o{ AUDIT_LOG : &quot;감사&quot;
     AUDIT_LOG }o--|| ERP_USER : &quot;created_by&quot;
-    ASSET ||--o| ERP_USER : &quot;modified_by&quot;</div>
+    ASSET ||--o| ERP_USER : &quot;modified_by&quot;
+    ERP_USER ||--o{ ANNOUNCEMENT : &quot;공지작성(author)&quot;</div>
 <hr>
 <h2 id="다이어그램-범례">다이어그램 범례</h2>
 <div class="table-wrap"><table><thead><tr><th>기호</th><th>의미</th><th>예시</th></tr></thead><tbody><tr><td><code>||--o{</code></td><td>1:N 관계 (1개가 여러 개를 소유)</td><td>office(1) : floor(N)</td></tr><tr><td><code>}o--||</code></td><td>N:1 관계 (FK 방향)</td><td>floor : office(1)</td></tr><tr><td><code>||--o|</code></td><td>1:0..1 관계 (nullable FK)</td><td>meeting : meeting_minute(optional)</td></tr><tr><td><code>}o--o{</code></td><td>N:M 관계 (mapping table)</td><td>(본 설계에는 미사용)</td></tr></tbody></table></div>
 <hr>
-<h2 id="13개-주요-테이블-개요">13개 주요 테이블 개요</h2>
+<h2 id="18개-주요-테이블-개요">18개 주요 테이블 개요</h2>
 <h3 id="a-erp-미러-계층-1개">A. ERP 미러 계층 (1개)</h3>
 <div class="table-wrap"><table><thead><tr><th>#</th><th>테이블명</th><th>용도</th><th>주요 필드</th></tr></thead><tbody><tr><td>1</td><td><strong>erp_user</strong></td><td>직원 정보 Source of Truth (읽기 전용 동기화)</td><td>id(PK), company<em>id, email, name, erp</em>team<em>id, role, is</em>active(soft-delete)</td></tr></tbody></table></div>
 <h3 id="b-조직구역공간-계층-6개">B. 조직·구역·공간 계층 (6개)</h3>
@@ -109,7 +111,9 @@ img{max-width:100%;border-radius:8px}
 <h3 id="e-업무kpi연동-계층-3개">E. 업무·KPI·연동 계층 (3개)</h3>
 <div class="table-wrap"><table><thead><tr><th>#</th><th>테이블명</th><th>용도</th><th>주요 필드</th></tr></thead><tbody><tr><td>13</td><td><strong>work_log</strong></td><td>업무 기록</td><td>id(PK), user<em>id, work</em>date, title, goal, status(started/completed), result<em>url, next</em>action</td></tr><tr><td>14</td><td><strong>kpi_result</strong></td><td><strong>KPI 평가 결과 (정본 스키마, D16)</strong></td><td>id(PK), user<em>id, period</em>type(daily/quarterly), period<em>key('2026-07-01'/'2026-Q3'), metric(8가지), value, ai</em>draft(JSONB), admin<em>adjusted</em>score, objection<em>status(none/submitted/reviewing/resolved), final</em>score, finalized_at</td></tr><tr><td>15</td><td><strong>daily<em>status</em>push</strong></td><td>ERP 연동 배치 로그</td><td>id(PK), user<em>id, push</em>date, target(erp<em>daily</em>reports/erp<em>kpi</em>results), status(pending/sent/failed), pushed<em>at, run</em>id</td></tr></tbody></table></div>
 <h3 id="f-자산감시감사-계층-2개">F. 자산·감시·감사 계층 (2개)</h3>
-<div class="table-wrap"><table><thead><tr><th>#</th><th>테이블명</th><th>용도</th><th>주요 필드</th></tr></thead><tbody><tr><td>16</td><td><strong>asset</strong></td><td>3D 에셋 메타 (Blender→GLB→Godot)</td><td>asset<em>id(PK), asset</em>name, asset<em>type, license, modified</em>by, downloaded_at</td></tr><tr><td>17</td><td><strong>audit_log</strong></td><td>감사 로그 (좌석배정, 회의, KPI, 배포)</td><td>id(PK), user<em>id(nullable), action, entity</em>type, entity<em>id, old</em>value(JSONB), new<em>value(JSONB), created</em>at(UTC), 5년 보존 정책(D20-e)</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>테이블명</th><th>용도</th><th>주요 필드</th></tr></thead><tbody><tr><td>16</td><td><strong>asset</strong></td><td>3D 에셋 메타 (Blender→GLTF→R3F, 스키마 정본 = 3d-design/asset-registry §1.1)</td><td>asset<em>id(PK), asset</em>name, asset<em>type, license, modified</em>by, downloaded_at</td></tr><tr><td>17</td><td><strong>audit_log</strong></td><td>감사 로그 (좌석배정, 회의, KPI, 배포)</td><td>id(PK), user<em>id(nullable), action, entity</em>type, entity<em>id, old</em>value(JSONB), new<em>value(JSONB), created</em>at(UTC), 5년 보존 정책(D20-e)</td></tr></tbody></table></div>
+<h3 id="g-공지-계층-1개-d27-신설">G. 공지 계층 (1개, D27 신설)</h3>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>테이블명</th><th>용도</th><th>주요 필드</th></tr></thead><tbody><tr><td>18</td><td><strong>announcement</strong></td><td>공지사항 (통합 대시보드 우패널) — <strong>정본: 04-data-model §2.7</strong></td><td>id(PK, UUID), company<em>id, title, body, category(system/notice/info), pinned, author</em>user<em>id(FK→erp</em>user, RESTRICT), published<em>at, expires</em>at</td></tr></tbody></table></div>
 <hr>
 <h2 id="핵심-설계-결정사항">핵심 설계 결정사항</h2>
 <h3 id="1-erp-동기화-d18">1. ERP 동기화 (D18)</h3>
@@ -141,7 +145,7 @@ CREATE INDEX idx_erp_user_team ON erp_user(erp_team_id);
 CREATE INDEX idx_erp_user_role ON erp_user(role);
 CREATE INDEX idx_erp_user_is_active ON erp_user(is_active);
 
--- 실시간 조회 (Godot 서버)
+-- 실시간 조회 (Colyseus 이동서버 → FastAPI 경유, D3)
 CREATE INDEX idx_presence_office_floor ON presence(office_id, floor_id);
 CREATE INDEX idx_presence_status ON presence(status);
 CREATE INDEX idx_presence_updated_at ON presence(updated_at DESC);
@@ -178,7 +182,7 @@ CREATE INDEX idx_user_team_history_team ON user_team_history(erp_team_id, valid_
 CREATE INDEX idx_seat_assignment_history_seat ON seat_assignment_history(seat_id, assigned_at DESC);
 CREATE INDEX idx_seat_assignment_history_user ON seat_assignment_history(user_id, assigned_at DESC);</code></pre>
 <hr>
-<h2 id="13개-테이블-필드-매핑-요약">13개 테이블 필드 매핑 요약</h2>
+<h2 id="18개-테이블-필드-매핑-요약">18개 테이블 필드 매핑 요약</h2>
 <p>(상세는 <code>04-data-model.md</code> §2 참조)</p>
 <h3 id="1-erp_user-erp-동기화">1. erp_user (ERP 동기화)</h3>
 <ul><li>id, company<em>id, email, name, erp</em>team<em>id, role, is</em>active(soft-delete)</li><li>FK: manager_id(self)</li></ul>
@@ -220,8 +224,10 @@ CREATE INDEX idx_seat_assignment_history_user ON seat_assignment_history(user_id
 <ul><li>asset<em>id, asset</em>name, asset<em>type, license, downloaded</em>at, modified_by</li></ul>
 <h3 id="17-audit_log-감사">17. audit_log (감사)</h3>
 <ul><li>id, user<em>id(nullable), action, entity</em>type, entity<em>id, old</em>value(JSONB), new<em>value(JSONB), created</em>at(UTC, 5년 보존)</li></ul>
+<h3 id="18-announcement-공지-d27-신설-04-data-model-27-요약">18. announcement (공지 — D27 신설, 04-data-model §2.7 요약)</h3>
+<ul><li>id(UUID), company<em>id, title, body(md), category(system/notice/info), pinned, author</em>user<em>id(FK→erp</em>user, RESTRICT), published<em>at, expires</em>at, created_at</li></ul>
 <hr>
-<h2 id="14개-enum-타입">14개 Enum 타입</h2>
+<h2 id="16개-enum-타입">16개 Enum 타입</h2>
 <pre class="code lang-sql"><code>CREATE TYPE presence_status AS ENUM (
   'offline', 'online', 'working', 'meeting', 'focus', 'away', 'external'
 );
@@ -269,11 +275,15 @@ CREATE TYPE work_log_status AS ENUM (
 
 CREATE TYPE meeting_minute_status AS ENUM (
   'draft', 'finalized'
+);
+
+CREATE TYPE announcement_category AS ENUM (
+  'system', 'notice', 'info'
 );</code></pre>
 <hr>
 <h2 id="다음-단계">다음 단계</h2>
 <ul><li class="task"><input type="checkbox" disabled> SQLAlchemy 모델 스켈레톤 작성 (<code>backend/app/models/tables.py</code>)</li><li class="task"><input type="checkbox" disabled> 마이그레이션 전략 정의 (<code>docs/data-model/migration-strategy.md</code>)</li><li class="task"><input type="checkbox" disabled> Alembic 초기 마이그레이션 생성 (<code>alembic/versions/001_init.py</code>)</li><li class="task"><input type="checkbox" disabled> 초기 fixtures 준비 (office/floor/room/샘플 레이아웃/테스트 직원 20명)</li><li class="task"><input type="checkbox" disabled> P0-T0.4 (API 계약 검증) 진행</li></ul>
-<div class="meta-foot">원본: <code>erd.md</code> · 자동 생성 2026-07-02 · md-to-html</div>
+<div class="meta-foot">원본: <code>erd.md</code> · 자동 생성 2026-07-09 · md-to-html</div>
 </main>
 </div>
 

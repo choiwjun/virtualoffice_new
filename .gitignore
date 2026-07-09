@@ -75,3 +75,10 @@ temp/
 
 # GJC runtime state (세션·팀·컨텍스트 — 런타임 소유, 저장소 제외)
 .gjc/
+
+# ===== render-pipeline 생성물·다운로드 원본 (재생성 가능 — 저장소 제외) =====
+render-pipeline/assets_cc0/
+render-pipeline/out_cc0/
+render-pipeline/out_cc0_v2/
+render-pipeline/out_real/
+render-pipeline/out_userassets/

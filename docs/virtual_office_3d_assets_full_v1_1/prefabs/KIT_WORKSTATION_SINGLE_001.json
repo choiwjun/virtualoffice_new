@@ -1,0 +1,130 @@
+{
+  "prefab_id": "KIT_WORKSTATION_SINGLE_001",
+  "category": "kit",
+  "room_type": "open_office",
+  "instances": [
+    {
+      "asset_id": "DESK_STANDARD_001",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "CHAIR_TASK_MESH_001",
+      "position": [
+        0,
+        -0.95,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "MONITOR_SINGLE_001",
+      "position": [
+        0,
+        0.08,
+        0.77
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "KEYBOARD_MOUSE_SET_001",
+      "position": [
+        0,
+        -0.24,
+        0.77
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "MUG_CERAMIC_001",
+      "position": [
+        0.55,
+        -0.2,
+        0.77
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    }
+  ],
+  "anchors": {
+    "seat_anchor": {
+      "position": [
+        0,
+        -0.95,
+        0.48
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "work_anchor": {
+      "position": [
+        0,
+        -0.45,
+        0.75
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "status_anchor": {
+      "position": [
+        0,
+        -0.95,
+        1.5
+      ]
+    }
+  }
+}

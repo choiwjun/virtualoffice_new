@@ -33,9 +33,9 @@ services:
       LIVEKIT_API_KEY: devkey
       LIVEKIT_API_SECRET: "devsecret01234567890123456789012345"
       LIVEKIT_URL: "http://livekit:7880"
-      # WA 맵 스크립트(presence.js)는 sandboxed iframe(origin: null)에서 실행되므로
-      # /api/wa/* fetch의 CORS preflight를 위해 "null" + 앱 오리진 허용 (G001 실배선)
-      CORS_ORIGINS: '["http://localhost:8090","http://localhost:3000","null"]'
+      # D27: WA(sandboxed iframe, origin:null) 폐기 → "null" 오리진 제거.
+      # ACAO:null + allow_credentials 조합을 Chrome이 "invalid CORS header values"로 플래그하므로 앱 오리진만 허용.
+      CORS_ORIGINS: '["http://localhost:8090","http://localhost:3000"]'
     volumes:
       # SQLite 파일 영속화 (컨테이너 재기동 시 데이터 유지)
       - backend_sqlite:/data

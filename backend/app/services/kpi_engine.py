@@ -460,7 +460,7 @@ async def compute_and_upsert_kpi(
     """
     KPI 계산 후 kpi_result 롱포맷 upsert.
     UNIQUE(user_id, period_type, period_key, metric) 기준 upsert.
-    ai_draft는 비움 (AI 서술은 후속).
+    정량 값은 결정론적(D14-e). AI 서술 초안(ai_draft)은 집계 metric 행에 별도 생성(REQ-007).
     """
     from sqlalchemy.dialects.sqlite import insert as sqlite_insert
     from sqlalchemy import insert as sa_insert
@@ -500,4 +500,19 @@ async def compute_and_upsert_kpi(
             results.append(row)
 
     await db.flush()
+
+    # AI 서술 초안 생성·부착 (REQ-007). 가명화 후 Claude 또는 mock. 실패해도 KPI 계산은 유효.
+    try:
+        from app.services.ai_draft import generate_and_attach_draft
+
+        await generate_and_attach_draft(
+            db,
+            user_id=user_id,
+            period_type=period_type,
+            period_key=period_key,
+            metrics=metrics,
+        )
+    except Exception as exc:  # 초안 생성 실패가 정량 계산을 무효화하지 않음
+        print(f"[KPI] ai_draft generation skipped for user={user_id}: {exc}")
+
     return results

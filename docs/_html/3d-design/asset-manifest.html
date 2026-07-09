@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D 에셋 제작 매니페스트 (필요 에셋 전체 목록)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">3D 에셋 제작 매니페스트 (필요 에셋 전체 목록)</div><div class="sub">asset-manifest.md</div><a class="lvl1" href="#3d-에셋-제작-매니페스트-필요-에셋-전체-목록">3D 에셋 제작 매니페스트 (필요 에셋 전체 목록)</a><a class="lvl2" href="#제작-형식-전-에셋-공통-반드시-준수">📦 제작 형식 (전 에셋 공통 — 반드시 준수)</a><a class="lvl2" href="#우선순위">우선순위</a><a class="lvl2" href="#1-캐릭터-아바타-최고가치최난제">1. 캐릭터 / 아바타 🟢 (최고가치·최난제)</a><a class="lvl2" href="#2-워크스테이션-책상좌석">2. 워크스테이션 (책상·좌석) 🟢</a><a class="lvl2" href="#3-회의실">3. 회의실 🟢</a><a class="lvl2" href="#4-라운지-브레이크아웃">4. 라운지 / 브레이크아웃 🟢</a><a class="lvl2" href="#5-리셉션-로비">5. 리셉션 / 로비 🟢</a><a class="lvl2" href="#6-집중실-폰부스">6. 집중실 / 폰부스 ⚪</a><a class="lvl2" href="#7-탕비실-카페">7. 탕비실 / 카페 ⚪</a><a class="lvl2" href="#8-데스크-소품-밀도생활감의-핵심">8. 데스크 소품 🟢 (밀도·생활감의 핵심)</a><a class="lvl2" href="#9-수납-사무기기">9. 수납 / 사무기기 ⚪</a><a class="lvl2" href="#10-식물-데코-아트">10. 식물 / 데코 / 아트 🟢</a><a class="lvl2" href="#11-건축-구조-모듈-blender-프리미티브로-대체-가능-모델링-선택">11. 건축 / 구조 모듈 🟢 (Blender 프리미티브로 대체 가능 — 모델링 선택)</a><a class="lvl2" href="#12-조명-오브젝트비주얼">12. 조명 오브젝트(비주얼) ⚪</a><a class="lvl2" href="#만들-필요-없는-것-제가-처리-cc0로-조달">🚫 만들 필요 없는 것 (제가 처리 / CC0로 조달)</a><a class="lvl2" href="#mvp-최소셋-만-첫-포토리얼-씬-착수-가능">MVP 최소셋 (🟢만 = 첫 포토리얼 씬 착수 가능)</a></nav>
+<main><h1 id="3d-에셋-제작-매니페스트-필요-에셋-전체-목록">3D 에셋 제작 매니페스트 (필요 에셋 전체 목록)</h1>
+<blockquote>2026-07-09 작성. 가상오피스 3D 씬에 필요한 에셋 전체 목록 + 제작 스펙. 근거: 05-office-layout-schema(방/좌석/가구 타입), 14-virtual-office-spec, design-style-analysis(시안), 사용자 에셋 시트. 관련 스키마 정본: 3d-design/asset-registry.md §1.1, 05-office-layout-schema.md.</blockquote>
+<hr>
+<h2 id="제작-형식-전-에셋-공통-반드시-준수">📦 제작 형식 (전 에셋 공통 — 반드시 준수)</h2>
+<div class="table-wrap"><table><thead><tr><th>항목</th><th>요구</th></tr></thead><tbody><tr><td><strong>형식</strong></td><td><strong><code>.glb</code></strong> (glTF 2.0 바이너리, 텍스처 내장), <strong>오브젝트 1개당 파일 1개</strong></td></tr><tr><td><strong>스케일</strong></td><td>실제 <strong>미터</strong> 단위</td></tr><tr><td><strong>원점(pivot)</strong></td><td><strong>바닥 중앙</strong>(바닥 z=0에 안착)</td></tr><tr><td><strong>텍스처</strong></td><td>PBR(baseColor·normal·roughness·metallic) 내장. ⚠️ <strong>albedo에 조명·그림자 굽지 말 것</strong></td></tr><tr><td><strong>명명</strong></td><td>asset_id = <strong>대문자·언더스코어</strong>(예 <code>DESK_STANDARD_001</code>) — 05 정본</td></tr><tr><td><strong>캐릭터</strong></td><td>리깅된 glb <strong>또는</strong> T/A포즈 glb(리깅 없이 주면 Mixamo로 자동리깅)</td></tr></tbody></table></div>
+<blockquote><strong>중요 — &quot;키트(kit)&quot; 개념</strong>: 120개 가구를 다 만들 필요 없음. <strong>재사용 모듈</strong>을 만들어 씬에서 인스턴싱한다(책상 1종 → 8~12석에 복제). 아래 &quot;수량&quot;은 유니크 에셋 수(만들 개수)이지 배치 수가 아님.</blockquote>
+<hr>
+<h2 id="우선순위">우선순위</h2>
+<ul><li>🟢 <strong>MVP (P1~P2, 1개 층)</strong> — 이것만 있으면 첫 포토리얼 씬 완성</li><li>⚪ <strong>Later</strong> — 다층·리치화 단계</li></ul>
+<hr>
+<h2 id="1-캐릭터-아바타-최고가치최난제">1. 캐릭터 / 아바타 🟢 (최고가치·최난제)</h2>
+<div class="table-wrap"><table><thead><tr><th>에셋</th><th>유니크 수</th><th>우선</th><th>비고</th></tr></thead><tbody><tr><td>남성 캐릭터(리깅)</td><td>1</td><td>🟢</td><td>기본 아바타. 시트의 그 캐릭터</td></tr><tr><td>여성 캐릭터(리깅)</td><td>1</td><td>🟢</td><td>성별 옵션</td></tr><tr><td>의상/헤어 변형</td><td>3~5</td><td>⚪</td><td>유저 구분용(같은 리그, 텍스처/파츠만 교체)</td></tr><tr><td><strong>애니메이션</strong>: idle / walk / sit / typing</td><td>4 clip</td><td>🟢</td><td>Mixamo 무료로 대체 가능(직접 안 만들어도 됨)</td></tr></tbody></table></div>
+<h2 id="2-워크스테이션-책상좌석">2. 워크스테이션 (책상·좌석) 🟢</h2>
+<div class="table-wrap"><table><thead><tr><th>에셋</th><th>유니크 수</th><th>우선</th><th>비고</th></tr></thead><tbody><tr><td>책상 — 1인 표준(파티션 포함)</td><td>1</td><td>🟢</td><td><code>DESK_STANDARD</code></td></tr><tr><td>책상 — L형 코너</td><td>1</td><td>⚪</td><td>시트 3번째 책상</td></tr><tr><td>책상 — 벤치형(2인 마주보기)</td><td>1</td><td>⚪</td><td>오픈플랜 포드</td></tr><tr><td>오피스 체어 — 태스크(메쉬)</td><td>1</td><td>🟢</td><td>시트 1번째</td></tr><tr><td>오피스 체어 — 임원(하이백 가죽)</td><td>1</td><td>⚪</td><td>시트 2번째</td></tr><tr><td>게스트 체어(팔걸이)</td><td>1</td><td>⚪</td><td>시트 3번째</td></tr><tr><td>스툴(높은 의자)</td><td>1</td><td>⚪</td><td>바/집중석</td></tr></tbody></table></div>
+<h2 id="3-회의실">3. 회의실 🟢</h2>
+<div class="table-wrap"><table><thead><tr><th>에셋</th><th>유니크 수</th><th>우선</th><th>비고</th></tr></thead><tbody><tr><td>회의 테이블 — 대(8인)</td><td>1</td><td>🟢</td><td></td></tr><tr><td>회의 테이블 — 소(4인)</td><td>1</td><td>⚪</td><td></td></tr><tr><td>회의 의자</td><td>1</td><td>🟢</td><td></td></tr><tr><td><strong>유리 파티션/유리벽 + 유리문</strong></td><td>1~2</td><td>🟢</td><td>시안 핵심. 투과 재질(⚠️2레이어 합성 검증 대상)</td></tr><tr><td>화이트보드 — 벽걸이</td><td>1</td><td>🟢</td><td></td></tr><tr><td>화이트보드 — 이동식(바퀴)</td><td>1</td><td>⚪</td><td>시트에 있음</td></tr><tr><td>벽걸이 대형 디스플레이/TV</td><td>1</td><td>🟢</td><td>화상회의 화면</td></tr></tbody></table></div>
+<h2 id="4-라운지-브레이크아웃">4. 라운지 / 브레이크아웃 🟢</h2>
+<div class="table-wrap"><table><thead><tr><th>에셋</th><th>유니크 수</th><th>우선</th><th>비고</th></tr></thead><tbody><tr><td>소파 — 3인</td><td>1</td><td>🟢</td><td></td></tr><tr><td>소파 — 2인 / 1인 라운지체어</td><td>2</td><td>⚪</td><td></td></tr><tr><td>커피 테이블</td><td>1</td><td>🟢</td><td></td></tr><tr><td>사이드 테이블</td><td>1</td><td>⚪</td><td></td></tr><tr><td>러그(카펫)</td><td>1~2</td><td>⚪</td><td>구역 구분</td></tr></tbody></table></div>
+<h2 id="5-리셉션-로비">5. 리셉션 / 로비 🟢</h2>
+<div class="table-wrap"><table><thead><tr><th>에셋</th><th>유니크 수</th><th>우선</th><th>비고</th></tr></thead><tbody><tr><td>리셉션 데스크</td><td>1</td><td>🟢</td><td>시안 ACME 데스크</td></tr><tr><td><strong>브랜드월(로고 벽 / 목재 슬랫)</strong></td><td>1</td><td>🟢</td><td>시안 ACME 월. 회사별 로고 교체 가능 구조</td></tr><tr><td>대기 벤치/소파</td><td>1</td><td>⚪</td><td></td></tr><tr><td>스탠딩 사이니지</td><td>1</td><td>⚪</td><td></td></tr></tbody></table></div>
+<h2 id="6-집중실-폰부스">6. 집중실 / 폰부스 ⚪</h2>
+<div class="table-wrap"><table><thead><tr><th>에셋</th><th>유니크 수</th><th>우선</th><th>비고</th></tr></thead><tbody><tr><td>폰부스(1인 밀폐)</td><td>1</td><td>⚪</td><td>room type=phonebooth</td></tr><tr><td>집중석 포드</td><td>1</td><td>⚪</td><td>room type=focus</td></tr><tr><td>어쿠스틱 패널</td><td>1</td><td>⚪</td><td>벽 데코</td></tr></tbody></table></div>
+<h2 id="7-탕비실-카페">7. 탕비실 / 카페 ⚪</h2>
+<div class="table-wrap"><table><thead><tr><th>에셋</th><th>유니크 수</th><th>우선</th><th>비고</th></tr></thead><tbody><tr><td>정수기</td><td>1</td><td>🟢</td><td>시트에 있음(생활감)</td></tr><tr><td>커피 머신</td><td>1</td><td>⚪</td><td></td></tr><tr><td>팬트리 카운터/바</td><td>1</td><td>⚪</td><td>시안 하단 바</td></tr><tr><td>바 스툴</td><td>1</td><td>⚪</td><td>시안 바 의자</td></tr><tr><td>냉장고 / 전자레인지</td><td>2</td><td>⚪</td><td></td></tr></tbody></table></div>
+<h2 id="8-데스크-소품-밀도생활감의-핵심">8. 데스크 소품 🟢 (밀도·생활감의 핵심)</h2>
+<div class="table-wrap"><table><thead><tr><th>에셋</th><th>유니크 수</th><th>우선</th><th>비고</th></tr></thead><tbody><tr><td>모니터 — 1대 / 듀얼</td><td>2</td><td>🟢</td><td>책상 위 필수</td></tr><tr><td>노트북</td><td>1</td><td>🟢</td><td></td></tr><tr><td>키보드 + 마우스</td><td>1</td><td>🟢</td><td></td></tr><tr><td>데스크폰(유선전화)</td><td>1</td><td>⚪</td><td>시트에 있음</td></tr><tr><td>데스크 램프</td><td>1</td><td>🟢</td><td></td></tr><tr><td>머그컵 / 테이크아웃 커피</td><td>2</td><td>🟢</td><td></td></tr><tr><td>펜꽂이 / 노트 / 책 더미</td><td>3</td><td>⚪</td><td></td></tr><tr><td>서류 트레이 / 바인더</td><td>2</td><td>⚪</td><td></td></tr><tr><td>헤드셋</td><td>1</td><td>⚪</td><td></td></tr></tbody></table></div>
+<h2 id="9-수납-사무기기">9. 수납 / 사무기기 ⚪</h2>
+<div class="table-wrap"><table><thead><tr><th>에셋</th><th>유니크 수</th><th>우선</th><th>비고</th></tr></thead><tbody><tr><td>책장/오픈 셸프</td><td>1</td><td>🟢</td><td>시안·시트</td></tr><tr><td>서류 캐비닛</td><td>1</td><td>🟢</td><td>책상 딸림</td></tr><tr><td>락커(사물함)</td><td>1</td><td>⚪</td><td>시트에 있음</td></tr><tr><td>복합기/프린터</td><td>1</td><td>🟢</td><td>시트에 있음</td></tr><tr><td>휴지통</td><td>1</td><td>⚪</td><td></td></tr></tbody></table></div>
+<h2 id="10-식물-데코-아트">10. 식물 / 데코 / 아트 🟢</h2>
+<div class="table-wrap"><table><thead><tr><th>에셋</th><th>유니크 수</th><th>우선</th><th>비고</th></tr></thead><tbody><tr><td>화분 — 대(몬스테라류)</td><td>1</td><td>🟢</td><td>시안 곳곳</td></tr><tr><td>화분 — 중/소(선반용)</td><td>2</td><td>🟢</td><td></td></tr><tr><td>행잉 플랜트</td><td>1</td><td>⚪</td><td></td></tr><tr><td>액자/벽 아트</td><td>2</td><td>⚪</td><td>시안 벽 프레임</td></tr><tr><td>포스터(&quot;FOCUS PLAN EXECUTE REPEAT&quot;)</td><td>1</td><td>⚪</td><td>시트에 있음</td></tr><tr><td>벽시계</td><td>1</td><td>⚪</td><td></td></tr></tbody></table></div>
+<h2 id="11-건축-구조-모듈-blender-프리미티브로-대체-가능-모델링-선택">11. 건축 / 구조 모듈 🟢 (Blender 프리미티브로 대체 가능 — 모델링 선택)</h2>
+<div class="table-wrap"><table><thead><tr><th>에셋</th><th>유니크 수</th><th>우선</th><th>비고</th></tr></thead><tbody><tr><td>바닥(목재/타일/카펫 — 재질만)</td><td>텍스처</td><td>🟢</td><td>CC0 텍스처로 대체 가능(모델링 불필요)</td></tr><tr><td>벽 세그먼트</td><td>1</td><td>🟢</td><td>프리미티브+재질로 충분</td></tr><tr><td>유리 파티션(구조)</td><td>—</td><td>🟢</td><td>§3과 통합</td></tr><tr><td>창문</td><td>1</td><td>⚪</td><td></td></tr><tr><td>기둥</td><td>1</td><td>⚪</td><td></td></tr><tr><td>층/방 표지 사이니지</td><td>2</td><td>⚪</td><td>방 이름·층 번호</td></tr></tbody></table></div>
+<h2 id="12-조명-오브젝트비주얼">12. 조명 오브젝트(비주얼) ⚪</h2>
+<div class="table-wrap"><table><thead><tr><th>에셋</th><th>유니크 수</th><th>우선</th><th>비고</th></tr></thead><tbody><tr><td>천장 패널등 / 펜던트 램프</td><td>2</td><td>⚪</td><td>실제 조명은 HDRI/씬 라이트, 이건 &quot;보이는 기구&quot;</td></tr></tbody></table></div>
+<hr>
+<h2 id="만들-필요-없는-것-제가-처리-cc0로-조달">🚫 만들 필요 없는 것 (제가 처리 / CC0로 조달)</h2>
+<ul><li><strong>HDRI 환경맵</strong>(조명) — CC0(Poly Haven) 다운로드</li><li><strong>바닥/벽 PBR 텍스처</strong> — CC0(ambientCG/Poly Haven)</li><li><strong>애니메이션</strong> — Mixamo 무료(캐릭터에 자동 적용)</li><li><strong>리깅</strong> — T포즈 메시만 주면 제가 Mixamo로 처리</li><li><strong>씬 조합·렌더·깊이맵·앱 임베드</strong> — 전부 제가 (오늘 CC0로 증명)</li></ul>
+<hr>
+<h2 id="mvp-최소셋-만-첫-포토리얼-씬-착수-가능">MVP 최소셋 (🟢만 = 첫 포토리얼 씬 착수 가능)</h2>
+<p>캐릭터 1(+Mixamo 애니) · 책상1 · 태스크체어1 · 회의테이블1 · 회의의자1 · <strong>유리파티션1</strong> · 화이트보드1 · 디스플레이1 · 소파1 · 커피테이블1 · 리셉션데스크1 · <strong>브랜드월1</strong> · 모니터2 · 노트북1 · 키보드마우스1 · 데스크램프1 · 머그2 · 책장1 · 캐비닛1 · 프린터1 · 화분3 · 정수기1</p>
+<p><strong>≈ 유니크 에셋 25~30개</strong> (나머지는 인스턴싱·CC0·Mixamo로 커버). 이 정도면 시안급 1개 층 씬을 채웁니다.</p>
+<div class="meta-foot">원본: <code>asset-manifest.md</code> · 자동 생성 2026-07-09 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

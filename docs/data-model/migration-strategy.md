@@ -1,5 +1,7 @@
 # migration-strategy.md: Alembic 마이그레이션 전략
 
+> 🟡 **D27 부분 개정(2026-07-09) — company_id INTEGER 정정 반영.** 마이그레이션 정본은 `04-data-model.md` 스키마 기준. asset `tscn_path`→신스키마(3d-design/asset-registry §1.1) Alembic 마이그레이션 별도 필요.
+
 **작성일**: 2026-07-02  
 **상태**: 확정 (Phase 0, P0-T0.3)  
 **정본 참조**: `04-data-model.md`, `00-decisions.md` (D18, D19)
@@ -130,7 +132,7 @@ def upgrade():
     # 3. org_group (조직 계층)
     op.create_table('org_group',
         sa.Column('id', sa.UUID(), nullable=False),
-        sa.Column('company_id', sa.UUID(), nullable=False),
+        sa.Column('company_id', sa.Integer(), nullable=False),  # ERP company_id와 동일 값(04 §2.2 정본, FK 아님)
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('type', Enum('division', 'department', 'part', name='org_group_type'), nullable=False),
         sa.Column('parent_id', sa.UUID(), nullable=True),
@@ -146,7 +148,7 @@ def upgrade():
     # 4. office (사무실)
     op.create_table('office',
         sa.Column('id', sa.UUID(), nullable=False),
-        sa.Column('company_id', sa.UUID(), nullable=False),
+        sa.Column('company_id', sa.Integer(), nullable=False),  # ERP company_id와 동일 값(04 §2.2 정본, FK 아님)
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('address', sa.String(500), nullable=True),
@@ -369,7 +371,7 @@ async def seed_data():
         # 1. Office (1개)
         office = Office(
             id=uuid.uuid4(),
-            company_id=uuid.uuid4(),
+            company_id=1,  # ERP company_id(INTEGER, 사내 단일값) — 04 §2.2 정본
             name="본사",
             address="서울시 강남구",
         )
@@ -531,8 +533,9 @@ pytest tests/fixtures/  # 초기 데이터 검증 테스트
 # Migration 파일: XXX_add_enum_value.py
 
 def upgrade():
-    # PostgreSQL Enum 타입에 값 추가
-    op.execute("ALTER TYPE presence_status ADD VALUE 'idle' BEFORE 'away'")  # 위치 지정 가능
+    # PostgreSQL Enum 타입에 값 추가 (가상 enum 예시 — sample_status)
+    op.execute("ALTER TYPE sample_status ADD VALUE 'archived'")  # BEFORE 'x'로 위치 지정 가능
+    # ⚠️ 실제 presence_status는 D13 7종(offline/online/working/meeting/focus/away/external) 고정 — 값 추가 금지
 
 def downgrade():
     # PostgreSQL Enum은 값 삭제 불가 (대신 deprecated 처리)
@@ -803,9 +806,10 @@ def downgrade():
 
 ---
 
-## 다음 단계
+## 다음 단계 (12-tasks v3.0 정합)
 
-- [ ] Phase 1: P1-R1-T1 (Alembic 초기 마이그레이션 코드 작성)
-- [ ] Phase 1: P1-R1-T2 (ERPUser 동기화 배치 스크립트)
-- [ ] Phase 2: P2-R1-T1 (FastAPI 모델 serializer 작성)
-- [ ] Phase 2: P2-R2-T1 (CRUD 엔드포인트 구현)
+- [x] Alembic 초기 마이그레이션·핵심 스키마 — **[구현됨]** (백엔드 도메인, pytest 417+ · HG-DATA 게이트)
+- [x] ERPUser 동기화 배치 — **[구현됨]** (`erp_sync.py` — 실패 알림 훅 연결은 12-tasks P7-T5)
+- [x] FastAPI 모델 serializer·기존 CRUD 엔드포인트 — **[구현됨]** (KPI·좌석·회의·work-log 등)
+- [ ] announcement 모델·API 신설 — 12-tasks **P1-T5** (04-data-model §2.7 정본)
+- [ ] asset `tscn_path`→신스키마(asset-registry §1.1) Alembic 마이그레이션 — 별도 필요(상단 배너)

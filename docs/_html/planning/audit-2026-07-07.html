@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>docs/ 기획 대비 구현 전수조사 (2026-07-07, authoritative)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">docs/ 기획 대비 구현 전수조사 (2026-07-07, authoritative)</div><div class="sub">audit-2026-07-07.md</div><a class="lvl1" href="#docs-기획-대비-구현-전수조사-2026-07-07-authoritative">docs/ 기획 대비 구현 전수조사 (2026-07-07, authoritative)</a><a class="lvl2" href="#0-워커-감사-정확도-정정-중요">0. 워커 감사 정확도 정정 (중요)</a><a class="lvl2" href="#1-구현-완료-실측-확인">1. 구현 완료 (실측 확인)</a><a class="lvl2" href="#2-미구현-외부-의존-phase-57-실제-잔여">2. 미구현 (외부 의존 · Phase 5~7) — 실제 잔여</a><a class="lvl2" href="#3-문서-드리프트-d26-미반영-즉시-조치-가능-코드-무관">3. 문서 드리프트 (D26 미반영) — 즉시 조치 가능, 코드 무관</a><a class="lvl2" href="#4-계약-드리프트-management-apiyaml-vs-구현-문서-정렬-필요">4. 계약 드리프트 (management-api.yaml vs 구현) — 문서 정렬 필요</a><a class="lvl2" href="#5-우선순위">5. 우선순위</a><a class="lvl2" href="#6-종합">6. 종합</a><a class="lvl2" href="#7-조치-완료-2026-07-07-후속-실행">7. 조치 완료 (2026-07-07, 후속 실행)</a></nav>
+<main><h1 id="docs-기획-대비-구현-전수조사-2026-07-07-authoritative">docs/ 기획 대비 구현 전수조사 (2026-07-07, authoritative)</h1>
+<blockquote>📦 <strong>아카이브 — D27 전환(2026-07-08) 이전 시점 스냅샷.</strong> 아키텍처 관련 서술은 현행(D27)과 다르며, 특정 시점 기록으로만 참조할 것. 코드 실측 수치(pytest 등)는 작성 시점 기준 유효.</blockquote>
+<blockquote><code>$team</code> 3-lane(worker) 감사 + 리더 실측 교정. 워커 원본은 <code>artifacts/audit/raw-lane-*.md</code>(정확도 편차 있어 리더가 현재 소스로 전면 재검증). 기준 커밋 <code>c1b06b5</code>. 검증 방법: 라우트/모델/서비스 직접 grep + 컨테이너 기동 확인.</blockquote>
+<h2 id="0-워커-감사-정확도-정정-중요">0. 워커 감사 정확도 정정 (중요)</h2>
+<p>worker-1(Lane A)이 아래를 &quot;미구현&quot;으로 오판 → <strong>실측 결과 전부 구현됨</strong>:</p>
+<ul><li>APScheduler: <code>main.py:30 start_scheduler()</code> lifespan + <code>scheduler.py</code> 3잡(18:00 KPI push, 21:00 AI, 매시간 ERP) 등록·기동 ✅</li><li><code>POST /api/maps/generate|validate</code> ✅ (maps.py), <code>POST /api/auth/login</code> ✅, <code>GET /api/seat-assignments</code> ✅, office-layouts D12 7종 ✅(worker-2 확인), 좌석편집기 도구·스키마 draft ✅</li></ul>
+<p>worker-2(Lane B) API 계약 감사는 정확하나 미완(데이터/ERP/KPI 섹션 누락, 요약 TBD). worker-3(Lane C)는 provider timeout으로 실패 → Lane C는 리더가 spec-conformance 결과로 대체.</p>
+<hr>
+<h2 id="1-구현-완료-실측-확인">1. 구현 완료 (실측 확인)</h2>
+<ul><li><strong>API 계약</strong>: management-api.yaml 34경로 중 ~28 구현 + 다수 신규(daily-status-push POST/retry, org-groups CRUD/validate/deploy, maps, seat CRUD, floors, action-items, auth/me, wa/*). office-layouts D12(validate/deploy/rollback) 7/7.</li><li><strong>스케줄러(D17/D18)</strong>: 등록·기동. 단 <strong>잡 본문</strong>은 아래 §2 외부의존 부분.</li><li><strong>KPI 엔진</strong>: 결정론적·<strong>반감시 D14 (a)~(e) 완전 준수</strong> ✅.</li><li><strong>좌석편집기(REQ-003)</strong>: 벽/방/구역/문 도구 + D12 validate 통과 draft ✅.</li><li><strong>프론트 11화면 + 명세 컴포넌트</strong>: spec-conformance 7스토리로 정합(work-log 일일리포트·employees presence/좌석·kpi AI초안/진행바/팀랭킹·meetings 캘린더/액션·sync 재시도·office-layout 도구·org-chart CRUD/검증/배포). 라이브 QA 8/8.</li><li>인증(OIDC+JWT), presence 7종, ERP sync soft-delete, 감사로그 자동기록.</li><li>검증 지표: pytest 412 passed, npm build EXIT=0.</li></ul>
+<hr>
+<h2 id="2-미구현-외부-의존-phase-57-실제-잔여">2. 미구현 (외부 의존 · Phase 5~7) — 실제 잔여</h2>
+<div class="table-wrap"><table><thead><tr><th>항목</th><th>정본</th><th>상태</th><th>심각도</th></tr></thead><tbody><tr><td>STT 회의록 초안(D5/REQ-006)</td><td>06/12-tasks P5, 10-roadmap Ph5</td><td>stt-draft 501 스텁, S2 PoC 미실행</td><td>HIGH</td></tr><tr><td>AI 서술 초안 <strong>생성</strong>(REQ-007)</td><td>08-kpi-logic, D17</td><td>표시 UI는 구현, <strong>생성(Claude API)·가명화 미배선</strong></td><td>HIGH</td></tr><tr><td>실 ERP push <strong>전송</strong>(REQ-008/D18)</td><td>03-erp, D17</td><td>daily<em>status</em>push 테이블·POST·retry·스케줄 잡 있음, <strong>잡 본문의 실 ERP 전송은 스텁</strong>(실 ERP DB 미접속)</td><td>HIGH</td></tr><tr><td>WA Room API·고급 scripting(Phase 4)</td><td>10-roadmap Ph4, D24</td><td>LiveKit 토큰만, 변수 push·이벤트 훅·명시입장 다이얼로그 미구현</td><td>HIGH</td></tr><tr><td>WA 맵 상호작용(WAM areas/entities)</td><td>07-3d, Ph3</td><td>map_generator 실제 오피스 생성 ✅, 회의존 WAM areas 배선 부분(TMJ zones+presence.js)</td><td>MED</td></tr><tr><td>D20 컴플라이언스</td><td>D20 (a)~(f)</td><td>presence 30일 파기·녹음 동의배너·AI 가명화·보존기한·ERP 최소수집 VIEW 미구현</td><td>MED</td></tr><tr><td>회의 예약 충돌 검증(D23)</td><td>D23/REQ-005</td><td>예약+FCFS 스키마만, 시간·room 중복 검증 미구현</td><td>MED</td></tr><tr><td>PUT /seat-assignments</td><td>management-api</td><td>배정 수정 API 미구현</td><td>MED</td></tr><tr><td>부하/성능(20인)·HG-SEC 하드닝·백업 리허설</td><td>01-prd, HG</td><td>미수행</td><td>MED</td></tr></tbody></table></div>
+<hr>
+<h2 id="3-문서-드리프트-d26-미반영-즉시-조치-가능-코드-무관">3. 문서 드리프트 (D26 미반영) — 즉시 조치 가능, 코드 무관</h2>
+<div class="table-wrap"><table><thead><tr><th>문서</th><th>갭</th><th>심각도</th></tr></thead><tbody><tr><td>docs/3d-design/scene-structure.md</td><td>Godot 씬·room_builder.gd 참조, WA TMJ 미반영</td><td>HIGH</td></tr><tr><td>docs/3d-design/asset-registry.md</td><td>ASSET_CATALOG GDScript·pak, WA 타일셋 PNG 미반영</td><td>HIGH</td></tr><tr><td>docs/3d-design/optimization-criteria.md</td><td>GTX1650·Godot Forward+ 수치, WA 브라우저 기준 미반영</td><td>HIGH</td></tr><tr><td>specs/screens/virtual-office-3d.yaml</td><td>D26 전환 주석 없음(platform: godot-native)</td><td>HIGH</td></tr><tr><td>docs/planning/02-trd-architecture.md</td><td>§2.2 Godot 헤드리스 서버 절 잔존</td><td>MED</td></tr><tr><td>docs/planning/11-tech-stack.md</td><td>Godot/GDScript 스택 절 잔존</td><td>MED</td></tr><tr><td>docs/planning/01-prd.md</td><td>Godot 품질 수치(60fps@GTX1650 등) 잔존(D22는 WA로 대체)</td><td>LOW</td></tr></tbody></table></div>
+<p>(참고: docs/api/realtime-server-api.yaml·office<em>layout</em>to_godot.py·godot/ 는 이미 삭제 완료)</p>
+<hr>
+<h2 id="4-계약-드리프트-management-apiyaml-vs-구현-문서-정렬-필요">4. 계약 드리프트 (management-api.yaml vs 구현) — 문서 정렬 필요</h2>
+<ul><li><code>/users</code>↔<code>/api/employees</code> 경로명 + <code>{items,total}</code> envelope·role/team 필터 미구현</li><li>adjust·objections/review: 계약 PUT vs 구현 POST</li><li>work-logs·minutes·meetings 수정: 계약 PUT vs 구현 PATCH</li><li>release: 계약 <code>{assignment_id}</code> vs 구현 <code>{seat_id}</code></li><li><code>/erp-sync/trigger</code>→<code>/erp/sync</code>; login 201 vs 200</li><li><strong>미문서 신규 엔드포인트</strong>(문서화 필요): daily-status-push(+retry), org-groups CRUD/validate/deploy, maps generate/validate, seat CRUD, floors, action-items, auth/me, wa/presence·livekit</li></ul>
+<p>→ 권고: management-api.yaml v1.1로 구현에 맞춰 갱신.</p>
+<hr>
+<h2 id="5-우선순위">5. 우선순위</h2>
+<ul><li><strong>즉시(문서, 코드 무관)</strong>: §3 D26 문서 드리프트 갱신 + §4 계약 v1.1 정렬.</li><li><strong>HIGH(외부 의존)</strong>: STT(S2 PoC), AI 초안 생성, 실 ERP 전송/DB — Phase 5~6 외부 리소스 필요.</li><li><strong>MED(현 범위 가능)</strong>: 회의 예약 충돌 검증, PUT /seat-assignments, WAM areas 배선, D20 배치(30일 파기).</li></ul>
+<h2 id="6-종합">6. 종합</h2>
+<ul><li>기획 대비 <strong>핵심 기능·화면·계약은 대부분 구현</strong>(스케줄러·KPI·좌석편집기·7화면 정합 포함). pytest 412 / build EXIT=0 / 라이브 QA 8/8.</li><li>실제 잔여는 <strong>① 외부 의존(STT·AI·실ERP·WA 고급) ② 문서 드리프트(D26 3d-design/spec) ③ 계약 문서 정렬 ④ 소규모 MED(예약충돌·PUT배정·D20배치)</strong>.</li><li>워커 자동 감사만으로는 false-negative 위험 → 본 리포트가 실측 정정본.</li></ul>
+<hr>
+<h2 id="7-조치-완료-2026-07-07-후속-실행">7. 조치 완료 (2026-07-07, 후속 실행)</h2>
+<p>audit 실행가능 항목 전량 처리:</p>
+<ul><li><strong>§3 D26 문서 드리프트</strong>: docs/3d-design/{scene-structure,asset-registry,optimization-criteria}.md + 02-trd·11-tech-stack·01-prd 상단에 D26 전환 배너 추가. (virtual-office-3d.yaml은 기존 배너 확인)</li><li><strong>§4 계약 정렬</strong>: docs/api/management-api.yaml description에 구현 정합 부록(경로/메서드 드리프트 + 미문서 엔드포인트 전량 목록) 추가.</li><li><strong>§2 MED 코드</strong>:<ul><li><strong>PUT /api/seat-assignments/{seat_id}</strong>(관리자 재배정, history 승계) 구현 + 테스트.</li><li><strong>presence 30일 좌표 파기</strong>(D20-a): scheduler <code>_presence_purge_job</code> 매일 03:00 KST(x/y/z NULL) + 테스트.</li><li><strong>WAM areas 배선</strong>(D24): map<em>generator.generate</em>wam(zones→focusable area, mapUrl 포함) + generate<em>and</em>upload_map 번들. <strong>map-storage 업로드 200, org-map.wam 6 areas 실검증.</strong></li><li><strong>회의 예약 충돌 검증(D23)</strong>: 실측 결과 <strong>이미 구현됨</strong>(meetings.py 409 room<em>time</em>conflict) — audit false-negative 정정.</li></ul></li><li>검증: pytest <strong>417 passed</strong>(+5), 스케줄러 4잡(presence_purge 포함) lifespan 확인, WAM 업로드 실검증.</li><li><strong>잔여(외부 의존, 미착수)</strong>: STT(S2 PoC·엔진), AI 서술초안 생성(Claude), 실 ERP push 전송/DB, WA Room API 고급 scripting — 외부 리소스 필요.</li></ul>
+<div class="meta-foot">원본: <code>audit-2026-07-07.md</code> · 자동 생성 2026-07-09 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

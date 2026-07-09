@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>프론트 명세(specs/screens) 대비 구현 정합 분석 (2026-07-06)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">프론트 명세(specs/screens) 대비 구현 정합 분석 (2026-07-06)</div><div class="sub">spec-conformance-2026-07-06.md</div><a class="lvl1" href="#프론트-명세specsscreens-대비-구현-정합-분석-2026-07-06">프론트 명세(specs/screens) 대비 구현 정합 분석 (2026-07-06)</a><a class="lvl2" href="#1-화면별-정합-요약">1. 화면별 정합 요약</a><a class="lvl2" href="#2-디자인-시스템">2. 디자인 시스템</a><a class="lvl2" href="#3-후속-작업a그룹-현-범위-구현-가능">3. 후속 작업(A그룹) — 현 범위 구현 가능</a><a class="lvl2" href="#4-외부-의존b그룹-phase-57">4. 외부 의존(B그룹, Phase 5~7)</a></nav>
+<main><h1 id="프론트-명세specsscreens-대비-구현-정합-분석-2026-07-06">프론트 명세(specs/screens) 대비 구현 정합 분석 (2026-07-06)</h1>
+<blockquote>📦 <strong>아카이브 — D27 전환(2026-07-08) 이전 시점 스냅샷.</strong> 아키텍처 관련 서술은 현행(D27)과 다르며, 특정 시점 기록으로만 참조할 것. 코드 실측 수치(pytest 등)는 작성 시점 기준 유효.</blockquote>
+<blockquote><code>specs/screens/*.yaml</code>(10화면)·<code>specs/shared/components.yaml</code>를 프론트 구현과 컴포넌트 단위로 대조. 기준 커밋 <code>7f9b591</code>. 후속 작업 계획(A그룹)은 §3.</blockquote>
+<h2 id="1-화면별-정합-요약">1. 화면별 정합 요약</h2>
+<div class="table-wrap"><table><thead><tr><th>화면</th><th>상태</th><th>주요 갭</th></tr></thead><tbody><tr><td>auth</td><td>✅</td><td>로그인/세션 동작</td></tr><tr><td>employee-directory</td><td>🟡</td><td>컬럼 드리프트: <strong>좌석/presence상태/행별 last<em>synced 누락</strong>(email·role·work</em>type로 교체), <strong>status 필터 없음</strong></td></tr><tr><td>work-log</td><td>🟡</td><td><strong>daily-status-form(일일리포트)·report-summary-card·progress-bar·어제복사 미구현</strong>, date-tabs 부분(지난주/연간 없음)</td></tr><tr><td>kpi-dashboard(/admin/kpi)</td><td>🟡</td><td><strong>ai-draft-display·metric-progress-bars·team-summary(팀랭킹)·tab-navigation·erp-push-indicator 미구현</strong>, 조정 UI가 prompt</td></tr><tr><td>kpi(/kpi 본인)</td><td>🟡</td><td>ai_draft·progress-bar 없음(objection 배지만)</td></tr><tr><td>kpi-objection</td><td>✅</td><td>제출(7일/사유/카테고리)+관리자 재검토</td></tr><tr><td>meetings</td><td>🟡</td><td><strong>캘린더(일/주/월)·action-item 대시보드·녹화동의배너 미구현</strong>, minute 폼 notes/액션생성 없음</td></tr><tr><td>sync-monitoring</td><td>🟡</td><td><strong>수동 재시도·daily<em>status</em>push/KPI배치 job-table 미구현</strong>(erp_sync만)</td></tr><tr><td>org-chart-editor</td><td>🟡</td><td><strong>검증/배포 스텁(토스트), org_group CRUD 모달·순환검증·배포 API 없음</strong></td></tr><tr><td>seat-layout-editor</td><td>🔴</td><td>좌석 전용 — <strong>벽/방/구역/문 도구·undo/redo·속성/레이어 패널 미구현</strong>(스키마는 지원, 빌더는 빈배열)</td></tr><tr><td>virtual-office-3d</td><td>⚪</td><td>D26으로 WA 대체(웹 3D N/A)</td></tr></tbody></table></div>
+<h2 id="2-디자인-시스템">2. 디자인 시스템</h2>
+<ul><li>badge/empty-state/error-state/details-panel/table/card 패턴은 페이지별 Tailwind 재구현 — 공용 컴포넌트 라이브러리 없음(동작 무방, 아키텍처 부채).</li></ul>
+<h2 id="3-후속-작업a그룹-현-범위-구현-가능">3. 후속 작업(A그룹) — 현 범위 구현 가능</h2>
+<ul><li><strong>G001 work-log</strong>: 일일 상태 리포트 폼(오늘할일/진행중/블로커/내일계획 → POST /api/daily-status-push) + report-summary-card + progress-bar + 어제복사</li><li><strong>G002 employee-directory</strong>: presence 상태 필터+컬럼 + 좌석 컬럼(백엔드 employees presence/seat 조인)</li><li><strong>G003 kpi-dashboard</strong>: ai-draft 표시 + metric progress-bar + 팀랭킹 탭 + ERP push 버튼</li><li><strong>G004 meetings</strong>: 캘린더 뷰(일/주/월) + action-item 대시보드 + 회의록 notes/액션 생성</li><li><strong>G005 sync-monitoring</strong>: 수동 재시도 + daily<em>status</em>push/KPI 배치 job-status-table</li><li><strong>G006 seat-layout-editor</strong>: 벽/방/구역/문 도구 + undo/redo + 속성 패널</li><li><strong>G007 org-chart-editor</strong>: org_group CRUD 모달 + 검증(순환/미매핑) + 배포 API</li></ul>
+<h2 id="4-외부-의존b그룹-phase-57">4. 외부 의존(B그룹, Phase 5~7)</h2>
+<ul><li>STT(D5), AI 서술 초안/회의록 요약(Claude SDK), 실 ERP DB/push, 녹화 Egress+동의, 다층/구역 권한, HG-SEC 하드닝·백업.</li></ul>
+<div class="meta-foot">원본: <code>spec-conformance-2026-07-06.md</code> · 자동 생성 2026-07-09 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

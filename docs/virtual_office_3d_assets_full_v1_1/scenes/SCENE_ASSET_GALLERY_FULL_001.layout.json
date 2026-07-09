@@ -1,0 +1,8 @@
+{
+  "scene_id": "SCENE_ASSET_GALLERY_FULL_001",
+  "file": "scenes/SCENE_ASSET_GALLERY_FULL_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "description": "Every unique asset placed in a grid for visual QA.",
+  "asset_count": 76
+}

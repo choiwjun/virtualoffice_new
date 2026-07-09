@@ -54,6 +54,7 @@ img{max-width:100%;border-radius:8px}
 <div class="layout">
 <nav class="toc"><div class="brand">기획 문서 갭 리포트 (document-gap-report)</div><div class="sub">document-gap-report.md</div><a class="lvl1" href="#기획-문서-갭-리포트-document-gap-report">기획 문서 갭 리포트 (document-gap-report)</a><a class="lvl2" href="#inventory-loop-0">Inventory (LOOP 0)</a><a class="lvl2" href="#클러스터-요약-심각도순">클러스터 요약 (심각도순)</a><a class="lvl3" href="#c1-배포-확정외부-공개-드리프트-d21-폐기-p05">C1. 🔴 배포 확정(외부 공개) 드리프트 — D21 폐기 [P0×5]</a><a class="lvl3" href="#c2-외부-공개-보안-요구-부재-p13">C2. 🔴 외부 공개 보안 요구 부재 [P1×3]</a><a class="lvl3" href="#c3-태스크-p0-갭-만들-수-없는-것-2개-p02">C3. 🔴 태스크 P0 갭 — 만들 수 없는 것 2개 [P0×2]</a><a class="lvl3" href="#c4-데이터-정본-충돌-구현이-갈라지는-지점-4건-정본-확정-필요">C4. 🔴 데이터 정본 충돌 — 구현이 갈라지는 지점 4건 [정본 확정 필요]</a><a class="lvl3" href="#c5-d5stt-회의록-구현-불가-데이터-모델-갭-p1">C5. 🟠 D5(STT 회의록) 구현 불가 — 데이터 모델 갭 [P1]</a><a class="lvl3" href="#c6-specsdomainresourcesyaml-전면-노후-p16-p24">C6. 🟠 specs/domain/resources.yaml 전면 노후 [P1×6, P2×4]</a><a class="lvl3" href="#c7-화면-yaml-6종-부재-d11-잔재-p14">C7. 🟠 화면 YAML 6종 부재 + D11 잔재 [P1×4]</a><a class="lvl3" href="#c8-kpi-산식원칙-충돌-p13">C8. 🟠 KPI 산식·원칙 충돌 [P1×3]</a><a class="lvl3" href="#c9-이미-구현된-코드의-수정-필요-p13-p25">C9. 🟠 이미 구현된 코드의 수정 필요 [P1×3, P2×5]</a><a class="lvl3" href="#c10-로드맵-스테일-표기-p14-p2-다수">C10. 🟡 로드맵 스테일 표기 [P1×4, P2 다수]</a><a class="lvl3" href="#c11-태스크-품질-상태-동기화-p15-p2-다수">C11. 🟡 태스크 품질 + 상태 동기화 [P1×5, P2 다수]</a><a class="lvl2" href="#검사-결과-이상-없음-확인-양호">검사 결과 &quot;이상 없음&quot; 확인 (양호)</a></nav>
 <main><h1 id="기획-문서-갭-리포트-document-gap-report">기획 문서 갭 리포트 (document-gap-report)</h1>
+<blockquote>📦 <strong>아카이브 — D27 전환(2026-07-08) 이전 시점 스냅샷.</strong> 아키텍처 관련 서술은 현행(D27)과 다르며, 특정 시점 기록으로만 참조할 것. 코드 실측 수치(pytest 등)는 작성 시점 기준 유효.</blockquote>
 <p><strong>검증일</strong>: 2026-07-02 · <strong>검증 방식</strong>: 6개 병렬 검사 에이전트 (A1 PRD/결정/로드맵 · A2 화면/명세 · A3 데이터 · A4 기술/3D/KPI · A5 태스크 · A6 신규결정 드리프트) <strong>총 발견</strong>: 139건 — <strong>P0 8건 · P1 ~60건 · P2 ~71건</strong> <strong>개별 발견 원본</strong>: 에이전트 산출 그대로 loop-state.json 참조. 본 리포트는 클러스터 통합본.</p>
 <hr>
 <h2 id="inventory-loop-0">Inventory (LOOP 0)</h2>
@@ -97,7 +98,7 @@ img{max-width:100%;border-radius:8px}
 <hr>
 <h2 id="검사-결과-이상-없음-확인-양호">검사 결과 &quot;이상 없음&quot; 확인 (양호)</h2>
 <ul><li>ENet/GDNative/C#(.cs)/500명/26주 잔재 없음 (D1·D2·D22 정리 완료 상태)</li><li>라이트맵 배제(D7), tick 20Hz, p95&lt;500ms, GTX1650/IrisXe 기준 — 02↔07↔09 일관</li><li>KPI 산식 표본 4/5 계산 가능(work<em>quality/action</em>items/percentile), 접속시간·채팅 지표 잔존 없음</li><li>58주 일정 검산 일치, 간트 날짜 정합, WON'T 스코프 컷 명확</li><li>YAML에만 있고 06에 없는 유령 화면 없음</li><li>의존성: 존재하지 않는 태스크 ID 0건, 순환 0건</li></ul>
-<div class="meta-foot">원본: <code>document-gap-report.md</code> · 자동 생성 2026-07-02 · md-to-html</div>
+<div class="meta-foot">원본: <code>document-gap-report.md</code> · 자동 생성 2026-07-09 · md-to-html</div>
 </main>
 </div>
 

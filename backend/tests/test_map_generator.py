@@ -214,6 +214,14 @@ class TestGenerateOfficeMapLayers:
         for ts in result["tilesets"]:
             assert "image" in ts, f"tileset '{ts.get('name')}' image 필드 없음"
 
+    def test_tileset_has_distinct_office_tile_types(self, single_team, default_config):
+        result = generate_office_map(single_team, default_config)
+        tileset = result["tilesets"][0]
+        tile_types = {tile["type"] for tile in tileset["tiles"]}
+        assert {"floor", "wall", "desk", "meeting", "passage"}.issubset(tile_types)
+        assert tileset["tilecount"] >= 5
+        assert tileset["columns"] >= 5
+
 
     def test_floor_data_length_matches_map_size(self, single_team, default_config):
         result = generate_office_map(single_team, default_config)

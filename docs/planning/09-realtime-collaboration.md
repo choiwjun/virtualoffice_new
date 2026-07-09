@@ -1,13 +1,15 @@
 # 09-realtime-collaboration.md
 
+> 🟢 **D27 반영(2026-07-09) — 서버/클라 엔진 서술을 Colyseus(권위) + R3F(웹 뷰포트)로 교체 완료.** 프로토콜 실체(이동검증 8·근접검증 8·프레즌스 7종·20Hz tick·재접속 스냅샷·D24 회의입장·메시지 프로토콜)는 논리적으로 유효하여 **보존**하되, 메시지 어휘는 15-realtime-server-spec 정본과 통일했다. 현행 정본 = 00-decisions §H(D27) · 14-virtual-office-spec · **15-realtime-server-spec(본 §5 정본을 구체화하는 구현 정본)** · 16-render-spike-and-roadmap · 3d-design/{design-style-analysis, photoreal-web-strategy}. 구 Godot 헤드리스 서버·Godot 네이티브 데스크톱 클라·웹 WASM export 배제 서술은 폐기됨.
+
 실시간 & 협업 명세
 
-**버전**: v1.2  
-**작성일**: 2026-07-02 (최초 2026-07-01)  
+**버전**: v2.0  
+**작성일**: 2026-07-09 (최초 2026-07-01)  
 **대상**: 가상오피스 운영 플랫폼 개발팀  
-**상태**: 확정 반영(00-decisions.md v1.0 정합)
+**상태**: 확정 반영(00-decisions.md §H D27 정합)
 
-> 본 문서의 모든 결정은 **00-decisions.md(정본)** 를 따른다. 충돌 시 정본이 이긴다. 변경 이력은 하단 참조.
+> 본 문서의 모든 결정은 **00-decisions.md(정본)** 를 따른다. 충돌 시 정본이 이긴다. 프로토콜의 구체 구현은 **15-realtime-server-spec**이 본 §5를 구체화한다. 변경 이력은 하단 참조.
 
 ---
 
@@ -15,7 +17,7 @@
 
 가상오피스의 핵심은 3D 환경에서 직원들이 자신의 좌석에 아바타로 출현하고, 근접·회의·협업을 통해 업무 성과를 남기는 것이다. 이 문서는 다음을 정의한다:
 
-1. **서버 권위 모델**: Godot 헤드리스 서버가 아바타 이동, 충돌, 근접, 회의실 점유를 검증
+1. **서버 권위 모델**: Colyseus(Node/TS) 권위 서버가 아바타 이동, 충돌, 근접, 회의실 점유를 검증
 2. **프레즌스 상태**: 접속~오프라인까지 **7가지 상태(D13)**와 전이 규칙
 3. **근접 상호작용**: 거리·벽·상태에 따른 상호작용 권한 검증
 4. **회의 흐름**: LiveKit 기반 화상회의와 회의록 시스템
@@ -23,28 +25,30 @@
 
 ---
 
-## 1. Godot 헤드리스 서버 권위 모델
+## 1. Colyseus 권위 서버 모델
+
+> **엔진 정본(D27)**: 권위 서버 = **Colyseus(Node/TS, SkyOffice 이식, MIT)**. 룸 = **층(floor) 단위**, 20Hz tick, **Colyseus Schema binary delta**로 상태 동기화. 클라이언트 = **R3F(three.js) 웹앱 뷰포트**(웹이 본체). 구 Godot 헤드리스 서버·Godot 네이티브 데스크톱 클라·웹 WASM export는 폐기. LOS/충돌은 헤드리스 3D 물리엔진이 아니라 **Colyseus 서버 측 기하 검증**(office_layout colliders 기반)으로 수행한다.
 
 ### 1.1 아키텍처
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ Godot 4 Headless Server (렌더러 미로드, 권위)          │
+│ Colyseus 권위 서버 (Node/TS, 룸=층 단위, 권위)         │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
-│  • 오피스 씬 로드 (콜리전/논리 노드만, 렌더러 미로드)  │
-│  • 충돌 메시 활성화 (PhysicsServer3D)                   │
-│  • 직원 아바타 인스턴스 (server-side state)           │
-│  • 회의실 정점 트리거 ←→ presence.status 갱신          │
-│  • 근접 감지 / LOS (PhysicsServer3D Raycast 기반)      │
+│  • office_layout 로드 (colliders/room·seat 논리만)      │
+│  • 충돌·바운드 판정 (서버 측 기하 검증)                 │
+│  • 직원 아바타 상태 인스턴스 (Colyseus Schema state)   │
+│  • 회의실 진입 트리거 ←→ presence.status 갱신          │
+│  • 근접 감지 / LOS (서버 측 기하 광선, 벽/유리벽)      │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
-         ↑ WebSocket(WSS) ↓
+         ↑ WebSocket(WSS), Colyseus Schema binary delta ↓
 ┌─────────────────────────────────────────────────────────┐
-│ 클라이언트 (Godot 4 Native Desktop 전용)               │
+│ 클라이언트 (R3F / three.js 웹앱 뷰포트)                │
 ├─────────────────────────────────────────────────────────┤
 │  • 로컬 아바타 애니메이션 (예측)                       │
-│  • UI 렌더링                                             │
+│  • R3F 씬 렌더링 (포토리얼 배경 + 아바타 합성)         │
 │  • 입력 이벤트 전송                                     │
 │  • 서버 상태 수신 & 적용                                │
 │                                                         │
@@ -158,7 +162,7 @@ graph TD
 | 항목 | 설명 | 조건 | 비고 |
 |-----|------|------|------|
 | **채팅** | 텍스트 메시지 | 거리 < 5m + 상대 online | 히스토리 저장 안 함 (KPI 미반영) |
-| **화상요청** | 1:1 음성/화상 | 거리 < 5m + 상대 회의 중 아님 | LiveKit 1:1 룸 생성 |
+| **화상요청** | 1:1 음성/화상 | 거리 < 5m + 상대 회의 중 아님 | **PeerJS P2P 세션(≤4명)** — 회의실 화상만 LiveKit(D24) |
 | **음성** | 공개 음성 채널 | 거리 < 10m + 층·구역 일치 | 근처 N명이 같은 채널 청취 |
 | **프로필** | 직원 정보 조회 | 제약 없음 | 이름, 팀, 위치, 근무상태 |
 | **메모** | 개인 메모(찜) | 제약 없음 | 나중에 참고하기 위해 저장 |
@@ -193,7 +197,7 @@ graph TD
 | **2** | office_id | presence.office_id 비교 | 즉시 |
 | **3** | floor_id | presence.floor_id 비교 | 즉시 |
 | **4** | 거리 | sqrt((x1-x2)² + (y1-y2)²) < 5.0 (단위: 미터) | 즉시 |
-| **5** | LOS (광선 추적) | **PhysicsServer3D Raycast**: 두 아바타 사이에 벽/유리벽 없음? (헤드리스는 렌더러 미로드이므로 물리 서버 기반) | 계산 < 5ms |
+| **5** | LOS (광선 추적) | **Colyseus 서버 측 기하 검증**: office_layout colliders(벽/유리벽 선분·폴리곤) 기반 광선 교차로 두 아바타 사이 차폐 여부 판정 | 계산 < 5ms |
 | **6** | 상대 status | presence.status ≠ offline (away, meeting 등은 허용) | 즉시 |
 | **7** | cooldown | 같은 대상과의 마지막 상호작용 후 1초 이상 경과 | 즉시 |
 | **8** | DND (방해금지) | 상대 user.dnd_enabled & (focus_mode OR external) → 거절 | 즉시 |
@@ -202,11 +206,11 @@ graph TD
 
 ```mermaid
 sequenceDiagram
-    participant Client1 as 클라이언트 A<br/>(근처 사용자)
-    participant Server as Godot<br/>헤드리스 서버
-    participant Client2 as 클라이언트 B<br/>(대상 사용자)
+    participant Client1 as 클라이언트 A<br/>(R3F, 근처 사용자)
+    participant Server as Colyseus<br/>권위 서버
+    participant Client2 as 클라이언트 B<br/>(R3F, 대상 사용자)
 
-    Client1->>Server: proximity_request(user_b_id, menu_type)
+    Client1->>Server: interact_request {target_user_id, menu_type}
     activate Server
     
     Note over Server: Validation 8항목 수행
@@ -219,16 +223,17 @@ sequenceDiagram
         Client2->>Client2: "A 사용자가 근처" 표시
         
         alt 사용자 A가 채팅 클릭
-            Client1->>Server: send_chat(user_b_id, message)
+            Client1->>Server: send_chat(target_user_id, message)
             Server->>Client2: receive_chat(user_a_id, message)
             Note over Client2: 채팅 히스토리 DB 저장 안 함
         else 사용자 A가 화상요청 클릭
-            Client1->>Server: request_call(user_b_id)
+            Client1->>Server: request_call(target_user_id)
             Server->>Client2: incoming_call(user_a_id)
             Client2->>Server: accept_call()
-            Server->>Server: LiveKit 1:1 방 생성
-            Server->>Client1: call_accepted(livekit_room_url)
-            Server->>Client2: call_accepted(livekit_room_url)
+            Server->>Server: PeerJS 시그널링 중개 (peer ID 교환)
+            Server->>Client1: call_accepted(peer_id_b)
+            Server->>Client2: call_accepted(peer_id_a)
+            Client1->>Client2: PeerJS P2P 미디어 연결 (≤4명, 회의실 화상만 LiveKit — D24)
         end
     else 검증 실패 (예: 벽 사이, offline)
         Server->>Client1: proximity_denied(reason)
@@ -290,19 +295,19 @@ graph TD
 
 ### 4.3 회의 입장 프로토콜 (**자동 연결 금지**)
 
-**원칙 (D24)**: 사용자가 회의실에 물리적으로 접근했다고 해서 자동으로 LiveKit 방에 입장하면 안 된다. 접근은 입장 다이얼로그를 띄울 뿐이고, **명시적 [입장하기] 클릭 후에만** LiveKit 토큰이 발급된다. LiveKit 룸 생성·토큰 발급은 **FastAPI 경유로 단일화**한다(클라이언트/게임서버 직접 생성 금지). 이 흐름은 **02-trd-architecture.md §5.3 회의 시퀀스와 정합**한다.
+**원칙 (D24, 2단계 명시입장 — 15-realtime-server-spec §3 정본)**: 사용자가 회의실에 물리적으로 접근했다고 해서 자동으로 LiveKit 방에 입장하면 안 된다. 입장은 **2단계**로 수행한다: **① Colyseus `enter_meeting {room_id}`** = 근접(2m)·정원 검증 → **입장 가능 통지(프롬프트)**, **② 명시적 [입장하기] 클릭 후 클라이언트가 FastAPI `POST /api/meetings/join`을 직접 호출**하여 LiveKit 토큰을 발급받고 meeting 상태로 전이한다. **자동 join 금지.** LiveKit 룸 생성·토큰 발급은 **FastAPI 경유로 단일화**한다(클라이언트/Colyseus 직접 생성 금지). 이 흐름은 **02-trd-architecture.md §5.3 회의 시퀀스와 정합**한다.
 
-**흐름**:
+**흐름** (15-realtime-server-spec §3 `enter_meeting` 2단계):
 
-1. **사용자가 회의실 바운드 진입**
-   - 서버: room entry trigger 감지 → meeting_participant 조회
-   - 서버: 해당 사용자가 meeting의 예상 참여자인가 확인
+1. **[1단계] 사용자가 회의실 바운드 진입 → `enter_meeting {room_id}` 발신**
+   - 클라이언트: Colyseus에 `enter_meeting {room_id}` 메시지 전송 (15 정본 어휘)
+   - 서버(Colyseus): **근접(2m)·정원(capacity) 검증** + meeting_participant 조회(FastAPI 위임) → 예상 참여자인가 확인
 
 2. **회의 참여 권한 확인**
    - 서버: "이 사람이 이 회의에 초대되었는가?" ✓
-   - 미초대: 방에서 추출 또는 입장 거절 알림
+   - 미초대/정원 초과: 입장 거절 알림
 
-3. **사용자에게 "입장" 대화상자 표시**
+3. **입장 가능 통지 → 사용자에게 "입장" 대화상자(프롬프트) 표시**
    ```
    ┌─ 회의실: 분기 계획 회의 ────────┐
    │ 호스트: 김영희                 │
@@ -312,11 +317,11 @@ graph TD
    └──────────────────────────────┘
    ```
 
-4. **사용자가 명시적으로 "입장하기" 클릭**
-   - 클라이언트: `join_meeting_room(meeting_id)` RPC
-   - 서버: LiveKit 방 존재 확인, 없으면 생성
-   - 서버: meeting 상태 → `in_progress`, presence.status → `meeting`
-   - 서버: 클라이언트에 LiveKit 방 URL + 인증 토큰 전달
+4. **[2단계] 사용자가 명시적으로 "입장하기" 클릭 → join 실행**
+   - 클라이언트: **FastAPI `POST /api/meetings/join`(room_id) 직접 호출** — Colyseus 경유 아님, 자동 join 금지(D24)
+   - FastAPI: meeting 레코드 확인(없으면 생성), LiveKit 방 존재 확인·생성 (**FastAPI 경유 단일화**)
+   - FastAPI: meeting 상태 → `in_progress`, presence.status → `meeting` 전이
+   - FastAPI: 클라이언트에 meeting.id + LiveKit 참가 토큰(room_token) 응답
 
 5. **LiveKit 클라이언트 초기화**
    - 클라이언트: LiveKit SDK 초기화 (카메라/마이크 권한 요청)
@@ -386,17 +391,19 @@ graph TD
 
 ### 5.3 위치 동기화 상세
 
-**핸드셰이크(첫 메시지, D1/D4)**:
+**핸드셰이크/인증(Colyseus `onAuth`, D27)**:
 ```json
 {
-  "type": "hello",
+  "type": "join",
+  "room": "floor:1",
   "protocol_version": 3,
-  "jwt": "<FastAPI 발급 자체 JWT>"
+  "jwt": "<FastAPI 발급 단일세션 자체 JWT>"
 }
 ```
-- 서버가 `protocol_version`을 협상한다. 미지원이면 `{"type":"reject","reason":"protocol_mismatch","min":2,"max":3}` 후 소켓 종료(업데이트 안내).
+- 클라이언트가 룸(=층) 조인 시 JWT를 함께 전달하고, 서버의 **Colyseus `onAuth`** 훅이 FastAPI 발급 JWT(단일세션, HS256)를 검증한다. OIDC 이중 로그인은 제거(D27).
+- 서버가 `protocol_version`을 협상한다. 미지원이면 조인 거절 `{"type":"reject","reason":"protocol_mismatch","min":2,"max":3}` 후 연결 종료(업데이트 안내).
 
-**클라이언트 → 서버**:
+**클라이언트 → 서버** (15 정본 어휘: `move_request`/`status_change`/`sit_request`/`enter_meeting`/`interact_request`):
 ```json
 {
   "type": "move_request",
@@ -407,10 +414,10 @@ graph TD
 }
 ```
 
-**서버 → 모든 클라이언트** (서버 tick 20Hz = 50ms 간격):
+**서버 → 모든 클라이언트** — `world_update`, 서버 tick 20Hz = 50ms 간격, Colyseus Schema binary delta로 전송(아래는 논리 뷰):
 ```json
 {
-  "type": "player_update",
+  "type": "world_update",
   "protocol_version": 3,
   "server_seq": 88012,
   "updates": [
@@ -434,16 +441,16 @@ graph TD
 ```
 
 **재접속 규칙 (WSS 순단/크래시 복구)**:
-- 클라이언트는 마지막으로 수신한 `server_seq`를 기억한다. 재접속 시 `{"type":"resume","last_server_seq":88012,"jwt":"<...>"}`로 요청.
-- 서버는 인메모리 상태가 유효하면 델타를, 게임서버 크래시 후 재기동 등으로 델타가 불가능하면 **전체 스냅샷**(`{"type":"snapshot","server_seq":N,"players":[...]}`)을 전송한다. 클라이언트는 스냅샷으로 로컬 상태를 재구축한다.
+- 클라이언트는 마지막으로 수신한 `server_seq`를 기억한다. 재접속 시 `{"type":"resume","last_seq":88012,"jwt":"<...>"}`로 요청 (필드명 정본 `last_seq`, 15 §3 보완 어휘).
+- 서버는 Colyseus 인메모리 룸 상태가 유효하면 델타를, Colyseus 서버 크래시 후 재기동 등으로 델타가 불가능하면 **전체 스냅샷**(`{"type":"snapshot","server_seq":N,"players":[...]}`, 15 정본 `snapshot` 어휘)을 전송한다. 클라이언트는 스냅샷으로 로컬 상태를 재구축한다.
 
 ### 5.4 동기화 시퀀스 다이어그램 (입장~퇴장)
 
 ```mermaid
 sequenceDiagram
-    participant User as 사용자<br/>(클라이언트)
-    participant Client as Godot<br/>클라이언트
-    participant Server as Godot<br/>헤드리스 서버
+    participant User as 사용자<br/>(브라우저)
+    participant Client as R3F<br/>웹 클라이언트
+    participant Server as Colyseus<br/>권위 서버
     participant API as FastAPI<br/>백엔드
     participant DB as PostgreSQL<br/>(우리 DB)
     participant ERP as ERP<br/>읽기 전용 DB
@@ -454,16 +461,16 @@ sequenceDiagram
     API->>DB: 4. erp_user 미러 갱신
     API->>Client: 5. 자체 JWT(HS256, 8h) 발급
 
-    Client->>Server: 6. WSS 핸드셰이크(protocol_version, JWT)
+    Client->>Server: 6. 룸(floor) 조인 + WSS 핸드셰이크(protocol_version, JWT)
     activate Server
-    Note over Server: JWT 검증(자체 시크릿) + 버전 협상
-    Server->>API: 7. GET /api/office/{id}/layout (씬/콜리전, FastAPI 경유)
-    Server->>Server: 8. 헤드리스 씬에 아바타 인스턴스 생성 (메모리 권위)
-    Server->>Client: 9. login_success(player_id, initial_state)
+    Note over Server: Colyseus onAuth JWT 검증(자체 시크릿) + 버전 협상
+    Server->>API: 7. GET /api/office/{id}/layout (office_layout/colliders, FastAPI 경유)
+    Server->>Server: 8. 룸 상태에 아바타 인스턴스 생성 (Colyseus Schema, 메모리 권위)
+    Server->>Client: 9. snapshot(player_id, initial_state)
 
     loop 서버 tick 20Hz
-        Server->>Server: 10. 씬 업데이트 (이동, 충돌, 근접 감지) — 메모리 권위
-        Server->>Client: 11. world_update (모든 플레이어 위치 + 상태)
+        Server->>Server: 10. 룸 상태 업데이트 (이동, 충돌, 근접 감지) — 메모리 권위
+        Server->>Client: 11. world_update (모든 플레이어 위치 + 상태, Schema binary delta)
     end
 
     loop 1~5초 배치 push (D3)
@@ -535,7 +542,7 @@ sequenceDiagram
 - [ ] **엘리베이터**: floor 간 이동 애니메이션
 - [ ] **비공개 구역**: 권한 기반 접근 제어 (leader-only 미팅룸 등)
 - [ ] **고급 근접 센싱**: 아바타가 같은 테이블에 앉을 때만 상호작용 허용
-- [ ] **모바일 Godot 클라이언트**: 웹 WASM export (향후 B2B 때 Three.js 경량 뷰어)
+- [ ] **모바일 뷰어**: R3F 웹앱의 모바일 반응형 경량 뷰어 (향후 B2B)
 
 ---
 
@@ -549,11 +556,12 @@ sequenceDiagram
 
 ### Downstream documents affected
 - **06-screens.md**: 근접 메뉴 UI, 회의실 입장 대화상자, presence 상태 인디케이터
-- **07-3d-visual-asset-pipeline.md**: Godot 씬 구조, 아바타 제어, 이동 애니메이션, LiveKit 통합
+- **07-3d-visual-asset-pipeline.md**: R3F(three.js) 씬 구조, 아바타 제어, 이동 애니메이션, LiveKit 통합 (07은 R3F로 재작성됨)
+- **15-realtime-server-spec.md**: 본 §5 메시지 프로토콜을 구체화하는 Colyseus 구현 정본
 - **08-kpi-logic.md**: meeting, meeting_minute, action_item → KPI 점수 계산
 
 ### Open questions
-1. **LOS (광선 추적) 구현**: **PhysicsServer3D Raycast 기반 확정**(헤드리스 렌더러 미로드). 유리벽 레이어 마스크 설계 및 성능은 스파이크 S3(20명 부하)에서 측정.
+1. **LOS (광선 추적) 구현**: **Colyseus 서버 측 기하 검증 확정**(office_layout colliders 기반 광선 교차, Godot PhysicsServer3D 없음). 유리벽 차폐 마스크 설계 및 성능은 스파이크 S3(20명 부하)에서 측정.
 2. **근접 거리 임계값**: 5m이 UX상 최적인가? 사무실 규모에 따라 조정 필요.
 3. **[OQ3 확정] 상태 away 자동 전이 시간 = 5분**(설정 가능 기본값, D13). "미정의/N분" 표기 폐기. 운영 중 문화에 맞춰 기본값 조정 가능.
 4. **[OQ5 RESOLVED] LiveKit 호스팅**: Self-host 결정(온프렘 VM 또는 사내 클라우드 + Docker Compose). 단일 SFU 노드로 충분하며, 재택/하이브리드는 공개 엔드포인트 직결(UDP) + TURN-TLS 443 폴백 (VPN 없음 확정 2026-07-02). 배제: SaaS(민감 미디어 외부 경유), 신규 AWS(데이터 주권 우선).
@@ -562,24 +570,24 @@ sequenceDiagram
 ### Assumptions
 - 사내 단일 테넌트(company_id) 배포이므로 멀티테넌트 회의 공유 로직 미포함.
 - ERP와 우리 플랫폼이 같은 사내 LAN(서버 PC ↔ ERP 서버)에 있어 네트워크 지연 < 50ms 가정.
-- Godot 헤드리스 서버가 씬 물리엔진(PhysicsServer3D, 렌더러 미로드)을 풀로 실행 가능. "CPU 리소스 충분" 가정은 **스파이크 S3(GDScript 헤드리스 20명 시뮬레이션 CPU/메모리 측정)로 검증**한다.
+- Colyseus 권위 서버가 서버 측 기하 검증(충돌·LOS)을 룸(층) 단위로 실행 가능. "CPU 리소스 충분" 가정은 **스파이크 S3(Node/Colyseus 20명 시뮬레이션 CPU/메모리 측정)로 검증**한다.
 - **[OQ3 결정]**: ERP `attendances` 테이블과 우리 3D `presence` 상태는 완전히 분리. ERP가 원본(check_in/out), 우리는 read-only로 읽기만 수행. v1에서 우리 플랫폼은 attendance 테이블을 쓰지 않음. 3D 프레즌스는 사용자 행동(로그인, 좌석 도착, 회의실 입장 등) 기반 자동 전이.
 - **[OQ5 결정]**: LiveKit은 self-host (온프렘 VM 또는 사내 클라우드 계정에 Docker Compose로 배포). 재택/외근자는 공개 엔드포인트 직결(UDP) + TURN-TLS 443 폴백으로 접속 (VPN 없음 확정 2026-07-02). 단일 SFU 노드로 충분하므로 오토스케일 불필요 → 1인 운영 부담 낮음. 배제: LiveKit SaaS(민감 미디어 외부 경유, 구독비), 신규 AWS(데이터 주권).
-- 모든 클라이언트가 Godot 4.x 네이티브 데스크톱 클라이언트 사용(웹 WASM export는 품질 이유로 제외).
+- 모든 클라이언트가 R3F(three.js) 웹앱 뷰포트를 브라우저에서 사용(웹이 본체). 구 Godot 네이티브 데스크톱 전용·웹 WASM export 배제 가정은 폐기(D27).
 
 ### Validation criteria
-- [ ] Godot 헤드리스 서버가 **20명 아바타(도그푸딩 검증 규모, D22)** + 1회의실 동시 운영 시 서버 CPU 여유 확인 (스파이크 S3).
+- [ ] Colyseus 권위 서버가 **20명 아바타(도그푸딩 검증 규모, D22)** + 1회의실 동시 운영 시 서버 CPU 여유 확인 (스파이크 S3).
 - [ ] 근접 상호작용 메뉴 활성화 지연 < 200ms.
 - [ ] 아바타 동기화 E2E(입력→원격 표시) **p95 < 500ms** (WSS 기반, 서버 tick 20Hz — D22).
 - [ ] 회의 입장부터 첫 미디어 수신까지 < 2초.
-- [ ] LiveKit 1:1 통화 지연 < 500ms (P2P 또는 SFU).
+- [ ] PeerJS 근접 통화(≤4명) 지연 < 500ms (P2P — 회의실 화상만 LiveKit SFU, D24).
 - [ ] 회의록 생성 → AI 요약 완료 < 30초.
 
 ### Risks
 - **서버 권위 모델의 CPU 병목**: 모든 이동 명령을 검증하므로 동시 접속자 수 증가 시 병목 가능. → 차후 서버 확장 또는 메시지 배치 처리 필요.
 - **LiveKit 자체 호스트의 운영 복잡도**: 클라우드 서비스(LiveKit Cloud) 대비 관리 부담 높음. → 팀 역량 확보 필수.
 - **ERP 동기화 지연**: ERP read-only 접근 중 쿼리가 느리면 presence 갱신이 지연될 수 있음. → 캐싱 전략 수립 필요.
-- **모바일 클라이언트 부재**: 사내에서도 모바일 사용자가 있을 경우 불만족. → 완성 후 별도 모바일 앱 검토(웹 WASM은 품질 이유로 후순위).
+- **모바일 뷰어 부재**: 사내에서도 모바일 사용자가 있을 경우 불만족. → 완성 후 R3F 웹앱의 모바일 반응형 경량 뷰어 검토(후순위).
 
 ---
 
@@ -590,3 +598,4 @@ sequenceDiagram
 | v1.0 | 2026-07-01 | 최초 작성 |
 | v1.1 | 2026-07-02 | 00-decisions.md v1.0 정합 반영 — D1(WSS 확정, "현재 선택 ENet" 폐기, 헤드리스 렌더러 미로드·Web WASM 제거, 재접속 sequence_num 스냅샷), D3(동기화 시퀀스 FastAPI 경유·presence 메모리 권위+1~5초 배치 push), D4(login(email,password)→JWT 핸드셰이크·protocol_version), D5(STT 정식 포함·회의록 STT 자동 초안→검토 확정), D13(상태 10종→7종·GPS 상태 삭제·external 수동·전이 다이어그램 working 포함 재작성·away 5분 확정), D22(p95<500ms·tick 20Hz·검증 20명), D24(자동 연결 금지 원칙 유지+02 정합 명시), LOS PhysicsServer3D Raycast 명시, CPU 가정 스파이크 S3 참조 |
 | v1.2 | 2026-07-02 | 배포·네트워크 확정 반영 — VPN 없음 확정(LiveKit 공개 엔드포인트 직결 UDP + TURN-TLS 443 폴백, WSS 인증서 사내 PKI→Let's Encrypt), ERP 연결 표기 "같은 VPN"→같은 사내 LAN(서버 PC ↔ ERP 서버), 녹화·요약 "LiveKit 클라우드 레코딩+Gemini"→LiveKit Egress(자체 호스트)+Claude(기본)/Gemini(대안), "Twilio LiveKit Cloud"→LiveKit Cloud 표기 정정, meeting_minute status published→finalized(04 enum 정합) |
+| **v2.0** | **2026-07-09** | **D27 반영(D26+Godot 폐기) — 엔진 서술 교체·프로토콜 실체 보존.** 교체: (1) 권위 서버 Godot 4 헤드리스(렌더러 미로드) → **Colyseus(Node/TS, SkyOffice 이식·MIT), 룸=층 단위, Colyseus Schema binary delta**, (2) 클라 Godot 4 네이티브 데스크톱 전용·웹 WASM export 배제 → **R3F(three.js) 웹앱 뷰포트(웹이 본체)**, (3) LOS/근접 PhysicsServer3D Raycast(헤드리스) → **Colyseus 서버 측 기하 검증(office_layout colliders)**, (4) 인증 자체 JWT 핸드셰이크 → **Colyseus onAuth JWT 검증(OIDC 이중로그인 제거)**, (5) 메시지 어휘 15 정본과 통일(`world_update`/`snapshot` 서버→클라, `move_request`/`status_change`/`sit_request`/`enter_meeting`/`interact_request` 클라→서버; `player_update`→`world_update`, `join_meeting_room`→`enter_meeting`, `proximity_request`→`interact_request`), (6) 시퀀스/아키텍처 다이어그램 참가자·라벨 갱신, (7) Downstream 07(R3F 재작성 명시)·15 추가, 스파이크 S3 가정 Colyseus 기준으로 정정. **보존(논리 유효)**: 이동검증 8·근접검증 8·프레즌스 7종(D13)·20Hz tick(D22)·재접속 스냅샷·D24 회의 명시입장·presence 1~5초 배치 push(D3)·WSS 전송·KPI 반영 규칙. 정본: 00-decisions §H(D27)·15-realtime-server-spec(구체 정본)·14/16 |

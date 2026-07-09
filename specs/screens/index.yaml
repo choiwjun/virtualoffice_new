@@ -7,13 +7,14 @@ version: "2.0"
 screens:
   - id: screen-virtual-office-3d
     file: virtual-office-3d.yaml
-    name: 3D Main Office
-    route: "/" # 기본 진입점 (Godot 데스크톱)
-    platform: godot-native
-    layout: split-3d-hud
+    name: 3D Main Office (Photoreal Web-Embed)
+    route: "/" # 기본 진입점 (웹 통합앱 대시보드의 임베드 뷰포트) — D27
+    platform: r3f-photoreal-web
+    layout: unified-dashboard-with-embedded-viewport
     description: |
-      가상오피스 3D 공간. 실시간 아바타 이동, 회의실 입장, 팀 구역 시각화, 좌측 사이드바(층/구역/사람),
-      우측 참석자 패널, 하단 회의/업무 제어. Godot 4 네이티브 데스크톱 앱.
+      단일 웹앱 내 임베드 3D 뷰포트(react-three-fiber). Blender 오프라인렌더 배경 + 실시간 아바타 깊이합성(고정 아이소 2.5D).
+      실시간 이동/프레즌스는 Colyseus 20Hz 권위 서버(SkyOffice 이식). 좌측 사이드바(층/구역/사람), 우측 참석자 패널,
+      중앙 하단 대시보드 3카드(오늘의 업무·나의 KPI·진행중 화상회의), 회의/업무 제어. Godot 네이티브 폐기(D27). 정본=14·15·16.
 
   - id: screen-org-chart-editor
     file: org-chart-editor.yaml
@@ -42,19 +43,19 @@ screens:
     platform: web
     layout: sidebar-main
     description: |
-      2D Konva.js 평면도 전용(웹 3D 미리보기 없음 — D11). 벽, 좌석, 회의실, 문 개구부, 구역 배치.
-      정밀 3D 확인은 저장 후 [데스크톱에서 열기(draft)]로 Godot 데스크톱 클라이언트에서 수행.
+      2D Konva.js 평면도 전용(편집 즉시 실시간 3D 재렌더 없음 — D11). 벽, 좌석, 회의실, 문 개구부, 구역 배치.
+      정밀 3D 확인은 저장 후 웹 뷰포트 내 draft 프리뷰로 수행(06 §3.3.2).
       Undo/Redo, 서버 검증(D12: ERROR 배포 차단), 층 단위 버전 관리, 배포/롤백.
 
   - id: screen-kpi-dashboard
     file: kpi-dashboard.yaml
     name: KPI 대시보드
-    route: /admin/kpi # 라우팅 분리: /kpi = 본인 KPI 열람(전 역할), /admin/kpi = 관리자 검토·확정(leader 팀 한정/admin)
+    route: /admin/kpi # 라우팅 분리: /kpi = 본인 KPI 열람(전 역할), /admin/kpi = 관리자 열람·추이·팀종합 (조정·확정은 /admin/kpi/workflow)
     platform: web
     layout: sidebar-main
     description: |
-      KPI 평가 결과 조회/검토. AI 초안 표시, 관리자 조정·확정(final_score), ERP 푸시 상태 추적.
-      기간별 필터, 팀 종합, 개인 지표, 추이/비교/순위 탭. 본인용(/kpi)과 관리자용(/admin/kpi) 라우팅 분리.
+      KPI 평가 결과 열람 전용. AI 초안 표시, ERP 푸시 상태 추적, 기간별(daily/quarterly) 필터,
+      팀 종합, 개인 지표, 추이/비교/순위 탭. 조정·확정(final_score)은 kpi-workflow(/admin/kpi/workflow) 소관.
 
   - id: screen-meetings
     file: meetings.yaml
@@ -106,17 +107,39 @@ screens:
       ERP 동기화·EOD push·KPI 배치의 상태 테이블/실패 이력/수동 재시도(관리자 전용, 06 §3.12).
       erp_sync_log + daily_status_push(run_id, error_message) 기반.
 
+  - id: screen-announcement
+    file: announcement.yaml # 상세 정본: docs/planning/06-screens · 14-virtual-office-spec
+    name: 공지사항
+    route: /announcements # 작성·수정·삭제는 이 화면 내 admin 전용 editor(announcement.yaml) — 별도 /admin/announcements 라우트 없음
+    platform: web
+    layout: sidebar-main
+    description: |
+      전사/부서 공지 목록·상세 열람 + 관리자 작성/게시. 대시보드·3D 뷰포트 알림 배너와 연동.
+      (상세 명세는 06-screens/14 정본 — 본 카탈로그는 등재만)
+
+  - id: screen-kpi-workflow
+    file: kpi-workflow.yaml # 상세 정본: docs/planning/06-screens · 08-kpi-logic
+    name: KPI 워크플로우 (관리자 검토·조정 — 이의신청은 kpi-objection)
+    route: /admin/kpi/workflow # 이의신청 상태머신(제출·재검토·확정 UI)은 kpi-objection(/kpi/objection) 소관
+    platform: web
+    layout: sidebar-main
+    description: |
+      KPI 평가 프로세스 워크플로우: AI 초안 열람 → 관리자 검토·조정(±10%) → 확정(admin 전용)/ERP push.
+      이의신청은 진행상태 배지+링크만 노출(상태머신은 kpi-objection 소관). (상세 명세는 06-screens/08 정본 — 본 카탈로그는 등재만)
+
 metadata:
-  total_screens: 10
-  web_screens: 9
-  native_screens: 1
-  admin_routes: 5 # org-chart, employees, office-layout, kpi(admin), sync
-  user_routes: 3 # meetings, work-log, kpi/objection (본인 KPI는 /kpi)
+  total_screens: 12
+  web_screens: 12 # 전 화면 웹(3D 오피스도 단일 웹앱 임베드 뷰포트 — D27)
+  native_screens: 0 # Godot 네이티브 폐기(D27)
+  embedded_viewport_screens: 1 # 3d-office (r3f-photoreal-web, 웹앱 임베드)
+  admin_routes: 6 # org-chart, employees, office-layout, kpi(admin), sync, kpi/workflow (공지 작성은 /announcements 화면 내 admin 전용 editor — 별도 admin 라우트 없음)
+  user_routes: 4 # meetings, work-log, kpi/objection (본인 KPI는 /kpi), announcements
   public_routes: 1 # login
-  godot_routes: 1 # 3d-office
+  godot_routes: 0 # Godot 네이티브 폐기(D27) — 3d-office는 웹앱 "/" 임베드
 
 routing_notes:
-  - "KPI 라우팅 분리: /kpi = 본인 KPI 열람(전 역할), /admin/kpi = 관리자 검토·확정 — §3.10 접근 매트릭스(shared/rbac.yaml) 참조"
+  - "루트 '/' = 단일 웹앱 통합 대시보드의 임베드 3D 뷰포트(r3f-photoreal-web, D27). Godot 네이티브 데스크톱 앱 전제 폐기 — 별도 실행 파일 없이 웹앱 내부에서 렌더."
+  - "KPI 라우팅 분리: /kpi = 본인 KPI 열람(전 역할), /kpi/quarterly = 직원 본인 분기 상세(read-only, 08 §6.2.2), /admin/kpi = 관리자 열람·추이·팀 종합, /admin/kpi/workflow = 관리자 검토·조정·확정, /kpi/objection = 이의신청 — §3.10 접근 매트릭스(shared/rbac.yaml) 참조"
   - "웹 콘솔 랜딩 = 직원명부(/admin/employees). 별도 대시보드 화면 없음(2026-07-02 결정)"
 
 grouping:
@@ -126,11 +149,14 @@ grouping:
     - screen-seat-layout-editor
     - screen-kpi-dashboard
     - screen-sync-monitoring
+    - screen-kpi-workflow
   user:
     - screen-meetings
     - screen-work-log
     - screen-kpi-objection
+    - screen-announcement
   public:
     - screen-auth
   immersive:
+    # 단일 웹앱(r3f-photoreal-web) 통합 대시보드에 임베드된 뷰포트 — 별도 네이티브 앱 아님(D27)
     - screen-virtual-office-3d

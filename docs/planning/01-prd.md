@@ -1,20 +1,17 @@
 # 01-prd.md: 제품 요구사항(PRD)
 
-> **[D26 전환 — 2026-07-06]** 이 문서의 Godot 헤드리스 서버 / GDScript / 3D 렌더러 품질수치(60fps@GTX1650 등) 관련 절은
-> D26으로 **WorkAdventure self-host 스택으로 대체**되었습니다(게임서버=wa-back, 실시간=WA 내장 WSS, 클라=브라우저). 해당 절은 역사적 참고용이며,
-> 현행 정본은 docs/planning/10-roadmap.md(v3.0)와 docker-compose.yml/config/*를 따릅니다.
-
-
 **프로젝트**: vituraloffice_new (가상오피스 운영 플랫폼)  
-**버전**: v3.4  
+**버전**: v4.0  
 **작성일**: 2026-07-02  
-**최종 갱신**: 2026-07-06 (D26 WorkAdventure 전환 반영)  
+**최종 갱신**: 2026-07-09 (D27 포토리얼 웹임베드 전환 반영)  
 **상태**: 확정(사용자 인터뷰 기반 + 00-decisions.md 정합)  
-**정본 기준**: `00-decisions.md` (D1~D26, F절) — 충돌 시 정본이 우선
+**정본 기준**: `00-decisions.md` (D1~D27, F절) — 충돌 시 정본이 우선. 아키텍처 정본 = 00-decisions §H(D27) · 14-virtual-office-spec · 15-realtime-server-spec · 16-render-spike-and-roadmap · 3d-design/{design-style-analysis, photoreal-web-strategy}
 
-> **변경 요약 (v3.3, 2026-07-02)**: 회의록 STT 자동 초안을 정식 MUST 범위로 명시(D5), 성공/품질 수용 기준에 측정 방법 병기(수동 전사 대조, p95, 측정 구간, 기준 하드웨어 GTX 1650급, D22), 범위표의 P0~P3 컬럼을 단계(#1~#7)로 변경(MoSCoW와 표기 충돌 해소), 일정 개요에 58주·완성 2027년 하반기 명시(D6), 확정된 Open question 정리, 리스크 3건(Godot-LiveKit 통합·STT 정확도·개인정보/노동법) 추가(D20/F).
+> **변경 요약 (v3.3, 2026-07-02)**: 회의록 STT 자동 초안을 정식 MUST 범위로 명시(D5), 성공/품질 수용 기준에 측정 방법 병기(수동 전사 대조, p95, 측정 구간, D22), 범위표의 P0~P3 컬럼을 단계(#1~#7)로 변경(MoSCoW와 표기 충돌 해소), 확정된 Open question 정리, 리스크(STT 정확도·개인정보/노동법) 추가(D20/F).
 >
-> **변경 요약 (v3.4, 2026-07-06)**: **D26** WorkAdventure 전환 반영. MUST 범위표에서 Godot 3D 클라이언트·Godot 헤드리스 서버 항목을 WorkAdventure self-host로 교체. WON'T 항목에 Godot WASM export 보류 추가.
+> **변경 요약 (v3.4, 2026-07-06)**: **D26** WorkAdventure 전환 반영(이후 D27로 전면 폐기됨 — 아래 참조).
+>
+> **변경 요약 (v4.0, 2026-07-09)**: **D27 반영: Godot/WA→R3F 웹임베드+Colyseus+단일세션 전환.** D26(WorkAdventure 2D 별도앱)을 전면 폐기하고, 단일 통합 웹앱(Next.js) 안의 react-three-fiber(R3F/three.js) 뷰포트로 전환(2026-07-08 확정). 렌더 = Blender Cycles 오프라인 배경 + Z깊이패스 깊이합성(고정 아이소 2.5D), 이동서버 = SkyOffice 이식 Colyseus(20Hz), 인증 = 콘솔 JWT 단일세션(OIDC 이중로그인 제거). 성공/품질 수용 기준을 깊이합성 픽셀정확 가림·R3F 로딩<5초·Colyseus p95<500ms·동시20(도그푸딩)/100(설계)로 교체. KPI·STT·ERP·개인정보(D20) 원칙은 보존.
 
 ---
 
@@ -47,9 +44,9 @@
   ↓ [직원배정]
 좌석 배치 (seat 배정, office_layout JSON 구동)
   ↓ [3D 시각화]
-Godot 4 네이티브 3D 클라이언트 (아바타 · 좌석 · 회의실 · 상태)
+R3F 포토리얼 웹임베드 (Blender 렌더 배경 + 깊이합성 아바타 · 좌석 · 회의실 · 상태)
   ↓ [아바타 출근/상태 변화]
-실시간 Presence (Godot 헤드리스 서버 권위)
+실시간 Presence (Colyseus 권위 서버, 20Hz)
   ↓ [회의/협업]
 회의 시작 → LiveKit 화상 → 회의록 + 액션아이템 생성
   ↓ [업무 기록]
@@ -68,6 +65,7 @@ ERP가 분기별 인사평가 자료 수집
 3. **결과물 중심 평가**: 접속시간이 아니라 회의록·액션·완료도로 평가 (반감시 제거)
 4. **운영 가시성**: 관리자가 3D맵에서 실시간으로 팀 상태·회의 현황 파악
 5. **사무실 구조 코드화**: office_layout JSON으로 구동하므로 좌석·구역·회의실을 앱 빌드 없이 배포/롤백 가능
+6. **단일 웹앱 경험**: 콘솔과 3D 뷰포트가 하나의 Next.js 앱 안에 통합 — 별도 데스크톱/별도앱 설치·이중 로그인 없음
 
 ---
 
@@ -77,28 +75,29 @@ ERP가 분기별 인사평가 자료 수집
 
 | 카테고리 | 항목 | 단계 | 근거 |
 |---------|------|------|------|
-| **MUST** | **WorkAdventure self-host 구축** (play/back/map-storage/redis/LiveKit/coturn) | #1 ⭐D26 | D26: WA self-host가 가상오피스 본체 |
-| **MUST** | **OIDC 연동** (FastAPI→WA, D4 자체 JWT 공존) | #1 ⭐D26 | D4/D26: ERP 사용자 WA 로그인 |
-| **MUST** | ERP 동기화 (직원·조직·근태) | #2 | 스펙 #2: 기초 데이터 |
-| **MUST** | **Presence 7종 WA 매핑** (D13 scripting API 연동) | #2 ⭐D26 | D13/D26: WA 상태 이벤트와 D13 7종 매핑 |
-| **MUST** | **TMJ 맵 제너레이터** (조직→WA 맵 자동 생성, D12 검증) | #3 ⭐D26 | D12/D26: 서버 단일 검증, 슬롯 초과 에러 |
-| **MUST** | **회의 명시적 입장** (Room API, D24) | #4 ⭐D26 | D24/D26: 자동 연결 금지, LiveKit 토큰 발급 |
-| **MUST** | 회의/화상회의 (LiveKit — WA 네이티브 통합) | #5 | 스펙 #5: 협업 기록 |
-| **MUST** | **회의록 STT 자동 초안** (LiveKit Egress→STT→화자분리→검토·확정) | #5 | 스펙 #5: 회의록 자동화 (D5 확정) |
-| **MUST** | KPI 산출 + AI 서술 초안 + 관리자 검토·이의신청 | #6 | 스펙 #6: ERP 연동 결과 |
-| **MUST** | 배치 (daily_reports 18:00 / KPI 확정 시 ERP push) | #6 | 스펙 #7: 폐쇄 루프 (D17) |
-| **SHOULD** | 층 추가·구역별 권한 | #7 | 고도화 (스펙 #7) |
-| **SHOULD** | 회의록 AI 요약 | #7 | 고도화 부가가치 (STT 초안과 별개) |
-| **SHOULD** | 조직도 실시간 에디터 | #7 | 고도화 운영편의 |
-| **COULD** | 모바일 알림 (사내 웹 추가) | #7 | 고도화 #7의 일부 (로드맵 7.4 정합, 2026-07-02) |
+| **MUST** | **R3F 포토리얼 웹임베드 셸** (단일 Next.js 앱 내 three.js 뷰포트) | P1 ⭐D27 | D27: R3F 웹3D가 v1 본체 |
+| **MUST** | **단일세션 인증** (콘솔 FastAPI JWT 단일 세션) | P1(콘솔 세션 유지)→P3(Colyseus onAuth 확장) ⭐D27 | D27: OIDC 이중로그인 제거 |
+| **MUST** | ERP 동기화 (직원·조직·근태) | P1 | 스펙 #2: 기초 데이터 |
+| **MUST** | **렌더 파이프라인** (Blender Cycles 배경 office_bg.png + Z깊이패스 office_depth.png + camera.json 직교 아이소, 깊이합성) | P2 ⭐D27 | D27: 고정 아이소 2.5D 픽셀정확 가림 |
+| **MUST** | **이동 서버** (SkyOffice 이식 = Colyseus 권위 서버, 20Hz tick, 이동검증 8항목·근접검증 8항목 LOS) | P3 ⭐D27 | D27/15-realtime-server-spec: 권위 서버 |
+| **MUST** | **Presence 7종 + 좌석** (Colyseus 메모리 권위 → 1~5초 `POST /api/presence/batch` → DB) | P4 ⭐D27 | D13/D27: presence 배치 반영 |
+| **MUST** | **회의 명시적 입장** (D24, 자동 연결 금지, LiveKit 토큰 발급) | P5 | D24: 협업 핵심 |
+| **MUST** | 회의/화상회의 (PeerJS ≤4 → mediasoup/LiveKit >4·회의실, 회의실=LiveKit D24) | P5 | 스펙 #5: 협업 기록 |
+| **MUST** | **회의록 STT 자동 초안** (녹음 Egress→STT→화자분리→검토·확정) | P6 | 스펙 #5: 회의록 자동화 (D5 확정) |
+| **MUST** | KPI 산출 + AI 서술 초안 + 관리자 검토·이의신청 | P6 | 스펙 #6: ERP 연동 결과 |
+| **MUST** | 배치 (daily_reports 18:00 / KPI 확정 시 ERP push) | P6 | 스펙 #7: 폐쇄 루프 (D17) |
+| **SHOULD** | 층 추가·구역별 권한 | P7 | 고도화 (스펙 #7) |
+| **SHOULD** | 회의록 AI 요약 | P7 | 고도화 부가가치 (STT 초안과 별개) |
+| **SHOULD** | 조직도 실시간 에디터 | P7 | 고도화 운영편의 |
+| **COULD** | 모바일 알림 (사내 웹 추가) | P7 | 고도화 #7의 일부 (로드맵 7.4 정합, 2026-07-02) |
 | **COULD** | 자동 일일보고 생성 (기술적 도전) | 추후 | 스펙 범위 검토 중 |
 | **WON'T** | B2B SaaS 멀티테넌트 전환 | 완성 이후 | 첫 사용=사내 도그푸딩 |
 | **WON'T** | 결제/라이선싱 | 완성 이후 | GTM은 완성 후 |
 | **WON'T** | 대규모 조직 확장 (성능 최적화) | 완성 이후 | 현재 스코프 = 단일 조직 |
 | **WON'T** | HR 재구축 (급여·휴가·근태 시스템) | 삭제됨 | ERP가 Source of Truth |
 | **WON'T** | 자체 리포트/역량평가 시스템 | 삭제됨 | ERP developer_evaluations와 역할 분담 |
-| **WON'T** | Godot 네이티브 3D 클라이언트 | 보류됨(D26) | WorkAdventure self-host로 전환(D26). 3D 노선 재검토는 B2B 확장 이후 |
-| **WON'T** | 웹 3D WASM export (품질 한계) | 배제됨 | 최고품질 = Godot Forward+ 필수 → 보류(D26) |
+| **WON'T** | 자유시점 3D·실시간 GI 렌더 | 배제됨(D27) | 고정 아이소 2.5D + Blender 오프라인 굽기로 충분 (D27) |
+| **WON'T** | Godot 네이티브 / WorkAdventure 별도앱 | 폐기됨(D27) | D26 WA 별도앱 전면 폐기 → R3F 웹임베드 단일앱으로 전환(D27) |
 
 ---
 
@@ -139,8 +138,8 @@ ERP가 분기별 인사평가 자료 수집
 
 | 측면 | gather.town | Microsoft Teams | 기존 ERP (DailyLog) | 우리 (Virtual Office) |
 |------|------------|-----------------|------------------|-------------------|
-| **3D 공간** | 경량 카주얼 | 없음 | 없음 | 고품질(Forward+) |
-| **실시간 화상** | 제한적 | 강력함 | 없음 | LiveKit 통합 |
+| **3D 공간** | 경량 카주얼 | 없음 | 없음 | 포토리얼(Blender 오프라인 렌더 + 깊이합성 아이소 2.5D, 웹임베드) |
+| **실시간 화상** | 제한적 | 강력함 | 없음 | PeerJS→mediasoup/LiveKit 통합 |
 | **ERP 통합** | 불가능 | Office365 계정만 | 자체 시스템 | DailyLog 100% 통합 |
 | **회의록/협업 추적** | 미흡 | 메시지만 | 일일보고만 | 회의록+액션+KPI 자동화 |
 | **조직 구조** | 없음 | 팀 기반 | 다단계(부서/팀) | 우리 추가(본부/파트) |
@@ -199,11 +198,12 @@ ERP가 분기별 인사평가 자료 수집
 ## 7. 성공 기준 & 수용 조건
 
 ### 기술적 성공 기준
-- [ ] **WorkAdventure self-host** 스택(play/back/map-storage/redis/LiveKit/coturn) Docker Compose 배포 완료 (D21-r, D26)
+- [ ] **R3F 웹임베드 + Colyseus 이동서버 + FastAPI 콘솔** 단일 통합 스택 Docker Compose 배포 완료 (D27)
 - [ ] ERP 직원·조직·근태 읽기 동기화 완전 자동화 (**매시간 증분 + 매일 00:00 KST 전체 대사**, D18)
 - [ ] office_layout JSON 기반 좌석·회의실 배치가 앱 빌드 없이 배포/롤백 가능
-- [ ] **WorkAdventure** 도그푸딩 검증 20명(설계 100명) 동시 접속·아바타 이동·presence 7종 동기화 검증 (D22/D26)
-- [ ] LiveKit 화상회의 통합 및 **회의록 STT 자동 초안 생성**(Egress→STT→화자분리→검토·확정) 테스트 완료 (D5)
+- [ ] 깊이합성 검증: Blender 렌더 배경 + Z깊이패스로 R3F 아바타가 가구·유리벽 뒤에 **픽셀정확하게 가림**(office_bg.png/office_depth.png/camera.json 스파이크 PASS 2026-07-08 기반)
+- [ ] 도그푸딩 검증 **동시 20명**(설계 100명) Colyseus 접속·아바타 이동·presence 7종 동기화 검증 (D22/D27)
+- [ ] 화상회의 통합(PeerJS→mediasoup/LiveKit) 및 **회의록 STT 자동 초안 생성**(녹음 Egress→STT→화자분리→검토·확정) 테스트 완료 (D5)
 - [ ] 관리자 확정 KPI(final_score)가 ERP로 push되고(관리자 확정 이벤트 + 분기 마감), ERP 분기평가에 반영되는 엔드-투-엔드 검증 (D15/D17)
 
 ### 사용성 성공 기준
@@ -211,9 +211,10 @@ ERP가 분기별 인사평가 자료 수집
 - [ ] 팀리더가 3D맵만으로 팀 상태를 이해할 수 있다는 피드백 — **정량 지표: 설문 5점 척도 평균 ≥4** (2026-07-02)
 - [ ] 관리자가 KPI 대시보드에서 평가 자료를 자신감 있게 수집 가능 — **정량 지표: KPI 수집 파이프라인 오류율 <1%** (2026-07-02)
 
-### 품질 수용 기준 (측정 방법 병기, D22)
-- [ ] Godot 클라이언트: **기준 하드웨어 GTX 1650급에서 60fps**(내장그래픽 Iris Xe급 최소 30fps), 로딩 < 5초 — 골든 샘플 씬 기준
-- [ ] 아바타 동기화: **E2E(입력→원격 표시) p95 < 500ms**, 서버 tick 20Hz — 측정 구간 명시
+### 품질 수용 기준 (측정 방법 병기, D22/D27)
+- [ ] 깊이합성 렌더 정합: 아바타가 가구·유리벽 뒤에 **픽셀정확하게 가림**(Z깊이패스 대조), 아바타는 Blender IBL 정합 — 고정 아이소 2.5D 골든 샘플 씬 기준
+- [ ] R3F 웹 클라이언트 **로딩 < 5초**(경량 GLTF 아바타 + 배경/깊이 텍스처)
+- [ ] 아바타 동기화: **Colyseus E2E(입력→원격 표시) p95 < 500ms**, 서버 tick 20Hz — 측정 구간 명시
 - [ ] 화상회의 음성 지연: **사내 LAN < 200ms / 외부(인터넷 UDP 직결) < 300ms 목표**, TURN-TLS 폴백 시 측정 병기 (2026-07-02)
 - [ ] 회의록 STT 자동 초안 정확도: 주요 발화자·액션아이템 **누락률 < 5%** — 측정 방법: **테스트 회의 10회의 수동 전사와 대조** (2026-07-02 확정)
 - [ ] 브로드캐스트 팬아웃은 O(N²)로 명시, 설계 100명 초과 시 AOI 필터링 + 바이너리 직렬화 도입 검토
@@ -231,27 +232,29 @@ ERP가 분기별 인사평가 자료 수집
 
 ---
 
-## 8. 개발 로드맵 개요 (Phase 0 + 7단계 → 세부 구현은 10-roadmap.md / 12-tasks.md)
+## 8. 개발 로드맵 개요 (P0 스파이크 + P1~P7 → 세부 구현은 10-roadmap.md / 16-render-spike-and-roadmap.md)
 
-**총 기간(D6, D26 재산정)**: **45주** — 시작 2026-07-06 → 완성 **2027-05-17 (2027년 상반기)**. D26 WorkAdventure 전환으로 Phase 1~4 단축(58주→45주). Phase 5의 회의록 STT 파이프라인 반영. ("26주"·"58주 Godot 기준선" 표기 폐기)
+**진행 원칙(D27)**: P0 스파이크(**PASS 2026-07-08**)를 통과했으므로 P1~P7로 순차 진행한다. **주 단위 일정은 스파이크 후 확정**하며(억지 숫자 금지), 기존 "45주/58주/26주" 등의 Godot·WA 기준선 표기는 폐기한다.
 
 | 단계 | 이름 | 목표 | 주요 결과물 |
 |-----|------|------|----------|
-| **#0** | 계약 & 스파이크 | 계약 확정 + 기술 리스크 검증 | API/데이터/ERP 계약, 스파이크 S2(STT — S1·S3·S4는 D26으로 취소) |
-| **#1** | WorkAdventure self-host 구축 | WA 스택 가동 + 인증 | WA(play/back/map-storage)·LiveKit·coturn·Caddy 배포, OIDC 연동(D4 공존) |
-| **#2** | ERP 동기화 + Presence 연동 | 기초 데이터 플로우 | 직원·조직 미러, D13 presence 7종 WA 매핑(scripting API) |
-| **#3** | 맵 제너레이터 + 좌석 배치 | 운영 자동화 | 조직→TMJ 맵 자동 생성·map-storage 배포, 팀 구역/좌석 |
-| **#4** | WorkAdventure 연동 완성 | 협업 핵심 | Room API 회의 명시 입장(D24)·scripting 고급 연동·E2E 검증 |
-| **#5** | 회의/화상회의 + 회의록 STT | 기록 자동화 | LiveKit·STT 회의록·액션아이템 |
-| **#6** | KPI 산출 + AI 서술 초안 | 평가 폐쇄루프 | KPI 대시보드·이의신청·ERP 연동 쓰기 |
-| **#7** | 고도화 | 운영 완성도 | 층·권한·요약·감사로그·자동업데이트 |
+| **P0** | 렌더·깊이합성 스파이크 | 기술 리스크 검증 (**PASS 2026-07-08**) | Blender 배경+Z깊이패스+camera.json 깊이합성 데모, R3F 오클루전 검증 |
+| **P1** | 셸 + 데이터 연결 | 단일 웹앱 셸 + 인증·ERP | Next.js 셸, 콘솔 JWT 단일세션, ERP 직원·조직 미러 |
+| **P2** | 렌더 파이프라인 | 포토리얼 배경 파이프라인 | Blender Cycles 배경/깊이 렌더 자동화, R3F 깊이합성·IBL 정합 |
+| **P3** | 이동 서버 | 권위 서버 이동 | SkyOffice 이식 Colyseus 20Hz, 이동검증 8·근접검증 8(LOS) |
+| **P4** | 프레즌스 · 좌석 | 상태 자동화 | D13 presence 7종, Colyseus 메모리 권위 → `POST /api/presence/batch` → DB |
+| **P5** | 회의 · 화상 | 협업 핵심 | 명시적 입장(D24), PeerJS→mediasoup/LiveKit 화상회의 |
+| **P6** | STT · AI (외부) | 기록·평가 폐쇄루프 | STT 회의록·액션아이템, KPI 대시보드·이의신청·ERP 연동 쓰기 |
+| **P7** | 정리 · 부하 | 운영 완성도 | 층·권한·요약·감사로그, 동시 20(도그푸딩)/100(설계) 부하 |
 
 ---
 
 ## Loop Metadata
 
 ### Upstream documents referenced
-- **00-decisions.md (정본 결정 로그 D1~D26, F절 — 최우선 기준)**
+- **00-decisions.md (정본 결정 로그 D1~D27, §H·F절 — 최우선 기준)**
+- 14-virtual-office-spec.md / 15-realtime-server-spec.md / 16-render-spike-and-roadmap.md (D27 아키텍처 정본)
+- 3d-design/{design-style-analysis, photoreal-web-strategy}.md (렌더 전략)
 - 사용자 v3.2 개발기획서 (2026-07-01 인터뷰 기록)
 - 03-erp-integration.md (ERP 연동 설계)
 
@@ -262,18 +265,21 @@ ERP가 분기별 인사평가 자료 수집
 - 05-office-layout-schema.md (office_layout JSON 스키마)
 
 ### 확정 (기존 Open question 종결)
+- **클라이언트 = R3F 웹임베드 단일앱(D27)**, 렌더 = Blender 오프라인 배경 + Z깊이패스 깊이합성(고정 아이소 2.5D), 이동서버 = Colyseus 권위 20Hz(SkyOffice 이식)
+- **인증 = 콘솔 FastAPI JWT 단일세션**(Colyseus onAuth 검증, OIDC 이중로그인 제거, D27)
 - **KPI AI 엔진 = Claude 확정(기본)**, Gemini는 필요 시 대안 (낮은 우선순위)
 - **회의록 저장소 = 우리 DB(meeting_minute)** — ERP에는 daily_reports 및 확정 KPI(kpi_results)만 전송. 녹음 원본 90일·회의록 텍스트는 평가 데이터로 관리(D20)
 - **실시간 프로토콜 = WebSocket(WSS)**(D1), **회의실 예약 = 예약 + FCFS 병행**(D23), **회의 입장 = 명시적 확인**(D24)
 
 ### Open questions
-- 아바타 외형: 사내 규칙이 있는지? (현재 가정: 기본 휴머노이드 + 색상 커스터마이즈)
-- STT 엔진 선정: 사내 자체 호스팅 vs 외부 API (S2 PoC 결과에 따라 결정, 외부 전송 시 D20 가명화·위탁 고지)
+- 아바타 외형: 사내 규칙이 있는지? (현재 가정: 경량 GLTF 휴머노이드 + 색상 커스터마이즈)
+- STT 엔진 선정: 사내 자체 호스팅 vs 외부 API (PoC 결과에 따라 결정, 외부 전송 시 D20 가명화·위탁 고지)
+- 화상 미디어 서버 승격 임계: PeerJS(≤4) → mediasoup vs LiveKit(>4) 최종 선정 (P5에서 부하 기준 확정)
 
 ### Assumptions
 1. 첫 배포는 사내 단일 조직(company_id 고정)이므로, 멀티테넌트 설계는 불필요.
 2. ERP (Space-Daily) DB는 read-only 직접 접근 가능하고, 쓰기는 API 또는 신설 테이블.
-3. 사내 네트워크에서 Godot 데스크톱 설치 → 웹 WASM export는 품질 한계로 배제.
+3. 클라이언트는 단일 Next.js 웹앱 내 R3F 뷰포트로 제공 — 별도 데스크톱/별도앱 설치 불필요(D27). 포토리얼 품질은 Blender 오프라인 렌더를 굽고 깊이합성으로 재현하므로 실시간 GI 불필요.
 4. 3D 사무실 구조는 office_layout JSON으로 동적 로드되므로, 매번 클라이언트 빌드할 필요 없음.
 5. 정량 KPI 점수는 결정론적 코드가 산출하고, AI는 서술(강점/개선/근거)만 생성하며, 관리자가 항상 최종 검토(D14).
 6. 직원의 도메인 이메일과 ERP users.id 매핑은 동기화 시 자동 수립.
@@ -282,15 +288,15 @@ ERP가 분기별 인사평가 자료 수집
 - [ ] 페르소나 3종의 JTBD가 모두 구현된 기능으로 충족되는가?
 - [ ] KPI 반영 신호들(work_log, meeting_minute, action_item)이 모두 수집 가능한가?
 - [ ] 관리자 확정 KPI(final_score) → ERP kpi_results → 분기평가 전체 루프가 폐쇄되는가? (D15/D17)
-- [ ] Godot 클라이언트 품질(Forward+, 60fps, 동기화 레이턴시)이 기준을 만족하는가?
+- [ ] R3F 클라이언트 품질(깊이합성 픽셀정확 가림, 로딩<5초, Colyseus 동기화 p95<500ms)이 기준을 만족하는가? (D27)
 
 ### Risks
 1. **ERP 브랜치 전환 지연**: ERP kpi_results 테이블 추가가 지연되면, 우리의 KPI push 쓰기가 블로킹됨 → **완화**: 초기 kpi_results를 우리 DB에만 쌓고(feature flag OFF), ERP 준비 후 backfill (D17)
-2. **3D 성능 (설계 100명)**: Godot 네트워크 동기화 성능 미검증 → **완화**: Phase 0 스파이크 S3(헤드리스 부하) + Phase 4 부하 테스트, tick 20Hz, 100명 초과 시 AOI 필터링 (D22)
+2. **이동서버 성능 (설계 100명)**: Colyseus 권위 서버 동기화 성능 미검증 → **완화**: P3 이동서버 구현 후 + P7 부하 테스트, tick 20Hz, 100명 초과 시 AOI 필터링 (D22/D27)
 3. **AI 평가 정확도**: 서술 초안 품질이 예상 수준 미만 → **완화**: 정량은 결정론적 코드로 고정(D14), AI 서술은 사용자 피드백으로 프롬프트 반복 개선
 4. **사용자 피드백 곡선**: 사내 도그푸딩 중 UX 이슈 발견 시 개발 일정 슬립 → **완화**: Phase 4부터 **주 1회 이상 피드백 수집 체계**
-5. **Godot ↔ LiveKit 통합** (신규, D20/F): 공식 SDK 부재, WebRTC GDExtension 자체 개발 필요 → **완화**: Phase 0 스파이크 S1 PoC, 실패 시 회의 화면만 임베디드 브라우저/외부 창 폴백
-6. **STT 정확도 / 한국어 화자분리** (신규, D5/F): 회의록 자동 초안 품질·화자분리 정확도 미달 위험 → **완화**: Phase 0 스파이크 S2 PoC, 누락률 <5% 미달 시 수동 회의록 + AI 요약으로 격하(기준 하향 재협의)
+5. **깊이합성 정합 (신규, D27)**: Blender 렌더 배경과 R3F 실시간 아바타의 깊이·조명 정합 실패 위험 → **완화**: P0 스파이크에서 오클루전 검증(**PASS 2026-07-08**), IBL 정합·Z깊이패스 기준 확립. 정합 붕괴 시 카메라 앵글/씬 단순화로 폴백
+6. **STT 정확도 / 한국어 화자분리** (신규, D5/F): 회의록 자동 초안 품질·화자분리 정확도 미달 위험 → **완화**: P6 STT PoC, 누락률 <5% 미달 시 수동 회의록 + AI 요약으로 격하(기준 하향 재협의)
 7. **개인정보 / 노동법 컴플라이언스** (신규, D20): 평가 목적 행동 데이터 수집 동의, 회의 녹음·STT 동의, 외부 LLM 전송 → **완화**: D20 컴플라이언스 원칙(고지·동의 절차, 사번 가명화, 보존기한, 최소수집 VIEW) 도입 전 이행
 
 ---

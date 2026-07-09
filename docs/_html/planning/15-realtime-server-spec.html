@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>15. 실시간 이동서버 스펙 (SkyOffice 이식 · 정본)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">15. 실시간 이동서버 스펙 (SkyOffice 이식 · 정본)</div><div class="sub">15-realtime-server-spec.md</div><a class="lvl1" href="#15-실시간-이동서버-스펙-skyoffice-이식-정본">15. 실시간 이동서버 스펙 (SkyOffice 이식 · 정본)</a><a class="lvl2" href="#1-스택-역할">1. 스택 &amp; 역할</a><a class="lvl2" href="#2-룸-구조-colyseus-room">2. 룸 구조 (Colyseus Room)</a><a class="lvl2" href="#3-메시지-프로토콜-09-5-정본-구체화">3. 메시지 프로토콜 (09 §5 정본 구체화)</a><a class="lvl3" href="#클라이언트-서버">클라이언트 → 서버</a><a class="lvl3" href="#서버-클라이언트-20hz-tick">서버 → 클라이언트 (20Hz tick)</a><a class="lvl2" href="#4-이동-검증-8항목-09-5-d22">4. 이동 검증 8항목 (09 §5 / D22)</a><a class="lvl2" href="#5-근접-상호작용-검증-8항목-09-5">5. 근접 상호작용 검증 8항목 (09 §5)</a><a class="lvl2" href="#6-presence-영속-d3">6. presence 영속 (D3)</a><a class="lvl2" href="#7-성능-sla-d22">7. 성능 SLA (D22)</a><a class="lvl2" href="#8-배포">8. 배포</a><a class="lvl2" href="#9-현재-구현-상태">9. 현재 구현 상태</a></nav>
+<main><h1 id="15-실시간-이동서버-스펙-skyoffice-이식-정본">15. 실시간 이동서버 스펙 (SkyOffice 이식 · 정본)</h1>
+<blockquote>2026-07-08 작성. D27(포토리얼 웹임베드) 전환에 따른 <strong>자체 실시간 이동서버</strong> 명세. WorkAdventure back을 대체한다. 09-realtime-collaboration.md의 프로토콜 정본을 SkyOffice/Colyseus 구현으로 구체화. 정본 참조: 09-realtime-collaboration.md(프로토콜), 00-decisions D1/D3/D4/D22, 14-virtual-office-spec.</blockquote>
+<hr>
+<h2 id="1-스택-역할">1. 스택 &amp; 역할</h2>
+<div class="table-wrap"><table><thead><tr><th>요소</th><th>선택</th><th>역할</th></tr></thead><tbody><tr><td>실시간 서버</td><td><strong>Colyseus</strong>(Node/TS)</td><td>룸 상태 권위(authoritative), 20Hz tick, 이동/충돌 검증</td></tr><tr><td>상태 동기화</td><td>Colyseus <strong>Schema</strong>(binary delta)</td><td>players 상태 델타 브로드캐스트</td></tr><tr><td>음성/영상</td><td><strong>PeerJS</strong>(≤4명) → <strong>mediasoup/LiveKit</strong>(&gt;4명·회의실)</td><td>WebRTC. 회의실은 LiveKit(D24)</td></tr><tr><td>영속/도메인</td><td><strong>FastAPI</strong>(단일 진입)</td><td>presence 1~5초 배치 push, 좌석/회의 도메인 로직(D3)</td></tr><tr><td>인증</td><td><strong>FastAPI JWT</strong>(D4)</td><td>Colyseus onAuth에서 JWT 검증(콘솔 세션 재사용, 별도 로그인 없음)</td></tr></tbody></table></div>
+<blockquote><strong>원칙(D3)</strong>: Colyseus는 <strong>자기 룸 상태만</strong> 소유. ERP·업무·좌석 DB는 FastAPI 단일 접근. presence는 Colyseus 메모리 권위 → FastAPI 배치 push → DB.</blockquote>
+<hr>
+<h2 id="2-룸-구조-colyseus-room">2. 룸 구조 (Colyseus Room)</h2>
+<ul><li><strong>룸 = 층(floor)</strong> 단위. <code>OfficeRoom({ office_id, floor_id })</code>.</li><li>입장: 클라이언트가 JWT + office/floor로 join → onAuth JWT 검증 → 초기 스냅샷 전송.</li><li>상태 스키마:</li></ul>
+<pre class="code"><code>OfficeState {
+  players: Map&lt;sessionId, Player&gt;
+}
+Player {
+  user_id, name, position{x,y}, facing, status,   // status = D13 7종
+  seat_id?, anim,                                  // idle/walk
+  last_seq                                         // 재접속 복구용
+}</code></pre>
+<hr>
+<h2 id="3-메시지-프로토콜-09-5-정본-구체화">3. 메시지 프로토콜 (09 §5 정본 구체화)</h2>
+<h3 id="클라이언트-서버">클라이언트 → 서버</h3>
+<div class="table-wrap"><table><thead><tr><th>메시지</th><th>페이로드</th><th>처리</th></tr></thead><tbody><tr><td><code>move_request</code></td><td><code>{target_pos{x,y}, seq}</code></td><td>이동 검증 8항목 → 승인 시 position 갱신</td></tr><tr><td><code>status_change</code></td><td><code>{status}</code></td><td>focus 토글·external 전환(수동). 자동전이는 서버 판정</td></tr><tr><td><code>sit_request</code></td><td><code>{seat_id}</code></td><td>FastAPI 좌석 점유 위임 → 성공 시 working·facing</td></tr><tr><td><code>enter_meeting</code></td><td><code>{room_id}</code></td><td><strong>2단계(D24 명시입장)</strong>: ① Colyseus가 근접(2m)·정원 검증 → 입장 가능 통지(프롬프트) ② 사용자 확인 클릭 후 <strong>클라이언트가 FastAPI <code>POST /api/meetings/join</code> 직접 호출</strong>(LiveKit 토큰 발급) → 성공 시 meeting 상태 전이. 자동 join 금지</td></tr><tr><td><code>interact_request</code></td><td><code>{target_user_id}</code></td><td>근접 8항목 검증(LOS 광선 포함)</td></tr></tbody></table></div>
+<h3 id="서버-클라이언트-20hz-tick">서버 → 클라이언트 (20Hz tick)</h3>
+<div class="table-wrap"><table><thead><tr><th>메시지</th><th>페이로드</th></tr></thead><tbody><tr><td><code>world_update</code></td><td><code>{server_seq, players[delta], timestamp}</code></td></tr><tr><td><code>snapshot</code></td><td>전체 상태(입장·재접속 시)</td></tr><tr><td><code>layout_updated</code></td><td>레이아웃 배포 시 재로드 신호(D12)</td></tr><tr><td><code>presence_event</code></td><td>상태 변경 브로드캐스트</td></tr></tbody></table></div>
+<blockquote><strong>보완 어휘(09 계승, 정본 포함)</strong>: <code>resume</code>(재접속 <code>last_seq</code> 기반 스냅샷 요청) · <code>reject</code>(프로토콜 버전 협상 거부, D4) · <code>send_chat</code>(근접 채팅 — 근접검증 8항목 통과 후). 필드명 정본: <code>last_seq</code> / <code>room_id</code> / <code>target_user_id</code> — 타 문서의 <code>last_server_seq</code>·<code>meeting_id</code>·<code>user_b_id</code> 표기는 이 어휘로 통일한다.</blockquote>
+<hr>
+<h2 id="4-이동-검증-8항목-09-5-d22">4. 이동 검증 8항목 (09 §5 / D22)</h2>
+<p>서버 tick마다 <code>move_request</code> 검증:</p>
+<ol><li>company<em>id 일치(테넌트 격리) 2. office</em>id 일치 3. floor_id 일치</li><li>좌표 유효·<strong>충돌</strong>(office_layout colliders AABB/polygon) 5. <strong>속도 제한</strong>(tick당 이동거리 상한)</li><li>권한(spawn/zone 접근) 7. 좌석 점유 충돌 8. 회의실 정원</li><li>실패 시: 서버 권위 위치로 <strong>되돌림</strong>(reconcile). 클라이언트 예측과 &gt;0.5m 차이 → Lerp 5프레임 보정.</li></ol>
+<h2 id="5-근접-상호작용-검증-8항목-09-5">5. 근접 상호작용 검증 8항목 (09 §5)</h2>
+<p>company<em>id / office</em>id / floor_id 일치 · 거리&lt;5m · <strong>벽/유리벽 LOS 광선(가림 시 불가)</strong> · 상대 status≠offline · 요청 쿨다운 1초 · 상대 방해금지/집중모드 미활성.</p>
+<hr>
+<h2 id="6-presence-영속-d3">6. presence 영속 (D3)</h2>
+<ul><li>Colyseus가 메모리 권위 → <strong>1~5초 주기</strong>로 변경분을 FastAPI <code>POST /api/presence/batch</code>에 push → DB.</li><li>자동전이: 좌석도착→working, 회의입장→meeting, <strong>5분 무입력→away</strong>(서버 타이머), 로그아웃→offline + 좌석 자동반납(FastAPI).</li><li>재접속: <code>last_seq</code> 기반 스냅샷 재수신.</li></ul>
+<h2 id="7-성능-sla-d22">7. 성능 SLA (D22)</h2>
+<ul><li>tick 20Hz(50ms). 아바타 E2E p95 <strong>&lt;500ms</strong>. 동시 <strong>20명(도그푸딩)</strong> / 100명(설계). 근접 메뉴 &lt;200ms.</li><li>부하검증: 20명 동시 이동 시뮬레이션(미착수 — Phase 후반).</li></ul>
+<h2 id="8-배포">8. 배포</h2>
+<ul><li>Colyseus 컨테이너 신설(WA 스택 대체). <strong>내부 포트 2567(WSS, Caddy 뒤 내부 전용 — 확정 2026-07-09)</strong>. Caddy가 <code>/ws/office/*</code> WSS → Colyseus:2567 라우팅.</li><li>LiveKit·coturn는 회의 화상용으로 유지. wa-* 컨테이너 제거.</li></ul>
+<hr>
+<h2 id="9-현재-구현-상태">9. 현재 구현 상태</h2>
+<ul><li>🆕 Colyseus 룸·프로토콜·검증: <strong>신규 구축</strong>(WA가 담당하던 것 대체).</li><li>✅ FastAPI presence 수집(store/stream)·좌석·회의·JWT: 존재 → Colyseus에서 호출.</li><li>검증된 패턴(SkyOffice MIT)이라 난이도보다 실행량. 착수는 D27 깊이합성 스파이크 통과 이후.</li></ul>
+<div class="meta-foot">원본: <code>15-realtime-server-spec.md</code> · 자동 생성 2026-07-09 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

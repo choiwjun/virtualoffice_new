@@ -1,0 +1,116 @@
+{
+  "prefab_id": "KIT_WALL_DECOR_001",
+  "category": "kit",
+  "room_type": "decor",
+  "description": "Wall art, poster, clock and signage kit.",
+  "instances": [
+    {
+      "asset_id": "WALL_ART_001",
+      "position": [
+        -1.2,
+        0,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "WALL_ART_002",
+      "position": [
+        -0.25,
+        0,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "POSTER_FOCUS_001",
+      "position": [
+        0.75,
+        0,
+        0.8
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "CLOCK_WALL_001",
+      "position": [
+        1.65,
+        0,
+        1.25
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "SIGN_ROOM_001",
+      "position": [
+        2.25,
+        0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "SIGN_FLOOR_001",
+      "position": [
+        2.75,
+        0,
+        1.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    }
+  ]
+}

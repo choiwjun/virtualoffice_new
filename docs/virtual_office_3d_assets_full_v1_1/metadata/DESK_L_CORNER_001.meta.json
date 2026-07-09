@@ -1,0 +1,96 @@
+{
+  "asset_id": "DESK_L_CORNER_001",
+  "name": "L-shaped corner desk",
+  "category": "workstation",
+  "type": "desk",
+  "priority": "Later",
+  "file": "models/workstation/DESK_L_CORNER_001.glb",
+  "unit": "meter",
+  "pivot": "BOTTOM_CENTER",
+  "up_axis": "Z",
+  "dimensions_m": {
+    "width": 1.55,
+    "depth": 1.39,
+    "height": 0.77
+  },
+  "placement": {
+    "snap_to_floor": true,
+    "grid_size": 0.1,
+    "rotatable": true
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.385
+    ],
+    "size": [
+      1.55,
+      1.39,
+      0.77
+    ]
+  },
+  "interaction": {
+    "can_work": true,
+    "work_anchor": {
+      "position": [
+        0,
+        -0.486,
+        0.524
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "chair_snap_anchor": {
+      "position": [
+        0,
+        -1.084,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "status_anchor": {
+      "position": [
+        0,
+        -1.084,
+        1.45
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "rendering": {
+    "cast_shadow": true,
+    "receive_shadow": true,
+    "lod_group": "LOW",
+    "pbr": {
+      "baseColor": true,
+      "normal": true,
+      "roughness": true,
+      "metallic": true,
+      "textures_embedded": true,
+      "baked_lighting_forbidden": true
+    }
+  },
+  "qa": {
+    "actual_triangles": 420,
+    "max_triangles": 3500,
+    "texture_max_size": 1024,
+    "pbr_required": true,
+    "baked_lighting_forbidden": true,
+    "result": "PASS"
+  },
+  "version": "1.0.0",
+  "format": "glb"
+}

@@ -95,6 +95,8 @@ export default function MeetingsPage() {
   const [showDash, setShowDash] = useState(false);
   const [dash, setDash] = useState<{ item: ActionItem; meeting: string }[]>([]);
   const [dashLoading, setDashLoading] = useState(false);
+  const [consentedMeetings, setConsentedMeetings] = useState<Record<string, boolean>>({});
+  const [consentSaving, setConsentSaving] = useState(false);
 
   const loadDash = useCallback(async () => {
     setDashLoading(true);
@@ -168,6 +170,23 @@ export default function MeetingsPage() {
       flash('참석 처리되었습니다.');
     } catch (err) {
       flash(err instanceof ApiError ? `참석 실패 (${err.status})` : '오류');
+    }
+  }
+
+  async function grantRecordingConsent() {
+    if (!selected) return;
+    setConsentSaving(true);
+    try {
+      await Promise.all([
+        api.post(`/api/meetings/${selected.id}/consent`, { consent_type: 'recording', granted: true }),
+        api.post(`/api/meetings/${selected.id}/consent`, { consent_type: 'stt', granted: true }),
+      ]);
+      setConsentedMeetings((prev) => ({ ...prev, [selected.id]: true }));
+      flash('녹음/STT 사용에 동의했습니다.');
+    } catch (err) {
+      flash(err instanceof ApiError ? `동의 실패 (${err.status})` : '오류');
+    } finally {
+      setConsentSaving(false);
     }
   }
 
@@ -322,6 +341,32 @@ export default function MeetingsPage() {
                 {formatKst(selected.scheduled_at)} · 방 {selected.room_id} · 호스트 user {selected.host_user_id}
               </div>
               {selected.description && <p className="text-gray-700">{selected.description}</p>}
+
+              <div className={`rounded-lg border px-3 py-3 ${consentedMeetings[selected.id] ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className={`text-sm font-medium ${consentedMeetings[selected.id] ? 'text-green-800' : 'text-amber-800'}`}>
+                      {consentedMeetings[selected.id] ? '녹음/STT 동의됨' : '이 회의는 녹음/STT가 사용될 수 있습니다'}
+                    </p>
+                    <p className={`mt-0.5 text-xs ${consentedMeetings[selected.id] ? 'text-green-700' : 'text-amber-700'}`}>
+                      참석자 동의 후 초안 생성 가능
+                    </p>
+                  </div>
+                  {consentedMeetings[selected.id] ? (
+                    <span className="shrink-0 rounded-md bg-white px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-green-200">
+                      동의됨
+                    </span>
+                  ) : (
+                    <button
+                      onClick={grantRecordingConsent}
+                      disabled={consentSaving}
+                      className="shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+                    >
+                      {consentSaving ? '처리 중...' : '동의'}
+                    </button>
+                  )}
+                </div>
+              </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">

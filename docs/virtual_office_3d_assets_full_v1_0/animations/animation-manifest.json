@@ -1,0 +1,53 @@
+{
+  "version": "1.0.0",
+  "unit": "meter",
+  "up_axis": "Z",
+  "rig_target": "Mixamo-compatible humanoid",
+  "clips": [
+    {
+      "animation_id": "ANIM_IDLE_001",
+      "name": "idle",
+      "status": "pose_reference_included",
+      "duration_s": 2.0,
+      "loop": true,
+      "reference_files": [
+        "animations/static_pose_previews/CHAR_MALE_001_POSE_IDLE_001.glb",
+        "animations/static_pose_previews/CHAR_FEMALE_001_POSE_IDLE_001.glb"
+      ]
+    },
+    {
+      "animation_id": "ANIM_WALK_001",
+      "name": "walk",
+      "status": "pose_reference_included",
+      "duration_s": 1.0,
+      "loop": true,
+      "reference_files": [
+        "animations/static_pose_previews/CHAR_MALE_001_POSE_WALK_001.glb",
+        "animations/static_pose_previews/CHAR_FEMALE_001_POSE_WALK_001.glb"
+      ]
+    },
+    {
+      "animation_id": "ANIM_SIT_001",
+      "name": "sit",
+      "status": "pose_reference_included",
+      "duration_s": 1.2,
+      "loop": false,
+      "reference_files": [
+        "animations/static_pose_previews/CHAR_MALE_001_POSE_SIT_001.glb",
+        "animations/static_pose_previews/CHAR_FEMALE_001_POSE_SIT_001.glb"
+      ]
+    },
+    {
+      "animation_id": "ANIM_TYPING_001",
+      "name": "typing",
+      "status": "pose_reference_included",
+      "duration_s": 1.6,
+      "loop": true,
+      "reference_files": [
+        "animations/static_pose_previews/CHAR_MALE_001_POSE_TYPING_001.glb",
+        "animations/static_pose_previews/CHAR_FEMALE_001_POSE_TYPING_001.glb"
+      ]
+    }
+  ],
+  "skeletal_export_note": "Bind CHAR_* T-pose GLBs to a humanoid rig, then export real skeletal GLB clips using these animation ids."
+}

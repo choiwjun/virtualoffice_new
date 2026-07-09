@@ -1,0 +1,80 @@
+{
+  "prefab_id": "KIT_STORAGE_UTILITY_001",
+  "category": "kit",
+  "room_type": "storage",
+  "description": "Office storage/utility kit.",
+  "instances": [
+    {
+      "asset_id": "SHELF_OPEN_001",
+      "position": [
+        -1.2,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "LOCKER_001",
+      "position": [
+        0.35,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "PRINTER_MFP_001",
+      "position": [
+        1.25,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "TRASH_BIN_001",
+      "position": [
+        1.9,
+        -0.25,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    }
+  ]
+}

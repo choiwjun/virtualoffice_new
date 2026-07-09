@@ -1,0 +1,62 @@
+﻿section,manifest_item,requested_unique_count,priority,asset_ids_or_files,status
+1 캐릭터/아바타,남성 캐릭터(리깅용 T-pose),1,MVP,CHAR_MALE_001,included
+1 캐릭터/아바타,여성 캐릭터(리깅용 T-pose),1,MVP,CHAR_FEMALE_001,included
+1 캐릭터/아바타,의상/헤어 변형,5,Later,CHAR_AVATAR_VARIANT_001; CHAR_AVATAR_VARIANT_002; CHAR_AVATAR_VARIANT_003; CHAR_AVATAR_VARIANT_004; CHAR_AVATAR_VARIANT_005,included
+1 캐릭터/아바타,애니메이션 idle/walk/sit/typing,4,MVP,animations/static_pose_previews/* + animation-manifest.json,pose_reference_included__skeletal_export_after_rigging
+2 워크스테이션,책상 — 1인 표준(파티션 포함),1,MVP,DESK_STANDARD_001,included
+2 워크스테이션,책상 — L형 코너,1,Later,DESK_L_CORNER_001,included
+2 워크스테이션,책상 — 벤치형(2인),1,Later,DESK_BENCH_2P_001,included
+2 워크스테이션,오피스 체어 — 태스크(메쉬),1,MVP,CHAIR_TASK_MESH_001,included
+2 워크스테이션,오피스 체어 — 임원(하이백 가죽),1,Later,CHAIR_EXECUTIVE_001,included
+2 워크스테이션,게스트 체어(팔걸이),1,Later,CHAIR_GUEST_001,included
+2 워크스테이션,스툴(높은 의자),1,Later,STOOL_HIGH_001,included
+3 회의실,회의 테이블 — 대(8인),1,MVP,TABLE_MEETING_LARGE_001,included
+3 회의실,회의 테이블 — 소(4인),1,Later,TABLE_MEETING_SMALL_001,included
+3 회의실,회의 의자,1,MVP,CHAIR_MEETING_001,included
+3 회의실,유리 파티션/유리벽 + 유리문,2,MVP,GLASS_PARTITION_001; GLASS_DOOR_001,included
+3 회의실,화이트보드 — 벽걸이,1,MVP,WHITEBOARD_WALL_001,included
+3 회의실,화이트보드 — 이동식(바퀴),1,Later,WHITEBOARD_MOBILE_001,included
+3 회의실,벽걸이 대형 디스플레이/TV,1,MVP,TV_WALL_001,included
+4 라운지,소파 — 3인,1,MVP,SOFA_3SEAT_001,included
+4 라운지,소파 — 2인 / 1인 라운지체어,2,Later,SOFA_2SEAT_001; LOUNGE_CHAIR_001,included
+4 라운지,커피 테이블,1,MVP,TABLE_COFFEE_001,included
+4 라운지,사이드 테이블,1,Later,TABLE_SIDE_001,included
+4 라운지,러그(카펫),2,Later,RUG_RECT_001; RUG_RECT_002,included
+5 리셉션/로비,리셉션 데스크,1,MVP,DESK_RECEPTION_001,included
+5 리셉션/로비,브랜드월(로고 벽 / 목재 슬랫),1,MVP,WALL_BRAND_001,included
+5 리셉션/로비,대기 벤치/소파,1,Later,BENCH_WAITING_001,included
+5 리셉션/로비,스탠딩 사이니지,1,Later,SIGNAGE_STANDING_001,included
+6 집중실/폰부스,폰부스(1인 밀폐),1,Later,PHONEBOOTH_001,included
+6 집중실/폰부스,집중석 포드,1,Later,FOCUS_POD_001,included
+6 집중실/폰부스,어쿠스틱 패널,1,Later,ACOUSTIC_PANEL_001,included
+7 탕비실/카페,정수기,1,MVP,WATER_DISPENSER_001,included
+7 탕비실/카페,커피 머신,1,Later,COFFEE_MACHINE_001,included
+7 탕비실/카페,팬트리 카운터/바,1,Later,PANTRY_COUNTER_001,included
+7 탕비실/카페,바 스툴,1,Later,BAR_STOOL_001,included
+7 탕비실/카페,냉장고 / 전자레인지,2,Later,FRIDGE_001; MICROWAVE_001,included
+8 데스크 소품,모니터 — 1대 / 듀얼,2,MVP,MONITOR_SINGLE_001; MONITOR_DUAL_001,included
+8 데스크 소품,노트북,1,MVP,LAPTOP_OPEN_001,included
+8 데스크 소품,키보드 + 마우스,1,MVP,KEYBOARD_MOUSE_SET_001,included
+8 데스크 소품,데스크폰(유선전화),1,Later,DESKPHONE_001,included
+8 데스크 소품,데스크 램프,1,MVP,LAMP_DESK_001,included
+8 데스크 소품,머그컵 / 테이크아웃 커피,2,MVP,MUG_CERAMIC_001; COFFEE_TAKEOUT_001,included
+8 데스크 소품,펜꽂이 / 노트 / 책 더미,3,Later,PEN_CUP_001; NOTEBOOK_001; BOOK_STACK_001,included
+8 데스크 소품,서류 트레이 / 바인더,2,Later,DOC_TRAY_001; BINDERS_SET_001,included
+8 데스크 소품,헤드셋,1,Later,HEADSET_001,included
+9 수납/사무기기,책장/오픈 셸프,1,MVP,SHELF_OPEN_001,included
+9 수납/사무기기,서류 캐비닛,1,MVP,CABINET_FILE_001,included
+9 수납/사무기기,락커(사물함),1,Later,LOCKER_001,included
+9 수납/사무기기,복합기/프린터,1,MVP,PRINTER_MFP_001,included
+9 수납/사무기기,휴지통,1,Later,TRASH_BIN_001,included
+10 식물/데코/아트,화분 — 대,1,MVP,PLANT_LARGE_MONSTERA_001,included
+10 식물/데코/아트,화분 — 중/소,2,MVP,PLANT_MEDIUM_001; PLANT_SMALL_001,included
+10 식물/데코/아트,행잉 플랜트,1,Later,PLANT_HANGING_001,included
+10 식물/데코/아트,액자/벽 아트,2,Later,WALL_ART_001; WALL_ART_002,included
+10 식물/데코/아트,포스터 FOCUS PLAN EXECUTE REPEAT,1,Later,POSTER_FOCUS_001,included
+10 식물/데코/아트,벽시계,1,Later,CLOCK_WALL_001,included
+11 건축/구조 모듈,바닥 목재/타일/카펫 재질,3,MVP,MAT_FLOOR_WOOD_001; MAT_FLOOR_TILE_001; MAT_FLOOR_CARPET_001,included
+11 건축/구조 모듈,벽 세그먼트,1,MVP,WALL_SEGMENT_001,included
+11 건축/구조 모듈,창문,1,Later,WINDOW_001,included
+11 건축/구조 모듈,기둥,1,Later,COLUMN_001,included
+11 건축/구조 모듈,층/방 표지 사이니지,2,Later,SIGN_ROOM_001; SIGN_FLOOR_001,included
+12 조명 오브젝트,천장 패널등 / 펜던트 램프,2,Later,CEILING_PANEL_LIGHT_001; PENDANT_LAMP_001,included

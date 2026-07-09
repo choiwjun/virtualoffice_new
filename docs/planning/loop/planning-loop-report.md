@@ -1,5 +1,7 @@
 # Planning Loop Report — Round 1
 
+> 📦 **아카이브 — D27 전환(2026-07-08) 이전 시점 스냅샷.** 아키텍처 관련 서술은 현행(D27)과 다르며, 특정 시점 기록으로만 참조할 것. 코드 실측 수치(pytest 등)는 작성 시점 기준 유효.
+
 **검증일**: 2026-07-02 · **모드**: Standard(ad-hoc 문서 맵) · **iteration**: 1/3
 **입력**: docs/planning/00~13 + specs/(screens 7, domain, shared) + 12-tasks + 구현 코드(backend) + 배포 정본(onprem-docker.md)
 **발견**: 139건 (P0 8 · P1 ~60 · P2 ~71) — 상세 클러스터: document-gap-report.md

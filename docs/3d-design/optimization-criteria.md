@@ -1,361 +1,327 @@
 # 리소스 최적화 기준 (optimization-criteria.md)
 
-> **[D26 전환 — 2026-07-06]** 이 문서는 Godot 4 네이티브 3D 노선 기준으로 작성되었습니다.
-> D26 결정으로 가상오피스 본체는 **WorkAdventure self-host(2D Phaser · TMJ 맵 · 타일셋 PNG · 내장 WSS)**로 전환되었습니다.
-> 아래 Godot/GDScript/pak/ReflectionProbe/Forward+/GTX1650 등 렌더러·씬·에셋 세부는 **역사적 설계 참고용(보류)**이며,
-> 현행 구현은 WorkAdventure 스택을 따릅니다. 현행 정본: docs/planning/10-roadmap.md(v3.0), 05-office-layout-schema.md,
-> backend/app/services/map_generator.py, config/(Caddyfile.local·livekit·coturn).
+> 🟢 **D27 반영(2026-07-09) — 이 문서는 현행 아키텍처(R3F 오프라인렌더+깊이합성 웹임베드) 기준으로 재작성되었다.** D26(WorkAdventure 2D)+Godot 네이티브 3D 노선은 모두 폐기됨. **최적화 대상 근본 전환**: 배경은 **Blender Cycles 오프라인 렌더 이미지**라 런타임 폴리곤/드로우콜/GI 예산이 배경에는 적용되지 않는다. 따라서 런타임 GPU 부담 = **실시간 아바타(경량 GLTF) + 깊이합성 셰이더 + 후처리(N8AO/Bloom/SMAA)뿐**이며, 최적화 예산·컬링·LOD·측정 절차를 이 축으로 전면 재정의한다. Godot 실시간 예산(GTX1650 60fps·드로우콜·SDFGI·MultiMesh·VRAM BC 압축)·Godot 컬링/LOD API·Godot 측정도구는 모두 폐기. 현행 정본: **00-decisions §H(D27)** · 14-virtual-office-spec · 15-realtime-server-spec · 16-render-spike-and-roadmap · 3d-design/{design-style-analysis, photoreal-web-strategy}.
 
-
-**문서 버전**: 1.0  
-**작성일**: 2026-07-02  
+**문서 버전**: 2.0  
+**작성일**: 2026-07-02 (초안) · **개정**: 2026-07-09 (D27 재작성)  
 **담당**: 3d-engine-specialist  
-**태스크**: P0-T0.5 — 3D 씬 구조 및 asset 레지스트리 설계  
-**참조**: 00-decisions.md(D7·D22), 07-3d-visual-asset-pipeline.md(§1.2·§6), 05-office-layout-schema.md(§1.2.13·§3.4)
+**태스크**: P0-T0.5 — 리소스 최적화 기준 (D27: R3F 웹임베드 아바타·후처리 예산)  
+**스택**: three ^0.168 · @react-three/fiber(R3F) ^8.17 · @react-three/drei ^9.115 · pmndrs/postprocessing  
+**참조**: 00-decisions.md §H(D27), 16-render-spike-and-roadmap(§A.3 깊이합성 PASS), 15-realtime-server-spec(§7 SLA), 3d-design/photoreal-web-strategy(§2·§4), 05-office-layout-schema.md(§2.4·§3.4)
 
-> 이 문서는 00-decisions.md의 정본 결정을 따른다. 충돌 시 00-decisions.md가 이긴다.
+> 이 문서는 00-decisions.md §H(D27)의 정본 결정을 따른다. 충돌 시 00-decisions.md가 이긴다.
 
 ---
 
-## 1. 기준 사양 및 성능 목표 (D22)
+## 1. 최적화 대상의 근본 전환 (D27)
 
-### 1.1 기준 사양
+### 1.1 배경은 예산 대상이 아니다
 
-| 등급 | GPU | 목표 FPS | 해상도 |
-|------|-----|---------|--------|
-| **기준 사양** | GTX 1650급 | **60 fps** | Full HD (1920×1080) |
-| **내장 그래픽** | Intel Iris Xe급 | **30 fps** | Full HD |
+D27에서 오피스 배경은 **Blender Cycles로 오프라인 렌더한 정적 이미지**(`office_bg.png`)와 **깊이맵**(`office_depth.png`)이다(photoreal-web-strategy §2). 배경의 가구·벽·조명·GI는 렌더 시점에 이미 픽셀로 구워졌으므로 **런타임에 폴리곤·드로우콜·GI 비용이 발생하지 않는다.** 배경 예산은 "렌더 시간(오프라인)"과 "이미지 파일 크기(다운로드)"의 문제이지, 런타임 GPU 예산의 문제가 아니다.
 
-> "RTX 4060 이상" 요구는 폐기됨(D22). 기준 사양은 GTX 1650급 60fps다.
+따라서 **런타임 GPU 부담 = 실시간 요소뿐**이다:
 
-### 1.2 핵심 성능 예산
+1. **실시간 아바타** — 경량 GLTF 메시(사람) N명, 애니메이션(idle/walk).
+2. **깊이합성 셰이더** — 아바타 프래그먼트 뷰공간 깊이 vs `office_depth` 샘플 비교 → 배경보다 뒤면 discard(오클루전).
+3. **후처리** — pmndrs/postprocessing 체인(ACES/AgX 톤매핑 · N8AO · Bloom · SMAA).
+4. **배경 풀스크린 쿼드** — 텍스처 샘플 1회 수준(무시 가능).
+
+최적화 예산·컬링·LOD·측정은 전부 이 실시간 축에 맞춘다.
+
+### 1.2 런타임 성능 예산 (웹 아바타·후처리 기준)
 
 | 항목 | 예산 | 비고 |
 |------|------|------|
-| **드로우콜** | 100~200회 | 동일 asset_id → MultiMesh 1드로우콜 계상 |
-| **폴리곤** | 500K~1M 삼각형 (LOD 포함) | 전체 씬 |
-| **VRAM** | BC 압축 후 예산 이내 | GTX 1650: 4GB VRAM 내 |
-| **시스템 메모리** | 2GB 이하 | Godot 엔진 포함 |
-| **초기 씬 로딩** | 3초 이내 | 클라이언트 시작 후 첫 오피스 씬 |
-| **구역 전환** | 1초 이내 | 층 간 이동 등 |
+| **웹 프레임레이트** | 아바타 N명(도그푸딩 20명)에서 **60fps 목표 / 30fps 최저** | Full HD, 표준 노트북 GPU + 크로미움. stats.js로 측정 |
+| **아바타 폴리곤** | 8K~15K 삼각형/명 (LOD 0), 다운로드 후 총합 관리 | 배경은 예산 무관 |
+| **아바타 드로우콜** | 아바타·후처리·쿼드 합산 수십 회 수준 | 배경(쿼드 1)은 사실상 상수 |
+| **후처리 패스** | N8AO + Bloom + SMAA (3~4 패스) | 프레임 예산의 주요 GPU 소비처 → 프로파일 대상 |
+| **깊이합성 정확도** | 오클루전 경계 오차 **≤ 2px** | 16 §A.3, PASS(2026-07-08) |
+| **E2E 이동 지연(SLA)** | 아바타 이동 p95 **< 500ms**, tick **20Hz(50ms)** | Colyseus 권위 서버(15 §7) |
+| **초기 로딩** | 배경 이미지 + 깊이맵 + 아바타 GLTF 다운로드·디코드 시간 | KTX2/Draco 압축으로 관리(§4·§5) |
+
+> "GTX 1650급 60fps / 내장 30fps" 같은 **Godot 데스크톱 네이티브 하드웨어 기준(D22)은 폐기**한다. D27은 웹(WebGL/브라우저)에서 도는 실시간 아바타·후처리 부담을 기준으로 삼는다. 런타임 예산의 절대 게이트는 하드웨어 등급이 아니라 **깊이합성 정확도(≤2px) + 웹 60fps + Colyseus p95<500ms** 세 축이다.
 
 ---
 
-## 2. 드로우콜 예산 (100~200회 이내)
+## 2. 아바타·후처리 드로우콜 (런타임 실시간 요소만)
 
-### 2.1 집행 규칙 — MultiMesh 그룹핑
+### 2.1 집행 규칙 — three.js 인스턴싱 / 배경 제외
 
-드로우콜 예산의 집행 주체는 **씬 빌더(`furniture_builder.gd`)의 MultiMesh 그룹핑 로직**이다(05 §5.1, 07 §6.2).
+Godot MultiMesh 그룹핑(`furniture_builder.gd`)은 **폐기**한다 — D27 가구는 배경 이미지에 구워져 런타임 드로우콜이 없기 때문이다. 런타임 드로우콜의 집행 대상은 **실시간 아바타·후처리·배경 쿼드뿐**이다.
 
 ```
-동일 asset_id 가구 N개 → MultiMesh 1드로우콜
-서로 다른 asset_id M개 → M드로우콜
+배경 풀스크린 쿼드      → 드로우콜 1 (상수)
+아바타 N명(개별 GLTF)   → 명당 메시/머티리얼 수만큼 (수 명~수십 명)
+동일 아바타 variant 다수 → three.js InstancedMesh로 묶어 1드로우콜 지향
+후처리 N8AO/Bloom/SMAA  → 패스당 풀스크린 드로우콜
 ```
 
-따라서 **같은 책상 100개는 드로우콜 1회**이고, 서로 다른 종류의 가구 100개는 드로우콜 100회다.  
-배치 계획 시 에셋 종류의 수(distinct asset_id 수)를 드로우콜 기준으로 관리한다.
+같은 아바타 variant가 다수일 때는 **three.js `InstancedMesh`(또는 drei `<Instances>`)**로 묶어 드로우콜을 줄인다(Godot MultiMesh의 웹 대응). 배경 가구는 이미 이미지라 인스턴싱 대상이 아니다.
 
-### 2.2 드로우콜 구성 예시 (표준 오피스 1층)
+### 2.2 런타임 드로우콜 구성 예시 (도그푸딩 20명)
 
-| 그룹 | distinct asset_id 수 | 예상 드로우콜 |
-|------|---------------------|------------|
-| 책상(desk_standard) | 1 | 1 |
-| 회의실 가구 세트 | 3~5 | 3~5 |
-| 라운지 가구 | 3~4 | 3~4 |
-| 소품(캐비닛, 프린터 등) | 4~6 | 4~6 |
-| 구조물(브랜드월, 파티션) | 3~5 | 3~5 |
-| UI 3D(상태뱃지, 라벨) | 2~3 | 2~3 |
-| 아바타 (10명) | 1~3 (variant) | 2~6 |
-| 조명·환경 | — | 5~15 |
-| 충돌체·파라메트릭 벽 | — | 10~20 |
-| **합계** | | **33~65 (여유 있음)** |
+| 그룹 | 대상 | 예상 드로우콜 |
+|------|------|------------|
+| 배경 풀스크린 쿼드 (깊이합성 머티리얼) | 1 | 1 |
+| 아바타 (20명, GLTF) | 명당 1~3 (mesh/material) | 20~60 (variant 인스턴싱 시 대폭 감소) |
+| 아바타 라벨·상태뱃지 (DOM/HTML 오버레이 권장) | — | 0 (DOM은 GPU 드로우콜 밖) |
+| 후처리 (N8AO + Bloom + SMAA) | 패스당 1 | 3~4 |
+| **합계** | | **수십 회 수준** |
 
-200드로우콜 한도는 `estimated_draw_calls`(서버 파생값)가 넘으면 FastAPI 검증에서 **ERROR**로 배포 차단된다(05 §3.4).
+> 가구·벽·구조물·조명·환경은 **배경 이미지에 포함**되어 런타임 드로우콜 0. Godot 시절의 "가구 200개 → 드로우콜 관리"는 D27에서 무의미하다.
 
-### 2.3 개수 프록시 폐기 (D7·D12 정합)
+### 2.3 개수 프록시·서버 파생 드로우콜 폐기
 
-종전의 "furniture_count > 500 거부" 같은 **개수 기반 성능 프록시는 폐기**한다.  
-성능 한도는 asset 테이블 `polygon_count`에서 파생한 **폴리곤/드로우콜 실측 기반값**으로 판정한다(05 §3.4).
+Godot 시절 서버가 asset 테이블에서 파생하던 `estimated_draw_calls`(distinct asset_id 수)와 "furniture_count > 500 거부" 개수 프록시는 **모두 폐기**한다. 런타임 드로우콜은 이제 배치가 아니라 **동시 아바타 수 + 후처리 패스 수**의 함수다. 배치(가구 수)는 런타임이 아니라 **오프라인 렌더 시간·이미지 용량**에만 영향을 준다(§6).
 
 ---
 
-## 3. 폴리곤 예산
+## 3. 폴리곤 예산 (실시간 아바타 전용)
 
-### 3.1 카테고리별 폴리곤 할당
+배경 가구·벽·구조물·바닥·천장은 **배경 이미지에 구워져 런타임 폴리곤이 0**이다. 폴리곤 예산은 **실시간 GLTF 아바타에만** 적용한다.
 
-| 카테고리 | LOD 0 삼각형 | LOD 2 삼각형 | 비고 |
+### 3.1 아바타 폴리곤 할당
+
+| 카테고리 | LOD 0 삼각형 | LOD 원거리 삼각형 | 비고 |
 |---------|-------------|-------------|------|
-| 아바타 (10명) | 10K × 10 = 100K | 2.5K × 10 = 25K | LOD 2 기준 |
-| 대형 가구 (데스크 블록, 소파) | 15K~40K/개 | 4K~10K/개 | |
-| 소형 가구 (의자, 캐비닛) | 5K~15K/개 | 1.5K~4K/개 | |
-| 구조물 (브랜드월, 파티션) | 2K~8K/개 | 0.5K~2K/개 | |
-| 파라메트릭 벽 (room 경계) | ~1K/세그먼트 | ~0.2K/세그먼트 | 런타임 생성 |
-| 바닥·천장 메시 | 2K~4K/층 | 0.5K~1K/층 | |
-| UI 3D (뱃지, 라벨) | 0.1K~0.5K/개 | 동일 | 극소 폴리곤 |
-| **전체 목표** | **500K~1M** | **100K~300K (LOD 적용 후)** | |
+| 아바타 (명당) | 8K~15K | 2K~4K | 사람 메시 + 간이 리깅 |
+| 아바타 20명(도그푸딩) | 160K~300K | 40K~80K | 동시 표시 상한 기준 |
+| 아바타 라벨·상태뱃지 | DOM/HTML 오버레이 권장 | — | GPU 폴리곤 밖(0) |
+| 배경(가구·벽·조명 등) | **0 (이미지에 구움)** | 0 | 런타임 폴리곤 예산 무관 |
+| **런타임 총 목표** | **≤ 300K (동시 20명)** | **거리 LOD 적용 후 대폭 감소** | 배경 제외 |
 
-### 3.2 LOD 레벨 규칙
+> Godot 시절의 "전체 씬 500K~1M"은 **가구·벽까지 실시간 렌더하던 전제**였다. D27은 배경이 이미지라 실시간 폴리곤 총량이 크게 줄어든다.
 
-Godot 4 `GeometryInstance3D.visibility_range_begin/end` 사용.
+### 3.2 아바타 LOD (three.js API)
 
-| LOD 레벨 | 폴리곤 비율 | 거리 범위 | 적용 조건 |
+Godot `GeometryInstance3D.visibility_range_begin/end`는 **폐기**한다. 아바타 LOD는 **three.js `THREE.LOD`(또는 drei `<Detailed>`)**로 카메라-아바타 거리에 따라 메시를 스왑한다.
+
+| LOD 레벨 | 폴리곤 비율 | 카메라 거리(월드 미터) | 적용 조건 |
 |---------|------------|---------|---------|
-| LOD 0 (Full) | 100% | 0~10m | 근거리 상세 |
-| LOD 1 (High) | 50% | 10~20m | 중거리 |
-| LOD 2 (Medium) | 25% | 20~50m | 원거리 |
-| LOD 3 (Low) | 10% | 50m 이상 | 매우 먼 거리 |
+| LOD 0 (Full) | 100% | 근거리 | 카메라에 가까운 아바타 |
+| LOD 1 (Mid) | 50% | 중거리 | |
+| LOD 2 (Low) | 25% | 원거리 | 화면 상 작게 보이는 아바타 |
 
-- Godot 4 임포트 설정의 **자동 LOD 생성**을 기본으로 활성화한다.
-- 수동 생성이 필요한 경우 Blender Decimate modifier 사용.
-
----
-
-## 4. 텍스처 예산
-
-### 4.1 텍스처 해상도 계층
-
-| 거리 | 해상도 | 적용 대상 |
-|------|--------|---------|
-| 근거리 (< 5m) | 2K (2048×2048) | 벽·바닥·천장·대형 구조물 |
-| 중거리 (5~20m) | 1K (1024×1024) | 데스크·파티션·가구 |
-| 원거리 (> 20m) | 512×512 | 소형 악세서리·전자기기 |
-
-### 4.2 PBR 채널 구성
-
-각 에셋은 최소 다음 텍스처 채널을 포함한다(glTF 2.0 Metallic-Roughness 기준):
-
-| 채널 | 파일명 패턴 | 필수 여부 |
-|------|-----------|---------|
-| Base Color (Albedo) | `{slug}_albedo.png` | 필수 |
-| Normal Map | `{slug}_normal.png` | 필수 |
-| Roughness | `{slug}_roughness.png` | 필수 |
-| Metallic | `{slug}_metallic.png` | 필수 (값이 0이면 단색 허용) |
-| AO (Ambient Occlusion) | `{slug}_ao.png` | 선택 |
-| Emission | `{slug}_emission.png` | LED·발광체만 |
+- 고정 아이소 직교 카메라이므로 거리 구간은 `ortho_scale`(camera.json) 기준 월드 미터로 튜닝한다(원근 왜곡 없음).
+- LOD 메시는 **Blender Decimate modifier**로 사전 제작해 GLTF에 담고, three.js는 스왑만 담당한다(런타임 자동 LOD 생성 없음).
 
 ---
 
-## 5. VRAM 압축 (BC 압축) 설정
+## 4. 텍스처 예산 (배경 이미지 + 아바타 텍스처)
 
-### 5.1 Godot 임포트 설정
+### 4.1 텍스처 구성
 
-**데스크톱 네이티브 배포**이므로 BC(Block Compression) 방식만 사용한다.
+| 대상 | 해상도 | 포맷 | 비고 |
+|------|--------|------|------|
+| 배경 컬러 (`office_bg.png`) | 렌더 해상도 (예: 1920×1080) | PNG/WebP(무손실 톤 유지) | 화면 채우는 정적 배경. 압축은 다운로드 용량 관리용 |
+| 배경 깊이 (`office_depth.png`) | 배경과 동일 해상도 | **무손실 필수**(깊이 정밀도) | 깊이합성 정확도(≤2px) 좌우 → 손실 압축 금지 |
+| 아바타 텍스처 (근/원) | 1K~2K → 원거리 512 | **KTX2/Basis Universal** | 실시간 GLTF, GPU 압축 텍스처 |
 
-| 포맷 | 적용 텍스처 | 압축율 |
-|------|-----------|------|
-| BC1 (DXT1) | Opaque RGB (Base Color) | ~6:1 |
-| BC3 (DXT5) | RGBA (투명도 포함 텍스처) | ~4:1 |
-| BC5 | Normal Map (RG 채널) | ~4:1 |
+> 배경은 벽·바닥·가구별 개별 PBR 텍스처가 아니라 **최종 렌더 결과 이미지 1~2장(+깊이)**이다. 벽/가구별 2K/1K/512 계층(Godot 전제)은 D27에서 불필요.
+>
+> **office_depth 규약** = 0=near(black) ‥ 1=far(white), **16bit** (camera.json `depth_encoding`, 스파이크 실측). 이 규약이 깊이합성 정확도(≤2px)의 전제다.
 
-설정 경로: `Import > Compress > Mode = VRAM Compressed`  
-GPU에서 자동 디코드 → VRAM 절약.
+### 4.2 아바타 PBR 채널
 
-**미사용 형식**:
-- WebP, Basis Universal, ASTC — WASM export 미사용(D11), 모바일 미지원
-- Draco / meshopt — Godot 4 임포트 실패(D8)
+실시간 아바타(GLTF 2.0 Metallic-Roughness)는 다음 채널을 포함한다. 배경은 이미 셰이딩이 구워져 PBR 채널이 없다.
 
-### 5.2 VRAM 사용 추정
+| 채널 | 필수 여부 |
+|------|---------|
+| Base Color (Albedo) | 필수 |
+| Normal Map | 필수 |
+| Metallic-Roughness (ORM 패킹 권장) | 필수 |
+| Emission | 발광체(뱃지 등)만 |
 
-| 텍스처 | 소스 크기 | BC 압축 후 |
-|--------|--------|----------|
-| 2K (2048×2048) RGBA | 16 MB | ~4 MB |
-| 1K (1024×1024) RGBA | 4 MB | ~1 MB |
-| 512×512 RGBA | 1 MB | ~0.25 MB |
+---
 
-표준 오피스 1층 기준 텍스처 총 VRAM:
+## 5. 웹 에셋 압축 (KTX2/Basis + Draco/meshopt)
+
+### 5.1 압축 포맷 — 웹(WebGL) 전용
+
+Godot BC(BC1/BC3/BC5)는 **데스크톱 네이티브 전제**이며 웹(WebGL)에서 지원되지 않으므로 **전면 폐기**한다. D27은 **웹 표준 GPU 압축**을 사용한다.
+
+| 압축 | 대상 | 도구 | 비고 |
+|------|------|------|------|
+| **KTX2 / Basis Universal** | 텍스처(아바타 albedo/normal/ORM) | `toktx`, gltf-transform | GPU 트랜스코드(WebGL2). Godot 시절 "미사용"과 **정반대로 채택** |
+| **Draco** | 메시 지오메트리(아바타 GLTF) | gltf-pipeline / gltf-transform | Godot에서 임포트 실패했으나 **three.js `DRACOLoader`로 정식 지원** |
+| **meshopt** | 메시(대안/병행) | gltfpack | three.js `MeshoptDecoder` |
+
+- three.js `GLTFLoader` + `KTX2Loader`(transcoder) + `DRACOLoader`/`MeshoptDecoder`로 로드한다(drei `useGLTF`가 래핑).
+- **배경 깊이맵은 압축하지 않는다** — 깊이 정밀도가 깨지면 오클루전 경계(≤2px)가 무너진다.
+
+### 5.2 다운로드/메모리 추정 (참고)
+
+D27의 핵심 제약은 데스크톱 VRAM(4GB) 여유가 아니라 **초기 다운로드·디코드 시간**이다.
 
 ```
-2K 텍스처 10개: 40 MB
-1K 텍스처 20개: 20 MB
-512 텍스처 30개: 7.5 MB
-아바타 텍스처 10명×2개: 20 MB
-────────────────────────
-합계: ~87.5 MB (GTX 1650 4GB 대비 여유 있음)
+배경 컬러 이미지 1장 (1920×1080, WebP): 수백 KB~2 MB
+배경 깊이 이미지 1장 (무손실 PNG):       수백 KB~2 MB
+아바타 GLTF (Draco+KTX2, 명당):          수백 KB
+────────────────────────────────────────
+→ 첫 씬 진입 시 배경 2장 + 사용 중 아바타 GLTF만 로드.
+  레이아웃/층별 렌더 산출물은 버전별 캐싱(photoreal-web-strategy §4).
 ```
 
 ---
 
-## 6. 서버 파생 성능 검증 (05 §1.2.13·§3.4 정합)
+## 6. 오프라인 렌더 예산 + 서버 검증 (05 §3.4 정합)
 
-### 6.1 파생 계산 주체
+D27에서 배치(가구 수·방 수)는 **런타임 예산이 아니라 오프라인 렌더 시간·이미지 용량**에 영향을 준다. 서버 검증은 "런타임 드로우콜/폴리곤"이 아니라 **렌더 파이프라인 트리거·산출물 용량**을 관리한다.
 
-`performance` 블록의 수치는 **FastAPI 서버가 asset 테이블에서 파생 계산**한다.  
-편집기(클라이언트)가 자기신고한 값은 무시하고 서버 계산값으로 덮어쓴다.
+### 6.1 파생 계산 주체 (재정의)
+
+`office_layout` 확정 시 **FastAPI 서버가 렌더 파이프라인(Blender 헤드리스, photoreal-web-strategy §4)을 배치 트리거**한다. 클라이언트가 실시간 성능을 자기신고하던 Godot 모델은 폐기.
 
 ```
-estimated_polygon_count
-  = Σ (furniture[i].asset.polygon_count × instance_count[i])
-  (동일 asset_id 반복은 인스턴스 수 그대로 합산)
-
-estimated_draw_calls
-  = distinct(asset_id 수) + 외벽·파라메트릭 벽·기타 개별 드로우콜
-  (동일 asset_id 그룹 = MultiMesh → 1드로우콜)
-
-estimated_memory_mb
-  = Σ (asset.file_size_bytes) / 1024 / 1024 (중복 asset_id는 1회만 계산)
+render_asset_count / render_area   → 오프라인 렌더 시간 추정(런타임 무관)
+background_image_bytes             → office_bg.png + office_depth.png 다운로드 용량
+concurrent_avatar_cap              → 동시 아바타 상한(런타임 폴리곤/드로우콜 실측의 근거)
 ```
 
-### 6.2 성능 검증 임계값
+- 배경 산출물은 층/레이아웃 버전별 캐싱 → 배치 변경 시에만 재렌더.
+- 종전 `estimated_draw_calls`(distinct asset_id·MultiMesh 파생)와 폴리곤 배포 게이트는 **런타임과 무관해졌으므로 폐기**.
 
-| 항목 | ERROR (배포 불가) | WARNING (배포 가능) |
-|------|-----------------|-------------------|
-| 드로우콜 | > 200 | 180~200 |
-| 폴리곤 | > 1.5M (LOD 0 기준) | 1M~1.5M |
-| VRAM (추정) | > 3.5GB | 2.5GB~3.5GB |
+### 6.2 검증 게이트 (D27 3축)
 
-> ERROR가 1개라도 있으면 `[무시하고 배포]` 버튼이 없으며 배포 불가(D12).  
-> WARNING은 `[경고 무시하고 배포]`로 진행 가능.
+| 축 | 게이트 | 근거 |
+|------|-----------------|------|
+| **깊이합성 정확도** | 오클루전 경계 오차 ≤ 2px | 16 §A.3 PASS(2026-07-08) |
+| **웹 프레임** | 아바타 N명(도그푸딩 20명) 60fps 목표 / 30fps 최저 | 브라우저 devtools·stats.js |
+| **이동 SLA** | Colyseus p95 < 500ms, 20Hz tick | 15 §7 |
+
+> Godot 시절 "드로우콜 >200 / 폴리곤 >1.5M / VRAM >3.5GB 배포 차단"은 **전면 폐기**. 배경이 이미지가 되면서 이 임계값들은 근거를 잃었다.
 
 ---
 
-## 7. Occlusion Culling 전략
+## 7. 컬링 전략 (three.js — 오프라인 배경은 컬링 무의미)
 
-### 7.1 동적 씬 제약 (D7)
+### 7.1 배경은 컬링 대상이 아니다
 
-office_layout JSON으로 씬이 **런타임에 동적 생성**되므로 **에디터에서 전체 씬 Occluder를 사전 베이크할 수 없다**. 방·벽 배치가 배포 때마다 달라지기 때문이다.
+배경은 화면을 채우는 **단일 풀스크린 쿼드(이미지)**이므로 오클루전/프러스텀 컬링 대상이 아니다. Godot의 동적 Occluder 베이크(`room_builder.gd`·`OccluderInstance3D`·`BoxOccluder3D`) 문제 자체가 **소멸**한다.
 
-### 7.2 런타임 Occluder 부착
+### 7.2 아바타 컬링·오클루전 (three.js)
 
-두 가지 방식을 병행한다:
-
-**방식 A — 런타임 벽 단위 Occluder**  
-`room_builder.gd`가 파라메트릭 벽 세그먼트를 생성할 때 단순 박스 `BoxOccluder3D`를 함께 부착한다.
-
-```gdscript
-# wall_segment.gd — 개별 벽 세그먼트에 부착
-func _ready() -> void:
-    var occ_inst := OccluderInstance3D.new()
-    var box := BoxOccluder3D.new()
-    box.size = $WallMesh.mesh.get_aabb().size
-    occ_inst.occluder = box
-    add_child(occ_inst)
-```
-
-**방식 B — 고정 외벽 Occluder 동봉**  
-배치가 고정된 외벽·기둥은 프리팹(.tscn)에 `OccluderInstance3D`를 미리 포함시킨다.
-
-### 7.3 Frustum Culling
-
-Godot 4의 기본 Frustum Culling이 항상 활성화된다.  
-카메라 절두체(FOV 60°) 밖의 노드는 자동으로 렌더링 제외된다.
+- **오클루전(가림)** = 깊이합성 셰이더가 담당한다. 아바타 프래그먼트 깊이 > 배경 깊이면 discard → 가구/유리벽 뒤 아바타가 자연스럽게 가려진다(경계 ≤2px). Godot Occluder가 아니라 **깊이 비교 셰이더가 오클루전의 유일 메커니즘**이다.
+- **프러스텀 컬링** = three.js `Object3D.frustumCulled`(기본 true)가 직교 카메라 절두체 밖 아바타를 자동 제외. 고정 아이소 뷰라 화면 밖 아바타(먼 좌석)는 자동 스킵된다.
 
 ---
 
-## 8. 자동 LOD (Godot 4 임포트 설정)
+## 8. 아바타 LOD (three.js — Godot 자동 LOD 폐기)
 
-### 8.1 임포트 설정
+Godot 임포트 자동 LOD(`Meshes > Generate LODs`, `visibility_range_begin/end`)는 **폐기**한다. D27 아바타 LOD는 three.js API로 처리한다.
 
-Godot 4 에디터의 `Import` 탭에서 메시별로 다음을 설정한다:
+### 8.1 방식 — THREE.LOD / drei `<Detailed>`
 
-```
-Meshes > Generate LODs = true
-Meshes > LOD Bias = 1.0    (기본값)
-```
+- **Blender Decimate**로 아바타 LOD 메시(예: 100% / 50% / 25%)를 사전 제작 → GLTF에 담는다.
+- three.js `THREE.LOD.addLevel(mesh, distance)` 또는 drei `<Detailed distances={[…]}>`로 카메라-아바타 거리에 따라 스왑.
+- 거리 임계값은 고정 직교 카메라의 `ortho_scale`(camera.json) 기준 월드 미터로 튜닝(원근 왜곡 없어 단순).
 
-자동 LOD 생성이 불충분한 경우 Blender Decimate modifier로 수동 LOD 메시를 제작해 `.tscn`에 포함시킨다.
+### 8.2 예시 (R3F)
 
-### 8.2 LOD GDScript 설정 예시
+```tsx
+// AvatarLOD.tsx — 거리 기반 LOD 스왑 (drei)
+// @TASK P0-T0.5  @SPEC docs/3d-design/photoreal-web-strategy.md#6.1
+import { Detailed } from '@react-three/drei'
 
-```gdscript
-# furniture_desk.gd — LOD 거리 명시적 설정
-# @TASK P0-T0.5
-# @SPEC docs/planning/07-3d-visual-asset-pipeline.md#6.1
-func _ready() -> void:
-    $MeshLOD0.visibility_range_begin = 0.0
-    $MeshLOD0.visibility_range_end   = 10.0
-
-    $MeshLOD1.visibility_range_begin = 10.0
-    $MeshLOD1.visibility_range_end   = 20.0
-
-    $MeshLOD2.visibility_range_begin = 20.0
-    $MeshLOD2.visibility_range_end   = 50.0
-
-    $MeshLOD3.visibility_range_begin = 50.0
-    $MeshLOD3.visibility_range_end   = 100.0
+<Detailed distances={[0, 8, 20]}>
+  <AvatarMesh lod={0} />   {/* 근거리: 100% */}
+  <AvatarMesh lod={1} />   {/* 중거리: 50%  */}
+  <AvatarMesh lod={2} />   {/* 원거리: 25%  */}
+</Detailed>
 ```
 
 ---
 
-## 9. 품질 프리셋 (기준 사양별, D7·D22)
+## 9. 품질 프리셋 (후처리 강도 기준)
 
-| 프리셋 | 대상 사양 | 목표 FPS | 설정 |
-|-------|---------|---------|------|
-| **High** (기본) | GTX 1650급 | 60 fps | 직접광 + ReflectionProbe + SSAO. SDFGI OFF. 2K 텍스처. LOD 2까지 |
-| **Ultra** (고사양 옵션) | RTX 계열 | 60+ fps | High + SDFGI ON. 모든 LOD. |
-| **Medium** | 중형 내장 | 45 fps | LOD 2까지, 1K 텍스처, 파티클 감소 |
-| **Low** | Iris Xe 등 내장 | 30 fps | LOD 1만, 512 텍스처, 그림자 축소, SSAO 경량화 |
+Godot의 하드웨어 등급별 프리셋(GTX1650/RTX·SDFGI/ReflectionProbe·`lighting_manager.gd`)은 **폐기**한다 — 배경 조명은 오프라인에 구워졌고 런타임 GI 노드가 없다. D27 프리셋은 **후처리 강도**(pmndrs/postprocessing 패스)와 아바타 LOD를 조절해 프레임을 확보한다.
 
-`lighting_manager.gd`의 `apply_preset()`이 프리셋 전환을 담당한다.
+| 프리셋 | 목표 프레임 | 설정 |
+|-------|---------|------|
+| **High** (기본) | 60fps | N8AO + Bloom + SMAA 전부. 아바타 LOD 0~2, KTX2 풀해상 |
+| **Balanced** | 45~60fps | N8AO 샘플 축소 + Bloom + SMAA. LOD 원거리 우선 |
+| **Low** | 30fps 방어 | AO OFF/저품질 + Bloom 축소, SMAA→FXAA, 아바타 텍스처 하향 |
+
+- 조절 주체는 R3F `<EffectComposer>` 패스 구성 + `THREE.LOD` 거리 튜닝.
+- 배경 이미지 품질은 프리셋과 무관(이미 렌더된 결과).
 
 ---
 
-## 10. GTX 1650 60fps / 내장 30fps 측정 절차 (S4 스파이크 연계)
+## 10. 측정 절차 (웹 프레임 + 깊이합성 + Colyseus SLA)
+
+Godot Debugger Monitor·GPU-Z·MSI Afterburner·Forward+·GDScript Profiler 기반 측정은 **전면 폐기**. D27은 **브라우저 도구**로 측정한다.
 
 ### 10.1 측정 환경
 
-- **기준 사양 PC**: GTX 1650, 16GB RAM, Full HD 1920×1080
-- **내장 그래픽 PC**: Intel Iris Xe급, 16GB RAM (공유 메모리), Full HD
-- **Godot 버전**: 4.x 최신 안정 버전 (Godot 4.x에 별도 LTS 채널 없음)
-- **렌더러**: Forward+
+- **클라이언트**: 표준 개발 노트북 + 크로미움(Chrome/Edge), Full HD.
+- **스택**: three ^0.168 · R3F ^8.17 · drei ^9.115 · pmndrs/postprocessing.
+- **카메라**: 고정 아이소 직교(camera.json 재현) — 자유 회전 없음.
 
 ### 10.2 측정 시나리오
 
 | 시나리오 | 내용 | 합격 기준 |
 |---------|------|--------|
-| S1. 빈 씬 | office_layout 로드, 아바타 없음 | GTX1650 > 120fps / 내장 > 60fps |
-| S2. 기본 씬 | 아바타 10명 + 가구 50개 + 조명 | GTX1650 ≥ 60fps / 내장 ≥ 30fps |
-| S3. 스트레스 씬 | 아바타 20명 + 가구 200개 (설계 100명 중 도그푸딩 20명 기준) | GTX1650 ≥ 60fps / 내장 ≥ 30fps |
-| S4. MultiMesh 효과 | 동일 desk 100개 (1드로우콜) | S2 대비 드로우콜 50% 이상 감소 확인 |
+| S1. 배경만 | office_bg 쿼드 + 후처리, 아바타 0 | 60fps 여유 |
+| S2. 기본 씬 | 아바타 10명 + 깊이합성 + 후처리 | ≥ 60fps 목표 |
+| S3. 스트레스 씬 | 아바타 20명(도그푸딩 상한) + 깊이합성 + 후처리 | ≥ 30fps 최저 |
+| S4. 오클루전 정확도 | 아바타를 책상/유리벽 앞·뒤 이동 | 경계 오차 ≤ 2px (16 §A.3) |
+| S5. 이동 E2E | Colyseus 20Hz, 멀티유저 이동 | p95 < 500ms (15 §7) |
 
 ### 10.3 측정 방법
 
 ```
-1. Godot 에디터 > Project > Project Settings > Debug > GDScript Profiler 활성화
-2. 씬 실행 (--debug-collisions 옵션 제거 후 측정)
-3. Godot 우상단 Debugger > Monitor 탭:
-   - FPS (초당 프레임)
-   - Memory Used (시스템 메모리)
-   - Video Mem Used (VRAM)
-   - Draw Calls (드로우콜)
-   - Objects Rendered (렌더링 객체 수)
-4. 5분 연속 측정, p5 (하위 5%) FPS 값을 기록
-5. 합격: p5 FPS ≥ 60 (GTX1650) / ≥ 30 (내장)
+1. 프레임: 브라우저 devtools > Performance(프레임 타임라인) + stats.js 오버레이(FPS/frame ms).
+2. GPU/드로우콜: Spector.js로 프레임 캡처 → 드로우콜 수·후처리 패스·텍스처 확인.
+3. 오클루전: 아바타를 배경 깊이 경계 앞/뒤로 이동 → 스크린샷 비교로 경계 오차 ≤2px 확인
+   (스파이크 evidence/{front,behind,scan_*}.png 방식 재사용).
+4. 이동 SLA: Colyseus 클라이언트 계측(move_request→서버 반영 반영 타임스탬프) p95 산출.
+5. 5분 연속 측정, 하위 5%(p5) 프레임 기록 → S2 ≥60fps / S3 ≥30fps 판정.
 ```
 
 ### 10.4 측정 도구
 
 | 도구 | 용도 |
 |------|------|
-| Godot Debugger Monitor | FPS·메모리·드로우콜 실시간 |
-| GPU-Z (Windows) | VRAM 사용량 독립 측정 |
-| MSI Afterburner | GPU 클럭·온도·프레임 오버레이 |
+| 브라우저 devtools (Performance) | 프레임 타임·CPU/GPU 병목 |
+| stats.js | 실시간 FPS·frame ms 오버레이 |
+| Spector.js | WebGL 프레임 캡처(드로우콜·후처리 패스·텍스처) |
+| 스크린샷 비교 (evidence/) | 깊이합성 경계 오차 ≤2px 검증 |
+| Colyseus 클라이언트 계측 | 이동 E2E p95 SLA |
 
-### 10.5 S4 스파이크와의 연계
+### 10.5 스파이크와의 연계
 
-P0-T0.11(S4 스파이크)에서 골든 샘플 씬으로 이 절차를 실행한다.  
-실패 시 폴백: SDFGI 옵션 기본화 + 기준 사양 상향 재협의(00-decisions.md F절 S4).
+깊이합성 정확도(S4)는 **Phase 0 스파이크에서 이미 PASS(2026-07-08, 16 §A.3)**. 산출물 `spikes/depth-composite/`(camera.json·evidence)를 회귀 기준으로 삼아, 아바타·후처리 추가 시 경계 오차가 유지되는지 재검증한다.
 
 ---
 
-## 11. 메모리 관리 (dispose 패턴)
+## 11. 메모리 관리 (three.js dispose 패턴)
 
-씬 전환 또는 에셋 제거 시 **메모리 누수 방지**를 위해 dispose 패턴을 적용한다.
+Godot `queue_free()`·`ResourceLoader` 캐시·ReflectionProbe 연쇄 해제는 **폐기**. three.js는 GC가 GPU 리소스를 자동 회수하지 않으므로, 씬/레이아웃 전환 시 **명시적 dispose**로 누수를 막는다.
 
-```gdscript
-# office.gd — 씬 교체 시
-func _dispose_current_scene() -> void:
-    if _current_floor_node:
-        _current_floor_node.queue_free()
-        _current_floor_node = null
-    # MultiMesh 리소스 해제
-    for mm in _active_multimeshes:
-        mm.mesh = null
-    _active_multimeshes.clear()
+```ts
+// disposeScene.ts — 배경/아바타 교체 시
+function disposeObject(obj: THREE.Object3D) {
+  obj.traverse((o) => {
+    const mesh = o as THREE.Mesh
+    mesh.geometry?.dispose()
+    const mat = mesh.material
+    const mats = Array.isArray(mat) ? mat : mat ? [mat] : []
+    for (const m of mats) {
+      for (const k in m) {
+        const v = (m as any)[k]
+        if (v && v.isTexture) v.dispose()   // albedo/normal/ORM/배경·깊이 텍스처
+      }
+      m.dispose()
+    }
+  })
+}
 ```
 
-- `queue_free()`: Godot 프레임 끝에서 안전하게 해제
-- `ResourceLoader` 캐시: 동일 `.tscn`은 캐시에서 재사용, 명시적 해제 불필요
-- ReflectionProbe: 씬 교체 시 자동 해제 (`queue_free()` 연쇄)
+- `geometry.dispose()` / `material.dispose()` / `texture.dispose()`를 명시 호출(GPU 버퍼 해제).
+- 레이아웃 재렌더로 배경 이미지·깊이맵이 바뀌면 **이전 배경 텍스처를 반드시 dispose**.
+- R3F는 언마운트 시 자동 dispose를 일부 수행하지만, 수동 로드(`KTX2Loader`/`useLoader` 캐시)·`InstancedMesh`는 명시 해제가 안전하다.
+- 후처리 `EffectComposer`/렌더타깃도 교체 시 dispose.
 
 ---
 
@@ -363,4 +329,5 @@ func _dispose_current_scene() -> void:
 
 | 버전 | 일자 | 변경 내용 |
 |------|------|----------|
+| **2.0** | **2026-07-09** | **D27 재작성** — 최적화 대상을 "실시간 아바타+깊이합성+후처리"로 전면 재정의. 배경은 Blender Cycles 오프라인 렌더 이미지라 런타임 폴리곤/드로우콜/GI 예산 제외. Godot 성능예산(GTX1650 60fps·MultiMesh 드로우콜·SDFGI·Forward+) 폐기 → 웹 60fps 목표. VRAM BC(BC1/BC3/BC5) 폐기 → KTX2/Basis + Draco/meshopt. 컬링/LOD를 Godot API→three.js(THREE.LOD·frustumCulled·깊이합성 오클루전)로 교체. 측정도구 Godot Debugger/GPU-Z→devtools/stats.js/Spector.js. 게이트 3축(깊이합성 ≤2px·웹 60fps·Colyseus p95<500ms). dispose 패턴을 three.js로 교체 |
 | 1.0 | 2026-07-02 | P0-T0.5 초안 — D7·D22 성능 기준, BC 압축, MultiMesh 집행 규칙, 서버 파생 검증(05 §3.4 정합), GTX1650/내장 측정 절차 |

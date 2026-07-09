@@ -1,0 +1,106 @@
+{
+  "asset_id": "CHAR_MALE_001",
+  "name": "Male character avatar",
+  "category": "characters",
+  "type": "avatar",
+  "priority": "MVP",
+  "file": "models/characters/CHAR_MALE_001.glb",
+  "unit": "meter",
+  "pivot": "BOTTOM_CENTER",
+  "up_axis": "Z",
+  "pose": "T_POSE",
+  "dimensions_m": {
+    "width": 1.689,
+    "depth": 0.273,
+    "height": 1.761
+  },
+  "placement": {
+    "snap_to_floor": true,
+    "grid_size": 0.1,
+    "rotatable": true
+  },
+  "collision": {
+    "type": "CAPSULE",
+    "center": [
+      0,
+      0,
+      0.88
+    ],
+    "radius": 0.845,
+    "height": 1.761
+  },
+  "interaction": {
+    "can_control": true,
+    "can_sit": true,
+    "status_anchor": {
+      "position": [
+        0,
+        0,
+        2.041
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "head_anchor": {
+      "position": [
+        0,
+        -0.02,
+        1.651
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "nameplate_anchor": {
+      "position": [
+        0,
+        0,
+        1.841
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "rig": {
+    "status": "UNRIGGED_T_POSE",
+    "mixamo_compatible_intent": true,
+    "note": "Static humanoid T-pose base GLB. Use Blender/Mixamo to bind skeleton and replace clips under the same asset_id."
+  },
+  "animations": [
+    "ANIM_IDLE_001",
+    "ANIM_WALK_001",
+    "ANIM_SIT_001",
+    "ANIM_TYPING_001"
+  ],
+  "rendering": {
+    "cast_shadow": true,
+    "receive_shadow": true,
+    "lod_group": "CHARACTER_MEDIUM",
+    "pbr": {
+      "baseColor": true,
+      "normal": false,
+      "roughness": true,
+      "metallic": true,
+      "textures_embedded": false,
+      "baked_lighting_forbidden": true
+    }
+  },
+  "qa": {
+    "actual_triangles": 5508,
+    "max_triangles": 15000,
+    "texture_max_size": 2048,
+    "pbr_required": true,
+    "baked_lighting_forbidden": true,
+    "result": "PASS"
+  },
+  "version": "1.1.0",
+  "format": "glb"
+}

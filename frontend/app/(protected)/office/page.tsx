@@ -246,6 +246,14 @@ const FILTER_TABS: { key: PresenceFilter; label: string }[] = [
   { key: 'external', label: '외근·출장' },
 ];
 
+// 시안 People 패널: 상태 그룹 헤더(재실/회의중/자리비움/오프라인)
+const PRESENCE_GROUPS: { key: string; label: string; color: string; statuses: PresenceStatus[] }[] = [
+  { key: 'office',   label: '사무실 재실', color: '#22C55E', statuses: ['online', 'focus'] },
+  { key: 'meeting',  label: '회의중',      color: '#EF4444', statuses: ['meeting'] },
+  { key: 'away',     label: '자리비움',    color: '#F59E0B', statuses: ['away', 'external'] },
+  { key: 'offline',  label: '오프라인',    color: '#64748B', statuses: ['offline'] },
+];
+
 // ─────────────────────────────────────────────
 // 메인 페이지
 // ─────────────────────────────────────────────
@@ -380,9 +388,41 @@ export default function OfficePage() {
   // ──────────────────────────────────────────
   return (
     <div
-      className="flex h-screen overflow-hidden font-sans"
+      className="flex flex-col h-screen overflow-hidden font-sans"
       style={{ background: '#0E1626' }}
     >
+      {/* ── 상단 헤더 (시안) ── */}
+      <header className="flex-shrink-0 h-14 flex items-center justify-between px-4 border-b border-border-subtle">
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-sm">V</div>
+          <span className="text-text-primary font-semibold text-[15px]">Virtual Office</span>
+          <button className="ml-1 flex items-center gap-1 px-2.5 py-1 rounded-md hover:bg-bg-surface-raised text-text-secondary text-[13px] transition-colors">
+            본사 (HQ) <span className="text-text-muted">▾</span>
+          </button>
+        </div>
+        <div className="flex-1 max-w-md mx-6 hidden md:block">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-surface text-text-muted text-[13px] border border-border-subtle">
+            <span>🔍</span><span>검색...</span>
+            <span className="ml-auto text-[11px] px-1.5 py-0.5 rounded bg-bg-surface-raised">⌘K</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className="w-8 h-8 rounded-lg hover:bg-bg-surface-raised flex items-center justify-center text-text-secondary transition-colors">📅</button>
+          <button className="w-8 h-8 rounded-lg hover:bg-bg-surface-raised flex items-center justify-center text-text-secondary transition-colors">🔔</button>
+          <div className="flex items-center gap-2 pl-1">
+            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold">
+              {me?.name?.charAt(0)?.toUpperCase() ?? '?'}
+            </div>
+            <div className="text-right leading-tight hidden sm:block">
+              <div className="text-[13px] text-text-primary font-medium">{me?.name ?? '—'}</div>
+              <div className="text-[11px] text-status-online">● Online</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ── 본문 3열 ── */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
       {/* ── 좌 내비 240px ── */}
       <aside
         className="w-60 flex-shrink-0 flex flex-col border-r border-border-subtle"
@@ -475,6 +515,44 @@ export default function OfficePage() {
           {/* 미디어 바 (하단 중앙) */}
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10">
             <MediaBar />
+          </div>
+
+          {/* 진행중 화상회의 오버레이 (시안: Product Sync · LIVE, 우하단) */}
+          <div
+            className="absolute right-3 bottom-3 z-10 w-56 rounded-xl border border-border-subtle overflow-hidden"
+            style={{ background: 'rgba(13,27,54,0.92)', backdropFilter: 'blur(6px)' }}
+          >
+            <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-danger flex-shrink-0" />
+                <span className="text-[11px] font-semibold text-text-primary truncate">Product Sync</span>
+              </div>
+              <span className="text-[9px] font-bold text-danger tracking-wider flex-shrink-0">● LIVE</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1 p-2">
+              {['Olivia', 'Liam', 'Mia', 'Noah'].map((n) => (
+                <div
+                  key={n}
+                  className="aspect-square rounded-md bg-bg-surface-raised flex items-center justify-center text-[11px] font-bold text-text-secondary"
+                >
+                  {n.charAt(0)}
+                </div>
+              ))}
+              <div className="aspect-square rounded-md bg-bg-surface-raised flex items-center justify-center text-[10px] text-text-muted">
+                +2
+              </div>
+            </div>
+          </div>
+
+          {/* "회의실 앞에서 E" 힌트 (시안: bottom center) */}
+          <div
+            className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full border border-border-subtle pointer-events-none flex items-center gap-2"
+            style={{ background: 'rgba(13,27,54,0.85)', backdropFilter: 'blur(6px)' }}
+          >
+            <kbd className="px-1.5 py-0.5 rounded bg-bg-surface-raised text-[10px] font-bold text-text-primary border border-border-subtle">
+              E
+            </kbd>
+            <span className="text-[11px] text-text-secondary">회의실 앞에서 눌러 입장</span>
           </div>
         </div>
 
@@ -623,21 +701,35 @@ export default function OfficePage() {
               </button>
             ))}
           </div>
-          <div className="py-1 max-h-48 overflow-y-auto">
+          <div className="py-1 max-h-72 overflow-y-auto">
             {loadingEmp ? (
               <div className="px-4 py-3 text-[12px] text-text-muted">로딩 중...</div>
             ) : filteredEmployees.length === 0 ? (
               <div className="px-4 py-3 text-[12px] text-text-muted">해당 상태 사용자 없음</div>
             ) : (
-              filteredEmployees.slice(0, 15).map((emp) => (
-                <ListItem
-                  key={emp.id}
-                  leading={<Avatar name={emp.name} status={emp.status} size="sm" />}
-                  primary={emp.name}
-                  secondary={emp.team_name ?? ''}
-                  trailing={<StatusBadge status={emp.status} showDot={false} />}
-                />
-              ))
+              PRESENCE_GROUPS.map((g) => {
+                const members = filteredEmployees.filter((e) => g.statuses.includes(e.status));
+                if (members.length === 0) return null;
+                return (
+                  <div key={g.key} className="mb-0.5">
+                    {/* 상태 그룹 헤더 (시안: In Office · N) */}
+                    <div className="px-4 pt-2 pb-1 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: g.color }} />
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">{g.label}</span>
+                      <span className="text-[10px] text-text-muted">· {members.length}</span>
+                    </div>
+                    {members.map((emp) => (
+                      <ListItem
+                        key={emp.id}
+                        leading={<Avatar name={emp.name} status={emp.status} size="sm" />}
+                        primary={emp.name}
+                        secondary={emp.team_name ?? ''}
+                        trailing={<StatusBadge status={emp.status} showDot={false} />}
+                      />
+                    ))}
+                  </div>
+                );
+              })
             )}
           </div>
         </section>
@@ -699,6 +791,7 @@ export default function OfficePage() {
           </div>
         </section>
       </aside>
+      </div>
     </div>
   );
 }

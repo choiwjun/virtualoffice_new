@@ -201,6 +201,11 @@ class MeetingParticipantRole(str, Enum):
     PARTICIPANT = "participant" # 참석자
 
 
+class RecordingConsentType(str, Enum):
+    RECORDING = "recording"
+    STT = "stt"
+
+
 class ActionItemPriority(str, Enum):
     """액션아이템 우선순위"""
     HIGH = "high"
@@ -922,6 +927,47 @@ class MeetingParticipant(Base):
     __table_args__ = (
         UniqueConstraint("meeting_id", "user_id", name="uq_meeting_participant"),
         Index("idx_meeting_participant_user", "user_id", "invited_at"),
+    )
+
+
+class RecordingConsent(Base):
+    """회의별 참석자 녹음/STT 동의 기록."""
+    __tablename__ = "recording_consent"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    meeting_id: Mapped[UUID] = mapped_column(
+        ForeignKey("meeting.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("erp_user.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    consent_type: Mapped[RecordingConsentType] = mapped_column(
+        SQLEnum(RecordingConsentType),
+        nullable=False,
+    )
+    granted: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    meeting: Mapped["Meeting"] = relationship("Meeting")
+    user: Mapped["ErpUser"] = relationship("ErpUser")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "meeting_id",
+            "user_id",
+            "consent_type",
+            name="uq_recording_consent_meeting_user_type",
+        ),
+        Index("idx_recording_consent_meeting_type", "meeting_id", "consent_type"),
     )
 
 

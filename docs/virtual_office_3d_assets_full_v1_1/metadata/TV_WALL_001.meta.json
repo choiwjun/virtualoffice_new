@@ -1,0 +1,72 @@
+{
+  "asset_id": "TV_WALL_001",
+  "name": "Wall display / video call screen",
+  "category": "meeting",
+  "type": "display",
+  "priority": "MVP",
+  "file": "models/meeting/TV_WALL_001.glb",
+  "unit": "meter",
+  "pivot": "BOTTOM_CENTER",
+  "up_axis": "Z",
+  "dimensions_m": {
+    "width": 1.45,
+    "depth": 0.065,
+    "height": 0.82
+  },
+  "placement": {
+    "snap_to_floor": true,
+    "grid_size": 0.1,
+    "rotatable": true
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.41
+    ],
+    "size": [
+      1.45,
+      0.065,
+      0.82
+    ]
+  },
+  "interaction": {
+    "can_inspect": true,
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        -0.08,
+        0.451
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "rendering": {
+    "cast_shadow": true,
+    "receive_shadow": true,
+    "lod_group": "LOW",
+    "pbr": {
+      "baseColor": true,
+      "normal": true,
+      "roughness": true,
+      "metallic": true,
+      "textures_embedded": true,
+      "baked_lighting_forbidden": true
+    }
+  },
+  "qa": {
+    "actual_triangles": 14,
+    "max_triangles": 1000,
+    "texture_max_size": 1024,
+    "pbr_required": true,
+    "baked_lighting_forbidden": true,
+    "result": "PASS"
+  },
+  "version": "1.0.0",
+  "format": "glb"
+}

@@ -606,13 +606,21 @@ async def test_upsert_value_updated(db_session: AsyncSession, seed_user: ErpUser
 
 
 @pytest.mark.asyncio
-async def test_upsert_ai_draft_empty(db_session: AsyncSession, seed_user: ErpUser):
-    """upsert 시 ai_draft는 None (AI 서술 후속)."""
+async def test_upsert_ai_draft_on_aggregate_only(db_session: AsyncSession, seed_user: ErpUser):
+    """REQ-007: 정량 metric 행은 ai_draft 없음, 집계 행(daily→collaboration_score)에만 서술 부착.
+
+    정량 값(value)은 여전히 결정론적(D14-e) — 서술은 value와 분리된 별도 필드."""
     results = await compute_and_upsert_kpi(db_session, seed_user.id, "daily", "2026-07-01")
     await db_session.flush()
 
+    with_draft = [r for r in results if isinstance(r.ai_draft, dict)]
+    assert len(with_draft) == 1  # 집계 metric 1행에만
+    assert with_draft[0].metric == "collaboration_score"
+    assert "강점" in with_draft[0].ai_draft
+    # 나머지 정량 metric 행은 서술 없음
     for r in results:
-        assert r.ai_draft is None
+        if r.metric != "collaboration_score":
+            assert not isinstance(r.ai_draft, dict)
 
 
 # ──────────────────────────────────────────────────────────────────────────────

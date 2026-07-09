@@ -97,6 +97,24 @@ async def _erp_sync_batch_job() -> None:
             print(f"[Scheduler] ERP sync failed: {exc}")
 
 
+async def _eod_push_job() -> None:
+    """REQ-008/D18: EOD ERP 전송 — pending daily_status_push를 ERP로 전송(pending→sent)."""
+    print("[Scheduler] EOD push started")
+    from app.services.eod_push import run_eod_push
+
+    async with SessionLocal() as db:
+        try:
+            summary = await run_eod_push(db)
+            await db.commit()
+            print(
+                f"[Scheduler] EOD push completed: sent={summary['sent']} "
+                f"failed={summary['failed']} total={summary['total']} run_id={summary['run_id']}"
+            )
+        except Exception as exc:
+            await db.rollback()
+            print(f"[Scheduler] EOD push failed: {exc}")
+
+
 async def _presence_purge_job() -> None:
     """D20-a: presence 좌표 30일 파기 — updated_at 30일 초과 행의 x/y/z를 NULL 처리."""
     print("[Scheduler] presence purge started")
@@ -156,6 +174,15 @@ def start_scheduler() -> None:
         replace_existing=True,
     )
 
+    # REQ-008/D18: EOD ERP 전송 — 매일 18:05 KST (KPI 18:00 배치 직후)
+    _scheduler.add_job(
+        _eod_push_job,
+        CronTrigger(hour=18, minute=5, timezone="Asia/Seoul"),
+        id="eod_push",
+        name="EOD ERP push",
+        replace_existing=True,
+    )
+
     # D20-a: presence 좌표 30일 파기 — 매일 03:00 KST
     _scheduler.add_job(
         _presence_purge_job,
@@ -164,9 +191,9 @@ def start_scheduler() -> None:
         name="Presence 30d coord purge",
         replace_existing=True,
     )
-    
+
     _scheduler.start()
-    print("[Scheduler] Started: KPI 18:00/21:00, ERP hourly:00, presence purge 03:00")
+    print("[Scheduler] Started: KPI 18:00/21:00, ERP hourly:00, EOD push 18:05, presence purge 03:00")
 
 
 def stop_scheduler() -> None:

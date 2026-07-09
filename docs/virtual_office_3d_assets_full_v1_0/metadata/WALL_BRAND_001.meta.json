@@ -1,0 +1,61 @@
+{
+  "asset_id": "WALL_BRAND_001",
+  "name": "Logo wall with replaceable logo panel",
+  "category": "reception",
+  "type": "brand_wall",
+  "priority": "MVP",
+  "file": "models/reception/WALL_BRAND_001.glb",
+  "unit": "meter",
+  "pivot": "BOTTOM_CENTER",
+  "up_axis": "Z",
+  "dimensions_m": {
+    "width": 2.4,
+    "depth": 0.135,
+    "height": 1.8
+  },
+  "placement": {
+    "snap_to_floor": true,
+    "grid_size": 0.1,
+    "rotatable": true
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.9
+    ],
+    "size": [
+      2.4,
+      0.135,
+      1.8
+    ]
+  },
+  "interaction": {
+    "nav_blocker": true,
+    "transparent": false
+  },
+  "rendering": {
+    "cast_shadow": true,
+    "receive_shadow": true,
+    "lod_group": "LOW",
+    "pbr": {
+      "baseColor": true,
+      "normal": true,
+      "roughness": true,
+      "metallic": true,
+      "textures_embedded": true,
+      "baked_lighting_forbidden": true
+    }
+  },
+  "qa": {
+    "actual_triangles": 122,
+    "max_triangles": 2800,
+    "texture_max_size": 1024,
+    "pbr_required": true,
+    "baked_lighting_forbidden": true,
+    "result": "PASS"
+  },
+  "version": "1.0.0",
+  "format": "glb"
+}

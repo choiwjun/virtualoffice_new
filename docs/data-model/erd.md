@@ -1,6 +1,9 @@
 # erd.md: 엔티티 관계도 (ERD)
 
+> 🟡 **D27 부분 개정(2026-07-09) — announcement 추가·Godot 잔재 정정 완료.** 상세 스키마 정본은 `04-data-model.md`. 본 문서는 요약 뷰.
+
 **작성일**: 2026-07-02  
+**최종 갱신**: 2026-07-09 (D27 부분 개정)  
 **상태**: 확정 (Phase 0, P0-T0.3)  
 **정본 참조**: `04-data-model.md` §1
 
@@ -50,6 +53,7 @@ erDiagram
     ERP_USER ||--o{ AUDIT_LOG : "감사"
     AUDIT_LOG }o--|| ERP_USER : "created_by"
     ASSET ||--o| ERP_USER : "modified_by"
+    ERP_USER ||--o{ ANNOUNCEMENT : "공지작성(author)"
 ```
 
 ---
@@ -65,7 +69,7 @@ erDiagram
 
 ---
 
-## 13개 주요 테이블 개요
+## 18개 주요 테이블 개요
 
 ### A. ERP 미러 계층 (1개)
 
@@ -114,8 +118,14 @@ erDiagram
 
 | # | 테이블명 | 용도 | 주요 필드 |
 |---|---------|------|---------|
-| 16 | **asset** | 3D 에셋 메타 (Blender→GLB→Godot) | asset_id(PK), asset_name, asset_type, license, modified_by, downloaded_at |
+| 16 | **asset** | 3D 에셋 메타 (Blender→GLTF→R3F, 스키마 정본 = 3d-design/asset-registry §1.1) | asset_id(PK), asset_name, asset_type, license, modified_by, downloaded_at |
 | 17 | **audit_log** | 감사 로그 (좌석배정, 회의, KPI, 배포) | id(PK), user_id(nullable), action, entity_type, entity_id, old_value(JSONB), new_value(JSONB), created_at(UTC), 5년 보존 정책(D20-e) |
+
+### G. 공지 계층 (1개, D27 신설)
+
+| # | 테이블명 | 용도 | 주요 필드 |
+|---|---------|------|---------|
+| 18 | **announcement** | 공지사항 (통합 대시보드 우패널) — **정본: 04-data-model §2.7** | id(PK, UUID), company_id, title, body, category(system/notice/info), pinned, author_user_id(FK→erp_user, RESTRICT), published_at, expires_at |
 
 ---
 
@@ -193,7 +203,7 @@ CREATE INDEX idx_erp_user_team ON erp_user(erp_team_id);
 CREATE INDEX idx_erp_user_role ON erp_user(role);
 CREATE INDEX idx_erp_user_is_active ON erp_user(is_active);
 
--- 실시간 조회 (Godot 서버)
+-- 실시간 조회 (Colyseus 이동서버 → FastAPI 경유, D3)
 CREATE INDEX idx_presence_office_floor ON presence(office_id, floor_id);
 CREATE INDEX idx_presence_status ON presence(status);
 CREATE INDEX idx_presence_updated_at ON presence(updated_at DESC);
@@ -233,7 +243,7 @@ CREATE INDEX idx_seat_assignment_history_user ON seat_assignment_history(user_id
 
 ---
 
-## 13개 테이블 필드 매핑 요약
+## 18개 테이블 필드 매핑 요약
 
 (상세는 `04-data-model.md` §2 참조)
 
@@ -303,9 +313,12 @@ CREATE INDEX idx_seat_assignment_history_user ON seat_assignment_history(user_id
 ### 17. audit_log (감사)
 - id, user_id(nullable), action, entity_type, entity_id, old_value(JSONB), new_value(JSONB), created_at(UTC, 5년 보존)
 
+### 18. announcement (공지 — D27 신설, 04-data-model §2.7 요약)
+- id(UUID), company_id, title, body(md), category(system/notice/info), pinned, author_user_id(FK→erp_user, RESTRICT), published_at, expires_at, created_at
+
 ---
 
-## 14개 Enum 타입
+## 16개 Enum 타입
 
 ```sql
 CREATE TYPE presence_status AS ENUM (
@@ -355,6 +368,10 @@ CREATE TYPE work_log_status AS ENUM (
 
 CREATE TYPE meeting_minute_status AS ENUM (
   'draft', 'finalized'
+);
+
+CREATE TYPE announcement_category AS ENUM (
+  'system', 'notice', 'info'
 );
 ```
 

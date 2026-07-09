@@ -1,1481 +1,628 @@
 # 12-tasks.md
 
-## 태스크 분해 및 로드맵 실행 계획
+## 태스크 분해 및 로드맵 실행 계획 (D27 포토리얼 웹임베드)
 
-**프로젝트**: 가상오피스 운영 플랫폼 (vituraloffice_new)  
-**버전**: v2.1  
-**생성일**: 2026-07-01  
-**최종 수정**: 2026-07-02  
-**최종 목표**: 로드맵 7단계 완성 (MVP 컷 없음, 온전한 통합 솔루션)  
-**개발 모델**: 1인 + AI 협업, TDD 기반  
-**총 Phase**: 8개 (Phase 0 + Phase 1~7)  
-**총 Task**: 86개 (2026-07-02 재카운트: 기존 78 + 신설 7 + P5-R2-T2 분할 +1)  
-**정본 기준**: `00-decisions.md` (D1~D25, F절) — 충돌 시 정본이 우선
+**프로젝트**: 가상오피스 운영 플랫폼 (vituraloffice_new)
+**버전**: v3.0
+**생성일**: 2026-07-01
+**최종 수정**: 2026-07-09
+**최종 목표**: 로드맵 P0~P7 완성 (MVP 컷 없음, 온전한 통합 솔루션 — 사내 도그푸딩 릴리스)
+**개발 모델**: 1인 + AI 협업, TDD 기반
+**총 Phase**: 8개 (P0 + P1~P7)
+**총 Task**: 39개 (P0 완료 2 + P1~P7 구현 30 + Phase 검증 V 7 · 구 Godot/WA 86태스크 편성 폐기). 유형: 신규 스택(Blender/R3F/Colyseus/셸 UI/공지) 약 20 + 백엔드 재사용·배선 약 12
+**정본 기준**: `00-decisions.md` §H(D27) · `14-virtual-office-spec` · `15-realtime-server-spec` · `16-render-spike-and-roadmap` §Part B · `3d-design/{design-style-analysis, photoreal-web-strategy}` — 충돌 시 정본이 우선
+**스택(D27)**: react-three-fiber(three.js 0.168) + Colyseus(Node/TS) + Blender Cycles(오프라인 렌더) + FastAPI + Next.js. 단일 세션 JWT(콘솔 JWT 그대로 3D 진입, 별도 OIDC 없음).
 
-> **변경 요약 (v2.0, 2026-07-02)**: 일정 58주 기준 정합(D6), 산출물 확장자 `.cs`→`.gd` 전면 수정(D2), Phase 병렬 표기 제거·순차 원칙 통일(1인 개발, R7), 성능 수치 설계 100명/검증 20명 통일(D22), 웹 3D 미리보기 제거→2D 편집+데스크톱 draft 모드(D11), Phase 0 스파이크 S1~S4 신설(F절), Phase 5 STT 회의록 태스크 신설(D5)·GDNative→GDExtension, 누락 태스크 신설(이의신청·분기집계·daily_reports push·감사로그·클라 자동업데이트·ERP 동기화 실패 알림·도그푸딩 피드백), ERP 동기화 D18·엔드포인트 `POST /api/kpi-results` 통일, 화상 지연 <200ms.
+> **변경 요약 (v3.0, 2026-07-09)** — **D27 전환 재작성**:
+> - **D26(WorkAdventure) + Godot 스택 전면 폐기** → D27 포토리얼 웹임베드(2026-07-08 사용자 승인). 구 Phase 1(Godot 골든샘플 3D `.tscn`/`.gd`/Forward+)·Phase 4(Godot 헤드리스 서버 + WSS 게이트웨이)·Phase 0 스파이크 S1~S4(Godot↔LiveKit 등)·데스크톱 draft 뷰어·P5 WebRTC GDExtension 등 **Godot/WA 태스크 전량 폐기·교체**.
+> - **Phase 편성 정본 = 16-render-spike-and-roadmap.md §Part B (P0~P7)** 로 재편.
+> - **P0 스파이크(깊이합성) = PASS(2026-07-08, commit `b4736b1`)** → 완료 처리. 다음 착수 = P1.
+> - **D27 신규 태스크 신설**: Blender 파라메트릭 씬 빌더 + 깊이패스 렌더, R3F 뷰포트 + 깊이합성 셰이더, Colyseus 이동서버(20Hz·이동검증8·근접검증8), 통합 대시보드 셸 UI, 공지 리소스 API + 화면, KPI 워크플로우 화면(관리자 검토·이의신청).
+> - **백엔드 도메인 태스크(ERP sync·좌석·회의·KPI 엔진 + AI 초안·consent·EOD·work-log·감사)는 대부분 재사용** — 이미 구현됨(pytest 417+). 태스크에 `[구현됨]`/`[부분구현]` 표기.
+> - **주 단위 기간은 스파이크 후 확정**(억지 숫자 금지). 구 45주/58주 간트·86태스크 편성 폐기. 규모는 상대 표기(S/M/L).
 >
-> **변경 요약 (v2.1, 2026-07-02)**: 마이그레이션 표기 정정(0002~0013 증분 실효 → `tables.py` 모델 정의 + `0001_initial_schema.py` 단일 반영, pre-prod 규약), 구현 완료분 반영(P2-R1-T1 부분완료, P2-R1-T2 완료, P2-R1-T4 신설·완료, P2-R2-T0 부분완료), 신규 태스크 7건(P2-R2-T0 인증, P2-R4-T1 외부 공개 하드닝, P4-R1-T3 클라 WSS 네트워킹, P4-R3-T3 presence 파기, P6-R1-T3 work_log UI, P7-R1-T4 조직도 에디터, P5-R2-T2 → T2a/T2b 분할), TLS 표기 사내 PKI → Let's Encrypt/Caddy(D21-r), 이의신청 상태 어휘 D15 정본(none→submitted→reviewing→resolved) 치환, V태스크 7건 검증 리포트 산출물 추가, 모호 완료조건 8건 검증 방법 명기, 과대 태스크 8건 진행 체크리스트 추가. 총 태스크 78 → 86.
+> **이전 이력 요약**: v2.1(2026-07-02) Godot/WA 기준 86태스크 편성 → D27로 전면 폐기. v3.0에서 P0~P7 D27 편성으로 재생성.
 
 ---
 
-## Phase 0: 계약 & 테스트 설계 + 스파이크
+## Phase 0: 깊이합성 스파이크 (착수 전 필수 게이트) — ✅ PASS
 
-> **목적**: API/데이터/ERP 연동 계약 확정, 통합 테스트 골격, 마이그레이션 전략 수립, **선행 기술 리스크 스파이크(S1~S4, F절)**.  
-> **산출물**: API 명세(OpenAPI), DB 스키마(ERD + SQLAlchemy 모델), ERP 연동 계약서, 테스트 프레임워크, Alembic 마이그레이션 초안, 스파이크 리포트 4종.  
-> **선행**: 없음. Phase 0 완료 후 **Phase 1~7은 순차 진행**(1인 개발, 병렬 불가 — 13-risks R7).
+> **목적**: Blender Cycles 오프라인 렌더 배경 위 react-three-fiber 실시간 아바타가 가구·유리벽 뒤로 픽셀 단위 정확히 가려지는가(깊이합성 오클루전) 실증. D27 전략의 기술적 성립 여부 게이트.
+> **정본**: 16-render-spike-and-roadmap.md §Part A.
+> **상태**: ✅ **PASS — 2026-07-08 (commit `b4736b1`)**. 게이트 통과 → 다른 코드 착수 허용. 다음 착수 대상 = P1(셸+데이터연결).
 
-### [x] P0-T0.1: 3D 클라이언트-서버 API 계약 정의 (WebSocket/WSS 확정, OQ4 종결)
-
-- **담당**: test-specialist
-- **의존**: 없음
-- **산출물**: 
-  - OpenAPI 스펙: `docs/api/realtime-server-api.yaml`
-  - 엔드포인트: **WebSocket(WSS) 프로토콜**(D1 확정, ENet 폐기) + REST fallback 정의
-  - 메시지 스키마: 아바타 이동, 회의실 점유, 근접 감지, 상태 변경. 재접속 시 sequence_num 스냅샷 재수신, 핸드셰이크 `protocol_version` 협상(D4)
-- **완료 조건**:
-  - WebSocket 메시지 타입 12개 이상 정의 (avatar_move, presence_update, meeting_room_enter/leave, 등)
-  - 동시성 제약 명시 (**설계 100명 / 도그푸딩 검증 20명**, D22 — 500명 표기 폐기), seat 점유 배타성
-  - 에러 코드 정의 (충돌, 권한, 타임아웃, 미지원 protocol_version 거부)
-  - **OQ4(프로토콜 선택) 확정 종결 명시** — WebSocket(WSS)
-
-### [x] P0-T0.2: 관리·업무·KPI API 계약 정의
-
-- **담당**: test-specialist
-- **의존**: 없음
-- **산출물**: 
-  - OpenAPI 스펙: `docs/api/management-api.yaml`
-  - REST 엔드포인트: 직원/팀/좌석/회의/KPI CRUD + 벌크 작업
-  - 인증/권한: JWT(24h) + role-based 접근
-- **완료 조건**:
-  - 엔드포인트 25개 이상 정의
-  - Request/Response 스키마 JSON Schema 형식
-  - 에러 응답 표준화 (400/401/403/404/500)
-
-### [x] P0-T0.3: 데이터 모델 및 ERD 정의
-
-- **담당**: database-specialist
-- **의존**: P0-T0.2
-- **산출물**: 
-  - ERD(Mermaid): `docs/data-model/erd.md` ✅
-  - SQLAlchemy 모델 스켈레톤: `backend/app/models/tables.py` (주요 엔티티 클래스) ✅
-  - 마이그레이션 전략 문서: `docs/data-model/migration-strategy.md` ✅
-- **완료 조건**:
-  - 13개 주요 테이블 정의 완료 (erp_user, org_group, team_zone, office, floor, office_layout, room, seat, presence, meeting, meeting_minute, work_log, kpi_result) ✅
-  - 인덱스/제약조건 설계 ✅
-  - 초기 데이터(fixtures) 생성 계획 ✅
-
-### [x] P0-T0.4: ERP 연동 계약 & 인증 설계
-
-- **담당**: test-specialist
-- **의존**: 없음
-- **산출물**: 
-  - ERP 연동 계약서: `docs/erp-integration/contract.md`
-  - 서비스계정 정책: `docs/erp-integration/service-account-policy.md`
-  - Alembic 마이그레이션(ERP dev 브랜치용): `migrations/alembic/versions/0001_kpi_results_table.py`
-- **완료 조건**:
-  - read-only 동기화 대상 5개 정의 (users, teams, job_positions, attendances, leaves)
-  - 쓰기 전송 스펙 확정 (daily_reports via POST /api/reports, kpi_results via 신규 엔드포인트)
-  - ERP dev 브랜치명: `feature/virtual-office-integration` (명시)
-  - JWT 서비스계정 갱신 주기: 24h (확정)
-
-### [x] P0-T0.5: 3D 씬 구조 및 asset 레지스트리 설계
+### [x] P0-T1: Blender 최소 오피스 씬 + 직교 아이소 렌더 + 깊이패스 (완료)
 
 - **담당**: 3d-engine-specialist
 - **의존**: 없음
-- **산출물**: 
-  - Godot 씬 구조 다이어그램: `docs/3d-design/scene-structure.md`
-  - Asset 레지스트리 명세: `docs/3d-design/asset-registry.md`
-  - 리소스 최적화 기준: `docs/3d-design/optimization-criteria.md`
-- **완료 조건**:
-  - 주요 씬 노드 계층 정의 (RootScene → Office → Floor[n] → Zone[m] → Seats, Rooms, etc.)
-  - asset 테이블 스키마 (asset_id, asset_name, asset_type, source_url, license, commercial_allowed, 등)
-  - 에셋 파이프라인 명시: glb(raw) → Godot 임포트 최적화(VRAM BC 압축·자동 LOD) → `.tscn` pak 동봉 (D8 — gltfpack/Draco 압축 금지, 07 §5.2 정합)
-
-### [x] P0-T0.6: office_layout 스키마 & 검증 로직 설계
-
-- **담당**: backend-specialist
-- **의존**: P0-T0.3, P0-T0.5
-- **산출물**: 
-  - office_layout JSON 스키마: `docs/data-model/office-layout-schema.json` (JSON Schema 형식)
-  - 검증 함수 스켈레톤: `backend/app/services/office_layout_validator.py`
-  - 변환 함수 스켈레톤: `backend/app/services/office_layout_to_godot.py`
-- **완료 조건**:
-  - office_layout 구조: `{version, floors: [{level, name, zones, rooms, seats, collision_map}]}`
-  - 검증 항목: 좌표 범위, 좌석 수, 중복 제거, 접근성 경로
-  - Godot 변환: JSON → Godot resource 파이프라인 명시
-
-### [x] P0-T0.7: 통합 테스트 프레임워크 & CI/CD 초안
-
-- **담당**: test-specialist
-- **의존**: P0-T0.1, P0-T0.2
 - **산출물** (완료):
-  - ✅ `docs/testing/test-strategy.md` — 테스트 레이어 정의 + Phase별 활성화 계획
-  - ✅ `backend/tests/conftest.py` — pytest 구성 (async, TestClient, JWT 팩토리, 시드 픽스처)
-  - ✅ `backend/tests/contract/test_management_api_stubs.py` — 관리 API 스텁 (61개 케이스, 9개 리소스)
-  - ✅ `backend/tests/contract/test_realtime_api_stubs.py` — WebSocket 스텁 (17개 케이스)
-  - ✅ `godot/tests/test_avatar_movement.gd` — GUT 템플릿 (18개 케이스)
-  - ✅ `.github/workflows/test-phase.yaml` — CI/CD 파이프라인 + 배포 게이트
-- **완료 조건**:
-  - ✅ 테스트 레이어 정의 (unit, integration, e2e) → test-strategy.md
-  - ✅ API 테스트 스튜브 작성 (모든 P0 계약 엔드포인트 테스트 케이스) → 96개 테스트 케이스
-  - ✅ 배포 게이트 정책 명시 → test-phase.yaml + test-strategy.md
+  - ✅ `render-pipeline/build_office.py` — Blender 헤드리스 최소 오피스 씬(바닥·책상 1·유리벽 1), 직교(ortho) 아이소 카메라 렌더
+  - ✅ `render-pipeline/generate_test_assets.py`, `render-pipeline/out/`
+  - ✅ 패스 export: `office_bg.png`(color) · `office_depth.png`(Z depth 선형화) · `camera.json`(ortho scale·행렬·near/far) → `spikes/depth-composite/public/`
+- **완료 조건** (충족):
+  - ✅ Blender 5.1 API 대응(depth PNG 2차 렌더 방식, commit `d5ccaf0`)
+  - ✅ 직교 카메라 행렬·near/far가 R3F에서 재현 가능한 형식으로 export
 
-### [ ] P0-T0.8: 스파이크 S1 — Godot ↔ LiveKit PoC (최우선, F절)
+### [x] P0-T2: R3F 깊이합성 셰이더 데모 + 오클루전 검증 증거 (완료)
 
 - **담당**: 3d-engine-specialist
-- **의존**: 없음
-- **산출물**: 
-  - PoC: `spikes/s1_livekit/` (GDScript + WebRTC GDExtension으로 LiveKit 룸 접속)
-  - 리포트: `spikes/s1_livekit/report.md` (오디오/비디오 수신 결과, Rust SDK 래핑 대안 평가)
-- **완료 조건**:
-  - LiveKit 룸 접속 + 오디오/비디오 수신 성공 여부 판정
-  - **실패 시 폴백 확정**: 회의 화면만 임베디드 브라우저/외부 창 분리
-
-### [ ] P0-T0.9: 스파이크 S2 — STT 파이프라인 PoC (F절)
-
-- **담당**: backend-specialist
-- **의존**: 없음
-- **산출물**: 
-  - PoC: `spikes/s2_stt/` (LiveKit Egress → STT 화자분리 → 회의록 초안)
-  - 리포트: `spikes/s2_stt/report.md` (한국어 초안 품질, 발화자·액션아이템 누락률 측정)
-- **완료 조건**:
-  - 한국어 회의록 초안 발화자·액션아이템 누락률 측정치 확보(수동 전사 대조, D22 <5% 목표)
-  - **실패 시 폴백 확정**: 수동 회의록 + AI 요약으로 격하(PRD 기준 하향 재협의)
-
-### [ ] P0-T0.10: 스파이크 S3 — 헤드리스 서버 부하 (F절)
-
-- **담당**: 3d-engine-specialist
-- **의존**: 없음
-- **산출물**: 
-  - PoC: `spikes/s3_headless_load/` (GDScript 헤드리스 + PhysicsServer3D, 20명 시뮬레이션)
-  - 리포트: `spikes/s3_headless_load/report.md` (CPU/메모리 측정)
-- **완료 조건**:
-  - 검증 20명 시뮬레이션에서 tick 20Hz 유지 시 CPU/메모리 여유 확인
-  - **실패 시 폴백 확정**: tick 하향(10Hz), 물리 간소화
-
-### [ ] P0-T0.11: 스파이크 S4 — 동적 씬 라이팅 룩 검증 (F절)
-
-- **담당**: 3d-engine-specialist
-- **의존**: 없음
-- **산출물**: 
-  - PoC: `spikes/s4_lighting/` (실시간광 + ReflectionProbe + SSAO, D7)
-  - 리포트: 골든 샘플 룩 스크린샷 + 기준 사양(GTX 1650급) fps 측정
-- **완료 조건**:
-  - 동적 씬 골든 샘플 룩 승인 (라이트맵 베이킹 배제, D7)
-  - **실패 시 폴백 확정**: SDFGI 옵션 기본화 + 기준 사양 상향 재협의
+- **의존**: P0-T1
+- **산출물** (완료):
+  - ✅ `spikes/depth-composite/` — R3F 최소 씬(배경 풀스크린 쿼드 + camera.json 직교 카메라 재현 + 테스트 아바타), 깊이합성 셰이더(아바타 프래그먼트 뷰공간 깊이 vs `office_depth` 샘플 비교 → 뒤면 discard)
+  - ✅ 증거: `spikes/depth-composite/evidence/{front,behind,scan_*,diag_*,spike_*}.png` + `EVIDENCE.md`
+- **완료 조건** (§A.3 전항목 충족, 2026-07-08):
+  - ✅ 아바타 책상 앞 → 온전히 보임 / 책상·유리벽 뒤 → 정확히 가려짐(경계 오차 ≤ 2px)
+  - ✅ 카메라 좌표계 정합(발 위치 격자 정합, 좌표 드리프트 없음)
+  - ✅ 아바타 조명 배경 톤 정합(IBL/라이트프로브 1차)
+  - ✅ 스크린샷 3종(앞/뒤/경계) 증거 저장
+- **실패 시 폴백(미발동)**: 부분 실시간 3D / 빌보드 스프라이트 아바타 / 시점 축소.
 
 ---
 
-## Phase 1: 프리미엄 골든 샘플 3D
+## Phase 1: 통합 대시보드 셸 + 데이터 연결
 
-> **목적**: 브랜드 품질의 3D 환경 1개 구현. 다양한 좌석/회의실/아바타 상호작용 시연.  
-> **산출물**: Godot 프로젝트 + 에셋 + 3D 로비 씬.  
-> **의존**: Phase 0 완료 (계약 P0-T0.1~0.7 + 스파이크 S1~S4).  
-> **순차 원칙**: 1인 개발이므로 Phase는 순차 진행(병렬 불가, R7).
+> **목적**: 확정 디자인 시안(design-style-analysis §3)의 통합 대시보드 셸을 픽셀 재현하고, 기존 백엔드 API(KPI·업무·유저·일정)에 연결. **3D 뷰포트 자리는 placeholder**(P2에서 렌더 배경 주입).
+> **산출물**: Next.js 3분할 셸 UI(Header/Left Nav/Center 상하분할/Right Panel) + 디자인 토큰 + 공용 컴포넌트 + 백엔드 데이터 배선.
+> **의존**: P0 통과(✅). **선행**: 1인 개발 순차 원칙(R7).
+> **재사용 전제**: 백엔드 KPI·업무(work_log)·유저(directory/erp)·좌석·프레즌스 API 대부분 존재(pytest 417+) → 프런트 배선 중심.
 
-### [ ] P1-S1-T1: 로비/브랜드월/공개 영역 모델링
+### [ ] P1-T1: 디자인 토큰 + Tailwind 테마 + 공용 컴포넌트 카탈로그 [신규]
 
-- **담당**: 3d-engine-specialist
-- **의존**: P0-T0.5, P0-T0.6
-- **산출물**: 
-  - Godot 씬: `godot/scenes/office/lobby.tscn`
-  - GLB 에셋: `godot/assets/models/lobby_structure.glb`
-  - 조명/머티리얼: `godot/scenes/materials/lobby_materials.tres`
-- **진행 체크리스트** (2026-07-02 추가):
-  - [ ] 블록아웃(화이트박스) 공간 배치
-  - [ ] 구조물 GLB 모델링·임포트 (D8 파이프라인)
-  - [ ] 머티리얼/조명(Forward+) 적용
-  - [ ] 브랜드월·안내 데스크·대기 영역 디테일
-  - [ ] 로딩 시간(<3초) 측정 + 룩 스크린샷
-- **Worktree**: `worktree/phase-1-golden-3d`
-- **브랜치**: `phase-1-golden-3d`
-- **완료 조건**:
-  - 로비 크기: 50m × 30m (실제 사무실 스케일)
-  - 브랜드월(3m × 5m) + 안내 데스크 + 대기 영역
-  - Forward+ 렌더러 품질 확인 — 골든샘플 스크린샷 대조 체크리스트(docs/3d-design/) 통과
-  - 로딩 시간 < 3초
-
-### [ ] P1-S1-T2: 좌석 영역(Open, Fixed, Free) 3D 표현
-
-- **담당**: 3d-engine-specialist
-- **의존**: P1-S1-T1, P0-T0.6
-- **산출물**: 
-  - Godot 씬: `godot/scenes/office/seating_area.tscn`
-  - 좌석 프리팹: `godot/prefabs/seat_desk.tscn` (Fixed), `godot/prefabs/free_seat.tscn`
-  - 마킹 시스템: 점유/비점유/예약 시각화
-- **Worktree**: `worktree/phase-1-golden-3d`
-- **브랜치**: `phase-1-golden-3d`
-- **완료 조건**:
-  - 좌석 30개 이상 배치
-  - 각 좌석에 이름/부서/상태 HUD 부착
-  - 점유 실시간 표색 (Green=비어있음, Blue=점유, Red=예약)
-
-### [ ] P1-S1-T3: 회의실 2개 + 라운지/집중실/폰부스 모델링
-
-- **담당**: 3d-engine-specialist
-- **의존**: P1-S1-T1
-- **산출물**: 
-  - Godot 씬: `godot/scenes/office/meeting_rooms.tscn`
-  - 프리팹: `godot/prefabs/meeting_room_glass.tscn`, `godot/prefabs/lounge.tscn`, `godot/prefabs/focus_room.tscn`, `godot/prefabs/phone_booth.tscn`
-  - 침입 감지(Trigger): 각 실의 enter/leave 콜라이더
-- **진행 체크리스트** (2026-07-02 추가):
-  - [ ] 회의실 2개 모델링 (유리 머티리얼)
-  - [ ] 라운지/집중실/폰부스 모델링
-  - [ ] enter/leave Trigger 콜라이더 부착
-  - [ ] 용도별 색상/조명 차별화
-  - [ ] 재질/조명 체크리스트 스크린샷 증빙
-- **Worktree**: `worktree/phase-1-golden-3d`
-- **브랜치**: `phase-1-golden-3d`
-- **완료 조건**:
-  - 회의실 2개(각 10인 수용) + 라운지 + 집중실 + 폰부스 1개
-  - 유리/투명성 시각 차별화 — 재질/조명 체크리스트 항목별 스크린샷 증빙
-  - 용도별 색상/조명 다양화 — 재질/조명 체크리스트 항목별 스크린샷 증빙
-
-### [ ] P1-S1-T4: 아바타 모델 및 애니메이션(5~10명) 제작
-
-- **담당**: 3d-engine-specialist
+- **담당**: frontend-specialist
 - **의존**: 없음
-- **산출물**: 
-  - 아바타 베이스 모델: `godot/assets/models/avatar_base.glb` (Rigged, 중성 외형)
-  - 색상/의류 variant: `godot/assets/models/avatar_variant_{1..10}.glb`
-  - 애니메이션: idle, walk, run, interact, sit, stand_talk (6가지 이상)
-  - Godot GDScript: `godot/scripts/avatar.gd` (D2)
-- **진행 체크리스트** (2026-07-02 추가):
-  - [ ] 베이스 모델(Rigged) 확보·제작
-  - [ ] variant 10종 (색상/의류 텍스처)
-  - [ ] 애니메이션 6종 임포트·리타게팅
-  - [ ] `avatar.gd` 애니메이션 상태머신
-  - [ ] 10명 동시 렌더링 성능 측정
-- **Worktree**: `worktree/phase-1-golden-3d`
-- **브랜치**: `phase-1-golden-3d`
+- **산출물**:
+  - `frontend/styles/tokens.css` — design-style-analysis §1 컬러/타이포/spacing 토큰(CSS 변수)
+  - `frontend/tailwind.config.js` `theme.extend.colors` 매핑(--bg-base/surface, --primary, status 7색 등)
+  - 공용 컴포넌트: `<Card>`, `<StatusBadge>`(7종 상태색), `<Avatar>`(상태 점), `<KpiGauge>`(도넛), `<ProgressMetric>`, `<ListItem>`, `<MediaBar>` — `frontend/components/ui/`
 - **완료 조건**:
-  - 아바타 5~10명 시각 차별화
-  - 애니메이션 부드러움(30 FPS 이상)
-  - 성능: 10명 동시 렌더링 < 16.6ms/frame @ 60fps (Forward+)
+  - 다크 퍼스트 토큰 전량 정의, status 7종(online/meeting/external/focus/away/offline + danger) 색·라벨 병기(색맹 대응, §8)
+  - 컴포넌트 스토리/스냅샷 렌더 검증, 대비 4.5:1 확인
 
-### [ ] P1-S1-T5: 이름/상태 HUD + 우측 직원 정보 패널
+### [ ] P1-T2: App Shell 레이아웃 (Header / Left Nav / Center 상하분할 / Right Panel) [신규]
 
-- **담당**: 3d-engine-specialist
-- **의존**: P1-S1-T4
-- **산출물**: 
-  - 아바타 머리 위 HUD 라벨: `godot/scripts/avatar_hud.gd` (이름, 부서, 상태 아이콘, D2)
-  - 우측 패널 UI: `godot/scenes/ui/employee_panel.tscn` (선택된 아바타 정보)
-  - 상태 아이콘: offline, online, working, meeting, focus, away, external (7종, D13)
-- **Worktree**: `worktree/phase-1-golden-3d`
-- **브랜치**: `phase-1-golden-3d`
+- **담당**: frontend-specialist
+- **의존**: P1-T1
+- **산출물**:
+  - `frontend/app/(protected)/layout.tsx` — 3분할 셸(Header ~56px / Left Nav ~240px / Center / Right Panel ~320px)
+  - `frontend/components/shell/{Header,LeftNav,RightPanel}.tsx`
+  - Center: 상단 3D 뷰포트 placeholder(약 55~60% 높이) + 하단 대시보드 3카드 행
+  - 반응형: 좁아지면 우측 패널 접기, 3카드 세로 스택(§3)
 - **완료 조건**:
-  - HUD는 카메라 방향 항상 유지 (Billboard 방식)
-  - 패널: 이름/부서/역할/상태/최근 회의/근무시간 표시
-  - 폰트 가독성(한글 포함) 검증 — 1080p에서 한글 8pt 가독 스크린샷
+  - 시안 구조 픽셀 재현(≥1440 최적), Left Nav 활성 항목 `--primary-soft` + 좌측 인디케이터
+  - 하단 내 프로필 카드(아바타+이름+상태+상태변경 버튼)
 
-### [ ] P1-S1-T6: 하단 회의 패널 + 미니맵 프로토타입
+### [ ] P1-T3: 3D 뷰포트 placeholder 컴포넌트 (`<OfficeViewport>`) [신규]
 
-- **담당**: 3d-engine-specialist
-- **의존**: P1-S1-T3, P1-S1-T5
-- **산출물**: 
-  - 하단 회의 패널 UI: `godot/scenes/ui/meeting_panel.tscn` (현재 진행 회의 목록, join 버튼)
-  - 미니맵 씬: `godot/scenes/ui/minimap.tscn` (top-down 오피스 뷰, 아바타 마커)
-  - 마우스 진입 감지: Raycast 기반
-- **Worktree**: `worktree/phase-1-golden-3d`
-- **브랜치**: `phase-1-golden-3d`
+- **담당**: frontend-specialist + 3d-engine-specialist
+- **의존**: P1-T2
+- **산출물**:
+  - `frontend/components/viewport/OfficeViewport.tsx` — P2 렌더 배경 주입 지점, 현재는 자리표시(로딩/안내 오버레이)
+  - 층 선택기·미니맵·미디어바 오버레이 **자리**(§4 컴포넌트 카탈로그, 실제 배선은 P2~P5)
 - **완료 조건**:
-  - 미니맵 스케일: 실시간 동적 업데이트(아바타 위치)
-  - 회의 목록: 시뮬레이션 데이터로 3~5개 항목 표시
+  - R3F 마운트 지점 격리(P2에서 배경 텍스처만 주입 가능한 인터페이스)
+  - placeholder에서 셸 레이아웃 깨짐 없음
 
-### [ ] P1-S1-V: 골든 샘플 3D 통합 검증
+### [ ] P1-T4: 대시보드 3카드 데이터 연결 (오늘의 업무 · 나의 KPI · 진행중 화상회의) [배선]
+
+- **담당**: frontend-specialist
+- **의존**: P1-T2
+- **산출물**:
+  - `frontend/components/dashboard/{TodayWorkCard,MyKpiCard,ActiveMeetingsCard}.tsx`
+  - 배선: work_log 조회(`/api/work-logs`) · KPI 결과(`/api/kpi-results` 본인) · 회의(`/api/meetings`) — 백엔드 존재 API 연결
+- **완료 조건**:
+  - `<KpiGauge>`에 본인 KPI 점수 렌더(도넛 게이지, 0~100)
+  - 오늘의 업무 목록·진행중 회의 목록 실데이터 표시(로딩/빈 상태 처리)
+
+### [ ] P1-T5: 공지 리소스 API (announcement) [신규 — 백엔드]
+
+- **담당**: backend-specialist
+- **의존**: 없음(04-data-model §2.7 정본)
+- **산출물**:
+  - 모델: `backend/app/models/tables.py::Announcement` (04-data-model §2.7 스키마: id, company_id, title, body(md), category[system|notice|info], pinned, author_user_id(FK erp_user RESTRICT), published_at, expires_at, created_at)
+  - API: `backend/app/api/announcements.py` — `GET /api/announcements`(활성·핀 우선 최신순), `POST`(admin), `PUT/{id}`, `DELETE/{id}`(soft)
+  - 감사 훅: `announcement_published/updated/deleted` → audit_log(구현됨)
+- **완료 조건**:
+  - 활성/만료/핀 필터 정확성(published_at·expires_at·pinned), company_id 스코프
+  - 게시·수정·삭제 audit_log 기록, 만료 공지 소프트 보존(물리 삭제 금지)
+
+### [ ] P1-T6: Right Panel — 사용자 목록 · 일정 · 공지사항 배선 [배선]
+
+- **담당**: frontend-specialist
+- **의존**: P1-T2, P1-T5
+- **산출물**:
+  - `frontend/components/shell/panels/{UserListPanel,SchedulePanel,AnnouncementPanel}.tsx`
+  - 배선: 유저(`/api/directory`) · 일정/회의(`/api/meetings`) · 공지(`/api/announcements`)
+- **완료 조건**:
+  - 리스트형 카드 스택(사용자→일정→공지), 상태 뱃지·핀 공지 상단 노출
+  - "접속중 N명" 카운트 표기(§7 마이크로카피)
+
+### [ ] P1-V: 셸 + 데이터 연결 통합 검증
 
 - **담당**: test-specialist
-- **의존**: P1-S1-T1 ~ P1-S1-T6
+- **의존**: P1-T1 ~ P1-T6
 - **산출물**: `docs/verification/phase-1-report.md`
 - **수용기준**:
-  - Godot 씬 로드 성공 (에러/경고 0개)
-  - 아바타 10명 동시 렌더링 + HUD 표시 + 미니맵 업데이트 시뮬레이션 성공
-  - 성능 기준: 60 FPS 유지, 메모리 < 2GB
-  - 사용자/관리자 육안 검증: 브랜드 품질 충족 확인 — 관리자 1인 + 직원 2인 리뷰 서명
+  - 시안 3분할 셸 픽셀 재현(≥1440), 3D 뷰포트 placeholder 정상
+  - 3카드 + 우측 패널 실데이터 배선(KPI·업무·유저·일정·공지) E2E 로드 성공
+  - 공지 API CRUD + 감사 기록 통과, 다크 대비·색맹 대응 확인
 
 ---
 
-## Phase 2: ERP 동기화 & 좌석 배정
+## Phase 2: 렌더 파이프라인 (layout JSON → Blender 배경 + 깊이 → R3F 뷰포트)
 
-> **목적**: ERP 직원·조직·근태 데이터 읽기, 좌석·구역 우리 DB 구축, 아바타 시작위치 매핑.  
-> **산출물**: 동기화 배치, 좌석 관리 API, 조직-팀-구역 계층.  
-> **의존**: Phase 1 완료 (순차 원칙, R7).  
-> **마이그레이션 규약(2026-07-02)**: pre-prod 동안 스키마 변경은 `backend/app/models/tables.py` 모델 수정 → `backend/alembic/versions/0001_initial_schema.py`(create_all 참조식) 단일 리비전에 자동 반영. **운영 첫 배포 후에는 Alembic autogenerate 증분 리비전을 사용한다.** (P2~P6 태스크의 구 0002~0013 증분 표기는 실효 → 본 규약으로 대체)
+> **목적**: office_layout JSON을 Blender 파라메트릭 씬으로 빌드하여 1개 층 포토리얼 배경 + 깊이패스를 자동 생성하고, R3F 뷰포트에 배경으로 표시. P0 스파이크의 최소본을 **파라메트릭·프로덕션 파이프라인**으로 확장.
+> **산출물**: `build_office.py` 파라메트릭 씬 빌더 + 배경/깊이 렌더 산출물 + R3F `<OfficeViewport>` 배경 표시.
+> **의존**: P0 통과(✅) + P1(셸 뷰포트 자리). 순차 원칙.
+> **정본**: photoreal-web-strategy.md, design-style-analysis §5(아트 디렉션).
 
-### [ ] P2-R1-T1: ERP 직원/조직/근태 read-only 동기화 배치 (부분완료, 2026-07-02)
+### [ ] P2-T1: office_layout JSON → Blender 파라메트릭 씬 빌더 [신규]
 
-- **담당**: backend-specialist
-- **의존**: P0-T0.4, P0-T0.3
-- **산출물**: 
-  - 배치 스크립트: `backend/app/tasks/erp_sync_worker.py` (APScheduler 기반)
-  - 모델: `backend/app/models/tables.py::ErpUser, ErpTeam, ErpAttendance`
-  - 동기화 로그: `backend/app/services/erp_sync_log.py`
-- **진행 체크리스트** (2026-07-02):
-  - [x] ErpReader 어댑터(mock/postgres)·sync upsert·soft-delete·수동 트리거 `POST /api/erp/sync` — `backend/app/erp/` (reader/mock/postgres/sync/dtos) 구현 완료
-  - [ ] APScheduler 워커: 매시간 증분(updated_at) + 매일 00:00 KST 전체 대사 (D18)
-  - [ ] 동기화 실패 시 **알림 훅 호출** (알림 채널 구축은 P7-R3-T3 소유)
-  - [ ] 에러 처리 + 재시도 로직(exponential backoff)
-- **Worktree**: `worktree/phase-2-erp-integration`
-- **브랜치**: `phase-2-erp-integration`
+- **담당**: 3d-engine-specialist + backend-specialist
+- **의존**: P0-T1
+- **산출물**:
+  - `render-pipeline/build_office.py` 확장 — office_layout JSON(좌석/벽/회의실/문/구역, 좌표계 top_left 미터 D25) → Blender 파라메트릭 씬 자동 구성
+  - 에셋 라이브러리: 책상·유리 회의실·소파·식물·브랜드월 프로시저럴/임포트
 - **완료 조건**:
-  - 읽기 대상 5개 테이블: users, teams, job_positions, attendances, leaves (읽기 전용 DB 스코프)
-  - 동기화 주기: **매시간 증분(updated_at) + 매일 00:00 KST 전체 대사**(D18)
-  - 전체 대사에서 하드 삭제 감지 → `is_active=false` **soft-delete**(미러 FK는 RESTRICT + soft-delete, D18)
-  - 에러 처리 + 재시도 로직(exponential backoff), 동기화 실패 시 **알림 훅 호출**(채널 구축은 P7-R3-T3 소유, D18)
-  - 로그 기록 (what, when, who, status)
+  - 임의 office_layout JSON 1건 → 씬 자동 빌드(좌석/벽/개구부 배치 정합)
+  - 아이소메트릭 30~35° 부감 카메라, PBR 재질(유리 반사·목재·패브릭·금속·식물)
 
-### [x] P2-R1-T2: erp_user 마이그레이션 & 조인 키(ERP users.id) 저장 (완료, 2026-07-02)
-
-- **담당**: database-specialist
-- **의존**: P0-T0.3, P0-T0.4
-- **산출물** (실제 경로 정정, 2026-07-02): 
-  - 모델 정의: `backend/app/models/tables.py::ErpUser` + Alembic 단일 리비전 `backend/alembic/versions/0001_initial_schema.py` (create_all 참조식, pre-prod 규약)
-  - 스키마: erp_user(id(FK users.id), company_id, email, name, erp_team_id, role, position, position_id, manager_id, slack_user_id, github_username, jira_email, work_type, work_hours, last_synced_at)
-  - 인덱스: (company_id, email) unique, erp_team_id
-- **Worktree**: `worktree/phase-2-erp-integration`
-- **브랜치**: `phase-2-erp-integration`
-- **완료 조건**:
-  - erp_user 테이블 생성 + 데이터 마이그레이션 성공
-  - 중복/null 검증 통과
-
-### [ ] P2-R1-T3: 조직 그룹(org_group) 계층 구축
-
-- **담당**: backend-specialist
-- **의존**: P2-R1-T2
-- **산출물**: 
-  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
-  - 모델: `backend/app/models/tables.py::OrgGroup`
-  - 스키마: id, name, type[division|department|part], parent_id(FK), color, sort_order
-  - API: GET /api/org-groups, POST, PUT, DELETE (admin만)
-- **Worktree**: `worktree/phase-2-erp-integration`
-- **브랜치**: `phase-2-erp-integration`
-- **완료 조건**:
-  - 표본 조직 3단계 트리 생성 및 테스트
-  - CRUD 엔드포인트 전량 구현 및 테스트
-
-### [x] P2-R1-T4: 직원/근태 조회 API (신설·완료, 2026-07-02)
-
-- **담당**: backend-specialist
-- **의존**: P2-R1-T2
-- **산출물**: 
-  - API: `GET /api/employees`, `GET /api/employees/{id}`, `GET /api/attendances` — `backend/app/api/erp.py`
-  - 수동 동기화 트리거: `POST /api/erp/sync` (P2-R1-T1 완료분과 연동)
-- **완료 조건**:
-  - 조회 엔드포인트 3종 구현 + 테스트 6종 통과 ✅ (2026-07-02 구현 완료 반영)
-
-> **P2-R2 구역 참고(2026-07-02)**: office/floor/room 모델은 `0001_initial_schema.py`에 이미 포함 — P3-R1-T1과의 마이그레이션 순서 이슈 해소.
-
-### [ ] P2-R2-T0: 인증 기반 구축 (로그인/JWT 발급/role 미들웨어) — 부분완료 (2026-07-02)
-
-- **담당**: backend-specialist + frontend-specialist
-- **의존**: P0-T0.2
-- **산출물**: 
-  - API: `POST /api/auth/login` (이메일+비밀번호 → JWT 24h)
-  - 의존성: `get_current_user` / `require_role` (참고: `backend/app/core/deps.py` 이미 구현 — 완료분 반영)
-  - Next.js 로그인 화면: `frontend/app/login/page.tsx`
-  - Godot 로그인 씬: `godot/scenes/ui/login.tscn`
-- **진행 체크리스트** (2026-07-02):
-  - [x] 백엔드 JWT 검증/발급 유틸 + role 의존성 (`backend/app/core/` JWT+bcrypt 보안 모듈, `deps.py`)
-  - [ ] 로그인 엔드포인트 `POST /api/auth/login`
-  - [ ] Next.js 로그인 화면 / Godot 로그인 씬
-  - [ ] 계정 잠금 (실패 5회 백오프)
-- **Worktree**: `worktree/phase-2-erp-integration`
-- **브랜치**: `phase-2-erp-integration`
-- **완료 조건**:
-  - 401/403 테스트 통과
-  - 잠금(실패 5회 백오프) 동작 확인
-
-### [ ] P2-R2-T1: team_zone 매핑 (ERP 팀 ↔ 3D 구역)
-
-- **담당**: backend-specialist
-- **의존**: P2-R1-T3, P0-T0.6
-- **산출물**: 
-  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
-  - 모델: `backend/app/models/tables.py::TeamZone`
-  - 스키마: id, erp_team_id, org_group_id, office_id, floor_id, zone_label, color, polygon(좌표 blob)
-  - API: GET, POST /api/team-zones (office_id 스코프)
-- **Worktree**: `worktree/phase-2-erp-integration`
-- **브랜치**: `phase-2-erp-integration`
-- **완료 조건**:
-  - 5개 팀 × 2개 구역 테스트 데이터 생성
-  - Polygon 좌표 검증(범위, 중첩)
-
-### [ ] P2-R2-T2: seat 테이블 & 좌석 배정 로직
-
-- **담당**: database-specialist
-- **의존**: P2-R2-T1
-- **산출물**: 
-  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
-  - 모델: `backend/app/models/tables.py::Seat`
-  - 스키마: id, floor_id, team_zone_id, type[fixed|free|temp|partner], assigned_user_id(FK erp_user.id), coords(x,y), facing(도 단위, D25), status[available|occupied|reserved|maintenance] (D13 통일)
-  - 테이블: seat_assignment_history(id, seat_id, user_id, assigned_at, released_at)
-- **Worktree**: `worktree/phase-2-erp-integration`
-- **브랜치**: `phase-2-erp-integration`
-- **완료 조건**:
-  - 좌석 100개 테스트 데이터 생성
-  - 배정 이력 추적 (언제 누가 어느 좌석)
-
-### [ ] P2-R2-T3: 좌석 배정 API (할당/예약/해제)
-
-- **담당**: backend-specialist
-- **의존**: P2-R2-T2
-- **산출물**: 
-  - API: 
-    - POST /api/seats/{seat_id}/assign - 고정 배정
-    - POST /api/seats/{seat_id}/reserve - 예약
-    - DELETE /api/seats/{seat_id}/assign - 해제
-    - GET /api/seats?floor_id=&status= - 조회
-  - 스크립트: `backend/app/services/seat_assignment.py`
-- **Worktree**: `worktree/phase-2-erp-integration`
-- **브랜치**: `phase-2-erp-integration`
-- **완료 조건**:
-  - 배정 충돌 방지(unique constraint) 검증
-  - 배정/예약/해제 트랜잭션 정확성
-  - 이력 자동 기록
-
-### [ ] P2-R3-T1: 아바타 시작 위치 매핑 (assigned_seat → 3D coords)
-
-- **담당**: backend-specialist
-- **의존**: P2-R2-T3, P0-T0.6
-- **산출물**: 
-  - API: GET /api/users/{user_id}/avatar-spawn-location
-  - 함수: `backend/app/services/avatar_spawner.py::get_spawn_location(user_id, office_id, floor_id)`
-  - 로직: assigned_seat.coords → 3D 씬 좌표 변환
-- **Worktree**: `worktree/phase-2-erp-integration`
-- **브랜치**: `phase-2-erp-integration`
-- **완료 조건**:
-  - 좌석 좌표 → 3D 씬 좌표 변환 테스트 통과
-  - 로비/기본 지점 폴백 로직
-
-### [ ] P2-R3-T2: presence 테이블 & 실시간 상태 기반 계설
-
-- **담당**: database-specialist
-- **의존**: 없음 (Phase 2 내 독립 Task — P2-R2와 별개로 진행 가능)
-- **산출물**: 
-  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
-  - 모델: `backend/app/models/tables.py::Presence`
-  - 스키마: user_id(FK), office_id, floor_id, x, y, status[offline|online|working|meeting|focus|away|external] (7종 확정, D13), updated_at
-  - 인덱스: (user_id, office_id) unique, updated_at
-- **Worktree**: `worktree/phase-2-erp-integration`
-- **브랜치**: `phase-2-erp-integration`
-- **완료 조건**:
-  - 테이블 생성 + 샘플 데이터 20명
-  - D13 상태전이표 기준 전이 테스트 통과
-
-### [ ] P2-R4-T1: 외부 공개 하드닝 (Caddy 단일 진입, D21-r — 신설 2026-07-02)
-
-- **담당**: backend-specialist (인프라 겸임)
-- **의존**: P2-R2-T0
-- **산출물**: 
-  - Caddy 단일 진입점 구성 (docker-compose reverse proxy, Let's Encrypt TLS)
-  - rate-limit, fail2ban, 포트 최소화 설정 — `docs/deployment/onprem-docker.md` §3.3 체크리스트 태스크화
-- **Worktree**: `worktree/phase-2-erp-integration`
-- **브랜치**: `phase-2-erp-integration`
-- **완료 조건**:
-  - onprem-docker §3.3 체크리스트 전 항목 통과
-  - **도그푸딩 전 완료 게이트** (VPN 없는 인터넷 공개 배포 — 미완료 시 도그푸딩 시작 불가)
-
-### [ ] P2-R3-V: ERP 동기화 및 좌석/구역 통합 검증
-
-- **담당**: test-specialist
-- **의존**: P2-R1-T3, P2-R2-T3, P2-R3-T1, P2-R3-T2
-- **산출물**: `docs/verification/phase-2-report.md`
-- **수용기준**:
-  - ERP 동기화 배치 실행 성공 (직원 10명 이상 동기화)
-  - 좌석 배정 → 아바타 시작위치 매핑 E2E 테스트 통과
-  - 조직 그룹 4단계 트리 생성 및 조회 성공
-  - 성능: 배치 동기화 < 5초(100명 기준)
-
----
-
-## Phase 3: 사무실 배치 편집기
-
-> **목적**: 사무실 구조(floor/zone/seat/room) 2D 시각 편집 + 3D 미리보기 + 검증 + 배포/롤백.  
-> **산출물**: Next.js 웹 UI + Konva.js 2D 캔버스 + 데스크톱 draft 모드 열람 + office_layout JSON 생성 (웹 3D 미리보기 제거, D11).  
-> **의존**: Phase 2 완료 (좌석/구역 정의, 순차 원칙).
-
-### [ ] P3-R1-T1: office/floor/room 관리 API
-
-- **담당**: backend-specialist
-- **의존**: P0-T0.3
-- **산출물**: 
-  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
-  - 모델: `backend/app/models/tables.py::Office, Floor, Room`
-  - API:
-    - POST /api/offices - 사무실 생성
-    - GET /api/offices/{office_id}/floors - 층 조회
-    - POST /api/floors - 층 생성
-    - POST /api/rooms - 회의실 등 생성
-- **Worktree**: `worktree/phase-3-layout-editor`
-- **브랜치**: `phase-3-layout-editor`
-- **완료 조건**:
-  - CRUD 엔드포인트 전량 구현
-  - office_id 스코프 검증
-  - 테스트 데이터: 1 office × 3 floors × 10 rooms
-
-### [ ] P3-R1-T2: office_layout 버전 관리 & 검증 API
-
-- **담당**: backend-specialist
-- **의존**: P0-T0.6, P3-R1-T1
-- **산출물**: 
-  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
-  - 모델: `backend/app/models/tables.py::OfficeLayout`
-  - 스키마: id, office_id, floor_id, version(int), status[draft|validated|deployed|archived], json(blob), created_by, created_at, validated_at
-  - 공식 스키마 파일: `backend/app/schemas/office_layout.schema.json` 생성 (05-office-layout-schema.md 정본 반영, 검증 API가 로드 — 2026-07-02 추가)
-  - API:
-    - POST /api/office-layouts - draft 생성
-    - PUT /api/office-layouts/{id} - JSON 업데이트
-    - POST /api/office-layouts/{id}/validate - 검증 실행
-    - POST /api/office-layouts/{id}/deploy - deployed로 전환 + 이전 버전 archived
-- **Worktree**: `worktree/phase-3-layout-editor`
-- **브랜치**: `phase-3-layout-editor`
-- **완료 조건**:
-  - JSON 검증 함수 정확성 (좌표 범위, 좌석 수, 중복 제거)
-  - 버전 관리 로직(이전 버전 자동 archive)
-  - 배포 원자성(all-or-nothing)
-
-### [ ] P3-R2-T1: Next.js 2D 편집 UI (Konva.js 기반)
-
-- **담당**: frontend-specialist
-- **의존**: P3-R1-T1
-- **산출물**: 
-  - 페이지: `frontend/app/(admin)/layout-editor/page.tsx`
-  - 컴포넌트: `frontend/components/LayoutEditor.tsx`, `frontend/components/FloorsPanel.tsx`, `frontend/components/SeatsPanel.tsx`
-  - Konva 스크립트: `frontend/lib/konva-helpers.ts` (드래그, 스냅 그리드, 좌표 계산)
-- **진행 체크리스트** (2026-07-02 추가):
-  - [ ] 캔버스 렌더 (층/존/좌석 2D 표현)
-  - [ ] 드래그 이동·리사이징·스냅 그리드(1m)
-  - [ ] 우클릭 메뉴 (삭제/복제/속성 편집)
-  - [ ] office_layout draft 저장 API 연동
-  - [ ] 마우스 좌표 실시간 표시·단위 검증
-- **Worktree**: `worktree/phase-3-layout-editor`
-- **브랜치**: `phase-3-layout-editor`
-- **완료 조건**:
-  - 캔버스 렌더: 층/존/좌석 2D 표현
-  - 상호작용: 드래그 이동, 리사이징, 스냅 그리드(1m 단위)
-  - 우클릭 메뉴: 삭제, 복제, 속성 편집
-  - 마우스 좌표 실시간 표시
-
-### [ ] P3-R2-T2: 데스크톱 draft 모드 열람 (웹 3D 미리보기 제거, D11)
+### [ ] P2-T2: 1개 층 포토리얼 배경 렌더 + 깊이패스 + camera.json 자동생성 [신규]
 
 - **담당**: 3d-engine-specialist
-- **의존**: P1-S1-V, P3-R1-T2
-- **산출물**: 
-  - Godot draft 뷰어 씬/스크립트: `godot/scenes/layout_draft_viewer.tscn`, `godot/scripts/layout_loader.gd` (`--draft` 플래그로 저장된 office_layout 버전 로드)
-  - Next.js 안내 컴포넌트: `frontend/components/DraftOpenGuide.tsx` (저장 후 데스크톱 draft 모드 열람 안내 + 딥링크)
-- **Worktree**: `worktree/phase-3-layout-editor`
-- **브랜치**: `phase-3-layout-editor`
+- **의존**: P2-T1
+- **산출물**:
+  - 렌더 배치: `render-pipeline/` — `office_bg.png`(Cycles color) + `office_depth.png`(선형 Z) + `camera.json`(직교 행렬) 자동 산출
+  - 조명: 따뜻한 키라이트 + 회의실 쿨 블루 네온 엣지(--accent-cyan) + AO/소프트 섀도우(design §5)
 - **완료 조건**:
-  - 웹 3D 미리보기(HTML5/WASM export) **미사용**(PRD WON'T 준수, D11)
-  - 데스크톱 클라이언트 draft 모드에서 office_layout JSON으로 동적 좌석/개구부 배치 확인
-  - draft 로딩 시간 < 5초
+  - 1개 층 layout → 배경/깊이/카메라 3종 자동 생성(수동 개입 없이)
+  - 깊이 정밀도가 깊이합성 오클루전(경계 ≤2px)에 충분
 
-### [ ] P3-R2-T3: 검증 + 배포/롤백 UI
-
-- **담당**: frontend-specialist
-- **의존**: P3-R1-T2, P3-R2-T2
-- **산출물**: 
-  - 대화상자: `frontend/components/LayoutValidationDialog.tsx`, `frontend/components/DeploymentDialog.tsx`
-  - 로직: 검증 결과 표시(에러/경고 목록), 배포 확인, 진행 중 상태 표시
-- **Worktree**: `worktree/phase-3-layout-editor`
-- **브랜치**: `phase-3-layout-editor`
-- **완료 조건**:
-  - 검증 실행 후 에러/경고 명확히 표시
-  - 배포 전 스냅샷 자동 생성
-  - 롤백: 이전 버전으로 원클릭 복구
-
-### [ ] P3-R3-T1: office_layout JSON 직렬화/역직렬화
-
-- **담당**: backend-specialist
-- **의존**: P0-T0.6, P3-R2-T1
-- **산출물**: 
-  - 함수: `backend/app/services/office_layout_serializer.py::to_json(office_obj), from_json(json_blob, office_id)`
-  - 스키마: Python dataclass 또는 Pydantic BaseModel
-- **Worktree**: `worktree/phase-3-layout-editor`
-- **브랜치**: `phase-3-layout-editor`
-- **완료 조건**:
-  - Round-trip 테스트: Python object → JSON → Python object 동일성
-  - 호환성: 버전별 마이그레이션 로직(v1→v2 예상)
-
-### [ ] P3-R3-T2: office_layout → Godot 씬 변환 파이프라인
-
-- **담당**: backend-specialist + 3d-engine-specialist
-- **의존**: P0-T0.6, P1-S1-T2, P3-R3-T1
-- **산출물**: 
-  - 함수: `backend/app/services/office_layout_to_godot.py::generate_godot_resource(office_layout_json, output_path)`
-  - 출력: `.tres` (Godot Resource) / 임포트 완료본 `.tscn` (D8)
-  - Godot 로더 스크립트: `godot/scripts/office_layout_loader.gd` (D2)
-- **Worktree**: `worktree/phase-3-layout-editor`
-- **브랜치**: `phase-3-layout-editor`
-- **완료 조건**:
-  - office_layout JSON → Godot 좌석/존/충돌맵 자동 생성
-  - 성능: 변환 < 1초 (100 seats 기준)
-
-### [ ] P3-R3-V: 사무실 배치 편집기 통합 검증
-
-- **담당**: test-specialist
-- **의존**: P3-R1-T2, P3-R2-T3, P3-R3-T2
-- **산출물**: `docs/verification/phase-3-report.md`
-- **수용기준**:
-  - 2D 편집: 좌석 50개 드래그 이동 + 저장 성공
-  - 데스크톱 draft 모드: 편집 내용 저장 후 열람 반영 확인 (웹 3D 미리보기 없음, D11)
-  - 서버 정밀 검증(D12) 실행 후 ERROR 0개 통과 (ERROR는 배포 불가, WARNING만 무시 가능)
-  - 배포 후 Godot 씬 로드 성공
-  - 롤백: 이전 버전 복구 성공
-
----
-
-## Phase 4: 실시간 가상오피스 (Godot 헤드리스 서버)
-
-> **목적**: 멀티플레이어 기능의 서버 권위 구현. 아바타 이동·충돌·근접·회의실 점유 검증. 프레즌스 동기화.  
-> **산출물**: Godot 헤드리스 서버 + WebSocket(WSS) 게이트웨이 + 실시간 프레즌스 동기화.  
-> **의존**: Phase 3 완료 (좌석·3D 씬·office_layout, 순차 원칙).
-
-### [ ] P4-R1-T1: Godot 헤드리스 서버 프로젝트 생성 & 에센셜 로직
-
-- **담당**: 3d-engine-specialist
-- **의존**: P1-S1-V, P0-T0.6
-- **산출물**: 
-  - 프로젝트: `godot-server/` (별도 repo 또는 subdirectory)
-  - 메인 씬: `godot-server/scenes/server_main.tscn`
-  - GDScript: `godot-server/scripts/server_manager.gd` (초기화, 플레이어 관리, D2)
-  - 설정: `godot-server/project.godot` (headless 렌더러 비활성화)
-- **Worktree**: `worktree/phase-4-realtime-server`
-- **브랜치**: `phase-4-realtime-server`
-- **완료 조건**:
-  - `godot-server --headless` 실행 가능
-  - 기본 회피(Panic) 없이 정상 종료
-  - 로그: `print()` → 파일로 리다이렉트 확인
-
-### [ ] P4-R1-T2: WebSocket 게이트웨이 (Python asyncio 기반)
-
-- **담당**: backend-specialist
-- **의존**: P0-T0.1, P0-T0.2
-- **산출물**: 
-  - 모듈: `backend/app/websocket/gateway.py` (FastAPI WebSocket endpoint)
-  - 클래스: `WebSocketManager` (연결 관리, 메시지 라우팅)
-  - API: `/ws/virtual-office/{user_id}` (클라이언트 연결점, WSS)
-  - 메시지 라우팅: **in-memory**(게임서버 메모리 권위, D3). 영속 재시도가 필요한 배치성 작업은 APScheduler + DB 영속 큐 사용(Redis 미사용, D21)
-- **Worktree**: `worktree/phase-4-realtime-server`
-- **브랜치**: `phase-4-realtime-server`
-- **완료 조건**:
-  - 클라이언트 10개 동시 연결 성공
-  - 메시지 브로드캐스트 < 100ms 지연
-  - 연결 해제 시 깔끔한 cleanup
-
-### [ ] P4-R1-T3: Godot 클라이언트 WSS 네트워킹 & 원격 아바타 동기화 (신설 2026-07-02)
-
-- **담당**: 3d-engine-specialist
-- **의존**: P4-R1-T2, P0-T0.1
-- **산출물**: 
-  - GDScript: `godot/scripts/network/ws_client.gd` (WSS 접속·hello/resume 핸드셰이크, D4)
-  - 이동 입력 → `move_request` 전송
-  - 원격 아바타 보간(interpolation) 렌더
-  - 재접속 시 sequence_num 스냅샷 재수신
-- **Worktree**: `worktree/phase-4-realtime-server`
-- **브랜치**: `phase-4-realtime-server`
-- **완료 조건**:
-  - 20명 동시 연결 E2E p95 < 500ms (D22)
-  - 재접속 5초 내 상태 복원
-
-### [ ] P4-R2-T1: 아바타 이동 권위 검증 (Godot 서버)
-
-- **담당**: 3d-engine-specialist
-- **의존**: P4-R1-T1, P2-R2-T2
-- **산출물**: 
-  - GDScript: `godot-server/scripts/avatar_controller.gd` (위치 업데이트, 충돌 검사, D2)
-  - 로직: 클라이언트 요청 위치 → Godot 씬 PhysicsBody 검사 → 유효 위치만 승인
-  - 메시지: `avatar_move_request` → 검증 → `avatar_moved` 브로드캐스트
-- **Worktree**: `worktree/phase-4-realtime-server`
-- **브랜치**: `phase-4-realtime-server`
-- **완료 조건**:
-  - 벽 통과 시도 거부 검증
-  - 금지 영역(collapse wall) 진입 거부
-  - 승인된 이동만 클라이언트에 전송
-
-### [ ] P4-R2-T2: 근접(Proximity) 감지 & 상호작용 트리거
-
-- **담당**: 3d-engine-specialist
-- **의존**: P4-R2-T1
-- **산출물**: 
-  - GDScript: `godot-server/scripts/proximity_detector.gd` (D2)
-  - 로직: 아바타 5m 이내 다른 아바타 감지 → `nearby_users` 이벤트 발생
-  - 메시지: `user_nearby`, `user_far_away` (자동 감지)
-- **Worktree**: `worktree/phase-4-realtime-server`
-- **브랜치**: `phase-4-realtime-server`
-- **완료 조건**:
-  - 근접 거리 임계값: 5m (설정 가능)
-  - 감지 업데이트 주기: 1Hz
-  - 성능: 설계 100명 아바타 근접 계산 < 50ms (도그푸딩 검증 20명, D22)
-
-### [ ] P4-R2-T3: 회의실 점유 & 진입/퇴장 검증
-
-- **담당**: 3d-engine-specialist
-- **의존**: P4-R2-T1, P1-S1-T3
-- **산출물**: 
-  - GDScript: `godot-server/scripts/room_occupancy.gd` (D2)
-  - 로직: 회의실 Trigger Area → 진입/퇴장 감지 → capacity 검사
-  - 메시지: `room_enter_request` → 검증(capacity) → `room_entered` or `room_full` 응답
-- **Worktree**: `worktree/phase-4-realtime-server`
-- **브랜치**: `phase-4-realtime-server`
-- **완료 조건**:
-  - capacity 초과 거부 검증
-  - 중복 진입 방지
-  - 퇴장 시 상태 정리
-
-### [ ] P4-R3-T1: 프레즌스 동기화 (아바타 위치 → DB)
-
-- **담당**: backend-specialist
-- **의존**: P2-R3-T2, P4-R2-T1
-- **산출물**: 
-  - 배치 작업: `backend/app/tasks/presence_sync_worker.py`
-  - 로직: Godot 서버에서 1초마다 모든 아바타 위치 수집 → presence 테이블 업데이트
-  - API: POST /api/internal/presence-sync (내부용, 서버 권위 인증)
-- **Worktree**: `worktree/phase-4-realtime-server`
-- **브랜치**: `phase-4-realtime-server`
-- **완료 조건**:
-  - 배치 주기: 1~5초 (설정 가능, D3: 게임서버 메모리 권위 + 주기 배치 push)
-  - 정확도: ±1m (3D 좌표)
-  - 성능: 설계 100명 presence 업데이트 < 2초 (도그푸딩 검증 20명, D22)
-
-### [ ] P4-R3-T2: 실시간 상태 전환 (online → meeting → away 등)
-
-- **담당**: backend-specialist
-- **의존**: P2-R3-T2, P4-R2-T3
-- **산출물**: 
-  - 로직: 회의실 진입 → status=meeting, 근무 완료 → status=offline
-  - 메시지: `status_changed` 이벤트 (자동 또는 수동)
-  - API: PUT /api/presence/{user_id}/status (수동 상태 변경)
-- **Worktree**: `worktree/phase-4-realtime-server`
-- **브랜치**: `phase-4-realtime-server`
-- **완료 조건**:
-  - D13 상태전이표 기준 전이 테스트 통과
-  - 상태 이력 기록
-
-### [ ] P4-R3-T3: presence 좌표 30일 파기 배치 (D20-a — 신설 2026-07-02)
-
-- **담당**: backend-specialist
-- **의존**: P4-R3-T1
-- **산출물**: 
-  - 배치 스크립트: `backend/app/tasks/presence_purge_worker.py` (APScheduler 일일 배치)
-  - 로직: presence 좌표(x, y) 이력 30일 경과분 파기 (D20-a 보존 정책)
-- **Worktree**: `worktree/phase-4-realtime-server`
-- **브랜치**: `phase-4-realtime-server`
-- **완료 조건**:
-  - 30일 경과 좌표 데이터 파기 검증 (경계값 테스트)
-  - 파기 실행 로그 기록
-
-### [ ] P4-R3-V: 실시간 가상오피스 통합 검증
-
-- **담당**: test-specialist
-- **의존**: P4-R1-T2, P4-R1-T3, P4-R2-T3, P4-R3-T2
-- **산출물**: `docs/verification/phase-4-report.md`
-- **수용기준**:
-  - Godot 헤드리스 서버 시작 및 10명 클라이언트 연결 성공
-  - 아바타 이동 권위 검증: 벽 통과 거부 확인
-  - 근접 감지: 5m 이내 사용자 감지 확인
-  - 회의실 점유: capacity 초과 거부 확인
-  - 프레즌스 동기화: DB presence 테이블 실시간 업데이트 확인
-  - 성능: 도그푸딩 검증 20명(설계 100명) 동시 처리, 아바타 동기화 E2E p95 < 500ms (서버 tick 20Hz, D22)
-
----
-
-## Phase 5: 회의/화상회의 + 회의록 STT
-
-> **목적**: LiveKit 통합(FastAPI 경유 룸 생성, D24), 회의실 예약(+즉석 FCFS 병행, D23)/명시적 입장(D24)/진행, **회의록 STT 자동 생성(정식 범위, D5)**, 액션아이템 기록.  
-> **산출물**: 회의 관리 API + STT 회의록 파이프라인 + 검토 UI + LiveKit 통합.  
-> **의존**: Phase 4 완료 (실시간 프레즌스, 순차 원칙) + Phase 0 스파이크 S1(Godot↔LiveKit)·S2(STT).
-
-### [ ] P5-R1-T1: 회의 관리 API (예약/시작/종료)
-
-- **담당**: backend-specialist
-- **의존**: P0-T0.2, P1-S1-T3, P2-R1-T1
-- **산출물**: 
-  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
-  - 모델: `backend/app/models/tables.py::Meeting, MeetingParticipant`
-  - API:
-    - POST /api/meetings - 회의 생성/예약 (예약 + 즉석 FCFS 병행, D23)
-    - PUT /api/meetings/{id}/start - 시작 (**FastAPI 경유 LiveKit 룸 생성**, D24)
-    - POST /api/meetings/{id}/join - **명시적 입장**(고지·동의 확인 후 LiveKit 토큰 발급, 자동 연결 금지, D24)
-    - PUT /api/meetings/{id}/end - 종료 (Egress 종료 트리거)
-    - GET /api/meetings?office_id=&date= - 조회
-- **Worktree**: `worktree/phase-5-meeting`
-- **브랜치**: `phase-5-meeting`
-- **완료 조건**:
-  - CRUD 엔드포인트 전량 구현
-  - 예약 충돌 검증 (회의실 중복 예약 거부, D23)
-  - 명시적 입장 다이얼로그 → 클릭 → 토큰 발급 흐름 (자동 접속 금지, D24)
-  - 참석자 자동 기록
-
-### [ ] P5-R1-T2: LiveKit + coturn self-host 설치 & 통합 (사내 VM, D21)
-
-- **담당**: backend-specialist (인프라 겸임)
-- **의존**: P5-R1-T1 (같은 Phase 내 선행)
-- **산출물**: 
-  - Docker Compose: `docker-compose.yaml` (**사내 VM**, LiveKit + coturn 서비스 정의, D21 — Kubernetes/클라우드 SaaS 배제)
-  - 설정: `livekit.yaml` (RTC port, API key, Let's Encrypt/Caddy TLS — D21-r 등)
-  - 통합 스크립트: `backend/app/services/livekit_client.py` (**FastAPI 경유** room 생성/삭제, D24)
-- **Worktree**: `worktree/phase-5-meeting`
-- **브랜치**: `phase-5-meeting`
-- **완료 조건**:
-  - `docker-compose up` 성공 (사내 VM)
-  - LiveKit 서버 health check 통과
-  - API 키 발급 및 JWT 토큰 생성 확인 (룸 생성은 FastAPI 단일화)
-
-### [ ] P5-R2-T1: 회의 UI (Next.js 대기실/참석자 목록)
-
-- **담당**: frontend-specialist
-- **의존**: P5-R1-T1
-- **산출물**: 
-  - 페이지: `frontend/app/(main)/meetings/page.tsx`
-  - 컴포넌트: `frontend/components/MeetingLobby.tsx`, `frontend/components/MeetingParticipants.tsx`
-  - 상태: 예약/대기/진행/종료
-- **Worktree**: `worktree/phase-5-meeting`
-- **브랜치**: `phase-5-meeting`
-- **완료 조건**:
-  - 회의 목록 표시 + join 버튼
-  - 참석자 목록 실시간 업데이트
-  - 마이크/카메라 테스트 UI
-
-### [ ] P5-R2-T2a: WebRTC GDExtension 통합 (S1 산출 승계 — 분할 2026-07-02)
-
-- **담당**: 3d-engine-specialist
-- **의존**: P5-R1-T2, P0-T0.8(S1)
-- **산출물**: 
-  - **WebRTC GDExtension** 플러그인 통합 (GDNative는 Godot 4에서 폐기, GDExtension으로 정정 — S1 PoC 산출 승계)
-  - LiveKit 룸 접속 GDScript 래퍼: `godot/scripts/livekit_client.gd`
-  - 실패 시 임베디드 브라우저/외부 창 폴백 (S1 폴백 확정안)
-- **Worktree**: `worktree/phase-5-meeting`
-- **브랜치**: `phase-5-meeting`
-- **완료 조건**:
-  - Godot 클라이언트에서 LiveKit 룸 접속 + 오디오/비디오 수신 성공
-  - 오디오 송수신 확인, 음성 지연 < 200ms (D22)
-
-### [ ] P5-R2-T2b: 3D 내 화상 렌더링·참석자 패널 (분할 2026-07-02)
-
-- **담당**: 3d-engine-specialist
-- **의존**: P5-R2-T2a, P4-R2-T3
-- **산출물**: 
-  - GDScript: `godot/scripts/meeting_room_view.gd` (화상 렌더링, D2)
-  - 회의실 3D 인터페이스: 참석자 비디오 패널
-- **Worktree**: `worktree/phase-5-meeting`
-- **브랜치**: `phase-5-meeting`
-- **완료 조건**:
-  - 명시적 입장 후(D24) 화상 활성화
-  - 자신 + 상대방 비디오 표시 (2명 기준)
-
-### [ ] P5-R3-T1: 회의록 저장 (STT 확정본: 결정사항/액션아이템)
-
-- **담당**: backend-specialist
-- **의존**: P5-R1-T1
-- **산출물**: 
-  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
-  - 모델: `backend/app/models/tables.py::MeetingMinute, ActionItem` (초안/확정 구분 필드 포함)
-  - API:
-    - POST /api/meeting-minutes - 회의록 저장 (수동 폴백)
-    - PUT /api/action-items/{id} - 액션아이템 진행 상태 업데이트
-    - GET /api/meetings/{id}/minutes - 조회
-- **Worktree**: `worktree/phase-5-meeting`
-- **브랜치**: `phase-5-meeting`
-- **완료 조건**:
-  - STT 초안 검토·확정본 또는 수동 폴백 회의록 저장 (결정사항, 액션아이템 목록)
-  - 액션아이템 할당자/기한 지정
-  - 이력 추적
-
-### [ ] P5-R4-T1: 회의 오디오 Egress 수집 (LiveKit)
-
-- **담당**: backend-specialist
-- **의존**: P5-R1-T2
-- **산출물**: 
-  - 서비스: `backend/app/services/egress_service.py` (LiveKit Egress 트랙별 오디오 수집)
-  - 트리거: 회의 시작 시 Egress 시작, 종료 시 정지
-- **Worktree**: `worktree/phase-5-meeting`
-- **브랜치**: `phase-5-meeting`
-- **완료 조건**:
-  - 트랙별(참석자별) 오디오 파일 저장 성공
-  - 녹음 원본 보존 90일 정책 반영(D20), 동의 거부자 오디오 미수집(D20)
-
-### [ ] P5-R4-T2: STT + 화자분리 + 회의록 초안 생성 (D5, S2 기반)
-
-- **담당**: backend-specialist
-- **의존**: P5-R4-T1, P0-T0.9(S2)
-- **산출물**: 
-  - 서비스: `backend/app/services/stt_service.py` (STT, 한국어), `backend/app/services/minute_drafter.py` (화자분리 → 회의록 초안 + 액션아이템 후보 추출)
-  - API: POST /api/meetings/{id}/transcribe (내부), GET /api/meetings/{id}/minute-draft
-- **진행 체크리스트** (2026-07-02 추가):
-  - [ ] STT 엔진 연동 (한국어, S2 선정안)
-  - [ ] 화자분리 파이프라인
-  - [ ] 외부 전송 가명화 (실명→사번, D20)
-  - [ ] 회의록 초안 + 액션아이템 후보 추출
-  - [ ] API 2종 + S2 실패 폴백 처리
-- **Worktree**: `worktree/phase-5-meeting`
-- **브랜치**: `phase-5-meeting`
-- **완료 조건**:
-  - Egress 오디오 → STT → 발화자별 텍스트 + 액션아이템 후보 초안 자동 생성
-  - 외부 STT/LLM 전송 시 실명→사번 가명화(D20)
-  - **폴백**: S2 실패 시 수동 회의록 + AI 요약으로 격하
-
-### [ ] P5-R4-T3: 회의록 초안 검토·확정 UI + 정확도 측정
-
-- **담당**: frontend-specialist + backend-specialist
-- **의존**: P5-R4-T2
-- **산출물**: 
-  - 페이지/컴포넌트: `frontend/app/(main)/meetings/[id]/minute-review/page.tsx`, `frontend/components/MinuteDraftEditor.tsx`
-  - API: POST /api/meetings/{id}/minute-confirm (참석자/호스트 검토·확정)
-  - 정확도 측정 스크립트: 테스트 회의 N회 대비 **수동 전사 대조** (발화자·액션아이템 누락률, D22)
-- **Worktree**: `worktree/phase-5-meeting`
-- **브랜치**: `phase-5-meeting`
-- **완료 조건**:
-  - 발화자별 초안 편집 + 확정 → meeting_minute 확정본 저장
-  - 발화자·액션아이템 누락률 < 5% (수동 전사 대조 측정, D22)
-
-### [ ] P5-R3-T2: 회의록 UI (Next.js 편집/조회)
-
-- **담당**: frontend-specialist
-- **의존**: P5-R3-T1
-- **산출물**: 
-  - 컴포넌트: `frontend/components/MeetingMinuteEditor.tsx`, `frontend/components/ActionItemList.tsx`
-  - 페이지: `frontend/app/(main)/meetings/{id}/minutes/page.tsx`
-- **Worktree**: `worktree/phase-5-meeting`
-- **브랜치**: `phase-5-meeting`
-- **완료 조건**:
-  - 회의록 작성/편집 UI
-  - 액션아이템 체크리스트
-  - 마크다운 또는 WYSIWYG 에디터
-
-### [ ] P5-R3-T3: 메시지/채팅 저장소 (선택, Phase 5.5)
-
-- **담당**: backend-specialist
-- **의존**: P5-R3-T1
-- **산출물**: 
-  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
-  - 모델: `backend/app/models/tables.py::Message`
-  - API: GET /api/meetings/{id}/messages
-- **Worktree**: `worktree/phase-5-meeting`
-- **브랜치**: `phase-5-meeting`
-- **완료 조건**:
-  - 채팅 메시지 저장 및 조회
-  - 타임스탬프 기록
-
-### [ ] P5-R3-V: 회의/화상회의 + STT 회의록 통합 검증
-
-- **담당**: test-specialist
-- **의존**: P5-R2-T2b, P5-R3-T2, P5-R4-T3
-- **산출물**: `docs/verification/phase-5-report.md`
-- **수용기준**:
-  - 회의 예약 → **명시적 입장**(D24) → 화상 참석 → **STT 회의록 초안 → 검토·확정** E2E 성공
-  - FastAPI 경유 LiveKit 룸 생성/해제 정상 (D24)
-  - 참석자 2명 비디오/오디오 송수신 확인
-  - STT 회의록(결정사항/액션아이템) 초안 생성·확정 및 조회 성공
-  - STT 정확도: 발화자·액션아이템 누락률 < 5% (수동 전사 대조, D22)
-  - 성능: 화상 음성 지연 < 200ms(사내망, D22), 회의록 조회 < 500ms
-
----
-
-## Phase 6: KPI 산출 & AI 초안 & 관리자 검토 & EOD ERP Push
-
-> **목적**: 협업 결과(회의/업무/완료도) 기반 KPI 산출, AI 초안 생성, 관리자 검토, ERP push.  
-> **산출물**: KPI 산출 로직(결정론적, D14) + AI 서술 초안 + 관리자 검토·이의신청 상태머신 + daily_reports/KPI 배치(D17).  
-> **의존**: Phase 5 완료 (회의록 신호, 순차 원칙) + ERP dev 브랜치.
-
-### [ ] P6-R1-T1: 업무 기록 (work_log) 저장소 설계
-
-- **담당**: database-specialist
-- **의존**: P0-T0.3
-- **산출물**: 
-  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
-  - 모델: `backend/app/models/tables.py::WorkLog`
-  - 스키마: id, user_id, work_date, category, title, goal, related_project, url, est_minutes, status[started|completed], result_url, attachments(JSON), issues, next_action, created_at
-- **Worktree**: `worktree/phase-6-kpi`
-- **브랜치**: `phase-6-kpi`
-- **완료 조건**:
-  - 테이블 생성 + 샘플 데이터 20개 업무 기록
-
-### [ ] P6-R1-T2: work_log CRUD API
-
-- **담당**: backend-specialist
-- **의존**: P6-R1-T1
-- **산출물**: 
-  - API:
-    - POST /api/work-logs - 업무 기록 작성
-    - PUT /api/work-logs/{id} - 편집
-    - GET /api/work-logs?user_id=&date= - 조회 (본인/관리자)
-    - DELETE /api/work-logs/{id}
-- **Worktree**: `worktree/phase-6-kpi`
-- **브랜치**: `phase-6-kpi`
-- **완료 조건**:
-  - CRUD 엔드포인트 전량 구현
-  - 권한 검증 (본인 또는 관리자만 접근)
-
-### [ ] P6-R1-T3: work_log 작성/편집 UI (Next.js — 신설 2026-07-02)
-
-- **담당**: frontend-specialist
-- **의존**: P6-R1-T2
-- **산출물**: 
-  - 페이지: `frontend/app/(main)/work-logs/page.tsx`
-  - 컴포넌트: `frontend/components/WorkLogForm.tsx`, `frontend/components/WorkLogList.tsx` (P6-R1-T2 CRUD API 연동)
-- **Worktree**: `worktree/phase-6-kpi`
-- **브랜치**: `phase-6-kpi`
-- **완료 조건**:
-  - 작성/편집/삭제 폼 동작 (P6-R1-T2 API 연동)
-  - 본인 기록 목록 조회 + 날짜 필터
-
-### [ ] P6-R2-T1: KPI 산출 로직 (회의·완료도·협업 기반)
-
-- **담당**: backend-specialist
-- **의존**: P6-R1-T2, P5-R3-T1, P4-R3-T2
-- **산출물**: 
-  - 모듈: `backend/app/services/kpi_calculator.py` (**정량 점수는 결정론적 코드로 계산**, AI 미개입, D14)
-  - 함수: `calculate_kpi_for_user(user_id, period_date)` → dict with metrics
-  - 지표 (08-kpi-logic.md 준수, D14):
-    - 협업도: 회의록 작성 기여 + 액션아이템 **완료·기한준수 이행률** (회의 참석 기본점·주관자 가점 제거, 생성 가점 제거)
-    - 업무충실도: 완료 work_log 건수 + 충실도(goal·result_url·next_action 작성도) (시간 비례 점수 `est_minutes/100` 폐기)
-  - **제외**: 접속시간/근무시간, 채팅, 근접, 화상요청 (반감시 정책). **근태 보정(±5%) 제거** — ERP가 attendance 별도 반영, 이중 반영 금지(D14)
-- **Worktree**: `worktree/phase-6-kpi`
-- **브랜치**: `phase-6-kpi`
-- **완료 조건**:
-  - 지표 계산 정확성 테스트 (5명 샘플 데이터), 결정론적(동일 입력 → 동일 출력)
-  - 점수 정규화 (0~100)
-  - 08-kpi-logic 신호 정의에 따른 점수 산출 검증 (근태 보정·시간 비례·참석 기본점 미포함)
-
-### [ ] P6-R2-T2: AI 초안 생성 (Claude 기본)
-
-- **담당**: backend-specialist
-- **의존**: P6-R2-T1
-- **산출물**: 
-  - 모듈: `backend/app/services/kpi_ai_summarizer.py`
-  - 함수: `generate_ai_narrative(user_id, period_date, kpi_metrics)` → str (**서술만: 강점/개선/근거**, 정량 점수 산출 금지, D14)
-  - 프롬프트: 결정론적 KPI 지표 + 회의록/업무기록 요약 → "협업 잘함, 액션아이템 미완료 3개, 개선: 회의 후 follow-up 강화" 등
-  - 모델: Claude(기본)
-- **Worktree**: `worktree/phase-6-kpi`
-- **브랜치**: `phase-6-kpi`
-- **완료 조건**:
-  - AI 호출 성공
-  - 응답 예: 50~200자 사유 텍스트
-  - 오류 처리 (API timeout 등)
-
-### [ ] P6-R2-T3: KPI 결과 저장소 (kpi_result)
-
-- **담당**: database-specialist
-- **의존**: P0-T0.3
-- **산출물**: 
-  - 마이그레이션: `backend/app/models/tables.py` 모델 정의 (+0001_initial 자동 반영 확인 — pre-prod 규약)
-  - 모델: `backend/app/models/tables.py::KpiResult` (정본 스키마 = 04-data-model.md, D16)
-  - 스키마(D16 롱포맷): id, user_id(FK erp_user.id), **period_type**(daily|quarterly), **period_key**('2026-07-01'|'2026-Q3'), metric(VARCHAR), value(FLOAT 0~100), source(=virtual_office), **ai_draft(JSONB), admin_adjusted_score, admin_note, admin_user_id, objection_status, final_score, finalized_at**, created_at
-  - 제약: **UNIQUE(user_id, period_type, period_key, metric)** (upsert 키). period NULL 금지. `kpi_result_review` 테이블 폐기(인라인)
-- **Worktree**: `worktree/phase-6-kpi`
-- **브랜치**: `phase-6-kpi`
-- **완료 조건**:
-  - 테이블 생성 (period_type/period_key 분리, 리뷰 필드 인라인)
-  - 샘플 데이터 10명 × 10일 = 100 KPI records
-
-### [ ] P6-R3-T1: 관리자 KPI 검토 UI (Next.js)
-
-- **담당**: frontend-specialist
-- **의존**: P6-R2-T3
-- **산출물**: 
-  - 페이지: `frontend/app/(admin)/kpi-review/page.tsx`
-  - 컴포넌트: `frontend/components/KpiReviewCard.tsx` (AI 초안 표시 + 조정 UI)
-  - 형태: 카드 목록 (사용자 × 날짜), AI 사유 표시, 점수 조정 슬라이더, 메모 추가
-- **Worktree**: `worktree/phase-6-kpi`
-- **브랜치**: `phase-6-kpi`
-- **완료 조건**:
-  - 100개 KPI 카드 UI 렌더링 성공
-  - 점수 조정(0~100) 및 메모 저장
-
-### [ ] P6-R3-T2: KPI 검토/조정 API
-
-- **담당**: backend-specialist
-- **의존**: P6-R2-T3
-- **산출물**: 
-  - API: PUT /api/kpi-results/{id}/review
-    - payload: `{admin_adjusted: INT, note: TEXT}`
-    - response: updated kpi_result with reviewed_at timestamp
-- **Worktree**: `worktree/phase-6-kpi`
-- **브랜치**: `phase-6-kpi`
-- **완료 조건**:
-  - 권한 검증 (admin/leader only)
-  - 변경 이력 기록
-
-### [ ] P6-R3-T3a: daily_reports push 배치 (매일 18:00 KST, D17)
-
-- **담당**: backend-specialist
-- **의존**: P0-T0.4, P6-R1-T2
-- **산출물**: 
-  - 배치 스크립트: `backend/app/tasks/daily_reports_push_worker.py`
-  - 로직: **매일 18:00 KST** work_log/daily_status 요약 → ERP daily_reports push (18:00 이후 활동은 익일 귀속, 주말·공휴일 스킵)
-  - 로그: `backend/app/models/tables.py::DailyStatusPush`
-- **Worktree**: `worktree/phase-6-kpi`
-- **브랜치**: `phase-6-kpi`
-- **완료 조건**:
-  - APScheduler 18:00 KST 스케줄, ERP push 성공, 전송 이력 기록
-  - 멱등성: 배치 run_id + advisory lock (D17)
-
-### [ ] P6-R3-T3b: KPI AI 초안 야간 배치 (21:00 KST, D17)
-
-- **담당**: backend-specialist
-- **의존**: P6-R2-T1, P6-R2-T2, P6-R2-T3
-- **산출물**: 
-  - 배치 스크립트: `backend/app/tasks/kpi_ai_draft_worker.py`
-  - 로직: **21:00 야간 배치** → 결정론적 metrics 계산 + AI 서술 초안 생성 → kpi_result upsert(objection_status="draft", 검토 대기)
-- **Worktree**: `worktree/phase-6-kpi`
-- **브랜치**: `phase-6-kpi`
-- **완료 조건**:
-  - metric 단위 upsert (UNIQUE 키, D16), advisory lock 동시 실행 방지 (D17)
-  - 관리자 리뷰 대기 알림 발송
-
-### [ ] P6-R3-T3c: kpi_results ERP push (관리자 확정 이벤트 + 분기 마감 배치, D15/D17)
-
-- **담당**: backend-specialist
-- **의존**: P0-T0.4, P6-R3-T2
-- **산출물**: 
-  - 서비스/핸들러: `backend/app/services/erp_kpi_pusher.py::push_finalized_kpi()`
-  - 로직: **관리자 확정(objection_status="finalized") 이벤트** → 즉시 `POST /api/kpi-results`(**final_score만**, ai_draft 미전송, D15). 분기 마감 시 일괄 push
-  - ERP 미준비 시: feature flag OFF → 로컬 적재 → 준비 후 backfill (D17)
-- **Worktree**: `worktree/phase-6-kpi`
-- **브랜치**: `phase-6-kpi`
-- **완료 조건**:
-  - ERP `POST /api/kpi-results` 성공 (서비스계정 JWT, upsert 멱등)
-  - 정정 발생 시 재push(upsert)로 반영 (D15)
-  - ERP push 실패 시 **알림 훅 호출** (알림 채널 구축은 P7-R3-T3 소유, D18)
-
-### [ ] P6-R3-T4: 직원 평가 열람 + 이의신청 상태머신 (D15)
-
-- **담당**: frontend-specialist + backend-specialist
-- **의존**: P6-R3-T2
-- **산출물**: 
-  - 페이지: `frontend/app/(main)/kpi-results/page.tsx`
-  - 컴포넌트: `frontend/components/KpiSelfReview.tsx` (AI 초안/관리자 조정 열람, 이의신청 폼)
-  - **이의신청 상태머신**(D15 정본, 2026-07-02 어휘 치환): objection_status **none→submitted→reviewing→resolved**. 흐름: 평가 공개 → 이의접수 submitted(**7일**) → 재검토 reviewing → 확정 resolved → ERP push. API: 이의 접수(POST /api/kpi-results/{id}/objection), 재검토 상태 전환(PUT .../objection-status), 확정 시 ERP 재push 트리거
-- **진행 체크리스트** (2026-07-02 추가):
-  - [ ] 열람 페이지/컴포넌트 (AI 초안·관리자 조정 열람)
-  - [ ] 이의신청 폼 + 접수 API (none→submitted)
-  - [ ] 재검토 전환(submitted→reviewing) + 처리 API
-  - [ ] 확정(reviewing→resolved) + ERP 재push 트리거
-  - [ ] 이의접수 7일 창 만료 처리
-  - [ ] 제출/처리 E2E 테스트
-- **Worktree**: `worktree/phase-6-kpi`
-- **브랜치**: `phase-6-kpi`
-- **완료 조건**:
-  - 이의신청 상태 전이(**none→submitted→reviewing→resolved**, D15) 유효성 검증
-  - 이의접수 7일 창 처리, 확정 후 final_score만 ERP 재push(D15)
-  - UI 렌더링 + 이의신청 제출/처리 E2E
-
-### [ ] P6-R4-T1: 분기 KPI 집계 + ERP 분기평가 E2E 검증
-
-- **담당**: backend-specialist + test-specialist
-- **의존**: P6-R3-T3c
-- **산출물**: 
-  - 집계 로직: `backend/app/services/quarterly_kpi_aggregator.py` (일간 → 분기 period_type=quarterly, period_key='2026-Q3')
-  - `user_team_history` 반영: 분기 중 팀 이동자 벤치마크 왜곡 방지 (D18)
-  - E2E 테스트: 분기 집계 → 확정 → ERP push → ERP 분기평가 수집 확인
-- **Worktree**: `worktree/phase-6-kpi`
-- **브랜치**: `phase-6-kpi`
-- **완료 조건**:
-  - 분기 집계 정확성 (일간 확정 점수 → 분기 롤업)
-  - ERP 분기평가 자료 수집 폐쇄루프 E2E 통과
-
-### [ ] P6-R3-V: KPI 산출·검토·ERP 푸시 통합 검증
-
-- **담당**: test-specialist
-- **의존**: P6-R3-T3a, P6-R3-T3b, P6-R3-T3c, P6-R3-T4, P6-R4-T1
-- **산출물**: `docs/verification/phase-6-report.md`
-- **수용기준**:
-  - KPI 정량 산출: 10명 × 10일 **결정론적** 계산 성공, 점수 0~100 범위 내 (D14)
-  - AI 서술 초안: 문장 생성 성공 (강점/개선/근거, 정량 미산출)
-  - 배치(D17): daily_reports **18:00 KST** / KPI AI 초안 **21:00** 정상 실행, 전송 이력 기록
-  - kpi_results ERP push: **관리자 확정 이벤트 + 분기 마감**, final_score만 POST /api/kpi-results (D15)
-  - 이의신청 상태머신: none→submitted(이의접수 7일)→reviewing→resolved→재push E2E (D15 정본)
-  - 분기 집계 → ERP 분기평가 수집 폐쇄루프 E2E 통과
-
----
-
-## Phase 7: 고도화 (MultiFloor, 권한, 요약, 모바일)
-
-> **목적**: 확장성 및 사용성 개선. 다층 건물, 구역별 권한, AI 요약, 모바일 알림 등.  
-> **산출물**: 다층 UI + 권한 시스템 + 고급 AI 기능 + 모바일 푸시 알림.  
-> **의존**: Phase 1~6 완료.  
-> **비고**: B2B/멀티테넌트는 이 이후로 미룸.
-
-### [ ] P7-R1-T1: 다층(MultiFloor) 내비게이션 UI
+### [ ] P2-T3: R3F 뷰포트 배경 표시 + 깊이 텍스처 로드 [신규]
 
 - **담당**: 3d-engine-specialist + frontend-specialist
-- **의존**: P1-S1-V, P3-R3-T2
-- **산출물**: 
-  - 3D 층 전환: 엘리베이터/계단 스폿 클릭 → 층 로딩
-  - 웹 UI: 좌측 층 탭, floor_id 선택
-  - API: GET /api/offices/{office_id}/floors/{floor_id} (층별 레이아웃)
-- **Worktree**: `worktree/phase-7-advanced`
-- **브랜치**: `phase-7-advanced`
+- **의존**: P2-T2, P1-T3
+- **산출물**:
+  - `frontend/components/viewport/OfficeViewport.tsx` 확장 — office_bg 풀스크린 쿼드 + camera.json 직교 카메라 재현 + office_depth 텍스처 로드(P3 아바타 합성 대비)
+  - 스파이크 `spikes/depth-composite/` 셰이더 이식
 - **완료 조건**:
-  - 3층 이상 건물 시뮬레이션
-  - 층 전환 로딩 시간 < 2초
-  - 층 간 이동 충돌 검증
+  - 셸 중앙 뷰포트에 포토리얼 배경 표시(placeholder 대체)
+  - 층 선택 시 해당 층 배경/깊이/카메라 스왑(다층은 P7)
 
-### [ ] P7-R1-T2: 구역별 접근 권한 (zone-based access control)
-
-- **담당**: backend-specialist
-- **의존**: P2-R2-T1
-- **산출물**: 
-  - 모델: `backend/app/models/tables.py::ZoneAccess` (zone_id, role/user_id, permission[view|enter|manage])
-  - API: GET /api/zones/{zone_id}/access-control, POST (admin)
-  - 로직: 사용자 진입 시 권한 검증 (room enter 차단 가능)
-- **Worktree**: `worktree/phase-7-advanced`
-- **브랜치**: `phase-7-advanced`
-- **완료 조건**:
-  - 특정 구역 제한 테스트 (e.g., CEO 오피스 제외)
-  - 권한 없는 진입 차단 검증
-
-### [ ] P7-R1-T3: 회의록 AI 요약 (선택, Phase 7.5)
-
-- **담당**: backend-specialist
-- **의존**: P5-R3-T2, P6-R2-T2
-- **산출물**: 
-  - 함수: `backend/app/services/meeting_ai_summarizer.py::summarize_meeting(meeting_id)` → str (회의 핵심 요약)
-  - 트리거: 회의 종료 후 자동 또는 수동
-  - 저장: MeetingMinute.ai_summary 필드
-- **Worktree**: `worktree/phase-7-advanced`
-- **브랜치**: `phase-7-advanced`
-- **완료 조건**:
-  - 회의록 요약 생성 성공
-  - 길이: 100~300자
-
-### [ ] P7-R1-T4: 조직도 실시간 에디터 (org_group CRUD UI, PRD SHOULD #7 — 신설 2026-07-02)
-
-- **담당**: frontend-specialist
-- **의존**: P2-R1-T3
-- **산출물**: 
-  - 페이지: `frontend/app/(admin)/org-chart/page.tsx`
-  - 컴포넌트: `frontend/components/OrgChartEditor.tsx` (React Flow 기반 트리 시각 편집)
-  - 연동: org_group CRUD API (P2-R1-T3) — 노드 추가/이동/삭제 즉시 반영
-- **Worktree**: `worktree/phase-7-advanced`
-- **브랜치**: `phase-7-advanced`
-- **완료 조건**:
-  - 3단계 트리 드래그 편집 + 저장 성공
-  - parent_id 순환 참조 방지 검증
-
-### [ ] P7-R2-T1: 모바일 푸시 알림 (중요 회의/액션아이템)
-
-- **담당**: devops-specialist + backend-specialist
-- **의존**: P5-R1-T1, P6-R1-T1
-- **산출물**: 
-  - 모듈: `backend/app/services/push_notification.py` (Firebase Cloud Messaging 또는 Slack)
-  - 트리거: 회의 30분 전, 액션아이템 기한 24h 전
-  - 로직: user 선호도 존중 (opt-in/opt-out)
-- **Worktree**: `worktree/phase-7-advanced`
-- **브랜치**: `phase-7-advanced`
-- **완료 조건**:
-  - FCM 또는 Slack 통합 성공
-  - 알림 전송 지연 < 10초
-
-### [ ] P7-R2-T2: 개인화된 대시보드 (요약/통계)
-
-- **담당**: frontend-specialist
-- **의존**: P6-R3-T1
-- **산출물**: 
-  - 페이지: `frontend/app/(main)/dashboard/page.tsx`
-  - 카드: 주간 KPI 평균, 회의 참석률, 업무 완료도, 근무 시간
-  - **팀 스코프 KPI 뷰(팀리더용)**: require_role(leader)로 소속 팀원 KPI 요약 열람 (범위 명시, 2026-07-02 추가)
-  - 그래프: 시계열 차트(Chart.js/D3)
-- **Worktree**: `worktree/phase-7-advanced`
-- **브랜치**: `phase-7-advanced`
-- **완료 조건**:
-  - 대시보드 렌더링 < 2초
-  - 통계 계산 정확성 테스트
-
-### [ ] P7-R2-T3: 실시간 협업 스트림 (피드)
-
-- **담당**: backend-specialist + frontend-specialist
-- **의존**: P5-R3-T1, P6-R1-T2
-- **산출물**: 
-  - 페이지: `frontend/app/(main)/activity-feed/page.tsx`
-  - 항목: "A와 B가 회의 시작", "C가 액션아이템 완료", "D의 KPI 검토됨" 등
-  - 실시간: WebSocket으로 새 항목 자동 갱신
-- **Worktree**: `worktree/phase-7-advanced`
-- **브랜치**: `phase-7-advanced`
-- **완료 조건**:
-  - 피드 항목 10개 이상 표시
-  - 실시간 업데이트 지연 < 1초
-
-### [ ] P7-R3-T1: 감사 로그 (audit_log)
-
-- **담당**: backend-specialist
-- **의존**: P6-R3-T2
-- **산출물**: 
-  - 마이그레이션/모델: `audit_log` (action, actor_user_id, target_entity, target_id, changes(JSONB), timestamp)
-  - 서비스: `backend/app/services/audit_service.py` (주요 액션 훅: login, layout_deployed, kpi_adjusted/finalized, objection 처리 등)
-- **Worktree**: `worktree/phase-7-advanced`
-- **브랜치**: `phase-7-advanced`
-- **완료 조건**:
-  - 주요 액션 기록 + 변경 전후 diff
-  - 보존 기한 5년(D20)
-
-### [ ] P7-R3-T2: 클라이언트 자동 업데이트 채널 (D8)
-
-- **담당**: backend-specialist + 3d-engine-specialist
-- **의존**: P1-S1-V
-- **산출물**: 
-  - API: GET /api/client/version (latest/current/url/required)
-  - 배포 채널: 신규 에셋(pak)·클라이언트 빌드 배포 (D8: 에셋은 클라이언트 빌드 동봉, 자동 업데이트 채널로 배포)
-  - 클라이언트 GDScript: `godot/scripts/updater.gd` (버전 체크 + 다운로드, 공인 도메인/Let's Encrypt)
-- **진행 체크리스트** (2026-07-02 추가):
-  - [ ] 버전 체크 API (latest/current/url/required)
-  - [ ] 배포 채널 스토리지·서빙 구성 (pak/클라이언트 빌드)
-  - [ ] `updater.gd` 버전 체크 + 다운로드
-  - [ ] 서명·체크섬 검증
-  - [ ] 강제/선택 업데이트 분기 테스트
-- **Worktree**: `worktree/phase-7-advanced`
-- **브랜치**: `phase-7-advanced`
-- **완료 조건**:
-  - 버전 체크 API 응답 + 강제/선택 업데이트 분기
-  - 공인 도메인 배포(Let's Encrypt, D21-r), 서명·체크섬 검증
-
-### [ ] P7-R3-T3: ERP 동기화 실패 자동 알림 + 관측 (D18/D21)
-
-- **담당**: backend-specialist
-- **의존**: P2-R1-T1, P6-R3-T3c
-- **산출물**: 
-  - 알림: read 동기화(매시간/00:00 대사) 및 KPI push 실패 시 자동 알림 (관리자 콘솔 + 알림 채널 1개, D18 — **알림 채널 구축 소유: 본 태스크**. P2-R1-T1/P6-R3-T3c는 훅 호출만)
-  - 관측: Grafana + Prometheus + Loki + Uptime Kuma 대시보드/알림 규칙 (D21)
-- **진행 체크리스트** (2026-07-02 추가):
-  - [ ] 알림 채널 1개 구축 (Slack 또는 이메일)
-  - [ ] read 동기화/KPI push 실패 훅 → 채널 연결
-  - [ ] Prometheus + Grafana 대시보드
-  - [ ] Loki 로그 수집 + Uptime Kuma
-  - [ ] 실패 주입 테스트 → 알림 발송 확인
-- **Worktree**: `worktree/phase-7-advanced`
-- **브랜치**: `phase-7-advanced`
-- **완료 조건**:
-  - 동기화/push 실패 주입 시 알림 발송 확인
-  - 재시도 큐(APScheduler + DB 영속 큐, D21) 동작 확인
-
-### [ ] P7-R3-T4: 도그푸딩 피드백 수집 체계 (주 1회)
-
-- **담당**: frontend-specialist + backend-specialist
-- **의존**: P1-S1-V
-- **산출물**: 
-  - API: POST /api/feedback (type[bug|feature|general], title, description, screenshot_url, user_context)
-  - 페이지: `frontend/app/(main)/feedback/report.tsx`
-  - 운영: **주 1회 피드백 수집·리뷰** 루틴 (01-prd 사용성 성공 기준 연동)
-- **Worktree**: `worktree/phase-7-advanced`
-- **브랜치**: `phase-7-advanced`
-- **완료 조건**:
-  - 피드백 제출→조회→관리자 열람 E2E 시나리오 통과
-  - 주간 피드백 리포트 집계
-
-### [ ] P7-R2-V: 고도화 기능 통합 검증
+### [ ] P2-V: 렌더 파이프라인 통합 검증
 
 - **담당**: test-specialist
-- **의존**: P7-R1-T1, P7-R1-T2, P7-R1-T3, P7-R2-T1, P7-R2-T2, P7-R2-T3, P7-R3-T1, P7-R3-T2, P7-R3-T3, P7-R3-T4
+- **의존**: P2-T1 ~ P2-T3
+- **산출물**: `docs/verification/phase-2-report.md`
+- **수용기준**:
+  - office_layout JSON → 배경/깊이/카메라 자동 생성 재현
+  - R3F 뷰포트에 배경 표시 + 깊이 텍스처 로드 성공, 스파이크 오클루전 정합 유지
+
+---
+
+## Phase 3: 실시간 이동서버 (Colyseus) + 깊이합성 아바타
+
+> **목적**: 자체 실시간 이동서버(Colyseus 이식, 15-realtime-server-spec)로 아바타 이동·좌표동기화(20Hz)·이동검증 8항목·근접검증 8항목 구현. 아바타 GLTF+애니메이션을 뷰포트에 깊이합성 렌더.
+> **산출물**: Colyseus `OfficeRoom` + 프로토콜 + 검증 + R3F 멀티유저 아바타(깊이합성) + presence 배치 push 배선.
+> **의존**: P2 완료(뷰포트 배경/깊이). 순차 원칙.
+> **정본**: 15-realtime-server-spec, 09-realtime-collaboration §5, D1/D3/D4/D22.
+> **재사용**: FastAPI presence 수집(`presence_store`/`presence_stream`)·좌석·JWT 존재 → Colyseus에서 호출.
+
+### [ ] P3-T1: Colyseus 서버 + OfficeRoom(층 단위) + JWT onAuth [신규]
+
+- **담당**: backend-specialist(Node/TS)
+- **의존**: P2 (레이아웃 콜라이더 필요)
+- **산출물**:
+  - `realtime-server/` (Node/TS Colyseus) — `OfficeRoom({office_id, floor_id})`, `OfficeState{players: Map<sessionId, Player>}`(Schema binary delta)
+  - `onAuth`: FastAPI JWT 검증(콘솔 세션 재사용, 별도 로그인 없음, D4)
+  - 컨테이너화(WA 스택 대체), Caddy `/ws/office/*` WSS 라우팅
+- **완료 조건**:
+  - JWT join → 초기 snapshot 전송, 20Hz tick 루프
+  - 룸=층 단위 격리, players Schema delta 브로드캐스트
+
+### [ ] P3-T2: 이동 검증 8항목 + reconcile [신규]
+
+- **담당**: backend-specialist(Node/TS)
+- **의존**: P3-T1
+- **산출물**:
+  - `move_request{target_pos, seq}` 서버 검증(15 §4): ①company_id ②office_id ③floor_id ④좌표·충돌(office_layout colliders AABB/polygon) ⑤속도 제한 ⑥권한(spawn/zone) ⑦좌석 점유 충돌 ⑧회의실 정원
+  - 실패 시 서버 권위 위치 되돌림(reconcile), 예측 >0.5m 차 → Lerp 5프레임 보정
+- **완료 조건**:
+  - 벽/유리벽 통과·속도 초과·권한 없는 zone 진입 거부 테스트
+  - reconcile 정합, `world_update{server_seq, players[delta]}` 20Hz 송신
+
+### [ ] P3-T3: 근접 상호작용 검증 8항목 (LOS 광선 포함) [신규]
+
+- **담당**: backend-specialist(Node/TS)
+- **의존**: P3-T2
+- **산출물**:
+  - `interact_request` 8항목 검증(15 §5): company/office/floor 일치 · 거리<5m · **벽/유리벽 LOS 광선(가림 시 불가)** · 상대 status≠offline · 쿨다운 1초 · 방해금지/집중모드 미활성
+- **완료 조건**:
+  - 유리벽 뒤 상대 근접 차단(LOS), 쿨다운·집중모드 존중
+  - 근접 메뉴 응답 <200ms(D22)
+
+### [ ] P3-T4: 아바타 GLTF + 애니메이션 + 깊이합성 렌더 [신규]
+
+- **담당**: 3d-engine-specialist
+- **의존**: P3-T1, P2-T3
+- **산출물**:
+  - 아바타 GLTF + idle/walk 애니, R3F 멀티유저 인스턴싱
+  - 깊이합성: 아바타 프래그먼트 vs office_depth 비교(가구·유리벽 뒤 자연 가림), Lerp 보간 이동(design §6)
+  - 머리 위 이름+상태 HUD 라벨(반투명 pill)
+- **완료 조건**:
+  - 멀티유저 아바타 이동 부드러움(Lerp), 깊이합성 오클루전 정확
+  - HUD 빌보드 유지, 20명 렌더 프레임 예산 확인
+
+### [ ] P3-T5: presence 배치 push 배선 (Colyseus → FastAPI → DB) [배선]
+
+- **담당**: backend-specialist
+- **의존**: P3-T2
+- **산출물**:
+  - Colyseus 메모리 권위 → 1~5초 주기 변경분 → FastAPI `POST /api/presence/batch` → DB(D3)
+  - 자동전이: 좌석도착→working, 회의입장→meeting, 5분 무입력→away(서버 타이머), 로그아웃→offline + 좌석 자동반납
+  - **재사용**: FastAPI `presence_store`/`presence_stream` 존재(구현됨) → 배치 엔드포인트 연결·보강
+- **완료 조건**:
+  - presence DB 반영(±1m), 자동전이 D13 상태전이표 통과
+  - 재접속 `last_seq` 스냅샷 재수신
+
+### [ ] P3-V: 실시간 이동서버 통합 검증
+
+- **담당**: test-specialist
+- **의존**: P3-T1 ~ P3-T5
+- **산출물**: `docs/verification/phase-3-report.md`
+- **수용기준**:
+  - 멀티유저 이동·좌표동기화 20Hz, 이동검증 8·근접검증 8 통과
+  - 깊이합성 아바타 오클루전 정확, presence DB 배치 push 반영
+  - 성능: 아바타 E2E p95 <500ms, 도그푸딩 20명(설계 100명) — 부하검증은 P7
+
+---
+
+## Phase 4: 프레즌스 · 좌석 (실시간 시각화)
+
+> **목적**: 7종 상태 HUD·미니맵·우패널 실시간 시각화, 자율좌석 클릭 점유/반납. 백엔드 좌석·프레즌스 존재분을 실시간 UI에 배선.
+> **산출물**: presence 라이브 시각화 + 미니맵 + 좌석 클릭 상호작용.
+> **의존**: P3 완료(이동·presence). 순차 원칙.
+> **재사용**: 좌석(`/api/seats`)·프레즌스 API + presence 7종(D13) 백엔드 구현됨.
+
+### [ ] P4-T1: 7종 상태 HUD + 우패널 실시간 프레즌스 [배선]
+
+- **담당**: frontend-specialist
+- **의존**: P3-T4, P3-T5
+- **산출물**:
+  - 아바타 HUD 상태 점 + 우패널 사용자 목록 실시간(presence_event 구독)
+  - 상태 7종 색(online/meeting/external/focus/away/offline, D13/design §1.3)
+- **완료 조건**:
+  - presence 변경 시 HUD·우패널 실시간 갱신, 색+라벨 병기
+  - "회의중 N명·접속중 N명" 카운트
+
+### [ ] P4-T2: 미니맵 (조감 + 컬러 점 아바타/회의실) [신규]
+
+- **담당**: frontend-specialist + 3d-engine-specialist
+- **의존**: P3-T4
+- **산출물**:
+  - `frontend/components/viewport/Minimap.tsx` — 좌하단 오버레이 카드, 조감 라인 + 컬러 점(아바타/회의실), 확대/축소(design §4)
+- **완료 조건**:
+  - 아바타 위치 실시간 반영, 회의실 점유 색점, 클릭 시 카메라 팬(§6)
+
+### [ ] P4-T3: 자율좌석 클릭 점유/반납 [배선]
+
+- **담당**: frontend-specialist + backend-specialist
+- **의존**: P3-T2
+- **산출물**:
+  - 좌석 클릭 → Colyseus `sit_request{seat_id}` → FastAPI 좌석 점유 위임(구현됨 `/api/seats`) → working·facing
+  - 로그아웃/이석 시 자동 반납(P3-T5 연동)
+- **완료 조건**:
+  - 좌석 점유 배타성(충돌 방지), 반납 정확성, 점유 시 status=working 전이
+
+### [ ] P4-V: 프레즌스 · 좌석 통합 검증
+
+- **담당**: test-specialist
+- **의존**: P4-T1 ~ P4-T3
+- **산출물**: `docs/verification/phase-4-report.md`
+- **수용기준**:
+  - 7종 상태 실시간 HUD·우패널·미니맵 반영
+  - 좌석 클릭 점유/반납 E2E, 점유 배타성·자동반납 통과
+
+---
+
+## Phase 5: 회의 · 화상 (D24 명시입장 + LiveKit)
+
+> **목적**: 회의실 근접(2m 트리거) 명시적 입장(D24), LiveKit 오디오/영상, 동의 배너(consent 구현됨), 화상 타일 UI.
+> **산출물**: 회의 입장 흐름 + LiveKit 통합 + 화상 타일 그리드 + 동의 배너 배선.
+> **의존**: P4 완료(프레즌스·좌석). 순차 원칙.
+> **재사용**: 회의 API(`/api/meetings`)·consent(`/api/consent`, `backend/app/api/consent.py`)·wa_livekit·egress·meeting_minutes 백엔드 구현됨 → LiveKit 실미디어 배선·프런트 중심.
+
+### [ ] P5-T1: 회의실 명시입장 (2m 근접 트리거 + 동의 배너) [배선]
+
+- **담당**: frontend-specialist + backend-specialist
+- **의존**: P4-T1, P3-T3
+- **산출물**:
+  - 회의실 2m 근접 트리거 → 명시입장 다이얼로그(자동 접속 금지, D24) → 클릭 → LiveKit 토큰 발급
+  - 동의 배너: 녹음·STT 고지·동의(consent 구현됨 — `backend/app/api/consent.py`) 확인 후 입장
+  - Colyseus `enter_meeting{room_id}` 근접·정원 검증 → FastAPI join + LiveKit 토큰
+- **완료 조건**:
+  - 명시입장 흐름(다이얼로그→클릭→토큰), 동의 거부 시 미수집(D20)
+  - 정원 초과·중복 진입 거부, status=meeting 전이
+
+### [ ] P5-T2: LiveKit 오디오/영상 통합 (실미디어) [배선]
+
+- **담당**: backend-specialist(인프라 겸임)
+- **의존**: P5-T1
+- **산출물**:
+  - LiveKit + coturn self-host(사내 VM, D21), `livekit.yaml`(Let's Encrypt/Caddy TLS)
+  - FastAPI 경유 룸 생성/삭제(구현분 `wa_livekit.py` → `livekit_client` 정리), 토큰 발급
+  - ≤4명 PeerJS 폴백 옵션 / >4명·회의실 LiveKit(15 §1)
+- **완료 조건**:
+  - `docker-compose up` 성공, health check, 오디오/영상 송수신
+  - 음성 지연 <200ms(사내망, D22)
+
+### [ ] P5-T3: 화상 타일 UI (참석자 그리드 + 미디어바) [신규]
+
+- **담당**: frontend-specialist
+- **의존**: P5-T2
+- **산출물**:
+  - `frontend/components/meeting/{VideoTileGrid,MediaBar}.tsx` — 참석자 2×2 그리드, 타일 하단 이름·상태, 컨트롤(마이크·카메라·화면공유·나가기 빨강)(design §4)
+  - 뷰포트 하단 중앙 미디어 컨트롤 필 바
+- **완료 조건**:
+  - 자신+상대 비디오 표시(2명 기준), 마이크/카메라 토글·음소거 색 구분
+  - 회의실 헤더 라벨("대회의실 · N명 회의중")
+
+### [ ] P5-V: 회의 · 화상 통합 검증
+
+- **담당**: test-specialist
+- **의존**: P5-T1 ~ P5-T3
+- **산출물**: `docs/verification/phase-5-report.md`
+- **수용기준**:
+  - 근접(2m)→명시입장(D24)→동의→화상 참석 E2E, FastAPI 경유 룸 생성/해제 정상
+  - 참석자 2명 비디오/오디오 송수신, 음성 지연 <200ms
+  - 동의 거부자 미수집(D20)
+
+---
+
+## Phase 6: STT · AI (외부 의존)
+
+> **목적**: LiveKit Egress → 한국어 STT → 회의록 초안, AI 요약. KPI AI 초안(배선됨). 외부 리소스(한국어 화자분리 STT, 실 LiveKit Egress, Claude) 의존.
+> **산출물**: STT 회의록 파이프라인 + 검토·확정 UI + KPI 워크플로우 화면.
+> **의존**: P5 완료(회의·Egress). 순차 원칙 + 외부 리소스 준비.
+> **재사용**: `egress_service`·`meeting_minutes`·`ai_draft`·`kpi_engine`·`pseudonymize`·`eod_push`·`scheduler` 백엔드 구현됨(pytest 417+).
+
+### [ ] P6-T1: 회의 오디오 Egress 수집 + STT + 화자분리 회의록 초안 [배선]
+
+- **담당**: backend-specialist
+- **의존**: P5-T2
+- **산출물**:
+  - Egress 트랙별 오디오 수집(구현분 `egress_service.py`) → 한국어 STT 엔진 연동 → 화자분리 → 회의록 초안 + 액션아이템 후보
+  - 외부 전송 가명화(실명→사번, `pseudonymize.py` 구현됨, D20)
+  - 녹음 원본 보존 90일·동의 거부자 미수집(D20)
+- **완료 조건**:
+  - Egress→STT→발화자별 텍스트+액션아이템 초안 자동 생성
+  - **폴백**: STT 실패 시 수동 회의록 + AI 요약 격하
+
+### [ ] P6-T2: 회의록 초안 검토·확정 UI + 정확도 측정 [신규 UI + 배선]
+
+- **담당**: frontend-specialist + backend-specialist
+- **의존**: P6-T1
+- **산출물**:
+  - `frontend/app/(protected)/meetings/[id]/minute-review/page.tsx`, `frontend/components/MinuteDraftEditor.tsx`
+  - API: `/api/meeting-minutes` 확정(구현분 `meeting_minutes.py`) — 발화자별 초안 편집→확정본 저장
+  - 정확도: 테스트 회의 N회 수동 전사 대조(발화자·액션아이템 누락률, D22)
+- **완료 조건**:
+  - 초안 편집→확정 저장, 누락률 <5%(수동 전사 대조, D22)
+
+### [ ] P6-T3: 회의록 AI 요약 [배선]
+
+- **담당**: backend-specialist
+- **의존**: P6-T2
+- **산출물**:
+  - 회의 종료 후 요약 생성(구현분 `ai_draft.py` 계열 활용) → MeetingMinute.ai_summary
+- **완료 조건**:
+  - 요약 100~300자 생성, Claude 기본, 오류 처리
+
+### [ ] P6-T4: KPI 워크플로우 화면 (관리자 검토 + 이의신청 상태머신) [신규 UI + 배선]
+
+- **담당**: frontend-specialist + backend-specialist
+- **의존**: P1-T4
+- **산출물**:
+  - 관리자 검토: `frontend/app/(protected)/kpi-review/page.tsx`, `<KpiReviewCard>`(AI 초안 표시 + 점수 조정 슬라이더 + 메모)
+  - 직원 열람 + 이의신청: `frontend/app/(protected)/kpi-results/page.tsx`, `<KpiSelfReview>`
+  - **이의신청 상태머신**(D15 정본): objection_status none→submitted(7일)→reviewing→resolved → 확정 시 ERP 재push
+  - **재사용**: 결정론적 KPI 산출(`kpi_engine.py`)·AI 서술 초안(`ai_draft.py`)·검토/조정 API·EOD/ERP push(`eod_push.py`)·야간 배치(`scheduler.py`) 구현됨(배선됨). 14 §2.8.2 위임분.
+- **완료 조건**:
+  - 관리자 점수 조정·메모 저장(admin/leader 권한), AI 서술 초안 표시
+  - 이의신청 전이(none→submitted→reviewing→resolved, 7일 창) 유효성, 확정 후 final_score만 ERP 재push(D15)
+
+### [ ] P6-V: STT · AI · KPI 워크플로우 통합 검증
+
+- **담당**: test-specialist
+- **의존**: P6-T1 ~ P6-T4
+- **산출물**: `docs/verification/phase-6-report.md`
+- **수용기준**:
+  - Egress→STT→회의록 초안→검토·확정 E2E, 누락률 <5%
+  - AI 요약 생성, KPI 관리자 검토·이의신청 상태머신 E2E(D15)
+  - 결정론적 KPI 산출(D14) + ERP push 폐쇄루프
+
+---
+
+## Phase 7: 정리 · 부하 · 하드닝 (도그푸딩 릴리스)
+
+> **목적**: 구 스택 잔재 제거, 다층 렌더, 20명 부하검증, 보안 하드닝, 편집기→재렌더 루프. 사내 도그푸딩 릴리스.
+> **산출물**: WA 스택 제거 + 다층 배경 렌더 + 부하검증 + 하드닝 + 배치 편집기.
+> **의존**: P1~P6 완료.
+> **정본**: 16 §B.3(정리 대상), 15 §7(부하), onprem-docker.
+
+### [ ] P7-T1: 구 WA/Godot 스택 정리 [신규]
+
+- **담당**: backend-specialist(인프라 겸임)
+- **의존**: P5(LiveKit 유지 확인)
+- **산출물**:
+  - docker WA 스택 제거(wa-back/play/map-storage/uploader/icon/redis), WA OIDC 브리지·Sidebar "가상 오피스 입장" 외부링크·관련 Caddy 라우팅 제거(16 §B.3)
+  - `wa_livekit.py`/`wa_presence.py` → D27 명칭·경로로 정리
+- **완료 조건**:
+  - WA 컨테이너·라우팅 잔재 0, Colyseus/LiveKit만 잔존
+  - 회귀 테스트 통과(기존 pytest 417+ 유지)
+
+### [ ] P7-T2: 다층 렌더 + 층 전환 UI [신규]
+
+- **담당**: 3d-engine-specialist + frontend-specialist
+- **의존**: P2-T3, P4-T1
+- **산출물**:
+  - 다층 배경/깊이 렌더(층별 office_bg/depth/camera), 층 선택기(4F/3F/2F/1F/B1F 세로 탭, design §4)
+  - 층 전환 크로스페이드(§6), Colyseus 룸=층 스왑
+- **완료 조건**:
+  - 3층 이상 층 전환, 전환 로딩 <2초, 층 간 이동·룸 스왑 정합
+
+### [ ] P7-T3: 배치 편집기 → 재렌더 루프 (2D 편집 + 배포) [신규]
+
+- **담당**: frontend-specialist + backend-specialist
+- **의존**: P2-T1, P7-T2
+- **산출물**:
+  - office_layout 2D 편집 UI(Konva) → 저장 → 검증(D12, `office_layout_validator.py` 구현됨) → 배포 → **Blender 재렌더 트리거**(P2 파이프라인) → 뷰포트/Colyseus `layout_updated` 재로드
+  - **재사용**: office_layouts API·검증기 구현됨
+- **완료 조건**:
+  - 편집→저장→검증(ERROR 0)→배포→재렌더→뷰포트 반영 E2E
+  - 롤백(이전 버전) 성공
+
+### [ ] P7-T4: 20명 부하검증 [신규]
+
+- **담당**: test-specialist
+- **의존**: P3-V, P5-V
+- **산출물**:
+  - 20명 동시 이동 시뮬레이션(15 §7), tick 20Hz 유지·E2E p95 <500ms 측정
+  - LiveKit 회의 동시성 측정
+- **완료 조건**:
+  - 20명(도그푸딩) tick 20Hz 유지, p95 <500ms, CPU/메모리 여유 리포트
+
+### [ ] P7-T5: 보안 하드닝 + 관측 + 알림 [신규 + 배선]
+
+- **담당**: backend-specialist(인프라 겸임)
+- **의존**: P7-T1
+- **산출물**:
+  - Caddy 단일 진입(Let's Encrypt TLS), rate-limit/fail2ban/포트 최소화(onprem-docker §3.3)
+  - 관측: Grafana + Prometheus + Loki + Uptime Kuma, ERP sync/KPI push 실패 알림 채널 1개(D18/D21)
+  - **재사용**: audit_log(`audit.py`)·ERP sync(`erp_sync.py`) 구현됨 → 알림 훅 연결
+- **완료 조건**:
+  - onprem §3.3 체크리스트 전 항목(인터넷 공개 배포 게이트)
+  - 실패 주입 시 알림 발송·재시도 큐 동작
+
+### [ ] P7-T6: 도그푸딩 피드백 수집 [신규]
+
+- **담당**: frontend-specialist + backend-specialist
+- **의존**: P1-V
+- **산출물**:
+  - `POST /api/feedback`(type[bug|feature|general]…), `frontend/app/(protected)/feedback/page.tsx`, 주 1회 리뷰 루틴(01-prd 사용성 기준)
+- **완료 조건**:
+  - 제출→조회→관리자 열람 E2E, 주간 피드백 리포트 집계
+
+### [ ] P7-V: 정리 · 부하 · 하드닝 통합 검증 (도그푸딩 릴리스 게이트)
+
+- **담당**: test-specialist
+- **의존**: P7-T1 ~ P7-T6
 - **산출물**: `docs/verification/phase-7-report.md`
 - **수용기준**:
-  - 다층 내비게이션: 3층 건물 이동 성공
-  - 구역 권한: 제한된 구역 진입 거부 확인
-  - AI 회의록 요약: 문장 생성 성공, 모바일 뷰포트 375px 스크린샷 가독 확인
-  - 푸시 알림: 회의/액션아이템 알림 수신 확인
-  - 대시보드: 통계 표시 및 정확성 검증
-  - 피드: 실시간 항목 업데이트 확인
-  - 감사 로그·클라이언트 자동 업데이트·ERP 동기화 실패 알림·도그푸딩 피드백 동작 확인
+  - WA 스택 잔재 0, 다층 전환 성공, 편집기→재렌더 루프 E2E
+  - 20명 부하 tick 20Hz·p95 <500ms, 하드닝(§3.3)·관측·알림 동작
+  - 도그푸딩 피드백 수집 동작 → **사내 인터넷 공개 배포 게이트 통과**
 
 ---
 
 ## 교차 참조 및 의존성 요약
 
-### 문서 계층 구조
+### 문서 계층 구조 (D27 정본)
 ```
-01-prd.md
-  ├→ 03-erp-integration.md
-  ├→ 04-data-model.md
-  ├→ 05-office-layout-schema.md
-  ├→ 06-screens.md
+00-decisions.md §H(D27) ── 최우선 정본
+  ├→ 14-virtual-office-spec.md (기능 스펙)
+  ├→ 15-realtime-server-spec.md (Colyseus 이동서버)
+  ├→ 16-render-spike-and-roadmap.md §Part B (P0~P7 편성 정본)
+  ├→ 3d-design/design-style-analysis.md (셸 UI·디자인 토큰·아트 디렉션)
+  ├→ 3d-design/photoreal-web-strategy.md (렌더 파이프라인)
+  ├→ 04-data-model.md §2.5/§2.7 (좌석·프레즌스·공지)
   └→ 12-tasks.md (본 문서)
 ```
 
-### 권장 순차 빌드 (1인 개발 현실 기준)
+### 규모 표기 (주 단위 확정 보류)
 
-**1인 개발 + AI 협업**: Godot 3D + FastAPI + Next.js 삼중 스택의 동시 개발은 불가능 (13-risks-open-questions.md R7 참조).  
-따라서 **Phase는 순차 빌드**를 원칙으로 한다(Phase 병렬화 없음). 각 Phase 내부의 개별 Task는 의존성이 없으면 함께 진행할 수 있으나, Phase 경계는 순차.
+> **주 단위 기간은 스파이크·초기 P1~P2 실측 후 확정**(억지 숫자 금지). 구 45주/58주 간트 폐기. 아래는 상대 규모(S/M/L)만 제시.
 
-| Phase | 예상 기간 | 의존 | 비고 |
-|-------|---------|------|------|
-| 0 | 4주 | 없음 | API 계약 + 스파이크 S1~S4 (F절) |
-| 1 | 12주 | P0 | 골든 샘플 3D (품질 기준) |
-| 2 | 7주 | P1 | ERP 동기화 + 좌석/구역 |
-| 3 | 6주 | P2 | 2D 편집기 + 데스크톱 draft 모드 |
-| 4 | 8주 | P3 | 헤드리스 서버 + 멀티플레이어(WSS) |
-| 5 | 8주 | P4 | 회의 + LiveKit + STT 회의록 |
-| 6 | 7주 | P5 + ERP dev브랜치 | KPI 산출 + AI 서술 + ERP push |
-| 7 | 6주 | P6 | 고도화 (다층, 권한, 감사로그, 자동업데이트) |
+| Phase | 범위 | 상대 규모 | 의존 | 신규/재사용 |
+|-------|------|:---:|------|------|
+| P0 | 깊이합성 스파이크 | — | 없음 | ✅ **PASS(2026-07-08)** |
+| P1 | 셸 + 데이터 연결 | M | P0 | 신규 UI + 백엔드 대부분 재사용 |
+| P2 | 렌더 파이프라인 | L | P0·P1 | 신규(Blender 파라메트릭) |
+| P3 | 이동서버(Colyseus) | L | P2 | 신규(Colyseus) + presence 재사용 |
+| P4 | 프레즌스·좌석 | M | P3 | 배선(백엔드 재사용) |
+| P5 | 회의·화상 | M | P4 | LiveKit 배선 + consent 재사용 |
+| P6 | STT·AI·KPI 워크플로우 | M | P5 + 외부 리소스 | STT 외부의존 + KPI 엔진 재사용 |
+| P7 | 정리·부하·하드닝 | M | P1~P6 | 정리 + 신규 다층/부하 |
 
-**총 예상 기간**: **58주** (시작 2026-07-06 → 완성 2027-08-16, 2027년 하반기) — 10-roadmap.md v2.0과 동일 (13-risks 검증 간트 기준선, 15% 버퍼 포함, D6)
+### Phase 간 의존성 (순차 원칙, R7)
 
-### Phase 간 의존성 (순차 원칙)
-
-- Phase 0 완료 → Phase 1 시작 (계약 + 스파이크 S1~S4 통과 후 3D 품질 기준 확정)
-- Phase 1 완료 → Phase 2 시작
-- Phase 2 완료 → Phase 3 시작
-- Phase 3 완료 → Phase 4 시작 (실시간 서버는 P1, P3 산출물 필요)
-- Phase 4 완료 → Phase 5 시작 (회의실 점유 state 필요)
-- Phase 5 완료 → Phase 6 시작 (회의록 신호 필요)
-- Phase 6 완료 → Phase 7 시작
+- **P0 완료(✅ PASS) → P1 시작** (셸 착수)
+- P1 완료 → P2 시작 (뷰포트 placeholder에 배경 주입)
+- P2 완료 → P3 시작 (배경/깊이 위 아바타 깊이합성)
+- P3 완료 → P4 시작 (이동·presence 위 시각화)
+- P4 완료 → P5 시작 (프레즌스 위 회의 근접)
+- P5 완료 → P6 시작 (회의·Egress 위 STT)
+- P1~P6 완료 → P7 시작 (정리·부하·하드닝)
 
 ---
 
 ## Open Questions & Assumptions
 
 ### Open Questions
-- ERP dev 브랜치(`feature/virtual-office-integration`) 착수 타이밍? (git 접근권한 보유로 자체 작업 — Phase 6 착수 시점 확정 필요)
-- 모바일 앱: Phase 7 이후인가? (현재 Godot 데스크톱 + Next.js 웹 기준)
+- 한국어 화자분리 STT 엔진 선정(외부 의존, P6 착수 전 확정 필요).
+- 실 ERP DB 접근·ERP dev 브랜치(`feature/virtual-office-integration`) 착수 타이밍(KPI push 폐쇄루프, P6).
+- Blender 렌더 파이프라인 CI 자동화 범위(수동 배치 vs 배포 트리거 재렌더, P2/P7-T3).
+- 100명 설계 부하 검증 시점(도그푸딩 20명 이후, P7 후).
 
-> 확정 종결: 실시간 프로토콜=WebSocket(WSS, D1), KPI AI=Claude 기본(D 참조), LiveKit=사내 VM self-host(D21), 회의실 예약=예약+FCFS(D23), 회의 입장=명시적 확인(D24).
+> 확정 종결: 실시간 이동서버=**Colyseus 이식**(D27, 20Hz), 렌더=**Blender Cycles 오프라인 + R3F 깊이합성**(D27), 인증=**단일 세션 JWT**(콘솔 JWT 그대로 3D 진입, 별도 OIDC 없음), 회의 입장=**명시적 확인**(D24), LiveKit=**사내 VM self-host**(D21).
 
 ### Assumptions
-- 단일 회사(company_id=1) 기준이므로 멀티테넌트 로직 미포함.
-- Phase별 Worktree는 순차 생성 (Phase 병렬화 없음, R7).
-- 모든 Task는 branch-per-phase 정책 (rebase 병합 권장).
-- ERP read-only 동기화는 Postgres direct access (API 없음).
-- 3D 최고품질 목표 우선, 웹 WASM export 배제.
+- 단일 회사(company_id=1) 기준, 멀티테넌트 로직 미포함(B2B는 P7 이후).
+- Phase는 순차 빌드(1인 개발, 병렬화 없음, R7).
+- 백엔드 도메인(ERP sync·좌석·회의·KPI 엔진·consent·EOD·work-log·감사)은 **구현됨(pytest 417+)** — Phase 태스크는 배선·프런트·신규 스택(Colyseus/Blender/R3F) 중심.
+- 고정 아이소메트릭 2.5D 시점(자유시점 풀3D 배제, D27).
 
 ### Validation Criteria (모든 Phase)
-- P0: 모든 계약 & 테스트 케이스 작성 완료
-- P1~P7: 각 Phase 마지막 Verification Task 통과
+- P0: ✅ 깊이합성 오클루전 게이트 PASS(2026-07-08, commit `b4736b1`).
+- P1~P7: 각 Phase 마지막 Verification(V) 태스크 통과. P7-V = 도그푸딩 인터넷 공개 배포 게이트.
 
 ---
 
 ## Loop Metadata
 
-### Upstream Documents Referenced
-- `01-prd.md`: 사용자 기획 v3.2 (로드맵 7단계, KPI 원칙)
-- `03-erp-integration.md`: ERP 연동 계약 (read-only sync, KPI push)
-- `04-data-model.md`: 데이터 모델 설계
-- `05-office-layout-schema.md`: office_layout 스키마
-- `06-screens.md`: 화면 스펙 (참조 예정)
-- `08-kpi-logic.md`: KPI 산출 규칙 (신호 정의, 평가 항목, 반감시 원칙)
-- `10-roadmap.md`: 총 58주 로드맵(v2.0, 시작 2026-07-06 → 완성 2027-08-16), 순차 빌드 원칙
-- `00-decisions.md`: 정본 결정 로그(D1~D25, F절) — 최우선 기준
-- `13-risks-open-questions.md`: 1인 개발 리스크(R7: Phase 병렬화 불가)
+### Upstream Documents Referenced (D27 정본)
+- `00-decisions.md` §H(D27): 정본 결정 로그 — 최우선 기준
+- `14-virtual-office-spec.md`: 가상오피스 기능 스펙(D27)
+- `15-realtime-server-spec.md`: Colyseus 이동서버 스펙(프로토콜·검증 8+8·SLA)
+- `16-render-spike-and-roadmap.md` §Part B: P0~P7 편성 정본
+- `3d-design/design-style-analysis.md`: 통합 셸 UI·디자인 토큰·아트 디렉션
+- `3d-design/photoreal-web-strategy.md`: 렌더 파이프라인 전략
+- `04-data-model.md` §2.5/§2.7: 좌석·프레즌스·공지(announcement)
+- `08-kpi-logic.md`: KPI 산출 규칙(결정론, 반감시)
+- `13-risks-open-questions.md`: 1인 개발 리스크(R7 순차)
 
 ### Downstream Documents Affected
-- API 명세 생성 (각 Phase별 OpenAPI YAML)
-- 테스트 계획 (pytest, Godot tests)
-- 배포 가이드 (Docker, Godot server setup)
-- CI/CD 워크플로우 (.github/workflows)
+- `specs/screens/virtual-office-3d.yaml` v3.0(D27 반영)
+- `06-screens.md`(셸 3카드·공지·KPI 워크플로우 화면)
+- `10-roadmap.md`(주 단위 재산정 — 스파이크 결과 반영)
+- API 명세(공지·presence batch·LiveKit), 배포 가이드(Colyseus/LiveKit docker, Caddy)
 
-### Risks
-- **R1**: Godot 4 네이티브 멀티플레이어 성능 미검증 (Phase 4 초반 POC 필수)
-- **R2**: ERP 연동 JWT 갱신 로직 복잡도 (24h 주기, 만료 전 갱신)
-- **R3**: AI KPI 초안 품질 편차 (프롬프트 튜닝 필요)
-- **R4**: LiveKit self-host 운영비 & 확장성 (현재 사내용 OK, B2B 시 재검토)
+### Risks (D27)
+- **R1(신규)**: Blender 파라메트릭 렌더 파이프라인 자동화 난이도 + 렌더 시간(P2).
+- **R2(신규)**: R3F 깊이합성 정밀도 다층·다양 레이아웃 일반화(P2·P3).
+- **R3(신규)**: Colyseus 이동서버 신규 구축량(검증된 SkyOffice MIT 패턴이라 난이도보다 실행량, 15 §9).
+- **R4**: 한국어 화자분리 STT 품질·외부 의존(P6, 폴백=수동+AI 요약).
+- **R5**: LiveKit self-host 운영·확장(사내 OK, B2B 재검토).
 
 ### Success Metrics
-- Phase 0 완료: API 계약 100% 정의, 테스트 구조 수립
-- Phase 1 완료: 골든 샘플 3D 60 FPS 유지
-- Phase 2 완료: ERP 동기화 정확성 99.9%
-- Phase 6 완료: EOD KPI push 성공률 100%
-- Phase 7 완료: 최종 사내 도그푸딩 만족도 >= 4.5/5
+- P0: ✅ 깊이합성 오클루전 게이트 PASS.
+- P1: 시안 셸 픽셀 재현 + 실데이터 배선.
+- P2: office_layout→배경/깊이 자동생성 + 뷰포트 표시.
+- P3: 멀티유저 이동 20Hz + 깊이합성 아바타, p95 <500ms.
+- P6: STT 회의록 누락률 <5%, KPI ERP push 폐쇄루프.
+- P7: 20명 부하 tick 20Hz 유지, 도그푸딩 만족도 ≥ 4.5/5.
 
 ---
 
-**Last Updated**: 2026-07-02 (v2.1 — 구현 현황 반영 + 마이그레이션 규약·배포 정본(onprem-docker) 정합)  
-**Author**: Documentation Specialist (Claude Code)  
-**Status**: Draft → Ready for Phase 0 Kickoff
+**Last Updated**: 2026-07-09 (v3.0 — D27 포토리얼 웹임베드 전환 재작성, Godot/WA 태스크 전량 폐기·P0~P7 재편)
+**Author**: Documentation Specialist (Claude Code)
+**Status**: Draft → Ready for P1 Kickoff (P0 PASS)

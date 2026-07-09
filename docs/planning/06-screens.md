@@ -1,175 +1,186 @@
 # 06-screens.md: 화면 명세
 
+> **아키텍처 정본 = D27 포토리얼 웹임베드(2026-07-08 전환).** 클라이언트는 **단일 통합 웹앱(Next.js) 안의 react-three-fiber(R3F) 3D 뷰포트**이며, 별도 데스크톱 앱은 없다. 화면 구조·대시보드 셸 정본 = 3d-design/design-style-analysis §3, 14-virtual-office-spec §1·§2.8. 실시간(Colyseus 20Hz)·인증(단일 세션 FastAPI JWT)·렌더(Blender 오프라인 배경 + R3F 아바타 깊이합성) 정본 = 15-realtime-server-spec · 16-render-spike-and-roadmap · 3d-design/photoreal-web-strategy.
+>
+> **폐기 스택 표기**: 이하 §1(3D 메인 오피스)은 구 아키텍처(Godot 4 네이티브 데스크톱 HUD)를 D27 웹 뷰포트 기준으로 교체 서술한다. 웹 콘솔의 도메인 화면(회의록·업무·좌석·인사근태·KPI 등)은 그대로 유효하다.
+
 ## 메타 정보
 - **프로젝트**: vituraloffice_new (가상오피스 운영 플랫폼)
 - **작성일**: 2026-07-01
-- **최종 갱신**: 2026-07-02
-- **버전**: 1.1
+- **최종 갱신**: 2026-07-09
+- **버전**: 2.0
 - **대상**: 개발/기획 경험 있는 실무자 (L3)
-- **목적**: screen-spec 입력 문서. 3D 오피스 + 웹 관리 콘솔의 모든 화면 정의
-- **참조**: 00-decisions.md(정본 결정, 특히 D5·D11·D12·D15·D20·D22), 05-office-layout-schema.md(레이아웃 스키마 정본)
+- **목적**: screen-spec 입력 문서. 통합 대시보드 셸(R3F 3D 뷰포트 + 웹 콘솔 화면)의 모든 화면 정의
+- **참조**: 00-decisions.md(정본 결정, 특히 D5·D11·D12·D15·D20·D22·§H D27), 14-virtual-office-spec.md(가상사무실 정본), 15-realtime-server-spec.md, 16-render-spike-and-roadmap.md, 3d-design/design-style-analysis.md(디자인·셸 정본)·photoreal-web-strategy.md(렌더), 05-office-layout-schema.md(레이아웃 스키마 정본), 08-kpi-logic.md(KPI 로직·메트릭 정본), 04-data-model.md(DB 스키마)
 
 > 이 문서는 00-decisions.md의 정본 결정을 따른다. 충돌 시 00-decisions.md가 이긴다.
 
-### 작성/열람 경계 원칙 (Godot ↔ 웹)
-- **Godot 데스크톱 클라이언트 = 보기/입장/상태**: 3D 오피스 탐색, 회의실 입장, 프레즌스 표시, 좌석 점유/반납 같은 실시간 상호작용만 담당한다. **문서 작성 폼(회의록·업무기록 등)을 Godot 안에 두지 않는다.**
-- **웹 관리·업무 콘솔 = 모든 작성**: 회의록·업무기록·KPI 검토·이의신청·조직도/좌석 편집 등 모든 데이터 입력·편집은 웹에서 한다.
-- Godot의 하단 패널 등에서 작성이 필요하면 "웹 콘솔로 이동" 링크로 단일화한다(중복 폼 금지).
+### 작성/열람 경계 원칙 (3D 뷰포트 ↔ 웹 콘솔)
+- **3D 뷰포트(R3F, 대시보드 셸 중앙 상단) = 보기/입장/상태**: 3D 오피스 탐색, 회의실 명시적 입장, 프레즌스 표시, 자율좌석 점유/반납 같은 실시간 상호작용만 담당한다. **문서 작성 폼(회의록·업무기록 등)을 3D 뷰포트 안에 두지 않는다.**
+- **웹 콘솔 화면(같은 앱의 다른 라우트/패널) = 모든 작성**: 회의록·업무기록·KPI 검토·이의신청·조직도/좌석 편집 등 모든 데이터 입력·편집은 웹 화면에서 한다.
+- 뷰포트 오버레이(미디어바·HUD 등)에서 작성이 필요하면 해당 웹 콘솔 화면으로 이동하는 링크로 단일화한다(중복 폼 금지).
 
 ---
 
-## 1. 3D 메인 오피스 화면 (Godot 4 Native Desktop)
+## 1. 통합 대시보드 셸 화면 (Unified Dashboard Shell — D27 정본)
+
+> **정본**: 3d-design/design-style-analysis §3(레이아웃·그리드), 14-virtual-office-spec §1(화면 구조)·§2.8(대시보드 패널). 이 화면이 앱의 **랜딩·홈**이며, 3D 오피스는 이 화면 중앙 상단의 뷰포트로 임베드된다(별도 데스크톱 앱·별도 탭 없음).
+
+### 1.0 화면 개요
+
+단일 통합 웹앱(Next.js) 안의 **3분할 셸 + 중앙 상하 분할** 레이아웃이다. 좌 내비 · 중앙(상단 R3F 3D 뷰포트 + 하단 대시보드 3카드) · 우 패널로 구성되며, 다크 퍼스트 엔터프라이즈 톤(design-style-analysis 정본)을 따른다.
 
 ### 1.1 전체 레이아웃 구조
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Header (상단)                               │
-│  [Company Logo] [Office/Floor 선택] [Search] [User Profile] [Help]  │
-├─────────┬──────────────────────────────────────────────┬────────────┤
-│         │                                              │            │
-│ Left    │                                              │  Right     │
-│ Sidebar │         3D Main Viewport                     │  Panel     │
-│ (Sidecar)│                                              │ (People)   │
-│         │  - 로비, 브랜드월, 오픈좌석,                 │            │
-│         │  - 유리 회의실, 라운지, 집중실              │ - 현재 참석│
-│         │  - 폰부스, 아바타×5~10                       │ - 상태별   │
-│         │  - 이름/상태 HUD, 우측 직원패널             │ - 조직도   │
-│         │  - 하단 회의/업무 패널                       │ - 검색     │
-│         │  - 미니맵                                    │            │
-│         │                                              │            │
-├─────────┼──────────────────────────────────────────────┼────────────┤
-│                    Footer (하단)                                    │
-│  [Meeting Controls] [Work Panel] [Chat Notify] [Time] [Status]      │
-└─────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│  Header (로고+앱명 | 오피스/층 선택 | 검색 | 알림·메시지 | 내 프로필)     │  ~56px
+├────────┬────────────────────────────────────────────┬─────────────────┤
+│  Left  │        3D 오피스 뷰포트 (R3F 포토리얼)        │   Right Panel   │
+│  Nav   │        + 아바타/프레즌스 HUD/미니맵/          │   사용자 목록    │
+│ ~240px │          층 선택/미디어바                     │   오늘의 일정    │
+│        ├────────────────────────────────────────────┤   공지사항       │
+│  가상  │  오늘의 업무 │ 나의 KPI 현황 │ 진행중 화상회의  │   ~320px        │
+│  오피스│  (3-card dashboard row)                     │                 │
+│  ...   │                                            │                 │
+│  설정  │                                            │                 │
+│ +프로필│                                            │                 │
+└────────┴────────────────────────────────────────────┴─────────────────┘
 ```
 
 ### 1.2 각 영역 상세
 
-#### **Header (상단)**
-- **로고 + 회사명**: 클릭 시 대시보드 이동
-- **Office/Floor 선택 드롭다운**: 사용자가 다중 office 구성 시 전환
-- **Search Bar**: 직원 이름/팀 검색 → 아바타 강조 + 카메라 이동
-- **User Profile**: 내 아바타 상태(online/meeting/focus/away) 표시 + 드롭다운 (마이페이지/로그아웃)
-- **Help**: 단축키, 튜토리얼 링크
+#### **Header (상단, ~56px)**
+- **로고 + 앱명**: 클릭 시 대시보드 셸(홈) 복귀
+- **오피스/층 선택**: 다중 office/floor 구성 시 전환(뷰포트 층 선택기와 동기화)
+- **Search Bar**: 직원 이름/팀 검색 → 뷰포트 아바타 강조 + 카메라 팬(design-style §6)
+- **알림·메시지**: 알림 카운트 뱃지(`--danger`), 드롭다운
+- **내 프로필**: 내 아바타 + 상태(online/working/meeting/focus/away/external/offline — D13 7종) + 드롭다운(마이페이지/로그아웃)
 
-#### **Left Sidebar (좌측 사이드바 — 보조 내비게이션)**
-- **Office Navigation**: 층(floor) 선택, 구역(zone) 필터
-- **Rooms**: 이용 가능한 회의실 목록 (점유 여부, 예약 시간), 클릭 → 회의실 카메라 이동
-- **People**: 현재 온라인 직원 목록 (팀별 그룹), 클릭 → 아바타 추적
-- **Chat**: 미니 채팅 인터페이스 (회의 중 메모/근접 DM만, KPI 반감시 원칙 준수). **본격 채팅은 Phase 7 고도화** — MVP는 회의 메모·근접 DM 수준으로 한정
-- **Settings**: 아바타 커스터마이징, 알림, 접근성
+#### **Left Nav (좌측 내비게이션, ~240px 고정)**
+아이콘+라벨 수직 메뉴. 활성 항목 = `--primary-soft` 배경 + `--primary` 좌측 인디케이터(design-style §3). 메뉴 항목(14 §1):
+- **가상오피스**(대시보드 셸 = 이 화면) / **업무관리** / **업무현황** / **출장관리** / **KPI평가**(§3.4·§3.13 워크플로우) / **보고서** / **회의실예약** / **커뮤니케이션** / **인사·근태** / **설정**
+- 하단: **내 프로필 카드**(아바타+이름+상태+상태변경 버튼)
+> 각 메뉴 항목은 §3 이하의 웹 콘솔 도메인 화면으로 라우팅된다. 조직도 편집(§3.1)은 **설정** 하위 관리자 기능. 채팅/커뮤니케이션은 **회의 메모·근접 DM 수준**으로 한정하고 본격 채팅은 Phase 7 고도화(Open questions).
 
-#### **3D Main Viewport (중앙 — 메인 렌더링 영역)**
-**기하학적 요소:**
-- **로비 (Lobby)**: 입장 포인트, 수직 레이아웃 (스탠딩 바 + 공동 공간)
-- **브랜드월 (Brand Wall)**: 회사 미션/비전 스크린, 회의 시 이미지 디스플레이
-- **오픈좌석 (Open Seating)**: 팀별 구역으로 배열, desk/monitor/chair 에셋, seat.coords 기반 배치
-- **회의실 (Meeting Rooms)**: 투명 유리벽, 내부 테이블/의자, 문 트리거, livekit_room 연결
-- **라운지 (Lounge)**: 소파/커피테이블, 비포멀 미팅 공간
-- **집중실 (Focus Room)**: 소음 차단, 좁은 데스크, 진입 제한(자리만큼만)
-- **폰부스 (Phone Booth)**: 독립 칸막이, 영상통화용
-- **미니맵 (Minimap)**: 우측 하단 코너, 현재 층 조감도, 아바타 위치, 회의실 점유 표시
+#### **3D 오피스 뷰포트 (중앙 상단 — R3F 포토리얼, 높이 ~55~60%)**
+- **렌더**: Blender Cycles 오프라인 렌더 배경 + R3F 실시간 아바타 **깊이합성**(가구·유리벽 뒤 자연 가림). 고정 **아이소메트릭 2.5D**(약 30~35° 부감). 세부 = photoreal-web-strategy.
+- **공간 요소**: 로비/브랜드월, 오픈좌석 군집, 유리 회의실(쿨 블루 네온 엣지 `--accent-cyan`), 라운지 소파존, 식물 데코, 층 표지.
+- **뷰포트 오버레이 UI**(design-style §4):
+  - **아바타 HUD**: 머리 위 이름+직급+상태 라벨(반투명 pill), 상태 점(7종 색)
+  - **미니맵**: 좌하단 오버레이 카드, 조감도 + 아바타/회의실 색점, 확대/축소
+  - **층 선택기(Floor)**: 뷰포트 우측 세로 탭(4F/3F/2F/1F/B1F), 활성 = `--primary`
+  - **미디어 컨트롤 바**: 하단 중앙 pill 바(마이크·카메라·화면공유·이모지·더보기)
+- **아바타 시스템**:
+  - 로그인 직원 = erp_user.id → 좌석(seat) 배정 또는 로비 시작
+  - 아바타 스타일: 본인 선택(5~10 템플릿, §3.9) + 이름/직급 HUD
+  - 상태 7종(D13): offline/online/working/meeting/focus/away/external
+  - 이동: WASD/마우스, **Colyseus 권위 서버 20Hz**가 이동/충돌/근접 검증(로컬 예측 + >0.5m Lerp 보정 — 15-realtime-server-spec)
+- **상호작용 트리거**:
+  - 회의실 명시적 입장(D24): 문 근처(2m) → "회의 입장" 프롬프트 → 클릭 → LiveKit 토큰·연결, presence=meeting, 참석자 기록
+  - 자율좌석 점유(§3.11): 빈 free 좌석 클릭 → 착석
+  - 협업 근접: 근접 시 프레즌스 시각화(협업 신호는 KPI 반감시 원칙 준수)
 
-**아바타 시스템:**
-- 로그인 직원 = erp_user.id → 좌석(seat) 배정 또는 로비 시작
-- 아바타 스타일: 본인 선택(5~10 가지 템플릿) + 이름/직급 텍스트 HUD 위에 표시
-- 상태: online(이동 중) → working(자리에서 작업) → meeting(회의실) → focus(집중모드) → away(자리 비움) → offline
-- 이동: WASD/마우스 드래그, 회의실/focus 구역 진입 시 서버 검증 (좌석 확보/시간 기한)
+#### **대시보드 3카드 행 (중앙 하단 — 읽기 전용 요약/글랜스)**
+> 매핑 정본 = 14 §2.8.1. 카드는 **daily 뷰**(period_type=`daily`, 당일 누적) 요약이며, 상세·편집은 각 도메인 화면으로 이동. 임의 점수를 만들지 않는다(정량은 결정론적 코드, AI는 서술만 — D14-e).
 
-**상호작용 트리거:**
-- 회의실 입장: 문 근처(2m 거리) → "Enter Meeting" 프롬프트 → 클릭 → LiveKit 방 생성/진입, presence 업데이트, 참석자 기록
-- 협업 제스처: 근접(1m) 시 "+1 nearby" 표시, 더블탭 → 협력 카운트 증가
-- 채팅 팝업: 직원 우클릭 → DM 시작 (실시간 채팅, 회의 중 메모)
+- **오늘의 업무**(work_log): 당일 업무 목록·진행도 요약. `[전체 보기 ›]` → 업무기록(§3.6)
+- **나의 KPI 현황**(kpi_result, daily): **도넛 게이지 = `collaboration_score`(0–100)** 중앙 숫자 + 지표바 5종(§1.2.1 매핑). `[전체 보기 ›]` → KPI평가(§3.13)
+- **진행중 화상회의**(meeting/participant): 참석자 타일(2×2 그리드) + 미디어 컨트롤. `[입장]`
 
-#### **Right Panel (우측 — 사람/상태 패널)**
-- **현재 참석자 리스트**: 층/구역별 필터, 아바타 선택 시 카메라 추적
-- **팀별 그룹**: 팀 이름 + 현재 온라인 인원 수
-- **상태별 필터**: all / online / meeting / focus / away
-- **검색 바**: 이름/팀 입력 → 실시간 필터
-- **상세 정보**: 선택한 직원 → 이름, 직급, 팀, 현재 상태, 마지막 상태 변경 시간
+##### 1.2.1 나의 KPI 카드 ↔ 메트릭 매핑 (14 §2.8.1 · 08 정본 바인딩)
 
-#### **Footer (하단 — 회의/업무 패널)**
-```
-[◄ 이전] [▶ 다음] Meeting: "Q4 Planning" (Host: Kim, 14:00-15:00)
-[▲ 펼치기] → 회의 참석자, 회의록, 액션아이템 확장 보기
+| UI 위젯 | 바인딩 메트릭(08 / 04 §2.5) | 형식 | 비고 |
+|---|---|---|---|
+| **도넛 게이지**(중앙 `NN/100`) | `collaboration_score` | 0–100 | 헤드라인. 08 §1.2 합성 점수(업무건수30·충실도25·회의록20·액션15·기록10) |
+| 지표바 ① | `work_completed_count` | 건수 | 완료 업무 건수(팀 벤치마크 대비 상대표시 권장) |
+| 지표바 ② | `work_quality_score` | 0–100 | 업무 충실도 |
+| 지표바 ③ | `minutes_authored_count` | 건수 | 회의록 작성 기여 |
+| 지표바 ④ | `action_items_ontime_rate` | % | 액션아이템 기한 내 이행률 |
+| 지표바 ⑤ | `report_fidelity_score` | 0–100 | 업무기록 충실도 |
 
-Work Log: "API 개발" (2.5h est, started) [상세보기]
-Chat Notifications: +3 (회의 채팅), [닫기]
-```
+- **표시 주기**: 카드는 daily 기본. AI 서술 초안·종합평가(상/중상/…)는 **분기(quarterly)에만** 존재하므로 카드에 노출하지 않고 KPI평가 화면(§3.13, 분기 상세)에서만 표시(08 §3·§6.2.2).
+- **API**: 카드 = `GET /api/kpi/daily`(와이드포맷, 08 §6.2.1). 분기 상세 = `GET /api/kpi/quarterly`(08 §6.2.2).
+- design-style §4의 `87/100`·`9/10`은 **시안 목업 예시**일 뿐, 실제 표시값은 위 메트릭에서 온다.
 
-- **회의 컨트롤**: 현재 진행 중인 회의 요약, 나가기(Leave), 화면 공유(Share), 녹화(Record). 회의록 **작성**은 여기서 하지 않고 종료 후 웹 콘솔에서 STT 초안을 검토·확정한다(D5)
-- **업무 패널**: 오늘의 work_log 요약, 예상 시간/진행도. 작성·수정은 **"웹 콘솔로 이동"** 링크로 단일화(Godot 내 입력 폼 없음 — 작성/열람 경계 원칙)
-- **알림**: 채팅/회의 초대/결정사항 발생 시 팝업
+#### **Right Panel (우측, ~320px — 리스트형 카드 스택)**
+- **사용자 목록**(presence/erp_user): 아바타+이름+상태 pill. 상단 탭 필터 **전체 / 사무실 / 회의중 / 외근·출장**(design-style §4). 클릭 → 뷰포트 카메라 추적
+- **오늘의 일정**(meeting): 시간순 회의 리스트, 클릭 → 회의 상세(§3.5)
+- **공지사항**(announcement): 카테고리별(system/notice/info) + 핀 고정 카드 스택(§3.14). `[전체 보기 ›]` → 공지 목록
 
-### 1.3 상호작용 플로우 (Godot 헤드리스 서버 기반)
+### 1.3 상호작용 플로우 (Colyseus 권위 서버 기반 — 15-realtime-server-spec 정본)
 
 ```mermaid
 sequenceDiagram
-    participant User as 사용자 (Godot Client)
-    participant Server as Godot Server (권위)
-    participant ERP as ERP API
+    participant User as 사용자 (웹앱 R3F 뷰포트)
+    participant RT as Colyseus 이동서버 (20Hz 권위)
+    participant API as FastAPI (JWT·도메인)
     participant LiveKit as LiveKit
 
-    User->>Server: 로그인 (JWT token)
-    Server->>ERP: erp_user 동기화
-    Server->>Server: presence 생성 (office_id, floor_id, x, y)
-    Server->>User: 아바타 로드 + 좌석 위치 반환
+    User->>API: 로그인 (email/pw) → JWT 발급 (단일 세션)
+    User->>RT: WSS 접속 (onAuth: JWT 검증)
+    RT->>API: presence 조회/생성 (office_id, floor_id, x, y)
+    RT->>User: room state 스냅샷 (아바타·좌석·프레즌스)
 
-    User->>User: WASD 입력 (x, y 이동)
-    User->>Server: 이동 상태 전송
-    Server->>Server: 충돌 검사 (office_layout), 근접 감지
-    Server->>User: 다른 아바타 위치 업데이트 (broadcast)
+    User->>User: WASD 입력 (로컬 예측 이동)
+    User->>RT: move_request
+    RT->>RT: 이동 검증(충돌·층·속도·권한·점유·정원), 근접 감지
+    RT->>User: world_update (20Hz broadcast, >0.5m Lerp 보정)
 
-    User->>Server: 회의실 입장 (room_id, user_id)
-    Server->>Server: seat 할당 검증, room.capacity 확인
-    Server->>LiveKit: room 생성 또는 기존 room token 발급
-    Server->>Server: meeting 레코드 생성, meeting_participant 추가
-    Server->>User: LiveKit token + 참석자 목록
-    User->>LiveKit: 카메라/마이크 연결
+    User->>RT: 회의실 명시적 입장 (room_id) — D24
+    RT->>RT: seat/정원 검증, presence=meeting 전이
+    RT->>API: meeting join → LiveKit 토큰 발급
+    API->>LiveKit: room 생성 또는 기존 room token
+    RT->>User: LiveKit token + 참석자 목록
+    User->>LiveKit: 카메라/마이크 연결 (녹음·STT 동의 배너 — D20-b)
 
-    User->>User: 회의 중 채팅/화이트보드
-    User->>Server: 회의 종료
-    Server->>Server: meeting.ended_at 업데이트
-    Server->>Server: LiveKit Egress 오디오 → STT(화자분리) → 회의록 초안 생성(D5)
-    Server->>User: "회의록 초안이 웹 콘솔에 준비됨" 알림 (작성은 웹에서)
+    User->>API: 회의 종료
+    API->>API: LiveKit Egress 오디오 → STT(화자분리) → 회의록 초안(D5)
+    API->>User: "회의록 초안이 KPI/회의 화면에 준비됨" 알림 (작성은 웹 화면에서)
+
+    Note over User,RT: 단절 시 지수 백오프 재접속 → JWT/schema 재협상 → Colyseus snapshot 복구
 ```
 
 ---
 
-## 2. 웹 관리·업무 콘솔 (Next.js + TailwindCSS)
+## 2. 웹 콘솔 도메인 화면 (통합 대시보드 셸 내부 라우트 — Next.js + TailwindCSS)
 
 ### 2.1 화면 목록 및 계층
 
 ```
-Dashboard
-├── 조직도 편집기 (Organization Chart Editor)
-├── 직원명부 (Employee Directory)
-├── 좌석 배치 편집기 (Seat Assignment & Layout Manager)
+통합 대시보드 셸 (§1 — 랜딩·홈)
+├── 조직도 편집기 (Organization Chart Editor, §3.1)
+├── 직원명부 (Employee Directory, §3.2)
+├── 좌석 배치 편집기 (Seat Assignment & Layout Manager, §3.3)
 │   ├── 2D 편집 (Konva.js 전용)
-│   ├── 저장 후 데스크톱 클라이언트 draft 모드 열람 (웹 3D 미리보기 없음 — D11)
+│   ├── 저장 후 웹 뷰포트 내 3D 프리뷰(본인 draft 열람, 웹 실시간 재렌더 없음 — D11)
 │   ├── 검증 & 배포 (층 단위)
 │   └── 롤백 이력 (층 단위)
-├── KPI 대시보드 (KPI Dashboard)
-├── 이의신청 (KPI Objection, §3.7)
-├── 회의/회의록 (Meeting & Meeting Minutes)
+├── KPI 평가 워크플로우 (§3.13)
+│   ├── 분기 KPI 상세 + AI 초안 열람 (직원, 08 §6.2.2)
+│   ├── 관리자 검토·조정 ±10% (leader/admin, 08 §3.2·§6.2.3)
+│   └── 이의신청 상태머신 none→submitted→reviewing→resolved (08 §3.3·§6.2.4)
+├── KPI 대시보드 (추이/팀 종합, §3.4)
+├── 이의신청 (KPI Objection, §3.7 — §3.13 워크플로우로 통합 열람)
+├── 회의/회의록 (Meeting & Meeting Minutes, §3.5)
 │   ├── 회의 일정 + 참석자
 │   ├── 회의록 STT 초안 검토/확정 (D5)
 │   └── 액션아이템 추적
-├── 업무기록 (Work Log & Reports)
+├── 업무기록 (Work Log & Reports, §3.6)
 │   ├── 일일/주간 업무보고
 │   ├── 결과물 등록
 │   └── EOD 상태 동기화
+├── 공지사항 (Announcement, §3.14 — 우패널 카드 + 관리자 게시 화면)
 ├── 로그인/세션 (Auth, §3.8)
 ├── 아바타 커스터마이징 (§3.9)
 ├── 권한 규칙 & 접근 매트릭스 (RBAC, §3.10)
-├── 자율좌석 점유/반납 (3D 상호작용, §3.11)
+├── 자율좌석 점유/반납 (3D 뷰포트 상호작용, §3.11)
 └── 관리자 동기화 모니터링 콘솔 (§3.12)
 ```
 
-> 조직도 편집기(§3.1)는 **P3/고도화**로 마킹(MVP 범위 밖). 자율좌석 점유/반납(§3.11)은 3D 오피스 내 상호작용이나 배정 로직상 여기 함께 표기.
+> 조직도 편집기(§3.1)는 **P3/고도화**로 마킹(MVP 범위 밖). 자율좌석 점유/반납(§3.11)은 3D 뷰포트 내 상호작용이나 배정 로직상 여기 함께 표기.
 
-> **웹 콘솔 랜딩 = 직원명부** — 별도 대시보드 화면 없음(2026-07-02 결정). 위 트리의 "Dashboard"는 내비게이션 루트 개념일 뿐 독립 화면이 아니며, 웹 콘솔 진입 시 직원명부(§3.2)로 랜딩한다.
+> **앱 랜딩 = 통합 대시보드 셸(§1)** — D27 전환으로 웹앱과 3D 오피스가 단일 화면으로 통합되었다(2026-07-08). 진입 시 대시보드 셸로 랜딩하며, 직원명부(§3.2) 등은 좌 내비에서 이동하는 하위 화면이다.
 
 ### 2.2 각 화면 상세 명세
 
@@ -318,7 +329,7 @@ Dashboard
 
 #### 목적 (3단계)
 1. **2D 편집** (Konva.js 전용): floor 평면도 + 좌석/구역/문 개구부 그리기
-2. **저장 후 데스크톱 클라이언트 draft 모드 열람**: 웹 3D 미리보기는 제거(D11). 정밀 확인은 저장 후 Godot 데스크톱 클라이언트를 draft 모드로 열어 실제 렌더링으로 확인
+2. **저장 후 웹 뷰포트 내 draft 프리뷰**: 웹에서의 **실시간 재렌더**(편집 즉시 3D 갱신)는 범위 밖(D11). 저장 후 배포된 layout은 대시보드 셸의 R3F 뷰포트(§1)에서 draft 모드로 본인만 열람한다(오프라인 렌더 배경 갱신은 render-pipeline 배치 이후 반영 — 16, Later).
 3. **검증 & 배포**: office_layout JSON 생성 → **층(floor) 단위** version 관리 → 배포/롤백. 검증은 서버(FastAPI) 단독 정밀 검증(D12)
 
 #### 3.3.1 2D 편집기 (Konva.js)
@@ -328,7 +339,7 @@ Dashboard
 ┌─────────────────────────────────────────────────────────┐
 │ 좌석 배치 편집기 - 2D 평면도                           │
 ├─────────────────────────────────────────────────────────┤
-│ [Office] [Floor 1] [Undo] [Redo] [데스크톱 draft] [저장]│
+│ [Office] [Floor 1] [Undo] [Redo] [뷰포트 draft] [저장] │
 ├────────────────┬──────────────────────────────────────┤
 │ 왼쪽 Palette:  │                                     │  │
 │                 │  Floor 1 (1024×768)                │  │
@@ -431,22 +442,22 @@ Dashboard
 - `kind`는 편집기 요소 구분자(오브젝트 종류)이며, `type`은 05 스키마의 세부 유형(zone type=team, room type=meeting 등)이다. 종전처럼 한 객체에 `type`을 두 번 쓰지 않는다.
 - 저장 시 편집기는 이 요소들을 05 루트 스키마(zones/rooms/seats/furniture/colliders/spawn_points/…)로 재조립해 FastAPI에 제출한다.
 
-#### 3.3.2 저장 후 데스크톱 클라이언트 draft 모드 열람 (웹 3D 미리보기 없음 — D11)
+#### 3.3.2 저장 후 웹 뷰포트 내 draft 프리뷰 (웹 실시간 재렌더 없음 — D11)
 
-**목적:** 웹에서의 실시간 3D 미리보기(WebSocket 픽셀 스트리밍/HTML5 export)는 **전면 제거**한다(D11, PRD WON'T 준수). 정밀한 3D 확인은 저장 후 **Godot 데스크톱 클라이언트를 draft 모드로 열어** 실제 렌더러(Forward+)로 확인한다.
+**목적:** 웹 편집기에서의 **실시간 3D 재렌더**(편집 즉시 픽셀 스트리밍/HTML5 export)는 범위 밖이다(D11, PRD WON'T 준수). 정밀한 3D 확인은 저장 후 draft layout을 **대시보드 셸의 R3F 뷰포트(§1)에 draft 모드로 로드**해 확인한다(배경은 render-pipeline 오프라인 렌더 반영 전까지 지오메트리/플레이스홀더 프리뷰).
 
 **흐름:**
 - 편집기에서 `[저장]` → 서버가 draft 상태로 layout 저장(status=draft) + 서버 정밀 검증 결과 반환
-- 편집기 `[데스크톱에서 열기]` 버튼 → 데스크톱 클라이언트가 해당 draft layout_id를 draft 모드로 로드(실서비스 배포와 격리, 본인만 열람)
+- 편집기 `[뷰포트에서 열기(draft)]` 버튼 → 대시보드 셸 R3F 뷰포트가 해당 draft layout_id를 draft 모드로 로드(실서비스 배포와 격리, 본인만 열람)
 - 확인 후 문제 없으면 편집기로 돌아와 `[배포]`
 
-**웹에서 제공하는 것:** Konva.js 2D 평면 뷰 + 서버 검증 결과 목록(아래). 3D 렌더링 캔버스는 웹에 없음.
+**웹 편집기에서 제공하는 것:** Konva.js 2D 평면 뷰 + 서버 검증 결과 목록(아래). draft 3D 프리뷰는 별도 뷰포트 draft 모드로 격리(실시간 편집 재렌더 아님).
 
 ```
 ┌──────────────────────────────────────┐
 │ 저장 & 검증 결과 (2D 전용)           │
 ├──────────────────────────────────────┤
-│ [◄ 2D 편집] [데스크톱에서 열기(draft)]│
+│ [◄ 2D 편집] [뷰포트에서 열기(draft)] │
 ├──────────────────────────────────────┤
 │ 서버 검증 결과 (FastAPI 정밀 검증):  │
 │ ✓ 구조/좌표 범위 정상                │
@@ -455,11 +466,11 @@ Dashboard
 │ ⚠ 회의실 A 입장 트리거-문 근접 경고  │
 │ ✗ 좌석 3개가 콜리전과 겹침 (오류)    │
 │                                      │
-│ ※ 3D 확인은 [데스크톱에서 열기]로    │
+│ ※ 3D 확인은 [뷰포트에서 열기]로      │
 └──────────────────────────────────────┘
 ```
 
-**검증 책임(D12):** 웹 편집기는 **경량 체크(좌표 범위/겹침)만** 즉시 표시하고, **도달성(A*) 포함 정밀 검증은 서버(FastAPI)가 단독** 수행한다. Godot 클라이언트는 검증하지 않고 배포본을 신뢰한다.
+**검증 책임(D12):** 웹 편집기는 **경량 체크(좌표 범위/겹침)만** 즉시 표시하고, **도달성(A*) 포함 정밀 검증은 서버(FastAPI)가 단독** 수행한다. R3F 클라이언트는 검증하지 않고 배포본을 신뢰한다.
 
 ```mermaid
 graph TD
@@ -470,7 +481,7 @@ graph TD
     C --> F["문 개구부/좌석-가구 정합"]
     D & E & F --> G{"ERROR 있음?"}
     G -->|Yes| H["❌ 배포 불가 — 2D로 수정"]
-    G -->|No| I["✓ draft 저장 → 데스크톱 열람 → 배포"]
+    G -->|No| I["✓ draft 저장 → R3F 뷰포트 draft 열람 → 배포"]
 ```
 
 #### 3.3.3 검증 & 배포
@@ -496,7 +507,7 @@ graph LR
 ```
 
 **배포 단계:**
-1. **Draft**: 편집 중 (자동저장). 데스크톱 draft 모드로 열람 가능
+1. **Draft**: 편집 중 (자동저장). R3F 뷰포트 draft 모드로 열람 가능
 2. **Validated**: 서버 검증 통과(ERROR 0건)
 3. **Deployed**: 운영 중 (배포/롤백 시 라이브 클라이언트 강제 동기화 — 05 §2.2)
 4. **Archived / Rolled_back**: 이전 버전 (언제든 롤백 가능)
@@ -529,8 +540,8 @@ graph LR
 ### 3.4 KPI 대시보드 (KPI Dashboard)
 
 #### 목적
-- 사용자의 일별/주별/월별 KPI 조회 및 추이
-- AI 초안 검토, 관리자 조정, 최종 확정
+- 사용자의 daily/quarterly KPI 조회 및 추이 (weekly·월별 주기 폐기, D16)
+- 열람·추이·팀 종합 전용 — AI 초안 열람 포함(조정·확정은 §3.13 KPI 평가 워크플로우 소관)
 
 #### 레이아웃
 
@@ -538,33 +549,33 @@ graph LR
 ┌─────────────────────────────────────────────────────────┐
 │ KPI 대시보드 - Q3 2026                                 │
 ├─────────────────────────────────────────────────────────┤
-│ [기간 선택: 월별/주별] [팀 필터] [비교 보기] [내보내기]│
+│ [기간 선택: daily/quarterly] [팀 필터] [비교 보기] [내보내기]│
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
 │ ▶ 내 KPI (Kim Jin, 웹팀)                               │
 │ ┌────────────────────────────────────────┐             │
 │ │ 기간: 2026-07-01 ~ 2026-07-31          │             │
 │ │                                        │             │
-│ │ 업무 완료도: ████████░░ 78%          │             │
-│ │ 회의 생산성: ██████░░░░ 64%          │             │
-│ │ 협업점수: ███████░░░ 72%              │             │
-│ │ 품질도: ████████░░ 80%               │             │
-│ │ 종합점수: ██████░░░░ 74%             │             │
+│ │ 협업점수(collaboration_score): ██████░ 81/100│      │
+│ │ 완료 업무(work_completed_count): 42건 │             │
+│ │ 업무 충실도(work_quality_score): ███████ 78/100│    │
+│ │ 회의록 기여(minutes_authored_count): 11건│          │
+│ │ 액션 기한이행(action_items_ontime_rate): 83%│       │
+│ │ 업무기록(report_fidelity_score): ██████ 74/100│     │
 │ │                                        │             │
 │ │ AI 초안: "일관된 기여, 회의 참여 증가│             │
 │ │ 필요. 품질 우수."                     │             │
 │ │                                        │             │
-│ │ 관리자 검토 (Park, Lead):             │             │
-│ │ [검토 중] [승인] [조정]               │             │
+│ │ 관리자 검토 상태 (Park, Lead): 검토중 │             │
 │ │ 조정 사항: "회의 참여는 팀 역할이므로│             │
 │ │           KPI에서 감점하지 않음"       │             │
 │ │                                        │             │
-│ │ [의견 제시] [확정]                    │             │
+│ │ [KPI평가 워크플로우에서 조정·확정 →§3.13]│           │
 │ └────────────────────────────────────────┘             │
 │                                                         │
 │ ▼ 팀 종합 (웹팀)  🔒 관리자/팀리더만 열람               │
 │ ┌────────────────────────────────────────┐             │
-│ │ 인원 6명, 평균 종합점수: 73%          │             │
+│ │ 인원 6명, 평균 협업점수: 73/100       │             │
 │ │                                        │             │
 │ │ 순위:                                  │             │
 │ │  1. Kim (74%) - 회의 초청 많음       │             │
@@ -582,13 +593,17 @@ graph LR
 
 #### 지표 상세
 
-| 지표 | 계산식 | 데이터 소스 | 범위 |
-|------|--------|-----------|------|
-| **업무 완료도** | 완료한 work_log 수 / 계획한 수 | work_log(status=completed) | 0-100% |
-| **회의 생산성** | (결정사항 수 + 액션아이템 수) / 참석 회의 수 | meeting, meeting_minute, action_item | 0-10점 |
-| **협업점수** | (액션아이템 이행률 + 회의록 기여도 + work_log 산출물 관련성) / 3 | meeting_minute(decisions), action_item(status), work_log(related_project, result_url) | 0-100 |
-| **품질도** | 완료 업무의 완료도(result_url 첨부율) | work_log(result_url) | 0-100% |
-| **종합점수** | (완료도×30% + 생산성×25% + 협업×25% + 품질×20%) | 종합 | 0-100점 |
+> **정본 = 08-kpi-logic §1.2 / 04 §2.5 metric 어휘.** 정량은 결정론적 코드로 계산(D14-e), AI는 서술만. 아래 표는 §1.2.1 게이지↔메트릭 매핑과 동일 어휘를 쓴다(구 "업무완료도/회의생산성/종합점수" 임의 어휘 폐기).
+
+| 지표 | metric (04 §2.5) | 계산식 (08 §1.2 정본) | 범위 |
+|------|------------------|----------------------|------|
+| **협업점수(헤드라인)** | `collaboration_score` | 합성 = 업무건수30·충실도25·회의록20·액션15·기록10 | 0–100 |
+| **완료 업무** | `work_completed_count` | 완료(status=completed) work_log 건수 | 건수 |
+| **업무 충실도** | `work_quality_score` | goal·category·result_url·next_action 작성도 + AI 신뢰도(±0.5) | 0–100 |
+| **회의록 기여** | `minutes_authored_count` | created_by 기준 작성 회의록 수(+decisions 가점 상한) | 건수 |
+| **액션 기한이행** | `action_items_ontime_rate` | 기한 내 완료 / 완료 전체 × 100 | % |
+| **업무기록 충실도** | `report_fidelity_score` | 일일리포트+work_log 작성 충실도(보일러플레이트 감점) | 0–100 |
+| **분기 종합** | `quarterly_total` | 일일 metric 13주 합산(분기 확정·ERP push 대상) | 합산 |
 
 #### AI 초안 플로우
 
@@ -603,7 +618,7 @@ graph LR
 ```
 
 #### 컴포넌트
-- **기간 필터**: 월/주 선택, 날짜 range picker
+- **기간 필터**: daily/quarterly 선택, 날짜 range picker (D16)
 - **팀 필터**: 드롭다운 또는 체크박스
 - **진행도 바**: ProgressBar 컴포넌트 (색상: 초록/노랑/빨강)
 - **텍스트 에리어**: AI 초안, 관리자 의견 편집 가능
@@ -672,7 +687,7 @@ graph LR
 
 #### 3.5.2 회의록 작성 & 조회 (STT 자동 초안 — D5)
 
-**목적:** 회의록은 **STT 자동 초안 생성 → 검토·수정 → 확정** 흐름으로 작성한다(D5). 수동 입력은 폴백. **작성은 웹 콘솔에서만** 한다(Godot 내 작성 폼 없음 — 작성/열람 경계 원칙).
+**목적:** 회의록은 **STT 자동 초안 생성 → 검토·수정 → 확정** 흐름으로 작성한다(D5). 수동 입력은 폴백. **작성은 웹 콘솔 화면에서만** 한다(3D 뷰포트 내 작성 폼 없음 — 작성/열람 경계 원칙).
 
 **회의 시작 시 고지·동의(D20(b)):** 회의 입장 시 **녹음·STT 고지 배너**를 표시하고 **참여 의사 확인**을 받는다. 거부하면 해당 참석자 오디오는 수집하지 않는다(STT 대상 제외). 녹음 원본 90일 보존, 회의록 텍스트는 평가 데이터로 관리.
 
@@ -963,12 +978,14 @@ graph TD
 - 평가 공개 후 직원이 결과에 이의를 제기하고, 관리자가 재검토·확정하는 흐름(D15).
 - 상태머신: **공개(none) → 이의접수(submitted, 7일 창) → 재검토(reviewing) → 확정(resolved) → ERP push**.
 
+> **§3.13과의 관계**: 이의신청 **제출·재검토·확정 상태머신 UI는 이 화면(kpi-objection, §3.7) 소관**이다. §3.13(KPI 평가 워크플로우)은 **진행상태 배지 + [이의신청 처리 →] 링크만** 노출한다(중복 방지).
+
 #### 직원 화면
 ```
 ┌──────────────────────────────────────────┐
 │ 내 평가 (2026-Q2)  상태: 공개됨           │
 ├──────────────────────────────────────────┤
-│ 종합점수: 74%   [상세 근거 보기]          │
+│ 협업점수: 74/100   [상세 근거 보기]       │
 │                                          │
 │ 이의신청 가능 기한: 2026-07-08 (D-6)     │
 │ [이의신청]                               │
@@ -1016,8 +1033,8 @@ graph TD
 └──────────────────────────────┘   └──────────────────────────────┘
 ```
 
-- **성공**: FastAPI가 JWT 발급 → 웹 콘솔/데스크톱 클라이언트 공용. 데스크톱은 WSS 핸드셰이크에서 JWT + protocol_version/schema_version 협상(D4·05 §2.2).
-- **실패**: 401 표시, 평문 비밀번호를 게임서버로 전송하지 않음(D4).
+- **성공**: FastAPI가 **단일 세션 JWT** 발급 → 같은 앱의 웹 화면과 3D 뷰포트가 공용(별도 OIDC 이중 로그인 없음). Colyseus 이동서버는 접속 시 `onAuth`에서 이 JWT를 검증(15-realtime-server-spec). 재접속 시 JWT + schema_version 재협상(D4).
+- **실패**: 401 표시, 평문 비밀번호를 이동서버로 전송하지 않음(D4).
 - **만료**: JWT 만료 시 재로그인 유도. 미저장 입력은 로컬 임시 저장 후 복구.
 
 #### Data Requirements
@@ -1064,13 +1081,16 @@ graph TD
 | 3D 오피스(입장·이동·프레즌스) | ✓ | ✓ | ✓ |
 | 본인 KPI 조회 | ✓ | ✓ | ✓ |
 | 팀 KPI 순위/타인 점수 열람 | ✗ | ✓(팀 한정) | ✓ |
-| KPI 점수 조정·확정 | ✗ | ✗ | ✓ |
+| KPI 점수 **조정**(admin_adjusted_score ±10%) | ✗ | ✓(자기 팀 한정) | ✓ |
+| KPI 최종 **확정**(final_score/finalized_at) | ✗ | ✗ | ✓(admin만) |
 | 이의신청 제출 | ✓ | ✓ | ✓ |
 | 이의신청 재검토·확정 | ✗ | ✗ | ✓ |
 | 좌석 배치 편집기(구조 편집·배포) | ✗ | ✗ | ✓ |
 | 조직도 편집 | ✗ | ✗ | ✓ |
 | 직원명부 조회 | ✓ | ✓ | ✓ |
 | 동기화 모니터링 콘솔 | ✗ | ✗ | ✓ |
+| 공지사항 열람 | ✓ | ✓ | ✓ |
+| 공지사항 작성·수정·삭제 | ✗ | ✗ | ✓(admin·super_admin) |
 
 #### 권한 없음 화면
 ```
@@ -1082,8 +1102,8 @@ graph TD
 ```
 
 #### Data Requirements
-- **입력**: erp_user.role(employee/leader/admin), team_id(팀리더 범위 판정)
-- **참조**: 00-decisions.md D15·D20, 04-data-model.md(role)
+- **입력**: erp_user.role(employee/leader/admin/super_admin — 04 §2.1), team_id(팀리더 범위 판정)
+- **참조**: 00-decisions.md D15·D20, 04-data-model.md(role), 08-kpi-logic.md(§3.2·§7.1 — KPI 조정=leader(자기 팀)/admin, 확정=admin 전용)
 
 ---
 
@@ -1144,35 +1164,203 @@ graph TD
 
 ---
 
+### 3.13 KPI 평가 워크플로우 (좌 내비 "KPI평가")
+
+#### 목적
+- **분기(quarterly)** KPI를 대상으로 한 전체 평가 워크플로우: 직원 본인 상세·AI 초안 열람 → 관리자 검토·조정(±10%) → 직원 이의신청 상태머신 → 확정 → ERP push.
+- 대시보드 3카드(§1.2.1)는 daily 글랜스일 뿐, **분기 상세·AI 서술 초안·종합평가·조정·이의신청은 이 화면에서만** 노출한다(08 §3·§6.2.2).
+- 로직·API 정본 = 08-kpi-logic.md(§3.2 조정, §3.3 이의 상태머신, §6.2.2~6.2.4). 스키마 정본 = 04-data-model §2.5(kpi_result). 정량은 결정론적 코드가 계산하고 **AI는 서술만**(D14-e).
+
+#### 3.13.1 분기 KPI 상세 + AI 초안 열람 (직원 본인 — 08 §6.2.2)
+
+**데이터 소스:** `GET /api/kpi/quarterly?user_id={{id}}&period_key={{2026-Q3}}`(와이드포맷). metrics(표시 7종 — API 응답은 8종, action_items_completed 포함, 04 §2.5) + ai_draft(서술) + review_status.
+
+```
+┌──────────────────────────────────────────────────────┐
+│ 내 KPI 상세 — 2026-Q3    상태: 공개됨(관리자 검토중)  │
+├──────────────────────────────────────────────────────┤
+│ 정량 지표 (코드 산출, 08 §2):                        │
+│  협업점수(collaboration_score)  ████████░ 81/100    │
+│  완료 업무(work_completed_count)          42건       │
+│  업무 충실도(work_quality_score) ███████░  78/100    │
+│  회의록 기여(minutes_authored_count)      11건       │
+│  액션 기한이행(action_items_ontime_rate)  83%        │
+│  업무기록 충실도(report_fidelity_score)   74/100     │
+│  ─ 분기 종합(quarterly_total)             504.0      │
+│                                                      │
+│ 🤖 AI 서술 초안 (강점/개선 — 점수 없음, D14-e):      │
+│  ▸ 강점: "우수한 회의록 작성 기여                    │
+│     (Q3 조직개편 회의록 3건, 의결 명확 기록)"         │
+│  ▸ 개선: "액션아이템 기한 준수 — 83%로 팀 대비 낮음" │
+│     제안 액션: 주간 액션 리뷰 참석 / 기한임박 알림    │
+│  ▸ 종합평가: 중상   팀 벤치마크: 상위 35%            │
+│  (모델: claude-opus · 생성: 2026-10-01)             │
+│                                                      │
+│ 관리자 검토: [검토중]  (조정·확정 시 갱신)           │
+│ 이의신청 기한: 2026-10-09 (공개+7일)  [이의신청]     │
+│                                                      │
+│ [원본 신호 열람(work_log·회의록·액션)] [추이 비교]   │
+└──────────────────────────────────────────────────────┘
+```
+
+- **원본 신호 링크**: 각 지표 → work_log / meeting_minute / action_item 원본으로 드릴다운(관리자 검토 화면과 공유).
+- **열람 권한**: 본인 상세는 직원 본인·팀리더(팀 한정)·관리자(§3.10). AI 서술 초안·종합평가는 분기에만 존재.
+
+#### 3.13.2 관리자 검토·조정 (leader/admin — 08 §3.2 · §6.2.3)
+
+**담당:** team leader / manager (erp_user.role = leader | admin). **조정 범위 ±10%**(백분율 단일 기준).
+
+```
+┌──────────────────────────────────────────────────────┐
+│ 관리자 검토 — Kim Jin / 웹팀 / 2026-Q3               │
+├──────────────────────────────────────────────────────┤
+│ AI 초안 점수(정량 산출): collaboration 81/100        │
+│ 각 신호별 원본 데이터: [work_log] [회의록] [액션]     │
+│ 지난 분기 추이: Q2 76 → Q3 81 (+5)                  │
+│ 팀 평균 벤치마크: 73 · 본인 상위 35%                 │
+│                                                      │
+│ 조정 (±10% 범위):                                    │
+│  admin_adjusted_score: [ 85 ]  (73~89 허용)         │
+│  조정 사유(필수, ≥30자):                            │
+│  [회의록 기여 탁월. 액션 기한 준수는 팀 평균 도달로  │
+│   상향 조정.]                                        │
+│  개선 액션 수정(최대 +3): [+ 팀 코드리뷰 주도권 확대]│
+│                                                      │
+│ ⚠ 이전 분기 대비 ±30% 급변 시 경고 · 저성과(<평균-2σ)│
+│   재검토 권유                                        │
+│                                                      │
+│ [저장(검토중 유지)]  [확정 대기(이의 7일 창 개시)]   │
+└──────────────────────────────────────────────────────┘
+```
+
+- **API:** `PUT /api/kpi/admin/review` — body: `{kpi_result_id, admin_adjusted_score, admin_note, improvement_actions_update[]}`.
+- **저장 컬럼(04 §2.5):** `admin_adjusted_score`(미조정 시 NULL → value 유효), `admin_note`, `admin_reviewed_at`, `admin_user_id`. 조정 여부는 `admin_adjusted_score IS NOT NULL`로 판정(별도 boolean 없음).
+- **감사:** `admin_adjusted_score` 설정 시 audit_log(`kpi_adjusted`) 자동 생성(D20).
+- **확정 규칙:** 이의신청이 없으면 공개 후 7일 경과 시 `final_score = admin_adjusted_score ?? value`로 자동 확정(finalized_at 설정) → ERP push.
+
+#### 3.13.3 직원 이의신청 — 소관: kpi-objection 화면(§3.7) (08 §3.3 · §6.2.4)
+
+**상태머신** (`kpi_result.objection_status`): **none → submitted → reviewing → resolved**. 제출·재검토·확정 **상태머신 UI는 kpi-objection 화면(§3.7) 소관**이며, 이 워크플로우 화면(§3.13)은 **진행상태 배지 + [이의신청 처리 →] 링크만** 노출한다(중복 방지). 아래 다이어그램은 상태 전이 로직 참조용(정본 08 §3.3).
+
+```mermaid
+graph LR
+    N["none<br/>(공개, finalized_at=NULL)"] -->|직원 접수, 공개+7일 이내| S["submitted<br/>(objection_detail 저장)"]
+    S -->|관리자·HR 착수| R["reviewing"]
+    R -->|근거 타당 재조정 / 기각 유지| RS["resolved<br/>(final_score·finalized_at 확정)"]
+    RS -->|ERP push (upsert)| E["ERP kpi_results"]
+    N -.7일 무이의 자동확정.-> RS
+```
+
+**이 화면(§3.13)의 노출 범위:** 진행상태 배지(접수완료/재검토중/확정) + [이의신청 처리 →] 링크(→ §3.7 kpi-objection).
+
+- **제출 화면 목업·직원 접수 UI·관리자 재검토 접수 목록 = §3.7 정본** (근태 관련 이의는 대상 아님 — KPI 근태 미반영, D14-d).
+- **API:** `POST /api/kpi/objection` — body: `{kpi_result_id, objection_category, objection_text, evidence[]}`. 응답 `objection_status: submitted`. (제출·재검토 UI는 §3.7 소관, API 정본 08 §6.2.4)
+- **저장 컬럼(04 §2.5):** `objection_status`, `objection_detail`(JSONB), `objection_submitted_at` → `reviewing` → `resolved` 시 `objection_resolved_at`·`final_score`·`finalized_at`.
+- **관리자 재검토·확정**은 §3.7(이의신청 접수 목록)에서 처리 — resolved 시 `final_score` 갱신 → ERP 재push(upsert).
+
+#### 3.13.4 감사/이력 열람 (HR·감사 — 08 §7.1)
+- 조정(`kpi_adjusted`)·이의 처리·확정·ERP push 이력을 audit_log 기준으로 열람(관리자/HR/감사 권한, §3.10).
+
+#### Data Requirements
+- **입력**: kpi_result (user_id, period_type=quarterly, period_key, value, source, ai_draft(JSONB), admin_adjusted_score, admin_note, admin_reviewed_at, admin_user_id, objection_status, objection_detail, objection_submitted_at, objection_resolved_at, final_score, finalized_at), work_log·meeting_minute·action_item(원본 신호 드릴다운), audit_log(kpi_adjusted)
+- **출력**: admin_adjusted_score/note 저장, objection 상태 전이, final_score 확정 → ERP push
+- **API**: `GET /api/kpi/quarterly`, `PUT /api/kpi/admin/review`, `POST /api/kpi/objection` (08 §6.2.2~6.2.4)
+- **참조**: 08-kpi-logic.md(§3.2·§3.3·§6.2), 04-data-model.md(§2.5), 14-virtual-office-spec §2.8.2, 00-decisions D14·D15·D20
+
+---
+
+### 3.14 공지사항 (Announcement)
+
+#### 목적
+- 관리자가 회사 공지·시스템 안내를 게시하고, 전 직원이 **통합 대시보드 우측 패널(§1.2)**에서 확인한다(D27 신설). 카테고리 분류 + 핀(상단 고정) 지원.
+- 데이터 정본 = 04-data-model §2.7(announcement). 게시·수정·삭제는 관리자 전용(role IN admin/super_admin).
+
+#### 3.14.1 우측 패널 공지 카드 (전 직원 열람)
+
+```
+┌─────────────────────────────┐
+│ 공지사항           전체 보기 ›│
+├─────────────────────────────┤
+│ 📌 [system] 서버 점검 안내   │  ← pinned, 상단 고정
+│    오늘 22:00~23:00 점검     │
+│ ● [notice] 창립기념 휴무     │
+│    2026-07-15 (수)          │
+│ ○ [info] 신규 회의실 오픈    │
+│    3F 프로젝트룸 예약 가능    │
+└─────────────────────────────┘
+```
+
+- **카테고리 색/아이콘**: `system`(시스템·장애·점검), `notice`(운영 공지), `info`(일반 정보). 상태를 색만으로 전달하지 않고 라벨 병기(design-style §8 접근성).
+- **정렬/필터**: `pinned = TRUE` 최상단 우선 → 이후 `published_at DESC`. 만료 공지(`expires_at < NOW()`)는 목록 제외.
+- **게시 활성 조건**: `published_at IS NULL`(즉시) 또는 `published_at <= NOW()`.
+- `[전체 보기 ›]` → 공지 목록 화면(카테고리 필터 + 페이지네이션).
+
+#### 3.14.2 관리자 게시 화면 (admin/super_admin 전용)
+
+```
+┌──────────────────────────────────────────┐
+│ 공지 게시 (관리자)                       │
+├──────────────────────────────────────────┤
+│ 제목: [__________________________]       │
+│ 카테고리: (●) notice ( ) system ( ) info │
+│ 본문(마크다운):                          │
+│ [________________________________]       │
+│ [________________________________]       │
+│ ☑ 상단 고정(pinned)                      │
+│ 게시 시각: [즉시] / [예약: 2026-07-15 09:00]│
+│ 만료 시각(선택): [2026-07-20 23:59]      │
+│                                          │
+│ [게시]  [임시저장]  [취소]               │
+├──────────────────────────────────────────┤
+│ 게시 목록 (활성/예약/만료 탭):           │
+│  📌 서버 점검 안내  system  게시중 [수정][삭제]│
+│  창립기념 휴무      notice  예약   [수정][삭제]│
+│  (만료) 6월 워크숍  notice  만료   [archive 조회]│
+└──────────────────────────────────────────┘
+```
+
+- **권한**: 작성·수정·삭제는 `role IN ('admin','super_admin')`(애플리케이션 레이어 검사, §3.10). 일반 직원은 우패널 열람만.
+- **보존**: 만료 공지는 소프트 방식 보존(물리 삭제 금지). 관리자 콘솔에서 archive 조회.
+- **감사**: 게시·수정·삭제는 audit_log(`announcement_published` / `announcement_updated` / `announcement_deleted`) 기록.
+
+#### Data Requirements
+- **입력/출력**: announcement (id UUID, company_id, title, body(마크다운), category(system|notice|info, DEFAULT notice), pinned, author_user_id → erp_user.id, published_at(NULL=즉시), expires_at, created_at, updated_at)
+- **API**: `/api/announcements` (목록: company_id+published_at DESC / category+pinned 필터; CRUD 관리자)
+- **참조**: 04-data-model.md §2.7(announcement 정본), 16-render-spike-and-roadmap §B.2(공지 리소스), 14-virtual-office-spec §2.8, 00-decisions D27
+
+---
+
 ## 4. 화면 전체 흐름도
 
 ```mermaid
 graph TD
-    A["로그인"] -->|JWT| B["3D 오피스 메인"]
-    B -->|사이드바| C["회의실 보기"]
-    B -->|사이드바| D["직원 검색"]
-    B -->|하단 패널| E["회의 입장"]
-    B -->|헤더| F["웹 콘솔 대시보드"]
+    A["로그인 (단일 세션 JWT)"] -->|랜딩| B["통합 대시보드 셸 (§1)"]
+    B -->|중앙 뷰포트| C["3D 오피스 (R3F) — 이동·회의 입장·좌석"]
+    B -->|좌 내비| D["직원 검색 / 사용자 목록"]
+    C -->|명시적 입장 D24| E["회의 입장"]
+    B -->|좌 내비| F["웹 콘솔 도메인 화면"]
     
-    F -->|메뉴| G["조직도 편집"]
+    F -->|설정 하위| G["조직도 편집(P3)"]
     F -->|메뉴| H["직원명부"]
     F -->|메뉴| I["좌석 배치 편집(2D)"]
-    I -->|저장| J["데스크톱 draft 열람"]
+    I -->|저장| J["R3F 뷰포트 draft 프리뷰"]
     J -->|서버 검증| K["배포(층 단위) 또는 수정"]
     
-    F -->|메뉴| L["KPI 대시보드"]
-    L -->|조회| M["AI 초안 검토"]
-    M -->|관리자 조정| N["최종 확정"]
-    N -->|EOD 배치| O["ERP 푸시"]
+    F -->|KPI평가| L["분기 KPI 상세 + AI 초안(§3.13)"]
+    L -->|leader/admin| M["관리자 검토·조정 ±10%"]
+    M -->|이의신청/7일| N["이의 상태머신 → 확정"]
+    N -->|EOD/분기 배치| O["ERP 푸시"]
     
     F -->|메뉴| P["회의 관리"]
     E -->|회의 중| Q["LiveKit 연결"]
-    E -->|회의 종료| R["회의록 작성"]
+    E -->|회의 종료| R["STT 회의록 초안 검토·확정"]
     R -->|액션아이템| S["액션 추적"]
     
     F -->|메뉴| T["업무기록"]
     T -->|매일| U["일일 상태 기록"]
     U -->|EOD| V["ERP daily_reports 동기화"]
+
+    B -->|우 패널| W["공지사항(§3.14)"]
     
     style A fill:#FFE5B4
     style B fill:#B4D7FF
@@ -1183,7 +1371,7 @@ graph TD
     style T fill:#B4FFD4
 ```
 
-> **노드 F 각주**: "웹 콘솔 대시보드"는 별도 대시보드 화면이 아니다 — 웹 콘솔 랜딩은 **직원명부**(§3.2)이다(2026-07-02 결정, §2.1 참조).
+> **노드 B 각주**: 앱 랜딩은 **통합 대시보드 셸(§1)** — 3D 오피스는 이 셸 중앙 상단의 R3F 뷰포트이며, 웹 콘솔 도메인 화면(F)은 좌 내비에서 이동하는 하위 화면이다(D27, 2026-07-08).
 
 ---
 
@@ -1194,16 +1382,16 @@ graph TD
 #### 3D 오피스 - 첫 로그인
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                  3D Main Viewport                       │
+│                  3D 오피스 뷰포트 (R3F)                 │
 │                                                         │
 │                   🎯 가상오피스에 오신 걸 환영합니다   │
 │                                                         │
-│                [게임처럼 시작하기] [튜토리얼]          │
+│                [입장하기] [튜토리얼]                    │
 │                                                         │
 │                아바타를 설정하고 오피스를 둘러보세요.  │
-│                W/A/S/D로 이동, 마우스로 회전합니다.   │
+│                W/A/S/D로 이동, 마우스로 시점 조정.     │
 │                                                         │
-│                근처 직원을 클릭하면 채팅할 수 있습니다 │
+│                근처 직원을 클릭하면 프로필을 봅니다.   │
 │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -1321,13 +1509,13 @@ graph TD
 ### 5.3 로딩 / 재연결 상태 (Loading & Reconnect)
 
 #### 초기 로드
-- **웹 콘솔**: 목록/테이블 화면은 **스켈레톤 UI**(테이블 행 형태), 카드/차트 화면은 **스피너**. 응답이 1초 미만이면 스켈레톤 생략 가능(깜빡임 방지)
-- **3D 오피스**: 전용 로딩 화면(진행바: 에셋→layout→presence 순) → office_layout 로드 완료 후 입장. 로딩 < 5초 목표(D22)
+- **웹 콘솔 화면**: 목록/테이블 화면은 **스켈레톤 UI**(테이블 행 형태), 카드/차트 화면은 **스피너**. 응답이 1초 미만이면 스켈레톤 생략 가능(깜빡임 방지)
+- **3D 뷰포트(R3F)**: 뷰포트 내 로딩 오버레이(진행바: 배경 렌더 에셋→layout→presence 순) → office_layout 로드 완료 후 입장. 뷰포트 로딩 < 5초 목표(D22)
 
-#### 3D 오피스 WSS 단절 시 UX
+#### 3D 뷰포트 WSS(Colyseus) 단절 시 UX
 - 단절 감지 즉시 뷰포트에 반투명 오버레이 **"연결 끊김 — 재연결 중…"** 표시. 조작은 잠그고 마지막 수신 상태는 화면에 유지(아바타 이동 정지)
 - 재연결: **지수 백오프**(1s → 2s → 4s → … 최대 30s), 자동 무한 재시도
-- 재연결 성공 시 **resume 프로토콜**: JWT + protocol_version/schema_version 재협상(05 §2.2) → 마지막 수신 seq 이후 상태 스냅샷 + 델타 재동기화 → 오버레이 해제
+- 재연결 성공 시 **resume 프로토콜**: JWT + schema_version 재협상(Colyseus onAuth — 15-realtime-server-spec) → **Colyseus snapshot 복구**(마지막 수신 이후 상태) → 오버레이 해제
 - 60초 이상 단절 시 오버레이에 `[지금 재연결] [로그인 화면으로]` 버튼 노출. 서버는 단절 사용자의 presence를 away→offline으로 전이
 
 #### API 실패 재시도 규칙 (웹 콘솔)
@@ -1342,60 +1530,62 @@ graph TD
 ### 6.1 컴포넌트 레이어 구조
 
 ```
-Frontend (Next.js + React)
+Frontend (단일 통합 웹앱 — Next.js + React)
 ├── 레이아웃 / 라우팅
-├── 화면 컴포넌트
-│   ├── OrganizationChart (React Flow)
+├── App Shell (§1 통합 대시보드 셸)
+│   ├── Header / LeftNav / RightPanel
+│   ├── OfficeViewport (R3F 3D 뷰포트 — 별도 격리 컴포넌트)
+│   │   ├── Blender 오프라인 렌더 배경 + 아바타 깊이합성
+│   │   ├── AvatarSystem (이동/HUD/상태 7종)
+│   │   ├── 오버레이(미니맵 / 층 선택기 / 미디어바 / 아바타 HUD)
+│   │   └── Colyseus 클라이언트 (WSS, 20Hz, 로컬 예측 + Lerp)
+│   └── DashboardCards (오늘의 업무 / 나의 KPI 게이지 / 진행중 화상회의)
+├── 화면 컴포넌트 (좌 내비 라우트)
+│   ├── OrganizationChart (React Flow, P3)
 │   ├── EmployeeDirectory (Table)
-│   ├── SeatLayoutEditor (Konva.js 2D 전용 — 웹 3D 미리보기 없음, D11)
-│   ├── KPIDashboard (Charts, Editor)
+│   ├── SeatLayoutEditor (Konva.js 2D 전용 — 웹 실시간 재렌더 없음, D11)
+│   ├── KpiWorkflow (분기 상세 + AI 초안 + 관리자 조정 + 이의신청, §3.13)
+│   ├── KPIDashboard (추이/팀 종합, Charts)
 │   ├── MeetingManager (Calendar, Forms)
-│   └── WorkLogRecorder (Forms, List)
-├── 공용 컴포넌트
-│   ├── Header / Navigation
-│   ├── Sidebar
-│   ├── Modal / Dialog
-│   ├── ProgressBar / Chart
-│   └── StatusBadge
-└── API 클라이언트 (fetch, WebSocket)
-
-3D Client (Godot 4 Native)
-├── Scene (Main Office, Rooms, Zones)
-├── Avatar System (Movement, HUD, State)
-├── UI Overlay (Header, Right Panel, Footer)
-├── LiveKit Integration
-└── Server Sync (Godot HeadlessServer via WebSocket/WSS — D1)
+│   ├── WorkLogRecorder (Forms, List)
+│   └── AnnouncementConsole (관리자 게시 · §3.14)
+├── 공용 컴포넌트 (design-style §9: Card, StatusBadge, Avatar, KpiGauge, ProgressMetric, ListItem, MediaBar)
+└── API 클라이언트 (fetch / SSE / Colyseus WSS)
 
 Backend (FastAPI)
-├── Auth (JWT)
+├── Auth (단일 세션 JWT)
 ├── API Routes
 │   ├── /orgs (org_group CRUD)
 │   ├── /teams (team_zone CRUD)
 │   ├── /layouts (office_layout CRUD + validation)
 │   ├── /seats (seat CRUD + assignment)
-│   ├── /meetings (meeting CRUD + minutes)
+│   ├── /meetings (meeting CRUD + minutes + livekit-token)
 │   ├── /work-logs (work_log CRUD)
-│   ├── /kpi-results (kpi_result CRUD + AI draft)
-│   ├── /erp (ERP sync endpoints)
-│   └── /3d-server (Godot server communication)
+│   ├── /kpi (kpi_result: daily/quarterly + admin/review + objection — 08 §6.2)
+│   ├── /announcements (공지 CRUD — §3.14)
+│   └── /erp (ERP sync endpoints)
 ├── Background Jobs
 │   ├── ERP Sync Worker (users, teams, attendances, leaves)
 │   ├── KPI AI Draft Worker (21:00 야간 배치 — D17)
 │   └── EOD Push Worker (매일 근무 종료 후)
 └── Database (PostgreSQL)
 
-Godot Headless Server
-├── Authority (Movement, Collision, Rooms)
-├── WebSocket(WSS) Sync — D1
-├── Room Management (LiveKit)
-└── Logging
+Colyseus 이동서버 (권위 · SkyOffice 이식 — 15-realtime-server-spec)
+├── onAuth (FastAPI JWT 검증 — 단일 세션)
+├── 20Hz tick (move_request / world_update)
+├── 이동·근접 검증(충돌·층·속도·권한·점유·정원)
+├── presence 배치 push (1~5초) + snapshot 복구
+└── 회의 입장 게이팅 → LiveKit 토큰(FastAPI 경유)
 ```
 
 ### 6.2 화면별 의존 엔티티
 
 | 화면 | 필수 엔티티 | 참조 문서 |
 |------|-----------|---------|
-| **3D 오피스 메인** | erp_user, presence, office, floor, office_layout, seat, room, meeting, meeting_participant | 04-data-model.md |
+| **통합 대시보드 셸(§1)** | erp_user, presence, office, floor, office_layout, seat, room, meeting, meeting_participant, kpi_result(daily), work_log, announcement | design-style-analysis, 14-virtual-office-spec |
+| **3D 오피스 뷰포트(§1.2)** | erp_user, presence, office, floor, office_layout, seat, room, meeting, meeting_participant | 04-data-model.md, 15-realtime-server-spec |
+| **KPI 평가 워크플로우(§3.13)** | kpi_result(quarterly, ai_draft, admin_adjusted_score, objection_*, final_score), work_log, meeting_minute, action_item, audit_log | 08-kpi-logic.md(§3·§6.2), 04-data-model.md(§2.5) |
+| **공지사항(§3.14)** | announcement(category, pinned, published_at, expires_at, author_user_id), erp_user | 04-data-model.md(§2.7) |
 | **조직도 편집** | org_group, team_zone, erp_user (teams) | 04-data-model.md, 01-prd.md |
 | **직원명부** | erp_user, presence, seat, team_zone | 04-data-model.md |
 | **좌석 배치 편집** | office, floor, office_layout(층 단위), seat(assigned_user_id), seat_assignment_history, room(doors), team_zone | 05-office-layout-schema.md, 04-data-model.md |
@@ -1413,23 +1603,23 @@ Godot Headless Server
 
 ## 7. 배포 & 렌더링 전략
 
-### 7.1 3D 클라이언트 (Godot Native)
-- **OS**: Windows, macOS, Linux (Desktop 우선)
-- **렌더러**: Forward+ (최고 품질)
-- **배포**: 독립형 exe/dmg/deb + 자동 업데이트
-- **해상도**: 1920×1080 권장, 최소 1280×720
+### 7.1 3D 뷰포트 (웹 임베드 R3F — 별도 데스크톱 앱 없음)
+- **런타임**: 브라우저 내 react-three-fiber(three.js). 독립형 exe/dmg/deb **없음**(D27로 Godot 네이티브 데스크톱 폐기).
+- **렌더**: Blender Cycles **오프라인 렌더 배경**(사전 렌더/render-pipeline 배치) + R3F **실시간 아바타 깊이합성**. 고정 아이소메트릭 2.5D. 세부 = photoreal-web-strategy.
+- **배포**: 웹앱과 함께 배포(§7.2). 배경 에셋(렌더 이미지+depth+camera.json)은 정적 자산으로 서빙.
+- **해상도**: 데스크톱 우선(≥1440 최적), 뷰포트 반응형.
 
-### 7.2 웹 콘솔 (Next.js)
+### 7.2 웹앱 (단일 통합 — Next.js)
 - **OS**: 모든 OS (브라우저)
-- **렌더**: Server-Side Rendering (SSR) / Static Generation (SSG) 혼합
-- **배포**: **사내 서버 PC + Docker Compose**(웹 프론트 포함 전부 사내 서버, Let's Encrypt TLS — D21-r, 2026-07-02). Vercel/외부 배포는 폐기
-- **브라우저 지원**: Chrome/Edge 90+, Safari 14+, Firefox 88+
+- **렌더**: SSR/SSG 혼합. 3D 뷰포트는 클라이언트 컴포넌트(R3F).
+- **배포**: **사내 서버 PC + Docker Compose**(웹 프론트·FastAPI·Colyseus·LiveKit 전부 사내 서버, Let's Encrypt TLS — D21-r). Vercel/외부 배포는 폐기.
+- **브라우저 지원**: WebGL2 지원 최신 브라우저 — Chrome/Edge 90+, Safari 15+, Firefox 88+
 
 ### 7.3 성능 목표 (D22)
-- **3D 프레임율**: **60fps@GTX1650급 / 최소 30fps@내장그래픽(Iris Xe급)**
+- **3D 프레임율**: 웹 R3F 뷰포트 목표 **60fps@GTX1650급 / 최소 30fps@내장그래픽(Iris Xe급)** — 오프라인 배경 덕에 실시간 부하는 아바타·깊이합성에 집중
 - **웹 페이지 로딩**: < 3초 (First Contentful Paint)
-- **실시간 업데이트**: 아바타 E2E p95 < 500ms, 화상 음성 < 200ms(사내망)
-- **규모**: **동시접속 설계 100명 / 도그푸딩 검증 20명**(500·1000명 표기 폐기). 로딩 < 5초
+- **실시간 업데이트**: 아바타 E2E p95 < 500ms(Colyseus 20Hz), 화상 음성 < 200ms(사내망)
+- **규모**: **동시접속 설계 100명 / 도그푸딩 검증 20명**(500·1000명 표기 폐기). 뷰포트 로딩 < 5초
 
 ---
 
@@ -1451,19 +1641,19 @@ Godot Headless Server
 - **직원명부 구현 태스크**: §3.2 직원명부 화면의 전용 프론트엔드 태스크를 12-tasks에 추가 필요.
 - **Whisper 자동 전사**: **해소됨** — 회의록은 STT 자동 초안(D5, §3.5.2)으로 확정. 실시간 전사 여부는 S2 스파이크(품질 측정)에서 결정.
 - **채팅 기능**: §1.2 사이드바에 언급된 채팅은 **간단한 DM/회의 메모 수준으로 명세하되 Phase 7(고도화) 마킹**. MVP는 회의 중 메모·근접 DM만.
-- **모바일 지원**: 웹 콘솔이 태블릿에서도 작동하는가? (사내 설치라 우선순위 낮음)
-- **3D 웹뷰어**: B2B 후 Three.js 경량 웹뷰어 추가 시 현재 설계와 호환성? (D11로 웹 3D는 현재 범위 밖)
+- **모바일 지원**: 통합 웹앱이 태블릿에서도 작동하는가? (사내 설치·데스크톱 우선이라 우선순위 낮음. 3D 뷰포트는 데스크톱 우선)
+- **레이아웃 편집→실시간 재렌더**: 편집 즉시 오프라인 배경을 재렌더하는 파이프라인은 Later(§3.3.2, 16-render-spike-and-roadmap). MVP는 draft 지오메트리 프리뷰.
 
 ### Assumptions
 - ERP API와 DB direct access 모두 안정적이며, 사내 네트워크 보안이 보장됨
 - LiveKit self-host는 ERP와 동일 인프라에서 운영 가능
 - daily_reports push는 매일 18:00 KST 배치(D17)
 - **직원 수는 설계 100명 / 도그푸딩 20명 범위**(D22, 500명 이상 표기 폐기)
-- Godot 4 native desktop deployment가 사내 보안 정책과 호환
+- 단일 통합 웹앱(브라우저 WebGL2 + Colyseus WSS)이 사내 네트워크·보안 정책과 호환(D27)
 
 ### Validation criteria
 1. **3D 메인 화면**: 로비 진입 → 아바타 로드 → 회의실 입장 → (종료 후) STT 회의록 초안 생성 전체 플로우 동작 ✓
-2. **웹 콘솔**: 조직도 편집 → 좌석 배치 2D → 저장·서버 검증 → 데스크톱 draft 열람 → 배포(층 단위) 전체 플로우 동작 ✓
+2. **웹 콘솔**: 조직도 편집 → 좌석 배치 2D → 저장·서버 검증 → R3F 뷰포트 draft 열람 → 배포(층 단위) 전체 플로우 동작 ✓
 3. **KPI**: AI 서술 초안 → 관리자 검토·확정 → 이의신청 처리 → ERP 푸시 전체 파이프라인 동작 ✓
 4. **회의**: 예약 → 입장(녹음 고지·동의) → STT 회의록 검토·확정 → 액션아이템 추적 전체 플로우 동작 ✓
 5. **업무**: 기록 → 일일 상태 → EOD 동기화 전체 플로우 동작 ✓
@@ -1472,7 +1662,7 @@ Godot Headless Server
 ### Risks
 - **ERP 동기화 지연**: 사내 ERP가 다운될 경우 KPI/업무 리포트가 적시에 반영되지 않음 → Fallback 큐 + 동기화 모니터링 콘솔(§3.12)
 - **Live Kit 비용**: 참석자 수 증가 시 비용 급증 → 사전 용량 계획 필수
-- **3D 렌더링 성능**: GPU 사양에 따른 편차 → 기준 사양 명시(GTX 1650급 60fps / 내장 30fps, D22)
+- **3D 렌더링 성능**: 브라우저 WebGL2 R3F 뷰포트의 GPU 편차 → 오프라인 배경 + 아바타 깊이합성으로 실시간 부하 최소화, 기준 사양 명시(GTX 1650급 60fps / 내장 30fps, D22). 깊이합성 정합성은 Phase 0 스파이크로 검증(16)
 - **웹 콘솔 복잡도**: 좌석/조직도 편집기 자체로 개발 리스크 높음 → 조직도 편집기는 P3로 후순위, 좌석 편집기 MVP/고도화 분리
 
 ---
@@ -1483,3 +1673,4 @@ Godot Headless Server
 |------|------|----------|
 | 1.0 | 2026-07-01 | 초안 |
 | 1.1 | 2026-07-02 | 00-decisions 반영: D11 웹 3D 미리보기 전면 제거(데스크톱 draft 열람으로 대체), D12 검증 아키텍처(서버 단일 정밀검증·ERROR 배포차단·[무시하고 배포] 제거), 편집기 JSON을 05 스키마와 정합(미터·필드명·doors[]·shape·중복 type 키 수정)·팔레트에 spawn/entrance/glass_wall/door/marker/exit 추가, D5 회의록 STT 초안 흐름·녹음 고지/동의 배너·Godot 작성폼 제거, Godot=보기/웹=작성 경계 원칙 명시, 신규 화면 6종(이의신청·로그인/세션·아바타·권한 매트릭스·자율좌석 점유/반납·동기화 모니터링 콘솔), D22 성능·규모 통일(60fps@GTX1650/100명), 층 단위 버전·롤백(05 정합), 조직도 편집기 P3·채팅 Phase 7 마킹, GPS 표기 제거(D13), Vercel→사내 VM(D21), ENet→WSS(D1) |
+| 2.0 | 2026-07-09 | **D27 포토리얼 웹임베드 전환 반영**(2026-07-08 확정, D26 WorkAdventure/Godot 데스크톱 폐기). §1을 Godot 4 네이티브 HUD → **단일 통합 웹앱 내 R3F 3D 뷰포트를 품은 통합 대시보드 셸**(좌 내비+중앙 뷰포트/대시보드 3카드+우 패널, design-style §3·14 §1 정본)로 교체. 상호작용 시퀀스 Godot Server/ENet/WSS → **Colyseus 20Hz 권위 서버**(SkyOffice 이식), 인증 이중 OIDC 제거→**단일 세션 FastAPI JWT(onAuth)**·재접속 Colyseus snapshot. §3.3 데스크톱 draft 열람 → 웹 뷰포트 내 draft 프리뷰(실시간 재렌더 없음, D11 유지). §6.1 컴포넌트 레이어(Godot 3D Client/Headless Server 제거→App Shell·OfficeViewport·Colyseus 이동서버), §7 배포(exe/dmg/deb·Forward+ 제거→웹 임베드 R3F+오프라인 배경). **신규 화면 4건 보강**: 통합 대시보드 셸(§1) 독립 정의, 나의 KPI 카드↔메트릭 매핑(§1.2.1, 14 §2.8.1), KPI 평가 워크플로우(§3.13: 분기 상세·AI 초안·관리자 조정 ±10%·이의 상태머신, 08 §3·§6.2 정본), 공지사항(§3.14: 우패널 카드+관리자 게시, 04 §2.7 정본). 화면 흐름도·상태 정의·의존 엔티티 표·Open questions·Assumptions·Risks를 D27 스택으로 정렬. 상단 🔴 미반영 배너 제거. |

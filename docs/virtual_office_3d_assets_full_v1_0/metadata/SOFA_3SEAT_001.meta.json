@@ -1,0 +1,84 @@
+{
+  "asset_id": "SOFA_3SEAT_001",
+  "name": "3-seat sofa",
+  "category": "lounge",
+  "type": "sofa",
+  "priority": "MVP",
+  "file": "models/lounge/SOFA_3SEAT_001.glb",
+  "unit": "meter",
+  "pivot": "BOTTOM_CENTER",
+  "up_axis": "Z",
+  "dimensions_m": {
+    "width": 2.32,
+    "depth": 0.8,
+    "height": 0.765
+  },
+  "placement": {
+    "snap_to_floor": true,
+    "grid_size": 0.1,
+    "rotatable": true
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.383
+    ],
+    "size": [
+      2.32,
+      0.8,
+      0.765
+    ]
+  },
+  "interaction": {
+    "can_sit": true,
+    "seat_anchor": {
+      "position": [
+        0,
+        -0.02,
+        0.367
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "status_anchor": {
+      "position": [
+        0,
+        0,
+        1.115
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "rendering": {
+    "cast_shadow": true,
+    "receive_shadow": true,
+    "lod_group": "LOW",
+    "pbr": {
+      "baseColor": true,
+      "normal": true,
+      "roughness": true,
+      "metallic": true,
+      "textures_embedded": true,
+      "baked_lighting_forbidden": true
+    }
+  },
+  "qa": {
+    "actual_triangles": 120,
+    "max_triangles": 5000,
+    "texture_max_size": 1024,
+    "pbr_required": true,
+    "baked_lighting_forbidden": true,
+    "result": "PASS"
+  },
+  "version": "1.0.0",
+  "format": "glb"
+}

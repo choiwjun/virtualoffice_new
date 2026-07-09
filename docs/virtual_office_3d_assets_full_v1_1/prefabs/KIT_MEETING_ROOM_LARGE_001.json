@@ -1,0 +1,205 @@
+{
+  "prefab_id": "KIT_MEETING_ROOM_LARGE_001",
+  "category": "kit",
+  "room_type": "meeting_room",
+  "instances": [
+    {
+      "asset_id": "TABLE_MEETING_LARGE_001",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "CHAIR_MEETING_001",
+      "position": [
+        -1.2,
+        -0.95,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "CHAIR_MEETING_001",
+      "position": [
+        -0.4,
+        -0.95,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "CHAIR_MEETING_001",
+      "position": [
+        0.4,
+        -0.95,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "CHAIR_MEETING_001",
+      "position": [
+        1.2,
+        -0.95,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "CHAIR_MEETING_001",
+      "position": [
+        -1.2,
+        0.95,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        180
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "CHAIR_MEETING_001",
+      "position": [
+        -0.4,
+        0.95,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        180
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "CHAIR_MEETING_001",
+      "position": [
+        0.4,
+        0.95,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        180
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "CHAIR_MEETING_001",
+      "position": [
+        1.2,
+        0.95,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        180
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "WHITEBOARD_WALL_001",
+      "position": [
+        0,
+        1.85,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        180
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "TV_WALL_001",
+      "position": [
+        0,
+        -1.85,
+        0.55
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    }
+  ]
+}

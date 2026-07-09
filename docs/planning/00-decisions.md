@@ -1,10 +1,10 @@
 # 00-decisions.md: 확정 결정 로그 (Single Source of Truth)
 
 **프로젝트**: vituraloffice_new (가상오피스 운영 플랫폼)
-**버전**: v1.1
+**버전**: v1.2
 **작성일**: 2026-07-02
-**최종 갱신**: 2026-07-06 (D26 WorkAdventure 전환 결정 추가)
-**상태**: 확정 (2026-07-02 기획 문서 전면 검토 후 사용자 승인 / 2026-07-06 D26 추가 사용자 승인)
+**최종 갱신**: 2026-07-09 (D27 문서 전면 재정합 완료 + D6 주단위 미확정 갱신 + §H S2 스파이크 P6 이관)
+**상태**: 확정 (2026-07-02 사용자 승인 / 2026-07-06 D26 / 2026-07-08 **D27 D26 대체, 사용자 승인**)
 
 > 이 문서는 01~13 모든 기획 문서가 참조하는 **정본(canonical) 결정 모음**이다.
 > 다른 문서와 이 문서가 충돌하면 **이 문서가 이긴다**. 결정 변경 시 이 문서를 먼저 수정하고 파급 문서를 갱신한다.
@@ -20,7 +20,7 @@
 | **D3** | 게임서버 데이터 접근 = **FastAPI 경유 단일화** | 게임서버는 DB(자체/ERP) 직접 접근 금지. presence는 게임서버 메모리 권위 + 1~5초 주기 배치 push(FastAPI) — **D26: "게임서버"=WA back으로 대체. 원칙 유지 — WA는 자체 상태만 소유, ERP·업무 DB 접근은 FastAPI 단일화. presence는 WA 이벤트(scripting API)→FastAPI 수집으로 계승** | 100ms 주기 PostgreSQL 직접 쓰기, 게임서버의 ERP 직접 조회 |
 | **D4** | 인증 = **FastAPI 발급 자체 JWT** | HS256 + **자체 시크릿(ERP와 미공유)**. 게임서버는 WSS 핸드셰이크에서 JWT 검증만. 평문 email/password를 게임서버로 보내지 않음. 핸드셰이크에 `protocol_version` 협상 포함(미지원 버전 거부 + 업데이트 안내) — **D26: WorkAdventure는 OIDC로 연동(oidc.py 브리지). D4 자체 JWT와 공존** | 게임서버 직접 로그인, "HS256 + ERP 공개키 검증"(암호학적 불성립), ERP 시크릿 공유 |
 | **D5** | 회의록 = **STT 자동 생성 정식 포함** (사용자 확정) | LiveKit Egress(트랙별 오디오) → STT(화자분리) → 회의록 초안 자동 생성 → 참석자/호스트 검토·확정. 수동 입력은 폴백. PRD "누락률 <5%" 기준 유지, 측정 방법 명시(테스트 회의 N회 대비 수동 전사 대조) | 수동 입력 전용 설계 |
-| **D6** | 일정 기준선 = **45주** (D26 재산정, 원 58주는 사용자 확정 이력) | 13-risks 검증 간트를 기준선으로 로드맵 재산정. 시작 2026-07-06, 완성 목표 **2027-05-17(2027년 상반기)**. Phase 5에 STT 파이프라인 포함. "26주/2026-12-28" 표기 전부 폐기 — **D26: Phase 1~4를 WorkAdventure 연동 구조(4~6주 단위)로 재편, 58주→45주 단축. 13-risks 간트는 45주 기준 재검증 필요** | 26주 로드맵, 58주 Godot 기준선 |
+| **D6** ⚠️재산정(D27) | 일정 기준선 = **주 단위 미확정** (D27 Phase 편성 P0~P7, 정본 = 16 §Part B) | **D27(2026-07-09): 45주/2027-05-17 기준선 폐기 — 주 단위는 P0 스파이크(PASS) 이후 P1~P7 실측으로 확정하며 억지 숫자를 기재하지 않는다(10-roadmap v3.1 원칙).** 이력: 원 58주(사용자 확정) → D26 45주(WA 재편) → D27 미확정 재산정. 시작 2026-07-06 유지 | 26주/45주/58주 확정 표기 전부 |
 
 ## B. 3D/에셋/레이아웃 확정
 
@@ -95,7 +95,36 @@
 
 ---
 
+## H. 포토리얼 웹임베드 전환 (D27, 2026-07-08) — **D26 대체**
+
+> 사용자 확정 디자인 시안 재확인 결과, WorkAdventure(2D 픽셀·별도 앱)는 목표 품질·통합성과 불일치 → **D26을 D27로 대체**.
+> 정본: [3d-design/design-style-analysis.md], [3d-design/photoreal-web-strategy.md], [14-virtual-office-spec.md].
+
+| ID | 결정 | 내용 | 폐기되는 대안 |
+|----|------|------|-------------|
+| **D27** | 가상오피스 = **웹 임베드 포토리얼(R3F) + 오프라인렌더 깊이합성** | 단일 통합 웹앱(시안) 안의 뷰포트로 가상오피스 임베드. **Blender Cycles 오프라인 렌더 배경 + react-three-fiber 실시간 아바타 깊이합성**(고정 아이소 2.5D). 실시간 이동서버 = **SkyOffice 이식(Colyseus 권위 서버, 20Hz)**. 단일 세션(콘솔 JWT 그대로 3D 진입, 별도 OIDC 로그인 없음). **D26(WorkAdventure) 전면 대체.** | WorkAdventure self-host(별도 앱·2D 픽셀·OIDC 이중로그인), Godot 실시간(품질 40%·용량과다), 자유시점 풀3D(고정 아이소 채택) |
+
+### D27로 인한 D26 폐기/부활 목록
+| 결정 | D26 상태 | D27 상태 | 사유 |
+|---|---|---|---|
+| **D26** WorkAdventure self-host | 확정 | **폐기** | 별도앱·2D·이중로그인이 시안(통합·포토리얼)과 불일치 |
+| **D7** 3D 라이팅 | 보류 | **부활(변형)** | 오프라인 Blender Cycles로 구움(실시간 아님) |
+| **D8** 에셋 전달 | 보류 | **부활(변형)** | CC0 에셋 + Blender 씬. 런타임은 렌더 이미지+경량 아바타 GLTF |
+| **D9** room 파라메트릭 | 보류 | **부활** | layout JSON→Blender 파라메트릭 씬 빌더 |
+| **D1** WSS | WA 내장 | **SkyOffice/Colyseus 자체** | 20Hz tick·이동검증 자체 구현(09 정본 부활) |
+| WA docker 스택·OIDC 브리지·"가상오피스 입장" 외부링크 | 운영 | **정리 대상** | 신규 구조 확정 후 제거 |
+
+### D27 착수 전 필수 스파이크 (Phase 0)
+| 스파이크 | 검증 | 상태 |
+|---|---|---|
+| **깊이합성 검증** | Blender 직교카메라 행렬 export→R3F 재현→아바타가 가구/유리벽 뒤 픽셀정확 가림. 실패 시 전략 재검토(빌보드 스프라이트/부분 실시간 3D) | ✅ **PASS(2026-07-08, commit b4736b1)** |
+| ~~S2 STT 파이프라인~~ | ~~(D26에서 유지) 한국어 화자분리 STT~~ — **P6 외부의존으로 이관(2026-07-09)**: STT는 D27 착수 게이트가 아니라 P6(STT·AI) 단계의 외부 리소스 확보 항목이다(16 §Part B, 12-tasks P6, derived-gates REQ-006 정합). 수동 회의록 폴백 유지 | ➡️ P6 이관 |
+
+---
+
 ## 문서별 반영 체크리스트
+
+> ⚠️ **아래 [x]는 D26(WorkAdventure)까지의 반영 현황이다. D27(포토리얼 웹임베드, 2026-07-08) 반영은 별도 — 하단 "D27 반영 현황"을 정본으로 본다.** 아래 체크리스트의 [x]를 D27 완료로 오독하지 말 것.
 
 - [x] 01-prd.md — D5(회의록 STT), D6(일정), D22(수치+측정방법), WON'T 표(WASM 유지·미리보기 예외 불필요해짐)
 - [x] 02-trd-architecture.md — D1, D3, D4, D7, D13, D17, D21, D22, D24
@@ -110,4 +139,39 @@
 - [x] 11-tech-stack.md — D1, D2, D21, 버전 표기 정정(FastAPI 0.115+, PyJWT 등) / **D26 반영**: 2.1(3D 클라이언트)/2.2(실시간 서버) 절을 WorkAdventure 스택으로 교체
 - [x] 12-tasks.md — D6, F(Phase 0 스파이크), GDScript, D22, 누락 태스크(이의신청·분기집계·감사로그·STT)
 - [x] 13-risks-open-questions.md — OQ4/OQ11 확정 종결, 신규 리스크(LiveKit 통합·STT·개인정보/노동법), 스테일 OQ 정리
-- [ ] specs/screens/virtual-office-3d.yaml — **D26 반영**: 상단에 전환 주석 추가
+- [x] specs/screens/virtual-office-3d.yaml — D26 전환 주석 (본문 D27 전환은 2026-07-09 완료 — 아래 D27 현황 참조, 구 "부분 잔존" 주석 철회)
+
+### D27 반영 현황 (2026-07-08 전환 — 정본)
+
+> D27 = D26(WorkAdventure) 전면 폐기 → 포토리얼 웹임베드(R3F + Blender 오프라인렌더 깊이합성) + SkyOffice/Colyseus 이동서버 + 단일세션. §H 참조.
+
+**✅ D27 반영 완료(정본):** 00-decisions §H(D27) · 04-data-model §2.5/§2.7 · 10-roadmap §D27섹션 · 14-virtual-office-spec · 15-realtime-server-spec · 16-render-spike-and-roadmap · 3d-design/{design-style-analysis, photoreal-web-strategy}
+
+**✅ D27 재작성 완료 (2026-07-09) — 18개 문서 전량:**
+- [x] **기초**: 01-prd v4.0 · 02-trd v2.0 · 11-tech-stack v3.0
+- [x] **화면/태스크**: 06-screens v2.0(통합 셸+공지+KPI워크플로우 신설) · 12-tasks v3.0(P0~P7, 39태스크) · specs/screens/{index, virtual-office-3d}.yaml
+- [x] **3D/렌더**: 07-3d-visual-asset-pipeline v2.0 · 3d-design/{scene-structure, optimization-criteria, asset-registry} v2.0 · 05-office-layout §5(부분, 스키마 본체 보존)
+- [x] **실시간/메타**: 09-realtime v2.0 · 13-risks v4.0 · 10-roadmap v3.1(헤더/간트) · loop/08-derived-gates(REQ 재파생) · deployment/onprem-docker v2.0 · testing/test-strategy v2.0
+- [x] **erd.md**: 부분개정 완료(2026-07-09 교차감사 교정) — 🟡 배너, Godot 잔존 정정, 카운트 18, enum·필드매핑 #18 반영
+
+### 교차 정합성 감사 + 일괄 교정 (2026-07-09, 2차)
+
+> 재작성 18종에 대해 5차원 교차감사(실시간 계약·3D 렌더 계약·Phase/게이트·KPI/화면·배너/참조) 수행 후 발견 전량 교정 완료.
+
+**해소된 실질 충돌(정본 확정):**
+1. 회의 join = **2단계 D24 명시입장**(Colyseus enter_meeting=검증·통지 → 사용자 확인 → 클라→FastAPI `POST /api/meetings/join`). 15 §3 정본 개정, 09/02 전파.
+2. 근접 화상/음성 = **PeerJS(≤4명)**, 회의실=LiveKit. 09의 "LiveKit 1:1" 폐기.
+3. KPI 권한 = **조정: leader(자기 팀)·admin / 확정: admin 전용**(08 §7.1 정본). 06 §3.10·rbac.yaml·kpi-dashboard/workflow.yaml 정합.
+4. asset 스키마 정본 = **3d-design/asset-registry §1.1**(gltf_path NULL허용 + asset_delivery 판별자 + CHECK). 07 DDL은 참조로 강등, 04 §2.6 출처 단일화.
+5. P7 부하 = **20명 도그푸딩 실측**(100명=설계 목표, P7 이후). 13-risks 정정.
+6. Colyseus 포트 **2567** 15 §8 확정(onprem/02와 일치). 메시지 필드 정본 = last_seq/room_id/target_user_id.
+7. 렌더 산출물 경로 단일 규약 = `frontend/public/assets/3d/scenes/{floor}/{layout_version}/`(+models/{slug}/{slug}.glb). 07/registry/onprem/04 동기화.
+8. 아바타 폴리곤 = 8K~15K/명·20명 ≤300K(optimization-criteria 정본). S2 STT 스파이크 = P6 이관(§H). D6 = 주 단위 미확정.
+
+**⚠️ 후속 정합:**
+1. 🔴 **asset 테이블 마이그레이션 필요(코드)** — backend `tables.py` asset.`tscn_path`(Godot)가 실측 존재. D27 문서(07·asset-registry·04 §2.6)는 `gltf_path`+배경 렌더 산출 기준 → **Alembic 마이그레이션(tscn_path→gltf_path) 필요.** (04 §2.6에 노트 추가됨)
+2. [x] 06-screens §3.4 KPI 지표어휘 → 08 정본 메트릭으로 통일(2026-07-09). §3.13 이의신청은 kpi-objection.yaml 소관으로 경계 정리.
+3. [x] HTML 미러(docs/_html/) 전체 재생성 — 35개(2026-07-09).
+4. [x] specs/screens/{announcement, kpi-workflow}.yaml 상세 스펙 생성 + resources.yaml에 announcement 도메인 리소스 추가(2026-07-09).
+
+**📦 아카이브 대상(D27 이전 스냅샷):** audit-2026-07-07.md · implementation-status-2026-07-06.md · spec-conformance-2026-07-06.md · loop/{document-gap-report, planning-loop-report, final-planning-approval}.md

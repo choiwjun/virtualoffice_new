@@ -19,6 +19,8 @@ from app.models.tables import (
     # ── 회의 / 협업 ──
     Meeting,
     MeetingParticipant,
+    RecordingConsent,
+    RecordingConsentType,
     MeetingMinute,
     ActionItem,
     WorkLog,
@@ -45,6 +47,8 @@ __all__ = [
     "Presence",
     "Meeting",
     "MeetingParticipant",
+    "RecordingConsent",
+    "RecordingConsentType",
     "MeetingMinute",
     "ActionItem",
     "WorkLog",

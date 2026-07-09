@@ -1,0 +1,84 @@
+{
+  "asset_id": "BENCH_WAITING_001",
+  "name": "Waiting bench",
+  "category": "reception",
+  "type": "bench",
+  "priority": "Later",
+  "file": "models/reception/BENCH_WAITING_001.glb",
+  "unit": "meter",
+  "pivot": "BOTTOM_CENTER",
+  "up_axis": "Z",
+  "dimensions_m": {
+    "width": 1.6,
+    "depth": 0.49,
+    "height": 0.925
+  },
+  "placement": {
+    "snap_to_floor": true,
+    "grid_size": 0.1,
+    "rotatable": true
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.463
+    ],
+    "size": [
+      1.6,
+      0.49,
+      0.925
+    ]
+  },
+  "interaction": {
+    "can_sit": true,
+    "seat_anchor": {
+      "position": [
+        0,
+        -0.02,
+        0.444
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "status_anchor": {
+      "position": [
+        0,
+        0,
+        1.275
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "rendering": {
+    "cast_shadow": true,
+    "receive_shadow": true,
+    "lod_group": "LOW",
+    "pbr": {
+      "baseColor": true,
+      "normal": true,
+      "roughness": true,
+      "metallic": true,
+      "textures_embedded": true,
+      "baked_lighting_forbidden": true
+    }
+  },
+  "qa": {
+    "actual_triangles": 216,
+    "max_triangles": 2500,
+    "texture_max_size": 1024,
+    "pbr_required": true,
+    "baked_lighting_forbidden": true,
+    "result": "PASS"
+  },
+  "version": "1.0.0",
+  "format": "glb"
+}

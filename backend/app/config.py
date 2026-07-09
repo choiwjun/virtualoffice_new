@@ -36,6 +36,14 @@ class Settings(BaseSettings):
     # ── ERP dailylog read-only DB (03-erp-integration, D18) ──
     # 같은 사내망, company_id 스코프. 비어있으면 ERP 연동 비활성.
     erp_database_url: str = ""
+    # ERP write-back(EOD 전송) 대상. 비어있으면 mock 전송(상태머신만 동작, 실 ERP 미접속).
+    erp_push_endpoint: str = ""
+
+    # ── AI 서술 초안 (REQ-007, D14-e, D20 가명화) ──
+    # anthropic_api_key 비어있거나 ai_draft_enabled=False면 결정론적 mock 초안 사용(네트워크·비용 없음).
+    anthropic_api_key: str = ""
+    ai_draft_enabled: bool = False
+    ai_draft_model: str = "claude-opus-4-8"
 
     # ── JWT (D4: HS256 + 자체 시크릿, ERP와 미공유) ──
     jwt_secret_key: str = "dev-only-secret-CHANGE-IN-PRODUCTION"

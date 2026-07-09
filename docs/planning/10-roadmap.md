@@ -1,41 +1,98 @@
 # 10-roadmap.md
 
+> ✅ **Phase 편성 정본 = 본 문서 "⚠️ D27 재산정" 섹션(§D27) + `16-render-spike-and-roadmap.md` §Part B(P0~P7).** 구 D26(WorkAdventure/45·58주) 헤더·간트는 폐기되었으며, 하단 Gantt/캘린더는 참고용 잔재(⚠️D26 폐기 표기)일 뿐 현행이 아니다. 주 단위는 P0 스파이크 후 확정한다(억지 숫자 금지).
+
 ## 개발 로드맵: Virtual Office 운영 플랫폼
 
 **프로젝트**: 가상오피스 운영 플랫폼 (vituraloffice_new)  
-**버전**: v3.0  
-**목표**: 완성 — WorkAdventure self-host 기반 가상오피스 + STT·KPI·ERP 통합  
+**버전**: v3.1  
+**목표**: 완성 — R3F + Blender Cycles(오프라인 렌더) 깊이합성 가상오피스 임베드 + Colyseus 이동서버 + STT·KPI·ERP 통합 (단일 통합 웹앱, 단일 세션 JWT)  
 **첫 사용**: 사내 도그푸딩 (단일 조직, 단일 company_id 기준)  
 **개발 규모**: 1인 개발 + AI 협업, 최고 품질 우선  
-**최종 업데이트**: 2026-07-06 (D26 WorkAdventure 전환 반영)  
-**정본 기준**: `00-decisions.md` (D1~D26, F절) — 충돌 시 정본이 우선
+**최종 업데이트**: 2026-07-09 (D27 재산정 정합 정리 — 헤더·간트를 P0~P7 기준으로 갱신)  
+**Phase 편성 정본**: 본 문서 §D27 + `16-render-spike-and-roadmap.md` §Part B (P0~P7)  
+**정본 기준**: `00-decisions.md` (§H D27, D1~D26 중 유효분) + 14/15/16 — 충돌 시 정본이 우선
 
 > **변경 요약 (v2.0, 2026-07-02)**: 전체 일정을 **58주 기준**으로 재산정(D6, 시작 2026-07-06 → 완성 **2027-08-16, 2027년 하반기**), "26주/2026-12-28" 표기 전면 폐기. Phase 0(계약+스파이크 S1~S4) 신설, Phase 5에 회의록 STT 파이프라인(D5) 포함, 실시간 프로토콜 WebSocket(WSS) 확정(D1), presence 7종(D13)·seat.status enum·ERP 엔드포인트(`POST /api/kpi-results`) 통일, EOD 순환 모순 해소(D17), 3D 미리보기 제거·데스크톱 draft 모드로 대체(D11), 성능 수치 100명 설계(D22).
 >
 > **변경 요약 (v3.0, 2026-07-06)**: **D26** WorkAdventure self-host 전환 반영. Phase 1~4를 WorkAdventure 연동 구조(각 4~6주)로 재편. Godot 3D 클라이언트·헤드리스 서버 노선 보류. Phase 0 스파이크 S1·S3·S4 취소, S2(STT) 유지. Phase 5~7(STT·KPI·고도화) 유지.
+>
+> **변경 요약 (v3.1, 2026-07-09)**: **D27 정합 정리.** §D27 재산정 섹션이 이미 정본이었으나 헤더 메타·하단 Gantt/캘린더가 구 D26(WA/45·58주)에 머물러 자기모순 상태였던 것을 해소. ① 헤더 목표·최종수정일·정본기준을 D27(R3F+Blender Cycles+Colyseus, 단일 세션 JWT) 기준으로 갱신하고 "Phase 편성 정본 = §D27 + 16 §Part B" 명시. ② 하단 Gantt/캘린더·의존 그래프를 P0~P7로 재작성하되 주 단위는 미확정(⚠️D26 폐기, 스파이크 후 확정)으로 표기. ③ 본문에 남은 Godot 산출물(godot_client/*.gd·"Godot 클라이언트 빌드"·S1~S4)·구 Phase 0(S2만) 잔재 정리, Phase 번호를 P0~P7로 통일. **§D27 섹션 본문은 정본으로 보존.** P0 깊이합성 스파이크 = PASS(2026-07-08).
 
 ---
 
-## 📋 로드맵 개요
+## ⚠️ D27 재산정 (2026-07-08) — D26 Phase 편성 전면 대체
+
+> **정본 참조**: `00-decisions.md` §H (D27), `docs/planning/16-render-spike-and-roadmap.md` §Part B (P0~P7 재구축 로드맵)
+
+### D27 결정 요약
+
+2026-07-08 사용자 확정. 디자인 시안 재확인 결과 WorkAdventure(2D 픽셀·별도 앱·OIDC 이중로그인)는 목표 품질 및 통합성과 불일치 → **D26(WorkAdventure) 전면 폐기, D27로 대체**.
+
+**D27 채택 내용**: 단일 통합 웹앱(시안) 안의 뷰포트로 가상오피스 임베드. **Blender Cycles 오프라인 렌더 배경 + react-three-fiber(R3F) 실시간 아바타 깊이합성** (고정 아이소 2.5D). 실시간 이동서버 = SkyOffice 이식(Colyseus 권위 서버, 20Hz). 단일 세션(콘솔 JWT 그대로 3D 진입, 별도 OIDC 로그인 없음).
+
+### D26 Phase 편성 폐기
+
+아래 v3.0 본문의 Phase 1~4(WorkAdventure 연동 구조)는 **D27로 대체되어 폐기**된다. 각 Phase는 해당 섹션 제목에 "⚠️D27로 대체됨" 표기로 남겨두되, 구현 착수 대상에서 제외한다.
+
+| 구 Phase (D26, 폐기) | 대체 Phase (D27) |
+|---|---|
+| Phase 0: 계약 & 스파이크 (WA 중심) | P0: 깊이합성 스파이크 — docs/planning/16 §Part A |
+| Phase 1: WorkAdventure self-host 구축 | P1: 통합 대시보드 셸 + 기존 백엔드 연결 |
+| Phase 2: ERP 동기화 + Presence 연동 (WA) | P2: 렌더 파이프라인 (Blender→R3F) |
+| Phase 3: 맵 제너레이터 + 좌석 배치 (TMJ) | P3: Colyseus 이동서버 + 아바타 깊이합성 |
+| Phase 4: WorkAdventure 연동 완성 | P4: 프레즌스·좌석 실시간 시각화 |
+| Phase 5~7: STT·KPI·고도화 | P5~P7: 대응 Phase 유지 (STT·화상·KPI·하드닝) |
+
+### D27 신규 Phase 편성 (정본: docs/planning/16-render-spike-and-roadmap.md §Part B)
+
+| Phase | 범위 | 핵심 산출물 | 상태 전제 |
+|---|---|---|---|
+| **P0 스파이크** | 깊이합성 검증 (3~5일) | render-pipeline 최소본 + 판정 리포트 | **PASS (2026-07-08)** |
+| **P1 셸+데이터연결** | 통합 대시보드 셸(시안), 기존 백엔드 API 연결(KPI·업무·유저·일정) | 시안 픽셀 재현 UI (3D 뷰포트 자리 = placeholder) | P0 통과 |
+| **P2 렌더 파이프라인** | layout JSON→Blender 파라메트릭 씬 빌더, 1개 층 포토리얼 배경 렌더+깊이 | office_bg/depth 자동생성, R3F 뷰포트 배경 표시 | P1 |
+| **P3 이동서버** | Colyseus 이식(15번 스펙), 아바타 이동·좌표동기화 20Hz·이동검증, 아바타 GLTF+애니 | 멀티유저 이동, 깊이합성 아바타 | P2 |
+| **P4 프레즌스·좌석** | 7종 상태 HUD·미니맵·우패널 실시간, 자율좌석 클릭 점유/반납 | presence 라이브 시각화 (백엔드 존재) | P3 |
+| **P5 회의·화상** | D24 명시입장(2m 트리거), LiveKit 오디오/영상, 동의배너, 화상 타일 UI | 회의실 입장→화상 | P4 |
+| **P6 STT·AI** | LiveKit Egress→한국어 STT→회의록 초안, AI요약. KPI AI초안(배선됨) | 회의록 자동화 | 외부 리소스 |
+| **P7 정리·부하·하드닝** | WA 스택 제거, 다층 렌더, 20명 부하검증, 보안 하드닝, 편집기→재렌더 | 도그푸딩 릴리스 | — |
+
+> **주 단위 확정치**: P0 깊이합성 스파이크 결과 후 확정. 스파이크 실패 시 전략 재검토(대안: 빌보드 스프라이트 아바타 / 부분 실시간 3D). 억지 숫자를 기재하지 않는다.
+
+### D27로 인한 보류·부활 결정 (00-decisions.md §H 참조)
+
+| 결정 | D26 상태 | D27 상태 |
+|---|---|---|
+| D26 WorkAdventure self-host | 확정 | **폐기** |
+| D7 3D 라이팅 | 보류 | **부활(변형)** — 오프라인 Blender Cycles로 구움 |
+| D8 에셋 전달 | 보류 | **부활(변형)** — CC0 에셋+Blender 씬, 런타임은 렌더 이미지+경량 GLTF |
+| D9 room 파라메트릭 | 보류 | **부활** — layout JSON→Blender 파라메트릭 씬 빌더 |
+| D1 WSS | WA 내장 | **SkyOffice/Colyseus 자체** — 20Hz tick·이동검증 구현 |
+
+---
+
+## 📋 로드맵 개요 (D27 정본 — P0~P7)
+
+> **정본**: 본 문서 §D27 재산정 섹션 + `16-render-spike-and-roadmap.md` §Part B. 아래 표는 §D27 "D27 신규 Phase 편성" 표를 요약한 것으로, 상세 산출물·상태 전제는 §D27 표를 따른다. 구 D26 45주 개요(WA self-host·Godot)는 폐기되었다.
 
 | 단계 | 이름 | 주요 산출물 | 예상 기간 | 의존성 |
 |------|------|-----------|---------|--------|
-| 0 | 계약 & 스파이크 | API/데이터/ERP 계약 + 스파이크 S2(STT, D26으로 S1·S3·S4 취소) | 4주 | 없음 |
-| 1 ⭐ | **WorkAdventure self-host 구축** | WA 스택(play/back/map-storage/redis/LiveKit/coturn) 배포 + OIDC 연동(D4 공존) | 4주 | 0 |
-| 2 ⭐ | **ERP 동기화 + Presence 연동** | ERP 미러 동기화 + D13 presence 7종 WA 매핑 + scripting API | 5주 | 1 |
-| 3 ⭐ | **맵 제너레이터 + 좌석 배치** | TMJ 맵 생성기(조직→맵) + 팀 구역/좌석 레이아웃 + map-storage 배포 | 5주 | 2 |
-| 4 ⭐ | **WorkAdventure 연동 완성** | Room API 회의 명시 입장(D24) + scripting 고급 연동 + E2E 검증 | 6주 | 3 |
-| 5 | 회의/화상회의 + 회의록 STT | LiveKit 통합(WA 네이티브) + STT 회의록/액션아이템(D5, S2 PoC 기반) | 8주 | 4 |
-| 6 | 업무결과·KPI 산출 | KPI 산출 + AI 초안 + ERP push | 7주 | 5 + ERP dev 브랜치 |
-| 7 | 고도화 | 층 추가·권한·AI요약·모바일 | 6주 | 6 |
+| **P0** | 깊이합성 스파이크 | render-pipeline 최소본 + 판정 리포트 (**PASS 2026-07-08**) | 3~5일 | 없음 |
+| **P1** ⭐ | **통합 대시보드 셸 + 데이터 연결** | 시안 픽셀 재현 UI + 기존 백엔드 API 연결(KPI·업무·유저·일정), 3D 뷰포트 = placeholder | 미확정 | P0 |
+| **P2** ⭐ | **렌더 파이프라인 (Blender→R3F)** | layout JSON→Blender 파라메트릭 씬 빌더, 1개 층 포토리얼 배경+깊이 자동생성, R3F 뷰포트 배경 표시 | 미확정 | P1 |
+| **P3** ⭐ | **Colyseus 이동서버 + 아바타 깊이합성** | Colyseus 이식(15번 스펙, 20Hz), 이동·좌표동기화·이동검증, 아바타 GLTF+애니, 깊이합성 | 미확정 | P2 |
+| **P4** ⭐ | **프레즌스·좌석 실시간 시각화** | 7종 상태 HUD·미니맵·우패널 실시간, 자율좌석 클릭 점유/반납 | 미확정 | P3 |
+| **P5** | 회의·화상 | D24 명시입장(2m 트리거), LiveKit 오디오/영상, 동의배너, 화상 타일 UI | 미확정 | P4 |
+| **P6** | STT·AI + KPI | LiveKit Egress→한국어 STT→회의록 초안·AI요약, KPI 산출 + AI 초안(서술) + ERP push | 미확정 | P5 + ERP dev 브랜치 |
+| **P7** | 정리·부하·하드닝 | WA 스택 제거, 다층 렌더, 20명 부하검증, 보안 하드닝, 편집기→재렌더, 고도화 기능 | 미확정 | P6 |
 
-**총 예상 기간**: **45주** (시작 2026-07-06 → 완성 약 2027-05, **2027년 상반기**) — D26 WorkAdventure 전환으로 Godot 3D 구현 기간 단축. 1인 개발 + AI 협업 기준. Phase 5의 8주에는 회의록 STT 파이프라인(D5, S2 PoC 기반)이 반영됨.
+> **주 단위**: **P0 깊이합성 스파이크(PASS) 결과를 바탕으로 P1 이후 주 단위를 확정한다.** 억지 숫자를 기재하지 않는다. 스파이크 실패 대비 대안(빌보드 스프라이트 아바타 / 부분 실시간 3D)은 §D27 참조.
 
 > **핵심 원칙**: 각 단계는 **독립 데모 가능** (이전 단계 완료 후 즉시 테스트/검증 가능). 순차 빌드이며 각 단계마다 사용자 가치 제공. 1인 개발이므로 Phase 병렬화는 하지 않고 **순차 원칙**을 따른다(13-risks R7).
 
 ---
 
-## Phase 0: 계약 & 스파이크 (F절)
+## Phase 0: 계약 & 스파이크 (F절) ⚠️D27로 대체됨
 
 ### 목표
 - API/데이터/ERP 연동 계약 확정, 통합 테스트 골격, 마이그레이션 전략 수립 (상세는 12-tasks.md Phase 0)
@@ -81,7 +138,7 @@ backend/tests/conftest.py, .github/workflows/test-phase.yaml
 
 ---
 
-## Phase 1: WorkAdventure self-host 구축 ⭐D26
+## Phase 1: WorkAdventure self-host 구축 ⭐D26 ⚠️D27로 대체됨
 
 > **D26 전환**: 기존 "프리미엄 골든 샘플 3D (Godot 클라이언트)" 단계를 대체.
 
@@ -134,7 +191,7 @@ docs/deployment/onprem-docker.md  (WA 섹션 추가, Lane B)
 
 ---
 
-## Phase 2: ERP 동기화 + Presence 연동 ⭐D26
+## Phase 2: ERP 동기화 + Presence 연동 ⭐D26 ⚠️D27로 대체됨
 
 > **D26 전환**: 기존 "ERP 동기화 + 좌석/구역 (Godot 기반)" 단계를 대체.
 
@@ -190,7 +247,7 @@ backend/tests/test_wa_presence.py
 
 ---
 
-## Phase 3: 맵 제너레이터 + 좌석 배치 ⭐D26
+## Phase 3: 맵 제너레이터 + 좌석 배치 ⭐D26 ⚠️D27로 대체됨
 
 > **D26 전환**: 기존 "사무실 배치 편집기 (Konva.js 2D 전용)" 단계를 대체.
 
@@ -237,7 +294,7 @@ backend/tests/test_map_generator.py
 
 ---
 
-## Phase 4: WorkAdventure 연동 완성 ⭐D26
+## Phase 4: WorkAdventure 연동 완성 ⭐D26 ⚠️D27로 대체됨
 
 > **D26 전환**: 기존 "실시간 가상오피스 (Godot 헤드리스 서버 + WSS)" 단계를 대체.
 
@@ -286,6 +343,8 @@ scripts/e2e_load_test.py  (20명 시뮬레이션)
 ---
 
 ## Phase 5: 회의/화상회의 + 회의록 STT
+
+> **D27 매핑**: 이 섹션 = **P5(회의·화상)**. D27에서 유지되는 Phase이며, 아래 본문(스키마·API·수용기준)은 그대로 유효하되 클라이언트는 R3F/React·LiveKit 브라우저 네이티브 기준으로 읽는다(구 godot_client 잔재는 §산출물에서 정리됨).
 
 ### 목표
 - **LiveKit 셀프호스트 통합** (룸 생성은 FastAPI 경유 단일화, D24)
@@ -439,17 +498,18 @@ backend/
       ├── test_meeting_api.py
       ├── test_livekit_integration.py
 
-godot_client/
-  ├── scenes/
-  │   └── meeting_room_ui.tscn
-  └── scripts/
-      ├── meeting_controller.gd
-      └── livekit_bridge.gd (WebRTC GDExtension 화면 임베드, S1 검증 기반. 실패 시 임베디드 브라우저 폴백)
+frontend/ (R3F/React — D27, 구 godot_client 대체)
+  ├── components/office/
+  │   └── MeetingRoomOverlay.tsx  (회의실 진입 오버레이 UI)
+  └── lib/
+      └── livekit-viewer.ts       (LiveKit WebRTC 화상 타일, 브라우저 네이티브)
 ```
 
+> ⚠️ **D27 잔재 정리**: 이전 판의 `godot_client/*.gd`(meeting_controller.gd·livekit_bridge.gd·GDExtension 임베드)는 폐기. LiveKit 화상은 단일 웹앱(React) 안에서 브라우저 네이티브 WebRTC로 처리한다(D27). S1(Godot↔LiveKit) 스파이크도 취소됨(§D27 참조).
+
 ### 의존성
-- Phase 4 완료 (실시간 서버, room 상태 관리)
-- Phase 0 스파이크 S1(Godot↔LiveKit), S2(STT 파이프라인) 결과
+- P4 완료 (Colyseus 이동서버 + 프레즌스 실시간)
+- P0 깊이합성 스파이크(PASS) — S1~S4(Godot 계열)는 D26/D27로 취소됨
 - LiveKit + coturn 셀프호스트 배포 (**사내 VM, Docker Compose**, D21 — Kubernetes/클라우드 SaaS 배제)
 
 ### 수용 기준
@@ -469,6 +529,8 @@ godot_client/
 ---
 
 ## Phase 6: 업무결과·KPI 산출 + ERP push
+
+> **D27 매핑**: 이 섹션 = **P6(STT·AI + KPI)**. D27에서 유지되는 Phase이며 KPI 산출·AI 서술 초안·ERP push 로직은 그대로 유효하다(D14/D15/D16/D17 정본).
 
 ### 목표
 - **work_log** (일일 업무 기록) 입력/수정 UI
@@ -841,6 +903,8 @@ erp_dev_branch/ (feature/virtual-office-integration)
 
 ## Phase 7: 고도화
 
+> **D27 매핑**: 이 섹션 = **P7(정리·부하·하드닝)**. D27 P7은 여기의 고도화 기능(층 이동·권한·AI요약·모바일·모니터링)에 더해 **WA 스택 제거·다층 렌더·20명 부하검증·보안 하드닝·편집기→재렌더**(§D27)를 포함한다. 구 godot_client 산출물 잔재는 §산출물에서 R3F/React로 정리됨.
+
 ### 목표
 - 플랫폼 **완성도 향상** (추가 기능, 사용성, 성능)
 - Phase 1~6 기반으로 **단계적 확장 기능** 적용
@@ -1004,13 +1068,14 @@ frontend/
   └── lib/
       └── feedback-api.ts
 
-godot_client/
-  ├── scenes/
-  │   └── floor_transition.tscn
-  └── scripts/
-      ├── access_control.gd
-      └── notification_receiver.gd
+frontend/ (R3F/React — D27, 구 godot_client 대체)
+  ├── components/office/
+  │   └── FloorTransition.tsx     (층 이동 전환 연출)
+  └── lib/
+      ├── access-control.ts       (구역 접근 제어 클라이언트)
+      └── notification-receiver.ts (실시간 알림 수신)
 ```
+> ⚠️ **D27 잔재 정리**: 이전 판의 `godot_client/*.gd`(floor_transition.tscn·access_control.gd·notification_receiver.gd)는 폐기. 층 이동·접근제어·알림은 R3F/React 클라이언트 + Colyseus로 처리(D27).
 
 ### 의존성
 - Phase 1~6 완료
@@ -1029,19 +1094,21 @@ godot_client/
 
 ---
 
-## 단계 간 의존 그래프
+## 단계 간 의존 그래프 (D27 — P0~P7)
+
+> ⚠️ **구 D26 그래프/Gantt(45주=315일, WA self-host·골든샘플 3D·2026-07-06→2027-05-17) 폐기.** 아래는 D27 Phase(P0~P7) 순차 의존만 표현한다. **주 단위·날짜는 미확정** — P0 깊이합성 스파이크(PASS) 결과를 바탕으로 P1 이후 일정을 확정한다(억지 숫자 금지). 확정 시 이 절에 Gantt를 채운다.
 
 ```mermaid
 graph LR
-    P0["Phase 0: 계약 & 스파이크<br/>(4주)"] --> P1["Phase 1: 골든 샘플 3D<br/>(12주)"]
-    P1 --> P2["Phase 2: ERP 동기화<br/>(7주)"]
-    P2 --> P3["Phase 3: 배치 편집기<br/>(6주)"]
-    P3 --> P4["Phase 4: 실시간 서버(WSS)<br/>(8주)"]
-    P4 --> P5["Phase 5: 회의/화상 + STT<br/>(8주)"]
-    P5 --> P6["Phase 6: KPI 산출 + ERP push<br/>(7주)"]
-    P6 --> P7["Phase 7: 고도화<br/>(6주)"]
+    P0["P0: 깊이합성 스파이크<br/>(PASS 2026-07-08)"] --> P1["P1: 대시보드 셸<br/>+ 데이터 연결"]
+    P1 --> P2["P2: 렌더 파이프라인<br/>(Blender→R3F)"]
+    P2 --> P3["P3: Colyseus 이동서버<br/>+ 아바타 깊이합성"]
+    P3 --> P4["P4: 프레즌스·좌석<br/>실시간 시각화"]
+    P4 --> P5["P5: 회의·화상<br/>(LiveKit)"]
+    P5 --> P6["P6: STT·AI + KPI<br/>+ ERP push"]
+    P6 --> P7["P7: 정리·부하·하드닝<br/>도그푸딩 릴리스"]
 
-    style P0 fill:#eeeeee
+    style P0 fill:#c8e6c9
     style P1 fill:#ffcccc
     style P2 fill:#ffffcc
     style P3 fill:#ccffcc
@@ -1051,70 +1118,43 @@ graph LR
     style P7 fill:#ffe0b2
 ```
 
-**Gantt 타임라인** (45주, 시작 2026-07-06 → 완성 2027-05-17, D26 재산정):
+**Gantt 타임라인**: ⚠️ **주 단위 미확정 — P0 스파이크 후 확정.** 구 D26 Gantt(45주, 2026-07-06→2027-05-17)는 폐기되어 제거했다. 날짜 확정 시 P0~P7 기준 Gantt를 이 자리에 작성한다.
 
-```mermaid
-gantt
-    title Virtual Office 로드맵 (45주, D26)
-    dateFormat YYYY-MM-DD
-
-    Phase 0 (계약·스파이크 S2)      :p0, 2026-07-06, 28d
-    Phase 1 (WA self-host 구축)     :p1, after p0, 28d
-    Phase 2 (ERP·Presence 연동)     :p2, after p1, 35d
-    Phase 3 (맵 제너레이터·좌석)    :p3, after p2, 35d
-    Phase 4 (WA 연동 완성·E2E)      :p4, after p3, 42d
-    Phase 5 (회의/STT)              :p5, after p4, 56d
-    Phase 6 (KPI/ERP push)          :p6, after p5, 49d
-    Phase 7 (고도화)                :p7, after p6, 42d
-
-    milestone Phase 1 완료 (WA 가동) :crit, m1, 2026-08-31, 1d
-    milestone Phase 4 완료 (연동 E2E) :crit, m4, 2026-12-21, 1d
-    milestone Phase 6 완료 (KPI) :crit, m6, 2027-04-05, 1d
-    milestone 프로젝트 완성 :crit, m7, 2027-05-17, 1d
-```
-
-**Phase별 캘린더 (검산 완료, 합계 45주 = 315일)**:
+**Phase별 캘린더**: ⚠️ **미확정.** 구 D26 캘린더(합계 45주=315일, Phase 0~7 날짜 표)는 폐기되었다. P1 이후 주 단위가 확정되면 아래 형식으로 채운다.
 
 | Phase | 기간 | 시작 | 종료 |
 |-------|------|------|------|
-| 0 | 4주 | 2026-07-06 | 2026-08-02 |
-| 1 | 4주 | 2026-08-03 | 2026-08-30 |
-| 2 | 5주 | 2026-08-31 | 2026-10-04 |
-| 3 | 5주 | 2026-10-05 | 2026-11-08 |
-| 4 | 6주 | 2026-11-09 | 2026-12-20 |
-| 5 | 8주 | 2026-12-21 | 2027-02-14 |
-| 6 | 7주 | 2027-02-15 | 2027-04-04 |
-| 7 | 6주 | 2027-04-05 | 2027-05-16 |
-| **완성** | | | **2027-05-17** |
+| P0 | 3~5일 | — | **PASS 2026-07-08** |
+| P1~P7 | 미확정 (스파이크 후 확정) | — | — |
 
 ---
 
 ## 1인 개발 리스크 & 완화 전략
 
 ### 리스크 1: 각 단계 간 coupling이 강하면 중단점이 많다
-**완화**: 각 단계가 **독립 데모 가능** (API mocking, stub 데이터 활용)
-- Phase 1: 로컬 아바타 시뮬레이션 (서버 없이)
-- Phase 2: 대시보드 UI (Godot 없이)
-- Phase 3: 배치 편집기 (배포 없이, 드래프트 상태만)
-- Phase 4: 멀티플레이어 테스트 (ERP 없이, 로컬 data)
-- Phase 5: 회의 예약 및 회의록 (화상회의 없이)
-- Phase 6: KPI 산출 (ERP 푸시 없이)
-- Phase 7: 기존 기능 개선
+**완화**: 각 단계가 **독립 데모 가능** (API mocking, stub 데이터 활용) — D27 P0~P7 기준
+- P1: 통합 대시보드 셸 (3D 뷰포트 = placeholder, 백엔드 mock)
+- P2: 렌더 파이프라인 (Blender→R3F 배경, 이동서버 없이 정적 표시)
+- P3: Colyseus 이동서버 (프레즌스 없이, 로컬 멀티유저 이동만)
+- P4: 프레즌스·좌석 실시간 (ERP 없이, 로컬 data)
+- P5: 회의 예약 및 회의록 (화상회의 없이)
+- P6: KPI 산출 (ERP 푸시 없이)
+- P7: 정리·부하·하드닝, 기존 기능 개선
 
-### 리스크 2: 복잡한 3D 렌더링 + 서버 로직 동시 개발
-**완화**: Godot Phase 1에서 **품질 기준 고정**, 이후는 재사용만
-- Phase 1 산출물 = "황금 템플릿"
-- Phase 2~3: 데이터 모델, API (2D 위주)
-- Phase 4: 멀티플레이어 로직만 추가 (3D 품질은 Phase 1 유지)
+### 리스크 2: 오프라인 렌더 배경 + 실시간 깊이합성 + 서버 로직 동시 개발
+**완화**: P2에서 **렌더 룩 기준 고정**(Blender Cycles 골든 배경), 이후는 파라메트릭 재생성·재사용만 (D27)
+- P2 산출물 = "포토리얼 배경+깊이 파이프라인 템플릿"
+- P3: 깊이합성 아바타·이동서버 로직 추가 (배경 룩은 P2 유지)
+- P4~: 프레즌스·좌석 등 데이터 결합만 추가
 
 ### 리스크 3: ERP 연동 + 서비스계정 JWT 관리
-**완화**: Phase 6에서만 ERP dev 브랜치 작업, 그 전까지는 모의 데이터
-- Phase 1~5: ERP 데이터 자체는 필요 없음 (Phase 2에서 cache만 읽음)
-- Phase 6: dev 브랜치 병합 전 로컬 ERP 테스트 환경 구축
+**완화**: P6에서만 ERP dev 브랜치 작업, 그 전까지는 모의 데이터
+- P1~P5: ERP 데이터 자체는 필요 없음 (P1/P4에서 cache만 읽음)
+- P6: dev 브랜치 병합 전 로컬 ERP 테스트 환경 구축
 
 ### 리스크 4: 성능 저하 (설계 100명 프레즌스 동기, D22)
-**완화**: Phase 4에서 delta sync (바이너리 직렬화·AOI는 100명 초과 시 도입 검토 — D22) (Redis 미사용 — 큐/스케줄은 APScheduler + DB 영속 큐, D21)
-- 초기 도그푸딩 검증 20명 데이터로 동작 검증
+**완화**: P3 Colyseus 이동서버에서 delta sync (바이너리 직렬화·AOI는 100명 초과 시 도입 검토 — D22) (Redis 미사용 — 큐/스케줄은 APScheduler + DB 영속 큐, D21)
+- 초기 도그푸딩 검증 20명 데이터로 동작 검증 (P7 부하검증)
 - 점진적 load testing (20 → 50 → 설계 100명)
 
 ### 리스크 5: 변경사항 추적 어려움
@@ -1164,45 +1204,47 @@ gantt
 - 02-trd-architecture.md (기술 요구사항)
 - 03-erp-integration.md (ERP 연동 계약)
 - 05-office-layout-schema.md (office_layout 상세)
-- 13-risks-open-questions.md (검증 간트 — 원 58주 기준선. D26 이후 45주 기준 재검증 필요)
+- 13-risks-open-questions.md (검증 간트 — 원 58주/45주 기준선. **D27 이후 P0~P7 기준·주 단위 미확정으로 재검증 필요**)
+- **14/15/16 (D27 정본 — render-spike-and-roadmap §Part B가 Phase 편성 정본)**
 
 ### Downstream documents affected
-- 12-tasks.md (Task ID 파생: P1-T1 ~ P7-T?)
+- 12-tasks.md (Task ID 파생: P0-T? ~ P7-T?, D27 기준 재파생 필요)
 
 ### Open questions
-- ERP dev 브랜치 병합 일정 (git 접근권한 보유로 자체 작업, Phase 6 착수 시점 확정 필요)
-- ~~Godot 네이티브 빌드 서명~~ — **D26으로 취소** (WA는 브라우저 접속, 클라이언트 배포 없음)
-- ~~3D 에셋 라이선스~~ — **D26으로 대체**: 2D 타일셋/아바타 에셋 라이선스 확인(WA 기본 에셋 + Tiled 타일셋 CC0 우선)
+- ERP dev 브랜치 병합 일정 (git 접근권한 보유로 자체 작업, P6 착수 시점 확정 필요)
+- **P1 이후 주 단위 일정** — P0 깊이합성 스파이크(PASS) 결과를 바탕으로 확정(억지 숫자 금지)
+- ~~Godot 네이티브 빌드 서명~~ — **D26/D27로 취소** (단일 웹앱 브라우저 접속, 네이티브 클라이언트 배포 없음)
+- ~~3D 에셋 라이선스~~ — **D27로 대체**: CC0 에셋 + Blender 씬, 런타임은 렌더 이미지 + 경량 GLTF 아바타 (§D27, D8 부활-변형)
 
-> 확정 종결: 실시간 프로토콜=WebSocket(WSS, D1), LiveKit 인프라=사내 VM self-host(D21), 회의실 예약=예약+FCFS 병행(D23).
+> 확정 종결: 실시간 이동서버=Colyseus 자체(SkyOffice 이식, 20Hz tick·이동검증, D1 변형/§D27), LiveKit 인프라=사내 VM self-host(D21), 회의실 예약=예약+FCFS 병행(D23), 인증=단일 세션 JWT(콘솔 JWT 그대로 3D 진입, 별도 OIDC 로그인 없음, §D27).
 
 ### Assumptions
 - ERP(Space-Daily) read-only DB 접근 가능 (같은 사내망)
-- Godot 4 Forward+ 렌더러 성능 = GTX 1650급 60fps / 내장그래픽(Iris Xe급) 30fps (D7/D22)
-- 1인 개발 + AI 협업으로 예상 기간 내 완성 가능 (변수: 예기치 않은 기술 이슈)
+- Blender Cycles 오프라인 렌더로 포토리얼 배경 구움 → 런타임은 R3F 실시간 아바타만(깊이합성). 저사양 PC 부담은 실시간 3D 대비 낮음 (D7 부활-변형/§D27)
+- 1인 개발 + AI 협업으로 완성 가능 (변수: 예기치 않은 기술 이슈. 주 단위는 스파이크 후 확정)
 - LiveKit 셀프호스트 유지비 허용 (예산 범위)
 
-### Validation criteria
-- [ ] Phase 0 완료: 계약 4종 + 스파이크 S1~S4 결과(성공/폴백 확정)
-- [ ] Phase 1 완료: Godot 클라이언트 빌드, 샘플 씬 렌더링
-- [ ] Phase 2 완료: ERP 동기화 배치 실행, 직원 데이터 로드
-- [ ] Phase 3 완료: 배치도 2D 편집 + 데스크톱 draft 모드 열람(D11)
-- [ ] Phase 4 완료: 20명 동시 멀티플레이어 프레즌스(설계 100명, D22)
-- [ ] Phase 5 완료: 회의 예약 + 화상 통화 + 회의록
-- [ ] Phase 6 완료: KPI 산출 + AI 초안 + ERP 푸시
-- [ ] Phase 7 완료: 층 이동, 권한 제어, AI 요약, 모니터링
+### Validation criteria (D27 — P0~P7)
+- [x] P0 완료: 깊이합성 스파이크 PASS (2026-07-08, render-pipeline 최소본 + 판정 리포트)
+- [ ] P1 완료: 통합 대시보드 셸 + 기존 백엔드 API 연결 (3D 뷰포트 = placeholder)
+- [ ] P2 완료: layout JSON→Blender 파라메트릭 씬 빌더, 1개 층 포토리얼 배경+깊이 자동생성, R3F 배경 표시
+- [ ] P3 완료: Colyseus 이동서버(20Hz) 멀티유저 이동 + 깊이합성 아바타
+- [ ] P4 완료: presence 7종 실시간 시각화 + 자율좌석 점유/반납 (설계 100명, D22)
+- [ ] P5 완료: 회의 명시입장 + 화상 통화 + 회의록
+- [ ] P6 완료: STT 회의록 + KPI 산출 + AI 초안 + ERP 푸시
+- [ ] P7 완료: WA 스택 제거, 다층 렌더, 20명 부하검증, 보안 하드닝
 
 ### Risks
-1. **3D 렌더링 성능**: 저사양 PC에서 60 FPS 미달 위험
-   - 완화: Phase 1 조기에 성능 벤치마크 (전체 아바타 10명, 모든 방)
+1. **깊이합성 렌더 룩·성능**: R3F 실시간 아바타와 Blender 배경 합성 시 깊이/그림자 불일치
+   - 완화: P0 스파이크에서 검증 완료(PASS). P2에서 골든 배경 룩 고정
 2. **ERP 연동 지연**: dev 브랜치 병합 일정 미정
-   - 완화: Phase 6 병렬 작업 (내부 KPI 엔진 먼저 검증)
+   - 완화: P6 병렬 작업 (내부 KPI 엔진 먼저 검증)
 3. **LiveKit 구축 난제**: 자체 호스팅 복잡도 (오디오/비디오 codec, 대역폭)
-   - 완화: Phase 5 초기 리서치, PoC 먼저 (작은 테스트 룸부터)
+   - 완화: P5 초기 리서치, PoC 먼저 (작은 테스트 룸부터)
 4. **데이터 일관성**: ERP ↔ 우리 플랫폼 양방향 동기 오류
    - 완화: audit_log, daily_status_push 로깅 (문제 추적 용이)
 
 ---
 
-**작성 완료**: 2026-07-02 (v2.0)  
-**다음 단계**: `12-tasks.md` 에서 Task ID 파생 (P0-T0.x ~ P7-Tx)
+**작성 완료**: 2026-07-02 (v2.0) · **D27 정합 정리**: 2026-07-09 (v3.1)  
+**다음 단계**: `12-tasks.md` 에서 Task ID 재파생 (D27 P0~P7 기준)

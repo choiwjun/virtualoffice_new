@@ -107,3 +107,5 @@ from app.api import office_layouts  # noqa: E402  Gaps: office-layouts (D12)
 app.include_router(office_layouts.router)     # /api/office-layouts/* (D12 검증·배포·롤백)
 from app.api import maps  # noqa: E402  Lane A: map generator API
 app.include_router(maps.router)              # /api/maps/* (generate/validate, REQ-003)
+from app.api import consent  # noqa: E402
+app.include_router(consent.router)

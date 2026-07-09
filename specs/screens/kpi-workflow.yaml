@@ -1,0 +1,115 @@
+version: "2.0"
+
+screen:
+  name: KPI 평가 워크플로우 (KPI Evaluation Workflow)
+  route: /admin/kpi/workflow # 관리자 검토·조정 흐름. 직원 본인 분기 열람은 /kpi/quarterly, 이의신청은 kpi-objection.yaml
+  platform: web
+  layout: sidebar-main
+  required_role: leader # 검토·조정은 leader | admin. 직원 본인 열람 뷰는 read-only 서브뷰
+
+data_requirements:
+  - resource: kpi_result
+    needs: [id, user_id, period_type, period_key, metric, value, ai_draft, admin_adjusted_score, admin_note, admin_user_id, admin_reviewed_at, objection_status, final_score, finalized_at]
+    filters:
+      period_type: "quarterly"
+      period_key: "?period_key"
+      user_id: "?user_id"
+    mutations: [update]
+    access: read-write
+    note: 정량 value는 결정론적 코드 계산본(읽기 전용). 관리자는 admin_adjusted_score(±10% 범위)·admin_note만 갱신. 정본 = 08-kpi-logic §3.2/§6.2.3, 04 §2.5
+
+  - resource: erp_user
+    needs: [id, name, erp_team_id, role]
+    access: read-only
+    note: 대상 직원·팀 벤치마크 모수 표시
+
+audit_trail:
+  - resource: audit_log
+    needs: [action, entity_id, old_value, new_value, created_at]
+    access: read-only
+    note: kpi_adjusted / kpi_finalized / ai_draft_generated 열람(HR·감사, 08 §7.1)
+
+components:
+  - id: quarterly-detail
+    type: panel
+    position: main
+    function: "분기 KPI 상세 — 표시 7종(API 응답은 8종 — action_items_completed 포함, 04 §2.5) metric 값(§1.2.1 매핑: collaboration_score 게이지 + work_completed_count/work_quality_score/minutes_authored_count/action_items_ontime_rate/report_fidelity_score + quarterly_total), 지난 3분기 추이, 팀 백분위(team_percentile)"
+    data_source:
+      resource: kpi_result
+
+  - id: ai-draft-view
+    type: panel
+    position: main
+    function: "AI 서술 초안 열람(정량 미포함, D14-e) — 강점 3 / 개선영역 2+액션 / 종합 서술 / team_percentile. 08 §6.2.2"
+    data_source:
+      resource: kpi_result
+
+  - id: admin-adjust-form
+    type: form
+    position: right
+    function: "관리자 검토·조정 — admin_adjusted_score(±10% 범위 슬라이더/입력) + admin_note(조정사유 ≥30자 필수) + 개선액션 추가(최대 +3). [검토 시작] → [확정 대기]"
+    data_source:
+      resource: kpi_result
+    visible_when: "role IN (leader, admin)"
+
+  - id: signal-evidence-links
+    type: list
+    position: main
+    function: "각 metric 원본 데이터 링크(work_log, meeting_minute, action_item) — 조정 근거 확인용"
+
+  - id: objection-link
+    type: link
+    position: main
+    function: "이의신청 진행 상태 배지 + [이의신청 처리 →] = kpi-objection.yaml(/admin/kpi/objections)로 이동. 이 화면은 검토·조정, 이의신청 상태머신은 kpi-objection 소관(중복 방지)"
+    data_source:
+      resource: kpi_result
+
+events:
+  - on: admin-start-review
+    do: "kpi_result 열람 상태 기록(admin_reviewed_at 예비). AI 초안·원본 신호 링크 로드"
+
+  - on: admin-adjust
+    do: "admin_adjusted_score 설정(value 대비 ±10% 범위 검증, 초과 시 거부) + admin_note(≥30자) + admin_user_id + admin_reviewed_at=now. 저장 시 audit_log(action=kpi_adjusted) 자동 생성(08 §3.2, D20)"
+
+  - on: admin-finalize
+    do: "확정(final_score/finalized_at)은 admin 전용(08 §7.1 — 조정은 leader/admin, 확정은 admin만). 직원 이의신청 기간(공개 후 7일) 대기 후 또는 이의 resolved 시 final_score = admin_adjusted_score ?? value, finalized_at=now → ERP push 트리거(POST /api/kpi-results, D15)"
+
+  - on: sudden-change-warning
+    do: "이전 분기 대비 ±30% 변화 또는 저성과(<평균-2σ) 시 경고 배너 표시(재검토 권유, 08 §3.2)"
+
+tests:
+  - name: "관리자 조정 ±10% 범위 검증"
+    when: "leader가 admin_adjusted_score를 value 대비 +15%로 입력"
+    then:
+      - "범위 초과로 저장 거부 + '±10% 범위 초과' 안내"
+      - "±10% 이내 값 + admin_note(≥30자) 입력 시 저장 성공"
+      - "audit_log(action=kpi_adjusted, old_value/new_value) 자동 생성"
+
+  - name: "정량 값 읽기 전용"
+    when: "관리자가 metric value(결정론적 계산본)를 직접 편집 시도"
+    then:
+      - "value는 편집 불가(읽기 전용), 조정은 admin_adjusted_score로만"
+      - "AI 초안(ai_draft)에 정량 점수 필드 없음 확인(D14-e)"
+
+  - name: "확정 → ERP push"
+    when: "이의신청 기간 경과 후 [확정]"
+    then:
+      - "final_score = admin_adjusted_score ?? value, finalized_at 설정"
+      - "POST /api/kpi-results로 final_score만 metric 단위 upsert(D15)"
+      - "audit_log(action=kpi_finalized) 생성"
+
+  - name: "이의신청과 경계"
+    when: "objection_status가 submitted/reviewing인 항목에서 [확정] 시도"
+    then:
+      - "확정 차단 — 이의신청 처리(kpi-objection.yaml)로 유도"
+      - "objection_status=none 또는 resolved일 때만 finalize 허용"
+
+  - name: "권한 경계"
+    when: "일반 직원이 /admin/kpi/workflow 접근"
+    then:
+      - "권한 없음 화면(§3.10) — 직원은 본인 분기 read-only 뷰(/kpi/quarterly)만"
+
+notes:
+  - "역할 분담: 이 화면 = 관리자 검토·조정·확정 + AI초안 열람. 이의신청 상태머신(none→submitted→reviewing→resolved)은 kpi-objection.yaml 소관(중복 방지)"
+  - "정본: 08-kpi-logic §3.2·§6.2.2·§6.2.3, 04 §2.5(kpi_result 인라인 필드), 06-screens §3.13"
+  - "정량=결정론적 코드(D14-e), AI=서술만, 조정=±10%·사유 필수, 확정=final_score만 ERP push(D15)"

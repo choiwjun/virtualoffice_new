@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>포토리얼 웹 렌더 전략 (정본)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">포토리얼 웹 렌더 전략 (정본)</div><div class="sub">photoreal-web-strategy.md</div><a class="lvl1" href="#포토리얼-웹-렌더-전략-정본">포토리얼 웹 렌더 전략 (정본)</a><a class="lvl2" href="#0-왜-전환했나-godot-폐기-사유">0. 왜 전환했나 (Godot 폐기 사유)</a><a class="lvl2" href="#1-확정-스택">1. 확정 스택</a><a class="lvl2" href="#2-핵심-아이디어-구운-배경-실시간-아바타-깊이합성">2. 핵심 아이디어: &quot;구운 배경 + 실시간 아바타 깊이합성&quot;</a><a class="lvl2" href="#3-미검증-리스크-phase-0-스파이크-착수-전-필수">3. 미검증 리스크 = Phase 0 스파이크 (착수 전 필수)</a><a class="lvl2" href="#4-파이프라인-배경-생성-웹-서빙">4. 파이프라인 (배경 생성 → 웹 서빙)</a><a class="lvl2" href="#5-좌표계-정합-web-blender-서버">5. 좌표계 정합 (Web ↔ Blender ↔ 서버)</a><a class="lvl2" href="#6-남은-실행-항목스파이크-이후">6. 남은 실행 항목(스파이크 이후)</a><a class="lvl2" href="#7-한-줄-요약">7. 한 줄 요약</a></nav>
+<main><h1 id="포토리얼-웹-렌더-전략-정본">포토리얼 웹 렌더 전략 (정본)</h1>
+<blockquote>2026-07-05 확정 · 2026-07-08 복원/정리. 유실됐던 정본을 재작성. 가상오피스 3D 뷰를 <strong>Godot 실시간 웹에서 웹 오프라인렌더 하이브리드로 전환</strong>한 확정 전략. 관련: <a href="./design-style-analysis.md">design-style-analysis.md</a>(비주얼 톤), 14-virtual-office-spec(기능).</blockquote>
+<hr>
+<h2 id="0-왜-전환했나-godot-폐기-사유">0. 왜 전환했나 (Godot 폐기 사유)</h2>
+<ul><li><strong>Godot 실시간 웹</strong>(Compatibility 렌더러)으로 시안급 포토리얼 시도 → <strong>품질 시안 대비 ~40%</strong>, 용량 무거움.</li><li>실시간 GI/스플랫은 <strong>고정 아이소 뷰에 오버킬</strong>. 결론: &quot;라이트를 실시간 계산하지 말고 <strong>오프라인으로 구워라</strong>&quot;.</li><li>포토리얼 협업앱 오픈소스 선례 없음(전부 2D/카툰: WorkAdventure·Gather 등) → <strong>뼈대와 렌더를 분리 조달</strong>하는 하이브리드가 유일 경로.</li></ul>
+<hr>
+<h2 id="1-확정-스택">1. 확정 스택</h2>
+<div class="table-wrap"><table><thead><tr><th>계층</th><th>선택</th><th>라이선스</th><th>비고</th></tr></thead><tbody><tr><td><strong>앱 뼈대(네트워킹)</strong></td><td><strong>SkyOffice</strong> 이식</td><td>MIT</td><td>Colyseus(권위 서버) + PeerJS. &gt;4명 시 mediasoup 검토. <strong>Phaser는 버림</strong>(렌더만 교체)</td></tr><tr><td><strong>렌더</strong></td><td><strong>react-three-fiber (R3F)</strong></td><td>MIT</td><td>three.js 기반, Next.js 임베드</td></tr><tr><td><strong>환경(배경)</strong></td><td><strong>Blender Cycles 오프라인 렌더</strong> + <strong>Z(깊이) 패스</strong></td><td>-</td><td>정적 포토리얼 배경 이미지 + 깊이맵</td></tr><tr><td><strong>합성</strong></td><td>R3F 실시간 아바타 ↔ 배경 <strong>깊이합성</strong>(자동 가림)</td><td>-</td><td>아바타가 가구/유리벽 뒤로 정확히 가려짐</td></tr><tr><td><strong>후처리</strong></td><td>pmndrs/postprocessing</td><td>MIT</td><td>ACES/AgX 톤매핑 · N8AO · Bloom · SMAA</td></tr><tr><td><strong>에셋</strong></td><td>CC0 ~90% (Poly Haven · ambientCG · Chocofur)</td><td>CC0</td><td>유일 유료갭 = <strong>사람 아바타</strong>(MakeHuman 무료 / CC4 유료). <strong>Ready Player Me 금지</strong>(2026-01 종료)</td></tr></tbody></table></div>
+<hr>
+<h2 id="2-핵심-아이디어-구운-배경-실시간-아바타-깊이합성">2. 핵심 아이디어: &quot;구운 배경 + 실시간 아바타 깊이합성&quot;</h2>
+<pre class="code"><code>[Blender Cycles]  직교(ortho) 아이소 카메라로 오피스 씬 렌더
+      │
+      ├─ Color 패스  → office_bg.png   (포토리얼 배경)
+      └─ Depth 패스  → office_depth.png (픽셀별 깊이)
+                           │
+[R3F 웹]  같은 직교 카메라 행렬 재현
+      │
+      ├─ 배경 = office_bg를 풀스크린 쿼드로
+      ├─ 아바타 = 실시간 3D(GLTF), 같은 좌표계
+      └─ 깊이합성: 아바타 프래그먼트 깊이 vs office_depth 비교
+                   → 배경보다 뒤면 discard(가림) → 자연스러운 오클루전</code></pre>
+<ul><li><strong>office_depth 규약</strong>: 0=near(black) ‥ 1=far(white), <strong>16bit</strong> (camera.json <code>depth_encoding</code>, 스파이크 실측 — spikes/depth-composite).</li><li><strong>결과 품질</strong>: 배경은 <strong>렌더 이미지 자체</strong>라 시안과 거의 동일(~90%+).</li><li><strong>트레이드오프</strong>: 카메라가 <strong>고정 아이소 시점</strong>(자유 회전 불가). 시안이 고정 아이소라 목표와 일치 → <strong>2.5D 포토리얼</strong>.</li><li><strong>레이아웃 변경</strong>: 층/배치가 바뀌면 해당 씬 <strong>재렌더</strong> 필요(즉시 반영 아님) → 렌더 파이프라인 배치화.</li></ul>
+<hr>
+<h2 id="3-미검증-리스크-phase-0-스파이크-착수-전-필수">3. 미검증 리스크 = Phase 0 스파이크 (착수 전 필수)</h2>
+<blockquote><strong>이 스파이크 성공이 전체 전략의 전제.</strong> 실패 시 전략 재검토.</blockquote>
+<p><strong>목표</strong>: Blender 직교카메라 행렬을 export → R3F에서 동일 카메라 재현 → 깊이합성으로 아바타가 책상/유리벽 뒤에 <strong>픽셀 단위로 정확히 가려지는가</strong> 검증.</p>
+<p><strong>산출물</strong>:</p>
+<ul><li><code>render-pipeline/build_office.py</code> (Blender 헤드리스 렌더 + 카메라행렬/깊이 export) — <strong>※ 2026-07-05 세션에서 실행했으나 git 미커밋으로 유실. 재작성 필요.</strong></li><li>R3F 최소 씬: 배경 쿼드 + 테스트 아바타 1개 + 깊이합성 셰이더.</li><li>검증: 아바타를 책상 앞/뒤로 이동 → 가림 경계가 정확한지 스크린샷 비교.</li></ul>
+<p><strong>소요</strong>: 며칠. 성공하면 나머지는 &quot;난이도&quot;가 아니라 &quot;실행량&quot;.</p>
+<hr>
+<h2 id="4-파이프라인-배경-생성-웹-서빙">4. 파이프라인 (배경 생성 → 웹 서빙)</h2>
+<pre class="code"><code>office_layout JSON (좌석/벽/회의실/구역)
+   → [Blender] 파라메트릭 씬 빌드(build_office.py) + CC0 에셋 배치
+   → Cycles 렌더(color + depth + 필요시 노멀/AO 패스)
+   → 후처리(톤매핑) → office_bg.png / office_depth.png / camera.json
+   → 정적 에셋 서빙(map-storage 유사) → R3F가 로드</code></pre>
+<ul><li>층별/레이아웃 버전별로 렌더 산출물 캐싱. 편집기에서 배치 확정 → 배치 렌더 트리거.</li><li>아바타(사람)는 실시간 GLTF(경량), 씬 조명에 맞춘 IBL/라이트 프로브로 정합.</li></ul>
+<hr>
+<h2 id="5-좌표계-정합-web-blender-서버">5. 좌표계 정합 (Web ↔ Blender ↔ 서버)</h2>
+<ul><li><strong>단일 좌표 원점</strong>: office<em>layout의 top</em>left 미터 좌표계(05-office-layout-schema 정본).</li><li>Blender 씬·R3F 씬·이동서버(SkyOffice) 모두 동일 미터 좌표 사용 → 아바타 위치가 배경과 정합.</li><li>직교 카메라 행렬(ortho scale·회전·위치)을 camera.json으로 공유 → 웹이 그대로 재현.</li></ul>
+<hr>
+<h2 id="6-남은-실행-항목스파이크-이후">6. 남은 실행 항목(스파이크 이후)</h2>
+<ol><li>아바타 에셋·리깅·애니메이션(idle/walk) + 씬 조명 정합(최난제, 목표 80~90%).</li><li>Blender 파라메트릭 빌더(layout JSON → 씬) 자동화.</li><li>SkyOffice 네트워킹 이식(Colyseus 권위 서버, 20Hz).</li><li>R3F 뷰포트 컴포넌트 + 대시보드 셸 통합(design-style-analysis 기준).</li></ol>
+<hr>
+<h2 id="7-한-줄-요약">7. 한 줄 요약</h2>
+<p><strong>실시간 렌더로는 못 넘는 포토리얼을, &quot;오프라인으로 구운 배경 + 실시간 아바타 깊이합성&quot;으로 넘는다. 대가는 고정 아이소 시점(2.5D). 성패는 깊이합성 스파이크 하나에 달렸다.</strong></p>
+<div class="meta-foot">원본: <code>photoreal-web-strategy.md</code> · 자동 생성 2026-07-09 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

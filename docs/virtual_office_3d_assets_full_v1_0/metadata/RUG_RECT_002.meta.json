@@ -1,0 +1,72 @@
+{
+  "asset_id": "RUG_RECT_002",
+  "name": "Area rug cool variant",
+  "category": "lounge",
+  "type": "rug",
+  "priority": "Later",
+  "file": "models/lounge/RUG_RECT_002.glb",
+  "unit": "meter",
+  "pivot": "BOTTOM_CENTER",
+  "up_axis": "Z",
+  "dimensions_m": {
+    "width": 1.8,
+    "depth": 1.25,
+    "height": 0.033
+  },
+  "placement": {
+    "snap_to_floor": true,
+    "grid_size": 0.1,
+    "rotatable": true
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.017
+    ],
+    "size": [
+      1.8,
+      1.25,
+      0.033
+    ]
+  },
+  "interaction": {
+    "can_inspect": true,
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        0.017
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "rendering": {
+    "cast_shadow": true,
+    "receive_shadow": true,
+    "lod_group": "LOW",
+    "pbr": {
+      "baseColor": true,
+      "normal": true,
+      "roughness": true,
+      "metallic": true,
+      "textures_embedded": true,
+      "baked_lighting_forbidden": true
+    }
+  },
+  "qa": {
+    "actual_triangles": 72,
+    "max_triangles": 500,
+    "texture_max_size": 512,
+    "pbr_required": true,
+    "baked_lighting_forbidden": true,
+    "result": "PASS"
+  },
+  "version": "1.0.0",
+  "format": "glb"
+}

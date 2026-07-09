@@ -31,8 +31,9 @@ GPS 코드 금지 (D20-c).
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Final, Optional
 
 
 # ---------------------------------------------------------------------------
@@ -82,6 +83,16 @@ class MapConfig:
 # ---------------------------------------------------------------------------
 
 _NEXT_OBJECT_ID = 1
+
+_TILE_SIZE: Final = 32
+_OFFICE_TILESET_IMAGE: Final = "office_tileset.png"
+_OFFICE_TILESET: Final = (
+    ("floor", "#DDE2E8"),
+    ("wall", "#4B5563"),
+    ("desk", "#9A6A3A"),
+    ("meeting", "#4F8DEB"),
+    ("passage", "#A7D9B7"),
+)
 
 
 def _next_oid() -> int:
@@ -167,35 +178,52 @@ def _make_rect_object(
     return obj
 
 
-def _make_tileset_stub() -> dict[str, Any]:
-    """
-    최소 타일셋 스텁.
+def _ensure_office_tileset_png() -> None:
+    try:
+        from PIL import Image
+    except ImportError:
+        return
 
-    실제 운영: 별도 .tsx 타일셋 파일로 교체 (Tiled 에디터 사용).
-    프로토타입: GID 1=바닥, GID 2=벽 으로 가정.
-    """
+    output_dir = Path(__file__).resolve().parents[2] / "wa_maps"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    image = Image.new("RGBA", (_TILE_SIZE * len(_OFFICE_TILESET), _TILE_SIZE))
+    for idx, (_, color) in enumerate(_OFFICE_TILESET):
+        tile = Image.new("RGBA", (_TILE_SIZE, _TILE_SIZE), color)
+        image.paste(tile, (idx * _TILE_SIZE, 0))
+    image.save(output_dir / _OFFICE_TILESET_IMAGE)
+
+
+def _make_tileset_stub() -> dict[str, Any]:
+    _ensure_office_tileset_png()
+    tiles = [
+        {
+            "id": idx,
+            "type": name,
+            "properties": [
+                {"name": "color", "type": "string", "value": color},
+            ],
+        }
+        for idx, (name, color) in enumerate(_OFFICE_TILESET)
+    ]
     return {
         "firstgid": 1,
-        "name": "default",
-        "tilewidth": 32,
-        "tileheight": 32,
+        "name": "office",
+        "tilewidth": _TILE_SIZE,
+        "tileheight": _TILE_SIZE,
         "spacing": 0,
         "margin": 0,
-        "tilecount": 16,
-        "columns": 4,
-        "imagewidth": 128,
-        "imageheight": 128,
-        "image": "tileset.png",  # 실제 asset 경로로 교체
-        "tiles": [],
+        "tilecount": len(_OFFICE_TILESET),
+        "columns": len(_OFFICE_TILESET),
+        "imagewidth": _TILE_SIZE * len(_OFFICE_TILESET),
+        "imageheight": _TILE_SIZE,
+        "image": _OFFICE_TILESET_IMAGE,
+        "tiles": tiles,
     }
 
 
 # ---------------------------------------------------------------------------
 # 핵심 생성 함수
 # ---------------------------------------------------------------------------
-
-from typing import Optional  # noqa: E402 (conditional import 정리)
-
 
 def generate_office_map(
     teams: list[TeamSpec],
@@ -253,7 +281,7 @@ def generate_office_map(
     px = config.tile_size
 
     # 레이어 생성
-    floor_layer = _make_tile_layer(1, "floor", map_width, map_height, tile_gid=1, fill=True)
+    floor_layer = _make_tile_layer(1, "floor", map_width, map_height, tile_gid=5, fill=True)
     wall_layer = _make_tile_layer(2, "walls", map_width, map_height, tile_gid=0, fill=False)
     zones_layer = _make_object_layer(3, "zones")
     seats_layer = _make_object_layer(4, "seats")

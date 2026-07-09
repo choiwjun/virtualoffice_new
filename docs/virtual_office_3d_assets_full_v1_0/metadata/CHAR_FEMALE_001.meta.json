@@ -1,0 +1,73 @@
+{
+  "asset_id": "CHAR_FEMALE_001",
+  "name": "Mixamo auto-rig friendly T-pose",
+  "category": "character",
+  "type": "avatar",
+  "priority": "MVP",
+  "file": "models/characters/CHAR_FEMALE_001.glb",
+  "unit": "meter",
+  "pivot": "BOTTOM_CENTER",
+  "up_axis": "Z",
+  "dimensions_m": {
+    "width": 1.99,
+    "depth": 0.3325,
+    "height": 1.7025
+  },
+  "placement": {
+    "snap_to_floor": true,
+    "grid_size": 0.1,
+    "rotatable": true
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.851
+    ],
+    "size": [
+      1.99,
+      0.3325,
+      1.7025
+    ]
+  },
+  "interaction": {
+    "head_anchor": {
+      "position": [
+        0,
+        0,
+        1.566
+      ]
+    },
+    "status_anchor": {
+      "position": [
+        0,
+        0,
+        1.952
+      ]
+    }
+  },
+  "rendering": {
+    "cast_shadow": true,
+    "receive_shadow": true,
+    "lod_group": "CHARACTER",
+    "pbr": {
+      "baseColor": true,
+      "normal": true,
+      "roughness": true,
+      "metallic": true,
+      "textures_embedded": true,
+      "baked_lighting_forbidden": true
+    }
+  },
+  "qa": {
+    "actual_triangles": 1692,
+    "max_triangles": 15000,
+    "texture_max_size": 2048,
+    "pbr_required": true,
+    "baked_lighting_forbidden": true,
+    "result": "PASS"
+  },
+  "version": "1.0.0",
+  "format": "glb"
+}

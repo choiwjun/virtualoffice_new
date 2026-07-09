@@ -118,6 +118,12 @@ http://localhost:8090 {
 		reverse_proxy backend:8000
 	}
 
+	# D27 웹콘솔 presence — FastAPI 백엔드로. (없으면 catch-all→죽은 wa-back→502→CORS헤더 누락)
+	# 백엔드에 라우트 없어 404여도 CORSMiddleware가 유효 헤더를 붙이므로 프론트의 404 폴백(/api/employees)이 정상 동작.
+	handle /api/presence* {
+		reverse_proxy backend:8000
+	}
+
 	handle /api/* {
 		uri strip_prefix /api
 		reverse_proxy wa-back:8080

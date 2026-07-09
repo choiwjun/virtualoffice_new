@@ -1,0 +1,61 @@
+{
+  "asset_id": "GLASS_PARTITION_001",
+  "name": "Transparent glass partition",
+  "category": "meeting",
+  "type": "glass_partition",
+  "priority": "MVP",
+  "file": "models/meeting/GLASS_PARTITION_001.glb",
+  "unit": "meter",
+  "pivot": "BOTTOM_CENTER",
+  "up_axis": "Z",
+  "dimensions_m": {
+    "width": 1.26,
+    "depth": 0.06,
+    "height": 2.1075
+  },
+  "placement": {
+    "snap_to_floor": true,
+    "grid_size": 0.1,
+    "rotatable": true
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      1.054
+    ],
+    "size": [
+      1.26,
+      0.06,
+      2.1075
+    ]
+  },
+  "interaction": {
+    "nav_blocker": true,
+    "transparent": true
+  },
+  "rendering": {
+    "cast_shadow": true,
+    "receive_shadow": true,
+    "lod_group": "LOW",
+    "pbr": {
+      "baseColor": true,
+      "normal": true,
+      "roughness": true,
+      "metallic": true,
+      "textures_embedded": true,
+      "baked_lighting_forbidden": true
+    }
+  },
+  "qa": {
+    "actual_triangles": 60,
+    "max_triangles": 800,
+    "texture_max_size": 1024,
+    "pbr_required": true,
+    "baked_lighting_forbidden": true,
+    "result": "PASS"
+  },
+  "version": "1.0.0",
+  "format": "glb"
+}

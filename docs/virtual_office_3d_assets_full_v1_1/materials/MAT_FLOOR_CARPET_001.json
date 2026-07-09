@@ -1,0 +1,22 @@
+{
+  "asset_id": "MAT_FLOOR_CARPET_001",
+  "category": "material",
+  "type": "floor",
+  "priority": "MVP",
+  "unit": "meter",
+  "tiling_m": [
+    2,
+    2
+  ],
+  "textures": {
+    "baseColor": "materials/textures/MAT_FLOOR_CARPET_001_baseColor.png",
+    "normal": "materials/textures/MAT_FLOOR_CARPET_001_normal.png",
+    "metallicRoughness": "materials/textures/MAT_FLOOR_CARPET_001_metallicRoughness.png"
+  },
+  "pbr": {
+    "metallic": 0.0,
+    "roughness": 0.9,
+    "baked_lighting_forbidden": true
+  },
+  "version": "1.0.0"
+}

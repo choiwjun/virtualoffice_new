@@ -36,6 +36,9 @@ from app.models.tables import (
     Meeting,
     MeetingMinute,
     MeetingMinuteStatus,
+    MeetingParticipant,
+    RecordingConsent,
+    RecordingConsentType,
 )
 
 router = APIRouter(prefix="/api", tags=["meeting-minutes"])
@@ -359,13 +362,37 @@ async def finalize_minute(
 )
 async def stt_draft(
     minute_id: str,
-    current_user: CurrentUser = Depends(get_current_user),
+    _current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> dict:
     """
     POST /api/meeting-minutes/{minute_id}/stt-draft — STT 자동 초안 생성.
 
     Not Implemented: D5(STT 스파이크 선행 필요). Phase 2+ 후속 구현 예정.
     """
+    minute = await _get_minute_or_404(minute_id, db)
+    participants_result = await db.execute(
+        select(MeetingParticipant.user_id).where(
+            MeetingParticipant.meeting_id == minute.meeting_id
+        )
+    )
+    participant_ids = set(participants_result.scalars().all())
+    if participant_ids:
+        consent_result = await db.execute(
+            select(RecordingConsent.user_id).where(
+                RecordingConsent.meeting_id == minute.meeting_id,
+                RecordingConsent.consent_type == RecordingConsentType.STT,
+                RecordingConsent.granted.is_(True),
+                RecordingConsent.user_id.in_(participant_ids),
+            )
+        )
+        granted_user_ids = set(consent_result.scalars().all())
+        if participant_ids - granted_user_ids:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="consent_required",
+            )
+
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
         detail="stt_not_implemented",

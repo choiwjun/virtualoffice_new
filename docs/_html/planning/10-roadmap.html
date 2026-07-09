@@ -52,25 +52,42 @@ img{max-width:100%;border-radius:8px}
 </style>
 </head><body>
 <div class="layout">
-<nav class="toc"><div class="brand">10-roadmap.md</div><div class="sub">10-roadmap.md</div><a class="lvl1" href="#10-roadmapmd">10-roadmap.md</a><a class="lvl2" href="#개발-로드맵-virtual-office-운영-플랫폼">개발 로드맵: Virtual Office 운영 플랫폼</a><a class="lvl2" href="#로드맵-개요">📋 로드맵 개요</a><a class="lvl2" href="#phase-0-계약-스파이크-f절">Phase 0: 계약 &amp; 스파이크 (F절)</a><a class="lvl3" href="#목표">목표</a><a class="lvl3" href="#범위">범위</a><a class="lvl3" href="#산출물">산출물</a><a class="lvl3" href="#의존성">의존성</a><a class="lvl3" href="#수용-기준">수용 기준</a><a class="lvl3" href="#독립-데모">독립 데모</a><a class="lvl2" href="#phase-1-프리미엄-골든-샘플-3d">Phase 1: 프리미엄 골든 샘플 3D</a><a class="lvl3" href="#목표-2">목표</a><a class="lvl3" href="#범위-2">범위</a><a class="lvl3" href="#산출물-2">산출물</a><a class="lvl3" href="#의존성-2">의존성</a><a class="lvl3" href="#수용-기준-2">수용 기준</a><a class="lvl3" href="#독립-데모-2">독립 데모</a><a class="lvl2" href="#phase-2-erp-동기화-좌석구역">Phase 2: ERP 동기화 + 좌석/구역</a><a class="lvl3" href="#목표-3">목표</a><a class="lvl3" href="#범위-3">범위</a><a class="lvl3" href="#산출물-3">산출물</a><a class="lvl3" href="#의존성-3">의존성</a><a class="lvl3" href="#수용-기준-3">수용 기준</a><a class="lvl3" href="#독립-데모-3">독립 데모</a><a class="lvl2" href="#phase-3-사무실-배치-편집기">Phase 3: 사무실 배치 편집기</a><a class="lvl3" href="#목표-4">목표</a><a class="lvl3" href="#범위-4">범위</a><a class="lvl3" href="#산출물-4">산출물</a><a class="lvl3" href="#의존성-4">의존성</a><a class="lvl3" href="#수용-기준-4">수용 기준</a><a class="lvl3" href="#독립-데모-4">독립 데모</a><a class="lvl2" href="#phase-4-실시간-가상오피스-godot-서버">Phase 4: 실시간 가상오피스 (Godot 서버)</a><a class="lvl3" href="#목표-5">목표</a><a class="lvl3" href="#범위-5">범위</a><a class="lvl3" href="#산출물-5">산출물</a><a class="lvl3" href="#의존성-5">의존성</a><a class="lvl3" href="#수용-기준-5">수용 기준</a><a class="lvl3" href="#독립-데모-5">독립 데모</a><a class="lvl2" href="#phase-5-회의화상회의-회의록-stt">Phase 5: 회의/화상회의 + 회의록 STT</a><a class="lvl3" href="#목표-6">목표</a><a class="lvl3" href="#범위-6">범위</a><a class="lvl3" href="#산출물-6">산출물</a><a class="lvl3" href="#의존성-6">의존성</a><a class="lvl3" href="#수용-기준-6">수용 기준</a><a class="lvl3" href="#독립-데모-6">독립 데모</a><a class="lvl2" href="#phase-6-업무결과kpi-산출-erp-push">Phase 6: 업무결과·KPI 산출 + ERP push</a><a class="lvl3" href="#목표-7">목표</a><a class="lvl3" href="#범위-7">범위</a><a class="lvl3" href="#산출물-7">산출물</a><a class="lvl3" href="#의존성-7">의존성</a><a class="lvl3" href="#수용-기준-7">수용 기준</a><a class="lvl3" href="#독립-데모-7">독립 데모</a><a class="lvl2" href="#phase-7-고도화">Phase 7: 고도화</a><a class="lvl3" href="#목표-8">목표</a><a class="lvl3" href="#범위-8">범위</a><a class="lvl3" href="#산출물-8">산출물</a><a class="lvl3" href="#의존성-8">의존성</a><a class="lvl3" href="#수용-기준-8">수용 기준</a><a class="lvl3" href="#독립-데모-8">독립 데모</a><a class="lvl2" href="#단계-간-의존-그래프">단계 간 의존 그래프</a><a class="lvl2" href="#1인-개발-리스크-완화-전략">1인 개발 리스크 &amp; 완화 전략</a><a class="lvl3" href="#리스크-1-각-단계-간-coupling이-강하면-중단점이-많다">리스크 1: 각 단계 간 coupling이 강하면 중단점이 많다</a><a class="lvl3" href="#리스크-2-복잡한-3d-렌더링-서버-로직-동시-개발">리스크 2: 복잡한 3D 렌더링 + 서버 로직 동시 개발</a><a class="lvl3" href="#리스크-3-erp-연동-서비스계정-jwt-관리">리스크 3: ERP 연동 + 서비스계정 JWT 관리</a><a class="lvl3" href="#리스크-4-성능-저하-설계-100명-프레즌스-동기-d22">리스크 4: 성능 저하 (설계 100명 프레즌스 동기, D22)</a><a class="lvl3" href="#리스크-5-변경사항-추적-어려움">리스크 5: 변경사항 추적 어려움</a><a class="lvl2" href="#완성-목표-명확화">&quot;완성&quot; 목표 명확화</a><a class="lvl2" href="#기술-부채-최소화">기술 부채 최소화</a><a class="lvl3" href="#문서화">문서화</a><a class="lvl3" href="#테스트-커버리지">테스트 커버리지</a><a class="lvl3" href="#코드-리뷰">코드 리뷰</a><a class="lvl2" href="#loop-metadata">Loop Metadata</a><a class="lvl3" href="#upstream-documents-referenced">Upstream documents referenced</a><a class="lvl3" href="#downstream-documents-affected">Downstream documents affected</a><a class="lvl3" href="#open-questions">Open questions</a><a class="lvl3" href="#assumptions">Assumptions</a><a class="lvl3" href="#validation-criteria">Validation criteria</a><a class="lvl3" href="#risks">Risks</a></nav>
+<nav class="toc"><div class="brand">10-roadmap.md</div><div class="sub">10-roadmap.md</div><a class="lvl1" href="#10-roadmapmd">10-roadmap.md</a><a class="lvl2" href="#개발-로드맵-virtual-office-운영-플랫폼">개발 로드맵: Virtual Office 운영 플랫폼</a><a class="lvl2" href="#d27-재산정-2026-07-08-d26-phase-편성-전면-대체">⚠️ D27 재산정 (2026-07-08) — D26 Phase 편성 전면 대체</a><a class="lvl3" href="#d27-결정-요약">D27 결정 요약</a><a class="lvl3" href="#d26-phase-편성-폐기">D26 Phase 편성 폐기</a><a class="lvl3" href="#d27-신규-phase-편성-정본-docsplanning16-render-spike-and-roadmapmd-part-b">D27 신규 Phase 편성 (정본: docs/planning/16-render-spike-and-roadmap.md §Part B)</a><a class="lvl3" href="#d27로-인한-보류부활-결정-00-decisionsmd-h-참조">D27로 인한 보류·부활 결정 (00-decisions.md §H 참조)</a><a class="lvl2" href="#로드맵-개요-d27-정본-p0p7">📋 로드맵 개요 (D27 정본 — P0~P7)</a><a class="lvl2" href="#phase-0-계약-스파이크-f절-d27로-대체됨">Phase 0: 계약 &amp; 스파이크 (F절) ⚠️D27로 대체됨</a><a class="lvl3" href="#목표">목표</a><a class="lvl3" href="#범위">범위</a><a class="lvl3" href="#산출물">산출물</a><a class="lvl3" href="#의존성">의존성</a><a class="lvl3" href="#수용-기준">수용 기준</a><a class="lvl3" href="#독립-데모">독립 데모</a><a class="lvl2" href="#phase-1-workadventure-self-host-구축-d26-d27로-대체됨">Phase 1: WorkAdventure self-host 구축 ⭐D26 ⚠️D27로 대체됨</a><a class="lvl3" href="#목표-2">목표</a><a class="lvl3" href="#범위-2">범위</a><a class="lvl3" href="#산출물-2">산출물</a><a class="lvl3" href="#의존성-2">의존성</a><a class="lvl3" href="#수용-기준-2">수용 기준</a><a class="lvl3" href="#독립-데모-2">독립 데모</a><a class="lvl2" href="#phase-2-erp-동기화-presence-연동-d26-d27로-대체됨">Phase 2: ERP 동기화 + Presence 연동 ⭐D26 ⚠️D27로 대체됨</a><a class="lvl3" href="#목표-3">목표</a><a class="lvl3" href="#범위-3">범위</a><a class="lvl3" href="#산출물-3">산출물</a><a class="lvl3" href="#의존성-3">의존성</a><a class="lvl3" href="#수용-기준-3">수용 기준</a><a class="lvl3" href="#독립-데모-3">독립 데모</a><a class="lvl2" href="#phase-3-맵-제너레이터-좌석-배치-d26-d27로-대체됨">Phase 3: 맵 제너레이터 + 좌석 배치 ⭐D26 ⚠️D27로 대체됨</a><a class="lvl3" href="#목표-4">목표</a><a class="lvl3" href="#범위-4">범위</a><a class="lvl3" href="#산출물-4">산출물</a><a class="lvl3" href="#의존성-4">의존성</a><a class="lvl3" href="#수용-기준-4">수용 기준</a><a class="lvl3" href="#독립-데모-4">독립 데모</a><a class="lvl2" href="#phase-4-workadventure-연동-완성-d26-d27로-대체됨">Phase 4: WorkAdventure 연동 완성 ⭐D26 ⚠️D27로 대체됨</a><a class="lvl3" href="#목표-5">목표</a><a class="lvl3" href="#범위-5">범위</a><a class="lvl3" href="#산출물-5">산출물</a><a class="lvl3" href="#의존성-5">의존성</a><a class="lvl3" href="#수용-기준-5">수용 기준</a><a class="lvl3" href="#독립-데모-5">독립 데모</a><a class="lvl2" href="#phase-5-회의화상회의-회의록-stt">Phase 5: 회의/화상회의 + 회의록 STT</a><a class="lvl3" href="#목표-6">목표</a><a class="lvl3" href="#범위-6">범위</a><a class="lvl3" href="#산출물-6">산출물</a><a class="lvl3" href="#의존성-6">의존성</a><a class="lvl3" href="#수용-기준-6">수용 기준</a><a class="lvl3" href="#독립-데모-6">독립 데모</a><a class="lvl2" href="#phase-6-업무결과kpi-산출-erp-push">Phase 6: 업무결과·KPI 산출 + ERP push</a><a class="lvl3" href="#목표-7">목표</a><a class="lvl3" href="#범위-7">범위</a><a class="lvl3" href="#산출물-7">산출물</a><a class="lvl3" href="#의존성-7">의존성</a><a class="lvl3" href="#수용-기준-7">수용 기준</a><a class="lvl3" href="#독립-데모-7">독립 데모</a><a class="lvl2" href="#phase-7-고도화">Phase 7: 고도화</a><a class="lvl3" href="#목표-8">목표</a><a class="lvl3" href="#범위-8">범위</a><a class="lvl3" href="#산출물-8">산출물</a><a class="lvl3" href="#의존성-8">의존성</a><a class="lvl3" href="#수용-기준-8">수용 기준</a><a class="lvl3" href="#독립-데모-8">독립 데모</a><a class="lvl2" href="#단계-간-의존-그래프-d27-p0p7">단계 간 의존 그래프 (D27 — P0~P7)</a><a class="lvl2" href="#1인-개발-리스크-완화-전략">1인 개발 리스크 &amp; 완화 전략</a><a class="lvl3" href="#리스크-1-각-단계-간-coupling이-강하면-중단점이-많다">리스크 1: 각 단계 간 coupling이 강하면 중단점이 많다</a><a class="lvl3" href="#리스크-2-오프라인-렌더-배경-실시간-깊이합성-서버-로직-동시-개발">리스크 2: 오프라인 렌더 배경 + 실시간 깊이합성 + 서버 로직 동시 개발</a><a class="lvl3" href="#리스크-3-erp-연동-서비스계정-jwt-관리">리스크 3: ERP 연동 + 서비스계정 JWT 관리</a><a class="lvl3" href="#리스크-4-성능-저하-설계-100명-프레즌스-동기-d22">리스크 4: 성능 저하 (설계 100명 프레즌스 동기, D22)</a><a class="lvl3" href="#리스크-5-변경사항-추적-어려움">리스크 5: 변경사항 추적 어려움</a><a class="lvl2" href="#완성-목표-명확화">&quot;완성&quot; 목표 명확화</a><a class="lvl2" href="#기술-부채-최소화">기술 부채 최소화</a><a class="lvl3" href="#문서화">문서화</a><a class="lvl3" href="#테스트-커버리지">테스트 커버리지</a><a class="lvl3" href="#코드-리뷰">코드 리뷰</a><a class="lvl2" href="#loop-metadata">Loop Metadata</a><a class="lvl3" href="#upstream-documents-referenced">Upstream documents referenced</a><a class="lvl3" href="#downstream-documents-affected">Downstream documents affected</a><a class="lvl3" href="#open-questions">Open questions</a><a class="lvl3" href="#assumptions">Assumptions</a><a class="lvl3" href="#validation-criteria-d27-p0p7">Validation criteria (D27 — P0~P7)</a><a class="lvl3" href="#risks">Risks</a></nav>
 <main><h1 id="10-roadmapmd">10-roadmap.md</h1>
+<blockquote>✅ <strong>Phase 편성 정본 = 본 문서 &quot;⚠️ D27 재산정&quot; 섹션(§D27) + <code>16-render-spike-and-roadmap.md</code> §Part B(P0~P7).</strong> 구 D26(WorkAdventure/45·58주) 헤더·간트는 폐기되었으며, 하단 Gantt/캘린더는 참고용 잔재(⚠️D26 폐기 표기)일 뿐 현행이 아니다. 주 단위는 P0 스파이크 후 확정한다(억지 숫자 금지).</blockquote>
 <h2 id="개발-로드맵-virtual-office-운영-플랫폼">개발 로드맵: Virtual Office 운영 플랫폼</h2>
-<p><strong>프로젝트</strong>: 가상오피스 운영 플랫폼 (vituraloffice<em>new) <strong>버전</strong>: v2.0 <strong>목표</strong>: 완성 — 스펙 7단계 전체를 체계적으로 구현 <strong>첫 사용</strong>: 사내 도그푸딩 (단일 조직, 단일 company</em>id 기준) <strong>개발 규모</strong>: 1인 개발 + AI 협업, 최고 품질 우선 <strong>최종 업데이트</strong>: 2026-07-02 <strong>정본 기준</strong>: <code>00-decisions.md</code> (D1~D25, F절 스파이크) — 충돌 시 정본이 우선</p>
-<blockquote><strong>변경 요약 (v2.0, 2026-07-02)</strong>: 전체 일정을 <strong>58주 기준</strong>으로 재산정(D6, 시작 2026-07-06 → 완성 <strong>2027-08-16, 2027년 하반기</strong>), &quot;26주/2026-12-28&quot; 표기 전면 폐기. Phase 0(계약+스파이크 S1~S4) 신설, Phase 5에 회의록 STT 파이프라인(D5) 포함, 실시간 프로토콜 WebSocket(WSS) 확정(D1), presence 7종(D13)·seat.status enum·ERP 엔드포인트(<code>POST /api/kpi-results</code>) 통일, EOD 순환 모순 해소(D17), 3D 미리보기 제거·데스크톱 draft 모드로 대체(D11), 성능 수치 100명 설계(D22).</blockquote>
+<p><strong>프로젝트</strong>: 가상오피스 운영 플랫폼 (vituraloffice<em>new) <strong>버전</strong>: v3.1 <strong>목표</strong>: 완성 — R3F + Blender Cycles(오프라인 렌더) 깊이합성 가상오피스 임베드 + Colyseus 이동서버 + STT·KPI·ERP 통합 (단일 통합 웹앱, 단일 세션 JWT) <strong>첫 사용</strong>: 사내 도그푸딩 (단일 조직, 단일 company</em>id 기준) <strong>개발 규모</strong>: 1인 개발 + AI 협업, 최고 품질 우선 <strong>최종 업데이트</strong>: 2026-07-09 (D27 재산정 정합 정리 — 헤더·간트를 P0~P7 기준으로 갱신) <strong>Phase 편성 정본</strong>: 본 문서 §D27 + <code>16-render-spike-and-roadmap.md</code> §Part B (P0~P7) <strong>정본 기준</strong>: <code>00-decisions.md</code> (§H D27, D1~D26 중 유효분) + 14/15/16 — 충돌 시 정본이 우선</p>
+<blockquote><strong>변경 요약 (v2.0, 2026-07-02)</strong>: 전체 일정을 <strong>58주 기준</strong>으로 재산정(D6, 시작 2026-07-06 → 완성 <strong>2027-08-16, 2027년 하반기</strong>), &quot;26주/2026-12-28&quot; 표기 전면 폐기. Phase 0(계약+스파이크 S1~S4) 신설, Phase 5에 회의록 STT 파이프라인(D5) 포함, 실시간 프로토콜 WebSocket(WSS) 확정(D1), presence 7종(D13)·seat.status enum·ERP 엔드포인트(<code>POST /api/kpi-results</code>) 통일, EOD 순환 모순 해소(D17), 3D 미리보기 제거·데스크톱 draft 모드로 대체(D11), 성능 수치 100명 설계(D22).  <strong>변경 요약 (v3.0, 2026-07-06)</strong>: <strong>D26</strong> WorkAdventure self-host 전환 반영. Phase 1~4를 WorkAdventure 연동 구조(각 4~6주)로 재편. Godot 3D 클라이언트·헤드리스 서버 노선 보류. Phase 0 스파이크 S1·S3·S4 취소, S2(STT) 유지. Phase 5~7(STT·KPI·고도화) 유지.  <strong>변경 요약 (v3.1, 2026-07-09)</strong>: <strong>D27 정합 정리.</strong> §D27 재산정 섹션이 이미 정본이었으나 헤더 메타·하단 Gantt/캘린더가 구 D26(WA/45·58주)에 머물러 자기모순 상태였던 것을 해소. ① 헤더 목표·최종수정일·정본기준을 D27(R3F+Blender Cycles+Colyseus, 단일 세션 JWT) 기준으로 갱신하고 &quot;Phase 편성 정본 = §D27 + 16 §Part B&quot; 명시. ② 하단 Gantt/캘린더·의존 그래프를 P0~P7로 재작성하되 주 단위는 미확정(⚠️D26 폐기, 스파이크 후 확정)으로 표기. ③ 본문에 남은 Godot 산출물(godot_client/*.gd·&quot;Godot 클라이언트 빌드&quot;·S1~S4)·구 Phase 0(S2만) 잔재 정리, Phase 번호를 P0~P7로 통일. <strong>§D27 섹션 본문은 정본으로 보존.</strong> P0 깊이합성 스파이크 = PASS(2026-07-08).</blockquote>
 <hr>
-<h2 id="로드맵-개요">📋 로드맵 개요</h2>
-<div class="table-wrap"><table><thead><tr><th>단계</th><th>이름</th><th>주요 산출물</th><th>예상 기간</th><th>의존성</th></tr></thead><tbody><tr><td>0</td><td>계약 &amp; 스파이크</td><td>API/데이터/ERP 계약 + 스파이크 S1~S4(F절)</td><td>4주</td><td>없음</td></tr><tr><td>1</td><td>프리미엄 골든 샘플 3D</td><td>Godot 클라이언트 + 샘플 씬</td><td>12주</td><td>0</td></tr><tr><td>2</td><td>ERP 동기화 + 좌석/구역</td><td>동기화 모듈 + 데이터 매핑</td><td>7주</td><td>1</td></tr><tr><td>3</td><td>사무실 배치 편집기</td><td>2D 편집 + 데스크톱 draft 열람 + office_layout</td><td>6주</td><td>2</td></tr><tr><td>4</td><td>실시간 가상오피스</td><td>Godot 헤드리스 서버 + 멀티플레이어(WSS)</td><td>8주</td><td>3</td></tr><tr><td>5</td><td>회의/화상회의 + 회의록 STT</td><td>LiveKit 통합 + STT 회의록/액션아이템</td><td>8주</td><td>4</td></tr><tr><td>6</td><td>업무결과·KPI 산출</td><td>KPI 산출 + AI 초안 + ERP push</td><td>7주</td><td>5 + ERP dev 브랜치</td></tr><tr><td>7</td><td>고도화</td><td>층 추가·권한·AI요약·모바일</td><td>6주</td><td>6</td></tr></tbody></table></div>
-<p><strong>총 예상 기간</strong>: <strong>58주</strong> (시작 2026-07-06 → 완성 2027-08-16, <strong>2027년 하반기</strong>) — 1인 개발 + AI 협업 기준, 13-risks 검증 간트를 기준선으로 재산정하고 <strong>15% 버퍼 포함</strong>. Phase 5의 8주에는 회의록 STT 파이프라인(+3주, D5)이 반영됨.</p>
+<h2 id="d27-재산정-2026-07-08-d26-phase-편성-전면-대체">⚠️ D27 재산정 (2026-07-08) — D26 Phase 편성 전면 대체</h2>
+<blockquote><strong>정본 참조</strong>: <code>00-decisions.md</code> §H (D27), <code>docs/planning/16-render-spike-and-roadmap.md</code> §Part B (P0~P7 재구축 로드맵)</blockquote>
+<h3 id="d27-결정-요약">D27 결정 요약</h3>
+<p>2026-07-08 사용자 확정. 디자인 시안 재확인 결과 WorkAdventure(2D 픽셀·별도 앱·OIDC 이중로그인)는 목표 품질 및 통합성과 불일치 → <strong>D26(WorkAdventure) 전면 폐기, D27로 대체</strong>.</p>
+<p><strong>D27 채택 내용</strong>: 단일 통합 웹앱(시안) 안의 뷰포트로 가상오피스 임베드. <strong>Blender Cycles 오프라인 렌더 배경 + react-three-fiber(R3F) 실시간 아바타 깊이합성</strong> (고정 아이소 2.5D). 실시간 이동서버 = SkyOffice 이식(Colyseus 권위 서버, 20Hz). 단일 세션(콘솔 JWT 그대로 3D 진입, 별도 OIDC 로그인 없음).</p>
+<h3 id="d26-phase-편성-폐기">D26 Phase 편성 폐기</h3>
+<p>아래 v3.0 본문의 Phase 1~4(WorkAdventure 연동 구조)는 <strong>D27로 대체되어 폐기</strong>된다. 각 Phase는 해당 섹션 제목에 &quot;⚠️D27로 대체됨&quot; 표기로 남겨두되, 구현 착수 대상에서 제외한다.</p>
+<div class="table-wrap"><table><thead><tr><th>구 Phase (D26, 폐기)</th><th>대체 Phase (D27)</th></tr></thead><tbody><tr><td>Phase 0: 계약 &amp; 스파이크 (WA 중심)</td><td>P0: 깊이합성 스파이크 — docs/planning/16 §Part A</td></tr><tr><td>Phase 1: WorkAdventure self-host 구축</td><td>P1: 통합 대시보드 셸 + 기존 백엔드 연결</td></tr><tr><td>Phase 2: ERP 동기화 + Presence 연동 (WA)</td><td>P2: 렌더 파이프라인 (Blender→R3F)</td></tr><tr><td>Phase 3: 맵 제너레이터 + 좌석 배치 (TMJ)</td><td>P3: Colyseus 이동서버 + 아바타 깊이합성</td></tr><tr><td>Phase 4: WorkAdventure 연동 완성</td><td>P4: 프레즌스·좌석 실시간 시각화</td></tr><tr><td>Phase 5~7: STT·KPI·고도화</td><td>P5~P7: 대응 Phase 유지 (STT·화상·KPI·하드닝)</td></tr></tbody></table></div>
+<h3 id="d27-신규-phase-편성-정본-docsplanning16-render-spike-and-roadmapmd-part-b">D27 신규 Phase 편성 (정본: docs/planning/16-render-spike-and-roadmap.md §Part B)</h3>
+<div class="table-wrap"><table><thead><tr><th>Phase</th><th>범위</th><th>핵심 산출물</th><th>상태 전제</th></tr></thead><tbody><tr><td><strong>P0 스파이크</strong></td><td>깊이합성 검증 (3~5일)</td><td>render-pipeline 최소본 + 판정 리포트</td><td><strong>PASS (2026-07-08)</strong></td></tr><tr><td><strong>P1 셸+데이터연결</strong></td><td>통합 대시보드 셸(시안), 기존 백엔드 API 연결(KPI·업무·유저·일정)</td><td>시안 픽셀 재현 UI (3D 뷰포트 자리 = placeholder)</td><td>P0 통과</td></tr><tr><td><strong>P2 렌더 파이프라인</strong></td><td>layout JSON→Blender 파라메트릭 씬 빌더, 1개 층 포토리얼 배경 렌더+깊이</td><td>office_bg/depth 자동생성, R3F 뷰포트 배경 표시</td><td>P1</td></tr><tr><td><strong>P3 이동서버</strong></td><td>Colyseus 이식(15번 스펙), 아바타 이동·좌표동기화 20Hz·이동검증, 아바타 GLTF+애니</td><td>멀티유저 이동, 깊이합성 아바타</td><td>P2</td></tr><tr><td><strong>P4 프레즌스·좌석</strong></td><td>7종 상태 HUD·미니맵·우패널 실시간, 자율좌석 클릭 점유/반납</td><td>presence 라이브 시각화 (백엔드 존재)</td><td>P3</td></tr><tr><td><strong>P5 회의·화상</strong></td><td>D24 명시입장(2m 트리거), LiveKit 오디오/영상, 동의배너, 화상 타일 UI</td><td>회의실 입장→화상</td><td>P4</td></tr><tr><td><strong>P6 STT·AI</strong></td><td>LiveKit Egress→한국어 STT→회의록 초안, AI요약. KPI AI초안(배선됨)</td><td>회의록 자동화</td><td>외부 리소스</td></tr><tr><td><strong>P7 정리·부하·하드닝</strong></td><td>WA 스택 제거, 다층 렌더, 20명 부하검증, 보안 하드닝, 편집기→재렌더</td><td>도그푸딩 릴리스</td><td>—</td></tr></tbody></table></div>
+<blockquote><strong>주 단위 확정치</strong>: P0 깊이합성 스파이크 결과 후 확정. 스파이크 실패 시 전략 재검토(대안: 빌보드 스프라이트 아바타 / 부분 실시간 3D). 억지 숫자를 기재하지 않는다.</blockquote>
+<h3 id="d27로-인한-보류부활-결정-00-decisionsmd-h-참조">D27로 인한 보류·부활 결정 (00-decisions.md §H 참조)</h3>
+<div class="table-wrap"><table><thead><tr><th>결정</th><th>D26 상태</th><th>D27 상태</th></tr></thead><tbody><tr><td>D26 WorkAdventure self-host</td><td>확정</td><td><strong>폐기</strong></td></tr><tr><td>D7 3D 라이팅</td><td>보류</td><td><strong>부활(변형)</strong> — 오프라인 Blender Cycles로 구움</td></tr><tr><td>D8 에셋 전달</td><td>보류</td><td><strong>부활(변형)</strong> — CC0 에셋+Blender 씬, 런타임은 렌더 이미지+경량 GLTF</td></tr><tr><td>D9 room 파라메트릭</td><td>보류</td><td><strong>부활</strong> — layout JSON→Blender 파라메트릭 씬 빌더</td></tr><tr><td>D1 WSS</td><td>WA 내장</td><td><strong>SkyOffice/Colyseus 자체</strong> — 20Hz tick·이동검증 구현</td></tr></tbody></table></div>
+<hr>
+<h2 id="로드맵-개요-d27-정본-p0p7">📋 로드맵 개요 (D27 정본 — P0~P7)</h2>
+<blockquote><strong>정본</strong>: 본 문서 §D27 재산정 섹션 + <code>16-render-spike-and-roadmap.md</code> §Part B. 아래 표는 §D27 &quot;D27 신규 Phase 편성&quot; 표를 요약한 것으로, 상세 산출물·상태 전제는 §D27 표를 따른다. 구 D26 45주 개요(WA self-host·Godot)는 폐기되었다.</blockquote>
+<div class="table-wrap"><table><thead><tr><th>단계</th><th>이름</th><th>주요 산출물</th><th>예상 기간</th><th>의존성</th></tr></thead><tbody><tr><td><strong>P0</strong></td><td>깊이합성 스파이크</td><td>render-pipeline 최소본 + 판정 리포트 (<strong>PASS 2026-07-08</strong>)</td><td>3~5일</td><td>없음</td></tr><tr><td><strong>P1</strong> ⭐</td><td><strong>통합 대시보드 셸 + 데이터 연결</strong></td><td>시안 픽셀 재현 UI + 기존 백엔드 API 연결(KPI·업무·유저·일정), 3D 뷰포트 = placeholder</td><td>미확정</td><td>P0</td></tr><tr><td><strong>P2</strong> ⭐</td><td><strong>렌더 파이프라인 (Blender→R3F)</strong></td><td>layout JSON→Blender 파라메트릭 씬 빌더, 1개 층 포토리얼 배경+깊이 자동생성, R3F 뷰포트 배경 표시</td><td>미확정</td><td>P1</td></tr><tr><td><strong>P3</strong> ⭐</td><td><strong>Colyseus 이동서버 + 아바타 깊이합성</strong></td><td>Colyseus 이식(15번 스펙, 20Hz), 이동·좌표동기화·이동검증, 아바타 GLTF+애니, 깊이합성</td><td>미확정</td><td>P2</td></tr><tr><td><strong>P4</strong> ⭐</td><td><strong>프레즌스·좌석 실시간 시각화</strong></td><td>7종 상태 HUD·미니맵·우패널 실시간, 자율좌석 클릭 점유/반납</td><td>미확정</td><td>P3</td></tr><tr><td><strong>P5</strong></td><td>회의·화상</td><td>D24 명시입장(2m 트리거), LiveKit 오디오/영상, 동의배너, 화상 타일 UI</td><td>미확정</td><td>P4</td></tr><tr><td><strong>P6</strong></td><td>STT·AI + KPI</td><td>LiveKit Egress→한국어 STT→회의록 초안·AI요약, KPI 산출 + AI 초안(서술) + ERP push</td><td>미확정</td><td>P5 + ERP dev 브랜치</td></tr><tr><td><strong>P7</strong></td><td>정리·부하·하드닝</td><td>WA 스택 제거, 다층 렌더, 20명 부하검증, 보안 하드닝, 편집기→재렌더, 고도화 기능</td><td>미확정</td><td>P6</td></tr></tbody></table></div>
+<blockquote><strong>주 단위</strong>: <strong>P0 깊이합성 스파이크(PASS) 결과를 바탕으로 P1 이후 주 단위를 확정한다.</strong> 억지 숫자를 기재하지 않는다. 스파이크 실패 대비 대안(빌보드 스프라이트 아바타 / 부분 실시간 3D)은 §D27 참조.</blockquote>
 <blockquote><strong>핵심 원칙</strong>: 각 단계는 <strong>독립 데모 가능</strong> (이전 단계 완료 후 즉시 테스트/검증 가능). 순차 빌드이며 각 단계마다 사용자 가치 제공. 1인 개발이므로 Phase 병렬화는 하지 않고 <strong>순차 원칙</strong>을 따른다(13-risks R7).</blockquote>
 <hr>
-<h2 id="phase-0-계약-스파이크-f절">Phase 0: 계약 &amp; 스파이크 (F절)</h2>
+<h2 id="phase-0-계약-스파이크-f절-d27로-대체됨">Phase 0: 계약 &amp; 스파이크 (F절) ⚠️D27로 대체됨</h2>
 <h3 id="목표">목표</h3>
 <ul><li>API/데이터/ERP 연동 계약 확정, 통합 테스트 골격, 마이그레이션 전략 수립 (상세는 12-tasks.md Phase 0)</li><li><strong>선행 기술 리스크를 스파이크(PoC)로 조기 검증</strong> — 00-decisions.md F절 S1~S4</li></ul>
 <h3 id="범위">범위</h3>
 <h4 id="계약-설계">계약 설계</h4>
-<ul><li>실시간 서버 API 계약(WebSocket(WSS) 프로토콜 + REST fallback, D1)</li><li>관리·업무·KPI REST 계약, 데이터 모델/ERD, ERP 연동 계약(<code>POST /api/kpi-results</code>)</li><li>office_layout JSON Schema, 3D 씬 구조/asset 레지스트리, 테스트 프레임워크·CI 초안</li></ul>
+<ul><li>FastAPI 연동 계약(OIDC provider·presence 수집·Room API 브리지) — 실시간 동기화 프로토콜은 WA 내장 WSS 사용(D1·D26), 자체 프로토콜 설계 없음</li><li>관리·업무·KPI REST 계약, 데이터 모델/ERD, ERP 연동 계약(<code>POST /api/kpi-results</code>)</li><li>TMJ 맵 스키마·맵 제너레이터 규약(구 office_layout JSON Schema·3D 씬 구조 대체, D26), 테스트 프레임워크·CI 초안</li></ul>
 <h4 id="스파이크-실패-시-폴백-확정">스파이크 (실패 시 폴백 확정)</h4>
-<div class="table-wrap"><table><thead><tr><th>순번</th><th>스파이크</th><th>검증 내용</th><th>실패 시 폴백</th></tr></thead><tbody><tr><td><strong>S1</strong></td><td><strong>Godot ↔ LiveKit PoC</strong> (최우선)</td><td>GDScript + WebRTC GDExtension으로 LiveKit 룸 접속·오디오/비디오 수신 검증(Rust SDK 래핑 대안 포함)</td><td>회의 화면만 임베디드 브라우저/외부 창 분리</td></tr><tr><td><strong>S2</strong></td><td>STT 파이프라인 PoC</td><td>LiveKit Egress → STT(화자분리) → 회의록 초안 품질 측정(한국어)</td><td>수동 회의록 + AI 요약으로 격하(PRD 기준 하향 재협의)</td></tr><tr><td><strong>S3</strong></td><td>헤드리스 서버 부하</td><td>GDScript 헤드리스 + PhysicsServer3D, 20명 시뮬레이션 CPU/메모리 측정</td><td>tick 하향(10Hz), 물리 간소화</td></tr><tr><td><strong>S4</strong></td><td>동적 씬 라이팅 룩 검증</td><td>D7 조합(실시간광+ReflectionProbe+SSAO)으로 골든 샘플 룩 확인</td><td>SDFGI 옵션 기본화 + 기준 사양 상향 재협의</td></tr></tbody></table></div>
+<blockquote>⚠️ <strong>D26 갱신</strong>: S1(Godot↔LiveKit)·S3(헤드리스 서버)·S4(라이팅 룩) 취소. S2(STT 파이프라인)만 유지.</blockquote>
+<div class="table-wrap"><table><thead><tr><th>순번</th><th>스파이크</th><th>검증 내용</th><th>실패 시 폴백</th><th>D26 상태</th></tr></thead><tbody><tr><td><del>S1</del></td><td><del>Godot ↔ LiveKit PoC</del></td><td><del>GDScript + WebRTC GDExtension으로 LiveKit 룸 접속·오디오/비디오 수신 검증</del></td><td><del>회의 화면만 임베디드 브라우저 분리</del></td><td><strong>취소</strong></td></tr><tr><td><strong>S2</strong></td><td>STT 파이프라인 PoC</td><td>LiveKit Egress → STT(화자분리) → 회의록 초안 품질 측정(한국어)</td><td>수동 회의록 + AI 요약으로 격하(PRD 기준 하향 재협의)</td><td><strong>유지</strong></td></tr><tr><td><del>S3</del></td><td><del>헤드리스 서버 부하</del></td><td><del>GDScript 헤드리스 + PhysicsServer3D, 20명 시뮬레이션</del></td><td><del>tick 하향(10Hz), 물리 간소화</del></td><td><strong>취소</strong></td></tr><tr><td><del>S4</del></td><td><del>동적 씬 라이팅 룩 검증</del></td><td><del>D7 조합(실시간광+ReflectionProbe+SSAO)으로 골든 샘플 룩 확인</del></td><td><del>SDFGI 옵션 기본화 + 기준 사양 상향 재협의</del></td><td><strong>취소</strong></td></tr></tbody></table></div>
 <h3 id="산출물">산출물</h3>
 <pre class="code"><code>docs/api/           (realtime-server-api.yaml, management-api.yaml)
 docs/data-model/    (erd.md, office-layout-schema.json)
@@ -84,429 +101,101 @@ backend/tests/conftest.py, .github/workflows/test-phase.yaml</code></pre>
 <h3 id="독립-데모">독립 데모</h3>
 <p><strong>&quot;스파이크 리포트 4종&quot;</strong> — 각 PoC의 성공/폴백 결정과 근거 수치를 문서화하여 Phase 1 이후 기술 선택의 근거로 사용.</p>
 <hr>
-<h2 id="phase-1-프리미엄-골든-샘플-3d">Phase 1: 프리미엄 골든 샘플 3D</h2>
+<h2 id="phase-1-workadventure-self-host-구축-d26-d27로-대체됨">Phase 1: WorkAdventure self-host 구축 ⭐D26 ⚠️D27로 대체됨</h2>
+<blockquote><strong>D26 전환</strong>: 기존 &quot;프리미엄 골든 샘플 3D (Godot 클라이언트)&quot; 단계를 대체.</blockquote>
 <h3 id="목표-2">목표</h3>
-<ul><li>Godot 4 네이티브 클라이언트의 <strong>품질 기준 확정</strong></li><li>3D 가상오피스의 핵심 구성요소(공간·아바타·UI) 완성도 검증</li><li>향후 모든 단계의 기준이 될 &quot;참고 구현&quot; 확보</li></ul>
+<ul><li>WorkAdventure self-host 스택(play/back/map-storage/redis/LiveKit/coturn) 온프렘 배포 완료</li><li>FastAPI OIDC 브리지로 ERP 사용자가 WorkAdventure에 로그인 (D4 자체 JWT와 공존)</li><li>기본 TMJ 맵(샘플 오피스) 배포 및 멀티유저 입장 검증</li></ul>
 <h3 id="범위-2">범위</h3>
-<h4 id="3d-공간">3D 공간</h4>
-<ul><li><strong>로비</strong>: 진입점, 브랜드 월, 안내판</li><li><strong>오픈 좌석 구역</strong>: 격자형 책상(20석), 팀 색상 표시, 상태 표시</li><li><strong>회의실</strong>: 유리벽 2개 회의실(각 6인), 예약/점유 상태 시각화</li><li><strong>라운지</strong>: 소파/테이블, 비포멀 협업 공간</li><li><strong>집중실/포커스존</strong>: 개인 작업 공간</li><li><strong>폰부스</strong>: 사적 통화 공간</li><li><strong>미니맵</strong>: 2D 평면도, 실시간 프레즌스 표시</li></ul>
-<h4 id="아바타-상호작용">아바타 &amp; 상호작용</h4>
-<ul><li><strong>아바타</strong>: 5~10명 플레이어(다양한 피부색/성별/복장), 자연스러운 애니메이션<ul><li>유휴(idle), 걷기(walk), 달리기(run), 앉기(sit), 제스처(wave/thumbs-up)</li></ul></li><li><strong>이름/상태 HUD</strong>: 각 아바타 위의 부동 레이블<ul><li>직원명, 직급/팀 배지, 상태(온라인/회의중/집중중/외근/퇴근)</li></ul></li><li><strong>근접 인터랙션</strong>: 거리 기반 협업 신호 (귀속말, 협업 제안 UI)</li></ul>
-<h4 id="ui-패널">UI 패널</h4>
-<ul><li><strong>우측 직원 패널</strong>: 현재 사무실 내 직원 목록, 클릭하면 아바타 추적</li><li><strong>하단 회의실 패널</strong>: 진행 중인 회의 표시, 참가자 리스트</li><li><strong>상단 스테이터스</strong>: 나의 현재 상태, 빠른 상태 변경 버튼</li></ul>
-<h4 id="시각적-품질">시각적 품질</h4>
-<ul><li>Forward+ 렌더러로 PBR 재료, 고품질 라이팅</li><li>조명: 자연광(창문), 인공등(LED), 실시간 그림자</li><li>CC0 에셋 활용 + 자체 오피스 키트(Blender GLB/glTF 최적화)</li><li>라이팅: 실시간 직접광 + ReflectionProbe + SSAO (라이트맵 베이킹 배제, D7). 기준 사양 GTX 1650급 60fps / 내장그래픽 30fps</li></ul>
+<h4 id="workadventure-스택-배포-d21-r-docker-compose-caddy-lets-encrypt">WorkAdventure 스택 배포 (D21-r: Docker Compose, Caddy, Let's Encrypt)</h4>
+<ul><li><code>workadventure/play</code> — 클라이언트 서빙 + Room API</li><li><code>workadventure/back</code> — 게임 상태 서버(WebSocket 권위)</li><li><code>workadventure/map-storage</code> — TMJ 맵 파일 서버</li><li><code>redis</code> — WA back 상태 캐시</li><li><code>livekit</code> — 화상회의 SFU (WA 네이티브 통합)</li><li><code>coturn</code> — TURN 릴레이(TURN-TLS 443 폴백, VPN 없음)</li></ul>
+<h4 id="oidc-연동-d4-공존">OIDC 연동 (D4 공존)</h4>
+<ul><li><code>backend/app/integrations/workadventure/oidc.py</code> — FastAPI를 OIDC Provider로 노출<ul><li>Authorization Code Flow: <code>/oauth/authorize</code>, <code>/oauth/token</code>, <code>/oauth/userinfo</code>, <code>/.well-known/openid-configuration</code></li><li>ERP 사용자(erp<em>user) → OIDC 클레임 매핑(sub=erp</em>user.id, name, email, groups)</li><li>D4 자체 JWT(HS256)와 공존: OIDC 토큰은 WA 전용, 내부 API는 D4 JWT 유지</li></ul></li></ul>
+<h4 id="샘플-맵-배포">샘플 맵 배포</h4>
+<ul><li>소규모 TMJ 맵(로비 + 오픈 좌석 20개) 수동 제작 → map-storage 배포</li><li>기본 타일셋(캐릭터 이동, 회의실 zone) 검증</li></ul>
 <h3 id="산출물-2">산출물</h3>
-<pre class="code"><code>backend/
-  ├── app/
-  │   ├── models/
-  │   │   ├── erp_user.py (ERP 사용자 미러, read-only)
-  │   │   ├── presence.py (실시간 위치/상태)
-  │   │   └── asset.py (에셋 레지스트리)
-  │   ├── api/
-  │   │   ├── erp_sync.py (ERP 읽기 초기화)
-  │   │   ├── presence.py (게임서버 배치 push 수신 엔드포인트, internal — D3)
-  │   │   └── asset.py (에셋 메타 조회)
-  │   └── services/
-  │       └── erp_reader.py (ERP 직접 DB 읽기)
-  ├── schema.sql (DB 초기화)
-  └── requirements.txt
-
-godot_client/
-  ├── scenes/
-  │   ├── office/
-  │   │   ├── lobby.tscn
-  │   │   ├── seating_area.tscn
-  │   │   ├── meeting_rooms.tscn
-  │   │   ├── lounge.tscn
-  │   │   ├── focus_zone.tscn
-  │   │   └── phone_booths.tscn
-  │   └── avatar/
-  │       ├── avatar.gd
-  │       ├── avatar_animator.gd
-  │       └── avatar_hud.gd
-  ├── ui/
-  │   ├── employee_panel.tscn
-  │   ├── meeting_panel.tscn
-  │   ├── minimap.tscn
-  │   └── status_bar.tscn
-  ├── assets/
-  │   ├── models/ (GLB/glTF 최적화 에셋)
-  │   ├── materials/ (PBR)
-  │   └── textures/
-  └── project.godot
-
-frontend/
-  ├── pages/
-  │   └── dashboard.tsx (Godot 클라이언트 다운로드, 실행 가이드)
-  └── components/
-      └── clientStatus.tsx (클라이언트 버전/구성 상태)</code></pre>
+<pre class="code"><code>docker-compose.yml        (WA 스택 통합, Lane B)
+.env.example              (WA 환경변수 포함)
+backend/app/integrations/workadventure/oidc.py
+backend/tests/test_wa_oidc.py
+maps/sample_office.tmj    (샘플 맵)
+docs/deployment/onprem-docker.md  (WA 섹션 추가, Lane B)</code></pre>
 <h3 id="의존성-2">의존성</h3>
-<ul><li>Phase 0 완료 (계약 + 스파이크 S1~S4, 특히 S4 라이팅 룩 승인)</li></ul>
+<ul><li>Phase 0 완료 (계약 + S2 STT PoC 진행)</li></ul>
 <h3 id="수용-기준-2">수용 기준</h3>
-<ul><li class="task"><input type="checkbox" disabled> Godot 4 클라이언트 빌드 성공 (Forward+ 렌더러, 기준 사양 GTX 1650급 60fps / 내장그래픽 30fps, D22)</li><li class="task"><input type="checkbox" disabled> 로비~폰부스 전체 공간 렌더링 (글리치 없음, 광도감 정상)</li><li class="task"><input type="checkbox" disabled> 아바타 5명 이상 동시 표시 (이름/상태 HUD 정확)</li><li class="task"><input type="checkbox" disabled> 우측 직원 패널, 하단 회의실 패널 표시/상호작용 정상</li><li class="task"><input type="checkbox" disabled> 미니맵 실시간 동기 (FPS 저하 &lt;5%)</li><li class="task"><input type="checkbox" disabled> 에셋 라이선스/귀속 정확 (asset.py 레지스트리 완성)</li></ul>
+<ul><li class="task"><input type="checkbox" disabled> <code>docker compose config</code> 문법 검증 통과, 모든 WA 서비스 정의 포함</li><li class="task"><input type="checkbox" disabled> OIDC Discovery endpoint(<code>/.well-known/openid-configuration</code>) 정상 응답</li><li class="task"><input type="checkbox" disabled> ERP 사용자 계정으로 WorkAdventure 로그인 성공 (OIDC 인증 흐름)</li><li class="task"><input type="checkbox" disabled> 샘플 맵에서 2명 이상 동시 아바타 이동 확인</li></ul>
 <h3 id="독립-데모-2">독립 데모</h3>
-<p><strong>&quot;Godot 멀티플레이어 없이 스크립트로 아바타 움직이기&quot;</strong> — 서버 연동 전 로컬 시뮬레이션으로 3D 품질 즉시 검증 가능. 실시간 동기화는 Phase 4에서.</p>
+<p><strong>&quot;ERP 계정으로 WorkAdventure 사무실 입장&quot;</strong> — OIDC 로그인 + 샘플 맵 멀티유저 데모.</p>
 <hr>
-<h2 id="phase-2-erp-동기화-좌석구역">Phase 2: ERP 동기화 + 좌석/구역</h2>
+<h2 id="phase-2-erp-동기화-presence-연동-d26-d27로-대체됨">Phase 2: ERP 동기화 + Presence 연동 ⭐D26 ⚠️D27로 대체됨</h2>
+<blockquote><strong>D26 전환</strong>: 기존 &quot;ERP 동기화 + 좌석/구역 (Godot 기반)&quot; 단계를 대체.</blockquote>
 <h3 id="목표-3">목표</h3>
-<ul><li>ERP(Space-Daily/DailyLog)에서 <strong>직원·조직·근태 읽기 통로 개설</strong></li><li>우리 플랫폼의 좌석/구역 데이터 모델 확정</li><li><strong>아바타 시작위치</strong> → 배정된 좌석으로 자동 연결</li></ul>
+<ul><li>ERP 직원·조직·근태 동기화 (D18) — 구조는 이전과 동일, Godot 의존성 제거</li><li>D13 presence 7종을 WorkAdventure 상태/이벤트와 매핑</li><li>scripting API로 focus/external 상태 WorkAdventure 변수 반영</li></ul>
 <h3 id="범위-3">범위</h3>
-<h4 id="erp-동기화-read-only">ERP 동기화 (Read-only)</h4>
-<ul><li><strong>users</strong>: 직원명, 직급, 팀, 역할, 근무설정(work_type/hours), 연락처</li><li><strong>teams</strong>: 팀명, 리더</li><li><strong>job_positions</strong>: 직급명, 서열</li><li><strong>attendances</strong>: 일일 출퇴근, 근태 상태 (read-only Postgres 직접 접근)</li><li><strong>leaves</strong>: 휴가/휴직</li></ul>
-<h4 id="우리-플랫폼-데이터-모델">우리 플랫폼 데이터 모델</h4>
-<pre class="code lang-sql"><code>-- ERP 미러
-CREATE TABLE erp_user (
-  id BIGINT PRIMARY KEY,  -- ERP users.id (조인 키)
-  company_id INT NOT NULL,
-  email VARCHAR(255) NOT NULL,
-  name VARCHAR(255),
-  erp_team_id INT,
-  role VARCHAR(50),  -- [employee|leader|admin]
-  position VARCHAR(255),
-  position_id INT,
-  manager_id BIGINT,
-  slack_user_id VARCHAR(255),
-  github_username VARCHAR(255),
-  jira_email VARCHAR(255),
-  work_type VARCHAR(50),
-  work_hours INT,
-  last_synced_at TIMESTAMP,
-  UNIQUE(company_id, email)
-);
-
--- 상위 조직 그룹 (우리 추가)
-CREATE TABLE org_group (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  type VARCHAR(50),  -- [division|department|part]
-  parent_id INT,
-  color VARCHAR(7),
-  sort_order INT,
-  FOREIGN KEY (parent_id) REFERENCES org_group(id)
-);
-
--- 팀 ↔ 구역 매핑
-CREATE TABLE team_zone (
-  id SERIAL PRIMARY KEY,
-  erp_team_id INT NOT NULL,
-  org_group_id INT,
-  office_id INT NOT NULL,
-  floor_id INT NOT NULL,
-  zone_label VARCHAR(255),
-  color VARCHAR(7),
-  polygon_coords JSONB,
-  FOREIGN KEY (org_group_id) REFERENCES org_group(id),
-  UNIQUE(erp_team_id, office_id, floor_id)
-);
-
--- 좌석
-CREATE TABLE seat (
-  id SERIAL PRIMARY KEY,
-  floor_id INT NOT NULL,
-  team_zone_id INT,
-  type VARCHAR(50),  -- [fixed|free|temp|partner]
-  assigned_user_id BIGINT,
-  coords POINT,
-  facing INT,  -- 도(degree), 시계방향, 기준축 +X (D25)
-  status VARCHAR(50),  -- [available|occupied|reserved|maintenance] (12-tasks와 통일)
-  FOREIGN KEY (assigned_user_id) REFERENCES erp_user(id)
-);
-
--- 근무 기록 (ERP attendances 캐시)
-CREATE TABLE attendance_cache (
-  id SERIAL PRIMARY KEY,
-  user_id BIGINT NOT NULL,
-  work_date DATE NOT NULL,
-  check_in_at TIMESTAMP,
-  check_out_at TIMESTAMP,
-  work_type VARCHAR(50),
-  last_synced_at TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES erp_user(id),
-  UNIQUE(user_id, work_date)
-);</code></pre>
-<h4 id="동기화-메커니즘-d18">동기화 메커니즘 (D18)</h4>
-<ul><li><strong>배치 스케줄러</strong>: <strong>매시간 증분(updated_at 기준) + 매일 00:00 KST 전체 대사</strong> (APScheduler)<ul><li>ERP read-only DB에서 delta 읽기 (last<em>synced</em>at 기준)</li><li>erp<em>user, attendance</em>cache 업데이트</li><li>전체 대사에서 하드 삭제 감지 → <code>is_active=false</code> <strong>soft-delete</strong> (미러 FK는 RESTRICT + soft-delete로 평가 기록 영구성 보장)</li><li>동기화 실패 시 자동 알림(관리자 콘솔 + 알림 채널)</li></ul></li><li><strong>API 엔드포인트</strong>:<ul><li>GET <code>/api/sync/status</code> — 마지막 동기화 시점, 상태</li><li>GET <code>/api/erp-user</code> — 모든 직원 (필터: team_id, role, status)</li><li>GET <code>/api/erp-user/{id}</code> — 개별 직원 상세</li><li>GET <code>/api/team-zone/{office_id}/{floor_id}</code> — 구역 정보</li><li>GET <code>/api/seat/{floor_id}</code> — 좌석 목록</li></ul></li></ul>
-<h4 id="좌석-배정-규칙">좌석 배정 규칙</h4>
-<ul><li><strong>고정 좌석(fixed)</strong>: erp<em>user.id → assigned</em>user_id (관리자 설정)</li><li><strong>자율 좌석(free)</strong>: assigned<em>user</em>id = NULL (출근 시 선택)</li><li><strong>임시/협력사(temp/partner)</strong>: 예약 또는 방문객 배정</li></ul>
-<h4 id="아바타-시작-위치-연결">아바타 시작 위치 연결</h4>
-<pre class="code"><code>erp_user.id
-  └→ seat.assigned_user_id
-      └→ seat.coords
-          └→ Godot 클라이언트 spawn position</code></pre>
+<h4 id="erp-동기화-d18-기존-스펙-유지">ERP 동기화 (D18, 기존 스펙 유지)</h4>
+<ul><li>erp<em>user, org</em>group, team<em>zone, seat, attendance</em>cache 동기화</li><li>매시간 증분 + 매일 00:00 KST 전체 대사 (APScheduler)</li><li>soft-delete, 알림 채널 연동</li></ul>
+<h4 id="presence-매핑-d13-workadventure">Presence 매핑 (D13 → WorkAdventure)</h4>
+<ul><li><code>backend/app/integrations/workadventure/presence.py</code></li></ul>
+<div class="table-wrap"><table><thead><tr><th>D13 Status</th><th>WorkAdventure 표현 방식</th></tr></thead><tbody><tr><td>offline</td><td>WA 연결 끊김 (disconnect event)</td></tr><tr><td>online</td><td>WA 연결 + 초기 변수 <code>status=online</code></td></tr><tr><td>working</td><td>WA zone 진입 (team 구역) → <code>status=working</code></td></tr><tr><td>meeting</td><td>WA meeting zone 진입 → <code>status=meeting</code></td></tr><tr><td>focus</td><td>scripting API 변수 <code>focusMode=true</code> → <code>status=focus</code></td></tr><tr><td>away</td><td>WA idle timer(5분) → <code>status=away</code></td></tr><tr><td>external</td><td>scripting API 변수 <code>external=true</code> → <code>status=external</code> (수동 전환)</td></tr></tbody></table></div>
+<ul><li>FastAPI WebSocket push → WA scripting API (Room API 경유)</li><li>presence DB 배치 push (1~5초 주기, D3 정신 유지)</li></ul>
+<h4 id="아바타-시작위치">아바타 시작위치</h4>
+<ul><li>erp_user → seat.coords → WA spawn position (TMJ 맵 좌표 변환)</li></ul>
 <h3 id="산출물-3">산출물</h3>
-<pre class="code"><code>backend/
-  ├── app/
-  │   ├── models/
-  │   │   ├── erp_user.py
-  │   │   ├── org_group.py
-  │   │   ├── team_zone.py
-  │   │   ├── seat.py
-  │   │   └── attendance_cache.py
-  │   ├── api/
-  │   │   ├── erp_user.py (GET 엔드포인트)
-  │   │   ├── team_zone.py
-  │   │   ├── seat.py
-  │   │   └── sync.py (상태 조회)
-  │   ├── services/
-  │   │   ├── erp_reader.py (동기화 로직)
-  │   │   ├── erp_db.py (read-only 커넥션)
-  │   │   └── seat_assignment.py (배정 규칙)
-  │   └── jobs/
-  │       └── daily_erp_sync.py (APScheduler)
-  ├── alembic/
-  │   └── versions/
-  │       └── 0001_initial_schema.py
-  └── config/
-      └── erp_connection.py (ERP read-only DB 자격증명)
-
-frontend/
-  ├── pages/
-  │   ├── admin/
-  │   │   ├── erp-sync-status.tsx (동기화 모니터링)
-  │   │   ├── team-zones.tsx (구역 관리, 맵 편집)
-  │   │   └── seat-assignment.tsx (좌석 배정)
-  │   └── dashboard.tsx (업데이트: 직원 리스트 조회)
-  └── lib/
-      ├── erp-api.ts (API 클라이언트)
-      └── team-zone-map.ts (좌석/구역 2D 시각화)
-
-tests/
-  ├── test_erp_sync.py (동기화 로직)
-  ├── test_seat_assignment.py
-  └── test_api_endpoints.py</code></pre>
+<pre class="code"><code>backend/app/integrations/workadventure/presence.py
+backend/app/services/erp_sync.py  (WA 의존성 제거 버전)
+backend/tests/test_wa_presence.py</code></pre>
 <h3 id="의존성-3">의존성</h3>
-<ul><li>Phase 1 완료 (Godot 클라이언트 기본 구조 확정)</li><li>ERP 접근 자격증명 (read-only 계정, DB 직접 접근)</li></ul>
+<ul><li>Phase 1 완료</li></ul>
 <h3 id="수용-기준-3">수용 기준</h3>
-<ul><li class="task"><input type="checkbox" disabled> ERP read-only DB 연결 성공 (테스트: 100명 이상 users 읽기)</li><li class="task"><input type="checkbox" disabled> 동기화 배치 정상 실행 (매시간 증분 + 매일 00:00 전체 대사 로그 기록 — D18)</li><li class="task"><input type="checkbox" disabled> erp<em>user, team</em>zone, seat 테이블 일관성 (FK 제약 통과)</li><li class="task"><input type="checkbox" disabled> GET <code>/api/erp-user</code> 응답 시간 &lt;500ms (100명 기준)</li><li class="task"><input type="checkbox" disabled> 고정 좌석 배정 시 Godot 클라이언트 spawn 위치 정확 (오차 &lt;1m)</li><li class="task"><input type="checkbox" disabled> 자율 좌석 선택 UI 동작 (assigned<em>user</em>id NULL → assigned)</li></ul>
+<ul><li class="task"><input type="checkbox" disabled> presence 7종 상태 전환이 WA 클라이언트에 실시간 반영 (1~5초 이내)</li><li class="task"><input type="checkbox" disabled> focus/external 상태가 scripting API 변수로 WA에 노출</li><li class="task"><input type="checkbox" disabled> ERP 동기화 배치 정상 동작 (매시간 증분, 00:00 KST 전체 대사)</li><li class="task"><input type="checkbox" disabled> pytest <code>test_wa_presence.py</code> 통과</li></ul>
 <h3 id="독립-데모-3">독립 데모</h3>
-<p><strong>&quot;좌석 배정 대시보드&quot;</strong> — 아바타 없이 우리 UI에서 직원·팀·좌석 시각화. 팀별 구역색, 직원명, 배정 상태만으로도 조직 구조 검증 가능.</p>
+<p><strong>&quot;ERP 팀 구조가 WA 맵에 반영되고 presence 상태가 실시간 동기화&quot;</strong></p>
 <hr>
-<h2 id="phase-3-사무실-배치-편집기">Phase 3: 사무실 배치 편집기</h2>
+<h2 id="phase-3-맵-제너레이터-좌석-배치-d26-d27로-대체됨">Phase 3: 맵 제너레이터 + 좌석 배치 ⭐D26 ⚠️D27로 대체됨</h2>
+<blockquote><strong>D26 전환</strong>: 기존 &quot;사무실 배치 편집기 (Konva.js 2D 전용)&quot; 단계를 대체.</blockquote>
 <h3 id="목표-4">목표</h3>
-<ul><li><strong>office_layout JSON 구조 확정</strong> (스키마 상세는 05-office-layout-schema.md 참조)</li><li>관리자가 <strong>2D 편집(Konva.js) + 검증 + 배포/롤백</strong>을 할 수 있는 엔드-투-엔드 도구 완성. 정밀 확인은 저장 후 <strong>데스크톱 클라이언트 draft 모드</strong>로 열람(웹 3D 미리보기 제거, D11)</li><li>사무실 구조 <strong>코드 대신 DB/JSON으로 구동</strong> (재사용성·변경 용이성)</li></ul>
+<ul><li>조직 데이터(팀·인원수) → TMJ 맵 자동 생성 (D12 정신: FastAPI 서버 단일 검증)</li><li>팀 구역/좌석 TMJ 레이어 자동 주입, map-storage 배포</li><li>슬롯 용량 초과 시 검증 에러</li></ul>
 <h3 id="범위-4">범위</h3>
-<h4 id="office_layout-데이터-모델">office_layout 데이터 모델</h4>
-<pre class="code lang-sql"><code>CREATE TABLE office (
-  id SERIAL PRIMARY KEY,
-  company_id INT NOT NULL,
-  name VARCHAR(255),
-  description TEXT
-);
-
-CREATE TABLE floor (
-  id SERIAL PRIMARY KEY,
-  office_id INT NOT NULL,
-  level INT,  -- 1, 2, 3, ...
-  name VARCHAR(255),  -- &quot;1F&quot;, &quot;2F Open&quot;, ...
-  minimap_config JSONB,  -- {&quot;zoom&quot;: 1.0, &quot;origin&quot;: [x, y]}
-  FOREIGN KEY (office_id) REFERENCES office(id)
-);
-
-CREATE TABLE office_layout (
-  id SERIAL PRIMARY KEY,
-  office_id INT NOT NULL,
-  floor_id INT NOT NULL,
-  version INT,
-  status VARCHAR(50),  -- [draft|validated|deployed|archived]
-  json JSONB,  -- 구조 blob
-  created_at TIMESTAMP,
-  deployed_at TIMESTAMP,
-  FOREIGN KEY (office_id) REFERENCES office(id),
-  FOREIGN KEY (floor_id) REFERENCES floor(id),
-  UNIQUE(office_id, floor_id, version)
-);
-
-CREATE TABLE room (
-  id SERIAL PRIMARY KEY,
-  floor_id INT NOT NULL,
-  type VARCHAR(50),  -- [lobby|meeting|lounge|focus|phonebooth]
-  name VARCHAR(255),
-  capacity INT,
-  coords JSONB,  -- {x, y, width, height, rotation}
-  enter_trigger JSONB,  -- 진입 트리거 영역
-  livekit_room VARCHAR(255),  -- LiveKit 방 이름 (optional, 회의실만)
-  FOREIGN KEY (floor_id) REFERENCES floor(id)
-);</code></pre>
-<p>office_layout JSON 스키마:</p>
-<pre class="code lang-json"><code>{
-  &quot;version&quot;: 1,
-  &quot;floor_id&quot;: 1,
-  &quot;dimensions&quot;: {
-    &quot;width&quot;: 100,
-    &quot;height&quot;: 80,
-    &quot;unit&quot;: &quot;meters&quot;
-  },
-  &quot;zones&quot;: [
-    {
-      &quot;id&quot;: &quot;zone-1&quot;,
-      &quot;name&quot;: &quot;개발팀&quot;,
-      &quot;type&quot;: &quot;seating&quot;,
-      &quot;coords&quot;: {&quot;x&quot;: 0, &quot;y&quot;: 0, &quot;width&quot;: 50, &quot;height&quot;: 40},
-      &quot;color&quot;: &quot;#FF5733&quot;,
-      &quot;seats&quot;: [
-        {&quot;id&quot;: &quot;seat-1-1&quot;, &quot;coords&quot;: {&quot;x&quot;: 5, &quot;y&quot;: 5}, &quot;type&quot;: &quot;fixed&quot;, &quot;facing&quot;: 90}
-      ]
-    }
-  ],
-  &quot;rooms&quot;: [
-    {
-      &quot;id&quot;: &quot;room-meeting-1&quot;,
-      &quot;name&quot;: &quot;회의실 A&quot;,
-      &quot;type&quot;: &quot;meeting&quot;,
-      &quot;capacity&quot;: 6,
-      &quot;coords&quot;: {&quot;x&quot;: 50, &quot;y&quot;: 0, &quot;width&quot;: 20, &quot;height&quot;: 30},
-      &quot;livekit_room&quot;: &quot;meeting-a&quot;
-    }
-  ],
-  &quot;colliders&quot;: [
-    {&quot;id&quot;: &quot;wall-1&quot;, &quot;start&quot;: [0, 0], &quot;end&quot;: [100, 0], &quot;type&quot;: &quot;wall&quot;}
-  ]
-}</code></pre>
-<h4 id="2d-편집기-konvajs">2D 편집기 (Konva.js)</h4>
-<ul><li><strong>캔버스</strong>: office_layout 시각화<ul><li>드래그로 구역/좌석/방 이동/크기 조정</li><li>우클릭 컨텍스트: 삭제, 복제, 속성 편집</li><li>그리드 스냅 (옵션)</li></ul></li><li><strong>우측 패널</strong>:<ul><li>구역/방/좌석 목록 (필터, 선택)</li><li>선택 항목 속성 폼 (이름, 용량, 색상, LiveKit 방 등)</li><li>좌석 대량 배정 (CSV import)</li></ul></li><li><strong>버전 관리</strong>:<ul><li>모든 편집은 &quot;draft&quot; 상태 (자동 저장)</li><li>&quot;Validate&quot; 버튼 → <strong>서버(FastAPI) 단일 정밀 검증</strong>(도달성 A* 포함, D12). 웹 편집기는 경량 체크(범위/겹침)만. <strong>ERROR는 배포 불가</strong>, WARNING만 무시 가능</li><li>&quot;Deploy&quot; → 상태 = deployed, timestamp 기록</li><li>&quot;Rollback&quot; → 이전 version으로 복원</li><li>&quot;데스크톱 draft 열람&quot; → 저장된 draft 레이아웃을 데스크톱 클라이언트에서 draft 모드로 로드해 정밀 확인</li></ul></li></ul>
-<h4 id="데스크톱-draft-모드-열람-웹-3d-미리보기-대체-d11">데스크톱 draft 모드 열람 (웹 3D 미리보기 대체, D11)</h4>
-<ul><li>웹 편집기는 Konva.js 2D 전용. WASM/HTML5 export 미사용(PRD WON'T 준수)</li><li>정밀 3D 확인은 저장 후 <strong>데스크톱 클라이언트를 draft 모드로 실행</strong>하여 해당 office_layout 버전을 로드</li><li>충돌·개구부(door opening) 등 시각 확인은 네이티브 클라이언트에서 수행</li></ul>
-<h4 id="검증-엔진">검증 엔진</h4>
-<pre class="code lang-python"><code>def validate_layout(office_layout_json):
-    # 제약:
-    # 1. 모든 객체가 office 범위 내
-    # 2. 객체 간 겹침 없음 (합법적 겹침 제외: 방 진입, 좌석 미세 중첩)
-    # 3. LiveKit 방 이름 고유성
-    # 4. (배정 검증은 DB측 — layout JSON에 배정 없음, D10)
-    # 5. 각 방의 수용 인원 ≥ 0
-    errors = []
-    warnings = []
-    return {&quot;valid&quot;: len(errors) == 0, &quot;errors&quot;: errors, &quot;warnings&quot;: warnings}</code></pre>
+<h4 id="맵-제너레이터-backendappservicesmap_generatorpy">맵 제너레이터 (<code>backend/app/services/map_generator.py</code>)</h4>
+<ul><li>수제 셸 TMJ + 팀 구역 슬롯 주입 구조</li><li>팀 구역: 타일 색상, 좌석 위치, 팀 라벨, WA zone 메타데이터</li><li>슬롯 용량 초과(팀 인원 &gt; 좌석 수) → ValidationError (D12)</li><li>생성된 TMJ → map-storage API 업로드 자동화</li></ul>
+<h4 id="관리-api">관리 API</h4>
+<ul><li><code>POST /api/maps/generate</code> — 조직 데이터로 맵 생성·배포</li><li><code>GET /api/maps/{map_id}</code> — 맵 메타 조회</li><li><code>POST /api/maps/{map_id}/validate</code> — 맵 검증(D12)</li></ul>
+<h4 id="편집기-tiled-외부-도구-map-storage">편집기 (Tiled 외부 도구 + map-storage)</h4>
+<ul><li>수동 커스텀: Tiled 앱으로 TMJ 편집 → map-storage API 업로드</li><li>Konva.js는 좌석 배정 UI(seat↔user 매핑)로 역할 축소</li></ul>
 <h3 id="산출물-4">산출물</h3>
-<pre class="code"><code>frontend/
-  ├── pages/
-  │   └── admin/
-  │       ├── layout-editor.tsx (메인 페이지)
-  │       ├── 2d-canvas.tsx (Konva.js 캔버스)
-  │       ├── properties-panel.tsx (우측 속성 폼)
-  │       ├── version-history.tsx (배포 이력)
-  │       └── draft-open-guide.tsx (데스크톱 draft 모드 열람 안내)
-  └── lib/
-      ├── office-layout-schema.ts (타입 정의)
-      ├── layout-validator.ts (검증 로직)
-      └── konva-shapes.ts (도형 렌더링)
-
-backend/
-  ├── app/
-  │   ├── models/
-  │   │   ├── office.py
-  │   │   ├── floor.py
-  │   │   ├── office_layout.py
-  │   │   └── room.py
-  │   ├── api/
-  │   │   └── layout.py (CRUD + validate + deploy + rollback)
-  │   ├── services/
-  │   │   ├── layout_validator.py (정밀 검증: 범위/겹침/도달성 A*, D12)
-  │   │   ├── layout_generator.py (JSON → Godot 씬 변환)
-  │   │   └── layout_versioning.py (v1, v2, ... 관리)
-  ├── alembic/
-  │   └── versions/
-  │       └── 0002_office_layout_tables.py
-  └── tests/
-      ├── test_layout_validator.py
-      └── test_layout_deploy.py
-
-godot_client/
-  ├── scenes/
-  │   └── layout_draft_viewer.tscn (--draft 모드: 저장된 draft 레이아웃 열람)
-  └── scripts/
-      └── layout_loader.gd (office_layout JSON 로드)</code></pre>
+<pre class="code"><code>backend/app/services/map_generator.py
+backend/app/api/maps.py
+backend/tests/test_map_generator.py</code></pre>
 <h3 id="의존성-4">의존성</h3>
-<ul><li>Phase 1, Phase 2 완료 (Godot 기본, erp_user/seat 테이블)</li></ul>
+<ul><li>Phase 2 완료</li></ul>
 <h3 id="수용-기준-4">수용 기준</h3>
-<ul><li class="task"><input type="checkbox" disabled> office_layout JSON 스키마 정규화 (상호참조, 외래키 일관성)</li><li class="task"><input type="checkbox" disabled> 2D 편집기 로드/저장 성능 &lt;2s (500개 좌석 기준)</li><li class="task"><input type="checkbox" disabled> 서버 정밀 검증 엔진 모든 제약 통과 (테스트: 겹침/범위/FK/도달성 케이스 각 3개, D12)</li><li class="task"><input type="checkbox" disabled> 데스크톱 draft 모드 열람: 저장된 draft 레이아웃 로드 성공 (로딩 &lt;5초)</li><li class="task"><input type="checkbox" disabled> Deploy 성공 후 상태 = deployed, timestamp 기록</li><li class="task"><input type="checkbox" disabled> Rollback으로 이전 version 복원 정상</li><li class="task"><input type="checkbox" disabled> CSV import로 100개 좌석 대량 배정 성공</li></ul>
+<ul><li class="task"><input type="checkbox" disabled> 팀 5개·인원 30명 조직 데이터로 TMJ 맵 자동 생성 성공</li><li class="task"><input type="checkbox" disabled> 슬롯 초과 시 ValidationError 반환 (pytest 확인)</li><li class="task"><input type="checkbox" disabled> 생성된 맵이 WA map-storage에 배포되어 클라이언트에서 로드</li><li class="task"><input type="checkbox" disabled> pytest <code>test_map_generator.py</code> 통과</li></ul>
 <h3 id="독립-데모-4">독립 데모</h3>
-<p><strong>&quot;배치도 편집·배포&quot;</strong> — Godot 없이 2D 캔버스에서 구역/좌석 배치, 검증, 배포. 정밀 3D 확인은 데스크톱 draft 모드로 열람.</p>
+<p><strong>&quot;조직도 API 호출 한 번으로 팀 구역이 WA 맵에 자동 생성&quot;</strong></p>
 <hr>
-<h2 id="phase-4-실시간-가상오피스-godot-서버">Phase 4: 실시간 가상오피스 (Godot 서버)</h2>
+<h2 id="phase-4-workadventure-연동-완성-d26-d27로-대체됨">Phase 4: WorkAdventure 연동 완성 ⭐D26 ⚠️D27로 대체됨</h2>
+<blockquote><strong>D26 전환</strong>: 기존 &quot;실시간 가상오피스 (Godot 헤드리스 서버 + WSS)&quot; 단계를 대체.</blockquote>
 <h3 id="목표-5">목표</h3>
-<ul><li><strong>Godot 4 헤드리스 멀티플레이어 서버</strong> 구축 (권위 모델)</li><li>아바타 이동, 프레즌스(presence), 회의실 점유, 근접 상호작용 모두 서버 검증</li><li><strong>WebSocket(WSS) 기반 동기화</strong> (D1: TLS 내장, 재택 방화벽/VPN 통과 용이. ENet 폐기)</li></ul>
+<ul><li>D24 명시적 회의 입장 확인(입장 다이얼로그 → Room API 토큰 발급)</li><li>scripting API 고급 연동(팀 알림, 상태 배지, 커스텀 UI 패널)</li><li>E2E 도그푸딩 검증: 20명 동시 접속, presence E2E p95 &lt; 500ms (D22)</li></ul>
 <h3 id="범위-5">범위</h3>
-<h4 id="godot-헤드리스-서버">Godot 헤드리스 서버</h4>
-<ul><li>오피스 씬 로드 (office_layout JSON → Godot 씬 재사용)</li><li>플레이어 연결/퇴장 처리</li><li>아바타 이동 입력 검증 (collision 확인)</li><li>프레즌스 상태 갱신 (<strong>7종 확정, D13</strong>: offline / online / working / meeting / focus / away / external). away 자동 전이 5분(기본값). GPS 기반 상태(trip<em>moving/trip</em>arrived/returning) 삭제</li><li>회의실 점유 검증 (room.capacity 초과 방지)</li><li>근접 인터랙션 감지 (거리 &lt; 5m → UI 신호)</li></ul>
-<h4 id="프레즌스-동기화">프레즌스 동기화</h4>
-<pre class="code lang-sql"><code>CREATE TABLE presence (
-  user_id BIGINT PRIMARY KEY,
-  office_id INT NOT NULL,
-  floor_id INT NOT NULL,
-  x FLOAT,
-  y FLOAT,
-  status VARCHAR(50),  -- 7종 (D13): [offline|online|working|meeting|focus|away|external]
-  updated_at TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES erp_user(id)
-);</code></pre>
-<p>API:</p>
-<ul><li>POST <code>/api/presence/update</code> — 게임서버→FastAPI 배치 push (internal, 1~5초 주기 — D3). 클라이언트 이동은 WSS 경유(게임서버 권위, collision 검사는 게임서버)</li><li>GET <code>/api/presence/{office_id}</code> — 현재 출근자 목록 (실시간)</li><li>WS <code>/ws/presence</code> — 프레즌스 실시간 푸시 (구독자)</li></ul>
-<h4 id="멀티플레이어-동기화-websocketwss-d1">멀티플레이어 동기화 (WebSocket/WSS, D1)</h4>
-<ul><li><strong>프로토콜</strong>: <strong>WebSocket(WSS)</strong> — TLS 내장, 재택 근무자 방화벽/VPN 통과 용이. 재접속 시 sequence_num 기반 스냅샷 재수신. 핸드셰이크에 <code>protocol_version</code> 협상 포함(미지원 버전 거부, D4)</li><li><strong>서버 tick</strong>: 20Hz (D22)</li><li><strong>동기화 항목</strong>:<ul><li>플레이어 위치 (서버 tick 20Hz, E2E p95 &lt; 500ms)</li><li>애니메이션 상태 (change-driven)</li><li>회의실 점유/진입 (1Hz)</li><li>채팅/근접 신호 (real-time)</li></ul></li></ul>
-<h4 id="충돌-시스템">충돌 시스템</h4>
-<ul><li>Godot 씬의 collider (office_layout JSON → collider JSONB 변환)</li><li>서버에서 이동 검증: 새 좌표가 collider와 충돌하면 거부 + 마지막 유효 위치로 클라이언트 correction</li></ul>
-<h4 id="회의실-상태-머신">회의실 상태 머신</h4>
-<pre class="code"><code>states: [available, reserved, in_session, maintenance]
-on_user_enter(user_id):
-  if occupants &lt; capacity:
-    occupants += 1
-    broadcast update
-  else:
-    reject (capacity exceeded)
-on_user_exit(user_id):
-  occupants -= 1
-  if occupants == 0:
-    state = available</code></pre>
+<h4 id="명시적-회의-입장-d24">명시적 회의 입장 (D24)</h4>
+<ul><li>WA meeting zone 진입 → FastAPI Room API 호출 → LiveKit 토큰 발급</li><li>입장 다이얼로그: 클릭 → LiveKit 화상 연결 (자동 연결 금지)</li><li>scripting API 이벤트 훅으로 구현</li></ul>
+<h4 id="scripting-api-고급-연동">scripting API 고급 연동</h4>
+<ul><li>팀 구역 진입 시 팀 알림 배너 표시</li><li>아바타 위의 presence 상태 배지(custom bubble)</li><li>우측 직원 패널 iframe(React) — 현재 접속자·상태 목록</li><li>외근/출장(external) 수동 전환 토글 UI</li></ul>
+<h4 id="e2e-검증">E2E 검증</h4>
+<ul><li>도그푸딩 20명 동시 접속 부하 테스트 시나리오</li><li>presence 상태 전환 E2E 측정 (p95 &lt; 500ms, D22)</li><li>OIDC 로그인 → 맵 로드 → 아바타 이동 → 회의 입장 전체 흐름</li></ul>
 <h3 id="산출물-5">산출물</h3>
-<pre class="code"><code>godot_server/
-  ├── scenes/
-  │   ├── office_server.tscn (메인 씬)
-  │   └── shared/
-  │       └── (offfice 씬 재사용: Phase 1에서 복사)
-  ├── scripts/
-  │   ├── server.gd (main entry)
-  │   ├── player_manager.gd (플레이어 연결/퇴장)
-  │   ├── presence_syncer.gd (프레즌스 업데이트)
-  │   ├── collision_validator.gd (이동 검증)
-  │   ├── meeting_room_manager.gd (회의실 상태)
-  │   └── network_protocol.gd (WebSocket 직렬화 + protocol_version 협상)
-  ├── config/
-  │   └── server_config.gd (포트, 최대 플레이어, 오피스 ID)
-  └── docker/
-      └── Dockerfile (헤드리스 빌드)
-
-backend/
-  ├── app/
-  │   ├── models/
-  │   │   └── presence.py
-  │   ├── api/
-  │   │   └── presence.py
-  │   ├── websocket/
-  │   │   └── presence_gateway.py (Godot 서버 ↔ 백엔드 브릿지)
-  │   └── services/
-  │       └── presence_service.py
-  ├── tests/
-  │   ├── test_presence_sync.py
-  │   ├── test_collision.py
-  │   └── test_meeting_room.py
-
-godot_client/
-  ├── scenes/
-  │   └── multiplayer_office.tscn (서버 연결)
-  └── scripts/
-      ├── client_network.gd (WebSocket/WSS 클라이언트)
-      ├── avatar_controller.gd (입력 → 서버 전송)
-      └── remote_avatar.gd (다른 플레이어 시각화)</code></pre>
+<pre class="code"><code>backend/app/api/rooms.py  (LiveKit Room API, D24)
+frontend/components/EmployeePanel.tsx  (iframe 패널)
+scripts/e2e_load_test.py  (20명 시뮬레이션)</code></pre>
 <h3 id="의존성-5">의존성</h3>
-<ul><li>Phase 1, 2, 3 완료 (Godot, erp<em>user, office</em>layout)</li></ul>
+<ul><li>Phase 3 완료</li></ul>
 <h3 id="수용-기준-5">수용 기준</h3>
-<ul><li class="task"><input type="checkbox" disabled> Godot 헤드리스 빌드 성공 (docker run으로 시작)</li><li class="task"><input type="checkbox" disabled> 도그푸딩 검증 20명 동시 연결 성공 (설계 목표 100명, D22)</li><li class="task"><input type="checkbox" disabled> 아바타 동기화 E2E(입력→원격 표시) p95 &lt; 500ms (서버 tick 20Hz, D22)</li><li class="task"><input type="checkbox" disabled> 프레즌스 브로드캐스트 정상 (팬아웃 O(N²) 명시, 100명 초과 시 AOI 필터링+바이너리 직렬화 검토)</li><li class="task"><input type="checkbox" disabled> 회의실 용량 초과 시 거부 정상 (테스트: 6인 회의실 7번째 진입 거부)</li><li class="task"><input type="checkbox" disabled> 클라이언트 disconnect 후 서버에서 자동 제거 (&lt;30s)</li><li class="task"><input type="checkbox" disabled> 충돌 검증 오류 없음 (테스트: 벽, 가구와 충돌 시도)</li></ul>
+<ul><li class="task"><input type="checkbox" disabled> 회의 입장 다이얼로그 → LiveKit 토큰 발급 → 화상 연결 E2E 성공 (D24)</li><li class="task"><input type="checkbox" disabled> scripting API custom bubble로 presence 상태 배지 표시</li><li class="task"><input type="checkbox" disabled> 20명 동시 접속 시 p95 &lt; 500ms presence 동기화 (D22)</li><li class="task"><input type="checkbox" disabled> 도그푸딩 준비 완료(사내 직원 20명 입장 가능)</li></ul>
 <h3 id="독립-데모-5">독립 데모</h3>
-<p><strong>&quot;멀티플레이어 아바타 이동&quot;</strong> — 실제 웹 백엔드 없이 Godot 서버만으로 3명 이상 아바타 동시 이동 시각화. 회의실 점유 상태 표시.</p>
+<p><strong>&quot;도그푸딩 세션: 팀 전원이 WA 사무실에서 presence·회의·상태 동기화 체험&quot;</strong></p>
 <hr>
 <h2 id="phase-5-회의화상회의-회의록-stt">Phase 5: 회의/화상회의 + 회의록 STT</h2>
+<blockquote><strong>D27 매핑</strong>: 이 섹션 = <strong>P5(회의·화상)</strong>. D27에서 유지되는 Phase이며, 아래 본문(스키마·API·수용기준)은 그대로 유효하되 클라이언트는 R3F/React·LiveKit 브라우저 네이티브 기준으로 읽는다(구 godot_client 잔재는 §산출물에서 정리됨).</blockquote>
 <h3 id="목표-6">목표</h3>
 <ul><li><strong>LiveKit 셀프호스트 통합</strong> (룸 생성은 FastAPI 경유 단일화, D24)</li><li>회의 예약(+즉석 FCFS 병행, D23), <strong>명시적 입장 확인</strong>(자동 연결 금지, D24), 화상회의 시작</li><li><strong>회의록 STT 자동 생성 (정식 범위, D5)</strong>: LiveKit Egress(트랙별 오디오) → STT(화자분리) → 회의록 초안 자동 생성 → 참석자/호스트 검토·확정. 수동 입력은 폴백</li><li>결정사항·액션아이템 기록, 회의 종료 후 ERP로 기록 동기화</li></ul>
 <h3 id="범위-6">범위</h3>
@@ -620,20 +309,21 @@ backend/
       ├── test_meeting_api.py
       ├── test_livekit_integration.py
 
-godot_client/
-  ├── scenes/
-  │   └── meeting_room_ui.tscn
-  └── scripts/
-      ├── meeting_controller.gd
-      └── livekit_bridge.gd (WebRTC GDExtension 화면 임베드, S1 검증 기반. 실패 시 임베디드 브라우저 폴백)</code></pre>
+frontend/ (R3F/React — D27, 구 godot_client 대체)
+  ├── components/office/
+  │   └── MeetingRoomOverlay.tsx  (회의실 진입 오버레이 UI)
+  └── lib/
+      └── livekit-viewer.ts       (LiveKit WebRTC 화상 타일, 브라우저 네이티브)</code></pre>
+<blockquote>⚠️ <strong>D27 잔재 정리</strong>: 이전 판의 <code>godot_client/*.gd</code>(meeting<em>controller.gd·livekit</em>bridge.gd·GDExtension 임베드)는 폐기. LiveKit 화상은 단일 웹앱(React) 안에서 브라우저 네이티브 WebRTC로 처리한다(D27). S1(Godot↔LiveKit) 스파이크도 취소됨(§D27 참조).</blockquote>
 <h3 id="의존성-6">의존성</h3>
-<ul><li>Phase 4 완료 (실시간 서버, room 상태 관리)</li><li>Phase 0 스파이크 S1(Godot↔LiveKit), S2(STT 파이프라인) 결과</li><li>LiveKit + coturn 셀프호스트 배포 (<strong>사내 VM, Docker Compose</strong>, D21 — Kubernetes/클라우드 SaaS 배제)</li></ul>
+<ul><li>P4 완료 (Colyseus 이동서버 + 프레즌스 실시간)</li><li>P0 깊이합성 스파이크(PASS) — S1~S4(Godot 계열)는 D26/D27로 취소됨</li><li>LiveKit + coturn 셀프호스트 배포 (<strong>사내 VM, Docker Compose</strong>, D21 — Kubernetes/클라우드 SaaS 배제)</li></ul>
 <h3 id="수용-기준-6">수용 기준</h3>
 <ul><li class="task"><input type="checkbox" disabled> 회의 예약 폼 동작 (저장 → meeting 레코드 생성, 예약 충돌 검증)</li><li class="task"><input type="checkbox" disabled> LiveKit 룸 생성 성공 (FastAPI 경유, livekit_room 컬럼 채워짐, D24)</li><li class="task"><input type="checkbox" disabled> 명시적 입장 다이얼로그 + 녹음·STT 동의 배너 동작 (거부 시 오디오 미수집, D24/D20)</li><li class="task"><input type="checkbox" disabled> 화상회의 UI 로드 (webrtc 스트림 시작), 화상 음성 지연 &lt; 200ms (사내망, D22)</li><li class="task"><input type="checkbox" disabled> <strong>STT 회의록 초안 자동 생성</strong> (Egress→화자분리→초안), 발화자·액션아이템 누락률 &lt; 5% (수동 전사 대조, D22)</li><li class="task"><input type="checkbox" disabled> 참석자/호스트 검토·확정 후 회의록 저장 (decisions, notes, created_by 기록)</li><li class="task"><input type="checkbox" disabled> 액션아이템 추가 (assignee, due<em>date, related</em>ref 정상)</li><li class="task"><input type="checkbox" disabled> 회의 종료 후 meeting<em>participant 레코드 완성 (joined/left</em>at)</li><li class="task"><input type="checkbox" disabled> 회의록 조회 API 응답 정상 (&lt;500ms)</li></ul>
 <h3 id="독립-데모-6">독립 데모</h3>
 <p><strong>&quot;회의 예약·화상·STT 회의록&quot;</strong> — 회의 생성·참가 기록·STT 회의록 초안 생성·검토 확정·액션아이템 추적을 데모. STT 미달 시 수동+AI요약 폴백 경로도 시연.</p>
 <hr>
 <h2 id="phase-6-업무결과kpi-산출-erp-push">Phase 6: 업무결과·KPI 산출 + ERP push</h2>
+<blockquote><strong>D27 매핑</strong>: 이 섹션 = <strong>P6(STT·AI + KPI)</strong>. D27에서 유지되는 Phase이며 KPI 산출·AI 서술 초안·ERP push 로직은 그대로 유효하다(D14/D15/D16/D17 정본).</blockquote>
 <h3 id="목표-7">목표</h3>
 <ul><li><strong>work_log</strong> (일일 업무 기록) 입력/수정 UI</li><li><strong>KPI 산출 엔진</strong> (협업 산출물 기반: 회의·액션아이템·업무완료도). <strong>정량 점수는 결정론적 코드로 계산, AI는 서술만</strong>(D14)</li><li><strong>AI 초안 생성</strong> (Claude API) — 강점/개선/근거 서술</li><li><strong>관리자 검토 &amp; 조정 + 이의신청 상태머신</strong> (정본 D15: none→submitted→reviewing→resolved, 이의접수 7일 창)</li><li><strong>배치 스케줄(D17)</strong>: daily<em>reports push <strong>18:00 KST</strong> / KPI AI 초안 <strong>21:00 야간 배치</strong>(검토 대기) / kpi</em>results ERP push = <strong>관리자 확정 이벤트 + 분기 마감 배치</strong></li><li><strong>ERP dev 브랜치 작업</strong> (신규 kpi<em>results 테이블 + 수신 엔드포인트 <code>POST /api/kpi-results</code> + 서비스계정 JWT, 03-erp-integration.md 참조). ERP에는 <strong>관리자 확정 점수(final</em>score)만 전송</strong>, <code>ai_draft</code> 미전송(D15)</li></ul>
 <h3 id="범위-7">범위</h3>
@@ -940,6 +630,7 @@ erp_dev_branch/ (feature/virtual-office-integration)
 <p><strong>&quot;KPI 산출 &amp; 리뷰&quot;</strong> — 가상 업무 기록 + 가상 회의 데이터로 KPI 계산, AI 초안 생성, 관리자 조정. ERP 연동 전에 내부 로직만 검증.</p>
 <hr>
 <h2 id="phase-7-고도화">Phase 7: 고도화</h2>
+<blockquote><strong>D27 매핑</strong>: 이 섹션 = <strong>P7(정리·부하·하드닝)</strong>. D27 P7은 여기의 고도화 기능(층 이동·권한·AI요약·모바일·모니터링)에 더해 <strong>WA 스택 제거·다층 렌더·20명 부하검증·보안 하드닝·편집기→재렌더</strong>(§D27)를 포함한다. 구 godot_client 산출물 잔재는 §산출물에서 R3F/React로 정리됨.</blockquote>
 <h3 id="목표-8">목표</h3>
 <ul><li>플랫폼 <strong>완성도 향상</strong> (추가 기능, 사용성, 성능)</li><li>Phase 1~6 기반으로 <strong>단계적 확장 기능</strong> 적용</li><li>B2B·멀티테넌트는 이 이후</li></ul>
 <h3 id="범위-8">범위</h3>
@@ -1062,12 +753,13 @@ frontend/
   └── lib/
       └── feedback-api.ts
 
-godot_client/
-  ├── scenes/
-  │   └── floor_transition.tscn
-  └── scripts/
-      ├── access_control.gd
-      └── notification_receiver.gd</code></pre>
+frontend/ (R3F/React — D27, 구 godot_client 대체)
+  ├── components/office/
+  │   └── FloorTransition.tsx     (층 이동 전환 연출)
+  └── lib/
+      ├── access-control.ts       (구역 접근 제어 클라이언트)
+      └── notification-receiver.ts (실시간 알림 수신)</code></pre>
+<blockquote>⚠️ <strong>D27 잔재 정리</strong>: 이전 판의 <code>godot_client/*.gd</code>(floor<em>transition.tscn·access</em>control.gd·notification_receiver.gd)는 폐기. 층 이동·접근제어·알림은 R3F/React 클라이언트 + Colyseus로 처리(D27).</blockquote>
 <h3 id="의존성-8">의존성</h3>
 <ul><li>Phase 1~6 완료</li></ul>
 <h3 id="수용-기준-8">수용 기준</h3>
@@ -1075,17 +767,18 @@ godot_client/
 <h3 id="독립-데모-8">독립 데모</h3>
 <p><strong>&quot;고도화된 가상오피스&quot;</strong> — 전 단계 기능 위에 층 이동, 권한 제어, AI 요약, 모니터링 기능 추가로 완성도 높은 플랫폼 데모.</p>
 <hr>
-<h2 id="단계-간-의존-그래프">단계 간 의존 그래프</h2>
+<h2 id="단계-간-의존-그래프-d27-p0p7">단계 간 의존 그래프 (D27 — P0~P7)</h2>
+<blockquote>⚠️ <strong>구 D26 그래프/Gantt(45주=315일, WA self-host·골든샘플 3D·2026-07-06→2027-05-17) 폐기.</strong> 아래는 D27 Phase(P0~P7) 순차 의존만 표현한다. <strong>주 단위·날짜는 미확정</strong> — P0 깊이합성 스파이크(PASS) 결과를 바탕으로 P1 이후 일정을 확정한다(억지 숫자 금지). 확정 시 이 절에 Gantt를 채운다.</blockquote>
 <div class="mermaid">graph LR
-    P0[&quot;Phase 0: 계약 &amp; 스파이크&lt;br/&gt;(4주)&quot;] --&gt; P1[&quot;Phase 1: 골든 샘플 3D&lt;br/&gt;(12주)&quot;]
-    P1 --&gt; P2[&quot;Phase 2: ERP 동기화&lt;br/&gt;(7주)&quot;]
-    P2 --&gt; P3[&quot;Phase 3: 배치 편집기&lt;br/&gt;(6주)&quot;]
-    P3 --&gt; P4[&quot;Phase 4: 실시간 서버(WSS)&lt;br/&gt;(8주)&quot;]
-    P4 --&gt; P5[&quot;Phase 5: 회의/화상 + STT&lt;br/&gt;(8주)&quot;]
-    P5 --&gt; P6[&quot;Phase 6: KPI 산출 + ERP push&lt;br/&gt;(7주)&quot;]
-    P6 --&gt; P7[&quot;Phase 7: 고도화&lt;br/&gt;(6주)&quot;]
+    P0[&quot;P0: 깊이합성 스파이크&lt;br/&gt;(PASS 2026-07-08)&quot;] --&gt; P1[&quot;P1: 대시보드 셸&lt;br/&gt;+ 데이터 연결&quot;]
+    P1 --&gt; P2[&quot;P2: 렌더 파이프라인&lt;br/&gt;(Blender→R3F)&quot;]
+    P2 --&gt; P3[&quot;P3: Colyseus 이동서버&lt;br/&gt;+ 아바타 깊이합성&quot;]
+    P3 --&gt; P4[&quot;P4: 프레즌스·좌석&lt;br/&gt;실시간 시각화&quot;]
+    P4 --&gt; P5[&quot;P5: 회의·화상&lt;br/&gt;(LiveKit)&quot;]
+    P5 --&gt; P6[&quot;P6: STT·AI + KPI&lt;br/&gt;+ ERP push&quot;]
+    P6 --&gt; P7[&quot;P7: 정리·부하·하드닝&lt;br/&gt;도그푸딩 릴리스&quot;]
 
-    style P0 fill:#eeeeee
+    style P0 fill:#c8e6c9
     style P1 fill:#ffcccc
     style P2 fill:#ffffcc
     style P3 fill:#ccffcc
@@ -1093,40 +786,23 @@ godot_client/
     style P5 fill:#ffccff
     style P6 fill:#ccffff
     style P7 fill:#ffe0b2</div>
-<p><strong>Gantt 타임라인</strong> (58주, 시작 2026-07-06 → 완성 2027-08-16, 15% 버퍼 포함):</p>
-<div class="mermaid">gantt
-    title Virtual Office 로드맵 (58주)
-    dateFormat YYYY-MM-DD
-
-    Phase 0 (계약·스파이크) :p0, 2026-07-06, 28d
-    Phase 1 (골든 샘플 3D)  :p1, after p0, 84d
-    Phase 2 (ERP 동기화)    :p2, after p1, 49d
-    Phase 3 (배치 편집기)   :p3, after p2, 42d
-    Phase 4 (실시간 서버)   :p4, after p3, 56d
-    Phase 5 (회의/STT)      :p5, after p4, 56d
-    Phase 6 (KPI/ERP push)  :p6, after p5, 49d
-    Phase 7 (고도화)        :p7, after p6, 42d
-
-    milestone Phase 1 완료 :crit, m1, 2026-10-26, 1d
-    milestone Phase 4 완료 (실시간) :crit, m4, 2027-03-22, 1d
-    milestone Phase 6 완료 (KPI) :crit, m6, 2027-07-05, 1d
-    milestone 프로젝트 완성 :crit, m7, 2027-08-16, 1d</div>
-<p><strong>Phase별 캘린더 (검산 완료, 합계 58주 = 406일)</strong>:</p>
-<div class="table-wrap"><table><thead><tr><th>Phase</th><th>기간</th><th>시작</th><th>종료</th></tr></thead><tbody><tr><td>0</td><td>4주</td><td>2026-07-06</td><td>2026-08-02</td></tr><tr><td>1</td><td>12주</td><td>2026-08-03</td><td>2026-10-25</td></tr><tr><td>2</td><td>7주</td><td>2026-10-26</td><td>2026-12-13</td></tr><tr><td>3</td><td>6주</td><td>2026-12-14</td><td>2027-01-24</td></tr><tr><td>4</td><td>8주</td><td>2027-01-25</td><td>2027-03-21</td></tr><tr><td>5</td><td>8주</td><td>2027-03-22</td><td>2027-05-16</td></tr><tr><td>6</td><td>7주</td><td>2027-05-17</td><td>2027-07-04</td></tr><tr><td>7</td><td>6주</td><td>2027-07-05</td><td>2027-08-15</td></tr><tr><td><strong>완성</strong></td><td></td><td></td><td><strong>2027-08-16</strong></td></tr></tbody></table></div>
+<p><strong>Gantt 타임라인</strong>: ⚠️ <strong>주 단위 미확정 — P0 스파이크 후 확정.</strong> 구 D26 Gantt(45주, 2026-07-06→2027-05-17)는 폐기되어 제거했다. 날짜 확정 시 P0~P7 기준 Gantt를 이 자리에 작성한다.</p>
+<p><strong>Phase별 캘린더</strong>: ⚠️ <strong>미확정.</strong> 구 D26 캘린더(합계 45주=315일, Phase 0~7 날짜 표)는 폐기되었다. P1 이후 주 단위가 확정되면 아래 형식으로 채운다.</p>
+<div class="table-wrap"><table><thead><tr><th>Phase</th><th>기간</th><th>시작</th><th>종료</th></tr></thead><tbody><tr><td>P0</td><td>3~5일</td><td>—</td><td><strong>PASS 2026-07-08</strong></td></tr><tr><td>P1~P7</td><td>미확정 (스파이크 후 확정)</td><td>—</td><td>—</td></tr></tbody></table></div>
 <hr>
 <h2 id="1인-개발-리스크-완화-전략">1인 개발 리스크 &amp; 완화 전략</h2>
 <h3 id="리스크-1-각-단계-간-coupling이-강하면-중단점이-많다">리스크 1: 각 단계 간 coupling이 강하면 중단점이 많다</h3>
-<p><strong>완화</strong>: 각 단계가 <strong>독립 데모 가능</strong> (API mocking, stub 데이터 활용)</p>
-<ul><li>Phase 1: 로컬 아바타 시뮬레이션 (서버 없이)</li><li>Phase 2: 대시보드 UI (Godot 없이)</li><li>Phase 3: 배치 편집기 (배포 없이, 드래프트 상태만)</li><li>Phase 4: 멀티플레이어 테스트 (ERP 없이, 로컬 data)</li><li>Phase 5: 회의 예약 및 회의록 (화상회의 없이)</li><li>Phase 6: KPI 산출 (ERP 푸시 없이)</li><li>Phase 7: 기존 기능 개선</li></ul>
-<h3 id="리스크-2-복잡한-3d-렌더링-서버-로직-동시-개발">리스크 2: 복잡한 3D 렌더링 + 서버 로직 동시 개발</h3>
-<p><strong>완화</strong>: Godot Phase 1에서 <strong>품질 기준 고정</strong>, 이후는 재사용만</p>
-<ul><li>Phase 1 산출물 = &quot;황금 템플릿&quot;</li><li>Phase 2~3: 데이터 모델, API (2D 위주)</li><li>Phase 4: 멀티플레이어 로직만 추가 (3D 품질은 Phase 1 유지)</li></ul>
+<p><strong>완화</strong>: 각 단계가 <strong>독립 데모 가능</strong> (API mocking, stub 데이터 활용) — D27 P0~P7 기준</p>
+<ul><li>P1: 통합 대시보드 셸 (3D 뷰포트 = placeholder, 백엔드 mock)</li><li>P2: 렌더 파이프라인 (Blender→R3F 배경, 이동서버 없이 정적 표시)</li><li>P3: Colyseus 이동서버 (프레즌스 없이, 로컬 멀티유저 이동만)</li><li>P4: 프레즌스·좌석 실시간 (ERP 없이, 로컬 data)</li><li>P5: 회의 예약 및 회의록 (화상회의 없이)</li><li>P6: KPI 산출 (ERP 푸시 없이)</li><li>P7: 정리·부하·하드닝, 기존 기능 개선</li></ul>
+<h3 id="리스크-2-오프라인-렌더-배경-실시간-깊이합성-서버-로직-동시-개발">리스크 2: 오프라인 렌더 배경 + 실시간 깊이합성 + 서버 로직 동시 개발</h3>
+<p><strong>완화</strong>: P2에서 <strong>렌더 룩 기준 고정</strong>(Blender Cycles 골든 배경), 이후는 파라메트릭 재생성·재사용만 (D27)</p>
+<ul><li>P2 산출물 = &quot;포토리얼 배경+깊이 파이프라인 템플릿&quot;</li><li>P3: 깊이합성 아바타·이동서버 로직 추가 (배경 룩은 P2 유지)</li><li>P4~: 프레즌스·좌석 등 데이터 결합만 추가</li></ul>
 <h3 id="리스크-3-erp-연동-서비스계정-jwt-관리">리스크 3: ERP 연동 + 서비스계정 JWT 관리</h3>
-<p><strong>완화</strong>: Phase 6에서만 ERP dev 브랜치 작업, 그 전까지는 모의 데이터</p>
-<ul><li>Phase 1~5: ERP 데이터 자체는 필요 없음 (Phase 2에서 cache만 읽음)</li><li>Phase 6: dev 브랜치 병합 전 로컬 ERP 테스트 환경 구축</li></ul>
+<p><strong>완화</strong>: P6에서만 ERP dev 브랜치 작업, 그 전까지는 모의 데이터</p>
+<ul><li>P1~P5: ERP 데이터 자체는 필요 없음 (P1/P4에서 cache만 읽음)</li><li>P6: dev 브랜치 병합 전 로컬 ERP 테스트 환경 구축</li></ul>
 <h3 id="리스크-4-성능-저하-설계-100명-프레즌스-동기-d22">리스크 4: 성능 저하 (설계 100명 프레즌스 동기, D22)</h3>
-<p><strong>완화</strong>: Phase 4에서 delta sync (바이너리 직렬화·AOI는 100명 초과 시 도입 검토 — D22) (Redis 미사용 — 큐/스케줄은 APScheduler + DB 영속 큐, D21)</p>
-<ul><li>초기 도그푸딩 검증 20명 데이터로 동작 검증</li><li>점진적 load testing (20 → 50 → 설계 100명)</li></ul>
+<p><strong>완화</strong>: P3 Colyseus 이동서버에서 delta sync (바이너리 직렬화·AOI는 100명 초과 시 도입 검토 — D22) (Redis 미사용 — 큐/스케줄은 APScheduler + DB 영속 큐, D21)</p>
+<ul><li>초기 도그푸딩 검증 20명 데이터로 동작 검증 (P7 부하검증)</li><li>점진적 load testing (20 → 50 → 설계 100명)</li></ul>
 <h3 id="리스크-5-변경사항-추적-어려움">리스크 5: 변경사항 추적 어려움</h3>
 <p><strong>완화</strong>: 각 phase마다 주요 테스트 케이스 작성 (회귀 방지)</p>
 <ul><li>Git 커밋 메시지: <code>[Phase X] feature: ...</code></li><li>각 Phase 끝에 E2E 테스트 스크립트 작성</li></ul>
@@ -1147,21 +823,21 @@ godot_client/
 <hr>
 <h2 id="loop-metadata">Loop Metadata</h2>
 <h3 id="upstream-documents-referenced">Upstream documents referenced</h3>
-<ul><li><strong>00-decisions.md (정본 결정 로그 — 최우선 기준)</strong></li><li>01-prd.md (제품 방향)</li><li>02-trd-architecture.md (기술 요구사항)</li><li>03-erp-integration.md (ERP 연동 계약)</li><li>05-office-layout-schema.md (office_layout 상세)</li><li>13-risks-open-questions.md (검증 간트 = 58주 일정 기준선)</li></ul>
+<ul><li><strong>00-decisions.md (정본 결정 로그 — 최우선 기준)</strong></li><li>01-prd.md (제품 방향)</li><li>02-trd-architecture.md (기술 요구사항)</li><li>03-erp-integration.md (ERP 연동 계약)</li><li>05-office-layout-schema.md (office_layout 상세)</li><li>13-risks-open-questions.md (검증 간트 — 원 58주/45주 기준선. <strong>D27 이후 P0~P7 기준·주 단위 미확정으로 재검증 필요</strong>)</li><li><strong>14/15/16 (D27 정본 — render-spike-and-roadmap §Part B가 Phase 편성 정본)</strong></li></ul>
 <h3 id="downstream-documents-affected">Downstream documents affected</h3>
-<ul><li>12-tasks.md (Task ID 파생: P1-T1 ~ P7-T?)</li></ul>
+<ul><li>12-tasks.md (Task ID 파생: P0-T? ~ P7-T?, D27 기준 재파생 필요)</li></ul>
 <h3 id="open-questions">Open questions</h3>
-<ul><li>ERP dev 브랜치 병합 일정 (git 접근권한 보유로 자체 작업, Phase 6 착수 시점 확정 필요)</li><li>Godot 네이티브 빌드 서명 (Windows code signing — 자체 서명+설치 시 신뢰 등록 또는 공인 code signing cert 구매 검토. TLS용 사내 PKI는 D21-r로 폐기 — 2026-07-02)</li><li>3D 에셋 라이선스 (상용 사용 허가 확인)</li></ul>
-<blockquote>확정 종결: 실시간 프로토콜=WebSocket(WSS, D1), LiveKit 인프라=사내 VM self-host(D21), 회의실 예약=예약+FCFS 병행(D23).</blockquote>
+<ul><li>ERP dev 브랜치 병합 일정 (git 접근권한 보유로 자체 작업, P6 착수 시점 확정 필요)</li><li><strong>P1 이후 주 단위 일정</strong> — P0 깊이합성 스파이크(PASS) 결과를 바탕으로 확정(억지 숫자 금지)</li><li><del>Godot 네이티브 빌드 서명</del> — <strong>D26/D27로 취소</strong> (단일 웹앱 브라우저 접속, 네이티브 클라이언트 배포 없음)</li><li><del>3D 에셋 라이선스</del> — <strong>D27로 대체</strong>: CC0 에셋 + Blender 씬, 런타임은 렌더 이미지 + 경량 GLTF 아바타 (§D27, D8 부활-변형)</li></ul>
+<blockquote>확정 종결: 실시간 이동서버=Colyseus 자체(SkyOffice 이식, 20Hz tick·이동검증, D1 변형/§D27), LiveKit 인프라=사내 VM self-host(D21), 회의실 예약=예약+FCFS 병행(D23), 인증=단일 세션 JWT(콘솔 JWT 그대로 3D 진입, 별도 OIDC 로그인 없음, §D27).</blockquote>
 <h3 id="assumptions">Assumptions</h3>
-<ul><li>ERP(Space-Daily) read-only DB 접근 가능 (같은 사내망)</li><li>Godot 4 Forward+ 렌더러 성능 = GTX 1650급 60fps / 내장그래픽(Iris Xe급) 30fps (D7/D22)</li><li>1인 개발 + AI 협업으로 예상 기간 내 완성 가능 (변수: 예기치 않은 기술 이슈)</li><li>LiveKit 셀프호스트 유지비 허용 (예산 범위)</li></ul>
-<h3 id="validation-criteria">Validation criteria</h3>
-<ul><li class="task"><input type="checkbox" disabled> Phase 0 완료: 계약 4종 + 스파이크 S1~S4 결과(성공/폴백 확정)</li><li class="task"><input type="checkbox" disabled> Phase 1 완료: Godot 클라이언트 빌드, 샘플 씬 렌더링</li><li class="task"><input type="checkbox" disabled> Phase 2 완료: ERP 동기화 배치 실행, 직원 데이터 로드</li><li class="task"><input type="checkbox" disabled> Phase 3 완료: 배치도 2D 편집 + 데스크톱 draft 모드 열람(D11)</li><li class="task"><input type="checkbox" disabled> Phase 4 완료: 20명 동시 멀티플레이어 프레즌스(설계 100명, D22)</li><li class="task"><input type="checkbox" disabled> Phase 5 완료: 회의 예약 + 화상 통화 + 회의록</li><li class="task"><input type="checkbox" disabled> Phase 6 완료: KPI 산출 + AI 초안 + ERP 푸시</li><li class="task"><input type="checkbox" disabled> Phase 7 완료: 층 이동, 권한 제어, AI 요약, 모니터링</li></ul>
+<ul><li>ERP(Space-Daily) read-only DB 접근 가능 (같은 사내망)</li><li>Blender Cycles 오프라인 렌더로 포토리얼 배경 구움 → 런타임은 R3F 실시간 아바타만(깊이합성). 저사양 PC 부담은 실시간 3D 대비 낮음 (D7 부활-변형/§D27)</li><li>1인 개발 + AI 협업으로 완성 가능 (변수: 예기치 않은 기술 이슈. 주 단위는 스파이크 후 확정)</li><li>LiveKit 셀프호스트 유지비 허용 (예산 범위)</li></ul>
+<h3 id="validation-criteria-d27-p0p7">Validation criteria (D27 — P0~P7)</h3>
+<ul><li class="task"><input type="checkbox" disabled checked> P0 완료: 깊이합성 스파이크 PASS (2026-07-08, render-pipeline 최소본 + 판정 리포트)</li><li class="task"><input type="checkbox" disabled> P1 완료: 통합 대시보드 셸 + 기존 백엔드 API 연결 (3D 뷰포트 = placeholder)</li><li class="task"><input type="checkbox" disabled> P2 완료: layout JSON→Blender 파라메트릭 씬 빌더, 1개 층 포토리얼 배경+깊이 자동생성, R3F 배경 표시</li><li class="task"><input type="checkbox" disabled> P3 완료: Colyseus 이동서버(20Hz) 멀티유저 이동 + 깊이합성 아바타</li><li class="task"><input type="checkbox" disabled> P4 완료: presence 7종 실시간 시각화 + 자율좌석 점유/반납 (설계 100명, D22)</li><li class="task"><input type="checkbox" disabled> P5 완료: 회의 명시입장 + 화상 통화 + 회의록</li><li class="task"><input type="checkbox" disabled> P6 완료: STT 회의록 + KPI 산출 + AI 초안 + ERP 푸시</li><li class="task"><input type="checkbox" disabled> P7 완료: WA 스택 제거, 다층 렌더, 20명 부하검증, 보안 하드닝</li></ul>
 <h3 id="risks">Risks</h3>
-<ol><li><strong>3D 렌더링 성능</strong>: 저사양 PC에서 60 FPS 미달 위험<ul><li>완화: Phase 1 조기에 성능 벤치마크 (전체 아바타 10명, 모든 방)</li></ul></li><li><strong>ERP 연동 지연</strong>: dev 브랜치 병합 일정 미정<ul><li>완화: Phase 6 병렬 작업 (내부 KPI 엔진 먼저 검증)</li></ul></li><li><strong>LiveKit 구축 난제</strong>: 자체 호스팅 복잡도 (오디오/비디오 codec, 대역폭)<ul><li>완화: Phase 5 초기 리서치, PoC 먼저 (작은 테스트 룸부터)</li></ul></li><li><strong>데이터 일관성</strong>: ERP ↔ 우리 플랫폼 양방향 동기 오류<ul><li>완화: audit<em>log, daily</em>status_push 로깅 (문제 추적 용이)</li></ul></li></ol>
+<ol><li><strong>깊이합성 렌더 룩·성능</strong>: R3F 실시간 아바타와 Blender 배경 합성 시 깊이/그림자 불일치<ul><li>완화: P0 스파이크에서 검증 완료(PASS). P2에서 골든 배경 룩 고정</li></ul></li><li><strong>ERP 연동 지연</strong>: dev 브랜치 병합 일정 미정<ul><li>완화: P6 병렬 작업 (내부 KPI 엔진 먼저 검증)</li></ul></li><li><strong>LiveKit 구축 난제</strong>: 자체 호스팅 복잡도 (오디오/비디오 codec, 대역폭)<ul><li>완화: P5 초기 리서치, PoC 먼저 (작은 테스트 룸부터)</li></ul></li><li><strong>데이터 일관성</strong>: ERP ↔ 우리 플랫폼 양방향 동기 오류<ul><li>완화: audit<em>log, daily</em>status_push 로깅 (문제 추적 용이)</li></ul></li></ol>
 <hr>
-<p><strong>작성 완료</strong>: 2026-07-02 (v2.0) <strong>다음 단계</strong>: <code>12-tasks.md</code> 에서 Task ID 파생 (P0-T0.x ~ P7-Tx)</p>
-<div class="meta-foot">원본: <code>10-roadmap.md</code> · 자동 생성 2026-07-02 · md-to-html</div>
+<p><strong>작성 완료</strong>: 2026-07-02 (v2.0) · <strong>D27 정합 정리</strong>: 2026-07-09 (v3.1) <strong>다음 단계</strong>: <code>12-tasks.md</code> 에서 Task ID 재파생 (D27 P0~P7 기준)</p>
+<div class="meta-foot">원본: <code>10-roadmap.md</code> · 자동 생성 2026-07-09 · md-to-html</div>
 </main>
 </div>
 

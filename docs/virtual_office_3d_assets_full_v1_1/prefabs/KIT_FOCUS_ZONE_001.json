@@ -1,0 +1,88 @@
+{
+  "prefab_id": "KIT_FOCUS_ZONE_001",
+  "category": "kit",
+  "room_type": "focus",
+  "description": "Phonebooth + focus pod + acoustic panel kit.",
+  "instances": [
+    {
+      "asset_id": "PHONEBOOTH_001",
+      "position": [
+        -0.85,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "FOCUS_POD_001",
+      "position": [
+        0.95,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "asset_id": "ACOUSTIC_PANEL_001",
+      "position": [
+        0,
+        1.25,
+        0.75
+      ],
+      "rotation": [
+        0,
+        0,
+        180
+      ],
+      "scale": [
+        1.4,
+        1,
+        1
+      ]
+    }
+  ],
+  "anchors": {
+    "phonebooth_seat_anchor": {
+      "position": [
+        -0.85,
+        -0.1,
+        0.48
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "focus_pod_seat_anchor": {
+      "position": [
+        0.95,
+        -0.1,
+        0.48
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  }
+}
