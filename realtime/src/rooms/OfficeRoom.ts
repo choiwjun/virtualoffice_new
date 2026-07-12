@@ -10,6 +10,7 @@ import {
   MEETING_PROXIMITY_M,
   PRESENCE_SINK_URL,
   PRESENCE_SINK_TOKEN,
+  LAYOUT_SOURCE_URL,
   JWT_SECRET,
   JWT_ALGORITHM,
   JWT_REQUIRED,
@@ -18,7 +19,7 @@ import {
 import {
   FloorLayout,
   FloorLayoutProvider,
-  DemoFloorLayoutProvider,
+  createFloorLayoutProvider,
 } from "../integration/FloorLayoutProvider";
 import { PresenceSink, PresenceRecord, createPresenceSink } from "../integration/PresenceSink";
 import { validateMove, MovementContext } from "../validation/movement";
@@ -77,7 +78,7 @@ export class OfficeRoom extends Room<OfficeState> {
 
   constructor() {
     super();
-    this.layoutProvider = new DemoFloorLayoutProvider();
+    this.layoutProvider = createFloorLayoutProvider(LAYOUT_SOURCE_URL, PRESENCE_SINK_TOKEN);
     this.presenceSink = createPresenceSink(PRESENCE_SINK_URL, PRESENCE_SINK_TOKEN);
   }
 

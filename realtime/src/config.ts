@@ -65,6 +65,12 @@ export const PRESENCE_SINK_URL = process.env.PRESENCE_SINK_URL ?? "";
 export const PRESENCE_SINK_TOKEN = process.env.PRESENCE_SINK_TOKEN ?? "";
 
 /**
+ * 층 레이아웃 소스(FastAPI). 설정 시 배포된 office_layout을 fetch(내부 토큰=PRESENCE_SINK_TOKEN),
+ * 실패/미배포 시 데모 층 폴백. 미설정 시 항상 데모 층. Spec §4 / 05 §5.
+ */
+export const LAYOUT_SOURCE_URL = process.env.LAYOUT_SOURCE_URL ?? "";
+
+/**
  * FastAPI JWT 검증 (D4: HS256 자체 시크릿). onAuth에서 join 시 전달된 토큰을 검증한다.
  * JWT_SECRET은 백엔드 settings.jwt_secret_key와 **동일**해야 함(로컬 기본값 일치).
  */

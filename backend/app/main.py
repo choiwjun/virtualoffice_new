@@ -93,3 +93,5 @@ from app.api import avatar  # noqa: E402  아바타 커스터마이징 (C4, 06-s
 app.include_router(avatar.router)             # /api/avatar — 내 아바타 조회/설정 (본인 전용)
 from app.api import presence  # noqa: E402  실시간 프레즌스 batch (D3, Colyseus→FastAPI)
 app.include_router(presence.router)           # /api/presence/batch — 이동서버 presence write (내부 토큰)
+from app.api import realtime_layout  # noqa: E402  이동서버용 층 레이아웃 (05→FloorLayout 매핑)
+app.include_router(realtime_layout.router)    # /api/realtime/floor-layout — deployed 레이아웃 조회 (내부 토큰)

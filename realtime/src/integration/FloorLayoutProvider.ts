@@ -85,17 +85,40 @@ export class DemoFloorLayoutProvider implements FloorLayoutProvider {
 }
 
 /**
- * HttpFloorLayoutProvider — TODO real impl.
- * Fetch from FastAPI `GET /api/office/{officeId}/layout?floor={floorId}` and
- * translate the office_layout JSON (05-office-layout-schema) into FloorLayout.
- * Cache per (office,floor); invalidate on `layout_updated` (D12).
+ * HttpFloorLayoutProvider — FastAPI에서 배포된 층 레이아웃을 가져온다.
+ * `GET /api/realtime/floor-layout?office_id=&floor_id=` (내부 토큰)이 05 office_layout JSON을
+ * 이미 FloorLayout 형태로 매핑해 준다(매핑은 백엔드가 수행, 15-realtime §4 / 05 §5). 실패/미배포 시
+ * 데모 층으로 폴백해 이동서버가 계속 동작한다. `layout_updated`(D12) 캐시 무효화는 TODO.
  */
 export class HttpFloorLayoutProvider implements FloorLayoutProvider {
-  constructor(private readonly baseUrl: string) {}
+  constructor(
+    private readonly baseUrl: string,
+    private readonly token: string = "",
+    private readonly fallback: FloorLayoutProvider = new DemoFloorLayoutProvider(),
+  ) {}
 
-  async getLayout(_officeId: string, _floorId: string): Promise<FloorLayout> {
-    // TODO: const res = await fetch(`${this.baseUrl}/api/office/${officeId}/layout?floor=${floorId}`)
-    //       return mapOfficeLayoutJson(await res.json());
-    throw new Error("HttpFloorLayoutProvider not implemented — use DemoFloorLayoutProvider for now");
+  async getLayout(officeId: string, floorId: string): Promise<FloorLayout> {
+    try {
+      const headers: Record<string, string> = {};
+      if (this.token) headers["authorization"] = `Bearer ${this.token}`;
+      const url = `${this.baseUrl}/api/realtime/floor-layout?office_id=${encodeURIComponent(officeId)}&floor_id=${encodeURIComponent(floorId)}`;
+      const res = await fetch(url, { headers });
+      if (!res.ok) throw new Error(`layout fetch ${res.status}`);
+      const data = (await res.json()) as FloorLayout;
+      if (!data || !data.bounds || !Array.isArray(data.seats) || !Array.isArray(data.walls) || !Array.isArray(data.meetingZones)) {
+        throw new Error("bad layout shape");
+      }
+      return data;
+    } catch (err) {
+      // 미배포/네트워크 실패 → 데모 층 폴백(이동서버는 계속 동작).
+      // eslint-disable-next-line no-console
+      console.warn(`[layout] fetch failed for ${officeId}/${floorId}, using demo floor:`, (err as Error).message);
+      return this.fallback.getLayout(officeId, floorId);
+    }
   }
+}
+
+/** Factory: LAYOUT_SOURCE_URL 설정 시 Http(폴백=Demo), 아니면 Demo. */
+export function createFloorLayoutProvider(url: string, token = ""): FloorLayoutProvider {
+  return url ? new HttpFloorLayoutProvider(url, token) : new DemoFloorLayoutProvider();
 }

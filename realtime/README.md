@@ -33,6 +33,10 @@ Env vars:
 |---|---|---|
 | `PORT` | `2567` | WSS listen port (internal, behind Caddy) |
 | `PRESENCE_SINK_URL` | *(unset)* | If set, presence batches POST to `<url>/api/presence/batch`; else console log |
+| `PRESENCE_SINK_TOKEN` | *(unset)* | Internal server-to-server token (= backend `INTERNAL_API_TOKEN`) for presence + layout fetch |
+| `LAYOUT_SOURCE_URL` | *(unset)* | If set, fetch deployed floor layout from `<url>/api/realtime/floor-layout`; else demo floor |
+| `JWT_SECRET` | `dev-only-…` | FastAPI HS256 secret for `onAuth` token verification (must equal backend `JWT_SECRET_KEY`) |
+| `JWT_REQUIRED` | `false` | If `true`, reject joins without a valid JWT (production). Dev/test: lenient |
 
 ## Room model
 
@@ -141,12 +145,13 @@ flush (console), snapshot on join, `allowReconnection` + resume snapshot.
 
 Stubbed / not yet real:
 
-- [ ] **Real layout fetch** — `HttpFloorLayoutProvider` against FastAPI
-      `GET /api/office/{id}/layout` (currently hardcoded demo floor).
-- [ ] **Real presence push** — wire `HttpPresenceSink` to the live FastAPI
-      `POST /api/presence/batch` (currently console log by default).
-- [ ] **JWT verification** in `onAuth` (currently accepts all; must verify the
-      FastAPI HS256 single-session token).
+- [x] **Real layout fetch** — `HttpFloorLayoutProvider` against FastAPI
+      `GET /api/realtime/floor-layout` (set `LAYOUT_SOURCE_URL`; backend maps the
+      05 office_layout JSON → FloorLayout). Falls back to demo floor if unset/unavailable.
+- [x] **Real presence push** — `HttpPresenceSink` POSTs to FastAPI
+      `POST /api/presence/batch` (set `PRESENCE_SINK_URL` + `PRESENCE_SINK_TOKEN`).
+- [x] **JWT verification** in `onAuth` (verifies FastAPI HS256; `JWT_REQUIRED=true`
+      to enforce). Token `sub` overrides client-supplied userId (anti-spoof).
 - [ ] **Real collision mesh / navmesh** — current collision is wall-segment
       crossing; LOS is opaque-wall ray test. Swap in the office_layout collider
       polygons + glass masking.
