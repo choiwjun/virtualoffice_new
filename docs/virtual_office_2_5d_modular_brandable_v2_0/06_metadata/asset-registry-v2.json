@@ -1,0 +1,44 @@
+{
+  "version": "2.0.0",
+  "coordinateSystem": "normalized_screen_16_9",
+  "items": [
+    {
+      "id": "PLATE_HORIZON_NEUTRAL",
+      "category": "clean_plate",
+      "file": "01_clean_plates/neutral/HORIZON_NEUTRAL_CLEAN.png"
+    },
+    {
+      "id": "PLATE_ACME_NEUTRAL",
+      "category": "clean_plate",
+      "file": "01_clean_plates/neutral/ACME_NEUTRAL_CLEAN.png"
+    },
+    {
+      "id": "PLATE_MODULAR_FLOOR",
+      "category": "clean_plate",
+      "file": "01_clean_plates/neutral/MODULAR_FLOOR_BASE.png"
+    },
+    {
+      "id": "BRAND_HORIZON",
+      "category": "branding",
+      "file": "02_branding/samples/HORIZON.svg"
+    },
+    {
+      "id": "BRAND_ACME",
+      "category": "branding",
+      "file": "02_branding/samples/ACME.svg"
+    },
+    {
+      "id": "BRAND_NOVA",
+      "category": "branding",
+      "file": "02_branding/samples/NOVA.svg"
+    },
+    {
+      "id": "SAME_ANGLE_CHARACTER_REFERENCE",
+      "category": "character",
+      "file": "04_characters/SAME_ANGLE_CHARACTER_REFERENCE.png",
+      "width": 1672,
+      "height": 941,
+      "transparent": false
+    }
+  ]
+}

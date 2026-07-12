@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>실시간 스택 QA 런북 (2026-07-12)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">실시간 스택 QA 런북 (2026-07-12)</div><div class="sub">realtime-qa-runbook.md</div><a class="lvl1" href="#실시간-스택-qa-런북-2026-07-12">실시간 스택 QA 런북 (2026-07-12)</a><a class="lvl2" href="#1-3개-서비스-기동-각각-별-터미널">1. 3개 서비스 기동 (각각 별 터미널)</a><a class="lvl2" href="#2-육안-체크리스트-office">2. 육안 체크리스트 (/office)</a><a class="lvl2" href="#3-자동-검증-이미-통과-회귀-시-재실행">3. 자동 검증 (이미 통과 — 회귀 시 재실행)</a></nav>
+<main><h1 id="실시간-스택-qa-런북-2026-07-12">실시간 스택 QA 런북 (2026-07-12)</h1>
+<blockquote>C2(프론트 Colyseus 배선)·서버 스텁 실체화(JWT/presence/layout)·C3(LiveKit) 검증용. <strong>자동 검증은 이미 통과</strong>(아래 §3). 이 문서는 <strong>3D/미디어 육안 QA</strong>(브라우저 필요)를 위한 절차.</blockquote>
+<h2 id="1-3개-서비스-기동-각각-별-터미널">1. 3개 서비스 기동 (각각 별 터미널)</h2>
+<p>로컬은 SQLite로 실증(운영은 PostgreSQL). 백엔드 python은 <code>backend/.venv/Scripts/python.exe</code>.</p>
+<pre class="code lang-bash"><code># (0) DB 시드 — alice/bob/charlie @virtualoffice.local, password123
+cd backend
+DATABASE_URL=&quot;sqlite+aiosqlite:///./dev_qa.db&quot; ./.venv/Scripts/python.exe scripts/seed_dev.py
+
+# (1) 백엔드 :8000
+DATABASE_URL=&quot;sqlite+aiosqlite:///./dev_qa.db&quot; \
+INTERNAL_API_TOKEN=&quot;dev-internal-token-CHANGE-IN-PRODUCTION&quot; \
+./.venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+
+# (2) 실시간 이동서버 :2567  (JWT_SECRET 기본값이 백엔드 jwt_secret_key 기본과 일치)
+cd realtime &amp;&amp; npm run build
+PORT=2567 \
+PRESENCE_SINK_URL=&quot;http://127.0.0.1:8000&quot; \
+LAYOUT_SOURCE_URL=&quot;http://127.0.0.1:8000&quot; \
+PRESENCE_SINK_TOKEN=&quot;dev-internal-token-CHANGE-IN-PRODUCTION&quot; \
+node dist/index.js
+
+# (3) 프론트 :3000
+cd frontend
+NEXT_PUBLIC_API_BASE=&quot;http://localhost:8000&quot; \
+NEXT_PUBLIC_REALTIME_URL=&quot;ws://localhost:2567&quot; \
+npm run dev</code></pre>
+<p>로그인: <code>http://localhost:3000</code> → alice@virtualoffice.local / password123 → <code>/office</code>.</p>
+<h2 id="2-육안-체크리스트-office">2. 육안 체크리스트 (/office)</h2>
+<ul><li class="task"><input type="checkbox" disabled> 3D 씬(scene_v4.glb) + 장식 아바타 렌더 (v10 PBR)</li><li class="task"><input type="checkbox" disabled> 좌상단 <strong>연결 배지</strong>: &quot;실시간 연결 · N명 접속&quot;(초록). 서버 미기동 시 &quot;실시간 서버 오프라인&quot;(회색)</li><li class="task"><input type="checkbox" disabled> <strong>본인 아바타</strong>(파란 링) 스폰. 다른 탭/브라우저로 alice·bob 동시 접속 시 상대 아바타 표시</li><li class="task"><input type="checkbox" disabled> <strong>바닥 클릭 → 아바타가 그 지점으로 걸어감</strong>(walk 애니 → 도착 시 idle). 다른 탭에서 실시간 반영</li><li class="task"><input type="checkbox" disabled> 우측 층 선택기, 좌하단 미니맵(정적, 준비중), 우패널 사용자목록</li><li class="task"><input type="checkbox" disabled> (진행중 회의 있을 때) 우하단 오버레이 <strong>&quot;입장하기&quot;</strong> → LiveKit 연결 → MediaBar 마이크/카메라/화면공유 활성 + &quot;연결됨&quot;<ul><li>⚠️ LiveKit 미디어는 <code>docker-compose.local.yml</code>의 livekit(:7880)·coturn 기동 + 브라우저 카메라/마이크 권한 필요</li></ul></li></ul>
+<h2 id="3-자동-검증-이미-통과-회귀-시-재실행">3. 자동 검증 (이미 통과 — 회귀 시 재실행)</h2>
+<pre class="code lang-bash"><code># 백엔드: 275 passed / 0 failed
+cd backend &amp;&amp; ./.venv/Scripts/python.exe -m pytest -q
+
+# 실시간 유닛/통합 스모크 (인프로세스, 브라우저 불필요)
+cd realtime
+npm run smoke           # 룸 로직 25/0 (이동검증8·근접검증8·reconnect)
+npm run client-smoke    # 클라↔서버 프로토콜 8/0 (join·스폰·walker이동·로스터·JWT)
+npm run presence-smoke  # HttpPresenceSink 요청 계약 6/0
+npm run layout-smoke    # HttpFloorLayoutProvider 4/0 (fetch·토큰·404폴백·팩토리)
+
+# 라이브 E2E (backend+realtime 기동 상태에서) — 실 JWT→onAuth→join→이동
+npm run live-check      # 4/0
+
+# 프론트 타입: tsc 0 errors
+cd frontend &amp;&amp; npx tsc --noEmit</code></pre>
+<p><strong>2026-07-12 라이브 확인 완료</strong>: backend 부팅+로그인(alice) · realtime onAuth 실토큰 수락+join+이동(live-check 4/0) · presence write path Colyseus→FastAPI→DB(presence row 기록 확인) · layout fetch(404→demo 폴백). <strong>잔여 = 3D 캔버스·LiveKit 미디어 육안 확인</strong>(위 §2).</p>
+<div class="meta-foot">원본: <code>realtime-qa-runbook.md</code> · 자동 생성 2026-07-12 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

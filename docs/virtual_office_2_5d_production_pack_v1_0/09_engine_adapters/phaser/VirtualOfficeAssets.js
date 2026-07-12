@@ -1,0 +1,1 @@
+export async function preloadVirtualOffice(scene,base='../'){const r=await fetch(base+'07_metadata/asset-registry.json').then(x=>x.json());r.assets.filter(a=>a.type==='sprite').forEach(a=>scene.load.image(a.asset_id,base+a.file));return r}

@@ -1,6 +1,0 @@
-{
-  "name": "virtual-office-babylon-v9",
-  "private": true,
-  "type": "module",
-  "dependencies": {"@babylonjs/core": "^8.0.0", "@babylonjs/loaders": "^8.0.0"}
-}

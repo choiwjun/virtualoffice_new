@@ -1,0 +1,29 @@
+{
+  "characterId": "NOAH",
+  "displayName": "Noah",
+  "genderPresentation": "male",
+  "identityLock": "navy shirt, glasses, gray trousers",
+  "states": {
+    "idle": "01_characters/NOAH/NOAH_IDLE.png",
+    "walk": "01_characters/NOAH/NOAH_WALK.png",
+    "sit": "01_characters/NOAH/NOAH_SIT.png",
+    "typing": "01_characters/NOAH/NOAH_TYPING.png"
+  },
+  "pivot": [
+    0.5,
+    0.98
+  ],
+  "display": {
+    "standingHeightPx": 190,
+    "walkingHeightPx": 188,
+    "seatedHeightPx": 116,
+    "typingHeightPx": 112
+  },
+  "contactShadow": {
+    "standing": "02_shared/contact_shadows/CONTACT_SHADOW_STANDING.svg",
+    "seated": "02_shared/contact_shadows/CONTACT_SHADOW_SEATED.svg"
+  },
+  "motionProfile": "02_shared/character-motion-profiles.json",
+  "identityStatus": "PASS",
+  "furnitureEmbedded": false
+}

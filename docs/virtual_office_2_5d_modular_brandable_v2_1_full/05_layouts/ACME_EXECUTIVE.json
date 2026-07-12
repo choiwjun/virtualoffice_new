@@ -1,0 +1,119 @@
+{
+  "id": "ACME_EXECUTIVE",
+  "name": "ACME Executive",
+  "plate": "01_clean_plates/neutral/ACME_NEUTRAL_CLEAN.png",
+  "brandAnchor": "ACME",
+  "brand": {
+    "companyName": "ACME",
+    "subtitle": "CORPORATION",
+    "color": "#F7FAFF"
+  },
+  "walkArea": [
+    [
+      0.18,
+      0.24
+    ],
+    [
+      0.78,
+      0.2
+    ],
+    [
+      0.92,
+      0.84
+    ],
+    [
+      0.1,
+      0.88
+    ]
+  ],
+  "spawnPoints": [
+    {
+      "id": "lobby",
+      "x": 0.42,
+      "y": 0.35
+    },
+    {
+      "id": "work",
+      "x": 0.49,
+      "y": 0.52
+    },
+    {
+      "id": "meeting",
+      "x": 0.75,
+      "y": 0.32
+    },
+    {
+      "id": "lounge",
+      "x": 0.68,
+      "y": 0.74
+    }
+  ],
+  "rooms": [
+    {
+      "id": "reception",
+      "label": "Reception",
+      "polygon": [
+        [
+          0.06,
+          0.06
+        ],
+        [
+          0.37,
+          0.06
+        ],
+        [
+          0.4,
+          0.31
+        ],
+        [
+          0.1,
+          0.34
+        ]
+      ]
+    },
+    {
+      "id": "design",
+      "label": "Design Room",
+      "polygon": [
+        [
+          0.58,
+          0.06
+        ],
+        [
+          0.91,
+          0.06
+        ],
+        [
+          0.92,
+          0.34
+        ],
+        [
+          0.59,
+          0.35
+        ]
+      ]
+    },
+    {
+      "id": "product",
+      "label": "Product Sync",
+      "polygon": [
+        [
+          0.61,
+          0.34
+        ],
+        [
+          0.94,
+          0.34
+        ],
+        [
+          0.94,
+          0.65
+        ],
+        [
+          0.62,
+          0.66
+        ]
+      ]
+    }
+  ]
+}

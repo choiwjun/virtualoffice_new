@@ -1,0 +1,20 @@
+{
+  "default": "ACME_EXECUTIVE",
+  "scenes": [
+    {
+      "id": "HORIZON_OPEN_PLAN",
+      "file": "05_layouts/HORIZON_OPEN_PLAN.json",
+      "name": "Horizon Open Plan"
+    },
+    {
+      "id": "ACME_EXECUTIVE",
+      "file": "05_layouts/ACME_EXECUTIVE.json",
+      "name": "ACME Executive"
+    },
+    {
+      "id": "MODULAR_SANDBOX",
+      "file": "05_layouts/MODULAR_SANDBOX.json",
+      "name": "Modular Sandbox"
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "id": "MODULAR_SANDBOX",
+  "name": "Modular Sandbox",
+  "plate": "01_clean_plates/neutral/MODULAR_FLOOR_BASE.png",
+  "brandAnchor": "MODULAR",
+  "brand": {
+    "companyName": "YOUR COMPANY",
+    "subtitle": "VIRTUAL OFFICE",
+    "color": "#EAF2FF"
+  },
+  "walkArea": [
+    [
+      0.08,
+      0.08
+    ],
+    [
+      0.93,
+      0.08
+    ],
+    [
+      0.97,
+      0.91
+    ],
+    [
+      0.04,
+      0.92
+    ]
+  ],
+  "spawnPoints": [
+    {
+      "id": "center",
+      "x": 0.5,
+      "y": 0.55
+    }
+  ],
+  "rooms": [],
+  "modules": [
+    {
+      "id": "seed_reception",
+      "assetId": "RECEPTION_DESK_PREMIUM_001",
+      "file": "03_modules/environment/RECEPTION_DESK_PREMIUM_001.png",
+      "x": 0.12,
+      "y": 0.29,
+      "scale": 0.19,
+      "z": 10
+    },
+    {
+      "id": "seed_brandwall",
+      "assetId": "BRAND_WALL_WOOD_SLAT_001",
+      "file": "03_modules/environment/BRAND_WALL_WOOD_SLAT_001.png",
+      "x": 0.08,
+      "y": 0.11,
+      "scale": 0.18,
+      "z": 5
+    },
+    {
+      "id": "seed_workstation",
+      "assetId": "WORKSTATION_CLUSTER_6P_001",
+      "file": "03_modules/environment/WORKSTATION_CLUSTER_6P_001.png",
+      "x": 0.37,
+      "y": 0.5,
+      "scale": 0.25,
+      "z": 30
+    },
+    {
+      "id": "seed_meeting",
+      "assetId": "MEETING_ROOM_GLASS_BLUE_001",
+      "file": "03_modules/environment/MEETING_ROOM_GLASS_BLUE_001.png",
+      "x": 0.65,
+      "y": 0.3,
+      "scale": 0.28,
+      "z": 20
+    },
+    {
+      "id": "seed_lounge",
+      "assetId": "LOUNGE_SET_BLUE_001",
+      "file": "03_modules/environment/LOUNGE_SET_BLUE_001.png",
+      "x": 0.12,
+      "y": 0.68,
+      "scale": 0.22,
+      "z": 40
+    },
+    {
+      "id": "seed_pantry",
+      "assetId": "PANTRY_ISLAND_MARBLE_001",
+      "file": "03_modules/environment/PANTRY_ISLAND_MARBLE_001.png",
+      "x": 0.63,
+      "y": 0.73,
+      "scale": 0.2,
+      "z": 50
+    },
+    {
+      "id": "seed_phonebooth",
+      "assetId": "PHONE_BOOTH_PREMIUM_001",
+      "file": "03_modules/environment/PHONE_BOOTH_PREMIUM_001.png",
+      "x": 0.86,
+      "y": 0.59,
+      "scale": 0.1,
+      "z": 45
+    }
+  ]
+}

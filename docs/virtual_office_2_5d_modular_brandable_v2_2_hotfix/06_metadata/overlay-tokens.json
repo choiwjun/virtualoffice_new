@@ -1,0 +1,18 @@
+{
+  "roomLabel": {
+    "background": "rgba(7,14,27,.88)",
+    "border": "rgba(255,255,255,.14)",
+    "radius": 14,
+    "title": "#fff",
+    "subtitle": "#9DAEC4"
+  },
+  "activeGlow": {
+    "color": "#2E7BFF",
+    "blur": 18,
+    "width": 4
+  },
+  "nameChip": {
+    "online": "#38D67A",
+    "busy": "#FF5364"
+  }
+}
