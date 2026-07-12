@@ -176,48 +176,49 @@ const NAV_ITEMS: NavItem[] = [
 // ─────────────────────────────────────────────
 const FLOORS = ['4F', '3F', '2F', '1F', 'B1F'];
 
-function FloorSelector({ active, onChange }: { active: string; onChange: (f: string) => void }) {
+// 사이드바 하단 층 도면 카드 (레퍼런스: Floor 2 map + People Online)
+// 실시간 아바타 위치 점은 이동서버 미니맵 배선 후 — 현재 도면만(가짜 점 없음).
+function FloorMapCard({
+  active,
+  onChange,
+  online,
+}: {
+  active: string;
+  onChange: (f: string) => void;
+  online: number;
+}) {
   return (
-    <div className="flex flex-col gap-1">
-      {FLOORS.map((f) => (
-        <button
-          key={f}
-          onClick={() => onChange(f)}
-          className={[
-            'w-10 h-8 rounded text-[11px] font-semibold transition-colors',
-            'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan',
-            active === f
-              ? 'bg-primary text-white'
-              : 'bg-bg-surface-raised text-text-muted hover:text-text-secondary',
-          ].join(' ')}
-          aria-pressed={active === f}
-        >
-          {f}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-// 미니맵 (정적 층 도면 스케치)
-// 실시간 아바타 위치는 이동서버(Colyseus C1) 연동 후 표시 예정 → 현재는 가짜 점 미표시
-// ─────────────────────────────────────────────
-function MiniMap() {
-  return (
-    <div className="w-28 rounded-lg bg-bg-base border border-border-subtle p-2 flex flex-col gap-1.5">
-      <div className="flex items-center justify-between mb-0.5">
-        <span className="text-[10px] text-text-muted font-medium">미니맵</span>
-        <span className="text-[9px] text-text-muted px-1 py-0.5 rounded bg-bg-surface-raised leading-none">준비중</span>
+    <div className="mx-3 mb-2 rounded-lg bg-bg-base border border-border-subtle p-2.5 flex flex-col gap-2 flex-shrink-0">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-semibold text-text-secondary">{active} 도면</span>
+        <span className="text-[9px] text-text-muted px-1 py-0.5 rounded bg-bg-surface-raised leading-none">위치 준비중</span>
       </div>
-      {/* 정적 층 도면 (실시간 위치는 이동서버 연동 후) */}
-      <svg viewBox="0 0 80 60" className="w-full rounded" style={{ background: '#0E1626' }}>
-        {/* 방 영역들 */}
-        <rect x="2" y="2" width="35" height="25" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
-        <rect x="42" y="2" width="36" height="25" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
-        <rect x="2" y="32" width="24" height="26" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
-        <rect x="30" y="32" width="48" height="26" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
+      <svg viewBox="0 0 80 46" className="w-full rounded" style={{ background: '#0E1626' }}>
+        <rect x="2" y="2" width="35" height="18" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
+        <rect x="42" y="2" width="36" height="18" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
+        <rect x="2" y="24" width="24" height="20" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
+        <rect x="30" y="24" width="48" height="20" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
       </svg>
+      <div className="flex gap-1">
+        {FLOORS.map((f) => (
+          <button
+            key={f}
+            onClick={() => onChange(f)}
+            aria-pressed={active === f}
+            className={[
+              'flex-1 py-1 rounded text-[10px] font-semibold transition-colors',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan',
+              active === f ? 'bg-primary text-white' : 'bg-bg-surface-raised text-text-muted hover:text-text-secondary',
+            ].join(' ')}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-1.5 text-[10px] text-text-muted">
+        <span className="w-1.5 h-1.5 rounded-full bg-status-online inline-block" />
+        {online}명 온라인
+      </div>
     </div>
   );
 }
@@ -430,13 +431,17 @@ export default function OfficePage() {
             aria-disabled="true"
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-surface text-text-muted text-[13px] border border-border-subtle opacity-50 cursor-not-allowed select-none"
           >
-            <span>🔍</span><span>검색...</span>
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg><span>검색...</span>
             <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-bg-surface-raised">준비중</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button title="준비중" aria-disabled="true" disabled className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted opacity-40 cursor-not-allowed">📅</button>
-          <button title="준비중" aria-disabled="true" disabled className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted opacity-40 cursor-not-allowed">🔔</button>
+          <button title="준비중" aria-disabled="true" disabled className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted opacity-40 cursor-not-allowed">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" /></svg>
+          </button>
+          <button title="준비중" aria-disabled="true" disabled className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted opacity-40 cursor-not-allowed">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" /></svg>
+          </button>
           <div className="flex items-center gap-2 pl-1">
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold">
               {me?.name?.charAt(0)?.toUpperCase() ?? '?'}
@@ -500,6 +505,13 @@ export default function OfficePage() {
           })}
         </nav>
 
+        {/* 층 도면 카드 (레퍼런스: 사이드바 하단 Floor map) */}
+        <FloorMapCard
+          active={activeFloor}
+          onChange={setActiveFloor}
+          online={employees.filter((e) => e.status !== 'offline').length}
+        />
+
         {/* 내 프로필 카드 */}
         <div className="px-3 py-3 border-t border-border-subtle flex-shrink-0">
           {me ? (
@@ -542,16 +554,6 @@ export default function OfficePage() {
                 실시간 R3F · v10 PBR 리깅
               </span>
             </div>
-          </div>
-
-          {/* 층 선택기 (우측 세로 탭) */}
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10">
-            <FloorSelector active={activeFloor} onChange={setActiveFloor} />
-          </div>
-
-          {/* 미니맵 (좌하단) */}
-          <div className="absolute left-3 bottom-3 z-10">
-            <MiniMap />
           </div>
 
           {/* 미디어 바 (하단 중앙) — 회의 연결 시 실제 마이크/카메라 제어(C3) */}
@@ -728,10 +730,8 @@ export default function OfficePage() {
         {/* ── 사용자 목록 ── */}
         <section className="flex-shrink-0 border-b border-border-subtle">
           <div className="px-4 py-3 flex items-center justify-between">
-            <span className="text-[13px] font-semibold text-text-primary">사용자 목록</span>
-            <span className="text-[11px] text-text-muted">
-              {employees.length}명
-            </span>
+            <span className="text-[13px] font-semibold text-text-primary">구성원 ({employees.length})</span>
+            <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded bg-bg-surface-raised">실시간</span>
           </div>
           {/* 상태 필터 탭 */}
           <div className="flex border-b border-border-subtle" role="tablist" aria-label="상태 필터">

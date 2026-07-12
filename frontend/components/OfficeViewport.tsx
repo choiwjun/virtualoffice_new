@@ -5,22 +5,24 @@
 //  · 씬 = SCENE_ACME_HQ_HERO_V4_001.glb (PBR 내장, 텍스처 114장 — v8 대비 토폴로지 동일·머티리얼만 강화). 정적 T포즈 인물은 숨기고 애니 아바타로 대체.
 //  · 캐릭터 = characters_rigged/*.glb (동일 V8 rig 18조인트·12클립 유지, PBR 텍스처 내장). 렌더 = IBL 환경맵 + ACES + Bloom + 소프트 그림자.
 // 스킨드 메시 복제는 SkeletonUtils.clone(three/examples) — 일반 clone은 스켈레톤 바인딩이 깨진다.
-import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
-import { useGLTF, OrbitControls, ContactShadows, Environment, Lightformer } from '@react-three/drei';
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { useGLTF, OrbitControls, ContactShadows, Html } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { useOfficeRoom } from '@/hooks/useOfficeRoom';
 import type { ConnStatus, NetPlayer } from '@/lib/realtime';
 
 // glb Z-up → three.js Y-up 보정 (v8 에셋 up-axis Z, pivot BOTTOM_CENTER)
 const ZUP: [number, number, number] = [-Math.PI / 2, 0, 0];
 
-// v10 GLB는 Draco 지오메트리 압축본(office/ 합계 ~34→22.6MB). 디코더는 CDN 대신 로컬(public/draco/, 온프렘 친화).
+// 캐릭터는 Draco 지오메트리 압축본. 디코더는 CDN 대신 로컬(public/draco/, 온프렘 친화).
 const DRACO = '/draco/';
 
-const SCENE_URL = '/office/scene_v4.glb';
+// 씬 = 풀 PBR SCENE_ACME_HQ_HERO_V4_001.glb(22.4MB, 텍스처 114장, 비압축) — 압축본보다 텍스처 선명.
+const SCENE_URL = '/office/scene_v10_full.glb';
 const HERO_M = '/office/male_rigged.glb';
 const HERO_F = '/office/female_rigged.glb';
 const HERO_RECEP = '/office/receptionist_rigged.glb';
@@ -37,7 +39,7 @@ const CHAR_URLS = [HERO_M, HERO_F, HERO_RECEP, M1, MCASUAL, F1, FBIZ];
 // ─────────────────────────────────────────────
 const FLOOR_W = 20;
 const FLOOR_H = 15;
-const FLOOR_SCALE = 0.5;
+const FLOOR_SCALE = 0.52; // 데모 층 20×15m → 월드 ±5.2×±3.9. 씬 실측 바닥 footprint(±5.9×±3.7)에 맞춤.
 function floorToWorld(fx: number, fy: number): [number, number] {
   return [(fx - FLOOR_W / 2) * FLOOR_SCALE, (fy - FLOOR_H / 2) * FLOOR_SCALE];
 }
@@ -49,6 +51,46 @@ function hashStr(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
   return Math.abs(h);
+}
+
+// ─────────────────────────────────────────────
+// 레퍼런스 디자인의 오버레이 pill: 아바타 이름표 + 룸 라벨 (07_visual_reference 정합)
+// drei <Html>은 캔버스 위 DOM으로 투영되어 3D 위치를 따라간다.
+// ─────────────────────────────────────────────
+function NameTag({ name, dotColor = '#22C55E' }: { name: string; dotColor?: string }) {
+  return (
+    <Html center position={[0, 2.05, 0]} zIndexRange={[5, 0]} style={{ pointerEvents: 'none' }}>
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+          padding: '3px 10px', borderRadius: 999,
+          background: 'rgba(13,20,36,0.92)', border: '1px solid rgba(255,255,255,0.10)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.45)',
+          fontSize: 11, fontWeight: 600, color: '#F1F5F9',
+        }}
+      >
+        <span style={{ width: 6, height: 6, borderRadius: 999, background: dotColor, flexShrink: 0 }} />
+        {name}
+      </div>
+    </Html>
+  );
+}
+
+function RoomLabel({ pos, name, sub }: { pos: [number, number, number]; name: string; sub?: string }) {
+  return (
+    <Html center position={pos} zIndexRange={[5, 0]} style={{ pointerEvents: 'none' }}>
+      <div
+        style={{
+          whiteSpace: 'nowrap', padding: '6px 12px', borderRadius: 10,
+          background: 'rgba(10,16,30,0.92)', border: '1px solid rgba(255,255,255,0.10)',
+          boxShadow: '0 3px 12px rgba(0,0,0,0.5)', textAlign: 'left',
+        }}
+      >
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#F8FAFC', lineHeight: 1.2 }}>{name}</div>
+        {sub && <div style={{ fontSize: 10, color: '#94A3B8', lineHeight: 1.3 }}>{sub}</div>}
+      </div>
+    </Html>
+  );
 }
 
 // 씬에 구워진 정적 T포즈 인물 노드명 (가구 아님) — 이 접두사로 시작하면 숨긴다.
@@ -119,16 +161,21 @@ function Person({
   clip,
   pos,
   rot,
+  name,
+  dot,
 }: {
   url: string;
   clip: string;
   pos: [number, number, number];
   rot: number;
+  name?: string;
+  dot?: string;
 }) {
   const inst = useRiggedCharacter(url, clip);
   return (
     <group position={pos} rotation={[0, rot, 0]}>
       <primitive object={inst} rotation={ZUP} />
+      {name && <NameTag name={name} dotColor={dot} />}
     </group>
   );
 }
@@ -163,14 +210,14 @@ function Walker({
 }
 
 // 씬 실측 인물 자리(three 월드 X=좌우·Z=깊이). 베이크 정적본을 숨기고 이 자리를 애니 아바타로 대체.
-const PEOPLE: { url: string; clip: string; pos: [number, number, number]; rot: number }[] = [
-  { url: HERO_RECEP, clip: 'ANIM_IDLE_001', pos: [-3.7, 0, -1.61], rot: 0.8 }, // 리셉션(기립)
-  { url: HERO_M, clip: 'ANIM_TALK_001', pos: [-1.3, 0, 2.91], rot: 2.0 }, // 카페 쪽 대화
-  { url: HERO_F, clip: 'ANIM_TALK_001', pos: [-2.3, 0, 2.7], rot: -1.0 }, // 카페 대화 상대
-  { url: M1, clip: 'ANIM_TYPING_001', pos: [1.56, 0, 1.06], rot: Math.PI }, // 데스크 워커(착석 타이핑)
-  { url: F1, clip: 'ANIM_TYPING_001', pos: [0.04, 0, 3.24], rot: 0 }, // 데스크 워커(착석)
-  { url: FBIZ, clip: 'ANIM_MEETING_IDLE_001', pos: [2.53, 0, 0.63], rot: 0.7 }, // 회의 착석
-  { url: MCASUAL, clip: 'ANIM_MEETING_IDLE_001', pos: [3.94, 0, 0.63], rot: 1.1 }, // 회의 착석
+const PEOPLE: { url: string; clip: string; pos: [number, number, number]; rot: number; name?: string; dot?: string }[] = [
+  { url: HERO_RECEP, clip: 'ANIM_IDLE_001', pos: [-3.7, 0, -1.61], rot: 0.8, name: 'Olivia' }, // 리셉션(기립)
+  { url: HERO_M, clip: 'ANIM_TALK_001', pos: [-1.3, 0, 2.91], rot: 2.0, name: 'Lucas' }, // 카페 쪽 대화
+  { url: HERO_F, clip: 'ANIM_TALK_001', pos: [-2.3, 0, 2.7], rot: -1.0, name: 'Maya' }, // 카페 대화 상대
+  { url: M1, clip: 'ANIM_TYPING_001', pos: [1.56, 0, 1.06], rot: Math.PI, name: 'Jordan' }, // 데스크 워커(착석 타이핑)
+  { url: F1, clip: 'ANIM_TYPING_001', pos: [0.04, 0, 3.24], rot: 0, name: 'Sophia' }, // 데스크 워커(착석)
+  { url: FBIZ, clip: 'ANIM_MEETING_IDLE_001', pos: [2.53, 0, 0.63], rot: 0.7, name: 'Emma', dot: '#EF4444' }, // 회의 착석
+  { url: MCASUAL, clip: 'ANIM_MEETING_IDLE_001', pos: [3.94, 0, 0.63], rot: 1.1, name: 'Noah', dot: '#EF4444' }, // 회의 착석
 ];
 const WALKERS: { url: string; clip: string; path: (t: number) => [number, number] }[] = [
   { url: M1, clip: 'ANIM_WALK_001', path: (t) => [Math.sin(t * 0.4) * 3.2, -0.9] as [number, number] },
@@ -236,9 +283,11 @@ function NetworkedAvatar({
     }
   });
 
+  const displayName = playersRef.current.get(sessionId)?.name || (isSelf ? '나' : '게스트');
   return (
     <group ref={g}>
       <primitive object={inst} rotation={ZUP} />
+      <NameTag name={isSelf ? `${displayName} (나)` : displayName} dotColor={isSelf ? '#3B82F6' : '#22C55E'} />
       {isSelf && (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
           <ringGeometry args={[0.26, 0.34, 28]} />
@@ -267,22 +316,35 @@ function NetworkedAvatars({
   );
 }
 
-// 클릭 이동: 바닥 평면 raycast → 서버 좌표로 변환해 move_request 전송.
-// 투명(opacity 0)이라 보이지 않지만 raycast는 수신한다(visible=false면 raycast 제외됨).
+// 클릭 이동: 바닥 평면 raycast → 서버 좌표로 변환(bounds 클램프)해 move_request 전송.
+// 평면을 크게(80×80) + 씬 바닥 살짝 위(y=0.01)에 둬서 어느 지점을 클릭해도 raycast가 잡는다.
+// 클릭 지점에 시안색 마커 링을 띄워 피드백을 준다.
 function MoveGround({ onMove }: { onMove: (fx: number, fy: number) => void }) {
+  const [marker, setMarker] = useState<[number, number] | null>(null);
   return (
-    <mesh
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, 0, 0]}
-      onClick={(e: ThreeEvent<MouseEvent>) => {
-        e.stopPropagation();
-        const [fx, fy] = worldToFloor(e.point.x, e.point.z);
-        onMove(fx, fy);
-      }}
-    >
-      <planeGeometry args={[FLOOR_W * FLOOR_SCALE, FLOOR_H * FLOOR_SCALE]} />
-      <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-    </mesh>
+    <>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0.01, 0]}
+        onClick={(e: ThreeEvent<MouseEvent>) => {
+          e.stopPropagation();
+          let [fx, fy] = worldToFloor(e.point.x, e.point.z);
+          fx = Math.max(0, Math.min(FLOOR_W, fx));
+          fy = Math.max(0, Math.min(FLOOR_H, fy));
+          onMove(fx, fy);
+          setMarker(floorToWorld(fx, fy));
+        }}
+      >
+        <planeGeometry args={[80, 80]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      {marker && (
+        <mesh position={[marker[0], 0.03, marker[1]]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.13, 0.22, 28]} />
+          <meshBasicMaterial color="#22D3EE" transparent opacity={0.95} />
+        </mesh>
+      )}
+    </>
   );
 }
 
@@ -313,47 +375,68 @@ function ConnBadge({ status, count }: { status: ConnStatus; count: number }) {
   );
 }
 
+// 정본 런타임(11_complete_runtime_app/OfficeApp.ts)과 동일한 스튜디오 IBL:
+// three RoomEnvironment을 PMREM으로 구워 scene.environment에 넣는다(온프렘 안전, 네트워크 불필요).
+function StudioEnvironment() {
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl);
+    const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = envTex;
+    return () => {
+      scene.environment = null;
+      envTex.dispose();
+      pmrem.dispose();
+    };
+  }, [gl, scene]);
+  return null;
+}
+
 export default function OfficeViewport() {
   const { status, roster, playersRef, selfIdRef, requestMove } = useOfficeRoom(true);
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
     <Canvas
-      orthographic
-      camera={{ position: [40, 34, 40], zoom: 48, near: 0.1, far: 500 }}
-      // ACES 톤매핑(README 권장). AA는 EffectComposer multisampling으로.
-      gl={{ toneMapping: THREE.ACESFilmicToneMapping, outputColorSpace: THREE.SRGBColorSpace, antialias: false }}
+      // 정본 렌더링(OfficeApp.ts): Perspective + ACES exposure 1.08 + PCFSoft 그림자.
+      camera={{ fov: 38, position: [8.2, 6.6, 9.2], near: 0.05, far: 200 }}
+      gl={{ toneMapping: THREE.ACESFilmicToneMapping, outputColorSpace: THREE.SRGBColorSpace, antialias: true, powerPreference: 'high-performance' }}
+      onCreated={({ gl }) => {
+        gl.toneMappingExposure = 1.22;
+        gl.shadowMap.type = THREE.PCFSoftShadowMap;
+      }}
       shadows
       dpr={[1, 2]}
       style={{ width: '100%', height: '100%' }}
     >
-      <color attach="background" args={['#0d1b36']} />
-      {/* 환경광은 IBL이 주로 담당 → 직접광은 절제 */}
-      <ambientLight intensity={0.28} />
-      <hemisphereLight args={['#dfeaff', '#5a4a3a', 0.35]} />
+      {/* 배경/포그: 레퍼런스(07_visual_reference) 딥네이비 */}
+      <color attach="background" args={['#0b1220']} />
+      <fogExp2 attach="fog" args={['#0b1220', 0.01]} />
+      {/* 정본 라이팅(OfficeApp.ts) + 레퍼런스 밝은 실내 무드 상향 */}
+      <hemisphereLight args={['#cfe2ff', '#4a3a2c', 1.35]} />
       <directionalLight
-        position={[14, 24, 12]}
-        intensity={2.0}
+        position={[12, 20, 10]}
+        intensity={4.5}
+        color="#fff1dc"
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0002}
       >
         <orthographicCamera attach="shadow-camera" args={[-11, 11, 11, -11, 0.1, 70]} />
       </directionalLight>
+      <directionalLight position={[-8, 6, -7]} intensity={1.1} color="#7ba9ff" />
+      {/* 실내 웜 포인트라이트: 리셉션·라운지 온광 + 회의실 쿨광 (레퍼런스 무드) */}
+      <pointLight position={[-3.7, 2.4, -1.6]} color="#ffd2a3" intensity={14} distance={7} />
+      <pointLight position={[-1.7, 2.5, 2.8]} color="#ffe0b8" intensity={11} distance={6.5} />
+      <pointLight position={[3.2, 2.4, 0.7]} color="#bcd6ff" intensity={9} distance={6} />
       <Suspense fallback={null}>
-        {/* IBL 환경맵(오프라인 안전: Lightformer 절차적) — PBR 재질 반사/필 */}
-        <Environment resolution={256} frames={1}>
-          <Lightformer
-            form="rect"
-            intensity={1.6}
-            color="#ffffff"
-            position={[0, 8, 3]}
-            scale={[14, 8, 1]}
-            rotation={[-Math.PI / 2, 0, 0]}
-          />
-          <Lightformer form="rect" intensity={0.9} color="#cfe0ff" position={[-9, 4, -5]} scale={[8, 8, 1]} rotation={[0, Math.PI / 3, 0]} />
-          <Lightformer form="rect" intensity={0.7} color="#ffe6c2" position={[9, 4, 5]} scale={[8, 8, 1]} rotation={[0, -Math.PI / 3, 0]} />
-        </Environment>
+        {/* 스튜디오 IBL(RoomEnvironment PMREM) — PBR 재질 반사/필 (정본과 동일) */}
+        <StudioEnvironment />
         <OfficeScene />
+        {/* 룸 라벨 pill (레퍼런스: Reception / Board Room / Lounge) */}
+        <RoomLabel pos={[-4.1, 2.2, -1.9]} name="Reception" sub="리셉션" />
+        <RoomLabel pos={[3.3, 2.3, 0.3]} name="Board Room" sub="회의실 · 유리룸" />
+        <RoomLabel pos={[-2.1, 1.9, 2.5]} name="Lounge" sub="라운지 · 카페" />
         {PEOPLE.map((p, i) => (
           <Person key={`p${i}`} {...p} />
         ))}
@@ -365,10 +448,10 @@ export default function OfficeViewport() {
         <MoveGround onMove={requestMove} />
         <ContactShadows position={[0, 0.01, 0]} opacity={0.45} scale={28} blur={2.6} far={6} />
       </Suspense>
-      <OrbitControls target={[0, 1.2, 0]} enablePan={false} minZoom={24} maxZoom={120} />
+      <OrbitControls target={[0, 0.4, 0]} enablePan={false} minDistance={6} maxDistance={26} maxPolarAngle={Math.PI / 2.2} />
       <EffectComposer multisampling={4}>
-        {/* 발광 스트립·스크린·블루 네온만 은은하게 글로우 */}
-        <Bloom luminanceThreshold={0.9} luminanceSmoothing={0.2} mipmapBlur intensity={0.6} radius={0.7} />
+        {/* LED 스트립·스크린·블루 네온 글로우 (레퍼런스의 회의실 네온 프레임 강조) */}
+        <Bloom luminanceThreshold={0.85} luminanceSmoothing={0.25} mipmapBlur intensity={0.8} radius={0.75} />
       </EffectComposer>
     </Canvas>
       <ConnBadge status={status} count={roster.length} />
