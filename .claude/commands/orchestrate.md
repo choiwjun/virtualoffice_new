@@ -182,6 +182,22 @@ Phase 병합 → 다음 그룹 진행
 | `security-specialist` | OWASP 보안 검사, 취약점 분석 |
 | `3d-engine-specialist` | Three.js, IFC/BIM, 3D 시각화 |
 
+### 🎚️ 모델 라우팅 (정본: `.claude/model-roles.yaml`)
+
+오케스트레이션 시작 시 **`.claude/model-roles.yaml` 을 Read** 하고, 각 Task 호출의 `model` 을 역할별로 지정한다(역할→모델 티어 = 정본).
+
+| 역할(yaml) | 모델·effort | 적용 대상(subagent_type / 단계) |
+|---|---|---|
+| **ARCHITECT** | opus · xhigh | system-designer, architecture-analyst, 설계/아키텍처 결정 |
+| **PLANNER** | opus · low | task-planner, requirements-analyst, dependency-resolver, 태스크 분해 |
+| **EXECUTOR** | sonnet(`claude-sonnet-4-6`) | backend/frontend/database/test/electron-*-specialist 등 **구현·기계적 작업**(대다수 Task) |
+| **CRITIC** | opus · high | security-specialist, code-review, verification, 품질 게이트 |
+| **DEFAULT** | opus · xhigh | 메인 코디네이터(자기 자신) |
+
+- **Task 호출**: `model` 파라미터에 해당 역할의 모델(`opus`\|`sonnet`)을 넣는다. 예) 구현 specialist → `model: "sonnet"`(EXECUTOR), 보안/리뷰 → `model: "opus"`(CRITIC).
+- **effort**: Task(subagent) 파라미터엔 effort 가 없다 → effort 는 **참고값**이며 Workflow(cost-router 등)·메인 추론에서만 실제 적용. cost-router 는 `scripts/load-model-roles.js` 로 이 yaml 을 args 로 로드한다.
+- 복잡도 기반 미세조정이 필요하면 `/cost-router`(classify-route)로 태스크별 tier→모델 plan 을 산출해 그 model 로 실행(동일 정본).
+
 ### Task 도구 호출 형식
 
 ```
