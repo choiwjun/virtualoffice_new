@@ -1,0 +1,27 @@
+{
+  "name": "virtual-office-realtime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Colyseus authoritative realtime movement server for the virtual-office product (room = one floor, 20Hz tick, server-authoritative movement + proximity validation).",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "test": "tsx src/__tests__/room.smoke.test.ts",
+    "smoke": "tsx src/__tests__/room.smoke.test.ts"
+  },
+  "dependencies": {
+    "@colyseus/core": "0.15.57",
+    "@colyseus/schema": "2.0.37",
+    "@colyseus/ws-transport": "0.15.3",
+    "colyseus": "0.15.57"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.9",
+    "tsx": "4.16.2",
+    "typescript": "5.5.3"
+  }
+}
