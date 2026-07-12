@@ -102,6 +102,37 @@ Every check is a **pure named function** — unit-tested directly without a sock
   Server never mints LiveKit tokens.
 - Auto-away after 5 min inactivity → status `away` + `presence_event`.
 
+## Frontend client (C2)
+
+The Next.js app connects via `colyseus.js`:
+
+- `frontend/lib/realtime.ts` — `createOfficeConnection(url, join, handlers)`: joins the
+  `office` room, keeps a **mutable `players` map** synced from state deltas (read
+  imperatively in R3F `useFrame`, not through React state — avoids 20Hz re-renders),
+  and exposes `requestMove(x,y)`. Because the server only accepts small per-request
+  steps (speed budget ≈ `MAX_SPEED·dt·tol`), `requestMove` sets a **destination** and
+  an internal walker streams sub-steps from the server-authoritative position toward it.
+- `frontend/hooks/useOfficeRoom.ts` — React wrapper (auth identity, roster state,
+  graceful degradation when the server is offline).
+- `frontend/components/OfficeViewport.tsx` — renders one avatar per server player
+  (position interpolated), click-to-move via a ground raycast, and a connection badge.
+
+Run both locally:
+
+```bash
+cd realtime && npm start           # ws://localhost:2567
+cd frontend && npm run dev         # localhost:3000  (NEXT_PUBLIC_REALTIME_URL overrides the ws url)
+```
+
+**Client↔server integration smoke** (in-process server + client, no browser):
+
+```bash
+cd realtime && npm run client-smoke   # 6 assertions: join, spawn, streamed walk, roster in/out
+```
+
+Coordinate mapping (server 20×15m demo plane → R3F world) lives in `OfficeViewport`
+(`FLOOR_SCALE`); exact furniture alignment awaits the real layout fetch (below).
+
 ## STATUS: minimal viable — TODO
 
 Implemented & smoke-tested: room join/leave, 20Hz movement integration, all

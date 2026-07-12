@@ -5,12 +5,14 @@
 //  · 씬 = SCENE_ACME_HQ_HERO_V4_001.glb (PBR 내장, 텍스처 114장 — v8 대비 토폴로지 동일·머티리얼만 강화). 정적 T포즈 인물은 숨기고 애니 아바타로 대체.
 //  · 캐릭터 = characters_rigged/*.glb (동일 V8 rig 18조인트·12클립 유지, PBR 텍스처 내장). 렌더 = IBL 환경맵 + ACES + Bloom + 소프트 그림자.
 // 스킨드 메시 복제는 SkeletonUtils.clone(three/examples) — 일반 clone은 스켈레톤 바인딩이 깨진다.
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { useGLTF, OrbitControls, ContactShadows, Environment, Lightformer } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { useOfficeRoom } from '@/hooks/useOfficeRoom';
+import type { ConnStatus, NetPlayer } from '@/lib/realtime';
 
 // glb Z-up → three.js Y-up 보정 (v8 에셋 up-axis Z, pivot BOTTOM_CENTER)
 const ZUP: [number, number, number] = [-Math.PI / 2, 0, 0];
@@ -27,6 +29,27 @@ const MCASUAL = '/office/malecasual.glb';
 const F1 = '/office/female01.glb';
 const FBIZ = '/office/femalebiz.glb';
 const CHAR_URLS = [HERO_M, HERO_F, HERO_RECEP, M1, MCASUAL, F1, FBIZ];
+
+// ─────────────────────────────────────────────
+// C2: 서버 좌표(20×15m 데모 층 평면) ↔ R3F 월드 매핑.
+// 서버 중앙(10,7.5) → 월드 원점(0,0). scale는 씬 크기에 맞춘 근사(실 레이아웃 연동 시 교체).
+// floor y → world z, floor x → world x.
+// ─────────────────────────────────────────────
+const FLOOR_W = 20;
+const FLOOR_H = 15;
+const FLOOR_SCALE = 0.5;
+function floorToWorld(fx: number, fy: number): [number, number] {
+  return [(fx - FLOOR_W / 2) * FLOOR_SCALE, (fy - FLOOR_H / 2) * FLOOR_SCALE];
+}
+function worldToFloor(wx: number, wz: number): [number, number] {
+  return [wx / FLOOR_SCALE + FLOOR_W / 2, wz / FLOOR_SCALE + FLOOR_H / 2];
+}
+// userId(없으면 sessionId)로 아바타 glb 결정 — 사용자별 일관.
+function hashStr(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
 
 // 씬에 구워진 정적 T포즈 인물 노드명 (가구 아님) — 이 접두사로 시작하면 숨긴다.
 const BAKED_PEOPLE = /^(worker_|ethan_|walk_|receptionist_|meeting_person)/i;
@@ -159,8 +182,134 @@ const WALKERS: { url: string; clip: string; path: (t: number) => [number, number
   },
 ];
 
-export default function OfficeViewport() {
+// ─────────────────────────────────────────────
+// C2: 서버 권위 네트워크 아바타 (실시간 이동)
+// 위치는 서버 state를 useFrame에서 imperative하게 읽어 보간(Walker와 동일 패턴).
+// ─────────────────────────────────────────────
+function NetworkedAvatar({
+  sessionId,
+  playersRef,
+  isSelf,
+}: {
+  sessionId: string;
+  playersRef: MutableRefObject<Map<string, NetPlayer>>;
+  isSelf: boolean;
+}) {
+  const url = useMemo(
+    () => CHAR_URLS[hashStr(playersRef.current.get(sessionId)?.userId || sessionId) % CHAR_URLS.length],
+    [sessionId, playersRef],
+  );
+  const [clip, setClip] = useState('ANIM_IDLE_001');
+  const inst = useRiggedCharacter(url, clip);
+  const g = useRef<THREE.Group>(null!);
+  const prev = useRef<[number, number]>([0, 0]);
+  const lastAnim = useRef('idle');
+  const spawned = useRef(false);
+
+  useFrame(() => {
+    const p = playersRef.current.get(sessionId);
+    if (!p || !g.current) return;
+    const [tx, tz] = floorToWorld(p.x, p.y);
+    if (!spawned.current) {
+      g.current.position.set(tx, 0, tz);
+      prev.current = [tx, tz];
+      spawned.current = true;
+    } else {
+      g.current.position.x += (tx - g.current.position.x) * 0.18;
+      g.current.position.z += (tz - g.current.position.z) * 0.18;
+    }
+    const [px, pz] = prev.current;
+    const dx = g.current.position.x - px;
+    const dz = g.current.position.z - pz;
+    if (Math.abs(dx) + Math.abs(dz) > 1e-4) g.current.rotation.y = Math.atan2(dx, dz);
+    prev.current = [g.current.position.x, g.current.position.z];
+    if (p.anim !== lastAnim.current) {
+      lastAnim.current = p.anim;
+      setClip(p.anim === 'walk' ? 'ANIM_WALK_001' : 'ANIM_IDLE_001');
+    }
+  });
+
   return (
+    <group ref={g}>
+      <primitive object={inst} rotation={ZUP} />
+      {isSelf && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
+          <ringGeometry args={[0.26, 0.34, 28]} />
+          <meshBasicMaterial color="#3B5BFE" transparent opacity={0.85} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+function NetworkedAvatars({
+  roster,
+  playersRef,
+  selfIdRef,
+}: {
+  roster: string[];
+  playersRef: MutableRefObject<Map<string, NetPlayer>>;
+  selfIdRef: MutableRefObject<string>;
+}) {
+  return (
+    <>
+      {roster.map((id) => (
+        <NetworkedAvatar key={id} sessionId={id} playersRef={playersRef} isSelf={id === selfIdRef.current} />
+      ))}
+    </>
+  );
+}
+
+// 클릭 이동: 바닥 평면 raycast → 서버 좌표로 변환해 move_request 전송.
+// 투명(opacity 0)이라 보이지 않지만 raycast는 수신한다(visible=false면 raycast 제외됨).
+function MoveGround({ onMove }: { onMove: (fx: number, fy: number) => void }) {
+  return (
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, 0, 0]}
+      onClick={(e: ThreeEvent<MouseEvent>) => {
+        e.stopPropagation();
+        const [fx, fy] = worldToFloor(e.point.x, e.point.z);
+        onMove(fx, fy);
+      }}
+    >
+      <planeGeometry args={[FLOOR_W * FLOOR_SCALE, FLOOR_H * FLOOR_SCALE]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+    </mesh>
+  );
+}
+
+// 연결 상태 배지 (HTML 오버레이 — Canvas 밖).
+function ConnBadge({ status, count }: { status: ConnStatus; count: number }) {
+  const map: Record<ConnStatus, { label: string; color: string }> = {
+    connecting: { label: '실시간 연결 중…', color: '#F59E0B' },
+    connected: { label: `실시간 연결 · ${count}명 접속`, color: '#22C55E' },
+    reconnecting: { label: '재연결 중…', color: '#F59E0B' },
+    disconnected: { label: '연결 끊김', color: '#EF4444' },
+    error: { label: '실시간 서버 오프라인', color: '#94A3B8' },
+  };
+  const { label, color } = map[status];
+  return (
+    <div
+      style={{
+        position: 'absolute', left: 12, top: 44, zIndex: 10,
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: '4px 10px', borderRadius: 8,
+        background: 'rgba(13,27,54,0.78)', backdropFilter: 'blur(6px)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        fontSize: 11, color: '#cbd5e1', pointerEvents: 'none',
+      }}
+    >
+      <span style={{ width: 7, height: 7, borderRadius: 999, background: color, display: 'inline-block' }} />
+      {label}
+    </div>
+  );
+}
+
+export default function OfficeViewport() {
+  const { status, roster, playersRef, selfIdRef, requestMove } = useOfficeRoom(true);
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
     <Canvas
       orthographic
       camera={{ position: [40, 34, 40], zoom: 48, near: 0.1, far: 500 }}
@@ -204,6 +353,9 @@ export default function OfficeViewport() {
         {WALKERS.map((w, i) => (
           <Walker key={`w${i}`} {...w} />
         ))}
+        {/* C2: 서버 권위 실시간 아바타 + 클릭 이동 바닥 */}
+        <NetworkedAvatars roster={roster} playersRef={playersRef} selfIdRef={selfIdRef} />
+        <MoveGround onMove={requestMove} />
         <ContactShadows position={[0, 0.01, 0]} opacity={0.45} scale={28} blur={2.6} far={6} />
       </Suspense>
       <OrbitControls target={[0, 1.2, 0]} enablePan={false} minZoom={24} maxZoom={120} />
@@ -212,6 +364,8 @@ export default function OfficeViewport() {
         <Bloom luminanceThreshold={0.9} luminanceSmoothing={0.2} mipmapBlur intensity={0.6} radius={0.7} />
       </EffectComposer>
     </Canvas>
+      <ConnBadge status={status} count={roster.length} />
+    </div>
   );
 }
 
