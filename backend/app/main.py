@@ -8,9 +8,8 @@ FastAPI 앱 엔트리포인트.
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from app import __version__
 from app.config import settings
@@ -62,33 +61,14 @@ async def health() -> dict:
     }
 
 
-# ── OIDC Discovery 루트 별칭 ──────────────────────────────────────────────
-# WA가 OPENID_CLIENT_ISSUER(= http://auth.localhost:8090) + /.well-known/openid-configuration
-# 를 조회하므로 루트 경로에도 마운트한다.
-# 실제 로직은 /oidc/.well-known/openid-configuration 핸들러에 위임.
-@app.get("/.well-known/openid-configuration", tags=["oidc"], include_in_schema=False)
-async def root_openid_configuration(request: Request) -> JSONResponse:
-    """루트 OIDC Discovery 별칭 — WA OPENID_CLIENT_ISSUER 호환."""
-    from app.integrations.workadventure.oidc import openid_configuration
-    return await openid_configuration(request)
-
-
 # ── 라우터 등록 (점진적) ─────────────────────────────────
 from app.api import erp  # noqa: E402
 from app.api import auth  # noqa: E402
-from app.api import presence_stream  # noqa: E402
 from app.api import seats  # noqa: E402
-from app.api import wa_livekit  # noqa: E402
-from app.api import wa_presence  # noqa: E402
-from app.integrations.workadventure import oidc as wa_oidc  # noqa: E402
 from app.api import meetings  # noqa: E402
 from app.api import meeting_minutes  # noqa: E402
 
 app.include_router(erp.router)
-app.include_router(wa_oidc.router)           # /oidc/* — OIDC Provider (D26, D4 공존)
-app.include_router(wa_presence.router)        # /api/wa/presence — presence 수집·저장
-app.include_router(presence_stream.router)    # /api/wa/presence/stream — SSE 브로드캐스트
-app.include_router(wa_livekit.router)         # /api/wa/livekit-token — LiveKit 토큰 (D24, G004)
 app.include_router(auth.router)               # /api/auth/* — 웹콘솔 인증 (D4)
 app.include_router(seats.router)              # /api/seats, /api/seat-assignments (D10, §3.11)
 from app.api import work_logs  # noqa: E402  Lane A G001
@@ -105,7 +85,7 @@ app.include_router(directory.router)          # /api/teams, /api/org-groups (man
 app.include_router(audit.router)              # /api/audit-logs (D20-e, admin)
 from app.api import office_layouts  # noqa: E402  Gaps: office-layouts (D12)
 app.include_router(office_layouts.router)     # /api/office-layouts/* (D12 검증·배포·롤백)
-from app.api import maps  # noqa: E402  Lane A: map generator API
-app.include_router(maps.router)              # /api/maps/* (generate/validate, REQ-003)
 from app.api import consent  # noqa: E402
 app.include_router(consent.router)
+from app.api import notices  # noqa: E402  공지사항 (14-spec §2.8)
+app.include_router(notices.router)            # /api/notices — 사내 공지 (조회 전직원 / 작성·삭제 admin)

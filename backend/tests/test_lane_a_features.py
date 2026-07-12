@@ -4,8 +4,6 @@ Lane A 기능 테스트 — APScheduler 배치, 신규 API, 로그인 백오프.
 - Scheduler: KPI/ERP 배치 작업 (단위 테스트, 실제 스케줄은 통합 테스트)
 - GET /api/seat-assignments: 배정 이력 조회
 - GET /api/daily-status-push: ERP 전송 큐 조회
-- POST /api/maps/generate: 맵 생성 API
-- POST /api/maps/validate: 맵 검증 API
 - Login backoff: 5회 실패 시 5분 잠금
 """
 

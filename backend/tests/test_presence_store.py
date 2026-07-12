@@ -6,11 +6,10 @@ presence_store 단위·통합 테스트.
 2. upsert_presence — 위치 포함 생성
 3. upsert_presence — 기존 레코드 status 갱신 (updated_at 변경)
 4. upsert_presence — 위치 선택적 갱신 (기존 위치 보존)
-5. POST /api/wa/presence — zone 이벤트 → DB 저장 확인
-6. presence_pubsub — SSE 이벤트 발행 확인
-7. D20-a 주석 확인: 좌표 파라미터 존재 but KPI 미사용 명시
+5. presence_pubsub — SSE 이벤트 발행 확인
+6. D20-a 주석 확인: 좌표 파라미터 존재 but KPI 미사용 명시
 
-참조: 00-decisions.md D13, D19, D20-a, D20-c, D26
+참조: 00-decisions.md D13, D19, D20-a, D20-c
 """
 
 from __future__ import annotations
@@ -21,12 +20,10 @@ from uuid import uuid4
 
 import pytest
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from app.db import Base, get_db
-from app.main import app
+from app.db import Base
 from app.models.tables import Presence, PresenceStatus
 from app.services.presence_store import presence_pubsub, upsert_presence
 
@@ -49,20 +46,6 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     async with factory() as session:
         yield session
     await engine.dispose()
-
-
-@pytest_asyncio.fixture
-async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    """FastAPI 테스트 클라이언트 (get_db → 테스트 세션 오버라이드)."""
-
-    async def _override() -> AsyncGenerator[AsyncSession, None]:
-        yield db_session
-
-    app.dependency_overrides[get_db] = _override
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as c:
-        yield c
-    app.dependency_overrides.clear()
 
 
 # ---------------------------------------------------------------------------
@@ -215,79 +198,7 @@ class TestUpsertPresenceUpdate:
 
 
 # ---------------------------------------------------------------------------
-# 3. POST /api/wa/presence — zone 이벤트 → DB 저장 확인
-# ---------------------------------------------------------------------------
-
-class TestWaPresenceEndpointSavesToDb:
-    async def test_zone_event_saves_presence_to_db(
-        self, async_client: AsyncClient, db_session: AsyncSession
-    ):
-        """zone 이벤트(desk enter) → DB presence 저장 확인."""
-        user_id = 9010
-        resp = await async_client.post(
-            "/api/wa/presence",
-            json={"employee_id": user_id, "kind": "enter_zone", "zone_name": "desk"},
-        )
-        assert resp.status_code == 200
-        body = resp.json()
-        assert body["resolved_status"] == "working"
-
-        # DB 직접 확인
-        from sqlalchemy import select
-        result = await db_session.execute(
-            select(Presence).where(Presence.user_id == user_id)
-        )
-        rec = result.scalar_one_or_none()
-        assert rec is not None
-        assert rec.status == PresenceStatus.WORKING
-
-    async def test_unmapped_event_does_not_save(
-        self, async_client: AsyncClient, db_session: AsyncSession
-    ):
-        """매핑 안 되는 이벤트 → DB 저장 없음."""
-        user_id = 9011
-        # leave_zone without known zone → no mapping → resolved = None
-        resp = await async_client.post(
-            "/api/wa/presence",
-            json={
-                "employee_id": user_id,
-                "kind": "leave_zone",
-                "zone_name": "unknown_zone_xyz",
-            },
-        )
-        assert resp.status_code == 200
-        body = resp.json()
-        assert body["resolved_status"] is None
-
-        from sqlalchemy import select
-        result = await db_session.execute(
-            select(Presence).where(Presence.user_id == user_id)
-        )
-        rec = result.scalar_one_or_none()
-        assert rec is None
-
-    async def test_connect_event_saves_online_status(
-        self, async_client: AsyncClient, db_session: AsyncSession
-    ):
-        """connect 이벤트 → online 저장."""
-        user_id = 9012
-        resp = await async_client.post(
-            "/api/wa/presence",
-            json={"employee_id": user_id, "kind": "connect"},
-        )
-        assert resp.status_code == 200
-        assert resp.json()["resolved_status"] == "online"
-
-        from sqlalchemy import select
-        result = await db_session.execute(
-            select(Presence).where(Presence.user_id == user_id)
-        )
-        rec = result.scalar_one()
-        assert rec.status == PresenceStatus.ONLINE
-
-
-# ---------------------------------------------------------------------------
-# 4. SSE 이벤트 발행 확인
+# 3. SSE 이벤트 발행 확인
 # ---------------------------------------------------------------------------
 
 class TestPresencePubSub:
