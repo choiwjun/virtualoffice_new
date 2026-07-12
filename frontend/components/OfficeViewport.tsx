@@ -209,7 +209,7 @@ function Walker({
     if (Math.abs(dx) + Math.abs(dz) > 1e-4) g.current.rotation.y = Math.atan2(dx, dz);
     // 발 미끄러짐 방지: 걷기 클립 재생속도를 실제 경로 속도에 동기화.
     const sp = Math.hypot(dx, dz) / Math.max(dt, 1e-4);
-    rate.current = THREE.MathUtils.clamp(sp / WALK_CLIP_SPEED, 0.3, 1.3);
+    rate.current = THREE.MathUtils.clamp(sp / WALK_CLIP_SPEED, 0.55, 1.3);
     prev.current = [x, z];
   });
   return (
@@ -224,10 +224,11 @@ const PEOPLE: { url: string; clip: string; pos: [number, number, number]; rot: n
   { url: HERO_RECEP, clip: 'ANIM_IDLE_001', pos: [-3.7, 0, -1.61], rot: 0.8, name: 'Olivia' }, // 리셉션(기립)
   { url: HERO_M, clip: 'ANIM_TALK_001', pos: [-1.3, 0, 2.91], rot: 2.0, name: 'Lucas' }, // 카페 쪽 대화
   { url: HERO_F, clip: 'ANIM_TALK_001', pos: [-2.3, 0, 2.7], rot: -1.0, name: 'Maya' }, // 카페 대화 상대
-  { url: M1, clip: 'ANIM_TYPING_001', pos: [1.56, 0, 1.06], rot: Math.PI, name: 'Jordan' }, // 데스크 워커(착석 타이핑)
-  { url: F1, clip: 'ANIM_TYPING_001', pos: [0.04, 0, 3.24], rot: 0, name: 'Sophia' }, // 데스크 워커(착석)
-  { url: FBIZ, clip: 'ANIM_MEETING_IDLE_001', pos: [2.53, 0, 0.63], rot: 0.7, name: 'Emma', dot: '#EF4444' }, // 회의 착석
-  { url: MCASUAL, clip: 'ANIM_MEETING_IDLE_001', pos: [3.94, 0, 0.63], rot: 1.1, name: 'Noah', dot: '#EF4444' }, // 회의 착석
+  // ⚠️ 착석 클립(TYPING/MEETING_IDLE/SIT)은 의자 앵커 정렬 전까지 금지 — 허공 착석(수평 허벅지)이 '벌린 팔'처럼 보임.
+  { url: M1, clip: 'ANIM_PHONE_CALL_001', pos: [1.56, 0, 1.06], rot: Math.PI, name: 'Jordan' }, // 데스크 옆 통화(기립)
+  { url: F1, clip: 'ANIM_TALK_001', pos: [0.04, 0, 3.24], rot: 0, name: 'Sophia' }, // 데스크 옆 대화(기립)
+  { url: FBIZ, clip: 'ANIM_TALK_001', pos: [2.53, 0, 0.63], rot: 0.7, name: 'Emma', dot: '#EF4444' }, // 회의실 스탠딩 대화
+  { url: MCASUAL, clip: 'ANIM_IDLE_001', pos: [3.94, 0, 0.63], rot: 1.1, name: 'Noah', dot: '#EF4444' }, // 회의실 기립
 ];
 const WALKERS: { url: string; clip: string; path: (t: number) => [number, number] }[] = [
   { url: M1, clip: 'ANIM_WALK_001', path: (t) => [Math.sin(t * 0.4) * 3.2, -0.9] as [number, number] },
@@ -293,7 +294,7 @@ function NetworkedAvatar({
     }
     // 발 미끄러짐 방지: 걷기 클립 재생속도를 화면상 실제 이동속도에 동기화.
     const sp = Math.hypot(dx, dz) / Math.max(dt, 1e-4);
-    rate.current = wantWalk ? THREE.MathUtils.clamp(sp / WALK_CLIP_SPEED, 0.3, 1.2) : 1;
+    rate.current = wantWalk ? THREE.MathUtils.clamp(sp / WALK_CLIP_SPEED, 0.55, 1.2) : 1;
   });
 
   const displayName = playersRef.current.get(sessionId)?.name || (isSelf ? '나' : '게스트');
