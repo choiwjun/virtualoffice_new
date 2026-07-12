@@ -14,8 +14,7 @@ from __future__ import annotations
 
 import pytest
 import pytest_asyncio
-from datetime import date, datetime, timedelta, timezone
-from decimal import Decimal
+from datetime import date, timedelta
 
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -26,19 +25,6 @@ from app.models.tables import (
     DailyStatusPush,
     DailyStatusPushTarget,
     ErpUser,
-    KpiObjectionStatus,
-    KpiPeriodType,
-    KpiResult,
-    KpiSource,
-    MeetingStatus,
-    Meeting,
-    MeetingMinuteStatus,
-    MeetingMinute,
-    Office,
-    Floor,
-    Room,
-    RoomType,
-    RoomStatus,
     WorkLog,
     WorkLogStatus,
 )

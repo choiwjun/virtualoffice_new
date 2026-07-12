@@ -19,15 +19,18 @@ from app.models.tables import (
     # ── 회의 / 협업 ──
     Meeting,
     MeetingParticipant,
+    RecordingConsent,
+    RecordingConsentType,
     MeetingMinute,
     ActionItem,
     WorkLog,
     # ── KPI / ERP push ──
     KpiResult,
     DailyStatusPush,
-    # ── 에셋 / 감사 ──
+    # ── 에셋 / 감사 / 공지 ──
     Asset,
     AuditLog,
+    Notice,
 )
 
 __all__ = [
@@ -45,6 +48,8 @@ __all__ = [
     "Presence",
     "Meeting",
     "MeetingParticipant",
+    "RecordingConsent",
+    "RecordingConsentType",
     "MeetingMinute",
     "ActionItem",
     "WorkLog",
@@ -52,4 +57,5 @@ __all__ = [
     "DailyStatusPush",
     "Asset",
     "AuditLog",
+    "Notice",
 ]

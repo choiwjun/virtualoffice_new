@@ -104,7 +104,7 @@
         "name": { "type": "string", "description": "표시명." },
         "total_area_m2": { "type": "number", "description": "층 전체 면적(m², 정보용).", "minimum": 0 },
         "coordinate_origin": { "const": "top_left", "description": "좌표계 원점. top_left 하나만 허용(D25). center/bottom_left 폐기." },
-        "floor_height_m": { "type": "number", "description": "이 층 바닥의 Godot 월드 Y 오프셋(m). (level-1)*story_height. 다층 매핑용(§5.3)." },
+        "floor_height_m": { "type": "number", "description": "이 층 바닥의 3D 월드 Y 오프셋(m) — Blender/three.js 다층 매핑용(05 §5.3 리맵 참조). (level-1)*story_height." },
         "grid_snap_unit_cm": { "type": "number", "description": "편집기 그리드 스냅 단위(cm).", "exclusiveMinimum": 0 },
         "unit_system": { "const": "metric", "description": "측정 단위. metric(미터) 고정(D25)." }
       }

@@ -1,23 +1,44 @@
 # 07-3D 비주얼 & 오픈에셋 파이프라인
 
+> 🔵 **D28 피벗(2026-07-09) — 렌더 방식 대체. 아래 "Blender Cycles 오프라인 렌더 + 깊이합성" 서술은 폐기·보류.** 현행 = **실시간 스타일라이즈드 R3F**(사용자 제작 저폴리 glb를 three.js로 실시간 렌더 — 같은 렌더러라 오클루전 자동, 깊이합성·Blender 오프라인 굽기 불필요). 정본 = **00-decisions §I(D28)**. 이 문서에서 **여전히 유효** = 에셋 규약(glb·미터·바닥중심 피벗·산출 경로 `frontend/public/assets/3d/...`)·아바타 폴리곤 예산·좌표(Z-up→Y-up 보정). **무효(D28)** = Blender/Cycles/오프라인 배경렌더/깊이합성/유리 2레이어 절.
+
+> 🟣 **v8.0 에셋 소스(2026-07-10, D28.1).** 런타임 에셋 산출 정본 = **v8.0 통합본**(`docs/virtual_office_final_dev_complete_v8_0/`, 레지스트리 `asset-registry-v8.json`). glb·미터·바닥중심 피벗·Z-up→Y-up 규약 유효. 캐릭터는 **리깅+애니 12클립 내장**(정적 포즈 폐기). 상세 = 00-decisions §I(D28.1).
+
+> 🟪 **v10.0 에셋 소스(2026-07-11, D28.2).** 런타임 에셋 산출 정본 = **v10.0 완제품**(`docs/virtual_office_complete_product_v10_0/`, 레지스트리 `asset-registry-v10.json`). glb·미터·바닥중심 피벗·Z-up→Y-up 규약 유효. v8 대비 **PBR(BaseColor·Normal·Metallic-Roughness) 텍스처를 GLB에 내장**(114 GLB·2127장)한 것이 핵심 차이. 상세 = 00-decisions §I(D28.2).
+
+> 🟢 **D27 반영(2026-07-09 재작성) — 포토리얼 웹임베드 정본.** D26(WorkAdventure)+Godot 실시간 렌더는 폐기되고, **Blender Cycles 오프라인 렌더로 배경을 굽고 R3F(three.js)가 깊이합성으로 실시간 아바타를 가리는 고정 아이소 2.5D**가 현행 아키텍처다. 실측 근거 = 스파이크 `spikes/depth-composite`(PASS 2026-07-08). 정본 = 00-decisions §H(D27) · 3d-design/{photoreal-web-strategy, design-style-analysis, scene-structure} · 14/15/16. 본문에서 Godot/실시간GI/`.tscn`·`.pak`·Draco금지·VRAM BC·GDScript LOD/Occluder/MultiMesh 서술은 전부 폐기·교체되었다.
+
 ## 메타 정보
 - **문서명**: 3D 비주얼 & 오픈에셋 파이프라인
-- **버전**: 1.2
+- **버전**: 2.0
 - **작성일**: 2026-07-01
-- **최종 갱신**: 2026-07-02
+- **최종 갱신**: 2026-07-09
 - **담당자**: 3d-engine-specialist
-- **범위**: 로드맵 Stage 1(골든 샘플) ~ Stage 2(에셋 통합)
-- **참조**: 00-decisions.md(정본, D7·D8·D9·D22), 05-office-layout-schema.md(씬빌더·경로 규약·성능 파생)
+- **범위**: 오프라인 배경 렌더(Blender Cycles) → 깊이합성 웹임베드(R3F) → 에셋 파이프라인
+- **참조**: 00-decisions.md(정본, §H/D27), 3d-design/photoreal-web-strategy.md(3자 정합·좌표·깊이 규약), 3d-design/scene-structure.md, 05-office-layout-schema.md(씬 원점·경로 규약·좌석↔가구 정합)
 
 > 이 문서는 00-decisions.md의 정본 결정을 따른다. 충돌 시 00-decisions.md가 이긴다.
 
 ---
 
-## 1. 골든 샘플 범위 & 품질 기준
+## 1. 렌더 방식 & 품질 기준
 
-### 1.1 골든 샘플 정의 (Stage 1)
+### 1.0 렌더 파이프라인 개요 (D27 정본)
 
-**목적**: Godot 4 Forward+ 렌더러에서 가상오피스의 최고 품질 기준을 시각적·성능적으로 확정하고, 향후 모든 씬·에셋의 벤치마크로 삼는다.
+**렌더 방식은 실시간 3D 엔진이 아니라 오프라인 렌더 + 깊이합성이다.**
+
+1. **배경을 굽는다(오프라인)**: Blender Cycles로 office_layout을 파라메트릭 씬으로 조립하고 **직교 아이소 카메라**로 렌더한다. 산출:
+   - color 패스 → `office_bg.png`(배경 이미지)
+   - Z depth 패스 → `office_depth.png`(16bit, 0=near black .. 1=far white)
+   - 카메라 파라미터/행렬 → `camera.json`(view/projection/world 행렬)
+2. **웹에서 실시간 합성**: R3F(three.js)가 `office_bg.png`를 **풀스크린 쿼드**로 깔고, 실시간 아바타(경량 GLTF)를 그린다. 아바타의 프래그먼트 깊이를 `office_depth.png`와 비교해(depthComposite.glsl.ts) 배경 뒤에 있으면 가린다 → **오클루전**.
+3. **고정 아이소 2.5D**: 카메라는 굽는 시점에 고정된다(자유 회전 없음). 층/레이아웃 편집이 확정되면 배경을 재렌더한다.
+
+실측 근거는 `spikes/depth-composite`(PASS 2026-07-08) — §1.3에 검증치를 수록한다.
+
+### 1.1 씬 범위 (골든 샘플 대상 공간)
+
+**목적**: Blender Cycles 오프라인 렌더에서 가상오피스의 최고 품질 기준을 시각적으로 확정하고, 향후 모든 배경·에셋의 벤치마크로 삼는다.
 
 **포함 공간**:
 - **로비**: 엔트리홀 + 브랜드월 + 리셉션 데스크 + 신발장/보관소 + 직원 안내 패널
@@ -31,6 +52,15 @@
 **플로어 스펙**: 
 - 정면 가로 약 30m, 깊이 약 15m (표준 중형 오피스)
 - 천고 2.8m, 각 공간 면적 비율은 현실 오피스 기준
+
+### 1.3 스파이크 검증치 (spikes/depth-composite, PASS 2026-07-08)
+
+아래 값은 실제 스파이크 코드에서 실측·확정된 정본이다. Blender 렌더 스크립트와 R3F 셰이더가 이 규약으로 정합한다.
+
+- **카메라**: `ORTHO`(직교), `ortho_scale = 8.0`, elevation **35.264°**, azimuth **45°**, render **1920×1080**, clip near **0.1** / far **100**. `camera.json`에 view/projection/world 행렬을 수록한다.
+- **좌표 변환**: **Blender(x, y, z) → three.js(x, z, −y)**. Blender는 Y-forward·Z-up, three.js는 Y-up·Z-forward이므로 축을 재매핑한다. 단일 원점은 photoreal-web-strategy §5의 3자 정합(Blender ↔ R3F ↔ Colyseus)에서 정의한 `office_layout`의 **top_left 미터 원점**(D25)이다.
+- **깊이 규약**: `office_depth`는 **0=near(black) .. 1=far(white), 16bit**. Blender 측은 `material_override_emission`으로 굽는다 — `ShaderNodeCameraData.View_Z_Depth → MapRange(near..far → 0..1) → Emission`. R3F 측(`depthComposite.glsl.ts`)이 같은 규약으로 배경 깊이를 샘플해 아바타 프래그먼트와 비교한다.
+- **웹 스택**: `three ^0.168`, `@react-three/fiber ^8.17`, `@react-three/drei ^9.115`, `vite`, `vitest`.
 
 ### 1.2 품질 기준
 
@@ -48,18 +78,17 @@
 - **맵 포함**: Base Color + Normal + Roughness + Metallic (선택: AO)
 - **소재 정확도**: 나무는 목재 텍스처, 유리는 반투명+프레넬, 금속은 산화 표현
 
-#### 간접광 조명 & GI (D7 확정)
-- **Godot 4 Forward+ 기본 조합**: **실시간 직접광(DirectionalLight3D/OmniLight3D/SpotLight3D) + ReflectionProbe + SSAO**. 이것을 모든 사양의 기본 렌더 경로로 확정한다.
-- **라이트맵 베이킹 배제**: office_layout JSON으로 씬이 런타임에 동적 생성되므로(05 참조), 사전 UV·라이트맵 베이크가 성립하지 않는다(방·가구 배치가 배포 때마다 달라짐 → 베이크한 라이트맵이 무효화). 따라서 GPU 라이트매핑은 사용하지 않는다.
-- **SDFGI는 고사양 옵션 토글**: SDFGI(Signed Distance Field GI)는 동적 씬과 호환되지만 비용이 크므로, 고사양 PC 전용 옵션으로만 제공하고 기본값은 OFF(직접광+ReflectionProbe+SSAO). 기준 사양(GTX 1650급)에서는 SDFGI 없이 60fps를 목표로 한다.
-- 브루탈리스트 조명 금지: 각 공간에 간접광 근사(ReflectionProbe + 스카이박스 앰비언트) + 국소 조명(스팟/포인트 라이트) 혼합
-- 실내 조명: 천장 LED 패널/스팟라이트, 따뜻한 색온도(3500K~4000K)
-- 외부 자연광: 스카이박스 + 창 유리를 통한 광선 투과 표현
+#### 조명 & GI (Blender Cycles 오프라인)
+- **GI는 오프라인 렌더에 굽는다**: 배경 이미지는 Blender Cycles(패스트레이싱 GI)로 굽는 순간 전역조명·소프트섀도·반사·AO가 이미 계산되어 픽셀에 고정된다. 웹 런타임(R3F)은 이 배경을 텍스처로 깔 뿐이므로 **실시간 GI 엔진이 필요 없다**. (구 문서의 Forward+/SDFGI/ReflectionProbe/SSAO/라이트맵 베이크 논쟁은 전부 무의미 → 폐기)
+- **아바타 조명 정합(런타임)**: 실시간 아바타는 배경과 같은 광환경으로 보이도록 **IBL/라이트프로브**로 라이팅한다. 배경을 굽는 데 쓴 HDRI/조명을 요약한 **IBL 환경맵**을 three.js `Scene.environment`에 주입해 배경 톤과 정합시킨다.
+- 브루탈리스트 조명 금지: 실내 간접광 + 국소 조명(면광원/스팟) 혼합으로 부드러운 GI 표현
+- 실내 조명: 천장 LED 패널/면광원, 따뜻한 색온도(3500K~4000K)
+- 외부 자연광: HDRI 환경 + 창 유리를 통한 광선 투과(Cycles가 굽는다)
 
-#### 제한 카메라 & FOV
-- FOV: 60° (데스크톱 게이밍 표준)
-- 오버헤드 뷰(미니맵): isometric 또는 top-down, 시야 각도 설정 고정
-- 1인칭 아바타 카메라: 아이레벨(약 1.6m), 회전 속도 제한(모션 멀미 방지)
+#### 카메라 (고정 아이소 2.5D)
+- **직교(ORTHO) 아이소메트릭 고정**: elevation 35.264° / azimuth 45°, `ortho_scale 8.0`, render 1920×1080, clip 0.1~100(§1.3 실측). 원근 FOV·자유 회전·1인칭 카메라는 없다.
+- 카메라 파라미터/행렬은 `camera.json`으로 내보내 R3F가 배경 쿼드·깊이합성에 동일 투영을 재현한다.
+- 미니맵(HUD)은 별도 top-down 평면도 오버레이로 처리하며, 메인 씬 카메라와 무관하다.
 
 #### HUD & 오버레이 UI
 - **직원 이름 태그**: 아바타 머리 위 텍스트, 거리별 페이드(20m 이상 숨김)
@@ -69,12 +98,14 @@
 - **미니맵**: 우측 하단 고정(05·06과 통일), 층/구역 토글, 아바타·회의실·클릭 네비게이션
 - **폰트**: 가독성 최우선(고대비, 안티에일리어싱 적용)
 
-#### 성능 기준 (D22)
-- **FPS**: **GTX 1650급 60fps / 내장그래픽(Iris Xe급) 30fps**, Full HD 기준. (종전 "RTX 4060 이상" 요구는 폐기)
-- **메모리**: 로드 후 **2GB 이하**(Godot 엔진 포함)
-- **폴리곤**: 전체 씬 약 500K~1M 삼각형(LOD 포함)
-- **드로우콜**: 배치 처리로 100~200회 이내. **동일 asset_id는 MultiMesh로 1드로우콜에 계상**(§6.2, 05 씬빌더·performance 파생 연동)
-- **로드 시간**: 초기 씬 < 3초, 구역 전환 < 1초
+#### 성능 기준 (웹임베드)
+- **배경(오프라인)**: 성능 예산의 대상이 아니다 — 배경은 정적 이미지(PNG) 2장 + camera.json이므로 렌더 비용이 런타임에 없다. 씬 복잡도(폴리곤·GI 반사 등)는 굽는 시점에만 비용이 든다.
+- **런타임 렌더 비용 = 아바타뿐**: 웹 브라우저(three.js)가 매 프레임 그리는 것은 풀스크린 배경 쿼드 1장 + 접속 아바타들뿐이다. **아바타 예산이 성능의 핵심**이다.
+  - 아바타 폴리곤: 경량 GLTF 기준 **아바타당 8K~15K 삼각형(LOD 0), 동시 20명 총 ≤300K** — 정본 = 3d-design/optimization-criteria.md §1.2/§3.1. 동시 표시 규모에 맞춰 three.js LOD로 원거리 감축.
+  - 드로우콜: 동일 아바타 메시는 three.js `InstancedMesh`로 병합해 계상.
+- **배경 에셋 크기**: `office_bg.png` + `office_depth.png`(16bit) 합계는 정적 서빙 대상이므로 층/레이아웃 버전별 캐싱으로 초기 로드를 관리한다(§6, §8).
+- **FPS 목표**: 일반 사무용 노트북 웹브라우저(내장그래픽 포함)에서 **60fps**를 목표로 하며, 부담은 배경이 아니라 동시 아바타 수에 비례한다.
+- **로드 시간**: 배경 이미지 로드 < 2초(캐시 적중 시 즉시), 층 전환은 해당 층 배경 캐시 교체.
 
 ---
 
@@ -103,7 +134,7 @@
 #### 금지 저장소 & 라이선스
 
 ❌ **사용 불가**:
-- **CC-NC**(비상업), **CC-ND**(수정금지), **CC-SA / CC-BY-SA**(동일조건변경허락, ShareAlike) — NC는 사내 운영이라도 상업 해석이 모호하고, ND는 최적화·변환(.tscn 임포트) 자체가 불가하며, SA는 파생물 전체에 동일 라이선스를 전염시켜(카피레프트) 클라이언트 pak 배포 라이선스를 오염시키므로 → 원칙상 피함
+- **CC-NC**(비상업), **CC-ND**(수정금지), **CC-SA / CC-BY-SA**(동일조건변경허락, ShareAlike) — NC는 사내 운영이라도 상업 해석이 모호하고, ND는 최적화·변환(GLTF 재익스포트·Draco/KTX2 압축·Blender 씬 편집) 자체가 불가하며, SA는 파생물 전체에 동일 라이선스를 전염시켜(카피레프트) 배포 산출물(GLTF 에셋·배경 이미지) 라이선스를 오염시키므로 → 원칙상 피함
 - **Editorial Only**(에디토리얼 용도만 허용) → B2B 장기 고려 시 위험
 - **All Rights Reserved**(명시 없음) — 라이선스 불명확 → 검수 불가 수용
 - **브랜드 로고·실제 가구 외형**(예: Herman Miller, Steelcase 로고 포함 모델) → 지식재산권 침해 위험
@@ -202,7 +233,7 @@ CC0 > CC-BY > (금지) > 구매/자체제작
 |----------|------|----------|--------|----------|---------|-----|
 | **브랜드월** | 구조 | 로비 - 회사 아이덴티티 | 중간 | 8h | Blender | 회사 로고·색상 활용 |
 | **리셉션 데스크** | 가구 | 로비 - 엔트리 포인트 | 중간 | 10h | Blender | 모듈형, 재질 고급 |
-| **회의실 유리 재질·문짝·화이트보드 세트** | 가구/소품 | Stage 1 핵심 - 파라메트릭 회의실용 부속 | 중간 | 10h | Blender + Godot 셰이더 | 골조(벽·개구부)는 05 room 스키마로 파라메트릭 생성(D9). 07은 유리 셰이더 파라미터·문짝·화이트보드만 공급 |
+| **회의실 유리 재질·문짝·화이트보드 세트** | 가구/소품 | 파라메트릭 회의실용 부속 | 중간 | 10h | Blender(Cycles 재질) | 골조(벽·개구부)는 05 room 스키마로 파라메트릭 생성(D9). 07은 유리 재질·문짝·화이트보드만 공급. 배경은 Cycles가 유리 굴절/반사를 굽는다 |
 | **오픈데스크 블록** | 가구 | 오피스 에어리어 - 팀별 구분 | 중간 | 12h | Blender | 모듈식, 의자·조명 포함 |
 | **팀구역 파티션** | 구조 | 시각적 경계 - 단색/패턴 | 낮음 | 6h | Blender | 흰색/색상 변형 버전 |
 | **집중실/폰부스** | 구조 | 집중·통화 공간 - 방음 표현 | 중간 | 12h | Blender | 투광성 합성수지, 내부 조명 |
@@ -211,9 +242,9 @@ CC0 > CC-BY > (금지) > 구매/자체제작
 | **모니터 스크린** | 장비 | 회의·라운지·데스크 | 낮음 | 4h | Blender 또는 Quaternius | 디스플레이 표면 UV 매핑 |
 | **LED 라인조명** | 구조 | 천장·벽 - 간접광 원천 | 낮음 | 5h | Blender | 이미시브 재질, 색온도 변형 |
 | **미니맵 구조물** | UI 3D | HUD - 평면도 기준 | 낮음 | 4h | Blender | 투명도 조정 |
-| **상태 뱃지 UI** | UI 3D | 아바타 상태 표시 | 낮음 | 3h | Blender + UI 설정 | 빌보드, 상태 아이콘 D13 7종(화면 표시는 오프라인 제외 6종) |
-| **회의실 플로팅 라벨** | UI 3D | 회의실 이름·점유 상태 | 낮음 | 3h | Blender + shader | 거리별 페이드, 항상 정면 향 |
-| **아바타 변형 5~10명** | 캐릭터 | Stage 1 - 기본 휴머노이드 + 색상 변형 | 높음 | 40h (베이스 리깅 + 변형, 2배 버퍼 포함) | **Mixamo/기성 리그 활용(정식 계획)** + Blender | 자동 리깅(Mixamo) 후 색상·프로포션 변형. 커스텀 리깅은 최소 2배 버퍼. 리깅 상세는 본 문서 §4.1 및 P1-S1-T4 태스크 산출물로 정의 |
+| **상태 뱃지 UI** | UI (R3F/DOM) | 아바타 상태 표시 | 낮음 | 3h | R3F drei Html/스프라이트 | 아바타 위 빌보드, 상태 아이콘 D13 7종(화면 표시는 오프라인 제외 6종) |
+| **회의실 플로팅 라벨** | UI (R3F/DOM) | 회의실 이름·점유 상태 | 낮음 | 3h | R3F drei Html/스프라이트 | 거리별 페이드, 항상 정면 향 |
+| **아바타 변형 5~10명** | 캐릭터 | 기본 휴머노이드 + 색상 변형(런타임 three.js GLTF) | 높음 | 40h (베이스 리깅 + 변형, 2배 버퍼 포함) | **MakeHuman(무료)/CC4(유료) 소스** + Blender | MakeHuman/CC4로 베이스 생성·리깅 후 색상·프로포션 변형. **Ready Player Me 금지(2026-01 종료)**. 경량 GLTF로 익스포트(Draco/meshopt + KTX2). 리깅 상세는 §4.1 및 태스크 산출물로 정의 |
 
 ### 4.2 자체 제작 가이드라인
 
@@ -223,10 +254,10 @@ CC0 > CC-BY > (금지) > 구매/자체제작
 - **색상 팔레트**: 회사 브랜드 컬러 가이드라인 준수
 
 #### 유리 & 투명도
-- **Shader**: Godot 4 Standard Material + Glass BRDF
-- **Roughness**: 0.0~0.1 (맑은 유리), 0.2~0.3 (스리드 글래스)
+- **재질**: Blender Cycles Principled BSDF(Transmission) — 배경 렌더 시 굴절·반사를 굽는다. (실시간 아바타가 유리 뒤에 있으면 배경 깊이합성으로 자연히 가려진다)
+- **Roughness**: 0.0~0.1 (맑은 유리), 0.2~0.3 (프로스티드 글래스)
 - **IOR**: 1.5 (표준 소다석회유리)
-- **내부 벽**: 화이트보드 재질(Roughness 0.4, Metallic 0.0) + 텍스트 쓰기 가능 설정
+- **내부 벽**: 화이트보드 재질(Roughness 0.4, Metallic 0.0)
 
 #### 모듈형 설계
 - **데스크 블록**: 1.2m × 0.6m 단위, 네스팅 배치 가능
@@ -235,26 +266,49 @@ CC0 > CC-BY > (금지) > 구매/자체제작
 
 ---
 
-## 5. 에셋 파이프라인 14단계 & 레지스트리 스키마
+## 5. 파이프라인 & 레지스트리 스키마
 
-### 5.1 에셋 파이프라인 14단계
+### 5.0 전체 파이프라인 (office_layout → 배경 굽기 → R3F 로드)
+
+**정본 흐름**: `office_layout JSON → Blender 파라메트릭 씬 빌더(build_office.py) + CC0 에셋 배치 → Cycles 렌더(color+depth) → 후처리(톤매핑) → office_bg/depth/camera.json → 정적 서빙 → R3F 로드`. 층/레이아웃 버전별로 캐싱하고, 편집이 확정되면 해당 배치를 재렌더한다.
+
+```mermaid
+graph LR
+    L["office_layout JSON<br/>(방·가구·좌석 배치, D25 원점)"] --> B["build_office.py<br/>(Blender 파라메트릭 씬 빌더)"]
+    A["CC0/CC-BY 에셋 배치<br/>(가구·구조 GLTF)"] --> B
+    B --> R["Cycles 오프라인 렌더<br/>(ORTHO 아이소 카메라)"]
+    R --> C1["color 패스 → office_bg.png"]
+    R --> C2["Z depth 패스 → office_depth.png<br/>(16bit, 0=near..1=far)"]
+    R --> C3["camera.json<br/>(view/projection/world 행렬)"]
+    C1 --> P["후처리(톤매핑)"]
+    P --> S["정적 서빙<br/>(층/버전별 캐싱)"]
+    C2 --> S
+    C3 --> S
+    S --> W["R3F 로드<br/>(풀스크린 배경 쿼드 + 실시간 아바타 깊이합성)"]
+
+    style L fill:#e1f5ff
+    style W fill:#c8e6c9
+```
+
+### 5.1 에셋 파이프라인 (개별 에셋 조달·제작)
+
+아래는 배경 씬을 조립하기 위한 **개별 GLTF 에셋**(가구·구조·아바타)의 조달·제작 파이프라인이다. 완성된 에셋은 위 §5.0의 `build_office.py`가 배치한다.
 
 ```mermaid
 graph LR
     A["1. 요구사항 정의<br/>(도면, 용도, 스펙)"] --> B["2. 소스 선정<br/>(CC0/검수)"]
     B --> C["3. 다운로드<br/>& 파일 정리"]
     C --> D["4. 분석 & 측정<br/>(비율, 폴리곤, 재질)"]
-    D --> E["5. 포맷 변환<br/>(Blender: FBX→GLB)"]
+    D --> E["5. 포맷 정리<br/>(Blender: FBX/OBJ→GLTF)"]
     E --> F["6. 자체 제작/조정<br/>(모델링, 구조 통합)"]
-    F --> G["7. PBR 재질 적용<br/>(텍스처, Shader)"]
-    G --> H["8. 최적화 & 압축<br/>(Godot 임포트: VRAM BC, 자동 LOD)"]
-    H --> I["9. LOD 생성<br/>(3~5 레벨)"]
-    I --> J["10. 충돌 & 트리거<br/>(Shape3D, trigger zone)"]
-    J --> K["11. 씬 배치 & 프리팹<br/>(Godot 씬, 재사용성)"]
-    K --> L["12. Asset Registry 등록<br/>(메타데이터, 라이선스)"]
-    L --> M["13. 성능 검증<br/>(FPS, 메모리, 드로우콜)"]
-    M --> N["14. 배포 & 버저닝<br/>(파일명, commit, release tag)"]
-    
+    F --> G["7. PBR 재질 적용<br/>(Cycles Principled BSDF)"]
+    G --> H["8. 웹 최적화<br/>(Draco/meshopt + KTX2/Basis)"]
+    H --> I["9. 아바타 LOD<br/>(three.js 기준, 배경 에셋은 불필요)"]
+    I --> K["10. 씬 배치<br/>(build_office.py가 layout대로 인스턴싱)"]
+    K --> L["11. Asset Registry 등록<br/>(메타데이터, 라이선스)"]
+    L --> M["12. 렌더 검증<br/>(배경 품질 · 아바타 런타임 FPS)"]
+    M --> N["13. 배포 & 버저닝<br/>(에셋 GLTF + 배경 이미지 캐시)"]
+
     style A fill:#e1f5ff
     style N fill:#c8e6c9
 ```
@@ -295,14 +349,14 @@ assets/
 - PBR 채널 명칭 확인(Roughness/Metallic 정의에 따라 다름)
 - 크기 재조정 필요 여부 판단
 
-#### **5. 포맷 변환 (Blender → glb → Godot 임포트)**
-- Blender에서 "Export as .glTF 2.0 (.glb/.gltf)" 선택
+#### **5. 포맷 정리 (Blender → GLTF 2.0)**
+- Blender에서 "Export as glTF 2.0 (.glb/.gltf)" 선택
 - 설정:
-  - Include Animations: 필요시만 O
+  - Include Animations: 아바타 등 필요시만 O
   - Include Deformation Bones: O (리깅 있을 시)
-  - Format: .glb (단일 파일, Godot 임포트 소스)
-  - **Draco Compression: 사용 안 함** — Godot 4는 Draco/meshopt 압축 glTF를 임포트하지 못해 로드가 실패한다(D8). 압축은 아래 8단계의 Godot 임포트 최적화(VRAM BC 압축)로 처리한다.
-- glb는 **중간 산출물**일 뿐이다. 최종 배포 산출물은 Godot 프로젝트에 임포트된 `.tscn`(임포트 완료본)이며, 클라이언트 pak에 동봉된다(런타임 glb 다운로드 없음).
+  - Format: `.glb`(단일 파일) 또는 `.gltf`+bin
+- **웹 표준 포맷을 지향한다** — 압축은 8단계에서 **Draco/meshopt(메시) + KTX2/Basis(텍스처)**로 처리한다. (구 문서의 "Draco 금지" 규약은 Godot 임포트 한계 때문이었고, 웹은 정반대로 Draco/meshopt가 표준이다.)
+- 배경 씬용 에셋은 `build_office.py`가 Blender 씬에 임포트해 배치하고 Cycles로 굽는다. 런타임에 브라우저로 내려가는 것은 배경 이미지와 **아바타 GLTF**뿐이다.
 
 #### **6. 자체 제작/조정**
 - 회사 로고 텍스처 추가, 색상 변경
@@ -310,266 +364,124 @@ assets/
 - 크기 및 배치 조정
 - 불필요한 지오메트리 정리
 
-#### **7. PBR 재질 적용**
-Godot 4 Standard Material 설정:
+#### **7. PBR 재질 적용 (Blender Cycles)**
+Blender Principled BSDF(glTF 2.0 Metallic-Roughness와 호환):
 ```
-Material:
-  - Albedo: Base color texture
-  - Normal Map: Normal texture
+Principled BSDF:
+  - Base Color: basecolor 텍스처
+  - Normal: Normal Map 노드 → normal 텍스처
   - Roughness: roughness.png or value 0.5
   - Metallic: metallic.png or value 0.0
-  - AO Map: 선택 (baking 필요)
-  - Emission: 발광 필요시만
+  - Transmission: 유리 등 투명 재질(Cycles가 굴절 렌더)
+  - Emission: LED 등 발광 필요시만
+```
+배경은 Cycles가 이 재질로 GI·반사·굴절을 굽는다. 아바타 GLTF는 같은 재질을 three.js `MeshStandardMaterial`로 로드한다.
+
+#### **8. 웹 최적화 (Draco/meshopt + KTX2/Basis)**
+- **메시 압축**: `gltf-transform` 또는 `gltfpack`으로 **Draco 또는 meshopt** 적용. 웹 GLTF의 표준 경로다(Godot 시절의 "Draco 금지·VRAM BC" 규약은 폐기 — 웹은 정반대다).
+- **텍스처 압축**: **KTX2/Basis Universal**로 변환(`toktx` / `gltf-transform`). GPU 지원 포맷으로 트랜스코드되어 브라우저 VRAM·다운로드를 절약한다.
+- 이 최적화는 **런타임 다운로드되는 아바타 GLTF**에 특히 중요하다. 배경 씬용 정적 에셋은 굽는 데만 쓰이므로 압축 우선순위가 낮다.
+
+#### **9. 아바타 LOD (three.js 기준)**
+- **배경 에셋에는 LOD가 불필요**하다 — 배경은 굽는 순간 이미지로 고정되므로 런타임 폴리곤이 0이다. (구 문서의 씬 전체 LOD·Occluder·MultiMesh는 오프라인 배경에 무의미 → 폐기)
+- **아바타만 three.js `LOD` 객체로 거리별 감축**:
+```
+LOD 0 (Full):   근거리 아바타 풀 메시
+LOD 1 (Medium): 중거리 간소화 메시(Blender Decimate 또는 gltf-transform simplify)
+LOD 2 (Low):    원거리 빌보드/저폴리
 ```
 
-#### **8. 최적화 & 압축 (Godot 임포트 파이프라인)**
-- **gltfpack/meshopt·Draco 사용 금지**: Godot 4가 임포트하지 못해 로드 실패(D8). 대신 **Godot 임포트 설정**으로 최적화한다.
-- **VRAM 텍스처 압축**: 임포트 시 Compress Mode = VRAM Compressed(BC1/BC3/BC5). GPU에서 자동 디코드되어 VRAM을 절약(§6.3).
-- **자동 LOD**: Godot 4의 메시 임포트 옵션에서 자동 LOD 생성 활성화(또는 §9단계 수동 LOD).
-- 텍스처 8bit PNG 소스(16bit는 필요한 경우만), 임포트 후 VRAM 압축본으로 대체.
-- 산출물 목표: `.tscn` + 임포트 캐시. 소스 glb는 저장소에 보관하되 pak에는 임포트 완료본만 포함.
+#### **10. 씬 배치 (build_office.py)**
+- 완성된 GLTF 에셋은 `build_office.py`가 office_layout JSON을 읽어 방·가구·좌석 좌표대로 Blender 씬에 인스턴싱한다. asset_id → 에셋 파일 매핑은 Asset Registry(§5.3)를 조회한다.
+- 좌표 원점은 layout `top_left` 미터(D25). Blender 좌표는 렌더 후 R3F에서 `(x, z, −y)`로 재매핑된다(§1.3).
 
-#### **9. LOD 생성**
-```
-LOD 0 (Full):     100% 폴리곤  (근거리)
-LOD 1 (High):     50% 폴리곤   (10m 이내)
-LOD 2 (Medium):   25% 폴리곤   (20m 이내)
-LOD 3 (Low):      10% 폴리곤   (50m 이상)
-```
-Godot 4에서 자동 LOD 생성 또는 Blender Decimate modifier로 수동 생성.
+#### **11. Asset Registry 등록**
+`asset` 테이블에 메타데이터 기록 (§5.3 참조).
 
-#### **10. 충돌 & 트리거**
-- **충돌 메시 생성**: 간단한 박스/캡슐(성능 중심)
-- **트리거 존**: 회의실 입장, 라운지 좌석 등 → Area3D
-- **물리**: RigidBody3D (필요시) 또는 StaticBody3D
+#### **12. 렌더 검증**
+- **배경**: Cycles 렌더 결과의 시각 품질(GI·그림자·재질) 및 `office_depth` 규약(0=near..1=far, 16bit) 정합 확인.
+- **아바타 런타임**: 웹브라우저에서 접속 아바타 규모 기준 60fps, 깊이합성 오클루전 정상 동작 확인(스파이크 검증 규약, §1.3).
 
-#### **11. 씬 배치 & 프리팹**
+#### **13. 배포 & 버저닝**
 ```
-reception_desk.tscn
-├─ Node3D (Root)
-├─ MeshInstance3D
-│  └─ Material (PBR)
-├─ CollisionShape3D (벽/데스크)
-└─ Area3D (트리거: "desk_greeting")
-```
-재사용 가능하도록 다른 씬에 인스턴스화.
+# 소스 (저장소 보관, 배포 미포함 — raw만 파일명 버전 허용)
+render-pipeline/assets/models/desk_standard/
+  ├── raw/desk_standard_v1.0.glb    # 배경 씬용 소스 GLTF (미압축 원본)
+  └── CHANGELOG.md
 
-#### **12. Asset Registry 등록**
-`asset` 테이블에 메타데이터 기록 (5.3 참조).
-
-#### **13. 성능 검증**
-- 전체 씬에 배치 후 FPS 측정
-- 메모리 사용량 (Godot Monitor 탭)
-- 드로우콜 수 (gizmo 해제 후 측정)
-- 목표: 60 FPS 유지
-
-#### **14. 배포 & 버저닝**
+# 배포 산출물 (정적 서빙 — 경로 정본: 3d-design/asset-registry.md §3.3)
+frontend/public/assets/3d/
+  ├── models/{slug}/{slug}.glb      # 런타임 다운로드 GLTF(Draco+KTX2). 파일명 고정 — 버전은 asset 테이블 관리
+  └── scenes/{floor}/{layout_version}/
+      ├── office_bg.png             # 배경(층/레이아웃 버전별 캐싱)
+      ├── office_depth.png          # 16bit depth
+      └── camera.json
 ```
-assets/
-  ├── 3d/
-  │   ├── models/
-  │   │   ├── reception_desk/
-  │   │   │   ├── reception_desk.tscn      # 배포 산출물(pak 동봉, 파일명 고정)
-  │   │   │   ├── raw/
-  │   │   │   │   └── reception_desk_v1.0.glb  # 임포트 소스(pak 미포함)
-  │   │   │   └── CHANGELOG.md
-  │   │   └── ...
-  │   └── materials/
-  │       └── pbr/
-```
-- Git tag: `asset/reception-desk-v1.0`
-- 버전은 asset 테이블·CHANGELOG로 관리(`.tscn` 파일명은 고정)
-- 변경 사항 문서화
+- Git tag: `asset/DESK_STANDARD_001`
+- 버전은 asset 테이블·CHANGELOG로 관리(배포 `.glb` 파일명에 버전 표기 금지). 배경 이미지는 층/레이아웃 버전 키로 캐싱하고 편집 확정 시 재렌더.
 - QA 체크리스트 완료
 
-### 5.3 Asset Registry 스키마
+### 5.3 Asset Registry 스키마 (정본 참조)
 
-> **정본 선언(2026-07-02 동기화)**: 이 스키마가 asset 테이블의 **정본(SoT)**이며, 04-data-model.md §2.6은 이를 참조(사본 동기화)한다. 충돌 시 본 절이 이긴다.
+> **스키마 정본 = `docs/3d-design/asset-registry.md` §1.1** (2026-07-09 교차감사 수렴). 본 절의 종전 자체 DDL "정본 선언"(2026-07-02)은 **철회**한다 — 이 절과 04-data-model.md §2.6은 모두 asset-registry.md §1.1을 참조한다. 충돌 시 asset-registry.md §1.1이 이긴다.
+>
+> 본 절이 정의했던 `asset_delivery VARCHAR(20)`(`"background"`|`"runtime"`) 판별자 컬럼은 **registry 스키마로 흡수**됐다. registry 정본에서 `gltf_path`는 **NULL 허용**이며, `CHECK((asset_delivery='runtime' AND gltf_path IS NOT NULL) OR (asset_delivery='background' AND render_output_path IS NOT NULL))` 제약이 계열별 필수 경로를 집행한다(타임스탬프는 TIMESTAMPTZ, D19).
 
-#### 테이블: asset
+#### 요약 (전체 DDL·컬럼 설명·예시 레코드 = asset-registry.md §1.1·§6)
 
-```sql
-CREATE TABLE asset (
-  asset_id          VARCHAR(64) PRIMARY KEY, -- e.g., "reception-desk-v1.0"
-  asset_name        VARCHAR(256) NOT NULL,   -- "Reception Desk"
-  asset_type        VARCHAR(50) NOT NULL,    -- "furniture" | "structure" | "material" | "ui3d" | "character" | "environment"
-  category          VARCHAR(100),             -- "office" | "meeting-room" | "lounge" | "lobby"
-  source_url        TEXT,                     -- Original download URL (CC0 sources)
-  author            VARCHAR(256),             -- Creator name (ambientCG, Poly Haven, or custom)
-  license           VARCHAR(100) NOT NULL,   -- "CC0" | "CC-BY" | "custom" | "proprietary"
-  license_url       TEXT,                     -- License document link
-  
-  downloaded_at     TIMESTAMP,                -- When first acquired
-  modified_by       VARCHAR(256),             -- Person who adapted/modified
-  
-  commercial_allowed        BOOLEAN DEFAULT TRUE,   -- Can be used commercially
-  attribution_required      BOOLEAN,                 -- Must credit author
-  redistribution_allowed    BOOLEAN,                 -- Can share modified version
-  
-  original_file_hash     VARCHAR(64),         -- SHA-256 of raw download
-  optimized_file_hash    VARCHAR(64),         -- SHA-256 of optimized .glb
-  
-  tscn_path          VARCHAR(256) NOT NULL,   -- res://assets/3d/models/<name>/<name>.tscn (배포 산출물, 05 ASSET_CATALOG 조회 대상)
-  source_glb_path    VARCHAR(256),            -- 임포트 소스 glb(저장소 보관, pak 미포함)
-  file_size_bytes    BIGINT,                  -- 산출물 크기(성능 예산 참고용, CDN 아님 — 런타임 다운로드 없음/D8)
-  
-  polygon_count      INT,                     -- Triangle count (LOD 0). 05 performance 파생 계산의 정본 소스
-  texture_resolution VARCHAR(20),             -- e.g., "2048x2048"
-  
-  dimension          JSONB,                   -- 실측 크기 {"width":1.5,"depth":0.8,"height":0.75}(m). 05 좌석↔가구 정합·검증의 정본
-  footprint_2d       JSONB,                   -- 편집기 도면용 2D 풋프린트 {"width":1.5,"depth":0.8}(m)
-  thumbnail_url      TEXT,                    -- 편집기 팔레트 썸네일
-  
-  used_in_scene      JSONB,                   -- ["stage1_lobby", "stage1_office"]
-  
-  external_dependencies TEXT,                 -- Other assets this requires (e.g., materials/wood_floor_006)
-  
-  notes              TEXT,                    -- Custom metadata, usage notes
-  
-  created_at         TIMESTAMP DEFAULT NOW(),
-  updated_at         TIMESTAMP DEFAULT NOW(),
-  deleted_at         TIMESTAMP                -- Soft delete
-);
-```
+| 컬럼(발췌) | 요약 |
+|---|---|
+| `asset_id` VARCHAR(64) PK | 대문자·언더스코어(05 정본). 예: `"DESK_STANDARD_001"` |
+| `asset_delivery` VARCHAR(20) NOT NULL | `"background"`(build_office.py가 굽는 배경 산출물) \| `"runtime"`(브라우저 다운로드 아바타·소품 GLTF) |
+| `gltf_path` VARCHAR(256) NULL | 런타임 GLTF. 규약: `frontend/public/assets/3d/models/{slug}/{slug}.glb` — **파일명 고정, 버전은 asset 테이블·CHANGELOG 관리**(종전 `_vX.glb` 파일명 버전 표기는 자기모순으로 폐기) |
+| `render_output_path` JSONB | 배경 렌더 산출물 세트(bg/depth/camera). 규약: `frontend/public/assets/3d/scenes/{floor}/{layout_version}/` |
+| `polygon_count` / `dimension` / `footprint_2d` / `thumbnail_url` | 성능·편집기 메타(±1cm AABB 검증 포함). `external_dependencies` 예: `"MAT_WOOD_FLOOR_006"` |
+| 라이선스 컬럼군 | `license`·`commercial_allowed`·`attribution_required` 등 — asset-registry.md §5 |
 
-#### 예시 레코드
+예시 레코드(`DESK_STANDARD_001` 등)는 asset-registry.md §6 참조.
 
-```json
-{
-  "asset_id": "reception-desk-v1.0",
-  "asset_name": "Reception Desk",
-  "asset_type": "furniture",
-  "category": "lobby",
-  "source_url": "https://polyhaven.com/a/reception_desk",
-  "author": "Poly Haven",
-  "license": "CC0",
-  "license_url": "https://polyhaven.com/license",
-  "downloaded_at": "2026-07-01T10:00:00Z",
-  "modified_by": "3d-engine-specialist",
-  "commercial_allowed": true,
-  "attribution_required": false,
-  "redistribution_allowed": true,
-  "original_file_hash": "a1b2c3d4e5f6...",
-  "optimized_file_hash": "f6e5d4c3b2a1...",
-  "tscn_path": "res://assets/3d/models/reception_desk/reception_desk.tscn",
-  "source_glb_path": "assets/3d/models/reception_desk/raw/reception_desk_v1.0.glb",
-  "file_size_bytes": 5242880,
-  "polygon_count": 42000,
-  "texture_resolution": "2048x2048",
-  "dimension": { "width": 2.4, "depth": 0.8, "height": 1.05 },
-  "footprint_2d": { "width": 2.4, "depth": 0.8 },
-  "thumbnail_url": "res://assets/3d/models/reception_desk/thumb.png",
-  "used_in_scene": ["stage1_lobby"],
-  "external_dependencies": "material/wood_floor_006",
-  "notes": "Adapted with company logo texture. UV unwrap optimized for LOD.",
-  "created_at": "2026-07-01T10:30:00Z",
-  "updated_at": "2026-07-01T10:30:00Z",
-  "deleted_at": null
-}
-```
-
-> **dimension 일치 검증 규칙**: `dimension`(및 `footprint_2d`)은 임포트된 `.tscn` 메시의 AABB 실측 크기와 일치해야 한다(허용 오차 ±1cm). 임포트 시 자동 측정한 AABB와 등록값이 어긋나면 등록을 거부한다. 이 `dimension`이 05의 좌석↔가구 좌표 정합·성능 파생 계산·편집기 도면 배치의 **정본**이므로, layout JSON의 `furniture.dimension`은 표시용 캐시일 뿐 이 값과 불일치하면 서버가 이 값으로 덮어쓴다.
+> **dimension 일치 검증 규칙**: `dimension`(및 `footprint_2d`)은 GLTF 메시의 바운딩박스 실측 크기와 일치해야 한다(허용 오차 ±1cm). 에셋 등록 시 자동 측정한 bbox와 등록값이 어긋나면 등록을 거부한다. 이 `dimension`이 05의 좌석↔가구 좌표 정합·`build_office.py` 배치·편집기 도면 배치의 **정본**이므로, layout JSON의 `furniture.dimension`은 표시용 캐시일 뿐 이 값과 불일치하면 서버가 이 값으로 덮어쓴다.
 
 ---
 
-## 6. 최적화 전략
+## 6. 최적화 전략 (웹 런타임 + 배경 캐싱)
 
-### 6.1 LOD(Level of Detail) 시스템
+> **핵심 전환**: 런타임 렌더 비용은 배경이 아니라 **아바타와 배경 이미지 로드**에만 존재한다. 배경은 굽는 순간 이미지가 되므로 런타임 폴리곤·드로우콜이 0이다. 따라서 최적화 대상은 (1) 배경 이미지 캐싱, (2) 아바타 GLTF 경량화, (3) 아바타 three.js LOD/인스턴싱이다. 구 문서의 씬 전체 LOD·MultiMesh·Occluder·VRAM BC·저사양 GI 모드는 오프라인 배경 아키텍처에 무의미 → 폐기.
 
-**Godot 4 GeometryInstance3D.visibility_range_begin/end 사용**:
+### 6.1 배경 이미지 캐싱
 
-```gdscript
-# furniture_desk.gd
-extends Node3D
+- `office_bg.png` + `office_depth.png` + `camera.json`을 **층/레이아웃 버전 키**로 캐싱(§8). 편집이 확정될 때만 재렌더하므로 대부분의 접속은 캐시 적중이다.
+- 배경은 정적 파일이라 CDN/브라우저 캐시가 그대로 먹는다. 깊이맵은 16bit PNG로 정밀도를 유지한다.
 
-func _ready():
-    # LOD 0 (Full detail, 0-10m)
-    $MeshInstance3D_LOD0.visibility_range_begin = 0.0
-    $MeshInstance3D_LOD0.visibility_range_end = 10.0
-    
-    # LOD 1 (50% detail, 10-20m)
-    $MeshInstance3D_LOD1.visibility_range_begin = 10.0
-    $MeshInstance3D_LOD1.visibility_range_end = 20.0
-    
-    # LOD 2 (25% detail, 20m+)
-    $MeshInstance3D_LOD2.visibility_range_begin = 20.0
-    $MeshInstance3D_LOD2.visibility_range_end = 100.0
+### 6.2 아바타 경량화 (런타임 GLTF)
+
+- **Draco/meshopt** 메시 압축 + **KTX2/Basis** 텍스처(§5.1 8단계)로 다운로드·VRAM을 줄인다.
+- 동일 아바타 메시는 three.js `InstancedMesh`로 병합해 드로우콜을 통합한다(구 Godot MultiMesh 대응).
+
+```ts
+// three.js: 동일 베이스 아바타 다중 인스턴싱
+const inst = new THREE.InstancedMesh(avatarGeometry, avatarMaterial, count);
+avatars.forEach((a, i) => inst.setMatrixAt(i, a.matrix));
+inst.instanceMatrix.needsUpdate = true;
 ```
 
-**폴리곤 감소 목표**:
+### 6.3 아바타 LOD (three.js)
+
+```ts
+const lod = new THREE.LOD();
+lod.addLevel(avatarFull,   0);   // 근거리 풀 메시
+lod.addLevel(avatarMedium, 15);  // 중거리 간소화
+lod.addLevel(avatarLow,    35);  // 원거리 저폴리/빌보드
 ```
-LOD 0: 100% (42K triangles)
-LOD 1: 50%  (21K triangles)
-LOD 2: 25%  (10.5K triangles)
-LOD 3: 10%  (4.2K triangles, 매우 먼 거리)
-```
+- 배경 가구·구조는 이미지이므로 LOD 대상이 아니다.
 
-### 6.2 인스턴싱 & 배치 처리
+### 6.4 깊이합성 오클루전 (Occluder 대체)
 
-**동일 자산 다중 배치** (예: 오피스 데스크 5개):
-- Godot MultiMesh 사용 → 드로우콜 1회로 통합
-- 트랜스폼만 변경, 메시 데이터는 공유
+- 벽·파티션 뒤 아바타 가림은 **별도 Occlusion Culling 엔진이 필요 없다** — `office_depth`와 아바타 프래그먼트 깊이를 비교하는 셰이더(`depthComposite.glsl.ts`)가 자동으로 배경 뒤 픽셀을 버린다(§1.3 깊이 규약). 이것이 구 Godot OccluderInstance3D를 대체하는 정본 메커니즘이다.
 
-```gdscript
-var multimesh = MultiMesh.new()
-multimesh.mesh = desk_mesh
-multimesh.instance_count = 5
+### 6.5 IBL/톤매핑 정합
 
-var multimesh_instance = MultiMeshInstance3D.new()
-multimesh_instance.multimesh = multimesh
-```
-
-**드로우콜 예산 집행 주체 (D7 · 05 연동):**
-- 씬 빌더(05 §5.1 `build_scene`)가 layout의 furniture를 **동일 `asset_id`끼리 그룹핑**해 2개 이상이면 MultiMesh 1드로우콜로 병합한다. 이 규칙이 100~200 드로우콜 예산(§1.2)의 집행 주체다.
-- 05의 성능 검증은 **가구 개수 프록시("furniture_count > 500 거부")를 폐기**하고, asset 테이블 `polygon_count`에서 파생한 **폴리곤/드로우콜 실측 기반값**으로 판정한다(05 §1.2.13·§3.4). 따라서 같은 asset_id 500개는 서로 다른 500개보다 훨씬 저렴하며, 개수 자체는 한도가 아니다.
-
-### 6.3 텍스처 압축 & 메모리
-
-**압축 형식**:
-- **VRAM 압축**: BC1(Opaque RGB), BC3(RGBA), BC5(Normal maps) → GPU에서 자동 디코드. 데스크톱 네이티브 배포이므로 이 경로만 사용한다.
-- **파일 크기**: PNG/JPEG 소스 → Godot 임포트 시 VRAM BC로 대체. WebP/Basis Universal·WASM용 경로는 미사용(웹 3D 미리보기 제거·WASM export 미사용, D11).
-
-**텍스처 해상도 계층**:
-
-| 거리 | 해상도 | 용도 |
-|------|--------|------|
-| < 5m | 2K | 근거리 상세 |
-| 5-20m | 1K | 중거리 |
-| > 20m | 512 | 원거리 |
-
-**메모리 계산** (대략):
-```
-2K 이미지: 2048×2048 × 4채널 = 16 MB (압축 없음)
-Godot에서 VRAM 압축 적용 시: ~4 MB
-1K 이미지: ~1 MB (압축 후)
-```
-
-### 6.4 오클루전 컬링(Occlusion Culling)
-
-**Godot 4 OccluderInstance3D**:
-- 벽·파티션으로 인한 불가시 객체 자동 제거
-- Stage 2 이후 고도화
-
-> **동적 씬 제약 (D7)**: 라이트맵과 마찬가지로, office_layout JSON으로 씬이 런타임 생성되므로 **에디터에서 전체 씬 Occluder를 사전 베이크할 수 없다**(배포 때마다 방·벽 배치가 달라짐). 대안: (a) **룸/벽 단위로 Occluder 지오메트리를 런타임에 부착**(05 room 경계·collider에서 단순 박스 Occluder 생성), (b) 정적 외벽 등 배치가 고정된 요소만 프리팹에 Occluder 동봉. 아래 코드는 개별 벽 프리팹에 부착하는 방식의 예시다.
-
-```gdscript
-# wall_occluder.gd — 개별 벽/파티션 프리팹에 부착(전체 씬 사전 베이크가 아님)
-extends OccluderInstance3D
-
-func _ready():
-    # 런타임 생성된 벽 메시의 단순 박스 형상으로 Occluder 구성
-    var box := BoxOccluder3D.new()
-    box.size = $Wall.mesh.get_aabb().size
-    occluder = box
-```
-
-### 6.5 저사양 모드
-
-**품질 설정** (기준 사양 = GTX 1650급 60fps / 내장그래픽 30fps, D22):
-- **Ultra**(고사양 옵션): 모든 LOD, **SDFGI 토글 ON**, 고해상도 텍스처. 기본값 아님(고사양 PC에서만 권장)
-- **High**(기준 사양 기본): LOD 2까지, **직접광 + ReflectionProbe + SSAO**(SDFGI OFF), 2K 텍스처 → GTX 1650급 60fps 목표
-- **Medium**: LOD 2까지, 1K 텍스처, 파티클 감소
-- **Low**(내장그래픽): LOD 1만, 512 텍스처, 그림자 축소, SSAO 경량화 → 내장그래픽 30fps 목표
+- 아바타 조명은 배경을 굽는 데 쓴 환경을 요약한 IBL 환경맵으로 정합(§1.2). 배경 후처리 톤매핑과 three.js `toneMapping`/`toneMappingExposure`를 맞춰 배경-아바타 색조 이질감을 제거한다.
 
 ---
 
@@ -586,9 +498,9 @@ func _ready():
 | 파티션·집중실·라운지 | 24h | Ready to start |
 | 모니터·LED·테이블 | 17h | Ready to start |
 | 미니맵·UI 뱃지·라벨 | 10h | Ready to start |
-| 아바타 5~10명 (Mixamo/기성 리그 활용, 2배 버퍼) | 40h | 본 문서 §4.1·P1-S1-T4 산출물 |
-| 텍스처 수집 & 최적화(Godot 임포트) | 20h | Ready to start |
-| 씬 통합 & 성능 검증 | 16h | Ready to start |
+| 아바타 5~10명 (MakeHuman/CC4 소스, 2배 버퍼) | 40h | 본 문서 §4.1 산출물 |
+| 텍스처 수집 & 웹 최적화(Draco/KTX2) + IBL 셋업 | 20h | Ready to start |
+| Blender 씬 빌더(build_office.py) + Cycles 렌더 + 깊이합성 통합 | 16h | Ready to start |
 | **소계** | **~167h** | **~4주 (1인 풀타임)** |
 
 ### 7.2 Stage 2 (통합) 일정
@@ -597,81 +509,63 @@ func _ready():
 - 좌석 배정 시스템(04 `seat.assigned_user_id`+`seat_assignment_history` 연동, D10): +24h
 - **총 Stage 1+2: ~231h (~6주)**
 
-> 위 시간은 3D/에셋 작업만의 추정이며, 전체 프로젝트 기준선은 **58주(D6)**다(10-roadmap.md). Stage 1+2(~6주)는 그 기준선 안의 3D 파이프라인 몫으로, D6과 모순되지 않는다. 아바타·커스텀 제작 시간은 최소 2배 버퍼를 반영했다.
+> 위 시간은 3D/에셋 작업만의 추정이며, 전체 프로젝트 일정은 **D27 재산정으로 주 단위 미확정**이다(00-decisions D6, 16-render-spike-and-roadmap §Part B). Stage 1+2(~6주)는 3D 파이프라인 몫의 추정치일 뿐 전체 기준선이 아니다. 아바타·커스텀 제작 시간은 최소 2배 버퍼를 반영했다.
 
 ---
 
 ## 8. 파일 구조 & 저장소 레이아웃
 
-> **경로 규약(05와 통일, D8)**: 배포 산출물은 각 모델 폴더의 `<name>.tscn`이며, 클라이언트 pak 경로는 `res://assets/3d/models/<name>/<name>.tscn`다. 이 경로가 05 씬빌더의 `ASSET_CATALOG[asset_id]` 값이다. 임포트 소스 glb는 `raw/`에 보관하되 pak에는 포함하지 않는다(런타임 glb 다운로드 없음). 버전은 파일명이 아니라 asset 테이블·CHANGELOG로 관리하고, `.tscn` 파일명은 고정한다.
+> **경로 규약(05와 통일)**: 에셋은 `background`(build_office.py가 굽는 배경용 GLTF)와 `runtime`(브라우저가 다운로드하는 아바타 GLTF)으로 나뉜다. 배경 산출물은 층/버전별 `office_bg.png`+`office_depth.png`+`camera.json` 세트다. asset_id → GLTF 매핑은 Asset Registry(§5.3)를 조회한다. 버전은 파일명이 아니라 asset 테이블·CHANGELOG·배경 버전 키로 관리한다.
 
 ```
 vituraloffice_new/
-├── godot/
-│   ├── project.godot
-│   ├── assets/                                 # Godot 프로젝트 하위 — res://assets/... 경로와 정합
-│   │   ├── 3d/
-│   │   │   ├── models/
-│   │   │   │   ├── brand_wall/
-│   │   │   │   │   ├── brand_wall.tscn         # 배포 산출물(pak 동봉). 05 ASSET_CATALOG 조회 대상
-│   │   │   │   │   ├── raw/
-│   │   │   │   │   │   └── brand_wall_v1.0.glb # 임포트 소스(저장소 보관, pak 미포함)
-│   │   │   │   │   ├── thumb.png               # 편집기 팔레트 썸네일
-│   │   │   │   │   ├── textures/
-│   │   │   │   │   │   ├── logo_albedo.png (2K)
-│   │   │   │   │   │   ├── wall_normal.png
-│   │   │   │   │   │   └── wall_roughness.png
-│   │   │   │   │   └── METADATA.json
-│   │   │   │   ├── reception_desk/
-│   │   │   │   ├── meeting_room_glass/
-│   │   │   │   ├── open_desk/
-│   │   │   │   └── ...
-│   │   │   ├── materials/
-│   │   │   │   ├── pbr/
-│   │   │   │   │   ├── wood_floor_006/ (from ambientCG)
-│   │   │   │   │   ├── concrete_wall/
-│   │   │   │   │   └── metal_frame/
-│   │   │   │   └── shaders/
-│   │   │   │       ├── glass.gdshader
-│   │   │   │       ├── emissive_led.gdshader
-│   │   │   │       └── billboard_ui.gdshader
-│   │   │   ├── hdri/
-│   │   │   │   └── kloppenheim_06_puresky_4k.exr (from Poly Haven)
-│   │   │   └── avatars/
-│   │   │       ├── base_male/
-│   │   │       └── base_female/
-│   │   ├── ui/
-│   │   │   ├── icons/
-│   │   │   │   ├── status_online.png
-│   │   │   │   ├── status_meeting.png
-│   │   │   │   └── ...
-│   │   │   └── fonts/
-│   │   │       └── roboto_mono_nerd.otf
-│   │   └── LICENSE/
-│   │       ├── THIRD_PARTY_LICENSES.md
-│   │       ├── brand_wall.txt (라이선스 명시)
-│   │       └── ...
-│   ├── scenes/
-│   │   ├── stage1_lobby.tscn
-│   │   ├── stage1_office.tscn
-│   │   ├── ui/
-│   │   │   ├── employee_panel.tscn
-│   │   │   ├── meeting_panel.tscn
-│   │   │   └── minimap.tscn
-│   │   └── ...
-│   ├── scripts/
-│   │   ├── player/
-│   │   ├── world/
-│   │   └── ui/
-│   └── addons/ (필요시)
+├── render-pipeline/                            # Blender 오프라인 렌더 (배경 굽기)
+│   ├── build_office.py                         # office_layout JSON → 파라메트릭 Blender 씬
+│   ├── render_office.py                        # Cycles 렌더 + color/depth 패스 + camera.json 익스포트
+│   └── assets/
+│       ├── models/                             # 배경 씬용 소스 GLTF (build_office.py가 배치)
+│       │   ├── brand_wall/
+│       │   │   ├── brand_wall_v1.0.glb
+│       │   │   ├── thumb.png                   # 편집기 팔레트 썸네일
+│       │   │   ├── textures/
+│       │   │   │   ├── logo_albedo.png (2K)
+│       │   │   │   ├── wall_normal.png
+│       │   │   │   └── wall_roughness.png
+│       │   │   └── METADATA.json
+│       │   ├── reception_desk/
+│       │   ├── meeting_room_glass/
+│       │   ├── open_desk/
+│       │   └── ...
+│       ├── materials/                          # ambientCG PBR 소스 (Blender 재질로 사용)
+│       │   ├── wood_floor_006/ (from ambientCG)
+│       │   ├── concrete_wall/
+│       │   └── metal_frame/
+│       ├── hdri/                               # Cycles 조명 + IBL 소스
+│       │   └── kloppenheim_06_puresky_4k.exr (from Poly Haven)
+│       └── LICENSE/
+│           ├── THIRD_PARTY_LICENSES.md
+│           ├── brand_wall.txt (라이선스 명시)
+│           └── ...
+├── frontend/                                   # R3F(three.js) 웹임베드 (three.js ^0.168, @react-three/fiber ^8.17, drei ^9.115)
+│   ├── public/                                 # Next.js 정적 서빙 루트 (R3F가 로드)
+│   │   └── assets/3d/                          # 경로 정본: 3d-design/asset-registry.md §3.3
+│   │       ├── scenes/                         # 배경 렌더 산출물
+│   │       │   └── {floor}/{layout_version}/   # 층/레이아웃 버전별 캐싱 (예: floor1/v3/)
+│   │       │       ├── office_bg.png           # color 패스
+│   │       │       ├── office_depth.png        # Z depth (16bit, 0=near..1=far)
+│   │       │       └── camera.json             # view/projection/world 행렬
+│   │       └── models/                         # 런타임 다운로드 GLTF (Draco+KTX2)
+│   │           └── {slug}/{slug}.glb           # 파일명 고정 — 버전은 asset 테이블·CHANGELOG 관리
+│   └── shaders/
+│       └── depthComposite.glsl.ts              # 배경 깊이 vs 아바타 프래그먼트 비교
 ├── docs/
 │   ├── planning/
 │   │   ├── 07-3d-visual-asset-pipeline.md (이 문서)
 │   │   └── ASSET_REGISTRY.md (레지스트리 쿼리 예시)
-│   └── 3d/
-│       ├── GODOT_SETUP.md (엔진 설정)
-│       ├── SHADER_LIBRARY.md (커스텀 셰이더)
-│       └── SCENE_STRUCTURE.md (씬 구조)
+│   └── 3d-design/
+│       ├── photoreal-web-strategy.md (3자 정합·좌표·깊이 규약, 정본)
+│       ├── design-style-analysis.md
+│       └── scene-structure.md (씬 구조, 정본)
 └── backend/
     ├── app/
     │   ├── models/
@@ -686,19 +580,22 @@ vituraloffice_new/
 
 ---
 
-## 9. QA 체크리스트 (Stage 1 완료 기준)
+## 9. QA 체크리스트 (골든 샘플 완료 기준)
 
 - [ ] **라이선스**: THIRD_PARTY_LICENSES.md 완료, 모든 CC0/CC-BY 출처 기록
-- [ ] **성능**: GTX 1650급 60fps / 내장그래픽 30fps 유지, 메모리 < 2GB, 드로우콜 < 200(동일 asset_id MultiMesh 병합)
-- [ ] **시각 품질**: Forward+ 실시간 직접광 + ReflectionProbe + SSAO 적용(SDFGI는 고사양 옵션), 모든 PBR 재질 적용
+- [ ] **배경 렌더**: Cycles color/depth 패스 정상 산출, `office_depth` 규약(0=near..1=far, 16bit) 정합, `camera.json` 행렬 유효
+- [ ] **깊이합성**: R3F가 배경 쿼드 + 아바타 로드, 벽/파티션 뒤 아바타 오클루전 정상(depthComposite 셰이더)
+- [ ] **좌표 정합**: Blender(x,y,z)→three.js(x,z,−y) 재매핑으로 아바타가 배경 좌표에 정확히 안착(3자 정합, photoreal-web-strategy §5)
+- [ ] **성능**: 웹브라우저(내장그래픽 포함) 60fps, 아바타 GLTF Draco+KTX2 적용, 배경 이미지 캐시 적중
+- [ ] **시각 품질**: Cycles GI/그림자/유리 굴절 굽기 완료, 아바타 IBL/톤매핑 정합
 - [ ] **기능**:
   - [ ] 아바타 5~10명 로드 가능
-  - [ ] 이름 태그 및 상태 뱃지 표시
+  - [ ] 이름 태그 및 상태 뱃지 표시(R3F drei Html/스프라이트)
   - [ ] 우측 직원 패널 업데이트
   - [ ] 하단 회의 패널 표시
   - [ ] 미니맵 네비게이션
-- [ ] **파일**: Asset Registry 기입, 메타데이터 기록
-- [ ] **문서**: GODOT_SETUP.md, SCENE_STRUCTURE.md 완료
+- [ ] **파일**: Asset Registry 기입, 메타데이터 기록(gltf_path·asset_delivery·dimension·footprint_2d)
+- [ ] **문서**: 3d-design/{photoreal-web-strategy, scene-structure} 반영
 
 ---
 
@@ -711,31 +608,33 @@ vituraloffice_new/
 - 12-tasks.md (Stage 1 태스크 분배)
 
 ### Downstream Documents Affected
-- 09-realtime-collaboration.md (실시간 협업 기능, Godot 헤드리스 서버)
-- docs/3d/GODOT_SETUP.md (신규 작성, 엔진 설정)
-- docs/3d/SCENE_STRUCTURE.md (신규 작성, 씬 조직)
+- 09-realtime-collaboration.md (실시간 협업 — Colyseus 서버, 아바타 위치 브로드캐스트)
+- 3d-design/photoreal-web-strategy.md (3자 정합·좌표·깊이 규약 정본)
+- 3d-design/scene-structure.md (R3F 씬 조직)
+- 16-render-spike-and-roadmap.md (스파이크 검증·렌더 로드맵)
 
 ### Open Questions
-- **아바타 리깅**: Humanoid 기본 구조인지 사내 고유 스키마인지? → 본 문서 §4.1(Mixamo/기성 리그) 및 P1-S1-T4 태스크 산출물로 정의(구 "08 문서" 참조는 삭제 — 08은 KPI 문서)
-- **HDRI 교체**: 사계절·날씨 표현 필요한가? (현재 기획: X)
-- **모바일 대응**: WASM 배포 시 텍스처 해상도 재조정 필요 범위는? → 로드맵 "완성 이후" 결정
+- **아바타 리깅**: Humanoid 기본 구조인지 사내 고유 스키마인지? → MakeHuman/CC4 베이스 리그 위에 사내 표준 정의(§4.1)
+- **HDRI 교체**: 사계절·날씨 표현 필요한가? (배경 재렌더로 대응 가능하나 현재 기획: X)
+- **아이소 시점 이외 뷰**: 층 전환·줌 외에 카메라 이동이 필요한가? → 필요 시 각 시점을 별도 배경으로 굽는 방식(고정 아이소 원칙 유지)
 
 ### Assumptions
 1. 사내 인트라넷 환경이라 CC0/CC-BY 에셋 사용 가능 (SA/NC/ND 배제, B2B 시 재검수 필수)
-2. Forward+ 렌더러가 **GTX 1650급에서 60fps / 내장그래픽에서 30fps**로 작동한다고 가정(D22). 라이트맵·전체 씬 Occluder 사전 베이크는 동적 씬이라 불가(D7)
-3. **Godot 4.x 안정 버전** 사용(Godot 4에는 별도 LTS 채널이 없음)
-4. 아바타는 **Mixamo/기성 리그를 정식 활용**하고, 사내 리깅 표준은 그 위에 정의(§4.1·P1-S1-T4 태스크 산출물)
-5. 배포 산출물은 `.tscn`(클라이언트 pak 동봉), 런타임 glb 다운로드/CDN 없음(D8)
+2. 렌더는 **Blender Cycles 오프라인**이므로 실시간 GI/GPU 부담이 배경에 없다. 런타임 부담은 아바타 수에 비례(웹브라우저 60fps 목표).
+3. 웹 스택 **three ^0.168 / @react-three/fiber ^8.17 / @react-three/drei ^9.115 / vite / vitest**(스파이크 검증 스택).
+4. 아바타는 **MakeHuman(무료)/CC4(유료)** 소스, **Ready Player Me 금지(2026-01 종료)**. 런타임 경량 GLTF(Draco+KTX2).
+5. 에셋 포맷은 **웹 표준 GLTF + Draco/meshopt + KTX2/Basis**. Godot `.tscn`/`.pak`/VRAM BC는 폐기.
 
 ### Validation Criteria
-- [ ] Stage 1 완료 후 3D 클라이언트 데모 실행 가능
-- [ ] Asset Registry DB에 모든 모델 메타데이터 저장(tscn_path·dimension·footprint_2d·thumbnail_url 포함)
-- [ ] GTX 1650급 60fps / 내장그래픽 30fps 성능 벤치마크 통과(D22)
+- [ ] 골든 샘플 배경 굽기(color/depth/camera) + R3F 깊이합성 데모 실행 가능
+- [ ] Asset Registry DB에 모든 모델 메타데이터 저장(gltf_path·asset_delivery·dimension·footprint_2d·thumbnail_url 포함)
+- [ ] 웹브라우저 60fps + 깊이합성 오클루전 벤치마크 통과(스파이크 규약, §1.3)
 - [ ] 라이선스 규정 준수 검증 완료(SA/NC/ND 미포함)
 
 ### Risks
 - **라이선스 검수 지연**: CC-BY 모델 선택 시 저자 확인 소요 → 사전에 백업 CC0 모델 확보
-- **성능 저하**: 폴리곤 수 과다 → LOD 적극 활용, 경계 드로우콜 모니터링
+- **깊이합성 아티팩트**: 배경 깊이 정밀도/에지에서 아바타 클리핑 → 16bit depth 유지, near/far 클립 튜닝(§1.3)
+- **재렌더 비용**: 레이아웃 편집마다 Cycles 재렌더 → 층/버전별 캐싱, 변경분만 재렌더
 - **에셋 조달 실패**: 특정 모델 삭제/변경 → 다중 소스 확보, 자체 제작 계획 유연성
 
 ---
@@ -747,10 +646,11 @@ vituraloffice_new/
 | 1.0 | 2026-07-01 | 초안 |
 | 1.1 | 2026-07-02 | 00-decisions 반영: D7 라이팅(실시간 직접광+ReflectionProbe+SSAO 기본·SDFGI 고사양 옵션, 라이트맵/Occluder 사전 베이크 배제 사유), D8 에셋 전달(.tscn pak 동봉·런타임 다운로드/CDN 배제·Draco/gltfpack 제거·Godot 임포트 최적화·경로 규약 05 통일), D9(회의실 골조 프리팹 제거→파라메트릭, 가구/소품만), 시간 재추정(Mixamo 정식 승격·§7.1 167h·§7.2 231h·D6 정합), asset 테이블 편집기 메타(footprint_2d·thumbnail_url·dimension·tscn_path) 및 dimension 일치 검증, 드로우콜 예산 MultiMesh 집행 규칙(개수 프록시 폐기), 사실 오류 정정(Poly Haven 연혁·ISO 14644 제거·CC-SA ShareAlike·Godot 4.x 안정판·메모리 2GB·미니맵 우측 하단), 성능 기준 D22(GTX 1650/내장) 통일 |
 | 1.2 | 2026-07-02 | 데이터 정본 정렬: 상태 뱃지를 D13 7종(offline/online/working/meeting/focus/away/external, 화면 표시 시 오프라인 제외 6종 — "이동중" 삭제·away 추가)으로 정정, 아바타 리깅의 깨진 "08 문서" 참조를 본 문서 §4.1·P1-S1-T4 산출물로 교체, §8 저장소 레이아웃의 assets/를 godot/ 하위로 이동(res:// 경로 정합), §5.3 asset 스키마 정본 선언(04 §2.6이 참조), §7.2 좌석 배정 참조를 04 정본(seat.assigned_user_id+seat_assignment_history)으로 정정 |
+| 2.0 | 2026-07-09 | **D27 포토리얼 웹임베드 전면 재작성**. Godot 폐기 → Blender Cycles 오프라인 렌더(color+depth) + R3F 깊이합성 고정 아이소 2.5D. §1.0 렌더 파이프라인 개요·§1.3 스파이크 검증치(ORTHO/ortho_scale 8.0/elev 35.264°/azim 45°/1920×1080/clip 0.1~100, Blender→three.js (x,z,−y), depth 0=near..1=far 16bit, three ^0.168 스택) 신설. GI/조명(SDFGI/ReflectionProbe/SSAO/라이트맵) → Cycles 굽기 + 아바타 IBL. 성능(GTX1650 60fps/2GB/드로우콜) → 웹 런타임(아바타만 비용·배경 이미지 캐싱). 에셋 포맷 Draco금지·VRAM BC → GLTF+Draco/meshopt+KTX2/Basis. §5 파이프라인 office_layout→build_office.py→Cycles→bg/depth/camera→R3F로 교체. §6 최적화(MultiMesh/Occluder/GDScript LOD) → three.js InstancedMesh/LOD·깊이합성 오클루전. 아바타 Mixamo → MakeHuman/CC4(Ready Player Me 금지). §8 저장소 레이아웃 godot/·.tscn → render-pipeline/·public/rendered/·frontend/. asset 스키마 tscn_path→gltf_path+asset_delivery. Downstream GODOT_SETUP 제거→3d-design/{photoreal-web-strategy,scene-structure}. |
 
 ---
 
 **작성일**: 2026-07-01  
-**최종 수정**: 2026-07-02  
+**최종 수정**: 2026-07-09  
 **담당**: 3d-engine-specialist  
 **검수 예정**: 완료 후 orchestrator 병합

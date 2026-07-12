@@ -1,0 +1,12 @@
+{
+  "image": "04_characters/SOPHIA/SOPHIA_IDLE_SPRITESHEET.png",
+  "frameWidth": 150,
+  "frameHeight": 520,
+  "frames": 6,
+  "fps": 6,
+  "loop": true,
+  "pivot": [
+    0.5,
+    0.98
+  ]
+}

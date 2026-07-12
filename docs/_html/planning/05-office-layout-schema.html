@@ -52,15 +52,16 @@ img{max-width:100%;border-radius:8px}
 </style>
 </head><body>
 <div class="layout">
-<nav class="toc"><div class="brand">05. officelayout JSON 스키마</div><div class="sub">05-office-layout-schema.md</div><a class="lvl1" href="#05-office_layout-json-스키마">05. office_layout JSON 스키마</a><a class="lvl2" href="#개요">개요</a><a class="lvl2" href="#1-office_layout-json-스키마-정의">1. office_layout JSON 스키마 정의</a><a class="lvl3" href="#11-루트-구조">1.1 루트 구조</a><a class="lvl3" href="#12-각-섹션-정의">1.2 각 섹션 정의</a><a class="lvl2" href="#2-버전-상태-관리">2. 버전 &amp; 상태 관리</a><a class="lvl3" href="#21-status-필드-office_layoutstatus">2.1 status 필드 (office_layout.status)</a><a class="lvl3" href="#22-버전-관리-규칙">2.2 버전 관리 규칙</a><a class="lvl3" href="#23-버전-히스토리">2.3 버전 히스토리</a><a class="lvl3" href="#24-좌석-배정과-레이아웃의-분리-d10">2.4 좌석 배정과 레이아웃의 분리 (D10)</a><a class="lvl2" href="#3-검증-규칙-및-검증-아키텍처">3. 검증 규칙 및 검증 아키텍처</a><a class="lvl3" href="#30-검증-아키텍처-d12">3.0 검증 아키텍처 (D12)</a><a class="lvl3" href="#31-구조-검증">3.1 구조 검증</a><a class="lvl3" href="#32-공간-검증">3.2 공간 검증</a><a class="lvl3" href="#33-조직역할-검증">3.3 조직/역할 검증</a><a class="lvl3" href="#34-설비-검증">3.4 설비 검증</a><a class="lvl3" href="#35-미니맵-검증">3.5 미니맵 검증</a><a class="lvl3" href="#36-검증-실행-흐름">3.6 검증 실행 흐름</a><a class="lvl2" href="#4-예시-json-샘플-층-레이아웃">4. 예시 JSON: 샘플 층 레이아웃</a><a class="lvl2" href="#5-클라이언트서버-로드-및-사용">5. 클라이언트/서버 로드 및 사용</a><a class="lvl3" href="#51-godot-클라이언트">5.1 Godot 클라이언트</a><a class="lvl3" href="#52-godot-헤드리스-서버">5.2 Godot 헤드리스 서버</a><a class="lvl3" href="#53-좌표계-godot-월드-매핑-d25">5.3 좌표계 → Godot 월드 매핑 (D25)</a><a class="lvl2" href="#6-loop-metadata">6. Loop Metadata</a><a class="lvl3" href="#upstream-documents-referenced">Upstream documents referenced</a><a class="lvl3" href="#downstream-documents-affected">Downstream documents affected</a><a class="lvl3" href="#open-questions">Open questions</a><a class="lvl3" href="#assumptions">Assumptions</a><a class="lvl3" href="#validation-criteria">Validation criteria</a><a class="lvl3" href="#risks">Risks</a><a class="lvl2" href="#7-변경-이력">7. 변경 이력</a></nav>
+<nav class="toc"><div class="brand">05. officelayout JSON 스키마</div><div class="sub">05-office-layout-schema.md</div><a class="lvl1" href="#05-office_layout-json-스키마">05. office_layout JSON 스키마</a><a class="lvl2" href="#개요">개요</a><a class="lvl2" href="#1-office_layout-json-스키마-정의">1. office_layout JSON 스키마 정의</a><a class="lvl3" href="#11-루트-구조">1.1 루트 구조</a><a class="lvl3" href="#12-각-섹션-정의">1.2 각 섹션 정의</a><a class="lvl2" href="#2-버전-상태-관리">2. 버전 &amp; 상태 관리</a><a class="lvl3" href="#21-status-필드-office_layoutstatus">2.1 status 필드 (office_layout.status)</a><a class="lvl3" href="#22-버전-관리-규칙">2.2 버전 관리 규칙</a><a class="lvl3" href="#23-버전-히스토리">2.3 버전 히스토리</a><a class="lvl3" href="#24-좌석-배정과-레이아웃의-분리-d10">2.4 좌석 배정과 레이아웃의 분리 (D10)</a><a class="lvl2" href="#3-검증-규칙-및-검증-아키텍처">3. 검증 규칙 및 검증 아키텍처</a><a class="lvl3" href="#30-검증-아키텍처-d12">3.0 검증 아키텍처 (D12)</a><a class="lvl3" href="#31-구조-검증">3.1 구조 검증</a><a class="lvl3" href="#32-공간-검증">3.2 공간 검증</a><a class="lvl3" href="#33-조직역할-검증">3.3 조직/역할 검증</a><a class="lvl3" href="#34-설비-검증">3.4 설비 검증</a><a class="lvl3" href="#35-미니맵-검증">3.5 미니맵 검증</a><a class="lvl3" href="#36-검증-실행-흐름">3.6 검증 실행 흐름</a><a class="lvl2" href="#4-예시-json-샘플-층-레이아웃">4. 예시 JSON: 샘플 층 레이아웃</a><a class="lvl2" href="#5-로드변환사용-d27-포토리얼-웹임베드">5. 로드·변환·사용 (D27 포토리얼 웹임베드)</a><a class="lvl3" href="#51-blender-파라메트릭-씬-빌더-배경-렌더-오프라인">5.1 Blender 파라메트릭 씬 빌더 (배경 렌더, 오프라인)</a><a class="lvl3" href="#52-r3fthreejs-런타임-서버-상호작용-레이어">5.2 R3F(three.js) 런타임 + 서버 (상호작용 레이어)</a><a class="lvl3" href="#53-좌표계-3d-월드-매핑-d25-좌표-저장-d27-축-리맵">5.3 좌표계 → 3D 월드 매핑 (D25 좌표 저장 + D27 축 리맵)</a><a class="lvl2" href="#6-loop-metadata">6. Loop Metadata</a><a class="lvl3" href="#upstream-documents-referenced">Upstream documents referenced</a><a class="lvl3" href="#downstream-documents-affected">Downstream documents affected</a><a class="lvl3" href="#open-questions">Open questions</a><a class="lvl3" href="#assumptions">Assumptions</a><a class="lvl3" href="#validation-criteria">Validation criteria</a><a class="lvl3" href="#risks">Risks</a><a class="lvl2" href="#7-변경-이력">7. 변경 이력</a></nav>
 <main><h1 id="05-office_layout-json-스키마">05. office_layout JSON 스키마</h1>
-<p><strong>작성일</strong>: 2026-07-01 <strong>최종 갱신</strong>: 2026-07-02 <strong>버전</strong>: 1.2 <strong>담당</strong>: 시스템 설계팀 + 3D 엔진팀 <strong>참조</strong>: 00-decisions.md (정본 결정, 특히 D7~D12·D25), 04-data-model.md (DB 구조), 06-screens.md (편집기 UI), 07-3d-visual-asset-pipeline.md (에셋 파이프라인)</p>
+<blockquote>🟡 <strong>D27 부분 개정(2026-07-09) — layout JSON 스키마 본체(floor/zones/rooms/seats/furniture/colliders/spawn/exit/doors, top_left 미터 좌표 D25, 좌석타입, 검증 규칙)는 D27에서도 정본으로 그대로 유효하다. 오직 로드·좌표변환·성능예산 서술(§5)만 D27(포토리얼 웹임베드)로 개정됐다: Godot 씬빌드/pak/.tscn/ResourceLoader → Blender 파라메트릭 씬 빌더(오프라인 렌더) + R3F(three.js) 런타임 로드, Godot <code>Vector3(x, floor_height, y)</code>/<code>Basis</code> 좌표변환 → 실측 camera.json 기준 Blender(x,y,z)→three.js(x,z,-y), MultiMesh 200드로우콜 예산 → 배경 렌더 예산(Blender)·아바타 예산(three.js).</strong> 정본 = 00-decisions §H · 07-3d-visual-asset-pipeline · 14/15/16 · photoreal-web-strategy.</blockquote>
+<p><strong>작성일</strong>: 2026-07-01 <strong>최종 갱신</strong>: 2026-07-09 <strong>버전</strong>: 1.3 (D27 부분 개정) <strong>담당</strong>: 시스템 설계팀 + 3D 엔진팀 <strong>참조</strong>: 00-decisions.md (정본 결정, 특히 D7~D12·D25·§H D27), 04-data-model.md (DB 구조), 06-screens.md (편집기 UI), 07-3d-visual-asset-pipeline.md (에셋·렌더 파이프라인), spikes/depth-composite/public/camera.json (실측 좌표계 정본)</p>
 <blockquote>이 문서는 00-decisions.md의 정본 결정을 따른다. 충돌 시 00-decisions.md가 이긴다.</blockquote>
 <hr>
 <h2 id="개요">개요</h2>
-<p><code>office_layout</code> JSON은 Godot 3D 가상오피스의 <strong>공간 구조 및 상호작용 규칙의 원본(Source of Truth)</strong>이다. 각 층(floor)마다 1개의 JSON blob으로 저장되며(1 floor = 1 layout), 2D 편집기에서 생성/수정되고, 검증 통과 후 Godot 헤드리스 서버와 클라이언트에서 사용된다. 코드로 하드코딩되지 않으므로, 사무실 변경은 DB 업데이트로만 반영된다(재컴파일 불필요).</p>
+<p><code>office_layout</code> JSON은 가상오피스의 <strong>공간 구조 및 상호작용 규칙의 원본(Source of Truth)</strong>이다. 각 층(floor)마다 1개의 JSON blob으로 저장되며(1 floor = 1 layout), 2D 편집기에서 생성/수정되고, 검증 통과 후 두 갈래에서 소비된다(D27 포토리얼 웹임베드): (1) <strong>Blender 파라메트릭 씬 빌더</strong>(<code>build_office.py</code>)가 오프라인 배경 렌더용 3D 씬을 조립하고, (2) <strong>R3F(three.js) 런타임</strong>이 상호작용 좌표(좌석·문·스폰·근접 zone 등)를 로드해 웹에서 아바타·인터랙션 레이어를 얹는다. 코드로 하드코딩되지 않으므로, 사무실 변경은 DB 업데이트 + 배경 재렌더로만 반영된다(재컴파일 불필요).</p>
 <p><strong>핵심 원칙(정본 결정 반영):</strong></p>
-<ul><li><strong>공간 구조만 담는다(D10)</strong>: 좌석-직원 배정은 이 JSON에 넣지 않는다. 배정은 DB <code>seat.assigned_user_id</code>(현재값) + <code>seat_assignment_history</code>(이력)가 담당하며(04 정본), 배정 변경은 레이아웃 재배포가 필요 없다.</li><li><strong>좌표계는 <code>top_left</code> 단일·미터 단위(D25)</strong>: 다른 원점은 허용하지 않는다.</li><li><strong>에셋은 <code>asset_id</code> 참조만(D8)</strong>: 클라이언트 빌드(pak)에 동봉된 카탈로그를 조회한다. 런타임에 glb/tscn을 다운로드하지 않는다.</li><li><strong>정밀 검증은 서버 1곳(D12)</strong>: 도달성(A*) 포함 정밀 검증은 FastAPI가 단독으로 수행한다. 웹 편집기는 경량 체크만, Godot 클라이언트는 검증하지 않고 신뢰한다.</li></ul>
+<ul><li><strong>공간 구조만 담는다(D10)</strong>: 좌석-직원 배정은 이 JSON에 넣지 않는다. 배정은 DB <code>seat.assigned_user_id</code>(현재값) + <code>seat_assignment_history</code>(이력)가 담당하며(04 정본), 배정 변경은 레이아웃 재배포가 필요 없다.</li><li><strong>좌표계는 <code>top_left</code> 단일·미터 단위(D25)</strong>: 다른 원점은 허용하지 않는다.</li><li><strong>에셋은 <code>asset_id</code> 참조만(D8)</strong>: asset 카탈로그를 조회한다. layout JSON에 파일 경로를 넣지 않는다. D27에서 배경 에셋은 Blender 오프라인 렌더로 굽고(§5.1), 런타임 프록시만 three.js가 로드한다.</li><li><strong>정밀 검증은 서버 1곳(D12)</strong>: 도달성(A*) 포함 정밀 검증은 FastAPI가 단독으로 수행한다. 웹 편집기는 경량 체크만, 런타임 클라이언트(R3F)는 검증하지 않고 신뢰한다.</li></ul>
 <hr>
 <h2 id="1-office_layout-json-스키마-정의">1. office_layout JSON 스키마 정의</h2>
 <h3 id="11-루트-구조">1.1 루트 구조</h3>
@@ -111,8 +112,8 @@ img{max-width:100%;border-radius:8px}
     &quot;unit_system&quot;: &quot;metric&quot;
   }
 }</code></pre>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>floor.id (UUID)</td></tr><tr><td>level</td><td>실제 층수(지상 3층 = 3, B1 = -1)</td></tr><tr><td>name</td><td>표시명</td></tr><tr><td>total<em>area</em>m2</td><td>층 전체 면적(정보용)</td></tr><tr><td>coordinate_origin</td><td>좌표계 원점. <strong><code>top_left</code> 하나만 허용(D25)</strong>. <code>center</code>/<code>bottom_left</code>는 폐기</td></tr><tr><td>floor<em>height</em>m</td><td>이 층 바닥의 Godot 월드 Y 오프셋(m). 다층 매핑에 사용(§5.3)</td></tr><tr><td>grid<em>snap</em>unit_cm</td><td>편집기 그리드 단위(cm)</td></tr><tr><td>unit_system</td><td>측정 단위. <strong><code>metric</code>(미터) 고정</strong></td></tr></tbody></table></div>
-<blockquote><strong>D25 좌표계 확정</strong>: 모든 좌표는 원점 <code>top_left</code>, 단위 미터, 2D 평면(x, y)로 저장한다. x는 오른쪽(동)으로 증가, y는 아래쪽(남)으로 증가한다. Godot 3D 월드로의 변환식은 §5.3에 정의한다.</blockquote>
+<div class="table-wrap"><table><thead><tr><th>필드</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>floor.id (UUID)</td></tr><tr><td>level</td><td>실제 층수(지상 3층 = 3, B1 = -1)</td></tr><tr><td>name</td><td>표시명</td></tr><tr><td>total<em>area</em>m2</td><td>층 전체 면적(정보용)</td></tr><tr><td>coordinate_origin</td><td>좌표계 원점. <strong><code>top_left</code> 하나만 허용(D25)</strong>. <code>center</code>/<code>bottom_left</code>는 폐기</td></tr><tr><td>floor<em>height</em>m</td><td>이 층 바닥의 3D 월드 높이축 오프셋(m). 다층 매핑에 사용(§5.3). three.js에서는 월드 Y로 매핑(§5.3, D27)</td></tr><tr><td>grid<em>snap</em>unit_cm</td><td>편집기 그리드 단위(cm)</td></tr><tr><td>unit_system</td><td>측정 단위. <strong><code>metric</code>(미터) 고정</strong></td></tr></tbody></table></div>
+<blockquote><strong>D25 좌표계 확정</strong>: 모든 좌표는 원점 <code>top_left</code>, 단위 미터, 2D 평면(x, y)로 저장한다. x는 오른쪽(동)으로 증가, y는 아래쪽(남)으로 증가한다. 3D 월드(Blender/three.js)로의 변환식은 §5.3에 정의한다(D27).</blockquote>
 <h4 id="123-dimensions">1.2.3 dimensions</h4>
 <pre class="code lang-json"><code>{
   &quot;dimensions&quot;: {
@@ -215,7 +216,7 @@ img{max-width:100%;border-radius:8px}
 <h5 id="doors-문-개구부-필드-상세-d9">doors (문 개구부) 필드 상세 — D9</h5>
 <p>room의 벽 콜리전은 room 경계에서 자동 생성되는 벽 세그먼트이며, <code>doors</code>에 정의된 위치는 <strong>개구부(구멍)</strong>로 처리되어 아바타가 통과할 수 있다. 개구부가 없으면 방은 사방이 막힌 상자가 되어 진입 불가하다.</p>
 <div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>설명</th></tr></thead><tbody><tr><td>door_id</td><td>string</td><td>JSON 내 임시 고유ID</td></tr><tr><td>wall</td><td>enum</td><td>개구부가 뚫릴 벽. <code>north</code>/<code>south</code>/<code>east</code>/<code>west</code> (room <code>coords</code> 기준 변)</td></tr><tr><td>offset</td><td>float(m)</td><td>해당 벽의 시작 모서리(top_left 기준: west/east 벽은 위쪽 y, north/south 벽은 왼쪽 x)에서 <strong>개구부 중심까지의 거리(m)</strong></td></tr><tr><td>width</td><td>float(m)</td><td>개구부 폭(m). 도어 폭 규약 0.9~1.2m 권장(07 §1.2와 정합)</td></tr><tr><td>door_type</td><td>enum</td><td>문 스타일(<code>glass_single</code>/<code>glass_double</code>/<code>wooden_single</code>/<code>wooden_double</code>/<code>open</code>(문짝 없는 개방 통로))</td></tr></tbody></table></div>
-<blockquote><strong>콜리전 생성 규칙(D9)</strong>: room 경계(coords의 사각형 네 변) → 각 변을 벽 세그먼트로 자동 생성. 단, <code>doors[]</code>에 정의된 <code>(wall, offset, width)</code> 구간은 벽 세그먼트에서 제외되어 개구부가 된다. 헤드리스 서버는 이 개구부를 A* 내비게이션의 통행 가능 지점으로 사용한다. 별도의 <code>colliders[]</code> 항목으로 room 벽을 solid box 하나로 덮지 않는다(그러면 개구부가 사라진다).</blockquote>
+<blockquote><strong>콜리전 생성 규칙(D9)</strong>: room 경계(coords의 사각형 네 변) → 각 변을 벽 세그먼트로 자동 생성. 단, <code>doors[]</code>에 정의된 <code>(wall, offset, width)</code> 구간은 벽 세그먼트에서 제외되어 개구부가 된다. 서버(FastAPI)는 이 개구부를 A* 내비게이션의 통행 가능 지점으로 사용한다. 별도의 <code>colliders[]</code> 항목으로 room 벽을 solid box 하나로 덮지 않는다(그러면 개구부가 사라진다).</blockquote>
 <h4 id="126-seats-고정좌석-자율좌석-임시좌석">1.2.6 seats (고정좌석, 자율좌석, 임시좌석)</h4>
 <blockquote><strong>D10 — 좌석 배정 분리</strong>: seat 객체는 <strong>공간 구조(위치·타입·방향·설비)만</strong> 담는다. 좌석-직원 배정(<code>assigned_user_id</code> 등)은 이 JSON에 넣지 않으며, DB <code>seat.assigned_user_id</code>(현재값) + <code>seat_assignment_history</code>(이력)가 단독으로 관리한다(04 정본). 클라이언트/서버는 런타임에 <code>seat_db_id</code>로 <code>seat.assigned_user_id</code>를 조회해 현재 착석자를 얻는다. <strong>좌석 배정 변경은 레이아웃 재배포가 필요 없다</strong>(§2.4 참조).</blockquote>
 <pre class="code lang-json"><code>{
@@ -266,10 +267,10 @@ img{max-width:100%;border-radius:8px}
     }
   ]
 }</code></pre>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>설명</th></tr></thead><tbody><tr><td>seat_id</td><td>string</td><td>JSON 내 임시 고유ID</td></tr><tr><td>seat<em>db</em>id</td><td>UUID</td><td>seat.id (DB FK). 착석자 조회는 이 값으로 <code>seat.assigned_user_id</code> 참조(이력은 <code>seat_assignment_history</code>)</td></tr><tr><td>seat_type</td><td>enum</td><td>fixed(고정), free(자율), temp(임시), partner(협력사)</td></tr><tr><td>team<em>zone</em>id</td><td>UUID</td><td>team_zone.id (공간 소속. 직원 배정과 무관)</td></tr><tr><td>coords</td><td>object</td><td>좌석 중심 좌표(x, y)</td></tr><tr><td><strong>facing</strong></td><td>float(도)</td><td><strong>착석 방향(D10)</strong>. 아바타가 앉았을 때 바라보는 방향. 도(degree), 시계방향, 기준축 +X(§5.3). 예: 180 = 남향(+Y)</td></tr><tr><td><strong>furniture_id</strong></td><td>string</td><td><strong>책상 상호 참조(D10)</strong>. 이 좌석이 딸린 <code>furniture[]</code> 항목의 <code>furniture_id</code>. 좌석 좌표는 이 가구의 <code>coords</code>에서 파생되므로 좌표 중복·desync를 방지한다</td></tr><tr><td>desk_dimension</td><td>object</td><td>책상 크기(meter). 정보용. 실제 3D 배치는 <code>furniture_id</code>가 가리키는 가구 에셋을 따른다</td></tr><tr><td>lifecycle_status</td><td>enum</td><td>deployed, archived, removed</td></tr><tr><td>accessibility</td><td>object</td><td>접근성 정보</td></tr><tr><td>nearby_amenities</td><td>object</td><td>주변 설비(모니터, 키보드, 전화)</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>설명</th></tr></thead><tbody><tr><td>seat_id</td><td>string</td><td>JSON 내 임시 고유ID</td></tr><tr><td>seat<em>db</em>id</td><td>UUID</td><td>seat.id (DB FK). 착석자 조회는 이 값으로 <code>seat.assigned_user_id</code> 참조(이력은 <code>seat_assignment_history</code>)</td></tr><tr><td>seat_type</td><td>enum</td><td>fixed(고정), free(자율), temp(임시), partner(협력사)</td></tr><tr><td>team<em>zone</em>id</td><td>UUID</td><td>team_zone.id (공간 소속. 직원 배정과 무관)</td></tr><tr><td>coords</td><td>object</td><td>좌석 중심 좌표(x, y)</td></tr><tr><td><strong>facing</strong></td><td>float(도)</td><td><strong>착석 방향(D10)</strong>. 아바타가 앉았을 때 바라보는 방향. 도(degree), 시계방향, 기준축 +X(§5.3). 예: 90 = 남향(+Y)</td></tr><tr><td><strong>furniture_id</strong></td><td>string</td><td><strong>책상 상호 참조(D10)</strong>. 이 좌석이 딸린 <code>furniture[]</code> 항목의 <code>furniture_id</code>. 좌석 좌표는 이 가구의 <code>coords</code>에서 파생되므로 좌표 중복·desync를 방지한다</td></tr><tr><td>desk_dimension</td><td>object</td><td>책상 크기(meter). 정보용. 실제 3D 배치는 <code>furniture_id</code>가 가리키는 가구 에셋을 따른다</td></tr><tr><td>lifecycle_status</td><td>enum</td><td>deployed, archived, removed</td></tr><tr><td>accessibility</td><td>object</td><td>접근성 정보</td></tr><tr><td>nearby_amenities</td><td>object</td><td>주변 설비(모니터, 키보드, 전화)</td></tr></tbody></table></div>
 <blockquote><strong>좌석↔가구 좌표 정합</strong>: seat의 <code>coords</code>와 <code>furniture_id</code>가 가리키는 desk의 <code>coords</code>는 동일해야 한다(§3.2 검증 규칙). 편집기는 좌석 배치 시 딸린 desk를 함께 이동시켜 desync를 원천 차단한다.</blockquote>
 <h4 id="127-furniture-테이블-캐비닛-베드-등-일반-가구">1.2.7 furniture (테이블, 캐비닛, 베드 등 일반 가구)</h4>
-<blockquote><strong>D8 — 에셋 참조 방식</strong>: furniture는 <code>asset_id</code>로 <strong>클라이언트 빌드(pak)에 동봉된 에셋 카탈로그</strong>를 참조한다. layout JSON에 파일 경로(glb 등)를 넣지 않는다. 클라이언트는 <code>asset_id</code>로 동봉된 <code>.tscn</code>(임포트 완료본)을 <code>ResourceLoader</code>로 로드한다(§5.1). 런타임 glb 다운로드/CDN은 사용하지 않는다. <code>dimension</code>·<code>type</code> 등은 편집기 표시·검증용 캐시이며, 실측 크기 정본은 asset 테이블(07 §5.3)이다.</blockquote>
+<blockquote><strong>D8 — 에셋 참조 방식(D27 개정)</strong>: furniture는 <code>asset_id</code>로 <strong>에셋 카탈로그</strong>를 참조한다. layout JSON에 파일 경로(glb 등)를 넣지 않는다. D27 포토리얼 웹임베드에서 <code>asset_id</code>는 <strong>Blender 파라메트릭 씬 빌더(<code>build_office.py</code>)가 오프라인 배경 렌더 시 배치하는 3D 에셋(.blend/GLB 소스)</strong>을 가리키며, R3F 런타임은 상호작용 오브젝트(예: 좌석 하이라이트)에 한해 동일 <code>asset_id</code>로 경량 프록시를 참조한다(§5.1). <code>dimension</code>·<code>type</code> 등은 편집기 표시·검증용 캐시이며, 실측 크기 정본은 asset 테이블(07 §5.3)이다.</blockquote>
 <pre class="code lang-json"><code>{
   &quot;furniture&quot;: [
     {
@@ -472,11 +473,11 @@ img{max-width:100%;border-radius:8px}
     &quot;estimated_draw_calls&quot;: 180,
     &quot;estimated_memory_mb&quot;: 256,
     &quot;recommended_device_tier&quot;: &quot;mid&quot;,
-    &quot;optimization_notes&quot;: &quot;동일 asset_id 가구를 MultiMesh로 묶으면 드로우콜 감소 가능&quot;
+    &quot;optimization_notes&quot;: &quot;D27: 배경은 Blender 오프라인 렌더로 굽히므로 estimated_draw_calls는 실시간 예산이 아닌 배경 렌더 참고값(§1.2.13)&quot;
   }
 }</code></pre>
-<p>클라이언트 성능 예측 및 최적화 힌트.</p>
-<blockquote><strong>서버 파생 계산(D12 정합)</strong>: <code>performance</code> 블록의 수치는 편집기가 자기신고하지 않는다. <strong>FastAPI 서버가 저장 시 asset 테이블(07 §5.3)의 <code>polygon_count</code>·<code>dimension</code> 등에서 파생 계산</strong>해 채운다. 산정 기준: <code>estimated_polygon_count</code>는 각 furniture의 asset <code>polygon_count</code> 합(동일 asset<em>id 반복은 실제 인스턴스 수 그대로 합산), <code>estimated_draw_calls</code>는 서로 다른 asset</em>id 수 + 개별 콜리전 등을 근거로 산정하되 <strong>동일 asset_id 그룹은 MultiMesh 1드로우콜로 계산</strong>(§5.1·07 §6.2). 편집기가 보낸 값은 무시하고 서버 계산값으로 덮어쓴다. 검증 규칙(§3.4)도 이 파생값을 기준으로 판정한다.</blockquote>
+<p>성능 예측 및 최적화 힌트.</p>
+<blockquote><strong>성능 예산 재정의(D27)</strong>: D26+Godot 실시간 렌더 폐기로, layout에서 파생하던 <strong><code>estimated_draw_calls</code>/MultiMesh 200드로우콜 예산은 오프라인 배경 렌더에는 부적절</strong>하다(배경은 Blender가 한 번 렌더해 PNG+깊이패스로 굽고, 런타임 GPU는 그 이미지를 합성할 뿐 실시간 드로우콜을 소비하지 않는다). D27에서 성능 예산은 두 축으로 분리한다: - <strong>배경 렌더 예산(Blender)</strong>: <code>estimated_polygon_count</code>·씬 복잡도는 <code>build_office.py</code>의 오프라인 렌더 시간·GPU 메모리 상한을 판정하는 데 쓴다. 실시간 프레임 예산이 아니다. - <strong>아바타 예산(three.js)</strong>: 런타임 GPU 예산은 배경 이미지 위에 얹는 아바타·인터랙션 프록시·깊이합성 셰이더에만 적용한다. 드로우콜/폴리곤 상한 정본은 <strong>3d-design/optimization-criteria.md §1</strong>(배경=오프라인 렌더 예산, 아바타=런타임 예산)에 위임한다.  <code>performance</code> 블록 수치는 편집기가 자기신고하지 않고 <strong>FastAPI 서버가 저장 시 asset 테이블(07 §5.3)의 <code>polygon_count</code>·<code>dimension</code> 등에서 파생 계산</strong>해 채운다. <code>estimated_polygon_count</code>는 각 furniture asset <code>polygon_count</code>의 인스턴스 합(배경 씬 복잡도 지표). <code>estimated_draw_calls</code>는 <strong>D27에서 실시간 예산이 아닌 배경 렌더 참고값</strong>으로 강등되며, 검증(§3.4)의 하드 게이트는 배경 렌더 예산·아바타 예산(3d-design/optimization-criteria.md §1 위임)으로 대체한다. 편집기가 보낸 값은 무시하고 서버 계산값으로 덮어쓴다.</blockquote>
 <hr>
 <h2 id="2-버전-상태-관리">2. 버전 &amp; 상태 관리</h2>
 <h3 id="21-status-필드-office_layoutstatus">2.1 status 필드 (office_layout.status)</h3>
@@ -506,7 +507,7 @@ id, office_id, floor_id, version, status, json, created_by, validated_by, deploy
 <h2 id="3-검증-규칙-및-검증-아키텍처">3. 검증 규칙 및 검증 아키텍처</h2>
 <h3 id="30-검증-아키텍처-d12">3.0 검증 아키텍처 (D12)</h3>
 <p>정밀 검증은 <strong>FastAPI 서버 1곳</strong>에서만 수행한다. 각 계층의 역할:</p>
-<div class="table-wrap"><table><thead><tr><th>계층</th><th>검증 범위</th><th>근거</th></tr></thead><tbody><tr><td><strong>웹 편집기(클라이언트)</strong></td><td><strong>경량 체크만</strong>: JSON 파싱, 좌표 범위, 오브젝트 겹침 등 즉시 피드백용. 이것은 UX 편의이며 권위가 아니다</td><td>D12</td></tr><tr><td><strong>FastAPI 서버(정본)</strong></td><td><strong>정밀 검증 전부</strong>: 구조·공간·조직/역할·설비·미니맵 + **도달성(A<em>) 검증</em>*. 공식 JSON Schema 파일 기준 스키마 검증 후, 서버 코드가 도달성·파생 성능값을 계산. ERROR 존재 시 저장 거부</td><td>D12</td></tr><tr><td><strong>Godot 클라이언트</strong></td><td><strong>검증 안 함</strong>. 서버가 배포한 레이아웃을 신뢰하고 렌더링만 한다</td><td>D12</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>계층</th><th>검증 범위</th><th>근거</th></tr></thead><tbody><tr><td><strong>웹 편집기(클라이언트)</strong></td><td><strong>경량 체크만</strong>: JSON 파싱, 좌표 범위, 오브젝트 겹침 등 즉시 피드백용. 이것은 UX 편의이며 권위가 아니다</td><td>D12</td></tr><tr><td><strong>FastAPI 서버(정본)</strong></td><td><strong>정밀 검증 전부</strong>: 구조·공간·조직/역할·설비·미니맵 + **도달성(A<em>) 검증</em>*. 공식 JSON Schema 파일 기준 스키마 검증 후, 서버 코드가 도달성·파생 성능값을 계산. ERROR 존재 시 저장 거부</td><td>D12</td></tr><tr><td><strong>런타임 클라이언트(R3F/three.js)</strong></td><td><strong>검증 안 함</strong>. 서버가 배포한 레이아웃을 신뢰하고 배경 합성·상호작용 렌더링만 한다(D27)</td><td>D12</td></tr></tbody></table></div>
 <ul><li><strong>공식 JSON Schema 파일 경로</strong>: <code>backend/app/schemas/office_layout.schema.json</code>(Draft 2020-12). 서버·편집기·CI가 모두 이 단일 파일을 참조한다. 편집기의 경량 체크도 이 스키마의 부분집합을 사용한다.</li><li><strong>ERROR/WARNING 정책(D12)</strong>: 하나라도 <strong>ERROR가 있으면 배포 불가</strong>(웹 편집기의 <code>[무시하고 배포]</code> 버튼 제거). <strong>WARNING만</strong> <code>[경고 무시하고 배포]</code>로 진행 가능. 06 §5.2의 검증 실패 다이얼로그와 정합.</li><li>아래 §3.1~§3.5의 규칙은 <strong>서버 정밀 검증의 규칙 목록</strong>이다. 심각도(ERROR/WARNING)는 서버 판정 기준이며, 편집기는 이 중 경량 항목만 미리 보여준다.</li></ul>
 <h3 id="31-구조-검증">3.1 구조 검증</h3>
 <div class="table-wrap"><table><thead><tr><th>규칙</th><th>심각도</th><th>설명</th></tr></thead><tbody><tr><td><strong>JSON 파싱</strong></td><td>ERROR</td><td>JSON 형식 오류(따옴표, 콤마 등)</td></tr><tr><td><strong>필수 필드</strong></td><td>ERROR</td><td>metadata, floor, dimensions, zones, rooms, seats, colliders 필수 존재</td></tr><tr><td><strong>ID 고유성</strong></td><td>ERROR</td><td>같은 floor 내 zone<em>id, room</em>id, seat<em>id, furniture</em>id, collider_id 중복 금지</td></tr><tr><td><strong>좌표 범위</strong></td><td>ERROR</td><td>모든 좌표가 dimensions 내 범위에 있어야 함(x: [min<em>x, max</em>x], y: [min<em>y, max</em>y])</td></tr></tbody></table></div>
@@ -516,8 +517,8 @@ id, office_id, floor_id, version, status, json, created_by, validated_by, deploy
 <div class="table-wrap"><table><thead><tr><th>규칙</th><th>심각도</th><th>설명</th></tr></thead><tbody><tr><td><strong>팀 구역 연결</strong></td><td>ERROR</td><td>zone의 erp<em>team</em>id가 유효한가?(ERP teams 존재 확인)</td></tr><tr><td><strong>org_group 누락</strong></td><td>WARNING</td><td>zone이 org<em>group</em>id를 지정하지 않으면 경고(권한 계층에 영향)</td></tr></tbody></table></div>
 <blockquote><strong>좌석 배정 검증 제외(D10)</strong>: 좌석-직원 배정은 layout JSON에 없으므로(§2.4) 여기서 검증하지 않는다. 배정 유효성(erp_user 존재 등)은 <code>seat.assigned_user_id</code> 갱신(및 <code>seat_assignment_history</code> 기록) 시점에 별도로 검증한다.</blockquote>
 <h3 id="34-설비-검증">3.4 설비 검증</h3>
-<div class="table-wrap"><table><thead><tr><th>규칙</th><th>심각도</th><th>설명</th></tr></thead><tbody><tr><td><strong>회의실 LiveKit 연결</strong></td><td>WARNING</td><td>type=meeting인 room에 livekit_room이 지정되지 않음</td></tr><tr><td><strong>에셋 존재</strong></td><td>ERROR</td><td>furniture.asset_id가 클라이언트 동봉 asset 카탈로그(asset 테이블)에 존재하는가?(D8)</td></tr><tr><td><strong>드로우콜 예산</strong></td><td>ERROR</td><td>서버 파생 <code>estimated_draw_calls</code>(동일 asset_id는 MultiMesh 1콜로 계산)가 예산(07 §1.2 기준 200)을 초과하면 거부</td></tr><tr><td><strong>폴리곤 예산</strong></td><td>WARNING</td><td>서버 파생 <code>estimated_polygon_count</code>가 씬 예산(07 §1.2 기준 상한)을 초과하면 경고</td></tr><tr><td><strong>메모리 예측</strong></td><td>WARNING</td><td>서버 파생 <code>estimated_memory_mb</code>가 기준 사양(D22: GTX 1650급) VRAM 예산을 초과하면 경고</td></tr></tbody></table></div>
-<blockquote><strong>개수 프록시 폐기(D7·D12 정합)</strong>: 종전의 &quot;furniture<em>count &gt; 500개 거부&quot;처럼 <strong>개수를 성능 프록시로 쓰던 규칙은 폐기</strong>한다. 성능 한도는 asset 테이블에서 파생한 <strong>폴리곤/드로우콜 실측 기반값</strong>(§1.2.13)으로 판정한다. 동일 asset</em>id 반복 배치는 MultiMesh로 묶여 드로우콜에 1회만 계상되므로, 같은 책상 500개가 서로 다른 500개보다 훨씬 저렴하다.</blockquote>
+<div class="table-wrap"><table><thead><tr><th>규칙</th><th>심각도</th><th>설명</th></tr></thead><tbody><tr><td><strong>회의실 LiveKit 연결</strong></td><td>WARNING</td><td>type=meeting인 room에 livekit_room이 지정되지 않음</td></tr><tr><td><strong>에셋 존재</strong></td><td>ERROR</td><td>furniture.asset_id가 asset 카탈로그(asset 테이블)에 존재하는가?(D8)</td></tr><tr><td><strong>배경 렌더 예산(D27)</strong></td><td>ERROR</td><td>서버 파생 <code>estimated_polygon_count</code>·씬 복잡도가 <code>build_office.py</code> 오프라인 렌더 예산(3d-design/optimization-criteria.md §1, 배경=오프라인 렌더 예산)을 초과하면 거부. <strong>종전 실시간 드로우콜 200 게이트는 D27에서 폐기</strong></td></tr><tr><td><strong>아바타/런타임 예산(D27)</strong></td><td>WARNING</td><td>three.js 런타임에 얹는 아바타·인터랙션 프록시·깊이합성 예산 초과 여부. 정본 상한은 3d-design/optimization-criteria.md §1(아바타=런타임 예산)에 위임</td></tr><tr><td><strong>메모리 예측</strong></td><td>WARNING</td><td>서버 파생 <code>estimated_memory_mb</code>가 기준 사양(D22 VRAM 예산)을 초과하면 경고</td></tr></tbody></table></div>
+<blockquote><strong>개수 프록시 폐기(D7·D12 정합) + D27 예산 재정의</strong>: 종전의 &quot;furniture_count &gt; 500개 거부&quot;처럼 <strong>개수를 성능 프록시로 쓰던 규칙은 폐기</strong>한다(유지). 단 D27에서는 <strong>실시간 드로우콜 예산(MultiMesh 200) 게이트도 폐기</strong>한다 — 배경은 Blender가 오프라인으로 한 번 렌더해 PNG+깊이패스로 굽기 때문에 런타임 드로우콜을 소비하지 않는다. 성능 판정은 (1) 배경 렌더 예산(Blender 렌더 시간·GPU 메모리, §1.2.13) (2) 아바타 예산(three.js 런타임, 3d-design/optimization-criteria.md §1 위임)의 두 축으로 대체한다.</blockquote>
 <h3 id="35-미니맵-검증">3.5 미니맵 검증</h3>
 <div class="table-wrap"><table><thead><tr><th>규칙</th><th>심각도</th><th>설명</th></tr></thead><tbody><tr><td><strong>뷰포트 범위</strong></td><td>ERROR</td><td>minimap.viewport_*이 dimensions를 벗어남</td></tr><tr><td><strong>픽셀 해상도</strong></td><td>WARNING</td><td>pixel<em>width * pixel</em>height &lt; 100,000 or &gt; 1,000,000</td></tr></tbody></table></div>
 <h3 id="36-검증-실행-흐름">3.6 검증 실행 흐름</h3>
@@ -1153,112 +1154,96 @@ id, office_id, floor_id, version, status, json, created_by, validated_by, deploy
     &quot;estimated_draw_calls&quot;: 9,
     &quot;estimated_memory_mb&quot;: 96,
     &quot;recommended_device_tier&quot;: &quot;low&quot;,
-    &quot;optimization_notes&quot;: &quot;소규모 샘플. desk 4개는 동일 asset_id(DESK_STANDARD_001)이므로 MultiMesh 1드로우콜로 계상됨.&quot;
+    &quot;optimization_notes&quot;: &quot;소규모 샘플. D27에서 배경은 Blender 오프라인 렌더로 굽히므로 estimated_draw_calls는 실시간 예산이 아닌 배경 렌더 참고값이다(§1.2.13).&quot;
   }
 }</code></pre>
-<blockquote>위 <code>performance</code> 값은 서버가 asset 카탈로그에서 파생 계산한 예시다(§1.2.13). desk 4개(F<em>001·F</em>002·F<em>003·F</em>101)는 같은 <code>asset_id</code>라 드로우콜 1회로 묶인다. 편집기가 보낸 값이 아니라 서버 계산값이 정본이다.</blockquote>
+<blockquote>위 <code>performance</code> 값은 서버가 asset 카탈로그에서 파생 계산한 예시다(§1.2.13). <strong>D27에서 <code>estimated_draw_calls</code>는 실시간 렌더 예산이 아니라 배경 렌더 참고값으로 강등</strong>됐다(배경은 Blender가 오프라인으로 렌더). 편집기가 보낸 값이 아니라 서버 계산값이 정본이다.</blockquote>
 <hr>
-<h2 id="5-클라이언트서버-로드-및-사용">5. 클라이언트/서버 로드 및 사용</h2>
-<h3 id="51-godot-클라이언트">5.1 Godot 클라이언트</h3>
-<p>에셋은 <strong><code>asset_id</code>로 클라이언트 빌드(pak)에 동봉된 <code>.tscn</code>을 로드</strong>한다(D8). 런타임 glb 다운로드는 없다. 동일 <code>asset_id</code> 그룹은 <strong>MultiMesh 1드로우콜로 병합</strong>한다(D7 드로우콜 예산·07 §6.2 연계). 좌표 변환은 §5.3의 <code>layout_to_world()</code>를 사용한다.</p>
-<pre class="code lang-gdscript"><code># 로드
-var layout_json: String = # API에서 fetch (배포된 layout)
-var layout: Dictionary = JSON.parse_string(layout_json)
+<h2 id="5-로드변환사용-d27-포토리얼-웹임베드">5. 로드·변환·사용 (D27 포토리얼 웹임베드)</h2>
+<blockquote><strong>D27 전환 요지</strong>: D26+Godot(실시간 렌더, <code>build_scene</code> GDScript, pak <code>.tscn</code> <code>ResourceLoader</code>)는 폐기됐다. layout JSON을 소비하는 주체는 (1) <strong>Blender 파라메트릭 씬 빌더</strong>(<code>build_office.py</code>, 오프라인 배경 렌더) + (2) <strong>R3F(three.js) 런타임</strong>(상호작용 좌표 로드)으로 바뀌었다. 좌표 변환은 실측 <code>camera.json</code>(<code>spikes/depth-composite/public/camera.json</code>) 기준 <strong>Blender(x,y,z) → three.js(x,z,-y)</strong>를 따른다(§5.3). 정본은 07-3d-visual-asset-pipeline·14/15/16·photoreal-web-strategy·render-pipeline/build_office.py.</blockquote>
+<h3 id="51-blender-파라메트릭-씬-빌더-배경-렌더-오프라인">5.1 Blender 파라메트릭 씬 빌더 (배경 렌더, 오프라인)</h3>
+<p>배경은 실시간으로 그리지 않는다. <code>build_office.py</code>가 layout JSON을 읽어 <strong>Blender 씬을 파라메트릭하게 조립</strong>하고, 정해진 카메라(<code>camera.json</code>)로 <strong>컬러 PNG + 깊이패스 PNG</strong>를 한 번 렌더해 굽는다. 런타임은 이 이미지를 깊이합성(R3F)으로 표시할 뿐, 배경 지오메트리를 GPU로 실시간 렌더하지 않는다.</p>
+<ul><li><strong>에셋 배치(D8)</strong>: <code>furniture[].asset_id</code>로 asset 카탈로그의 3D 소스(.blend/GLB)를 조회해 <code>coords</code>(§5.3 변환) 위치·회전으로 씬에 인스턴싱한다. 동일 <code>asset_id</code> 반복은 Blender linked-duplicate로 묶어 렌더 메모리를 절약한다(실시간 드로우콜 개념 아님).</li><li><strong>room 벽/콜리전</strong>: 배경 렌더에는 <code>doors[]</code> 개구부를 반영한 벽 메시를 세워 시각적으로만 굽는다. 통행 판정(A*)은 런타임(§5.2)이 담당하므로 배경 메시와 분리된다.</li><li><strong>깊이패스 export 훅</strong>: <code>build_office.py</code>는 렌더 후 <code>camera.json</code>의 <code>depth_encoding</code>(0=near/black ~ 1=far/white, 16bit) 규약으로 깊이 PNG를 함께 export한다. 이 깊이맵이 런타임 오클루전 합성의 근거다. 상세 파이프라인·훅 정본은 <strong>07-3d-visual-asset-pipeline.md</strong> 및 <strong>16(render-pipeline)</strong>, <code>render-pipeline/build_office.py</code>를 참조한다.</li></ul>
+<pre class="code lang-python"><code># build_office.py (개념) — layout JSON → Blender 씬 → 컬러/깊이 PNG (오프라인)
+import bpy, json
 
-# asset_id → 클라이언트 동봉 .tscn 경로(카탈로그). pak에 포함되어 있음.
-const ASSET_CATALOG := {
-  &quot;DESK_STANDARD_001&quot;: &quot;res://assets/3d/models/desk_standard/desk_standard.tscn&quot;,
-  &quot;CABINET_STORAGE_001&quot;: &quot;res://assets/3d/models/cabinet_storage/cabinet_storage.tscn&quot;,
-  &quot;SOFA_3SEAT_001&quot;: &quot;res://assets/3d/models/sofa_3seat/sofa_3seat.tscn&quot;,
+def build_office(layout: dict, camera_json: dict):
+    scene = bpy.context.scene
+    floor_h = layout[&quot;floor&quot;][&quot;floor_height_m&quot;]
+
+    # 가구: asset_id → asset 카탈로그의 .blend/GLB 소스 배치
+    for f in layout[&quot;furniture&quot;]:
+        obj = load_asset(f[&quot;asset_id&quot;])                 # 카탈로그 미존재는 검증에서 차단(§3.4)
+        obj.location = layout_to_blender(f[&quot;coords&quot;], floor_h)   # §5.3
+        obj.rotation_euler.z = deg_to_rad_cw(f[&quot;coords&quot;].get(&quot;rotation&quot;, 0.0))
+
+    # room 벽: doors[] 개구부 반영해 시각 메시만 세움 (통행 판정은 런타임 §5.2)
+    for room in layout[&quot;rooms&quot;]:
+        build_room_walls_visual(room, floor_h)          # solid box로 덮지 않음(D9)
+
+    # 카메라 고정(camera.json) 후 컬러 + 깊이패스 렌더
+    apply_camera(camera_json)                            # ortho, azimuth/elev 실측값
+    render_color_png()                                  # office_bg.png
+    render_depth_png(camera_json[&quot;depth_encoding&quot;])     # office_depth.png (0=near..1=far)</code></pre>
+<h3 id="52-r3fthreejs-런타임-서버-상호작용-레이어">5.2 R3F(three.js) 런타임 + 서버 (상호작용 레이어)</h3>
+<p>런타임은 배경 이미지를 깊이합성으로 깔고, 그 위에 <strong>상호작용 좌표(좌석·문·스폰·근접 zone·콜리전)</strong>만 three.js로 얹는다. layout JSON을 그대로 fetch해 좌표 변환(§5.3)만 적용한다.</p>
+<pre class="code lang-ts"><code>// R3F 런타임 (개념) — 상호작용 오브젝트만 배치, 배경은 렌더된 PNG 합성
+const layout = await fetchLayout(floorId);        // 배포된 layout JSON
+const floorH = layout.floor.floor_height_m;
+
+// 좌석/스폰/문 등 상호작용 마커: Blender→three.js 축 리맵(§5.3)
+for (const seat of layout.seats) {
+  const p = layoutToThree(seat.coords, floorH);   // (x, z, -y) 리맵
+  addSeatMarker(scene, p, seat.facing);           // 아바타 착석 지점
 }
 
-func build_scene(layout: Dictionary) -&gt; Node3D:
-  var scene = Node3D.new()
-  var floor_h: float = layout[&quot;floor&quot;][&quot;floor_height_m&quot;]
-
-  # 가구: 동일 asset_id 끼리 그룹핑 → MultiMesh (드로우콜 예산 준수)
-  var groups := {}   # asset_id -&gt; [furniture, ...]
-  for furniture in layout[&quot;furniture&quot;]:
-    groups.get_or_add(furniture[&quot;asset_id&quot;], []).append(furniture)
-
-  for asset_id in groups:
-    var tscn_path: String = ASSET_CATALOG[asset_id]   # 카탈로그 미존재 시 검증에서 이미 걸러짐
-    var packed := ResourceLoader.load(tscn_path) as PackedScene
-    var items: Array = groups[asset_id]
-    if items.size() &gt;= 2:
-      _add_multimesh(scene, packed, items, floor_h)    # 동일 에셋 다중 → 1드로우콜
-    else:
-      var inst := packed.instantiate()
-      inst.transform = layout_to_world(items[0][&quot;coords&quot;], floor_h)
-      scene.add_child(inst)
-
-  # room 벽: 경계에서 자동 생성하되 doors[] 개구부는 구멍으로 (D9)
-  for room in layout[&quot;rooms&quot;]:
-    _build_room_walls(scene, room, floor_h)   # doors 반영, solid box로 덮지 않음
-
-  # 정적 콜리전(외벽·기둥 등): shape 필드로 box/polygon 분기
-  for collider in layout[&quot;colliders&quot;]:
-    _add_static_collider(scene, collider, floor_h)
-
-  build_minimap(layout[&quot;minimap&quot;])
-  return scene</code></pre>
-<h3 id="52-godot-헤드리스-서버">5.2 Godot 헤드리스 서버</h3>
-<pre class="code lang-gdscript"><code># A* 내비게이션 생성(colliders 기반)
-var astar = AStar2D.new()
-for collider in layout[&quot;colliders&quot;]:
-  # 네비메시 생성
-  pass
-
-# 근접(proximity) 감지(zones 기반)
-func check_proximity(user_pos: Vector2) -&gt; String:
-  for zone in layout[&quot;zones&quot;]:
-    if Geometry2D.point_in_polygon(user_pos, zone[&quot;polygon&quot;]):
-      return zone[&quot;zone_id&quot;]
-  return &quot;&quot;
-
-# 회의실 점유(rooms 기반)
-func enter_room(user_id: int, room_id: String) -&gt; bool:
-  var room = find_room(room_id)
-  if room[&quot;current_occupants&quot;].size() &lt; room[&quot;max_concurrent_users&quot;]:
-    room[&quot;current_occupants&quot;].append(user_id)
-    return true
-  return false</code></pre>
-<h3 id="53-좌표계-godot-월드-매핑-d25">5.3 좌표계 → Godot 월드 매핑 (D25)</h3>
-<p>layout JSON의 2D 좌표(원점 <code>top_left</code>, 미터)를 Godot 3D 월드로 변환하는 <strong>단일 규약</strong>이다.</p>
-<p><strong>변환식:</strong></p>
-<pre class="code"><code>Vector3(x, floor_height, y)</code></pre>
-<ul><li><strong>x(월드 X)</strong> = layout <code>coords.x</code>. <strong>+X = 동쪽</strong>.</li><li><strong>floor_height(월드 Y)</strong> = <code>floor.floor_height_m</code>. 높이축은 층 바닥 오프셋으로만 쓰고, 개별 오브젝트의 z(높이)는 에셋 <code>.tscn</code> 자체가 결정한다.</li><li><strong>y축 매핑(월드 Z)</strong> = layout <code>coords.y</code>. <strong>+Z = 남쪽</strong>. (top_left 원점에서 y가 아래로 증가하므로 남쪽이 +Z)</li></ul>
-<p><strong>회전·facing 규약:</strong></p>
-<ul><li>단위 <strong>도(degree)</strong>, <strong>시계방향</strong>, <strong>기준축 +X</strong>(동쪽이 0도).</li><li>따라서 0=동(+X), 90=남(+Z), 180=서(-X), 270=북(-Z).</li><li>Godot의 <code>rotate_y</code>는 반시계·라디안 기준이므로 부호 변환이 필요: <code>basis = Basis(Vector3.UP, deg_to_rad(-angle_cw))</code>.</li></ul>
-<pre class="code lang-gdscript"><code># 단일 오브젝트 변환(furniture.coords, seat.facing, spawn.facing 공통)
-func layout_to_world(coords: Dictionary, floor_height: float) -&gt; Transform3D:
-    var pos := Vector3(coords[&quot;x&quot;], floor_height, coords[&quot;y&quot;])   # +X 동, +Z 남
-    var angle_cw: float = float(coords.get(&quot;rotation&quot;, 0.0))     # 도, 시계방향, 기준축 +X
-    var basis := Basis(Vector3.UP, deg_to_rad(-angle_cw))
-    return Transform3D(basis, pos)</code></pre>
-<p><strong>다층 건물의 floor_height 오프셋:</strong></p>
-<ul><li>각 층 JSON의 <code>floor.floor_height_m</code>가 그 층 바닥의 월드 Y다.</li><li>규칙: <code>floor_height_m = (level - 1) * story_height</code> (지상). 예: 층고 <code>story_height = 4.2m</code>면 1F=0.0, 2F=4.2, 3F=8.4. 지하는 음수(B1 level=-1 → -4.2).</li><li>다층을 동시에 로드할 때는 각 층 씬을 해당 <code>floor_height_m</code>만큼 Y로 올려 배치한다. 층 전환(계단/엘리베이터, <code>connections</code>)은 대상 층의 spawn으로 텔레포트한다.</li></ul>
-<blockquote>종전 &quot;z는 Godot에서 자동 계산(가정)&quot; 문구는 이 규칙으로 대체된다. 높이축(월드 Y)은 층 오프셋(<code>floor_height_m</code>) + 에셋 자체 높이로 결정되며, layout 좌표의 y는 <strong>월드 Z(남북)</strong>에 매핑된다.</blockquote>
+// 배경 깊이합성: office_bg.png + office_depth.png (camera.json 규약)
+mountDepthComposite(scene, bgTexture, depthTexture, cameraJson);</code></pre>
+<ul><li><strong>근접(proximity)·회의실 점유</strong>: zone 다각형 포함 판정, room <code>max_concurrent_users</code> 체크 등 상호작용 로직은 <strong>서버(FastAPI)</strong> 또는 클라이언트 좌표 판정으로 수행한다(종전 Godot 헤드리스 서버 GDScript는 폐기). A* 내비게이션은 <code>colliders[]</code> + <code>doors[]</code> 개구부를 근거로 서버가 계산한다(D12).</li><li><strong>에셋(D8)</strong>: 상호작용에 필요한 오브젝트에 한해 <code>asset_id</code>로 경량 프록시(three.js glTF)를 로드한다. 배경 지오메트리는 이미 PNG로 구워졌으므로 런타임 로드 대상이 아니다.</li></ul>
+<h3 id="53-좌표계-3d-월드-매핑-d25-좌표-저장-d27-축-리맵">5.3 좌표계 → 3D 월드 매핑 (D25 좌표 저장 + D27 축 리맵)</h3>
+<p>layout JSON의 2D 좌표(원점 <code>top_left</code>, 미터, D25)는 그대로 유지된다. D27에서 3D 월드로의 변환만 <strong>실측 <code>camera.json</code> 기준 Blender/three.js 규약</strong>으로 바뀐다.</p>
+<p><strong>저장 좌표(D25, 유지):</strong> x는 오른쪽(동)으로, y는 아래쪽(남)으로 증가하는 2D 미터 평면.</p>
+<p><strong>1) Blender 배치 (<code>build_office.py</code>, Z-up):</strong></p>
+<pre class="code"><code>Blender: (x, y_blender, z_up)
+  x        = layout coords.x          # +X = 동
+  y_blender = -(layout coords.y)      # top_left의 아래(+y, 남)를 Blender +Y_forward에 맞춰 부호 반전
+  z_up      = floor.floor_height_m    # 층 바닥 높이 오프셋</code></pre>
+<p><strong>2) Blender → three.js 축 리맵 (camera.json <code>threejs_notes.axis_remap</code>):</strong></p>
+<pre class="code"><code>three.js(x, y_up, z_forward) = Blender(x, z, -y)     # 실측 정본</code></pre>
+<p>즉 layout 좌표를 three.js 월드로 직접 쓰면:</p>
+<ul><li><strong>three.js X</strong> = layout <code>coords.x</code> (+X = 동)</li><li><strong>three.js Y(월드 높이)</strong> = <code>floor.floor_height_m</code> (Blender z<em>up → three.js y</em>up)</li><li><strong>three.js Z</strong> = layout <code>coords.y</code> (Blender −y<em>blender = −(−coords.y) = coords.y). top</em>left에서 y(남)가 커질수록 three.js +Z.</li></ul>
+<p><strong>회전·facing 규약(유지):</strong></p>
+<ul><li>단위 <strong>도(degree)</strong>, <strong>시계방향</strong>, <strong>기준축 +X</strong>(동쪽이 0도). 0=동, 90=남, 180=서, 270=북. (D25에서 확정, D27에서도 불변)</li><li>three.js <code>rotateY</code>는 반시계·라디안 기준이므로 부호 변환: <code>mesh.rotation.y = THREE.MathUtils.degToRad(-angle_cw)</code>.</li></ul>
+<pre class="code lang-ts"><code>// 단일 오브젝트 변환(furniture.coords, seat.facing, spawn.facing 공통)
+function layoutToThree(coords: {x:number,y:number,rotation?:number}, floorHeight: number) {
+  const pos = new THREE.Vector3(coords.x, floorHeight, coords.y);  // (x, y_up, z)
+  const angleCw = coords.rotation ?? 0;                            // 도, 시계방향, 기준축 +X
+  const rotY = THREE.MathUtils.degToRad(-angleCw);
+  return { pos, rotY };
+}</code></pre>
+<p><strong>다층 건물의 floor_height 오프셋(유지):</strong></p>
+<ul><li>각 층 JSON의 <code>floor.floor_height_m</code>가 그 층 바닥의 월드 높이축(three.js Y / Blender z_up)이다.</li><li>규칙: <code>floor_height_m = (level - 1) * story_height</code> (지상). 예: 층고 <code>story_height = 4.2m</code>면 1F=0.0, 2F=4.2, 3F=8.4. 지하는 음수(B1 level=-1 → -4.2).</li><li>층 전환(계단/엘리베이터, <code>connections</code>)은 대상 층의 spawn으로 텔레포트한다. 다층 배경은 층별로 별도 렌더/합성한다(단일 씬 동시 로드 대신).</li></ul>
+<blockquote>종전 Godot <code>Vector3(x, floor_height, y)</code>/<code>Basis(Vector3.UP, …)</code> 규약은 D27에서 위 Blender→three.js 리맵으로 대체된다. 저장 좌표(D25, top_left 미터)와 회전·facing 단위(도/시계방향/+X 기준)는 불변이며, <strong>오직 3D 월드 축 매핑만</strong> 실측 <code>camera.json</code>에 맞춰 갱신됐다.</blockquote>
 <hr>
 <h2 id="6-loop-metadata">6. Loop Metadata</h2>
 <h3 id="upstream-documents-referenced">Upstream documents referenced</h3>
 <ul><li>04-data-model.md: erp<em>user, team</em>zone, office, floor, room, seat, presence, meeting, kpi_result, asset 테이블 스키마</li><li>10-roadmap.md: 7단계 로드맵(특히 Step 3. 사무실 배치 편집기)</li></ul>
 <h3 id="downstream-documents-affected">Downstream documents affected</h3>
-<ul><li>06-screens.md: JSON 편집기 UI 설계(좌표 선택, 검증 결과 표시)</li><li>07-3d-visual-asset-pipeline.md: Godot 클라이언트 씬 빌드(office_layout 파싱, 렌더링)</li><li>02-trd-architecture.md: office_layout CRUD 엔드포인트, 검증 API 정의</li></ul>
+<ul><li>06-screens.md: JSON 편집기 UI 설계(좌표 선택, 검증 결과 표시)</li><li>07-3d-visual-asset-pipeline.md: Blender 파라메트릭 씬 빌드(build<em>office.py)·깊이패스·R3F 런타임 로드(office</em>layout 파싱), 배경/아바타 성능 예산 정본(D27)</li><li>16(render-pipeline)·<code>render-pipeline/build_office.py</code>: layout→Blender 씬 빌더·컬러/깊이 PNG export 구현(D27)</li><li>02-trd-architecture.md: office_layout CRUD 엔드포인트, 검증 API 정의</li></ul>
 <h3 id="open-questions">Open questions</h3>
-<ol><li><strong>공간 구조 변경 시 라이브 처리</strong>: deployed 상태에서 좌석 좌표/문 위치 등 <strong>공간 구조</strong>가 바뀌어 재배포되면, 회의 중인 사용자는 재로드 시점을 언제로? → §2.2 라이브 강제 동기화 정책(안전 시점 재로드) 기준. (배정 변경은 D10으로 재배포 자체가 없어 해당 없음)</li><li><strong>폴리곤 좌표 정확도</strong>: 16자리 소수점 필요? 정수(cm 단위) 충분?</li><li><strong>에셋 버전 관리</strong>: 클라이언트 동봉 asset(.tscn)이 업데이트되면 기존 layout에서 자동 로드되나? → D8: 신규/갱신 에셋은 클라이언트 자동 업데이트 채널로 배포. asset<em>id는 유지, 내용만 갱신되므로 layout 수정 불필요. 브레이킹 변경 시 새 asset</em>id 부여 + layout 마이그레이션.</li><li><strong>다층 빌딩의 floor<em>id</strong>: 각 office</em>layout은 1개 floor<em>id만 가지는가? 또는 1개 JSON이 여러 층을 포함할 수 있나? → 현재 설계: 1 floor = 1 layout (확정). 다층 동시 로드는 §5.3 floor</em>height 오프셋으로 처리.</li></ol>
+<ol><li><strong>공간 구조 변경 시 라이브 처리</strong>: deployed 상태에서 좌석 좌표/문 위치 등 <strong>공간 구조</strong>가 바뀌어 재배포되면, 회의 중인 사용자는 재로드 시점을 언제로? → §2.2 라이브 강제 동기화 정책(안전 시점 재로드) 기준. (배정 변경은 D10으로 재배포 자체가 없어 해당 없음)</li><li><strong>폴리곤 좌표 정확도</strong>: 16자리 소수점 필요? 정수(cm 단위) 충분?</li><li><strong>에셋 버전 관리</strong>: asset(배경 .blend/GLB 소스 또는 런타임 프록시)이 업데이트되면 기존 layout에서 자동 반영되나? → D8: asset<em>id는 유지, 내용만 갱신. 배경 갱신은 <code>build_office.py</code> 재렌더로, 런타임 프록시는 배포 채널로 반영되며 layout 수정 불필요. 브레이킹 변경 시 새 asset</em>id 부여 + layout 마이그레이션.</li><li><strong>다층 빌딩의 floor<em>id</strong>: 각 office</em>layout은 1개 floor<em>id만 가지는가? 또는 1개 JSON이 여러 층을 포함할 수 있나? → 현재 설계: 1 floor = 1 layout (확정). 다층 동시 로드는 §5.3 floor</em>height 오프셋으로 처리.</li></ol>
 <h3 id="assumptions">Assumptions</h3>
-<ul><li>좌표계는 2D(x, y)만 저장(원점 top_left, 미터). 월드 Y(높이축)는 <code>floor_height_m</code> 오프셋 + 에셋 자체 높이로 결정되고, layout의 y는 월드 Z(남북)에 매핑된다(§5.3, D25).</li><li>좌석은 room 내부(by<em>seats 모드일 때 capacity만큼) 또는 개방 구역/by</em>room에 속함.</li><li>에셋 카탈로그(asset 테이블)는 클라이언트 빌드에 동봉되며, JSON에서는 asset_id로만 참조(D8).</li><li>좌석-직원 배정은 layout이 아니라 <code>seat.assigned_user_id</code> + <code>seat_assignment_history</code> DB가 담당(D10, C4-a). ERP DB 동기화(teams, users)는 별도 배치 작업.</li></ul>
+<ul><li>좌표계는 2D(x, y)만 저장(원점 top_left, 미터, D25). 3D 월드 매핑은 D27 Blender(x,y,z)→three.js(x,z,-y) 리맵을 따르며(§5.3, camera.json 실측 정본), 월드 높이축(three.js Y)은 <code>floor_height_m</code> 오프셋 + 에셋 자체 높이로, layout의 y는 three.js Z(남북)에 매핑된다.</li><li>좌석은 room 내부(by<em>seats 모드일 때 capacity만큼) 또는 개방 구역/by</em>room에 속함.</li><li>에셋 카탈로그(asset 테이블)는 클라이언트 빌드에 동봉되며, JSON에서는 asset_id로만 참조(D8).</li><li>좌석-직원 배정은 layout이 아니라 <code>seat.assigned_user_id</code> + <code>seat_assignment_history</code> DB가 담당(D10, C4-a). ERP DB 동기화(teams, users)는 별도 배치 작업.</li></ul>
 <h3 id="validation-criteria">Validation criteria</h3>
-<ul><li class="task"><input type="checkbox" disabled checked> 모든 필드 설명: 타입, 필수 여부, 용도</li><li class="task"><input type="checkbox" disabled checked> 예시 JSON: 실제 사용 가능 (Godot 로드, 검증 통과) — v1.1에서 자체 검증 위반(입장 트리거 경계·by_seats 좌석 0개·문 개구부) 수정 완료</li><li class="task"><input type="checkbox" disabled checked> 검증 규칙: 에러/경고 분류, 심각도별 처리 흐름, 검증 아키텍처(D12)</li><li class="task"><input type="checkbox" disabled checked> 버전 관리: schema<em>version 호환성 처리, status·롤백 상태 전이(archived 재서술), 변경 이력 audit</em>log 기록(04 정본)</li><li class="task"><input type="checkbox" disabled checked> mermaid 다이어그램: 검증 시퀀스(웹 경량/서버 정밀 분리)</li><li class="task"><input type="checkbox" disabled checked> 상호 참조: 00(정본), 04, 06, 07 등 다른 문서 명확히 표기</li></ul>
+<ul><li class="task"><input type="checkbox" disabled checked> 모든 필드 설명: 타입, 필수 여부, 용도</li><li class="task"><input type="checkbox" disabled checked> 예시 JSON: 실제 사용 가능 (Blender 씬 빌드 + R3F 로드, 검증 통과) — v1.1에서 자체 검증 위반(입장 트리거 경계·by_seats 좌석 0개·문 개구부) 수정 완료</li><li class="task"><input type="checkbox" disabled checked> 검증 규칙: 에러/경고 분류, 심각도별 처리 흐름, 검증 아키텍처(D12)</li><li class="task"><input type="checkbox" disabled checked> 버전 관리: schema<em>version 호환성 처리, status·롤백 상태 전이(archived 재서술), 변경 이력 audit</em>log 기록(04 정본)</li><li class="task"><input type="checkbox" disabled checked> mermaid 다이어그램: 검증 시퀀스(웹 경량/서버 정밀 분리)</li><li class="task"><input type="checkbox" disabled checked> 상호 참조: 00(정본), 04, 06, 07 등 다른 문서 명확히 표기</li></ul>
 <h3 id="risks">Risks</h3>
-<ul><li><strong>성능</strong>: 파생 폴리곤/드로우콜 예산 초과 시 A*·렌더링 성능 저하. 개수가 아니라 파생값으로 모니터링(§3.4).</li><li><strong>권한 누락</strong>: 좌석/구역에 org<em>group</em>id가 없으면 접근 제어 실패. 검증 경고 필수.</li><li><strong>문 개구부 누락</strong>: room에 doors[]가 없으면 진입 불가한 밀폐 상자가 됨. 검증 ERROR로 차단(§3.2).</li><li><strong>에셋 카탈로그 불일치</strong>: 클라이언트 pak의 asset 카탈로그와 layout asset_id가 어긋나면 로드 실패. 검증에서 존재 확인 + 클라이언트 자동 업데이트 채널로 동기화(D8).</li></ul>
+<ul><li><strong>성능</strong>: 파생 폴리곤/드로우콜 예산 초과 시 A*·렌더링 성능 저하. 개수가 아니라 파생값으로 모니터링(§3.4).</li><li><strong>권한 누락</strong>: 좌석/구역에 org<em>group</em>id가 없으면 접근 제어 실패. 검증 경고 필수.</li><li><strong>문 개구부 누락</strong>: room에 doors[]가 없으면 진입 불가한 밀폐 상자가 됨. 검증 ERROR로 차단(§3.2).</li><li><strong>에셋 카탈로그 불일치</strong>: asset 카탈로그(배경 소스·런타임 프록시)와 layout asset_id가 어긋나면 렌더/로드 실패. 검증에서 존재 확인 + 배포 채널로 동기화(D8, D27).</li></ul>
 <hr>
 <h2 id="7-변경-이력">7. 변경 이력</h2>
-<div class="table-wrap"><table><thead><tr><th>버전</th><th>일자</th><th>변경 내용</th></tr></thead><tbody><tr><td>1.0</td><td>2026-07-01</td><td>초안</td></tr><tr><td>1.1</td><td>2026-07-02</td><td>00-decisions 반영: D9 문 개구부(doors[]) 신설·room 벽 자동생성 규칙, D10 좌석 배정 분리(assigned<em>user 제거·facing·furniture</em>id·§2.4), D25 좌표계 top<em>left 단일화·Godot 매핑식·floor</em>height 오프셋(§5.3), D12 검증 아키텍처(서버 단일 정밀검증·공식 JSON Schema·ERROR 배포차단)·검증 흐름 재작성, D8 에셋 asset<em>id 카탈로그 참조·model</em>glb 제거·씬빌더 ResourceLoader+MultiMesh, D7 드로우콜 예산 파생값 기준, schema<em>version 호환성·롤백 상태전이 보강, collider shape 필드 분리, floor</em>id UUID 통일, performance 서버 파생 계산, 샘플 JSON 자체 검증 위반 수정, &quot;설파&quot; 오탈자 수정, changelog 배열화</td></tr><tr><td>1.2</td><td>2026-07-02</td><td>데이터 정본 정렬: C4-a 좌석 배정 정본을 04(<code>seat.assigned_user_id</code>+<code>seat_assignment_history</code>, <code>unassigned_at</code>)로 확정·<code>seat_assignment</code>/<code>released_at</code> 참조 전면 정정, 상태 전이도 <code>rolled_back</code> 제거(롤백=archived 처리+이전 버전 재deployed, 04 enum 4종 유지), §2.3 컬럼 목록 04 정본 정정(updated<em>by·changelog 삭제→validated</em>by·deployed<em>at·deployment</em>notes, 이력은 audit<em>log), §6 샘플 JSON connections floor</em>id/target<em>floor</em>id UUID 정정(§1.2.12 규약)</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>버전</th><th>일자</th><th>변경 내용</th></tr></thead><tbody><tr><td>1.0</td><td>2026-07-01</td><td>초안</td></tr><tr><td>1.1</td><td>2026-07-02</td><td>00-decisions 반영: D9 문 개구부(doors[]) 신설·room 벽 자동생성 규칙, D10 좌석 배정 분리(assigned<em>user 제거·facing·furniture</em>id·§2.4), D25 좌표계 top<em>left 단일화·Godot 매핑식·floor</em>height 오프셋(§5.3), D12 검증 아키텍처(서버 단일 정밀검증·공식 JSON Schema·ERROR 배포차단)·검증 흐름 재작성, D8 에셋 asset<em>id 카탈로그 참조·model</em>glb 제거·씬빌더 ResourceLoader+MultiMesh, D7 드로우콜 예산 파생값 기준, schema<em>version 호환성·롤백 상태전이 보강, collider shape 필드 분리, floor</em>id UUID 통일, performance 서버 파생 계산, 샘플 JSON 자체 검증 위반 수정, &quot;설파&quot; 오탈자 수정, changelog 배열화</td></tr><tr><td>1.2</td><td>2026-07-02</td><td>데이터 정본 정렬: C4-a 좌석 배정 정본을 04(<code>seat.assigned_user_id</code>+<code>seat_assignment_history</code>, <code>unassigned_at</code>)로 확정·<code>seat_assignment</code>/<code>released_at</code> 참조 전면 정정, 상태 전이도 <code>rolled_back</code> 제거(롤백=archived 처리+이전 버전 재deployed, 04 enum 4종 유지), §2.3 컬럼 목록 04 정본 정정(updated<em>by·changelog 삭제→validated</em>by·deployed<em>at·deployment</em>notes, 이력은 audit<em>log), §6 샘플 JSON connections floor</em>id/target<em>floor</em>id UUID 정정(§1.2.12 규약)</td></tr><tr><td>1.3</td><td>2026-07-09</td><td><strong>D27 부분 개정(로드·변환·성능만, 스키마 본체 불변)</strong>: D26+Godot 폐기→포토리얼 웹임베드. §5 전면 교체 — Godot <code>build_scene</code>(GDScript)·pak·.tscn·<code>ResourceLoader</code>·헤드리스 서버 → Blender 파라메트릭 씬 빌더(<code>build_office.py</code>, 오프라인 배경 렌더+깊이패스 export) + R3F(three.js) 런타임 상호작용 로드. §5.3 좌표변환 Godot <code>Vector3(x,floor_height,y)</code>/<code>Basis</code> → 실측 camera.json 기준 Blender(x,y,z)→three.js(x,z,-y) 리맵(top<em>left 미터 D25·회전/facing 도·시계방향·+X 기준 불변). 성능예산 재정의(§1.2.13·§3.4): 실시간 MultiMesh 200드로우콜 게이트 폐기 → 배경 렌더 예산(Blender)·아바타 예산(three.js, 07 optimization-criteria 위임). 개요·§1.2.2 floor</em>height·§1.2.7 D8 에셋참조·상단 배너·§6 downstream/assumptions/validation 문구 D27 정합. <strong>JSON 스키마 정의(§1.2 필드·§2 버전·§3 검증 규칙·§4 샘플)는 정본으로 그대로 유효</strong></td></tr></tbody></table></div>
 <hr>
-<p><strong>작성자</strong>: 시스템 설계팀 <strong>마지막 수정</strong>: 2026-07-02 <strong>검토 상태</strong>: 개정(v1.2, 데이터 정본 정렬 반영)</p>
-<div class="meta-foot">원본: <code>05-office-layout-schema.md</code> · 자동 생성 2026-07-02 · md-to-html</div>
+<p><strong>작성자</strong>: 시스템 설계팀 <strong>마지막 수정</strong>: 2026-07-09 <strong>검토 상태</strong>: D27 부분 개정(v1.3 — 스키마 본체 유효, 로드/변환/성능절만 포토리얼 웹임베드로 개정)</p>
+<div class="meta-foot">원본: <code>05-office-layout-schema.md</code> · 자동 생성 2026-07-12 · md-to-html</div>
 </main>
 </div>
 

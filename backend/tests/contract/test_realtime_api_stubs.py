@@ -21,8 +21,6 @@ WebSocket 실시간 API 계약 테스트 스텁 (Phase 0)
 """
 
 import pytest
-import json
-from datetime import datetime
 
 
 # ============================================================================
@@ -558,6 +556,7 @@ class MockWebSocketClient:
             "jwt": self.token
         }
         # await self.ws.send(json.dumps(message))
+        return message
 
     async def recv(self) -> dict:
         """메시지 수신"""
@@ -574,6 +573,7 @@ class MockWebSocketClient:
             "velocity": 2.0
         }
         # await self.ws.send(json.dumps(message))
+        return message
 
     async def close(self):
         """연결 종료"""

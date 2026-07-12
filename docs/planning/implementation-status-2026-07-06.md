@@ -1,5 +1,7 @@
 # 구현 현황 · 핸드오프 문서 (2026-07-06)
 
+> 📦 **아카이브 — D27 전환(2026-07-08) 이전 시점 스냅샷.** 아키텍처 관련 서술은 현행(D27)과 다르며, 특정 시점 기록으로만 참조할 것. 코드 실측 수치(pytest 등)는 작성 시점 기준 유효.
+
 > 기획 정본 대비 개발 구현 상태 전수조사 결과 + 다음 담당자 인수인계.
 > 기준 커밋: `aef929b` (feat: 미구현 계약 API 갭 구현)
 > 정본 참조: `docs/api/management-api.yaml`, `docs/planning/loop/08-derived-gates.md`(REQ-001~011), `10-roadmap.md`(Phase 0~7), `specs/screens/`(11화면), `00-decisions.md`(D1~D26)

@@ -1,14 +1,16 @@
 # 기술 아키텍처(TRD) — 가상오피스 운영 플랫폼
 
-> **[D26 전환 — 2026-07-06]** 이 문서의 Godot 헤드리스 서버 / GDScript / 3D 렌더러 품질수치(60fps@GTX1650 등) 관련 절은
-> D26으로 **WorkAdventure self-host 스택으로 대체**되었습니다(게임서버=wa-back, 실시간=WA 내장 WSS, 클라=브라우저). 해당 절은 역사적 참고용이며,
-> 현행 정본은 docs/planning/10-roadmap.md(v3.0)와 docker-compose.yml/config/*를 따릅니다.
+> 🔵 **D28 피벗(2026-07-09) — 렌더 아키텍처 대체.** 아래 "Blender Cycles 오프라인 렌더 배경 + 깊이합성"은 폐기, 현행 = **실시간 스타일라이즈드 R3F 단일 렌더**(같은 렌더러라 오클루전 자동 — 별도 깊이합성 없음). Colyseus 이동서버·단일세션 JWT·데이터/ERP/보안/KPI/회의 시퀀스는 유지. 정본 = **00-decisions §I(D28)**.
+
+> ✅ **D27 반영(2026-07-09) — 포토리얼 웹임베드 아키텍처로 재작성 완료.** D26(WorkAdventure) 및 그 이전의 Godot 네이티브 스택은 **전면 폐기**되었다. 현행 정본 = 00-decisions §H(D27) · 14-virtual-office-spec · 15-realtime-server-spec · 16-render-spike-and-roadmap · 3d-design/{design-style-analysis, photoreal-web-strategy}. 데이터 계층·ERP 연동·보안·KPI·회의 시퀀스의 도메인 로직은 D27에서도 유효하며 보존한다.
+
+> **[전환 이력]** ① Godot 4 네이티브 데스크톱/헤드리스 서버(v1.x) → ② D26 WorkAdventure self-host(2026-07-06) → ③ **D27 포토리얼 웹임베드(2026-07-08)**. 최종 확정 = R3F(three.js) 뷰포트 + Blender Cycles 오프라인 렌더 배경 + 깊이합성 + Colyseus(Node/TS) 권위 서버 + 단일세션 JWT. 이전 두 아키텍처의 렌더·클라·서버·배포 서술은 모두 폐기됨(도메인 로직 제외).
 
 
 **문서 ID**: 02-trd-architecture.md  
-**버전**: v1.2  
-**작성일**: 2026-07-02 (최초 2026-07-01)  
-**상태**: 확정 반영(00-decisions.md v1.0 정합)  
+**버전**: v2.0  
+**작성일**: 2026-07-09 (최초 2026-07-01)  
+**상태**: 확정 반영(00-decisions.md §H / D27 정합)  
 **대상**: 개발팀 L3 실무자  
 
 > 본 문서의 모든 결정은 **00-decisions.md(정본)** 를 따른다. 충돌 시 00-decisions.md가 이긴다.
@@ -18,7 +20,9 @@
 
 ## 개요
 
-가상오피스 운영 플랫폼은 기존 사내 ERP(Space-Daily/DailyLog) 위에 얹는 3D 프레즌스 + 협업 계층이다. Godot 4 네이티브 데스크톱을 주력 배포 형식으로 하며, FastAPI 백엔드 + Next.js 웹 콘솔으로 운영 및 업무 기록을 지원한다. 실시간 가상오피스 서버는 아바타 이동·프레즌스·회의실 점유를 권위 있게 관리하고, LiveKit를 통해 화상회의를 제공한다. EOD 배치는 협업 신호와 KPI를 ERP로 push하여 분기 인사평가 자료로 활용한다.
+가상오피스 운영 플랫폼은 기존 사내 ERP(Space-Daily/DailyLog) 위에 얹는 2.5D 포토리얼 프레즌스 + 협업 계층이다. **단일 통합 웹앱(Next.js)** 을 주력 배포 형식으로 하며, 그 안의 **react-three-fiber(R3F/three.js) 뷰포트**가 3D 씬을 렌더링한다. 배경은 **Blender Cycles로 오프라인 렌더한 포토리얼 이미지 + Z깊이패스**를 사용하고, 런타임에는 경량 GLTF 아바타만 R3F로 렌더하여 배경 깊이맵과 **깊이합성(depth composite)** 함으로써 아바타가 가구·유리벽 뒤로 픽셀 정확하게 가려지는 고정 아이소메트릭 2.5D를 구현한다. 실시간 동기화는 **Colyseus(Node/TS) 권위 서버**(SkyOffice 이식)가 20Hz tick으로 아바타 이동·프레즌스·회의실 점유를 관리한다. FastAPI 백엔드 + Next.js 웹 콘솔이 운영 및 업무 기록을 담당하고, LiveKit를 통해 화상회의를 제공한다. EOD 배치는 협업 신호와 KPI를 ERP로 push하여 분기 인사평가 자료로 활용한다.
+
+> 렌더 예산에 대하여: 배경이 오프라인 렌더 이미지이므로 런타임 3D 렌더 부담은 **아바타(경량 GLTF) + 깊이합성 셰이더**뿐이다. 실시간 렌더러(Forward+/SDFGI/LOD/오클루전 컬링 등)의 GPU 예산 산정은 이 아키텍처에서 무의미하다.
 
 ---
 
@@ -26,20 +30,16 @@
 
 ```mermaid
 graph TB
-    subgraph "클라이언트 계층"
-        GodotDesktop["🖥️ Godot 4 데스크톱 클라이언트<br/>(Forward+ 렌더러)<br/>- 아바타 시각화<br/>- 로컬 키 입력<br/>- 미니맵/직원패널"]
+    subgraph "클라이언트 계층 (단일 웹앱)"
+        WebApp["🌐 Next.js 통합 웹앱<br/>(TypeScript, App Router)<br/>┣ R3F 3D 뷰포트<br/>┃  - 아바타 렌더(경량 GLTF)<br/>┃  - 오프라인 배경 + 깊이합성<br/>┣ 관리 콘솔(조직도/좌석/KPI/회의록)<br/>┗ 업무기록 UI"]
     end
 
-    subgraph "실시간 게임서버"
-        GodotServer["🎮 Godot 4 헤드리스 서버<br/>- 권위 있는 아바타 이동<br/>- 충돌/근접 검증<br/>- 회의실 점유 관리<br/>- 프레즌스 상태"]
+    subgraph "실시간 서버 (권위)"
+        Colyseus["🎮 Colyseus 서버<br/>(Node/TS, SkyOffice 이식)<br/>- 20Hz tick 권위 이동<br/>- 충돌/근접 검증<br/>- 회의실 점유 관리<br/>- 프레즌스(메모리 권위)<br/>- Schema binary delta"]
     end
 
     subgraph "백엔드 API 계층"
-        FastAPI["🔧 FastAPI 백엔드<br/>(Python)<br/>- 비즈니스 로직<br/>- 데이터 영속(Persistence)<br/>- 배치 작업<br/>- ERP 동기화"]
-    end
-
-    subgraph "웹 관리/업무 계층"
-        NextJS["🌐 Next.js 관리 콘솔<br/>(TypeScript, App Router)<br/>- 조직도/좌석배치<br/>- KPI 대시보드<br/>- 업무기록<br/>- 회의록 관리"]
+        FastAPI["🔧 FastAPI 백엔드<br/>(Python, 단일 데이터 진입)<br/>- 비즈니스 로직<br/>- 데이터 영속(Persistence)<br/>- 배치 작업<br/>- ERP 동기화<br/>- JWT 발급"]
     end
 
     subgraph "협업 & 회의"
@@ -59,32 +59,29 @@ graph TB
         AIWorker["🤖 AI 워커<br/>- KPI 초안 생성<br/>- 회의록 요약 검토<br/>(Claude 기본, Gemini 대안)"]
     end
 
-    subgraph "에셋 파이프라인"
-        Blender["🎨 Blender<br/>- 3D 모델 제작"]
-        Optimization["⚙️ 최적화<br/>(gltfpack, glTF-Transform)<br/>- Godot 임포트"]
+    subgraph "에셋/렌더 파이프라인 (오프라인)"
+        Blender["🎨 Blender Cycles<br/>- 배경 오프라인 렌더<br/>- Z깊이패스 + camera.json<br/>- 아바타 GLTF 제작"]
+        Optimization["⚙️ 웹 최적화<br/>(glTF-Transform, Draco/meshopt)<br/>- KTX2/Basis 텍스처"]
         AssetDB["📦 에셋 레지스트리<br/>(asset 테이블)<br/>- 라이선스 추적<br/>- 해시 검증"]
     end
 
-    subgraph "배포"
-        Installer["📦 데스크톱 인스톨러<br/>- 자동 업데이트 클라이언트"]
-        WebDeploy["🚀 웹 배포<br/>- 관리 콘솔<br/>- 정적/API 서빙"]
-        ServerDeploy["☁️ 백엔드 호스팅<br/>- FastAPI + Uvicorn<br/>- Godot 헤드리스"]
+    subgraph "배포 (온프렘 단일 서버 PC)"
+        WebDeploy["🚀 웹앱 배포<br/>- Next.js 정적/SSR<br/>- Docker Compose + Caddy(TLS)"]
+        ServerDeploy["☁️ 백엔드 호스팅<br/>- FastAPI + Uvicorn<br/>- Colyseus(Node) 서버"]
         LiveKitDeploy["🏢 Self-host LiveKit<br/>- 온프레미스 배포"]
     end
 
     %% 연결 관계
-    GodotDesktop -->|WebSocket(WSS)| GodotServer
-    GodotDesktop -->|REST API| FastAPI
-    GodotDesktop -->|LiveKit 수신| LiveKit
+    WebApp -->|WebSocket(WSS) Colyseus Schema| Colyseus
+    WebApp -->|REST API| FastAPI
+    WebApp -->|LiveKit WebRTC| LiveKit
 
-    GodotServer -->|REST API 쿼리| FastAPI
-    GodotServer -->|아바타 상태 저장| FastAPI
+    Colyseus -->|onAuth JWT 검증| FastAPI
+    Colyseus -->|presence batch(1~5s)| FastAPI
 
     FastAPI -->|읽기/쓰기| PostgreSQL
     FastAPI -->|읽기(SELECT)| ERPDB
     FastAPI -->|쓰기(write API)| ERPWrite
-
-    NextJS -->|REST API| FastAPI
 
     AIWorker -->|쿼리| PostgreSQL
     AIWorker -->|업데이트| FastAPI
@@ -92,21 +89,18 @@ graph TB
     FastAPI -->|룸 생성/삭제| LiveKit
     LiveKit -->|웹훅 메타데이터| FastAPI
 
-    Blender -->|GLB/glTF 내보내기| Optimization
-    Optimization -->|임포트| AssetDB
-    AssetDB -->|로드| GodotDesktop
-    AssetDB -->|로드| GodotServer
+    Blender -->|배경 PNG+깊이+GLTF| Optimization
+    Optimization -->|웹 에셋 등록| AssetDB
+    AssetDB -->|정적 서빙/로드| WebApp
 
-    Installer -.->|배포| GodotDesktop
-    WebDeploy -.->|배포| NextJS
+    WebDeploy -.->|배포| WebApp
     ServerDeploy -.->|배포| FastAPI
-    ServerDeploy -.->|배포| GodotServer
+    ServerDeploy -.->|배포| Colyseus
     LiveKitDeploy -.->|배포| LiveKit
 
-    style GodotDesktop fill:#4CAF50,color:#fff
-    style GodotServer fill:#2196F3,color:#fff
+    style WebApp fill:#9C27B0,color:#fff
+    style Colyseus fill:#2196F3,color:#fff
     style FastAPI fill:#FF9800,color:#fff
-    style NextJS fill:#9C27B0,color:#fff
     style LiveKit fill:#F44336,color:#fff
     style PostgreSQL fill:#37474F,color:#fff
     style ERPDB fill:#616161,color:#fff
@@ -118,93 +112,99 @@ graph TB
 
 ## 2. 컴포넌트별 책임과 통신 프로토콜
 
-### 2.1 Godot 4 데스크톱 클라이언트
+### 2.1 R3F(three.js) 클라이언트 (Next.js 웹앱 내 뷰포트)
+
+3D 클라이언트는 별도 데스크톱 앱이 아니라 **단일 통합 Next.js 웹앱 내부에 임베드된 react-three-fiber(R3F/three.js) 뷰포트**다. 설치·자동 업데이트가 없으며 브라우저에서 즉시 실행된다.
 
 **책임**
-- 아바타 렌더링 및 애니메이션 (Forward+ 렌더러)
+- 아바타 렌더링 및 애니메이션 (경량 GLTF, three.js WebGL2)
+- **깊이합성 렌더**: Blender Cycles 오프라인 렌더 배경 PNG + Z깊이맵을 로드하고, camera.json(직교 아이소 카메라)으로 three.js 카메라를 정합시켜 아바타 프래그먼트를 배경 깊이와 비교(depth composite) → 가구·유리벽 뒤로 픽셀 정확 가림. 고정 아이소메트릭 2.5D
 - 로컬 입력(키보드, 마우스) 처리
-- 게임서버와 실시간 위치 동기화
-- UI: 미니맵, 직원패널(명단/상태), 하단 회의패널
-- 자동 업데이트 확인 및 설치
+- Colyseus 서버와 실시간 위치 동기화 (Colyseus Schema 클라이언트 콜백 → 아바타 보간)
+- UI: 미니맵, 직원패널(명단/상태), 하단 회의패널 (동일 웹앱의 React 컴포넌트)
 
 **통신 프로토콜**
-- **게임서버 연결**: WebSocket(WSS) 단일 확정 (D1)
-  - TLS 내장(WSS) → 재택 근무자의 방화벽/프록시 통과 용이. ENet(UDP)·"ENet TCP" 폴백은 폐기(존재하지 않는 조합)
-  - 전송: WebSocketPeer(WSS) / 메시지: 09-realtime-collaboration.md §5.3 정의 JSON 프로토콜
-  - 메시지 예: `{"type":"move_request","player_id":42,"target_pos":[10.5,0.0,20.3],"floor_id":1,"sequence_num":1234}` (09 §5.3 정본)
-  - **접속 경로**: 사무실 내는 사내 LAN에서 WSS 직접 접속. 재택/외근자는 443 공개 엔드포인트(WSS, Let's Encrypt) 직접 접속 — VPN 없음 확정(2026-07-02)
+- **Colyseus 서버 연결**: WebSocket(WSS) 단일 확정 (D1)
+  - 전송: Colyseus 클라이언트 SDK(WSS) / 상태 동기화: **Colyseus Schema binary delta**(20Hz). 메시지 어휘 정본 = 15-realtime-server-spec
+  - 송신 메시지: `move_request` / `status_change` / `sit_request` / `enter_meeting` / `interact_request`
+  - 수신 메시지: `world_update`(Schema delta) / `snapshot` / `layout_updated` / `presence_event`
+  - **접속 경로**: 사무실 내는 사내 LAN에서 WSS 직접 접속. 재택/외근자는 443 공개 엔드포인트(WSS, Let's Encrypt) 직접 접속 — VPN 없음 확정
 - **FastAPI 백엔드**: REST API (HTTPS)
   - 초기화: `GET /api/presence/init` → 현재 위치, 직원 명단, 좌석 배치 로드
   - 액션: `POST /api/meetings/join` (회의실 진입), `POST /api/work-logs` (업무 기록)
-  - 주기적: `GET /api/presence` (refresh, 백그라운드)
+  - 인증: 단일세션 JWT (로그인 시 발급, 웹앱·Colyseus 공유)
 - **LiveKit**: 직접 연결 (미디어), 룸 생성/토큰 발급은 FastAPI 경유 (D24)
   - WebRTC 미디어 스트림 (회의 참여 시)
 
+**좌표계 정합 (D25/D27)**
+- office_layout은 `top_left` 원점 미터 단위(D25). **Blender ↔ R3F(three.js Y-up) ↔ Colyseus** 3자가 동일 좌표를 공유해야 하며, 배경·깊이합성 정합은 Blender에서 export한 `camera.json`(직교 아이소 투영)을 세 계층이 공유하여 맞춘다.
+
 **오류 처리**
-- 서버 연결 끊김 → 로컬 UI 업데이트 중단, 재연결 시도, 동기화 복구
+- Colyseus 연결 끊김 → 로컬 보간 유지, 재연결 시도, `snapshot` 재수신으로 복구
 - API 요청 실패 → 사용자 피드백 팝업 + 재시도 옵션
-- 렌더링 성능 저하 → 저사양 모드 자동 전환 (LOD 조정, 그림자 비활성화)
+- 렌더링 성능 저하 → 아바타 수/그림자 품질만 조정(배경은 오프라인 렌더 정적 이미지라 조정 여지 없음). LOD/오클루전 컬링 등 실시간 씬 최적화는 해당 없음
 
 ---
 
-### 2.2 Godot 4 헤드리스 서버
+### 2.2 Colyseus 실시간 서버 (권위, Node/TS)
+
+실시간 서버는 **Colyseus(Node/TS) 권위 서버**(SkyOffice 오픈소스 이식)다. 층(floor) 단위 룸으로 확장하며, 20Hz tick으로 권위 시뮬레이션을 돌린다. 상세 정본 = **15-realtime-server-spec**.
 
 **책임**
-- **권위 있는 게임 상태 관리**
+- **권위 있는 상태 관리**
   - 아바타 위치 검증 (충돌, 경계)
   - 회의실 점유 (최대 수용인원 체크)
   - 근접 감지 (좌석/아바타 간 거리) — 향후 협업 신호로 활용
 - **클라이언트 입력 처리**
-  - 이동 요청 검증 및 에코백 (실제 위치 반영)
+  - 이동 요청 검증 및 반영 (Schema 갱신 → binary delta 브로드캐스트)
   - 회의실 진입/퇴출 검증
-- **프레즌스 상태 업데이트 (우리 소유, ERP 분리)** — 결정: OQ3, D13
-  - 3D 프레즌스 상태 기계 = **7종 확정**: `offline / online / working / meeting / focus / away / external` (D13). GPS 기반 `trip_moving`·`trip_arrived`·`returning`은 폐기(데스크톱에 GPS 없음)
-    - `offline` → `online` (3D 클라이언트 로그인)
+- **프레즌스 상태 관리 (메모리 권위, 우리 소유, ERP 분리)** — 결정: OQ3, D13
+  - 3D 프레즌스 상태 기계 = **7종 확정**: `offline / online / working / meeting / focus / away / external` (D13). GPS 기반 `trip_moving`·`trip_arrived`·`returning`은 폐기(GPS 없음)
+    - `offline` → `online` (웹앱 로그인)
     - `online` → `working` (지정 좌석/팀 구역 도착)
     - `working` → `meeting` (회의실 진입)
     - `working` / `meeting` → `away` (5분 마우스/키보드 무입력)
     - `*` → `focus` (집중모드 토글 ON, 상태 무관)
     - `*` → `external` (외근/출장 **수동** 전환)
-    - `*` → `offline` (3D 클라 로그아웃)
+    - `*` → `offline` (웹앱 로그아웃/탭 종료)
   - 자동 타임아웃: 마지막 신호 후 **5분(설정 가능 기본값)** → `away`
-  - 근거: 스펙 장애 격리 원칙(가상오피스 장애가 근태/업무 데이터에 영향 없음), 원본 명확화
+  - 근거: 스펙 장애 격리 원칙(가상오피스 장애가 근태/업무 데이터에 영향 없음)
   - **참고**: 3D 화면에는 "ERP상 오늘 check_in된 직원" 목록을 read로 병기 표시 (시각적 참고용)
-- **정기적 FastAPI 푸시**
-  - 아바타 위치 일괄 업데이트 (`POST /api/presence/batch`)
+- **정기적 FastAPI 푸시** (D3 — 데이터 접근은 FastAPI 단일 진입)
+  - Colyseus 메모리 권위 프레즌스 → **1초 ~ 5초 주기**로 `POST /api/presence/batch`(FastAPI) → DB 영속
   - 회의 상태 변경 (`POST /api/meetings/{id}/status`)
-  - 1초 ~ 5초 주기 (설정 가능)
 
 **통신 프로토콜**
-- **클라이언트 입력**: WebSocketPeer(WSS) + 09 §5.3 JSON 프로토콜
-  - 받음: `move_request`(player_id, target_pos, sequence_num), `room_enter`, `room_exit`
-  - 응답: `player_update`(20Hz 브로드캐스트), `reject`(오류)
+- **클라이언트 입력**: Colyseus WSS + Schema (15-realtime-server-spec 정본)
+  - 받음: `move_request` / `status_change` / `sit_request` / `enter_meeting` / `interact_request`
+  - 응답: `world_update`(Schema binary delta, 20Hz) / `snapshot` / `layout_updated` / `presence_event`
 - **FastAPI 동기화**: REST API (HTTPS)
-  - 배치 쿼리: `GET /api/office/{office_id}/floor/{floor_id}/layout` (오피스 씬/콜리전)
-  - 배치 업데이트: `POST /api/presence/batch` (아바타 위치)
+  - 레이아웃 쿼리: `GET /api/office/{office_id}/floor/{floor_id}/layout` (오피스 좌표/콜리전)
+  - 배치 업데이트: `POST /api/presence/batch` (프레즌스·아바타 위치)
   - 개별 업데이트: `PATCH /api/meetings/{room_id}` (회의 상태)
-  - 인증: Bearer Token (JWT, 서버용 계정)
+  - 인증: Bearer Token (JWT, 서버용 service account)
 
 **오류 처리**
-- 클라이언트 부정 입력 → 무시, 서버 상태 그대로 유지 (클라이언트가 재동기화)
+- 클라이언트 부정 입력 → 무시, 서버 Schema 그대로 유지 (클라이언트가 다음 delta로 재동기화)
 - FastAPI 연결 끊김 → 메모리 버퍼링, 온라인 복귀 시 배치 동기화
 - 데이터 불일치 → 정기적 재검증 (예: 30초마다 위치 재확인)
-- **게임서버 크래시 시 인메모리 상태 복원**: 프레즌스·아바타 위치는 게임서버 메모리 권위이므로 크래시 시 휘발 → 재기동 후 클라이언트 재접속 시 각 클라이언트가 마지막 `last_server_seq`를 제시하고(09 §5.3 resume) 서버가 좌석 배정(DB)·최근 배치 push 스냅샷을 근거로 상태를 재구축(reconstruct)한다.
+- **서버 크래시 시 인메모리 상태 복원**: 프레즌스·아바타 위치는 Colyseus 메모리 권위이므로 크래시 시 휘발 → 재기동 후 클라이언트 재접속 시 서버가 좌석 배정(DB)·최근 배치 push 스냅샷을 근거로 룸 상태를 재구축(reconstruct)한다.
 
 ---
 
-### 2.2.1 WSS 핸드셰이크 & 인증 (D1/D4)
+### 2.2.1 WSS 핸드셰이크 & 인증 (D1/D4, 단일세션)
 
-게임서버는 DB(자체/ERP)에 직접 접근하지 않으며(D3), 로그인 자격증명(email/password)도 받지 않는다. 인증은 **FastAPI가 발급한 자체 JWT를 게임서버가 검증**하는 방식이다.
+Colyseus 서버는 DB(자체/ERP)에 직접 접근하지 않으며(D3), 로그인 자격증명(email/password)도 받지 않는다. 인증은 **FastAPI가 발급한 단일세션 JWT를 Colyseus `onAuth`가 검증**하는 방식이다. OIDC 이중 로그인은 제거되었다.
 
 **핸드셰이크 순서**
-1. 클라이언트가 FastAPI 로그인(`POST /api/auth/login`, email/password) → **자체 JWT(HS256, 자체 시크릿, 8h 만료)** 수령. 시크릿은 ERP와 공유하지 않는다.
-2. 클라이언트가 WSS 연결을 열며 첫 메시지로 `{"type":"hello","protocol_version":<int>,"jwt":"<token>"}` 전송.
-3. 게임서버가 **`protocol_version` 협상**: 지원 범위 밖이면 `{"type":"reject","reason":"protocol_mismatch","min":<int>,"max":<int>}` + 업데이트 안내 후 소켓 종료.
-4. 게임서버가 **자체 시크릿으로 JWT 서명·만료 검증**(FastAPI와 동일 시크릿, ERP 시크릿 아님) → 성공 시 세션 확립. 게임서버는 ERP 공개키를 사용하지 않는다(암호학적 불성립이던 기존 표기 폐기).
+1. 클라이언트가 FastAPI 로그인(`POST /api/auth/login`, email/password) → **단일세션 JWT(HS256, 자체 시크릿, 8h 만료)** 수령. 시크릿은 ERP와 공유하지 않는다. 이 JWT 하나로 웹앱 REST와 Colyseus 접속을 모두 처리한다.
+2. 클라이언트가 Colyseus 룸 `join`을 요청하며 옵션에 `{ jwt, protocolVersion }`을 전달.
+3. Colyseus `onAuth`가 **`protocolVersion` 협상**: 지원 범위 밖이면 join 거부(업데이트 안내).
+4. Colyseus `onAuth`가 **자체 시크릿으로 JWT 서명·만료 검증**(FastAPI와 동일 시크릿, ERP 시크릿 아님) → 성공 시 클라이언트를 룸에 입장시킨다. ERP 공개키는 사용하지 않는다(HS256 대칭키이므로 공개키 검증은 성립하지 않음).
 
 **장기 접속 세션과 8h 만료(인밴드 토큰 refresh)**
 - 업무 시간 내 WSS 세션은 8h를 초과할 수 있다. JWT 만료로 세션을 끊지 않도록 **인밴드 refresh**를 사용한다.
-- 클라이언트는 만료 임박(예: 잔여 15분) 시 FastAPI refresh 엔드포인트로 신규 JWT를 받아 WSS 상에서 `{"type":"reauth","jwt":"<new>"}`로 전달, 게임서버가 재검증하여 세션 유효기간을 갱신한다. 재검증 실패 시에만 재접속을 요구한다.
+- 클라이언트는 만료 임박(예: 잔여 15분) 시 FastAPI refresh 엔드포인트로 신규 JWT를 받아 Colyseus 룸에 `reauth` 메시지로 전달, 서버가 재검증하여 세션 유효기간을 갱신한다. 재검증 실패 시에만 재접속을 요구한다.
 
 ---
 
@@ -240,9 +240,9 @@ graph TB
 - `POST /api/daily-status-push` — EOD 배치 로그 (관리자 감시)
 
 **통신 프로토콜**
-- 클라이언트: REST API + JSON (HTTPS)
-  - 인증: Bearer Token (**FastAPI 발급 자체 JWT, HS256 + 자체 시크릿**, ERP와 시크릿 미공유) (D4)
-- 게임서버: REST API + JSON (HTTPS, 같은 네트워크)
+- 클라이언트(웹앱): REST API + JSON (HTTPS)
+  - 인증: Bearer Token (**FastAPI 발급 단일세션 JWT, HS256 + 자체 시크릿**, ERP와 시크릿 미공유) (D4)
+- Colyseus 서버: REST API + JSON (HTTPS, 같은 네트워크)
   - 인증: Bearer Token (서버용 service account JWT)
 - ERP: **psycopg(3.x)** 드라이버 직결 (read-only, 같은 사내망)
   - 쓰기: REST API (ERP의 기존 + 신규 엔드포인트)
@@ -257,7 +257,9 @@ graph TB
 
 ---
 
-### 2.4 Next.js 웹 관리 콘솔
+### 2.4 Next.js 웹 관리 콘솔 (동일 웹앱)
+
+관리 콘솔은 3D 뷰포트와 **같은 Next.js 웹앱** 내 라우트다(별도 배포 없음).
 
 **책임**
 - **조직 관리**
@@ -266,7 +268,7 @@ graph TB
   - 팀 별 색, 3D 구역 매핑 (React Flow)
 - **사무실 편집기**
   - 2D 배치 편집 (Konva.js)
-  - 정밀 확인은 저장 후 데스크톱 클라이언트 draft 모드(D11)
+  - 정밀 확인은 저장 후 동일 웹앱의 R3F 뷰포트 draft 모드(D11)
   - 좌석/회의실 정의
   - office_layout JSON 생성 → FastAPI 저장 → 배포
 - **KPI & 업무 대시보드**
@@ -372,14 +374,22 @@ graph TB
 
 ---
 
-### 2.8 에셋 파이프라인
+### 2.8 에셋/렌더 파이프라인 (오프라인)
 
-**흐름**
-1. **제작**: Blender에서 3D 모델 제작 (CC0 우선 또는 자체 제작)
+파이프라인은 두 갈래다: ① **배경**(오프라인 렌더 이미지 + 깊이) ② **아바타·소품**(경량 GLTF). 상세 정본 = 16-render-spike-and-roadmap, 3d-design/photoreal-web-strategy.
+
+**① 배경 렌더 흐름 (오프라인)**
+1. **씬 구성**: Blender에서 오피스 층 3D 씬 구성 (CC0 우선 또는 자체 제작)
+2. **오프라인 렌더**: Cycles로 포토리얼 배경 PNG 렌더(직교 아이소 카메라)
+3. **깊이패스**: 동일 카메라로 Z깊이패스(깊이 PNG) 렌더
+4. **카메라 export**: `camera.json`(직교 투영 행렬·위치)으로 카메라 파라미터 내보내기 → R3F/three.js 카메라 정합에 사용
+5. 산출물(office_bg.png / office_depth.png / camera.json)을 웹앱이 정적 로드
+
+**② 아바타·소품 GLTF 흐름 (런타임 렌더 대상)**
+1. **제작**: Blender에서 경량 아바타/소품 모델 제작
 2. **내보내기**: GLB/glTF 형식
-3. **최적화**: gltfpack 또는 glTF-Transform (메시 압축, 텍스처 최적화)
-4. **임포트**: Godot 4 씬으로 변환 (자동 또는 수동)
-5. **등록**: asset 테이블에 메타데이터 기록
+3. **웹 최적화**: glTF-Transform + Draco/meshopt(메시 압축) + KTX2/Basis(텍스처) — 웹 표준. (Godot .tscn·gltfpack→Godot 임포트 폐기)
+4. **등록**: asset 테이블에 메타데이터 기록
    - asset_id, asset_name, asset_type, source_url, author, license, license_url
    - downloaded_at, modified_by, commercial_allowed, attribution_required, redistribution_allowed
    - original_file_hash, optimized_file_hash (무결성)
@@ -400,49 +410,31 @@ graph TB
 
 > 배포 상세 정본은 **docs/deployment/onprem-docker.md** (2026-07-02 신설).
 
-### 3.1 네이티브 데스크톱 배포
+### 3.1 통합 웹앱 배포 (설치형 없음)
 
-**대상**: Windows, macOS, Linux (Godot 4 Forward+ 지원)
-
-**패키징**
-- Godot 4 export: PCK 패키징 (GodotEngine 네이티브 바이너리 + 리소스)
-- 인스톨러 생성: NSIS (Windows) 또는 DMG (macOS), AppImage (Linux)
-- 파일 크기: ~300-500MB (Forward+ 렌더러 포함, 에셋 최적화)
-
-**자동 업데이트**
-- 클라이언트: 시작 시 버전 체크 (`GET /api/version`)
-- 업데이트 서버: S3 또는 사내 파일 서버 (delta 패치 지원)
-- 재시작: 자동 설치 후 재실행 (또는 사용자 확인)
-
-**설치형 단점 제거**
-- 단일 조직 소규모(동시 ~20명) → 확장 부담 없음. 단, 서버는 인터넷 공개(보안 §4.2)
-- IT 관리자가 배포 중앙화 가능 (AD 있는 경우)
-
----
-
-### 3.2 웹 관리 콘솔 배포
+**대상**: 최신 브라우저(WebGL2 지원) — Windows/macOS/Linux/크롬북 무관. **네이티브 인스톨러·PCK·NSIS/DMG/AppImage·자동 업데이터는 전면 폐기.**
 
 **스택**
-- Next.js 앱 (TypeScript, App Router)
-- 정적 생성 + ISR (Incremental Static Regeneration)
-- API Routes → FastAPI 백엔드 프록시
+- Next.js 앱 (TypeScript, App Router) — R3F 뷰포트 + 관리 콘솔 + 업무기록을 단일 앱으로 배포
+- SSR/정적 서빙 (온프렘) + 정적 에셋(office_bg.png / office_depth.png / camera.json / GLTF)
 
 **호스팅**
-- **Linux 서버 PC 단일화** (D21, 2026-07-02): 웹 프론트 포함 전부 Docker Compose + Caddy(TLS 종단) 배포 — 정본 docs/deployment/onprem-docker.md
+- **Linux 서버 PC 단일화** (D21): 웹앱 포함 전부 Docker Compose + Caddy(TLS 종단) 배포 — 정본 docs/deployment/onprem-docker.md
 - Vercel/외부 CDN은 폐기(온프렘 데이터 주권 — 회의·평가 데이터를 외부 인프라에 두지 않음)
+- **배포 이점**: 설치·자동 업데이트 없음 → URL 접속 즉시 최신 버전. IT 배포 중앙화 불필요
 
 **도메인**
-- 공인 도메인(추후 구매, 그 전 임시 Caddy 내부 CA) — 2026-07-02 확정
+- 공인 도메인(추후 구매, 그 전 임시 Caddy 내부 CA)
 - SSL: **Let's Encrypt 자동 발급(Caddy)**. 상세: docs/deployment/onprem-docker.md §3.1
 
 ---
 
-### 3.3 FastAPI 백엔드 & Godot 헤드리스 서버
+### 3.2 FastAPI 백엔드 & Colyseus 실시간 서버
 
 **공통 호스팅**
-- VPS 또는 사내 서버 (Ubuntu 22.04 LTS)
+- 온프렘 Linux 서버 PC (Ubuntu 22.04 LTS)
 - Python 3.11 + Uvicorn (FastAPI)
-- Godot 4 헤드리스 바이너리 (게임서버)
+- Node.js + Colyseus (실시간 서버)
 
 **배포 방식**
 - Docker Compose (권장)
@@ -453,17 +445,18 @@ graph TB
       ports: [8000:8000]
       env: .env (DB, ERP, JWT_SECRET, AI_API_KEY 등)
       volumes: [./data:/app/data]
-    godot-server:
-      image: voffice-gameserver:latest
-      ports: [8080:8080]  # WebSocket(WSS, 프록시 종단)
-      env: FASTAPI_URL=http://fastapi:8000
+    colyseus:
+      image: voffice-realtime:latest
+      ports: [2567:2567]  # WebSocket(WSS, Caddy 프록시 종단)
+      # Caddy가 WSS 경로 `/ws/office/*` → colyseus:2567 라우팅 (내부 전용 — 15-realtime-server-spec §8)
+      env: FASTAPI_URL=http://fastapi:8000, JWT_SECRET(공유), COLYSEUS_TICK=20
     postgres:
       image: postgres:17-alpine
       env: POSTGRES_DB=voffice
       volumes: [./postgres_data:/var/lib/postgresql/data]
     redis:
       image: redis:7-alpine
-      (옵션: 캐시용. 배치 재시도 큐는 Redis가 아닌 PostgreSQL 영속 테이블 사용 — D21)
+      (옵션: 캐시 + Colyseus 다중 프로세스 presence 프리셋. 배치 재시도 큐는 Redis가 아닌 PostgreSQL 영속 테이블 사용 — D21)
   ```
 
 **시크릿 관리 (D21)**
@@ -472,19 +465,19 @@ graph TB
 
 **헬스체크**
 - FastAPI: `GET /healthz` (DB 연결, ERP 연결 상태)
-- Godot 서버: 주기적 心跳(heartbeat) 신호
+- Colyseus 서버: `GET /matchmake/health` 또는 주기적 heartbeat 신호
 
 **로깅 & 모니터링 (D21, 1인 운영 규모로 축소)**
 - Logs: **Loki**(경량 로그 수집). ELK/CloudWatch는 폐기
 - Metrics: **Prometheus + Grafana**
   - CPU/메모리, 활성 사용자 수, API 응답시간, ERP 동기화 지연
-  - 게임서버 네트워크 대역폭, 아바타 위치 업데이트 손실률
+  - Colyseus 룸 수·tick 지연·네트워크 대역폭, 아바타 위치 업데이트 손실률
 - 헬스 감시: **Uptime Kuma**
 - 알림: **단일 채널**(1인 운영). 온콜 에스컬레이션 계층은 두지 않음
 
 ---
 
-### 3.4 Self-host LiveKit (결정: OQ5)
+### 3.3 Self-host LiveKit (결정: OQ5)
 
 **호스팅 인프라 (사내 통제)**
 - 배포 대상: 온프레미스 VM 또는 사내 클라우드 계정 (AWS/Azure/GCP 자체 계정 아님)
@@ -537,26 +530,18 @@ graph TB
 
 ### 4.1 성능(Performance)
 
-**3D 렌더링 성능** (D7/D22)
-- 목표: 60 FPS@1080p (Forward+)
-  - 기준 GPU: **GTX 1650급** 60fps
-  - 저사양 모드 = **Low 프리셋** (그래픽 프리셋 정본: 07-3d §6.5 Ultra/High/Medium/Low): **내장그래픽(Iris Xe급)** 에서 실행 가능
-  - 로딩 < 5초
-- 최적화 기법:
-  - **LOD (Level of Detail)**: 아바타 5m 이상 거리 → 단순화(Simplified) 모델
-  - **인스턴싱(Instancing)**: 동일 에셋(책상, 의자) → GPU 일괄 렌더링
-  - **오클루전 컬링(Occlusion Culling)**: 벽/바닥 뒤 객체 렌더링 스킵
-  - **배칭(Batching)**: 드로우콜 합산
+**웹 로딩 & 렌더** (D27, NFR 유지분)
+- **초기 로딩 < 5초**: 배경 이미지(office_bg.png)·깊이맵·경량 GLTF·camera.json 로드 완료까지. 배경이 오프라인 렌더 정적 이미지이므로 씬 지오메트리 스트리밍 부담이 없다
+- 런타임 GPU 부담은 **아바타(경량 GLTF) + 깊이합성 셰이더**뿐. 실시간 씬 렌더 예산(Forward+/SDFGI/LOD/오클루전 컬링/배칭)은 이 아키텍처에 해당하지 않음 — 배경은 런타임에 렌더하지 않기 때문
+- 아바타 최적화: KTX2/Basis 텍스처 + Draco/meshopt 압축으로 다운로드·디코드 비용 최소화. 동일 소품은 three.js instancing으로 드로우콜 절감
+- 깊이합성: 아바타 프래그먼트 깊이 vs 배경 깊이맵 비교(단일 셰이더 패스) — 픽셀 정확 오클루전, 스파이크 검증 PASS(16-render-spike / spikes/depth-composite)
 
-**네트워크 성능** (D22)
-- 서버 tick **20Hz**, 아바타 동기화 E2E(입력→원격 표시) **p95 < 500ms**
-- 대역폭은 **브로드캐스트 팬아웃 O(N²)** 로 지배된다(기존 산정은 서버 수신량만 계산해 팬아웃을 누락했음). 서버는 매 tick 각 클라이언트에게 전체 N명 상태를 송신하므로 **송신량**이 병목이다.
-  - 실제 JSON 페이로드 기준 ≈ **150B/player**(player_id·pos·rotation·animation·status 포함)
-  - 수신(inbound): 각 클라 자기 위치만 → N × 150B × 20Hz = 100 × 150 × 20 ≈ **300 KB/s**
-  - 송신(outbound, O(N²)): N × (N × 150B × 20Hz) = 100 × 100 × 150 × 20 ≈ **30 MB/s ≈ 240 Mbps**(집계)
-- **100명 초과 시**: AOI(Area of Interest) 필터링 + 바이너리 직렬화 도입 검토(JSON→바이너리로 페이로드 축소, 화면 밖 플레이어 송신 생략)
-- WebSocket 연결: 사용자당 1개 유지
-- 메시지 압축: 옵션(대역폭 제약 시)
+**네트워크 성능** (D22 유지)
+- Colyseus 서버 tick **20Hz**, 아바타 동기화 E2E(입력→원격 표시) **p95 < 500ms**
+- 상태 동기화는 **Colyseus Schema binary delta**로 전송한다(변경분만 바이너리 인코딩). 자체 JSON 브로드캐스트 대비 페이로드가 작아 O(N²) 팬아웃 대역폭이 크게 줄어든다
+  - 참고 산정(구 JSON, 상한): ≈150B/player 기준 100명 전체 브로드캐스트 시 송신 O(N²) ≈ 30MB/s. binary delta는 변경분만 보내므로 실측 상한은 이보다 크게 낮다
+- **100명 초과 시**: 층(floor) 단위 룸 분산 + AOI(Area of Interest) 필터링(화면 밖 플레이어 송신 생략) 검토
+- WebSocket 연결: 사용자당 1개 유지 (Colyseus 룸 join)
 
 **데이터베이스 성능**
 - 쿼리 응답: 평균 50ms, 최대 500ms
@@ -569,11 +554,11 @@ graph TB
 - 캐시: Redis (TTL 1시간)
   - 직원 명단, 조직도, 좌석 배치
 
-**게임서버 확장성** (D22)
-- 단일 Godot 헤드리스: **설계 100명 / 도그푸딩 검증 20명**(이 버전 Phase 1-7 스코프). "500명" 표기는 폐기
-  - **1000명 이상 동시 접속**: 완성 이후(Won't) — 월드 샤딩 + 로드밸런싱 구성 필요
-  - 아키텍처: floor_id 또는 zone 단위로 게임서버 분산
-  - 로드밸런서: Nginx/HAProxy → 여러 게임서버
+**실시간 서버 확장성** (D22/D27)
+- 단일 Colyseus 프로세스: **설계 100명 / 도그푸딩 검증 20명**(이 버전 스코프). "500명" 표기는 폐기
+  - 확장 단위 = **Colyseus 룸(층/floor 단위)**. 층별 룸으로 부하를 분산
+  - **1000명 이상 동시 접속**: 완성 이후(Won't) — 다중 노드 + Colyseus presence(Redis) + 로드밸런싱 구성 필요
+  - 로드밸런서: Nginx/HAProxy → 여러 Colyseus 노드(매치메이킹 경유)
 
 ---
 
@@ -587,7 +572,7 @@ graph TB
   - WSS 핸드셰이크에 **`protocol_version` 협상** 포함(미지원 버전 거부 + 업데이트 안내, §2.2.1)
   - "ERP 공개키 검증" 표기는 폐기(HS256은 대칭키이므로 공개키 검증이 성립하지 않음)
 - 서비스 계정 (API to API)
-  - 게임서버 ↔ FastAPI: JWT (service_voffice_server, **자체 시크릿**)
+  - Colyseus 서버 ↔ FastAPI: JWT (service_voffice_server, **자체 시크릿**)
   - FastAPI ↔ ERP API: JWT (service_voffice_erp, 24h)
   - 유효성: **자체 시크릿으로 서명 검증**, 클레임 타임스탬프
 - 권한 모델:
@@ -601,7 +586,7 @@ graph TB
   - 인증서: **Let's Encrypt 자동 발급(Caddy)** — WSS/HTTPS/TURN-TLS 단일 인증서로 통일(2026-07-02). 상세: docs/deployment/onprem-docker.md §3.1
 - 저장소: 암호화 (옵션)
   - PII(Personal Identifiable Information): 직원명, 이메일은 평문(필수 업무용)
-  - **GPS 수집 기능 삭제** (D13/D20(c)): 데스크톱에 GPS 없음, ERP lat/lng/radius 미러링 금지
+  - **GPS 수집 기능 삭제** (D13/D20(c)): 웹앱(데스크톱 브라우저)에 GPS 없음, ERP lat/lng/radius 미러링 금지
   - presence 좌표(x,y): KPI 산출 미사용, 보존 30일 후 삭제 (D20(a))
   - 회의록: 접근 제어 (참여자 + 리더 역할만)
 - DB 접근:
@@ -609,7 +594,7 @@ graph TB
   - 우리 DB: 최소 권한 (application 계정은 INSERT/UPDATE/SELECT만, DDL 불가)
 
 **API 보안**
-- 게임서버↔FastAPI: **서비스 계정 토큰(service account JWT) + IP allowlist**로 제한(게임서버는 브라우저가 아니므로 CORS 무의미 — "게임서버 IP CORS" 표기 폐기)
+- Colyseus 서버↔FastAPI: **서비스 계정 토큰(service account JWT) + IP allowlist**로 제한(Colyseus 서버는 브라우저가 아니므로 CORS 무의미 — "게임서버 IP CORS" 표기 폐기). Colyseus WSS 접속 자체는 `onAuth`에서 단일세션 JWT 검증
 - CORS: 브라우저 원본 제한 (localhost 개발용, 공인 도메인 — 구매 후 확정, 임시 사내 IP)
 - Rate limiting: 로그인은 IP당 10 req/min + 실패 누적 잠금, 일반은 1000 req/min
 - Input validation: JSON Schema (FastAPI pydantic)
@@ -643,16 +628,16 @@ graph TB
 
 **목표 가용성**
 - FastAPI + DB: 99.5% (월간 3.6시간 다운타임 허용)
-- 게임서버: 95% (겹침 허용, 사용자는 재접속)
+- Colyseus 실시간 서버: 95% (겹침 허용, 사용자는 재접속)
 - 웹 콘솔: 99% (유지보수 제외)
 
 **장애 격리(Fault Isolation)**
-- 게임서버 다운 → 아바타/프레즌스 비가용, **그러나**
+- Colyseus 서버 다운 → 아바타/프레즌스 비가용, **그러나**
   - 업무기록(work_log): FastAPI에 직접 저장 → 정상
   - 회의록(meeting_minute): LiveKit 독립 → 정상
-  - KPI(kpi_result): 모바일 또는 웹 콘솔에서 관리 → 정상
+  - KPI(kpi_result): 웹 콘솔에서 관리 → 정상
   - 결론: 핵심 업무 흐름 유지
-- FastAPI 다운 → 게임서버 재접속 불가, **그러나**
+- FastAPI 다운 → Colyseus 재접속(onAuth 검증) 불가, **그러나**
   - 캐시(Redis)의 프레즌스: 단기 유효 (TTL 5분)
   - 수동 업무기록: 오프라인 모드 (나중 동기화) 또는 웹 콘솔
 - 웹 콘솔 다운 → KPI/회의록 관리 지연, **그러나**
@@ -662,10 +647,10 @@ graph TB
 **데이터 보존**
 - 정기 백업 (D21, 범위 확장):
   - **PostgreSQL**: 일 1회(23:00), 증분 4시간마다
-  - **LiveKit/coturn 설정**(config.yaml, TURN 자격), **`.env`**, **office_layout 에셋**(임포트본 `.tscn`/pak 소스, layout JSON) 포함
+  - **LiveKit/coturn 설정**(config.yaml, TURN 자격), **`.env`**, **office_layout·렌더 에셋**(office_bg.png / office_depth.png / camera.json, 아바타 GLTF, layout JSON) 포함
   - 보관: 30일 + 월간 장기 보관(1년)
   - 복구 시간: RTO 4시간, RPO 4시간
-- 게임서버 인메모리 상태(프레즌스·아바타 위치)는 백업 대상이 아니며, 크래시 시 재접속 스냅샷 재구축으로 복원(§2.2)
+- Colyseus 인메모리 상태(프레즌스·아바타 위치)는 백업 대상이 아니며, 크래시 시 재접속 스냅샷 재구축으로 복원(§2.2)
 - 이중화(선택사항): PostgreSQL 리플리카 또는 클러스터
 
 **헬스체크 & 자동 복구**
@@ -673,7 +658,7 @@ graph TB
   - 실패 시 5초 후 자동 재시작, 최대 3회
 - 모니터링: Prometheus 알림
   - API 응답 시간 > 1s
-  - 게임서버 연결 손실률 > 5%
+  - Colyseus 연결 손실률 > 5%
   - DB 동기화 지연 > 1시간
 
 ---
@@ -708,7 +693,7 @@ graph TB
     - node_disk_io_now
 - Grafana 대시보드:
   - Overview (API 처리량, 에러율, 응답시간)
-  - 게임서버 (활성 아바타, 네트워크 손실)
+  - Colyseus 실시간 서버 (활성 룸/아바타, tick 지연, 네트워크 손실)
   - DB (쿼리 시간, 락 대기, 커넥션 풀)
   - ERP 동기화 (성공률, 지연)
 
@@ -729,27 +714,28 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    participant User as 사용자 데스크톱
-    participant GodotClient as Godot 클라이언트
+    participant User as 사용자 브라우저
+    participant R3FClient as R3F 웹앱<br/>클라이언트
     participant FastAPI as FastAPI 백엔드
-    participant GodotServer as Godot 헤드리스<br/>서버
+    participant ColyseusServer as Colyseus<br/>실시간 서버
     participant ERPDB as ERP PostgreSQL
     participant OurDB as 우리<br/>PostgreSQL
 
-    User->>GodotClient: 앱 실행
-    GodotClient->>FastAPI: GET /api/presence/init<br/>(user_id, office_id)
+    User->>R3FClient: 웹앱 접속(URL)
+    R3FClient->>FastAPI: GET /api/presence/init<br/>(user_id, office_id)
     FastAPI->>OurDB: SELECT * FROM office_layout<br/>WHERE office_id=?
     OurDB-->>FastAPI: office_layout JSON
     FastAPI->>OurDB: SELECT * FROM seat<br/>WHERE office_id=?
     OurDB-->>FastAPI: 좌석 목록
     FastAPI->>ERPDB: SELECT * FROM users<br/>WHERE company_id=?<br/>(read-only)
     ERPDB-->>FastAPI: 직원 명단
-    FastAPI-->>GodotClient: 초기 데이터
-    GodotClient->>GodotServer: WSS 핸드셰이크<br/>(protocol_version, 자체 JWT)
-    GodotServer->>FastAPI: GET /api/office/{id}/layout
-    FastAPI-->>GodotServer: 씬 데이터
-    GodotServer-->>GodotClient: 씬 로드 완료
-    GodotClient->>User: 게임 화면 표시
+    FastAPI-->>R3FClient: 초기 데이터 + camera.json/배경 에셋
+    R3FClient->>ColyseusServer: 룸 join<br/>(protocolVersion, 단일세션 JWT)
+    ColyseusServer->>ColyseusServer: onAuth: JWT 검증
+    ColyseusServer->>FastAPI: GET /api/office/{id}/layout
+    FastAPI-->>ColyseusServer: 좌표/콜리전 데이터
+    ColyseusServer-->>R3FClient: snapshot(Schema 초기 상태)
+    R3FClient->>User: 3D 화면 표시(깊이합성)
 ```
 
 ### 5.2 업무기록 및 KPI 푸시 흐름 (EOD)
@@ -757,15 +743,15 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant User as 사용자
-    participant GodotClient as Godot 클라이언트
-    participant NextJS as Next.js 콘솔
+    participant R3FClient as R3F 웹앱<br/>클라이언트
+    participant NextJS as Next.js 콘솔<br/>(동일 웹앱)
     participant FastAPI as FastAPI 백엔드
     participant AIWorker as AI 워커
     participant OurDB as 우리 DB
     participant ERPWrite as ERP API<br/>(신규)
 
-    User->>GodotClient: 업무기록 입력<br/>(오늘 작업, 내일 계획)
-    GodotClient->>FastAPI: POST /api/work-logs
+    User->>R3FClient: 업무기록 입력<br/>(오늘 작업, 내일 계획)
+    R3FClient->>FastAPI: POST /api/work-logs
     FastAPI->>OurDB: INSERT INTO work_log
     OurDB-->>FastAPI: OK
 
@@ -803,63 +789,64 @@ sequenceDiagram
 sequenceDiagram
     participant User1 as 사용자 A<br/>(호스트)
     participant User2 as 사용자 B<br/>(참여자)
-    participant GodotClient as Godot 클라이언트
+    participant R3FClient as R3F 웹앱<br/>클라이언트
     participant FastAPI as FastAPI
-    participant GodotServer as 게임서버
+    participant ColyseusServer as Colyseus 서버
     participant LiveKit as LiveKit
     participant OurDB as 우리 DB
 
-    User1->>GodotClient: 회의실 바운드 진입<br/>(아바타 이동)
-    GodotClient->>GodotServer: room_enter {room_id} (09 §5.3 JSON)
-    GodotServer->>FastAPI: POST /api/rooms/{id}/check-capacity
+    User1->>R3FClient: 회의실 바운드 진입<br/>(아바타 이동)
+    R3FClient->>ColyseusServer: enter_meeting {room_id} (15-spec 메시지)
+    ColyseusServer->>FastAPI: POST /api/rooms/{id}/check-capacity
     FastAPI->>OurDB: SELECT COUNT(*) FROM meeting_participant<br/>WHERE room_id=?
     OurDB-->>FastAPI: 참여자 수 + 초대 여부
-    FastAPI-->>GodotServer: OK(입장 가능)/Reject
-    GodotServer-->>GodotClient: 입장 가능 통지 (자동 연결 금지)
+    FastAPI-->>ColyseusServer: OK(입장 가능)/Reject
+    ColyseusServer-->>R3FClient: 입장 가능 통지 (자동 연결 금지)
 
-    Note over GodotClient,User1: 명시적 입장 확인 (D24)
-    GodotClient->>User1: "입장하시겠습니까?" 다이얼로그<br/>(호스트/참여자 표시)
-    User1->>GodotClient: [입장하기] 클릭
+    Note over R3FClient,User1: 명시적 입장 확인 (D24)
+    R3FClient->>User1: "입장하시겠습니까?" 다이얼로그<br/>(호스트/참여자 표시)
+    User1->>R3FClient: [입장하기] 클릭
 
-    GodotClient->>GodotServer: join_meeting {room_id} (09 §5.3 JSON)
-    GodotServer->>FastAPI: POST /api/meetings/join<br/>(room_id, user_id)
+    R3FClient->>FastAPI: POST /api/meetings/join<br/>(room_id, user_id)
     FastAPI->>OurDB: INSERT INTO meeting (없으면 생성)
     OurDB-->>FastAPI: meeting.id
     FastAPI->>LiveKit: POST /twirp/livekit.RoomService/CreateRoom<br/>(name, empty_timeout=300) — FastAPI 경유 단일화
     LiveKit-->>FastAPI: room 생성 확인
     FastAPI->>FastAPI: 참가 토큰(JWT, API key/secret 서명) 발급
-    FastAPI-->>GodotServer: meeting.id, room_token
-    GodotServer-->>GodotClient: meeting.id, room_token
-    GodotClient->>LiveKit: WebRTC 연결<br/>(token)
-    LiveKit-->>GodotClient: 미디어 스트림
+    FastAPI-->>R3FClient: meeting.id, room_token
+    R3FClient->>LiveKit: WebRTC 연결<br/>(token)
+    LiveKit-->>R3FClient: 미디어 스트림
 
-    User2->>GodotClient: (동일 프로세스)
-    GodotClient->>LiveKit: 참여
+    User2->>R3FClient: (동일 프로세스)
+    R3FClient->>LiveKit: 참여
 
     Note over User1,LiveKit: 회의 중...
 
-    User1->>GodotClient: 회의종료 + 기록 저장
-    GodotClient->>FastAPI: POST /api/meetings/{id}/close<br/>(decisions, notes, action_items)
+    User1->>R3FClient: 회의종료 + 기록 저장
+    R3FClient->>FastAPI: POST /api/meetings/{id}/close<br/>(decisions, notes, action_items)
     FastAPI->>OurDB: INSERT INTO meeting_minute<br/>INSERT INTO action_item
     OurDB-->>FastAPI: OK
     FastAPI->>LiveKit: DELETE /twirp/livekit.RoomService/DeleteRoom
     LiveKit-->>FastAPI: OK
-    FastAPI-->>GodotClient: OK
+    FastAPI-->>R3FClient: OK
 ```
 
 ---
 
 ## 6. 기술 결정 및 근거
 
+> 표 정정(D27): 구 표는 "Godot 4 네이티브 채택"으로 되어 있었으나 **정반대다**. D27은 **R3F(three.js) 웹 채택**이며 Godot 네이티브·헤드리스는 전면 폐기다.
+
 | 결정 | 선택지 | 근거 |
 |-----|-------|-----|
-| 3D 클라 플랫폼 | Godot 4 네이티브(선택) vs Three.js WASM | 최고품질(Forward+) + 설치형(IT관리용) + MIT 라이선스 |
-| 게임서버 권위 | 헤드리스 Godot(선택) vs 다른 게임엔진 vs 일반 앱 | 클라와 씬/콜리전 재사용, 오피스 layout JSON 구동 |
-| 백엔드 언어 | FastAPI/Python(선택) vs Node.js | ERP와 언어 통일(DB 직접읽기·마이그레이션 작성 용이) |
-| 백엔드 인증 | JWT HS256 + 자체 시크릿(선택) vs 다른 방식 | FastAPI 발급·게임서버 검증, ERP와 시크릿 미공유(D4), API키·세션쿠키 없음(간소화) |
-| 웹 프레임워크 | Next.js(선택) vs React SPA | 사내 도구(TDS 불필요), App Router(최신), 타입세이프 |
+| 3D 클라 플랫폼 | **R3F(react-three-fiber/three.js) 웹(선택)** vs Godot 네이티브 vs WA/Phaser | 단일 웹앱 임베드(설치 없음)·즉시 배포·오프라인 렌더 배경 깊이합성 조합에 최적, MIT 계열 오픈소스 (D27) |
+| 렌더 방식 | **오프라인 렌더(Blender Cycles) 배경 + 깊이합성(선택)** vs 실시간 3D 렌더 | 포토리얼 품질을 런타임 GPU 없이 확보, 런타임 부담은 아바타+깊이합성 셰이더뿐 (D27) |
+| 실시간 서버 권위 | **Colyseus(Node/TS, SkyOffice 이식)(선택)** vs Godot 헤드리스 vs WA 내장 | 웹 표준 WSS + Schema binary delta, 룸 단위 확장, 자체 동기화 프로토콜 부활(D1/D27) |
+| 백엔드 언어 | FastAPI/Python(선택) vs Node.js | ERP와 언어 통일(DB 직접읽기·마이그레이션 작성 용이), 실시간만 Node(Colyseus) 분리 |
+| 백엔드 인증 | JWT HS256 + 자체 시크릿·단일세션(선택) vs OIDC 이중로그인 | FastAPI 발급·Colyseus onAuth 검증, ERP와 시크릿 미공유(D4), OIDC 이중로그인 제거(간소화) |
+| 웹 프레임워크 | Next.js(선택) vs React SPA | 사내 도구(TDS 불필요), App Router(최신), 타입세이프, 3D 뷰포트·콘솔 단일앱 |
 | 화상회의 | LiveKit self-host(선택) vs LiveKit Cloud·Zoom·Teams | 미디어 데이터 주권(인사평가 근거), 사내망 지연 이점, 단일 SFU(오토스케일 불필요), 오픈소스(Apache 2.0) |
-| 에셋 포맷 | glTF/GLB(선택) vs FBX·USDZ | 표준, Godot 기본 지원, 최적화 도구 풍부 |
+| 에셋 포맷 | glTF/GLB + KTX2/Draco/meshopt(선택) vs FBX·USDZ | 웹 표준, three.js 기본 지원, 웹 최적화 도구 풍부 |
 | ERP 읽기 | read-only DB(선택) vs 읽기 API | API 벌크 엔드포인트 없음(근태), 직접 접근이 빠름·안전 |
 | ERP 쓰기 | 신규 API + 테이블(선택) vs 기존 API만 | KPI는 저장 필요(기존 API에 없음), ERP 기여도 높음 |
 
@@ -869,7 +856,9 @@ sequenceDiagram
 
 | 위험 | 영향 | 완화 |
 |-----|------|-----|
-| Godot 4.x 버그(렌더러) | 3D 품질 저하, 배포 지연 | 안정(stable) 최신 패치 추적(Godot 4는 LTS 채널 없음), 커뮤니티 피드백 조기 반영 |
+| 깊이합성 정합 오차(카메라/좌표계) | 아바타 오클루전 어긋남, 시각 품질 저하 | Blender↔R3F(three.js Y-up)↔Colyseus 3자 좌표계 정합, camera.json 공유, 깊이합성 스파이크 회귀 검증(16-render-spike, spikes/depth-composite PASS) |
+| 브라우저 WebGL2/디바이스 편차 | 저사양 기기 프레임 저하 | 아바타 수·그림자 품질 조정(배경은 정적), KTX2/Draco 압축, 최소 사양 가이드 |
+| Colyseus 스케일(층 룸 분산) | 100명 초과 시 tick 지연 | 층 단위 룸 분산 + AOI 필터링, presence(Redis) 다중 노드는 완성 이후 |
 | ERP DB 스키마 변경 | 우리 쿼리 깨짐 | 마이그레이션 테스트(테스트 DB), 버전 관리 |
 | ERP API 속도 저하 | 배치 지연, KPI 푸시 밀림 | 캐시(Redis), 배치 큐(지수 백오프) |
 | LiveKit 자체 호스팅 비용 | 인프라 부담 | 사용자 수 기반 리소스 계획, 모니터링 |
@@ -893,7 +882,7 @@ sequenceDiagram
 - 13-risks-open-questions.md: 운영·모니터링·장애대응 관련 리스크/완화
 
 ### Open Questions
-1. **Godot 헤드리스 서버 월드 샤딩**: 1000명 이상 동시 접속 시 여러 게임서버에 분산 전략? (Phase 4 이후 검토)
+1. **Colyseus 다중 노드 샤딩**: 1000명 이상 동시 접속 시 층 룸 분산 + presence(Redis) 다중 노드 전략? (완성 이후 검토)
 2. **KPI 메트릭 정의**: "협업 신호"의 구체적 수식(회의 횟수, 시간, 참여도 등)은? (Phase 6 기획 단계)
 3. **LiveKit 녹음/STT 정책**: [확정] STT 자동 회의록 정식 포함(D5). 회의 시작 시 전원 고지+동의(D20(b)), LiveKit Egress→STT 경로. 녹음 원본 90일 보존.
 4. **AI 워커**: Claude 확정(기본), Gemini 대안 여부만 후속 검토 (ERP 연동 및 비용/품질 검토)
@@ -903,12 +892,12 @@ sequenceDiagram
 1. **사내 사용자 설계 100명 / 도그푸딩 검증 20명(Phase 1-7 스코프, D22)** — "500명" 표기 폐기. 1000명 이상 대규모 조직은 완성 이후(Won't).
 2. ERP DB는 같은 사내망(지연 **< 50ms**, 09와 통일), read-only 계정 제공 가능.
 3. **ERP API 신규 엔드포인트(kpi_results 테이블·Alembic·수신 엔드포인트·service account)는 우리가 직접 생성·관리**(OQ1 결정, §4.2 참조). ERP 담당자 승인·병합 대기 불필요.
-4. 네이티브 데스크톱 설치는 IT 관리자가 배포(자동 업데이트는 우리 서버).
+4. 클라이언트는 브라우저 접속(단일 웹앱)이므로 설치·자동 업데이트가 없다 — URL 접속 즉시 최신 버전 (D27).
 5. 단일 조직(single company_id)이므로 멀티테넌트 복잡도 제외 — 이후 확장은 B2B 단계에서 검토.
 6. **LiveKit self-host 인프라 (결정: OQ5)**: Linux 서버 PC에서 Docker Compose로 배포, 사내 IT 담당. VPN 없음 확정(2026-07-02) → 재택/외근자는 공개 엔드포인트로 확정(직결 + TURN-TLS 443 폴백), 협의 종결.
 
 ### Validation Criteria
-- **Phase 1 끝**: 3D 골든 샘플(로비~5명 아바타) + 최소 API 호출 가능, FPS 측정 문서화.
+- **Phase 0/1 끝**: 깊이합성 스파이크 PASS(아바타가 가구/유리벽 뒤 픽셀정확 가림, camera.json 정합) + 3D 골든 샘플(로비~5명 아바타) + 최소 API 호출 가능, 브라우저 로딩<5초 문서화.
 - **Phase 2 끝**: ERP 직원/조직 동기화, 우리 seat/presence 동작, 아바타 시작위치 연결 확인.
 - **Phase 4 끝**: 실시간 서버 권위 검증(충돌감지, 회의실 점유), 아바타 동기화 E2E p95 < 500ms(D22)로 통일.
 - **Phase 5 끝**: LiveKit 화상회의 + 회의록 저장, 참여자 동기화 확인.
@@ -919,7 +908,7 @@ sequenceDiagram
 | 위험 | 심각도 | 완화 |
 |-----|--------|-----|
 | ERP DB 직접 읽기 권한 거부 | 높음 | 읽기 전용 계정 협상, 또는 ERP API 보충(벌크 엔드포인트 신설) |
-| Godot 성능 미달 | 높음 | Phase 1에서 조기 성능 측정 + LOD 미리 구현 |
+| 깊이합성/브라우저 성능 미달 | 높음 | Phase 0 깊이합성 스파이크로 조기 검증(PASS), 아바타 경량화 + 압축 선반영 |
 | LiveKit 호스팅 복잡도 | 중간 | 사전 POC(Proof of Concept), Docker Compose 템플릿 제공 |
 | GPS 데이터 프라이버시 침해 | 높음 | 수집 제한, 암호화, 30일 자동삭제, 감사로그 필수 |
 | KPI AI 초안 품질 부족 | 중간 | 관리자 수동 조정 프로세스, 여러 모델 테스트(Claude vs Gemini) |
@@ -930,17 +919,13 @@ sequenceDiagram
 
 | 버전 | 일자 | 변경 내용 |
 |------|------|-----------|
-| v1.1 | 2026-07-02 | 00-decisions.md v1.0 정합 반영 |
-| v1.2 | 2026-07-02 | 배포·네트워크 확정 반영 — VPN 없음 확정(재택 접속=443 공개 엔드포인트, LiveKit 공개 직결+TURN-TLS 443 폴백), Docker Compose + Caddy + Let's Encrypt(사내 PKI·PM2/Nginx 표기 폐기, 정본 docs/deployment/onprem-docker.md), 외부 공개 보안 보강(§4.2 로그인 잠금·rate-limit·fail2ban·2FA), WSS 메시지 어휘 09 §5.3 정본 통일(move_request/player_update/last_server_seq), 3D 미리보기→데스크톱 draft 모드(D11), 저사양 모드=Low 프리셋(07-3d §6.5), Godot LTS 표기 정정, 레이턴시 검증 기준 E2E p95<500ms(D22) 통일, 오타 정정(데이터 영속, 단순화 모델) |
-
-## 변경 이력
-
-| 버전 | 일자 | 변경 내용 |
-|------|------|-----------|
 | v1.0 | 2026-07-01 | 최초 작성 |
-| v1.1 | 2026-07-02 | 00-decisions.md v1.0 정합 반영 — D1(WSS 단일 확정, "ENet TCP" 제거, 재택 접속 경로, TLS에 게임 트래픽 포함), D3(게임서버 FastAPI 경유·presence 1~5초), D4(자체 시크릿 HS256·FastAPI 발급·게임서버 검증·protocol_version 협상·인밴드 refresh, "ERP 공개키 검증" 폐기), D5(STT 정식 포함·AI 워커 가명화), D7/D22(GPU 기준·규모 100/20명·500명 삭제), D13(프레즌스 7종·away 5분), D17/D21(APScheduler+DB 영속 재시도 큐, 사내 VM+사내 PKI, 관측 스택 Grafana/Prometheus/Loki/Uptime Kuma+단일 알림, .env 600+반기 로테이션, 백업 범위 확장, 크래시 복원), D24(명시적 입장 확인 다이얼로그·LiveKit 룸 FastAPI 경유), 표기 정정(psycopg 3.x, LiveKit API key/secret 서명 JWT, 게임서버 IP allowlist), OQ1 내부 모순 정리 |
+| v1.1 | 2026-07-02 | 00-decisions.md v1.0 정합 반영 — D1/D3/D4/D5/D7/D13/D17/D21/D24, 표기 정정(psycopg 3.x, LiveKit API key/secret 서명 JWT, IP allowlist), OQ1 내부 모순 정리 |
+| v1.2 | 2026-07-02 | 배포·네트워크 확정 반영 — VPN 없음 확정, Docker Compose + Caddy + Let's Encrypt, 외부 공개 보안 보강(§4.2), 3D 미리보기 draft 모드(D11), 레이턴시 E2E p95<500ms(D22) 통일 |
+| **v2.0** | **2026-07-09** | **D27 포토리얼 웹임베드 전환 반영(D26 WorkAdventure·Godot 네이티브 전면 폐기)** — ① 클라: Godot 데스크톱→**Next.js 단일 웹앱 내 R3F(three.js) 뷰포트**, 설치·자동 업데이트 제거 ② 렌더: Forward+/LOD/SDFGI/오클루전 컬링 등 실시간 렌더 서술 폐기→**Blender Cycles 오프라인 렌더 배경 + Z깊이패스 + camera.json 깊이합성**(고정 아이소 2.5D) ③ 실시간 서버: Godot 헤드리스→**Colyseus(Node/TS) 권위 서버**(SkyOffice 이식, 20Hz, Schema binary delta), 메시지 어휘 15-realtime-server-spec 정본(move_request/status_change/sit_request/enter_meeting/interact_request ↔ world_update/snapshot/layout_updated/presence_event) ④ 인증: 단일세션 JWT→Colyseus onAuth 검증, OIDC 이중로그인 제거 ⑤ presence: Colyseus 메모리 권위→1~5초 FastAPI /api/presence/batch→DB(D3 유지) ⑥ 에셋: Blender→GLTF+KTX2/Basis·Draco/meshopt, Godot .tscn/PCK/NSIS/DMG 데스크톱 배포→웹앱 배포 ⑦ NFR: 3D 60fps@GTX1650 수치 제거, 브라우저 로딩<5초 + Colyseus tick 20Hz·아바타 E2E p95<500ms 유지, 확장성=Colyseus 룸(층 단위) ⑧ 기술결정표 정정(구 "Godot 채택"은 정반대→**R3F 채택**) ⑨ 시퀀스다이어그램 노드명 GodotClient/GodotServer→R3FClient/ColyseusServer(흐름 보존) ⑩ 좌표계 정합 Blender↔R3F(three.js Y-up)↔Colyseus, camera.json 공유. **보존**: 데이터 계층·ERP 연동(§2.3/2.6)·보안(§4.2)·KPI·회의 도메인 로직 |
 
 ---
 
-**문서 최종 검토**: 2026-07-02  
-**다음 검토 일정**: Phase 0 과제(01, 03, 04, 05) 완료 후 재검토
+**문서 최종 검토**: 2026-07-09  
+**다음 검토 일정**: Phase 0/1 골든 샘플 + 깊이합성 통합 검증 후 재검토  
+**정본 참조**: 00-decisions §H(D27) · 14-virtual-office-spec · 15-realtime-server-spec · 16-render-spike-and-roadmap · 3d-design/{design-style-analysis, photoreal-web-strategy}

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Virtual Office 2.5D Modular v2.2</title><link rel="stylesheet" href="styles.css"></head><body>
+<header>
+  <div class="product"><strong>Virtual Office</strong><span>2.5D Modular v2.2 · Functional Hotfix</span></div>
+  <div class="toolbar">
+    <select id="preset" title="레이아웃 프리셋"></select>
+    <select id="character" title="캐릭터"></select>
+    <select id="actorState" title="캐릭터 상태"><option value="idle">Idle</option><option value="walk">Walk</option><option value="sit">Sit</option><option value="typing">Typing</option></select>
+    <input id="company" value="ACME" maxlength="28"><input id="subtitle" value="CORPORATION" maxlength="36">
+    <input id="brandColor" type="color" value="#f7faff"><button id="applyBrand">브랜드 적용</button>
+    <label class="file">로고 업로드<input id="logoFile" type="file" accept="image/*,.svg"></label>
+    <button id="toggleLabels">라벨</button><button id="toggleEdit">편집</button><button id="saveLayout">JSON 저장</button>
+    <button id="playDemo">자동 시연</button><button id="fullscreen">전체화면</button>
+  </div>
+</header>
+<main>
+  <aside id="catalog"><div class="catalogHead"><h3>모듈 카탈로그</h3><input id="catalogSearch" placeholder="검색"></div><div class="catalogTabs"><button data-filter="environment" class="active">공간·가구</button><button data-filter="props">소품</button><button data-filter="all">전체</button></div><div id="catalogList"></div><p>클릭해 추가 · 드래그 이동 · 더블클릭 삭제</p></aside>
+  <section id="viewport"><div id="stage"><img id="plate" alt="office plate"><div id="brand"><img id="brandImg" alt="logo"><div id="brandText"><b></b><small></small></div></div><div id="moduleLayer"></div><div id="characterLayer"></div><div id="labelLayer"></div><div id="glowLayer"></div><div id="hint">바닥 클릭: 이동 · 편집: 모듈 배치</div></div></section>
+</main><script src="app.js"></script></body></html>

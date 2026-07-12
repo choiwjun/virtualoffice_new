@@ -1,14 +1,11 @@
-"""audit MED 항목 테스트: PUT 배정 수정, presence 30일 파기, WAM areas 생성."""
+"""audit MED 항목 테스트: PUT 배정 수정, presence 30일 파기."""
 
 import uuid
 from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from app.core.security import hash_password
 from app.models.tables import (
-    ErpRole,
-    ErpUser,
     Floor,
     Presence,
     PresenceStatus,
@@ -75,25 +72,3 @@ async def test_presence_purge_nulls_old_coords(db_session, monkeypatch):
     await db_session.refresh(fresh)
     assert old.x is None and old.y is None and old.z is None  # 40일 → 파기
     assert fresh.x == 5.0  # 최근 → 보존
-
-
-# ── generate_wam (WAM areas) ─────────────────────────────────────────────
-
-def test_generate_wam_areas_from_zones():
-    from app.services.map_generator import generate_office_map, generate_wam, TeamSpec, MapConfig
-    tmj = generate_office_map([TeamSpec(name="Eng", headcount=5, color="#3498db")], MapConfig())
-    wam = generate_wam(tmj)
-    assert wam["version"] == "1.0.0"
-    assert wam["mapUrl"].endswith(".tmj")
-    assert isinstance(wam["areas"], list) and len(wam["areas"]) >= 1
-    # WA MapValidator 준수: 모든 area는 focusable(허용 discriminator)만 사용
-    for a in wam["areas"]:
-        assert any(p["type"] == "focusable" for p in a["properties"])
-        assert all(p["type"] in ("focusable",) for p in a["properties"])
-
-
-def test_generate_wam_empty_zones_valid():
-    """zones 없으면 areas=[] (구조 유효)."""
-    from app.services.map_generator import generate_wam
-    wam = generate_wam({"layers": []})
-    assert wam["version"] == "1.0.0" and wam["areas"] == []

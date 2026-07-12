@@ -21,7 +21,7 @@ from app.models.tables import ErpSyncLog, ErpUser, Presence
 from app.services.kpi_engine import compute_and_upsert_kpi
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
+    pass
 
 DEFAULT_COMPANY_ID = 1
 
@@ -31,8 +31,20 @@ DEFAULT_COMPANY_ID = 1
 
 
 async def _kpi_batch_job() -> None:
-    """KPI 자동계산: 전체 active 직원 대상 daily/weekly/monthly."""
+    """KPI 자동계산: 전체 active 직원 대상 daily/quarterly (D16).
+
+    period_type은 정본상 daily/quarterly 2종만 존재(D16: weekly/monthly 폐기).
+    각 period_key는 KST 기준 현재값으로 계산해 넘긴다(배치 경계=KST, D19):
+      - daily     → 'YYYY-MM-DD' (KST 오늘)
+      - quarterly → 'YYYY-Q#'    (KST 현재 분기)
+    """
     print("[Scheduler] KPI batch started")
+
+    # 배치 경계는 KST(D19). 현재 KST 기준 daily/quarterly period_key 산출.
+    kst_now = datetime.now(timezone(timedelta(hours=9)))
+    daily_key = kst_now.date().isoformat()
+    quarter_key = f"{kst_now.year}-Q{(kst_now.month - 1) // 3 + 1}"
+
     async with SessionLocal() as db:
         try:
             # 활성 직원 전체
@@ -44,15 +56,18 @@ async def _kpi_batch_job() -> None:
                     )
                 )
             ).scalars().all()
-            
+
             for user in users:
-                # daily/weekly/monthly 각각 계산 (D17)
-                for period_type in ["daily", "weekly", "monthly"]:
+                # daily/quarterly 각각 계산 (D16 — weekly/monthly 폐기)
+                for period_type, period_key in (
+                    ("daily", daily_key),
+                    ("quarterly", quarter_key),
+                ):
                     await compute_and_upsert_kpi(
                         db=db,
                         user_id=user.id,
                         period_type=period_type,
-                        period_key=None,  # None = 가장 최근 기간
+                        period_key=period_key,
                     )
             await db.commit()
             print(f"[Scheduler] KPI batch completed: {len(users)} users")
@@ -95,6 +110,24 @@ async def _erp_sync_batch_job() -> None:
             )
             await db.commit()
             print(f"[Scheduler] ERP sync failed: {exc}")
+
+
+async def _eod_push_job() -> None:
+    """REQ-008/D18: EOD ERP 전송 — pending daily_status_push를 ERP로 전송(pending→sent)."""
+    print("[Scheduler] EOD push started")
+    from app.services.eod_push import run_eod_push
+
+    async with SessionLocal() as db:
+        try:
+            summary = await run_eod_push(db)
+            await db.commit()
+            print(
+                f"[Scheduler] EOD push completed: sent={summary['sent']} "
+                f"failed={summary['failed']} total={summary['total']} run_id={summary['run_id']}"
+            )
+        except Exception as exc:
+            await db.rollback()
+            print(f"[Scheduler] EOD push failed: {exc}")
 
 
 async def _presence_purge_job() -> None:
@@ -156,6 +189,15 @@ def start_scheduler() -> None:
         replace_existing=True,
     )
 
+    # REQ-008/D18: EOD ERP 전송 — 매일 18:05 KST (KPI 18:00 배치 직후)
+    _scheduler.add_job(
+        _eod_push_job,
+        CronTrigger(hour=18, minute=5, timezone="Asia/Seoul"),
+        id="eod_push",
+        name="EOD ERP push",
+        replace_existing=True,
+    )
+
     # D20-a: presence 좌표 30일 파기 — 매일 03:00 KST
     _scheduler.add_job(
         _presence_purge_job,
@@ -164,9 +206,9 @@ def start_scheduler() -> None:
         name="Presence 30d coord purge",
         replace_existing=True,
     )
-    
+
     _scheduler.start()
-    print("[Scheduler] Started: KPI 18:00/21:00, ERP hourly:00, presence purge 03:00")
+    print("[Scheduler] Started: KPI 18:00/21:00, ERP hourly:00, EOD push 18:05, presence purge 03:00")
 
 
 def stop_scheduler() -> None:

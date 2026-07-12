@@ -36,11 +36,23 @@ class Settings(BaseSettings):
     # ── ERP dailylog read-only DB (03-erp-integration, D18) ──
     # 같은 사내망, company_id 스코프. 비어있으면 ERP 연동 비활성.
     erp_database_url: str = ""
+    # ERP write-back(EOD 전송) 대상. 비어있으면 mock 전송(상태머신만 동작, 실 ERP 미접속).
+    erp_push_endpoint: str = ""
+
+    # ── AI 서술 초안 (REQ-007, D14-e, D20 가명화) ──
+    # anthropic_api_key 비어있거나 ai_draft_enabled=False면 결정론적 mock 초안 사용(네트워크·비용 없음).
+    anthropic_api_key: str = ""
+    ai_draft_enabled: bool = False
+    ai_draft_model: str = "claude-opus-4-8"
 
     # ── JWT (D4: HS256 + 자체 시크릿, ERP와 미공유) ──
     jwt_secret_key: str = "dev-only-secret-CHANGE-IN-PRODUCTION"
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_hours: int = 24  # D4 확정: 24h
+
+    # ── 서버간 내부 API (Colyseus 이동서버 → FastAPI presence batch write, D3) ──
+    # 운영: .env에서 강한 랜덤값 주입. Colyseus의 PRESENCE_SINK_TOKEN과 동일해야 함.
+    internal_api_token: str = "dev-internal-token-CHANGE-IN-PRODUCTION"
 
     # ── CORS (Next.js 웹 관리콘솔) ──
     cors_origins: list[str] = ["http://localhost:3000"]

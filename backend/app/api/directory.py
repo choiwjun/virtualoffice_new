@@ -118,7 +118,7 @@ async def list_org_groups(
 
 
 # ── org_group CRUD · 검증 · 배포 (관리자, REQ-011) ──────────────────────
-import uuid as _uuid
+import uuid as _uuid  # noqa: E402
 
 _ADMIN = ("admin", "super_admin")
 

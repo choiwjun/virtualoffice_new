@@ -18,7 +18,7 @@ function LoginForm() {
   // Already logged in → redirect
   useEffect(() => {
     if (getToken()) {
-      router.replace('/admin/employees');
+      router.replace('/office');
     }
   }, [router]);
 
@@ -29,7 +29,7 @@ function LoginForm() {
     setError('');
     try {
       await login(email, password);
-      router.replace('/admin/employees');
+      router.replace('/office');
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setError('이메일 또는 비밀번호 오류');

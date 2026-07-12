@@ -29,8 +29,6 @@ from app.core.security import create_access_token
 from app.db import Base, get_db
 from app.main import app
 from app.models.tables import (
-    ErpRole,
-    ErpUser,
     Seat,
     SeatAssignmentHistory,
     SeatStatus,
@@ -122,27 +120,27 @@ async def _create_seat(
 
 class TestListSeats:
     async def test_returns_empty_list_when_no_seats(
-        self, async_client: AsyncClient
+        self, async_client: AsyncClient, auth_headers: dict
     ):
         """좌석 없으면 빈 목록 반환."""
-        resp = await async_client.get("/api/seats")
+        resp = await async_client.get("/api/seats", headers=auth_headers)
         assert resp.status_code == 200
         assert resp.json() == []
 
     async def test_returns_all_seats(
-        self, async_client: AsyncClient, db_session: AsyncSession
+        self, async_client: AsyncClient, db_session: AsyncSession, auth_headers: dict
     ):
         """좌석 2개 생성 후 전체 목록 반환."""
         await _create_seat(db_session)
         await _create_seat(db_session)
         await db_session.commit()
 
-        resp = await async_client.get("/api/seats")
+        resp = await async_client.get("/api/seats", headers=auth_headers)
         assert resp.status_code == 200
         assert len(resp.json()) == 2
 
     async def test_filters_by_floor_id(
-        self, async_client: AsyncClient, db_session: AsyncSession
+        self, async_client: AsyncClient, db_session: AsyncSession, auth_headers: dict
     ):
         """floor_id 필터링."""
         floor_a = uuid4()
@@ -151,16 +149,23 @@ class TestListSeats:
         await _create_seat(db_session, floor_id=floor_b)
         await db_session.commit()
 
-        resp = await async_client.get(f"/api/seats?floor_id={floor_a}")
+        resp = await async_client.get(f"/api/seats?floor_id={floor_a}", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert len(data) == 1
         assert data[0]["floor_id"] == str(floor_a)
 
-    async def test_invalid_floor_id_returns_400(self, async_client: AsyncClient):
+    async def test_invalid_floor_id_returns_400(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         """잘못된 floor_id → 400."""
-        resp = await async_client.get("/api/seats?floor_id=not-a-uuid")
+        resp = await async_client.get("/api/seats?floor_id=not-a-uuid", headers=auth_headers)
         assert resp.status_code == 400
+
+    async def test_requires_auth(self, async_client: AsyncClient):
+        """HG-SEC: 인증 없이 좌석 목록 조회 → 401/403."""
+        resp = await async_client.get("/api/seats")
+        assert resp.status_code in (401, 403)
 
 
 # ---------------------------------------------------------------------------

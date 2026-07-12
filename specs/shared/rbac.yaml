@@ -8,7 +8,8 @@ version: "2.0"
 roles:
   - employee # 일반 직원
   - leader # 팀/부서 리더 (팀 한정 열람 권한)
-  - admin # 회사 관리자 (super_admin은 admin 상위 호환)
+  - admin # 회사 관리자
+  - super_admin # 최상위 관리자 — admin 상위 호환(아래 매트릭스의 admin 열 포함). role 어휘 정본 = 04 §2.1
 
 access_matrix:
   # 화면/기능 × 역할. scope 표기: team = 본인 팀 한정, self = 본인 데이터 한정
@@ -30,10 +31,22 @@ access_matrix:
     leader: allow (scope=team)
     admin: allow
 
-  - feature: KPI 점수 조정·확정
-    screen: screen-kpi-dashboard
+  - feature: KPI 워크플로우 화면 진입 (/admin/kpi/workflow — 검토·조정·확정)
+    screen: screen-kpi-workflow
+    employee: deny # 직원 본인 분기 열람은 /kpi/quarterly (read-only)
+    leader: allow (scope=team)
+    admin: allow
+
+  - feature: KPI 점수 조정 (admin_adjusted_score ±10%)
+    screen: screen-kpi-workflow
     employee: deny
-    leader: deny
+    leader: allow (scope=team) # 자기 팀 범위 한정 — 정본 08-kpi-logic §3.2·§7.1
+    admin: allow
+
+  - feature: KPI 최종 확정 (final_score/finalized_at)
+    screen: screen-kpi-workflow
+    employee: deny
+    leader: deny # 확정은 admin 전용 — 정본 08-kpi-logic §7.1
     admin: allow
 
   - feature: 이의신청 제출
@@ -77,6 +90,18 @@ access_matrix:
     employee: deny
     leader: deny
     admin: allow
+
+  - feature: 공지사항 열람
+    screen: screen-announcement
+    employee: allow
+    leader: allow
+    admin: allow
+
+  - feature: 공지사항 작성·수정·삭제
+    screen: screen-announcement
+    employee: deny
+    leader: deny
+    admin: allow # admin·super_admin 전용(04 §2.7)
 
 unauthorized_screen:
   # 권한 없는 접근 시 공통 표시(06 §3.10)

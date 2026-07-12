@@ -13,6 +13,13 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
   {
+    // D27: 앱 내 R3F 실시간 3D 오피스(WA 외부앱 대체)
+    href: '/office',
+    label: '가상 오피스',
+    roles: ['admin', 'super_admin', 'leader', 'employee'],
+    icon: '🏢',
+  },
+  {
     href: '/admin/employees',
     label: '직원명부',
     roles: ['admin', 'super_admin', 'leader', 'employee'],
@@ -66,6 +73,19 @@ const MENU_ITEMS: MenuItem[] = [
     roles: ['admin', 'super_admin'],
     icon: '📜',
   },
+  {
+    href: '/admin/notices',
+    label: '공지 관리',
+    roles: ['admin', 'super_admin'],
+    icon: '📢',
+  },
+  {
+    // C4: 아바타 커스터마이징 (06-screens §3.9)
+    href: '/settings',
+    label: '아바타 설정',
+    roles: ['admin', 'super_admin', 'leader', 'employee'],
+    icon: '🧑‍🎨',
+  },
 ];
 
 interface SidebarProps {
@@ -85,17 +105,8 @@ export default function Sidebar({ role }: SidebarProps) {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        <a
-          href="http://localhost:8090"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 px-3 py-2 mb-1 rounded-md text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
-          title="WorkAdventure 가상 오피스 (별도 앱, OIDC 로그인)"
-        >
-          <span className="text-base">🏢</span>
-          <span>가상 오피스 입장</span>
-          <span className="ml-auto text-xs opacity-70">↗</span>
-        </a>
+        {/* D26 WorkAdventure 외부링크(가상 오피스 입장 → localhost:8090) 제거 —
+            D27에서 가상오피스는 앱 내 R3F 뷰포트(/office)로 대체됨. WA 별도앱/OIDC 폐기. */}
         {visibleItems.map((item) => {
           const isActive =
             pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));

@@ -1,0 +1,18 @@
+# 작업 모델 정본 설정 (work-model role defaults) — Single Source of Truth
+#
+# 오케스트레이션/하네스(orchestrate · cost-router · harness · cmux-harness 등)가
+# 역할별로 어떤 모델을 쓸지 선택할 때 참조하는 정본 매핑입니다.
+#
+# ⚠️ Claude Code 네이티브는 단일 `model`(+서브에이전트 frontmatter `model`)만 소비합니다.
+#    아래 역할별 라우팅(EXECUTOR/PLANNER/CRITIC/ARCHITECT)은 CC가 자동 적용하지 않으며,
+#    이 파일을 읽는 커스텀 하네스/스킬이 있어야 실효가 있습니다.
+#
+# 형식: <provider>/<model-id>[:effort]     effort ∈ {low, medium, high, xhigh}
+# 최종 갱신: 2026-07-11
+
+roles:
+  DEFAULT:   anthropic/claude-opus-4-8:xhigh   # 메인 루프 기본값
+  EXECUTOR:  anthropic/claude-sonnet-4-6       # 실행/구현(대량·기계적 작업). ※원 요청 claude-sonnet-5는 미실존 → 현존 최신 4-6으로 교정
+  PLANNER:   anthropic/claude-opus-4-8:low     # 계획 분해(가벼운 추론)
+  CRITIC:    anthropic/claude-opus-4-8:high    # 비평·검증
+  ARCHITECT: anthropic/claude-opus-4-8:xhigh   # 아키텍처 설계(최고 추론)

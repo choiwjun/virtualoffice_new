@@ -173,7 +173,7 @@ class SyncStatusOut(BaseModel):
     failure_count: int
 
 
-def _log_out(l: ErpSyncLog) -> "SyncLogOut":
+def _log_out(entry: ErpSyncLog) -> "SyncLogOut":
     def _iso(dt):
         if dt is None:
             return None
@@ -181,9 +181,9 @@ def _log_out(l: ErpSyncLog) -> "SyncLogOut":
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.isoformat()
     return SyncLogOut(
-        id=str(l.id), started_at=_iso(l.started_at), finished_at=_iso(l.finished_at),
-        created=l.created, updated=l.updated, deactivated=l.deactivated,
-        status=l.status, trigger=l.trigger, error=l.error,
+        id=str(entry.id), started_at=_iso(entry.started_at), finished_at=_iso(entry.finished_at),
+        created=entry.created, updated=entry.updated, deactivated=entry.deactivated,
+        status=entry.status, trigger=entry.trigger, error=entry.error,
     )
 
 
@@ -376,3 +376,29 @@ async def retry_daily_status_push(
         target=row.target.value, payload=row.payload, status=row.status.value,
         pushed_at=None, run_id=str(row.run_id) if row.run_id else None, error=row.error_message,
     )
+
+
+# ── EOD Push 수동 트리거 (배치 즉시 실행, 관리자) ────────────────────────────
+
+class EodPushRunOut(BaseModel):
+    run_id: str
+    sent: int
+    failed: int
+    total: int
+
+
+@router.post("/daily-status-push/run", response_model=EodPushRunOut)
+async def run_daily_status_push(
+    push_date: Optional[date] = Query(None, description="대상 날짜(KST). 미지정 시 전체 pending"),
+    db=Depends(get_db),
+    _: CurrentUser = Depends(require_role("admin", "super_admin")),
+) -> EodPushRunOut:
+    """POST /api/daily-status-push/run — pending 큐를 ERP로 즉시 전송 (관리자, REQ-008/D18).
+
+    스케줄러 EOD 배치(18:05 KST)와 동일 로직. pending→sent 전이, 멱등(sent 재전송 안 함).
+    """
+    from app.services.eod_push import run_eod_push
+
+    summary = await run_eod_push(db, push_date=push_date)
+    await db.commit()
+    return EodPushRunOut(**{k: summary[k] for k in ("run_id", "sent", "failed", "total")})

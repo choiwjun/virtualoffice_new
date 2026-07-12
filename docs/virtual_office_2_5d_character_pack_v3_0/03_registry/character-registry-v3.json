@@ -1,0 +1,245 @@
+{
+  "version": "3.0",
+  "strategy": "single-frame-code-motion",
+  "characters": [
+    {
+      "characterId": "JAMES",
+      "displayName": "James",
+      "genderPresentation": "male",
+      "identityLock": "black suit, white shirt, short black hair",
+      "states": {
+        "idle": "01_characters/JAMES/JAMES_IDLE.png",
+        "walk": "01_characters/JAMES/JAMES_WALK.png",
+        "sit": "01_characters/JAMES/JAMES_SIT.png",
+        "typing": "01_characters/JAMES/JAMES_TYPING.png"
+      },
+      "pivot": [
+        0.5,
+        0.98
+      ],
+      "display": {
+        "standingHeightPx": 190,
+        "walkingHeightPx": 188,
+        "seatedHeightPx": 116,
+        "typingHeightPx": 112
+      },
+      "contactShadow": {
+        "standing": "02_shared/contact_shadows/CONTACT_SHADOW_STANDING.svg",
+        "seated": "02_shared/contact_shadows/CONTACT_SHADOW_SEATED.svg"
+      },
+      "motionProfile": "02_shared/character-motion-profiles.json",
+      "identityStatus": "PASS",
+      "furnitureEmbedded": false
+    },
+    {
+      "characterId": "OLIVIA",
+      "displayName": "Olivia",
+      "genderPresentation": "female",
+      "identityLock": "ivory blouse, black trousers, long brown hair",
+      "states": {
+        "idle": "01_characters/OLIVIA/OLIVIA_IDLE.png",
+        "walk": "01_characters/OLIVIA/OLIVIA_WALK.png",
+        "sit": "01_characters/OLIVIA/OLIVIA_SIT.png",
+        "typing": "01_characters/OLIVIA/OLIVIA_TYPING.png"
+      },
+      "pivot": [
+        0.5,
+        0.98
+      ],
+      "display": {
+        "standingHeightPx": 190,
+        "walkingHeightPx": 188,
+        "seatedHeightPx": 116,
+        "typingHeightPx": 112
+      },
+      "contactShadow": {
+        "standing": "02_shared/contact_shadows/CONTACT_SHADOW_STANDING.svg",
+        "seated": "02_shared/contact_shadows/CONTACT_SHADOW_SEATED.svg"
+      },
+      "motionProfile": "02_shared/character-motion-profiles.json",
+      "identityStatus": "PASS",
+      "furnitureEmbedded": false
+    },
+    {
+      "characterId": "ETHAN",
+      "displayName": "Ethan",
+      "genderPresentation": "male",
+      "identityLock": "blue hoodie, dark jeans, casual",
+      "states": {
+        "idle": "01_characters/ETHAN/ETHAN_IDLE.png",
+        "walk": "01_characters/ETHAN/ETHAN_WALK.png",
+        "sit": "01_characters/ETHAN/ETHAN_SIT.png",
+        "typing": "01_characters/ETHAN/ETHAN_TYPING.png"
+      },
+      "pivot": [
+        0.5,
+        0.98
+      ],
+      "display": {
+        "standingHeightPx": 190,
+        "walkingHeightPx": 188,
+        "seatedHeightPx": 116,
+        "typingHeightPx": 112
+      },
+      "contactShadow": {
+        "standing": "02_shared/contact_shadows/CONTACT_SHADOW_STANDING.svg",
+        "seated": "02_shared/contact_shadows/CONTACT_SHADOW_SEATED.svg"
+      },
+      "motionProfile": "02_shared/character-motion-profiles.json",
+      "identityStatus": "PASS",
+      "furnitureEmbedded": false
+    },
+    {
+      "characterId": "SOPHIA",
+      "displayName": "Sophia",
+      "genderPresentation": "female",
+      "identityLock": "black blouse, beige trousers, long brown hair",
+      "states": {
+        "idle": "01_characters/SOPHIA/SOPHIA_IDLE.png",
+        "walk": "01_characters/SOPHIA/SOPHIA_WALK.png",
+        "sit": "01_characters/SOPHIA/SOPHIA_SIT.png",
+        "typing": "01_characters/SOPHIA/SOPHIA_TYPING.png"
+      },
+      "pivot": [
+        0.5,
+        0.98
+      ],
+      "display": {
+        "standingHeightPx": 190,
+        "walkingHeightPx": 188,
+        "seatedHeightPx": 116,
+        "typingHeightPx": 112
+      },
+      "contactShadow": {
+        "standing": "02_shared/contact_shadows/CONTACT_SHADOW_STANDING.svg",
+        "seated": "02_shared/contact_shadows/CONTACT_SHADOW_SEATED.svg"
+      },
+      "motionProfile": "02_shared/character-motion-profiles.json",
+      "identityStatus": "PASS",
+      "furnitureEmbedded": false
+    },
+    {
+      "characterId": "NOAH",
+      "displayName": "Noah",
+      "genderPresentation": "male",
+      "identityLock": "navy shirt, glasses, gray trousers",
+      "states": {
+        "idle": "01_characters/NOAH/NOAH_IDLE.png",
+        "walk": "01_characters/NOAH/NOAH_WALK.png",
+        "sit": "01_characters/NOAH/NOAH_SIT.png",
+        "typing": "01_characters/NOAH/NOAH_TYPING.png"
+      },
+      "pivot": [
+        0.5,
+        0.98
+      ],
+      "display": {
+        "standingHeightPx": 190,
+        "walkingHeightPx": 188,
+        "seatedHeightPx": 116,
+        "typingHeightPx": 112
+      },
+      "contactShadow": {
+        "standing": "02_shared/contact_shadows/CONTACT_SHADOW_STANDING.svg",
+        "seated": "02_shared/contact_shadows/CONTACT_SHADOW_SEATED.svg"
+      },
+      "motionProfile": "02_shared/character-motion-profiles.json",
+      "identityStatus": "PASS",
+      "furnitureEmbedded": false
+    },
+    {
+      "characterId": "AVA",
+      "displayName": "Ava",
+      "genderPresentation": "female",
+      "identityLock": "light-blue shirt, navy trousers, dark hair",
+      "states": {
+        "idle": "01_characters/AVA/AVA_IDLE.png",
+        "walk": "01_characters/AVA/AVA_WALK.png",
+        "sit": "01_characters/AVA/AVA_SIT.png",
+        "typing": "01_characters/AVA/AVA_TYPING.png"
+      },
+      "pivot": [
+        0.5,
+        0.98
+      ],
+      "display": {
+        "standingHeightPx": 190,
+        "walkingHeightPx": 188,
+        "seatedHeightPx": 116,
+        "typingHeightPx": 112
+      },
+      "contactShadow": {
+        "standing": "02_shared/contact_shadows/CONTACT_SHADOW_STANDING.svg",
+        "seated": "02_shared/contact_shadows/CONTACT_SHADOW_SEATED.svg"
+      },
+      "motionProfile": "02_shared/character-motion-profiles.json",
+      "identityStatus": "PASS",
+      "furnitureEmbedded": false
+    },
+    {
+      "characterId": "LIAM",
+      "displayName": "Liam",
+      "genderPresentation": "male",
+      "identityLock": "olive shirt, black trousers, short black hair",
+      "states": {
+        "idle": "01_characters/LIAM/LIAM_IDLE.png",
+        "walk": "01_characters/LIAM/LIAM_WALK.png",
+        "sit": "01_characters/LIAM/LIAM_SIT.png",
+        "typing": "01_characters/LIAM/LIAM_TYPING.png"
+      },
+      "pivot": [
+        0.5,
+        0.98
+      ],
+      "display": {
+        "standingHeightPx": 190,
+        "walkingHeightPx": 188,
+        "seatedHeightPx": 116,
+        "typingHeightPx": 112
+      },
+      "contactShadow": {
+        "standing": "02_shared/contact_shadows/CONTACT_SHADOW_STANDING.svg",
+        "seated": "02_shared/contact_shadows/CONTACT_SHADOW_SEATED.svg"
+      },
+      "motionProfile": "02_shared/character-motion-profiles.json",
+      "identityStatus": "PASS",
+      "furnitureEmbedded": false
+    },
+    {
+      "characterId": "MAYA",
+      "displayName": "Maya",
+      "genderPresentation": "female",
+      "identityLock": "tan blouse, light beige trousers, long brown hair",
+      "states": {
+        "idle": "01_characters/MAYA/MAYA_IDLE.png",
+        "walk": "01_characters/MAYA/MAYA_WALK.png",
+        "sit": "01_characters/MAYA/MAYA_SIT.png",
+        "typing": "01_characters/MAYA/MAYA_TYPING.png"
+      },
+      "pivot": [
+        0.5,
+        0.98
+      ],
+      "display": {
+        "standingHeightPx": 190,
+        "walkingHeightPx": 188,
+        "seatedHeightPx": 116,
+        "typingHeightPx": 112
+      },
+      "contactShadow": {
+        "standing": "02_shared/contact_shadows/CONTACT_SHADOW_STANDING.svg",
+        "seated": "02_shared/contact_shadows/CONTACT_SHADOW_SEATED.svg"
+      },
+      "motionProfile": "02_shared/character-motion-profiles.json",
+      "identityStatus": "PASS",
+      "furnitureEmbedded": false
+    }
+  ],
+  "shared": {
+    "motionProfiles": "02_shared/character-motion-profiles.json",
+    "chairAnchors": "02_shared/chair-anchor-profiles.json",
+    "occlusionRules": "02_shared/desk-occlusion-rules.json",
+    "standingShadow": "02_shared/contact_shadows/CONTACT_SHADOW_STANDING.svg",
+    "seatedShadow": "02_shared/contact_shadows/CONTACT_SHADOW_SEATED.svg"
+  }
+}

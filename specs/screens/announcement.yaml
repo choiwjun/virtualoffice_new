@@ -1,0 +1,101 @@
+version: "2.0"
+
+screen:
+  name: 공지사항 (Announcement)
+  route: /announcements # 우패널 카드는 통합 대시보드(virtual-office-3d)에 임베드, 전체 목록/작성은 이 화면
+  platform: web
+  layout: sidebar-main
+  required_role: employee # 열람은 전 역할, 작성·수정·삭제는 admin 전용
+
+data_requirements:
+  - resource: announcement
+    needs: [id, company_id, title, body, category, pinned, author_user_id, published_at, expires_at, created_at, updated_at]
+    filters:
+      category: "?category" # system | notice | info (선택 필터)
+      active: "(published_at IS NULL OR published_at<=now) AND (expires_at IS NULL OR expires_at>now)"
+    mutations: [create, update, delete]
+    access: read-write
+    note: 열람은 활성 공지만(published_at NULL=즉시 게시 또는 <=now, 미만료 — 04 §2.7 의미론). 작성·수정·삭제는 role IN (admin, super_admin) 애플리케이션 레이어 검사. 정본 = 04-data-model §2.7
+
+  - resource: erp_user
+    needs: [id, name, role]
+    access: read-only
+    note: 작성자(author_user_id) 표시
+
+components:
+  - id: announcement-list
+    type: list
+    position: main
+    function: "공지 목록 — pinned 상단 고정 우선, 이후 published_at DESC. 카테고리 pill(system 빨강/notice 파랑/info 회색). 행 클릭 → 상세"
+    data_source:
+      resource: announcement
+
+  - id: announcement-category-tabs
+    type: tabs
+    position: main
+    function: "카테고리 필터 언더라인 탭: 전체 / 시스템(system) / 공지(notice) / 정보(info). 활성 언더라인 --primary"
+
+  - id: announcement-detail
+    type: panel
+    position: main
+    function: "선택 공지 본문(마크다운 렌더) + 작성자·게시일·만료일 메타"
+    data_source:
+      resource: announcement
+
+  - id: announcement-editor
+    type: form
+    position: right
+    function: "관리자 전용: [새 공지] — title/body(마크다운)/category/pinned 토글/published_at(예약)/expires_at(만료). [게시] [임시저장]"
+    data_source:
+      resource: announcement
+    visible_when: "role IN (admin, super_admin)"
+
+  - id: right-panel-card
+    type: card
+    position: embedded # 통합 대시보드(virtual-office-3d) 우패널 카드로 재사용
+    function: "우패널 공지 카드 — 활성 공지 최신 3~5건(pinned 우선), [전체 보기 ›] → 이 화면. design-style-analysis §3 우패널"
+    data_source:
+      resource: announcement
+
+events:
+  - on: publish-announcement
+    do: "role IN (admin, super_admin) 검증 → announcement 생성(published_at=입력값 또는 now), audit_log(action=announcement_published) 기록"
+
+  - on: update-announcement
+    do: "관리자 검증 → 수정, audit_log(action=announcement_updated)"
+
+  - on: delete-announcement
+    do: "관리자 검증 → 소프트 방식 보존(물리 삭제 금지, 04 §2.7), audit_log(action=announcement_deleted). archive 조회는 관리자 콘솔"
+
+  - on: toggle-pinned
+    do: "pinned 토글 → 우패널·목록 최상단 정렬 갱신(복수 핀 허용)"
+
+tests:
+  - name: "활성 공지만 노출"
+    when: "직원이 /announcements 진입"
+    then:
+      - "(published_at IS NULL OR published_at<=now) AND (expires_at IS NULL OR expires_at>now) 공지만 표시 (NULL=즉시 게시, 04 §2.7)"
+      - "만료(expires_at<now)·미래 게시 예약 공지는 목록에서 제외"
+      - "pinned=true 공지가 최상단 우선 정렬"
+
+  - name: "관리자 공지 게시"
+    when: "admin이 [새 공지]에서 title/body/category 입력 후 [게시]"
+    then:
+      - "announcement 생성, 우패널·목록에 즉시 반영(published_at<=now인 경우)"
+      - "audit_log(action=announcement_published) 자동 생성"
+
+  - name: "권한 경계"
+    when: "일반 직원이 공지 작성/수정/삭제 시도"
+    then:
+      - "편집 UI 미노출(visible_when: role IN admin, super_admin)"
+      - "API 레이어에서 role 검증 실패 시 403"
+
+  - name: "카테고리 필터"
+    when: "카테고리 탭에서 '시스템(system)' 선택"
+    then:
+      - "category=system 공지만 필터링 표시"
+
+notes:
+  - "데이터 정본: 04-data-model §2.7 announcement (D27 신설). category ENUM = system | notice | info"
+  - "우패널 카드는 통합 대시보드(virtual-office-3d.yaml)에 임베드 — 이 화면은 전체 목록·작성 뷰"
+  - "감사 대상: 게시·수정·삭제 전부 audit_log 기록(04 §2.6)"

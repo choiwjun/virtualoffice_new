@@ -2,10 +2,10 @@ version: "2.0"
 
 screen:
   name: KPI 대시보드
-  route: /admin/kpi # 관리자 검토·확정용. 본인 KPI 열람은 /kpi (라우팅 분리)
+  route: /admin/kpi # 열람·추이·팀 종합 전용. 본인 KPI 열람은 /kpi (라우팅 분리). 조정·확정은 /admin/kpi/workflow(kpi-workflow.yaml) 소관
   platform: web
   layout: sidebar-main
-  required_role: employee # 본인 KPI(/kpi)는 전 역할, 팀 순위·조정·확정(/admin/kpi)은 leader(팀 한정)/admin — §3.10
+  required_role: employee # 본인 KPI(/kpi)는 전 역할, 팀 순위·타인 점수 열람(/admin/kpi)은 leader(팀 한정)/admin — §3.10. 조정·확정은 kpi-workflow 소관
 
 data_requirements:
   - resource: kpi_result
@@ -53,24 +53,24 @@ components:
   - id: header-controls
     type: toolbar
     position: top
-    function: 기간 선택(월/주별), 팀 필터, 비교 보기, 내보내기 버튼
+    function: 기간 선택(daily/quarterly), 팀 필터, 비교 보기, 내보내기 버튼
 
   - id: period-selector
     type: panel
     position: top
-    function: 기간 선택 (월별/주별 선택기, 날짜 range picker)
+    function: 기간 선택 (daily/quarterly 선택기, 날짜 range picker — weekly/월별 주기 폐기 D16)
 
   - id: my-kpi-section
     type: panel
     position: main
-    function: 개인 KPI 카드 (지표 종합, AI 초안, 관리자 검토)
+    function: 개인 KPI 카드 (지표 종합, AI 초안, 검토 상태 표시 — 조정·확정 UI 없음)
     data_source:
       resource: kpi_result
 
   - id: metric-progress-bars
     type: chart
     position: main
-    function: 지표별 진행도 바 (업무완료도, 회의생산성, 협업점수, 품질도, 종합점수)
+    function: "지표 표시(08 §1.2/04 §2.5 정본) — collaboration_score 게이지(헤드라인) + 지표바 5종(work_completed_count, work_quality_score, minutes_authored_count, action_items_ontime_rate, report_fidelity_score)"
     data_source:
       resource: kpi_result
 
@@ -81,10 +81,7 @@ components:
     data_source:
       resource: kpi_result
 
-  - id: admin-review-controls
-    type: form
-    position: main
-    function: 관리자 검토 및 조정 (상태선택, 조정값입력, 의견작성, 버튼[검토중][승인][조정][확정])
+  # (제거) admin-review-controls — 조정·확정은 kpi-workflow(/admin/kpi/workflow) 소관. 본 화면은 열람·추이·팀 종합 전용
 
   - id: team-summary-section
     type: panel
@@ -112,8 +109,7 @@ events:
   - on: period_selected
     do: 필터링 조건 변경, kpi_result 재로드
 
-  - on: admin_review_submitted
-    do: kpi_result.admin_adjusted_score, admin_note, admin_user_id, admin_reviewed_at 업데이트 (확정 시 final_score = admin_adjusted_score ?? value, finalized_at 설정)
+  # (제거) admin_review_submitted — 조정·확정 이벤트는 kpi-workflow(/admin/kpi/workflow) 소관
 
   - on: ai_draft_not_found
     do: 에러 모달 표시 (재시도/수동입력 옵션)
@@ -130,14 +126,12 @@ tests:
       - "ai_draft(강점/개선/근거 서술)가 표시되고 ai_draft_generated_at 타임스탐프 표시"
       - "admin_reviewed_at=null이면 [검토중] 배지, finalized_at 설정 시 [확정] 배지"
 
-  - name: "관리자 검토 및 조정 - 값 수정"
-    when: "관리자가 admin-review-form에서 조정값을 입력하고 저장"
+  - name: "조정·확정 UI 부재 - 워크플로우 화면으로 유도"
+    when: "관리자가 본 화면에서 KPI 조정·확정을 시도"
     then:
-      - "admin_adjusted_score 저장 (조정 여부는 admin_adjusted_score IS NOT NULL로 판정)"
-      - "admin_note 필드에 의견 저장"
-      - "admin_user_id, admin_reviewed_at 기록"
-      - "확정 시 final_score = admin_adjusted_score ?? value, finalized_at 설정"
-      - "상태 배지가 [승인] 또는 [조정]으로 업데이트"
+      - "본 화면에는 조정·확정 컨트롤이 없음 (열람·추이·팀 종합 전용)"
+      - "검토·조정·확정은 kpi-workflow(/admin/kpi/workflow) 링크로 이동하여 수행"
+      - "상태 배지([검토중]/[승인]/[조정]/[확정])는 읽기 전용 표시만"
 
   - name: "AI 평가 실패 - 에러 상태 및 복구"
     when: "ai_draft_generated_at가 null이고 화면 로드 시"
@@ -159,15 +153,15 @@ tests:
     when: "사용자가 팀 필터를 선택하고 [팀랭킹] 탭 클릭"
     then:
       - "같은 team_zone의 모든 유저 kpi_result 로드"
-      - "팀 평균 종합점수 계산 및 team-summary-section에 표시"
-      - "상위 5명을 순위순으로 리스트 (이름, 종합점수, 주요 지표)"
+      - "팀 평균 collaboration_score 계산 및 team-summary-section에 표시 (quarterly 표시 시 quarterly_total 병기 가능)"
+      - "상위 5명을 순위순으로 리스트 (이름, collaboration_score, 주요 지표)"
       - "각 지표별 팀 평균값과 개인값 비교 차트 표시"
 
 notes:
   - "KPI 지표 계산: 21:00 야간 배치(D17)로 자동 수행(결정론적 코드), 데이터 소스 = work_log, meeting, meeting_minute, action_item"
   - "결과중심 원칙: 협업점수·회의생산성 지표는 회의록(decisions)·액션아이템 이행률·완료 업무 기반으로 산출. meeting.started_at/ended_at은 표시·맥락용이며 접속시간·참석횟수를 KPI 산식에 반영하지 않음(반감시)."
   - "AI 초안 생성: 21:00 야간 배치(D17)에서 Claude API 호출(서술만 — 정량 점수는 결정론적 코드, D14-e), ai_draft_generated_at 기록, 실패 시 ai_draft=null"
-  - "Admin 검토: admin_reviewed_at 기록. 조정 여부는 admin_adjusted_score IS NOT NULL로 판정(별도 boolean 없음, D16)"
+  - "조정·확정은 kpi-workflow(/admin/kpi/workflow) 소관 — 본 화면은 열람·추이·팀 종합 전용. 상태 배지 판정용으로 admin_reviewed_at·finalized_at·admin_adjusted_score IS NOT NULL(D16)만 읽는다"
   - "ERP 푸시: 관리자 확정 이벤트 + 분기 마감 배치(D15·D17), daily_status_push 로그 생성(final_score만 전송)"
   - "이의신청: objection_status(none→submitted→reviewing→resolved)는 kpi-objection.yaml 화면에서 처리, 본 화면은 상태 표시만"
   - "지표 정의 문서: 06-screens.md §3.4의 지표 상세 참조"

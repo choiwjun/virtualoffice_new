@@ -13,15 +13,17 @@ D19: UTC 저장
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from livekit import api as livekit_api
 from pydantic import BaseModel
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.core.deps import CurrentUser, get_current_user, require_role
 from app.db import get_db
 from app.models.tables import (
@@ -208,7 +210,6 @@ async def create_meeting(
             detail="room_time_conflict",
         )
 
-    now = datetime.now(timezone.utc)
     meeting = Meeting(
         id=uuid4(),
         room_id=room_uuid,
@@ -314,6 +315,56 @@ async def join_meeting(
     await db.commit()
     await db.refresh(participant)
     return _participant_out(participant)
+
+
+class LivekitTokenOut(BaseModel):
+    token: str
+    url: str
+    room: str
+
+
+@router.post("/meetings/{meeting_id}/livekit-token", response_model=LivekitTokenOut)
+async def meeting_livekit_token(
+    meeting_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> LivekitTokenOut:
+    """
+    POST /api/meetings/{id}/livekit-token — 참석자에게 LiveKit 룸 접속 토큰 발급 (C3, D24, G004).
+
+    정본 경로(WA 제거로 신설, 구 /api/wa/livekit-token 대체). 참석 등록(join)된 사용자만 발급.
+    서버가 발급 주체 → 클라이언트가 room_name/identity를 위조할 수 없다.
+    """
+    meeting = await _get_meeting_or_404(meeting_id, db)
+
+    q = await db.execute(
+        select(MeetingParticipant).where(
+            and_(
+                MeetingParticipant.meeting_id == meeting.id,
+                MeetingParticipant.user_id == current_user.user_id,
+            )
+        )
+    )
+    if q.scalar_one_or_none() is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="not a participant — join the meeting first",
+        )
+
+    room_name = meeting.livekit_room or f"meeting-{meeting.id}"
+    token = (
+        livekit_api.AccessToken(settings.livekit_api_key, settings.livekit_api_secret)
+        .with_identity(str(current_user.user_id))
+        .with_name(current_user.email or str(current_user.user_id))
+        .with_grants(
+            livekit_api.VideoGrants(
+                room_join=True, room=room_name, can_publish=True, can_subscribe=True
+            )
+        )
+        .with_ttl(timedelta(seconds=settings.livekit_token_expiry_seconds))
+        .to_jwt()
+    )
+    return LivekitTokenOut(token=token, url=settings.livekit_url, room=room_name)
 
 
 @router.get(

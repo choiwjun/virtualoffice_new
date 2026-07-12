@@ -1,20 +1,19 @@
 # docker-compose.local.yml — 로컬 확인 전용 (커밋/배포 대상 아님)
-# 목적: WorkAdventure UI/맵/이동을 로컬 브라우저에서 미리보기.
+# 목적: FastAPI 백엔드 + LiveKit(회의 미디어) + coturn(TURN 폴백) 로컬 실증.
 # 프로덕션 docker-compose.yml(공개 도메인+Let's Encrypt+LiveKit+coturn)과 별개.
-# OIDC: FastAPI backend가 auth.localhost:8090 으로 노출됨 (Caddy 역방향 프록시).
-# 접속: http://localhost:8090  (localhost = secure context → 카메라 없이 UI 확인 가능)
+#
+# D27/D28: WorkAdventure 외부앱/OIDC/TMJ맵 스택 폐기(2026-07-12 wa-*·caddy 서비스 제거).
+#   실시간 3D는 앱 내 Next.js R3F + Colyseus 이동서버(`realtime/`, 포트 2567)로 대체.
+#   Colyseus는 아직 Dockerfile 미작성 → 로컬은 `cd realtime && npm start`로 별도 기동.
 #
 # 기동(Rancher Desktop, WSL):
 #   DEXE="/mnt/c/Users/wj941/AppData/Local/Programs/Rancher Desktop/resources/resources/win32/bin/docker.exe"
 #   "$DEXE" compose -f docker-compose.local.yml up -d
-
-x-wa-secret: &wa_secret "local-dev-secret-key-not-for-production-0123456789abcdef"
+# 접속: http://localhost:8000 (백엔드), 프론트는 `cd frontend && npm run dev`(localhost:3000)
 
 services:
 
-  # ── FastAPI 백엔드 (OIDC Provider + presence·KPI 도메인) ─────────────
-  # Lane B(D26): OIDC Provider를 로컬 스택에 연결.
-  # auth.localhost:8090 → caddy → backend:8000 경로로 WA play가 OIDC 디스커버리에 접근.
+  # ── FastAPI 백엔드 (presence·KPI·회의 등 도메인 API) ─────────────
   backend:
     build: ./backend
     container_name: volocal_backend
@@ -25,153 +24,17 @@ services:
       AUTO_CREATE_TABLES: "true"
       JWT_SECRET_KEY: local-dev-jwt-secret-not-for-production
       ENVIRONMENT: development
-      # WorkAdventure OIDC 클라이언트 자격증명 (wa-play와 동일하게 설정)
-      WA_OIDC_CLIENT_ID: workadventure
-      WA_OIDC_CLIENT_SECRET: local-dev-oidc-secret
-      WA_OIDC_BASE_URL: http://auth.localhost:8090
-      # LiveKit 자격증명 (D24: /api/wa/livekit-token 토큰 발급용)
+      # LiveKit 자격증명 (C3: 회의실 livekit-token 발급용 — /api/meetings/{id}/livekit-token 예정)
       LIVEKIT_API_KEY: devkey
       LIVEKIT_API_SECRET: "devsecret01234567890123456789012345"
       LIVEKIT_URL: "http://livekit:7880"
-      # WA 맵 스크립트(presence.js)는 sandboxed iframe(origin: null)에서 실행되므로
-      # /api/wa/* fetch의 CORS preflight를 위해 "null" + 앱 오리진 허용 (G001 실배선)
-      CORS_ORIGINS: '["http://localhost:8090","http://localhost:3000","null"]'
+      # 앱 오리진만 허용 (프론트 dev 서버). Colyseus 클라 배선 시 필요분 추가.
+      CORS_ORIGINS: '["http://localhost:3000"]'
     volumes:
       # SQLite 파일 영속화 (컨테이너 재기동 시 데이터 유지)
       - backend_sqlite:/data
-    expose:
-      - "8000"
-
-  wa-redis:
-    image: redis:6
-    container_name: volocal_wa_redis
-    restart: unless-stopped
-
-  wa-map-storage:
-    image: thecodingmachine/workadventure-map-storage:master
-    container_name: volocal_wa_map_storage
-    restart: unless-stopped
-    environment:
-      API_URL: wa-back:50051
-      SECRET_KEY: *wa_secret
-      ENABLE_BASIC_AUTHENTICATION: "true"
-      AUTHENTICATION_USER: admin
-      AUTHENTICATION_PASSWORD: localadmin
-      MAP_STORAGE_API_TOKEN: *wa_secret
-      PUSHER_URL: http://localhost:8090
-      PATH_PREFIX: /map-storage
-
-  wa-back:
-    image: thecodingmachine/workadventure-back:master
-    container_name: volocal_wa_back
-    restart: unless-stopped
-    depends_on:
-      - wa-redis
-      - wa-map-storage
-    environment:
-      SECRET_KEY: *wa_secret
-      PLAY_URL: http://localhost:8090
-      MAP_STORAGE_URL: wa-map-storage:50053
-      INTERNAL_MAP_STORAGE_URL: http://wa-map-storage:3000
-      PUBLIC_MAP_STORAGE_URL: http://localhost:8090/map-storage
-      REDIS_HOST: wa-redis
-      STUN_SERVER: stun:stun.l.google.com:19302
-      MAX_PER_GROUP: "4"
-      ENABLE_MAP_EDITOR: "true"
-      ENABLE_CHAT: "true"
-      STORE_VARIABLES_FOR_LOCAL_MAPS: "true"
-      # ── LiveKit 통합 (WA 네이티브 그룹 버블 음성, D26) ──────────────────
-      # LIVEKIT_HOST: wa-back↔livekit 내부 통신 (Docker DNS). 토큰 발급·룸 관리용.
-      # 로컬: 브라우저는 ws://localhost:7880 직접 접속(7880 포트 게시).
-      # 프로덕션: LIVEKIT_HOST=wss://<공개 도메인> 으로 교체 필요.
-      LIVEKIT_HOST: "http://livekit:7880"
-      LIVEKIT_API_KEY: devkey
-      LIVEKIT_API_SECRET: "devsecret01234567890123456789012345"
-      MAX_USERS_FOR_WEBRTC: "4"
-      # ── TURN 서버 (로컬 coturn, D21-r TURN 폴백) ────────────────────────
-      # wa-back이 TURN_STATIC_AUTH_SECRET으로 시간 제한 자격증명을 생성해 브라우저에 전달.
-      # 브라우저: turn:localhost:3478 (coturn 컨테이너 포트 게시) 로 ICE 릴레이 시도.
-      # 프로덕션 실WAN 미디어 릴레이는 이관 명시 (D21-r).
-      TURN_SERVER: "turn:localhost:3478"
-      TURN_STATIC_AUTH_SECRET: "local-dev-coturn-secret"
-
-  wa-play:
-    image: thecodingmachine/workadventure-play:master
-    container_name: volocal_wa_play
-    restart: unless-stopped
-    depends_on:
-      - wa-back
-      - wa-map-storage
-      - wa-redis
-      - backend
-    environment:
-      SECRET_KEY: *wa_secret
-      API_URL: wa-back:50051
-      PUSHER_URL: http://localhost:8090
-      FRONT_URL: /
-      INTERNAL_MAP_STORAGE_URL: http://wa-map-storage:3000
-      PUBLIC_MAP_STORAGE_URL: http://localhost:8090/map-storage
-      MAP_STORAGE_API_TOKEN: *wa_secret
-      REDIS_HOST: wa-redis
-      ICON_URL: /icon
-      UPLOADER_URL: /uploader
-      STUN_SERVER: stun:stun.l.google.com:19302
-      MAX_PER_GROUP: "4"
-      MAX_USERNAME_LENGTH: "20"
-      ENABLE_MAP_EDITOR: "true"
-      MAP_EDITOR_ALLOW_ALL_USERS: "true"
-      # 시작 룸 = 우리 조직 맵 (Lane C가 map-storage에 업로드한 org-map, D26 Phase 3)
-      START_ROOM_URL: /~/org-map.wam
-      ENABLE_CHAT: "true"
-      ENABLE_CHAT_UPLOAD: "true"
-      ENABLE_CHAT_ONLINE_LIST: "true"
-      # ── OIDC 설정 (D26 Lane B) — FastAPI backend를 OIDC Provider로 사용 ──
-      # auth.localhost:8090 → caddy(alias) → backend:8000 으로 동일 URL 접근 가능.
-      # 브라우저: auth.localhost → 127.0.0.1:8090(published port) → caddy → backend.
-      # WA play 컨테이너: auth.localhost → Docker DNS(caddy alias) → caddy → backend.
-      DISABLE_ANONYMOUS: "true"
-      OPENID_CLIENT_ID: workadventure
-      OPENID_CLIENT_SECRET: local-dev-oidc-secret
-      OPENID_CLIENT_ISSUER: http://auth.localhost:8090
-      OPENID_SCOPE: "openid profile email"
-      OPENID_USERNAME_CLAIM: preferred_username
-
-  wa-uploader:
-    image: thecodingmachine/workadventure-uploader:master
-    container_name: volocal_wa_uploader
-    restart: unless-stopped
-    depends_on:
-      - wa-redis
-    environment:
-      UPLOADER_URL: http://localhost:8090/uploader
-      REDIS_HOST: wa-redis
-      ENABLE_CHAT_UPLOAD: "true"
-      UPLOAD_MAX_FILESIZE: "10485760"
-
-  wa-icon:
-    image: matthiasluedtke/iconserver:v3.21.0
-    container_name: volocal_wa_icon
-    restart: unless-stopped
-
-  caddy:
-    image: caddy:2-alpine
-    container_name: volocal_caddy
-    restart: unless-stopped
     ports:
-      - "127.0.0.1:8090:8090"
-    volumes:
-      - ./config/Caddyfile.local:/etc/caddy/Caddyfile:ro
-    depends_on:
-      - wa-play
-      - wa-back
-      - backend
-    networks:
-      default:
-        # auth.localhost → 이 caddy 컨테이너로 해석됨 (컨테이너 내부 DNS).
-        # 브라우저: auth.localhost → 127.0.0.1:8090(published) → caddy → backend.
-        # WA play 컨테이너: auth.localhost → Docker DNS alias → caddy → backend.
-        aliases:
-          - auth.localhost
+      - "127.0.0.1:8000:8000"
 
   # ── LiveKit SFU (D24: 명시적 입장 토큰 발급, 로컬 시그널링 검증) ──────────
   # 로컬 TLS 제약으로 미디어 릴레이 없음; 토큰 발급·WebSocket 시그널링만 검증.
@@ -184,7 +47,6 @@ services:
     ports:
       - "127.0.0.1:7880:7880"
       - "127.0.0.1:7881:7881"
-
     environment:
       # LIVEKIT_KEYS 형식: "<api_key>: <api_secret>"
       LIVEKIT_KEYS: "devkey: devsecret01234567890123456789012345"
@@ -193,7 +55,6 @@ services:
 
   # ── coturn STUN/TURN (로컬, D21-r TURN 폴백 검증) ────────────────────────
   # 목적: 브라우저 WebRTC ICE 후보 릴레이 검증 (로컬 단일 머신, NAT 없음).
-  # wa-back이 TURN_STATIC_AUTH_SECRET으로 자격증명 생성 → 브라우저가 turn:localhost:3478 사용.
   # 프로덕션 실WAN 미디어 릴레이(공인 IP + TLS 5349)는 docker-compose.yml 이관 명시.
   coturn:
     image: coturn/coturn:4.6.2
@@ -206,5 +67,6 @@ services:
     volumes:
       - ./config/coturn.local.conf:/etc/coturn/turnserver.conf:ro
     command: -c /etc/coturn/turnserver.conf
+
 volumes:
   backend_sqlite:

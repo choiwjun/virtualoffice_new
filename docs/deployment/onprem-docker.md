@@ -1,6 +1,9 @@
 # 사내 서버 PC 배포 아키텍처 (Docker Compose)
 
-**작성**: 2026-07-02 · **정본 근거**: 02-trd §호스팅(Docker Compose 권장), 11-tech-stack §4.2, OQ5(LiveKit self-host 확정)
+> 🟢 **D27 반영(2026-07-09) — WorkAdventure(D26)·Godot 노선 폐기.** 가상오피스 본체 = **Colyseus 실시간 이동서버(Node/TS, SkyOffice 이식, 20Hz) + Next.js 통합 웹앱(R3F 뷰포트 내장, 무설치) + 정적 렌더 산출물 서빙(Blender 오프라인 렌더: office_bg/depth/camera.json)**. 회의 화상 인프라(FastAPI·PostgreSQL·Redis·LiveKit·coturn·Caddy)는 보존, 라우팅만 정정. 인증 = 단일세션 FastAPI JWT(OIDC 이중로그인/wa OIDC 브리지 제거).  
+> 현행 정본 = 00-decisions §H(D27) · 14-virtual-office-spec · 15-realtime-server-spec §8(배포) · 16-render-spike-and-roadmap · 3d-design/{design-style-analysis, photoreal-web-strategy}. §8의 WorkAdventure wa-* 스택은 아래에서 D27 Colyseus 배포로 대체됨.
+
+**작성**: 2026-07-02 · **최종 갱신**: 2026-07-09 (D27) · **버전**: v2.0 (D27) · **정본 근거**: 00-decisions §H(D27), 15-realtime-server-spec §8(배포), 14-virtual-office-spec, 16-render-spike-and-roadmap
 **배포 대상**: 사내 온프렘 **로컬 서버 PC 1대** · 단일 조직 도그푸딩(동시 ~20명) · 1인 운영
 **오케스트레이션**: **Docker Compose** (Kubernetes 미사용 — 단일 노드·1인 운영에 과잉, ERP도 compose 사용)
 
@@ -14,12 +17,15 @@
 |---|---|---|---|---|
 | `db` | postgres:17 | 5432(내부) | 지금 | ✅ 구성됨 |
 | `backend` | ./backend (FastAPI) | 8000 | 지금 | ✅ 구성됨 |
-| `web` | ./web (Next.js 콘솔) | 3000 | Phase 2~3 | 예정 |
-| `godot-server` | Godot 헤드리스 export (Linux) | 9000(WSS) | Phase 4 | 예정 |
+| `web` | ./frontend (Next.js 통합 웹앱, R3F 뷰포트 내장) | 3000 | Phase 2~3 | 예정 |
+| `colyseus-server` | ./realtime (Node/TS, SkyOffice 이식) | 2567(WSS) | Phase 4 | 예정 |
+| `redis` | redis:7 | 6379(내부) | Phase 4 | 예정 (Colyseus presence/세션) |
 | `livekit` | livekit/livekit-server | 7880(TCP)+**UDP 범위** | Phase 5 | 예정 ⚠️ |
 | `coturn` | coturn/coturn | 3478, 5349(TLS) | Phase 5 | 예정 ⚠️ |
 | `proxy` | caddy (TLS 종단/리버스 프록시) | 80/443 | web 도입 시 | 예정 |
 
+- **정적 렌더 산출물**(office_bg.png / office_depth.png / camera.json)은 Blender 오프라인 렌더 결과물로, `web`(Next.js) 컨테이너의 `public/` 정적 서빙 또는 Caddy 정적 파일 서빙으로 배포 — 상시 렌더 컨테이너 불필요.
+- **Colyseus**는 실시간 이동/근접/점유 권위 서버(20Hz). Caddy가 `/ws/office/*` WSS를 colyseus-server로 라우팅.
 - EOD 배치(18:00 KST ERP push)·ERP 동기화 스케줄은 **backend 내 APScheduler**로 실행 — 별도 컨테이너 불필요.
 - STT 워커(Phase 5)는 부하 보고 backend 내장 vs 분리 결정.
 
@@ -27,15 +33,17 @@
 
 | 컴포넌트 | 실행 위치 | 이유 |
 |---|---|---|
-| **Godot 데스크톱 클라이언트** | 각 직원 PC (네이티브 설치) | D11 확정 — Forward+ 최고품질은 네이티브. 자동 업데이트(P7 태스크)로 갱신 |
-| Blender→GLB 에셋 파이프라인 | 개발 PC | 빌드타임 도구 |
+| **데스크톱 클라이언트** | 없음 (D27) | 웹 무설치 — Next.js 통합 웹앱 + R3F 뷰포트가 브라우저에서 직접 렌더. 네이티브 설치 항목 폐기 |
+| **Blender 렌더 파이프라인** | 개발 PC / 배치(오프라인) | office_bg/depth/camera.json 생성 도구 — 빌드타임·배치 실행, 상시 컨테이너 아님. 산출물만 서버에 서빙 |
 | ERP(space-daily) | 기존 ERP 서버 (별도) | 우리는 read-only 접속만. 같은 사내망 |
 
 ```
-[직원 PC들]                          [사내 서버 PC - Docker Compose]
- Godot 클라이언트(네이티브) ──WSS──▶  godot-server (헤드리스, 이동/근접/점유 권위)
- 브라우저(관리콘솔)       ──HTTPS─▶  proxy(caddy) ─▶ web(Next.js) / backend(FastAPI)
- 화상(클라이언트 내)      ──WebRTC─▶  livekit + coturn (UDP)
+[직원 브라우저]                       [사내 서버 PC - Docker Compose]
+ 통합 웹앱(Next.js+R3F, 무설치) ─HTTPS▶  proxy(caddy) ─▶ web(Next.js) / backend(FastAPI)
+                              ──WSS──▶  proxy(caddy) /ws/office/* ─▶ colyseus-server (이동/근접/점유 권위, 20Hz)
+                              ─HTTPS─▶  proxy(caddy) ─▶ 정적 렌더 산출물(office_bg/depth/camera.json)
+ 화상(웹앱 내 WebRTC)         ──WebRTC▶  livekit + coturn (UDP)
+                                      colyseus-server ──▶ redis (presence/세션)
                                       backend ──read-only──▶ [ERP dailylog PG] (기존 사내망)
                                       backend ──EOD push───▶ [ERP API]
                                       db(postgres:17, pgdata 볼륨)
@@ -132,12 +140,12 @@ docker exec vo_db pg_dump -U postgres virtualoffice | gzip > /backup/vo_$(date +
 | 서비스 | RAM 추정 | 비고 |
 |---|---|---|
 | db + backend + web + proxy | ~2.5GB | |
-| godot-server (헤드리스) | ~1GB | 물리 20Hz, 20명 |
+| colyseus-server (Node/TS) + redis | ~0.7GB | 이동 20Hz, 20명, presence/세션 |
 | livekit + coturn | ~1.5GB | 1 SFU, 회의 동시 2~3방 |
-| **합계** | **~5GB** | **서버 PC 16GB RAM이면 충분, 8GB는 빠듯** |
+| **합계** | **~4.7GB** | **서버 PC 16GB RAM이면 충분, 8GB는 빠듯** |
 
-- GPU 불필요(서버는 렌더링 안 함 — 렌더링은 직원 PC의 네이티브 클라이언트).
-- 디스크: SSD 256GB+ (pgdata + 회의 녹음/STT 임시파일 고려).
+- GPU 불필요(서버는 실시간 렌더링 안 함 — 3D는 직원 브라우저의 R3F가 렌더, 배경은 Blender 오프라인 렌더 산출물 정적 서빙).
+- 디스크: SSD 256GB+ (pgdata + 정적 렌더 산출물 + 회의 녹음/STT 임시파일 고려).
 
 ## 6. 리스크 요약
 
@@ -161,68 +169,65 @@ docker exec vo_db pg_dump -U postgres virtualoffice | gzip > /backup/vo_$(date +
 
 ---
 
-## 8. WorkAdventure self-host 스택 (D26, 2026-07-06)
+## 8. Colyseus 실시간 스택 + 통합 웹앱 + 정적 렌더 서빙 (D27, 2026-07-09)
 
-> **D26 전환** — Godot 네이티브 클라이언트·헤드리스 서버 노선 보류. 가상오피스 본체 = **WorkAdventure self-host (AGPL-3.0 + Commons Clause, 사내 도그푸딩 한정 적법)**.  
-> §1 서비스 표의 `godot-server` 예정 항목은 보류됨.
+> **D27 전환** — WorkAdventure(D26) 및 Godot 노선 폐기. 가상오피스 본체 = **Colyseus 실시간 이동서버(Node/TS, SkyOffice 이식, 20Hz) + Next.js 통합 웹앱(R3F 뷰포트 내장, 무설치) + Blender 오프라인 렌더 산출물 정적 서빙**.  
+> wa-play/wa-back/wa-map-storage/wa-uploader/wa-icon/wa-redis 등 wa-* 컨테이너는 **전량 제거**. LiveKit·coturn·Caddy·PostgreSQL은 회의 화상용으로 보존, 라우팅만 정정. 인증 = **단일세션 FastAPI JWT**(wa OIDC 브리지 제거).
 
-### 8.1 추가된 서비스 구성
+### 8.1 D27 서비스 구성
 
-| 서비스 | 이미지 | 역할 | 포트(내부) |
+| 서비스 | 이미지/빌드 | 역할 | 포트(내부) |
 |---|---|---|---|
-| `wa-play` | `thecodingmachine/workadventure-play:v1.21.5` | 정적 에셋·WebSocket pusher | 3000(HTTP), 3001(WS) |
-| `wa-back` | `thecodingmachine/workadventure-back:v1.21.5` | 룸 상태 관리, gRPC API | 8080(HTTP), 50051(gRPC) |
-| `wa-map-storage` | `thecodingmachine/workadventure-map-storage:v1.21.5` | TMJ 맵 파일 저장·편집 | 3000(HTTP), 50053(gRPC) |
-| `wa-uploader` | `thecodingmachine/workadventure-uploader:v1.21.5` | 채팅 파일 업로드 | 8080 |
-| `wa-icon` | `matthiasluedtke/iconserver:v3.21.0` | iframe 파비콘 프록시 | 8080 |
-| `wa-redis` | `redis:6` | 스크립팅 API 변수·채팅 세션 저장 | 6379(내부) |
-| `livekit` | `livekit/livekit-server:v1.7.2` | SFU (4인 이상 버블 화상/음성) | 7880, 7881/TCP, 50000-50200/UDP |
-| `coturn` | `coturn/coturn:4.6.2` | TURN 릴레이 (P2P WebRTC) | 3478/UDP+TCP, 5349/TCP |
+| `web` | `./frontend` (Next.js) | 통합 웹앱(관리콘솔 + R3F 3D 뷰포트) + 정적 렌더 산출물(`public/office_bg.png`·`office_depth.png`·`camera.json`) 서빙 | 3000 |
+| `colyseus-server` | `./realtime` (Node/TS, SkyOffice 이식) | 실시간 이동/근접/점유 권위 서버, 20Hz 상태 동기화 | 2567(WSS) |
+| `backend` | `./backend` (FastAPI) | REST API·JWT 인증·ERP 연동·회의록·KPI | 8000 |
+| `redis` | `redis:7` | Colyseus presence·세션·매치메이킹 상태 | 6379(내부) |
+| `livekit` | `livekit/livekit-server:v1.7.2` | SFU (회의 화상/음성) | 7880, 7881/TCP, 50000-50200/UDP |
+| `coturn` | `coturn/coturn:4.6.2` | TURN 릴레이 (WebRTC 폴백) | 3478/UDP+TCP, 5349/TCP |
 | `caddy` | `caddy:2-alpine` | TLS 종단·역방향 프록시 | 80, 443 |
+| `db` | `postgres:17` | 주 데이터베이스 (pgdata 볼륨) | 5432(내부) |
 
-**업데이트된 아키텍처 다이어그램**:
+> **정적 렌더 산출물**은 Blender 오프라인/배치 렌더의 결과물이다. 상시 컨테이너가 아니며, 산출물 파일만 `web` 컨테이너의 `public/`(또는 별도 Caddy 정적 서빙 경로)에 배치되어 HTTPS로 서빙된다. 렌더 파이프라인 실행은 빌드타임/배치(개발 PC 또는 CI)에서 수행.
+
+**D27 아키텍처 다이어그램**:
 ```
-[직원 브라우저]                   [사내 서버 PC - Docker Compose]
- WorkAdventure 클라이언트 ──WSS──▶  caddy:443 ─▶ wa-play:3000/3001
-                          ──HTTPS─▶  caddy:443 ─▶ wa-back:8080 (REST /api)
-                          ──HTTPS─▶  caddy:443 ─▶ wa-map-storage:3000 (/map-storage)
-                          ──HTTPS─▶  caddy:443 ─▶ livekit:7880 (livekit.도메인)
-                          ──WebRTC─▶ livekit:7881/UDP50000-50200 (SFU 직결)
-                          ──TURN──▶  coturn:3478/UDP (P2P 릴레이)
-                          ──TURNS─▶  coturn:5349/TCP (TURN-TLS 폴백)
- 관리 브라우저            ──HTTPS─▶  caddy:443 ─▶ backend:8000 (api.도메인)
-                                      backend ──OIDC──▶ wa-play (ERP 사용자 SSO)
+[직원 브라우저]                        [사내 서버 PC - Docker Compose]
+ 통합 웹앱(Next.js+R3F, 무설치) ─HTTPS▶  caddy:443 ─▶ web:3000 (웹앱 + 정적 렌더 산출물)
+                              ──WSS──▶  caddy:443 /ws/office/* ─▶ colyseus-server:2567 (이동/근접/점유 권위 20Hz)
+                              ─HTTPS─▶  caddy:443 /api/* ─▶ backend:8000 (REST + JWT)
+                              ─HTTPS─▶  caddy:443 ─▶ livekit:7880 (livekit.도메인)
+                              ──WebRTC▶ livekit:7881/UDP50000-50200 (SFU 직결, 회의 화상)
+                              ──TURN──▶ coturn:3478/UDP (WebRTC 릴레이)
+                              ──TURNS─▶ coturn:5349/TCP (TURN-TLS 폴백)
+                                      colyseus-server ──▶ redis (presence/세션)
                                       backend ──read-only──▶ [ERP dailylog PG]
-                                      wa-back ──gRPC──▶ wa-map-storage
-                                      wa-back, wa-play ──▶ wa-redis
-                                      wa-back ──gRPC──▶ livekit:7880
+                                      backend ──EOD push───▶ [ERP API]
                                       db(postgres:17, pgdata 볼륨)
 ```
 
 ### 8.2 도메인·DNS 요구사항
 
-WorkAdventure는 **3개 A레코드** 필요 (단일 서버 공인 IP 가리킴):
+D27은 단일 웹앱 통합으로 **2개 A레코드**면 충분 (단일 서버 공인 IP 가리킴):
 
 | A레코드 | 역할 | 예시 |
 |---|---|---|
-| `office.example.com` | WorkAdventure 메인 (WA_DOMAIN) | `WA_DOMAIN=office.example.com` |
-| `api.office.example.com` | FastAPI 백엔드·OIDC Provider (WA_API_DOMAIN) | `WA_API_DOMAIN=api.office.example.com` |
-| `livekit.office.example.com` | LiveKit SFU 공개 엔드포인트 (LIVEKIT_DOMAIN) | `LIVEKIT_DOMAIN=livekit.office.example.com` |
+| `office.example.com` | 통합 웹앱 + API + 실시간(WSS) — Caddy가 경로별 라우팅(`/`, `/api/*`, `/ws/office/*`) | `APP_DOMAIN=office.example.com` |
+| `livekit.office.example.com` | LiveKit SFU 공개 엔드포인트 (회의 화상) | `LIVEKIT_DOMAIN=livekit.office.example.com` |
 
-Caddy가 3개 도메인 모두 Let's Encrypt 인증서를 자동 발급·갱신한다.  
-도메인 구매 전 임시 운용: Caddyfile에서 `tls {$ACME_EMAIL}` 를 제거하고 IP:포트 직접 접속.
+Caddy가 두 도메인 모두 Let's Encrypt 인증서를 자동 발급·갱신한다. 실시간 서버(Colyseus)와 API·정적 렌더는 모두 메인 도메인 하위 경로이므로 별도 A레코드가 필요 없다.  
+도메인 구매 전 임시 운용: Caddyfile에서 `tls` 블록을 내부 CA/자체서명으로 두고 IP:포트 직접 접속.
 
-### 8.3 포트 개방 업데이트 (D21-r §3.2 갱신)
+### 8.3 포트 개방 (D27)
 
 | 포트 | 용도 | 방화벽 |
 |---|---|---|
-| 443/TCP | HTTPS + WSS (Caddy, 모든 도메인) | ✅ 개방 |
+| 443/TCP | HTTPS(웹앱·API·정적 렌더) + WSS(Colyseus 실시간) + TURN-TLS 폴백 | ✅ 개방 |
 | 80/TCP | Let's Encrypt ACME challenge + HTTPS 리다이렉트 | ✅ 개방 |
 | 7881/TCP | LiveKit RTC over TCP (UDP 차단 클라이언트 폴백) | ✅ 개방 |
-| 50000-50200/UDP | LiveKit WebRTC 직결 (품질 최우선) | ✅ 개방 |
-| 3478/UDP+TCP | coturn TURN/STUN (표준 P2P 릴레이) | ✅ 개방 |
-| 5349/TCP | coturn TURN-TLS (D21-r 폴백 — 5349를 443으로 전환하려면 §8.6 참조) | ✅ 개방 |
-| 5432, 8000, 6379 | DB·백엔드·Redis | ❌ 내부 전용 |
+| 50000-50200/UDP | LiveKit WebRTC 직결 (회의 화상 품질) | ✅ 개방 |
+| 3478/UDP+TCP | coturn TURN/STUN (WebRTC 릴레이) | ✅ 개방 |
+| 5349/TCP | coturn TURN-TLS (§8.6 폴백) | ✅ 개방 |
+| 2567, 5432, 8000, 6379 | Colyseus·DB·백엔드·Redis | ❌ 내부 전용 (Caddy 프록시 뒤) |
 
 ### 8.4 초기 설치 절차
 
@@ -232,49 +237,52 @@ git clone https://github.com/choiwjun/virtualoffice_new.git && cd virtualoffice_
 # 1. 환경변수 설정
 cp .env.example .env
 # .env 필수 항목 채우기:
-#   WA_DOMAIN, WA_API_DOMAIN, LIVEKIT_DOMAIN
-#   WA_SECRET_KEY (openssl rand -hex 32)
-#   WA_MAP_STORAGE_PASSWORD
-#   WA_OIDC_CLIENT_ID, WA_OIDC_CLIENT_SECRET, WA_OIDC_ISSUER
+#   APP_DOMAIN, LIVEKIT_DOMAIN
+#   JWT_SECRET (openssl rand -hex 32)          # 단일세션 FastAPI JWT
+#   POSTGRES_PASSWORD, ERP_DATABASE_URL
+#   COLYSEUS_REDIS_URL=redis://redis:6379
 #   LIVEKIT_API_KEY, LIVEKIT_API_SECRET
 #   COTURN_STATIC_SECRET (openssl rand -hex 32)
-#   WA_TURN_SERVER=turn:<도메인>:5349
 #   ACME_EMAIL
 
 # 2. coturn 정적 시크릿 교체 (REPLACE_WITH_COTURN_STATIC_SECRET → .env의 COTURN_STATIC_SECRET 값)
 sed -i "s/REPLACE_WITH_COTURN_STATIC_SECRET/$(grep COTURN_STATIC_SECRET .env | cut -d= -f2)/" config/coturn.conf
 # 또는 직접 텍스트 편집기로 config/coturn.conf 수정
 
-# 3. 기동
-docker-compose up -d --build
+# 3. 정적 렌더 산출물 배치 (Blender 오프라인 렌더 결과)
+#    frontend/public/assets/3d/scenes/{floor}/{layout_version}/ 에
+#    office_bg.png / office_depth.png / camera.json 배치 (예: .../scenes/floor1/v3/)
+#    — 층·레이아웃 버전별 계층 규약. 경로 정본: docs/3d-design/asset-registry.md §3.3
+#    (렌더 파이프라인은 spikes/depth-composite 및 16-render-spike-and-roadmap 참조)
 
-# 4. 헬스 확인
-curl https://${WA_DOMAIN}/
-docker-compose ps
-docker-compose logs wa-play --tail 50
+# 4. 기동
+docker compose up -d --build
+
+# 5. 헬스 확인
+curl https://${APP_DOMAIN}/
+docker compose ps
+docker compose logs colyseus-server --tail 50
 ```
 
-### 8.5 맵 초기 업로드
+### 8.5 정적 렌더 산출물 갱신
 
-WorkAdventure는 첫 기동 후 맵 파일이 없으면 빈 공간만 표시된다.  
-기본 오피스 맵을 map-storage에 업로드하려면:
+오피스 배경/깊이맵/카메라는 Blender 오프라인 렌더 산출물이다. 맵 편집 서버(구 wa-map-storage) 없이 파일 교체만으로 갱신한다.
 
 ```bash
-# map-starter-kit 클론 후 업로드 (map-storage Basic 인증 사용)
-git clone https://github.com/workadventure/map-starter-kit /tmp/wa-map
-cd /tmp/wa-map
-# WA 공식 업로드 절차: https://docs.workadventu.re/map-building/tiled-editor/publish/wa-hosted
-# 또는 curl로 직접:
-curl -u admin:${WA_MAP_STORAGE_PASSWORD} \
-     -F "file=@office.tmj" \
-     https://${WA_DOMAIN}/map-storage/upload
+# Blender 렌더 파이프라인으로 산출물 재생성 (개발 PC / 배치)
+#   → office_bg.png, office_depth.png, camera.json 생성
+# 산출물을 웹앱 정적 경로에 배치 — 층·레이아웃 버전별 계층 규약
+#   frontend/public/assets/3d/scenes/{floor}/{layout_version}/ (정본: docs/3d-design/asset-registry.md §3.3)
+mkdir -p frontend/public/assets/3d/scenes/floor1/v3
+cp office_bg.png office_depth.png camera.json frontend/public/assets/3d/scenes/floor1/v3/
 
-# 업로드 후 .env에서 WA_START_ROOM_URL 업데이트:
-# WA_START_ROOM_URL=/~/office.wam   (wam 파일 기준)
-docker-compose up -d wa-play  # play 서버 재기동으로 새 URL 반영
+# 웹앱 재빌드/재기동으로 새 산출물 반영
+docker compose up -d --build web
 ```
 
-### 8.6 TURN-TLS 443 폴백 (D21-r)
+> R3F 뷰포트는 `camera.json`의 카메라 파라미터로 3D 오브젝트를 배경 렌더와 정합시키고, `office_depth.png`로 깊이 합성(오클루전)을 수행한다. 산출물 3종의 좌표계·해상도 일관성이 깨지면 합성이 어긋난다(§13 리스크).
+
+### 8.6 TURN-TLS 443 폴백
 
 일부 제한적 네트워크(기업 방화벽)는 5349도 차단한다. 이 경우 TURN-TLS를 443 포트로 서비스해야 한다.  
 Caddy가 443을 이미 점유하므로 **단일 IP** 서버에서는 다음 중 하나를 선택:
@@ -287,29 +295,40 @@ Caddy가 443을 이미 점유하므로 **단일 IP** 서버에서는 다음 중 
 
 도그푸딩 단계에서는 **5349 유지**로 시작하고, 실제 연결 불가 사례가 나오면 sslh를 도입한다.
 
-### 8.7 리소스 계획 갱신 (WA 스택 포함)
+### 8.7 리소스 계획 (D27 스택)
 
 | 서비스 그룹 | RAM 추정 | 비고 |
 |---|---|---|
 | db + backend | ~1.0GB | |
-| caddy + wa-redis + wa-icon + wa-uploader | ~0.5GB | |
-| wa-play + wa-back + wa-map-storage | ~1.5GB | Node.js 기반 |
-| livekit | ~0.8GB | SFU, 20명 동시 화상 |
+| caddy + redis | ~0.4GB | |
+| web (Next.js) | ~0.6GB | 통합 웹앱 + 정적 서빙 |
+| colyseus-server | ~0.5GB | Node/TS, 이동 20Hz, 20명 |
+| livekit | ~0.8GB | SFU, 회의 동시 화상 |
 | coturn | ~0.2GB | TURN 릴레이 |
-| **합계** | **~4.0GB** | **8GB RAM이면 여유 있음, 4GB는 빠듯** |
+| **합계** | **~3.5GB** | **8GB RAM이면 여유, 4GB는 빠듯** |
 
-디스크: 맵 파일(wa_maps 볼륨) + 채팅 업로드 파일(wa-redis) → SSD 256GB+ 권장.
+디스크: pgdata + 정적 렌더 산출물(office_bg/depth/camera.json) + 회의 녹음/STT 임시파일 → SSD 256GB+ 권장.
 
-### 8.8 WA 버전 업그레이드
+### 8.8 버전 업그레이드
 
 ```bash
-# .env에서 WA_VERSION을 새 버전으로 변경 (예: v1.22.0)
-# 릴리스 노트 확인: https://github.com/workadventure/workadventure/releases
-vim .env  # WA_VERSION=v1.22.0
+# LiveKit/coturn/redis/postgres/caddy: docker-compose.yml 이미지 태그 갱신 후
+docker compose pull && docker compose up -d
 
-# 재기동 (이미지 pull + 컨테이너 교체)
-docker-compose up -d --force-recreate wa-play wa-back wa-map-storage wa-uploader
-docker-compose logs -f wa-play  # 정상 기동 확인
+# web·colyseus-server·backend (자체 빌드): git pull 후 재빌드
+git pull
+docker compose up -d --build web colyseus-server backend
+docker compose logs -f colyseus-server  # 정상 기동 확인
 ```
 
-> ⚠️ WA_VERSION과 docker-compose.yml의 이미지 태그가 항상 일치해야 함. 메이저 버전 업그레이드 시 릴리스 노트에서 환경변수 변경사항 필수 확인.
+> ⚠️ Colyseus 스키마(@colyseus/schema) 변경은 클라이언트(웹앱)와 서버 버전이 일치해야 한다. web과 colyseus-server를 함께 배포하고, 실시간 상태 스키마 호환성을 릴리스 시 확인.
+
+---
+
+## 변경 이력
+
+| 버전 | 일자 | 변경 |
+|---|---|---|
+| v2.0 (D27) | 2026-07-09 | **WorkAdventure(D26)·Godot 노선 폐기 → Colyseus 전환.** §8을 wa-* 스택에서 Colyseus 실시간 이동서버 + Next.js 통합 웹앱(R3F 무설치) + Blender 정적 렌더 산출물 서빙으로 재작성. §1 서비스표 `godot-server`→`colyseus-server`, 네이티브 데스크톱 클라 항목 삭제. 인증을 OIDC 브리지에서 단일세션 FastAPI JWT로 정정. LiveKit·coturn·Caddy·PostgreSQL은 회의 화상용으로 보존(라우팅만 정정). |
+| v1.x (D26) | 2026-07-06 | WorkAdventure self-host 스택(§8) 추가 — D27에서 폐기됨. |
+| v1.0 | 2026-07-02 | 초판 — Godot 헤드리스 서버 + 네이티브 클라 기준. Linux 확정·외부 공개 아키텍처(§2·§3). |

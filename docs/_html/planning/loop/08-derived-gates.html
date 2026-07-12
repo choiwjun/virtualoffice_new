@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>파생 게이트 (Derived Gates) — 구현 완료 판정 기준</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">파생 게이트 (Derived Gates) — 구현 완료 판정 기준</div><div class="sub">08-derived-gates.md</div><a class="lvl1" href="#파생-게이트-derived-gates-구현-완료-판정-기준">파생 게이트 (Derived Gates) — 구현 완료 판정 기준</a><a class="lvl2" href="#req-001-3d-가상오피스-클라이언트-r3f-웹앱-뷰포트-통합-대시보드-셸-must-1-d27">REQ-001: 3D 가상오피스 클라이언트 — R3F 웹앱 뷰포트 + 통합 대시보드 셸 (MUST #1) 🔄D27</a><a class="lvl2" href="#req-002-erp-read-only-동기화-must-2">REQ-002: ERP read-only 동기화 (MUST #2)</a><a class="lvl2" href="#req-003-좌석배치-편집기-must-3">REQ-003: 좌석/배치 편집기 (MUST #3)</a><a class="lvl2" href="#req-004-실시간-서버-colyseus-20hz-권위-must-4-d27">REQ-004: 실시간 서버 — Colyseus 20Hz 권위 (MUST #4) 🔄D27</a><a class="lvl2" href="#req-005-회의화상-must-5-d27">REQ-005: 회의/화상 (MUST #5) 🔄D27</a><a class="lvl2" href="#req-006-회의록-stt-초안-must-5d5-d27">REQ-006: 회의록 STT 초안 (MUST #5/D5) 🔄D27</a><a class="lvl2" href="#req-007-kpi-산출ai-초안검토이의신청-must-6">REQ-007: KPI 산출+AI 초안+검토·이의신청 (MUST #6)</a><a class="lvl2" href="#req-008-eod-erp-push-must-6">REQ-008: EOD ERP Push (MUST #6)</a><a class="lvl2" href="#req-009011-should-phase-7-층구역-권한-회의록-ai-요약-조직도-에디터">REQ-009~011 (SHOULD, Phase 7): 층/구역 권한 · 회의록 AI 요약 · 조직도 에디터</a><a class="lvl2" href="#d27-신규-게이트-렌더-파이프라인실시간-셸-d27">D27 신규 게이트 (렌더 파이프라인·실시간 셸) 🆕D27</a><a class="lvl2" href="#req-012-깊이합성-정확도-신규-phase-0-스파이크-승계">REQ-012: 깊이합성 정확도 (신규, Phase 0 스파이크 승계)</a><a class="lvl2" href="#req-013-아바타배경-조명-정합-ibl-신규">REQ-013: 아바타↔배경 조명 정합 (IBL) (신규)</a><a class="lvl2" href="#req-014-blender-파라메트릭-씬-빌더-신규">REQ-014: Blender 파라메트릭 씬 빌더 (신규)</a><a class="lvl2" href="#req-015-단일-세션-jwt-colyseus-onauth-신규">REQ-015: 단일 세션 JWT (Colyseus onAuth) (신규)</a><a class="lvl2" href="#req-016-공지kpi-워크플로우-화면-신규">REQ-016: 공지·KPI 워크플로우 화면 (신규)</a><a class="lvl2" href="#공통-게이트-전-phase">공통 게이트 (전 Phase)</a><a class="lvl2" href="#게이트-자가검증">게이트 자가검증</a></nav>
+<main><h1 id="파생-게이트-derived-gates-구현-완료-판정-기준">파생 게이트 (Derived Gates) — 구현 완료 판정 기준</h1>
+<blockquote>⚠️ <strong>실측 재정합 2026-07-11: D27 렌더 게이트(REQ-012/013/014) D28 폐기 반영, 잔여 최대 갭=REQ-004(Colyseus).</strong></blockquote>
+<blockquote>✅ <strong>D27 반영(2026-07-09 재파생) — 이 문서는 D27 정본(R3F 웹앱 + 오프라인렌더 깊이합성 + Colyseus 권위 서버) 기준으로 재작성되었다.</strong> D26(WorkAdventure)+Godot 게이트는 폐기·재파생되었으며, 도메인 게이트(KPI·좌석·회의·ERP·개인정보)는 보존한다. 현행 정본 = 00-decisions §H(D27) · 14-virtual-office-spec · 15-realtime-server-spec · 16-render-spike-and-roadmap · 3d-design/{design-style-analysis, photoreal-web-strategy}. 구 Godot/WA/Phaser/OIDC/네이티브빌드 서술은 본 재작성으로 대체됨.</blockquote>
+<p><strong>생성</strong>: 2026-07-02 (planning-loop-supervisor LOOP 9) · <strong>갱신</strong>: 2026-07-09 (D27 재파생) · <strong>소스</strong>: 01-prd MUST 8 + SHOULD 3 (Round 1 수정 반영판) + 00-decisions §H(D27) <strong>규약</strong>: 다운스트림 빌더/검증자는 이 게이트를 <strong>증거와 함께</strong> 통과하기 전 &quot;구현 완료&quot; 선언 금지. Hard = 통과/실패 이분법 · Metric = 수치 목표 · Domain = 도메인 원칙 준수 · Evidence = 요구 증거물.</p>
+<p><strong>변경이력</strong></p>
+<ul><li>2026-07-09 (D27): REQ-001(구 Godot Forward+ 네이티브 빌드→R3F 웹앱 뷰포트+통합 대시보드 셸 픽셀 재현), REQ-004(구 Godot 헤드리스 권위·GTX1650 60fps→Colyseus 20Hz 권위+이동검증8+p95&lt;500ms), REQ-005/006(구 S1 Godot↔LiveKit 폐기, STT는 외부의존 P6 유지) 재파생. 신규 게이트 REQ-012~015(깊이합성 정확도, 아바타↔배경 조명정합, Blender 파라메트릭 씬 빌더, 단일세션 JWT), REQ-016(공지·KPI 워크플로우 화면) 추가. Phase 정본 = 16 §Part B(P0~P7).</li><li>2026-07-02: 최초 파생 (LOOP 9, PRD Round 1 반영판).</li></ul>
+<hr>
+<h2 id="req-001-3d-가상오피스-클라이언트-r3f-웹앱-뷰포트-통합-대시보드-셸-must-1-d27">REQ-001: 3D 가상오피스 클라이언트 — R3F 웹앱 뷰포트 + 통합 대시보드 셸 (MUST #1) 🔄D27</h2>
+<ul><li><strong>추적</strong>: PRD §3 → 06-screens §1 → virtual-office-3d.yaml → 14-virtual-office-spec → 3d-design/design-style-analysis §3</li><li><strong>Hard</strong>: React Three Fiber(R3F) 웹앱 뷰포트가 오프라인 렌더 배경 + 깊이합성으로 씬을 구성한다(네이티브 빌드 없음, 브라우저 실행). 아바타 이동/좌석 착석/회의실 입장 상호작용 동작. 통합 대시보드 셸(design-style-analysis §3)이 픽셀 단위로 재현된다.</li><li><strong>Metric</strong>: design-style-analysis §3 셸 골든샘플 대비 픽셀 재현(레이아웃·컬러·타이포 일치). 웹앱 초기 로드·상호작용 프레임 드롭 없음(브라우저 기준).</li><li><strong>Domain</strong>: 좌석 배정은 layout JSON이 아닌 DB(seat.assigned<em>user</em>id) 조회 (D10). 상태 뱃지 D13 7종.</li><li><strong>Evidence</strong>: 대시보드 셸 픽셀 재현 스크린샷 대조, R3F 뷰포트 렌더 캡처, 조작 데모 영상/GIF, 깊이합성 오클루전 확인(REQ-012 연계).</li></ul>
+<h2 id="req-002-erp-read-only-동기화-must-2">REQ-002: ERP read-only 동기화 (MUST #2)</h2>
+<ul><li><strong>추적</strong>: PRD §3 → 03-erp → 백엔드 <strong>[구현됨]</strong>(<code>erp_sync.py</code>, pytest) + 12-tasks P1-T4/P1-T6(배선) · P7-T5(실패 알림 훅) → backend/app/erp/</li><li><strong>Hard</strong>: users/teams/positions 동기화(upsert+soft-delete 멱등) + attendances/leaves read-through. 실 dailylog 연결 시 코드 무변경(ERP<em>DATABASE</em>URL만).</li><li><strong>Metric</strong>: 매시간 증분 + 00:00 전체 대사 스케줄 동작(D18). 동기화 실패 시 알림 훅 발화.</li><li><strong>Domain</strong>: ERP에 쓰기 0건(read-only), company<em>id 스코프 전 쿼리 강제, attendance</em>date 컬럼 사용(updated_at 없음).</li><li><strong>Evidence</strong>: pytest(현 15종 통과 유지) + 실DB 통합 테스트 1종 + 스케줄 실행 로그. ✅ 부분 선행 구현됨(수동 트리거까지).</li></ul>
+<h2 id="req-003-좌석배치-편집기-must-3">REQ-003: 좌석/배치 편집기 (MUST #3)</h2>
+<ul><li><strong>추적</strong>: PRD §3 → 05-layout → seat-layout-editor.yaml → 12-tasks P7-T3(배치 편집기→재렌더 루프)</li><li><strong>Hard</strong>: Konva.js 2D 편집(웹 3D 미리보기 없음 — D11). 검증 ERROR 0건일 때만 배포 버튼 활성([무시하고 배포] 없음 — D12). draft→validated→deployed→archived 상태 전이.</li><li><strong>Metric</strong>: office_layout.schema.json 공식 스키마 검증 통과. 배포 후 웹 뷰포트 draft 프리뷰 반영(06 §3.3.2).</li><li><strong>Domain</strong>: 좌표 2D top_left 미터(D25), 배정 데이터 layout JSON 비포함(D10).</li><li><strong>Evidence</strong>: 검증 실패→수정→배포 E2E 시나리오 테스트, WARNING-only 배포 케이스 테스트.</li></ul>
+<h2 id="req-004-실시간-서버-colyseus-20hz-권위-must-4-d27">REQ-004: 실시간 서버 — Colyseus 20Hz 권위 (MUST #4) 🔄D27</h2>
+<ul><li><strong>추적</strong>: PRD §3 → 09-realtime → 15-realtime-server-spec(정본) → 12-tasks P3-T1~T3(Colyseus onAuth·이동검증8·근접검증8) + P3-T5(presence 배치)</li><li><strong>Hard</strong>: Colyseus 권위 서버(이동 검증·충돌 차단(OQ12 확정)·근접·회의실 점유), 클라이언트 WSS 접속+hello/resume 핸드셰이크(D4), 재접속 5초 내 스냅샷 복원. 이동검증 8종(15-realtime-server-spec 정본) 적용.</li><li><strong>Metric</strong>: 검증 20명 동시(설계 100명, D22), tick <strong>20Hz 유지</strong>, 아바타 동기화 E2E <strong>p95 &lt; 500ms</strong>(15/09 정본).</li><li><strong>Domain</strong>: presence는 Colyseus 서버 메모리 권위 + FastAPI 배치 push(D3). presence 좌표 30일 파기(D20-a).</li><li><strong>Evidence</strong>: 20명 시뮬레이션 부하 리포트, 이동검증 8종 통과 로그, p95 측정 로그, 재접속 테스트.</li><li><strong>🔴 미구현 — 이동서버 스택 부재(최대 잔여 갭).</strong></li></ul>
+<h2 id="req-005-회의화상-must-5-d27">REQ-005: 회의/화상 (MUST #5) 🔄D27</h2>
+<ul><li><strong>추적</strong>: PRD §3 → 09 §LiveKit → meetings.yaml → 12-tasks P5-T1~T3(명시입장·LiveKit 통합·화상 타일)</li><li><strong>Hard</strong>: LiveKit self-host(Docker) 화상 연결 — 명시입장(D24): 근접 프롬프트→사용자 확인→join(자동 연결 금지). 예약+FCFS(D23). 외부 접속은 공개 엔드포인트 UDP 직결+TURN-TLS 443 폴백(VPN 없음).</li><li><strong>Metric</strong>: 사내 LAN 음성 지연 &lt; 200ms / 외부 &lt; 300ms 목표. 동시 2~3방.</li><li><strong>Domain</strong>: 녹음·STT 동의 배너 필수(D20-b). <strong>선행 결정: OQ13(ERP 회의실 예약 관계) Phase 5 착수 전 확정.</strong></li><li><strong>Evidence</strong>: <del>S1 스파이크(Godot↔LiveKit PoC) — D27로 폐기</del>. LiveKit↔R3F 웹클라이언트 연결 데모, 지연 측정, 동의 플로우 캡처.</li></ul>
+<h2 id="req-006-회의록-stt-초안-must-5d5-d27">REQ-006: 회의록 STT 초안 (MUST #5/D5) 🔄D27</h2>
+<ul><li><strong>추적</strong>: PRD §3 → 08/09 → meetings.yaml(stt-draft-review) → 12-tasks P6-T1(Egress+STT+화자분리)·P6-T2(검토·확정 UI)</li><li><strong>Hard</strong>: 녹음→STT→화자분리→초안이 meeting<em>minute.stt</em>draft에 저장, 검토·수정→finalized 흐름. 실패 시 수동 폴백. <strong>STT는 외부 의존(P6) — 외부 STT 서비스/모델 연동.</strong></li><li><strong>Metric</strong>: 한국어 발화자·액션아이템 누락률 &lt; 5%(D22, 수동 전사 10회 대조).</li><li><strong>Domain</strong>: 녹음 파일 90일 보존 후 파기.</li><li><strong>Evidence</strong>: <del>S2 스파이크 — D27로 폐기(외부의존 전환)</del>. 외부 STT 연동 결과, 누락률 측정표, E2E(회의→초안→확정) 테스트.</li><li><strong>🔴 501 스텁, 외부의존(P6).</strong></li></ul>
+<h2 id="req-007-kpi-산출ai-초안검토이의신청-must-6">REQ-007: KPI 산출+AI 초안+검토·이의신청 (MUST #6)</h2>
+<ul><li><strong>추적</strong>: PRD §3 → 08-kpi → kpi-dashboard/kpi-objection.yaml → 12-tasks P6-T4(KPI 워크플로우 화면 — 엔진·AI초안·EOD는 [구현됨] 재사용)</li><li><strong>Hard</strong>: 결정론적 코드가 정량 계산(같은 입력=같은 점수), AI는 서술 초안만(D14-e). 이의신청 none→submitted→reviewing→resolved(D15) 상태머신 동작. D16 스키마(period<em>type/period</em>key/final_score).</li><li><strong>Metric</strong>: 분기 100명 배치 완료. 이의신청 7일 창 강제.</li><li><strong>Domain</strong>: 접속시간·채팅수 지표 사용 금지(결과물 중심). work<em>completed</em>count=완료 전건(D14-a).</li><li><strong>Evidence</strong>: 동일 입력 반복 계산 재현성 테스트, 상태머신 전이 테스트, AI 초안이 점수를 변경하지 않음 증명.</li></ul>
+<h2 id="req-008-eod-erp-push-must-6">REQ-008: EOD ERP Push (MUST #6)</h2>
+<ul><li><strong>추적</strong>: PRD §3 → 03-erp §5 → 백엔드 <strong>[구현됨]</strong>(<code>eod_push.py</code>·<code>scheduler.py</code>, 12-tasks P6-T4 재사용분 — ERP 실수신 폐쇄루프 검증은 P6)</li><li><strong>Hard</strong>: 18:00 KST daily<em>status push(D17, run</em>id 멱등) + KPI 확정분 POST /api/kpi-results(ERP dev 브랜치 신설분). 실패 재시도+알림 훅.</li><li><strong>Metric</strong>: push 성공률 추적, 실패 시 익일 보정.</li><li><strong>Domain</strong>: ERP 쓰기는 이 두 경로만. daily<em>status</em>push.status 추적 테이블 기록.</li><li><strong>Evidence</strong>: 멱등성 테스트(중복 run_id), ERP 수신 확인 로그.</li></ul>
+<h2 id="req-009011-should-phase-7-층구역-권한-회의록-ai-요약-조직도-에디터">REQ-009~011 (SHOULD, Phase 7): 층/구역 권한 · 회의록 AI 요약 · 조직도 에디터</h2>
+<ul><li><strong>Hard</strong>: 각 기능 동작(다층 내비게이션 3층, 구역 role 제한, ai<em>summary 생성, org</em>group CRUD — ERP 팀=리프 불변).</li><li><strong>Evidence</strong>: Phase 7 검증 리포트(docs/verification/phase-7-report.md).</li></ul>
+<hr>
+<h2 id="d27-신규-게이트-렌더-파이프라인실시간-셸-d27">D27 신규 게이트 (렌더 파이프라인·실시간 셸) 🆕D27</h2>
+<h2 id="req-012-깊이합성-정확도-신규-phase-0-스파이크-승계">REQ-012: 깊이합성 정확도 (신규, Phase 0 스파이크 승계)</h2>
+<ul><li><strong>추적</strong>: 16-render-spike-and-roadmap §A.3 → 3d-design/photoreal-web-strategy → spikes/depth-composite</li><li><strong>Hard</strong>: 오프라인 렌더 배경 depth PNG + R3F 아바타 실시간 렌더의 깊이합성 오클루전이 정확히 동작(아바타가 책상/기둥 뒤로 올바르게 가려짐).</li><li><strong>Metric</strong>: <strong>경계 오차 ≤ 2px</strong>. 스파이크 PASS(2026-07-08, 커밋 b4736b1).</li><li><strong>Domain</strong>: 배경/깊이/camera.json은 layout에서 파생(REQ-014 연계), 클라이언트는 배경을 렌더하지 않고 합성만 수행.</li><li><strong>Evidence</strong>: 깊이합성 스파이크 리포트(경계 오차 측정), 오클루전 골든샘플 대조 스크린샷.</li><li><strong>⛔ D28 폐기(2026-07-11 재정합) — 오프라인렌더+깊이합성 노선 폐기, 실시간 단일 R3F 렌더가 오클루전·조명정합을 자동 충족. 이 게이트는 비활성.</strong></li></ul>
+<h2 id="req-013-아바타배경-조명-정합-ibl-신규">REQ-013: 아바타↔배경 조명 정합 (IBL) (신규)</h2>
+<ul><li><strong>추적</strong>: 3d-design/{design-style-analysis, optimization-criteria} → 14-virtual-office-spec</li><li><strong>Hard</strong>: R3F 아바타가 오프라인 렌더 배경과 동일한 IBL(Image-Based Lighting) 환경으로 조명되어, 실시간 아바타와 배경의 광원·톤이 정합한다(붕 뜬 느낌 없음).</li><li><strong>Metric</strong>: 배경 렌더 환경맵과 아바타 IBL 소스 동일. 조명 방향/색온도 일치 육안 검증 PASS.</li><li><strong>Domain</strong>: 환경맵/조명 파라미터는 Blender 씬 빌더 산출물(REQ-014)과 동일 소스에서 도출.</li><li><strong>Evidence</strong>: 아바타+배경 합성 골든샘플 대조, IBL 환경맵 산출 로그.</li><li><strong>⛔ D28 폐기(2026-07-11 재정합) — 오프라인렌더+깊이합성 노선 폐기, 실시간 단일 R3F 렌더가 오클루전·조명정합을 자동 충족. 이 게이트는 비활성.</strong></li></ul>
+<h2 id="req-014-blender-파라메트릭-씬-빌더-신규">REQ-014: Blender 파라메트릭 씬 빌더 (신규)</h2>
+<ul><li><strong>추적</strong>: photoreal-web-strategy → 16-render-spike-and-roadmap(render-pipeline) → spikes/depth-composite/public/{office<em>bg.png, office</em>depth.png, camera.json}</li><li><strong>Hard</strong>: office_layout JSON을 입력받아 Blender가 배경 이미지 + depth PNG + camera.json을 결정론적으로 산출한다(layout→배경/깊이/camera). Blender 5.1 API 대응(2차 렌더 방식, 커밋 d5ccaf0).</li><li><strong>Metric</strong>: 동일 layout 입력 = 동일 산출물(재현성). depth PNG가 REQ-012 오클루전 기준 충족.</li><li><strong>Domain</strong>: 좌석 배정 데이터는 산출물에 비포함(D10) — 씬 지오메트리만. 좌표 2D top_left 미터(D25).</li><li><strong>Evidence</strong>: layout→산출물 파이프라인 실행 로그, 재현성 테스트(동일 입력 반복), camera.json 스키마 검증.</li><li><strong>⛔ D28 폐기(2026-07-11 재정합) — 오프라인렌더+깊이합성 노선 폐기, 실시간 단일 R3F 렌더가 오클루전·조명정합을 자동 충족. 이 게이트는 비활성.</strong></li></ul>
+<h2 id="req-015-단일-세션-jwt-colyseus-onauth-신규">REQ-015: 단일 세션 JWT (Colyseus onAuth) (신규)</h2>
+<ul><li><strong>추적</strong>: 15-realtime-server-spec → 00-decisions §H(D27) → HG-AUTH 연계</li><li><strong>Hard</strong>: Colyseus <strong>onAuth</strong>가 JWT를 검증하여 인증된 접속만 룸 입장 허용. 단일 세션 강제(동일 사용자 신규 접속 시 기존 세션 해제).</li><li><strong>Metric</strong>: 무효/만료 JWT 접속 거부 100%. 중복 로그인 시 기존 세션 축출 동작.</li><li><strong>Domain</strong>: JWT 24h + role 가드(HG-AUTH 정합). presence 좌표 30일 파기(D20-a).</li><li><strong>Evidence</strong>: onAuth 거부/승인 테스트, 단일 세션 축출 E2E 테스트.</li><li><strong>🟡 JWT 로그인 ✅ / Colyseus onAuth·단일세션 eviction 미구현.</strong></li></ul>
+<h2 id="req-016-공지kpi-워크플로우-화면-신규">REQ-016: 공지·KPI 워크플로우 화면 (신규)</h2>
+<ul><li><strong>추적</strong>: 06-screens → design-style-analysis §3(통합 대시보드 셸) → 08-kpi/09-realtime</li><li><strong>Hard</strong>: 통합 대시보드 셸 내 공지(announcement) 워크플로우 화면 + KPI 워크플로우 화면(산출→검토→이의신청) 동작. REQ-007 KPI 상태머신과 연동.</li><li><strong>Metric</strong>: 공지 CRUD+게시 동작, KPI 워크플로우 화면이 REQ-007 상태(none→submitted→reviewing→resolved) 반영.</li><li><strong>Domain</strong>: KPI 화면은 결정론적 계산 결과만 표시, AI 초안은 서술만(D14-e). 접속시간·채팅수 지표 표시 금지(D14-a).</li><li><strong>Evidence</strong>: 공지 워크플로우 E2E, KPI 워크플로우 화면 상태 반영 캡처.</li></ul>
+<hr>
+<h2 id="공통-게이트-전-phase">공통 게이트 (전 Phase)</h2>
+<div class="table-wrap"><table><thead><tr><th>게이트</th><th>기준</th><th>증거</th></tr></thead><tbody><tr><td><strong>HG-SEC 외부 공개 하드닝</strong></td><td>onprem-docker §3.3 체크리스트 전항목 — <strong>도그푸딩 시작 전 완료 필수</strong> (12-tasks P7-T5)</td><td>포트 스캔 결과, rate-limit 동작 테스트</td></tr><tr><td>HG-AUTH 인증</td><td>로그인+JWT 24h+role 가드, 실패 5회 백오프 잠금</td><td>401/403/잠금 테스트</td></tr><tr><td>HG-TEST 테스트</td><td>각 Phase pytest green + 계약 스텁 해제분 통과</td><td>pytest 출력</td></tr><tr><td>HG-DATA 마이그레이션</td><td>pre-prod 0001 규약 / 운영 후 autogenerate 리비전</td><td>alembic 이력</td></tr><tr><td>HG-BACKUP</td><td>pg_dump 일일 백업 + 복원 리허설 1회 (도그푸딩 전)</td><td>복원 성공 로그</td></tr></tbody></table></div>
+<h2 id="게이트-자가검증">게이트 자가검증</h2>
+<ul><li class="task"><input type="checkbox" disabled checked> 모든 MUST REQ에 Hard+Evidence 존재</li><li class="task"><input type="checkbox" disabled checked> 각 게이트 문서 추적 링크 보유 (D27 정본 기준 — 14/15/16, design-style-analysis, photoreal-web-strategy)</li><li class="task"><input type="checkbox" disabled checked> 이분법 판정 가능 (모호 표현 없음 — 측정치/파일경로/테스트 명시)</li><li class="task"><input type="checkbox" disabled checked> 선행 결정 의존 명시 (OQ13→REQ-005, D27 깊이합성 스파이크 PASS(2026-07-08)→REQ-012)</li><li class="task"><input type="checkbox" disabled checked> D27 재파생 완료 (REQ-001/004/005/006 Godot 게이트 제거, 신규 REQ-012~016 추가, 도메인 게이트 보존)</li></ul>
+<div class="meta-foot">원본: <code>08-derived-gates.md</code> · 자동 생성 2026-07-12 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

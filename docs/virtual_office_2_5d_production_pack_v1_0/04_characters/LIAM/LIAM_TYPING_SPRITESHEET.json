@@ -1,0 +1,12 @@
+{
+  "image": "04_characters/LIAM/LIAM_TYPING_SPRITESHEET.png",
+  "frameWidth": 202,
+  "frameHeight": 190,
+  "frames": 6,
+  "fps": 6,
+  "loop": true,
+  "pivot": [
+    0.5,
+    0.98
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "image": "04_characters/MAYA/MAYA_WALK_SPRITESHEET.png",
+  "frameWidth": 138,
+  "frameHeight": 296,
+  "frames": 8,
+  "fps": 10,
+  "loop": true,
+  "pivot": [
+    0.5,
+    0.98
+  ]
+}

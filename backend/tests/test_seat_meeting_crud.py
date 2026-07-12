@@ -8,7 +8,6 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.tables import Meeting, MeetingStatus, Seat, SeatStatus, SeatType

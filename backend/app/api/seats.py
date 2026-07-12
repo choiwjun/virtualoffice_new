@@ -65,9 +65,10 @@ class SeatAssignmentOut(BaseModel):
 @router.get("/seats", response_model=list[SeatOut])
 async def list_seats(
     floor_id: Optional[str] = Query(None, description="층 UUID — 미지정 시 전체"),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[SeatOut]:
-    """GET /api/seats — 층별 좌석 목록 (D10)."""
+    """GET /api/seats — 층별 좌석 목록 (D10). HG-SEC: 인증 필수(사내 좌석 배치 비공개)."""
     q = select(Seat)
     if floor_id is not None:
         try:

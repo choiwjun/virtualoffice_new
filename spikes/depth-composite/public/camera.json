@@ -1,0 +1,97 @@
+{
+  "camera_type": "ORTHO",
+  "ortho_scale": 8.0,
+  "ortho_w": 14.222222222222221,
+  "ortho_h": 8.0,
+  "aspect": 1.7777777777777777,
+  "render_w": 1920,
+  "render_h": 1080,
+  "clip_near": 0.10000000149011612,
+  "clip_far": 100.0,
+  "elevation_deg": 35.264389682754654,
+  "azimuth_deg": 45.0,
+  "camera_position": [
+    8.66025447845459,
+    -8.66025447845459,
+    8.66025447845459
+  ],
+  "camera_rotation_euler_xyz_rad": [
+    0.9553166031837463,
+    0.0,
+    0.7853981852531433
+  ],
+  "camera_rotation_euler_xyz_deg": [
+    54.735609461202685,
+    0.0,
+    45.00000125223908
+  ],
+  "view_matrix_row_major": [
+    0.7071067690849304,
+    0.7071068286895752,
+    1.4901162970204496e-08,
+    -0.0,
+    -0.40824833512306213,
+    0.40824833512306213,
+    0.8164966702461243,
+    0.0,
+    0.5773503184318542,
+    -0.5773503184318542,
+    0.5773503184318542,
+    -15.000001907348633,
+    -0.0,
+    0.0,
+    -0.0,
+    1.0
+  ],
+  "projection_matrix_row_major": [
+    0.140625,
+    0,
+    0,
+    0,
+    0,
+    0.25,
+    0,
+    0,
+    0,
+    0,
+    -0.02002002002031864,
+    -1.002002002031864,
+    0,
+    0,
+    0,
+    1
+  ],
+  "world_matrix_row_major": [
+    0.7071067690849304,
+    -0.40824830532073975,
+    0.5773502588272095,
+    8.66025447845459,
+    0.7071067690849304,
+    0.40824827551841736,
+    -0.5773502588272095,
+    -8.66025447845459,
+    0.0,
+    0.8164965510368347,
+    0.5773502588272095,
+    8.66025447845459,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "threejs_notes": {
+    "coordinate_system": "Blender Y-forward Z-up → Three.js Y-up Z-forward 변환 필요",
+    "axis_remap": "Blender(x,y,z) → Three.js(x,z,-y)",
+    "ortho_half_w": 7.111111111111111,
+    "ortho_half_h": 4.0
+  },
+  "depth_encoding": {
+    "method": "material_override_emission",
+    "convention": "0=near(black), 1=far(white)",
+    "near_m": 0.10000000149011612,
+    "far_m": 100.0,
+    "color_depth_bits": 16,
+    "shader_node": "ShaderNodeCameraData.View_Z_Depth → MapRange(near..far→0..1) → Emission",
+    "r3f_shader_compat": "depthComposite.glsl.ts bgDepth=0(near)..1(far) 정합됨"
+  }
+}

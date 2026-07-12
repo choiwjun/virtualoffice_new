@@ -1,29 +1,32 @@
 # ============================================================
-# D26 전환 주석 (2026-07-06)
+# D27 반영 완료 (2026-07-09) — D26(WorkAdventure)·Godot 폐기
 # ============================================================
-# 이 스펙은 원래 Godot 4 네이티브 3D 클라이언트(platform: godot-native)를
-# 기술하고 있었으나, D26(WorkAdventure self-host 전환) 결정에 따라
-# 아래 사항이 변경된다:
+# (이전 상태: D27 부분 반영 → 본 개정에서 본문·이벤트·open_question까지 전량 반영)
+# 이 스펙은 Godot(원안)→WorkAdventure(D26)를 거쳐, 최종적으로
+# D27(포토리얼 웹임베드) 결정에 따라 아래로 확정된다:
 #
-#   - platform: godot-native → workadventure-web
-#   - 3D 아바타·Forward+ 렌더러 → WorkAdventure 2D 아바타(Phaser)
-#   - 헤드리스 서버(GDScript) → WorkAdventure back (WA 내장)
-#   - WASD 이동 → WA 네이티브 이동 (scripting API 확장만 허용)
-#   - presence 7종(D13): WA zone 이벤트 + scripting API 변수로 매핑
-#   - 이 파일의 data_requirements·interactions·layout은 재사용 가능
-#     (presence 필드, ERP 연동 구조, 회의실 zone 개념 동일)
+#   - platform: godot-native/workadventure-web → r3f-photoreal-web
+#   - 렌더: Blender Cycles 오프라인 렌더 배경 + react-three-fiber
+#           실시간 아바타 깊이합성 (고정 아이소 2.5D)
+#   - 실시간 서버: WA back → SkyOffice 이식(Colyseus 권위, 20Hz)
+#   - 앱 구조: 별도 앱 → 단일 통합 웹앱(시안)의 임베드 뷰포트
+#   - 인증: WA OIDC 이중로그인 → 콘솔 JWT 단일 세션
+#   - presence 7종(D13)·좌석·회의·레이아웃·data_requirements는 그대로 재사용
 #
-# 정본: docs/planning/00-decisions.md — D26
-# 라이선스 경계: WorkAdventure 소스 수정 금지.
-#   확장은 scripting API / iframe / OIDC / Room API 만.
+# 정본: docs/planning/00-decisions.md — D27
+#       docs/planning/14-virtual-office-spec.md (기능)
+#       docs/planning/15-realtime-server-spec.md (이동서버)
+#       docs/3d-design/design-style-analysis.md (스타일)
+#       docs/3d-design/photoreal-web-strategy.md (렌더)
 # ============================================================
 
-version: "2.0"
+version: "3.0"
 
 screen:
-  name: 3D Main Office
-  platform: godot-native
-  layout: split-3d-hud
+  name: 3D Main Office (Photoreal Web-Embed)
+  route: "/" # 기본 진입점 — 단일 웹앱 통합 대시보드의 임베드 뷰포트(D27, index.yaml 정합)
+  platform: r3f-photoreal-web
+  layout: unified-dashboard-with-embedded-viewport # 시안: 좌내비+중앙(뷰포트+3카드)+우패널
   required_role: employee # §3.10 — 전 역할 접근(입장·이동·프레즌스)
 
 data_requirements:
@@ -35,7 +38,11 @@ data_requirements:
   - resource: presence
     needs: [user_id, office_id, floor_id, x, y, z, status, last_activity_at, updated_at]
     mutations: [update]
-    note: 아바타 위치, 상태 동기화 (WASD 이동 시 실시간 업데이트)
+    note: |
+      아바타 위치, 상태 동기화 (WASD 이동 시 Colyseus 20Hz 권위 서버가 x,y + facing 갱신).
+      z는 자유이동 좌표가 아님 — 고정 아이소 2.5D이므로 이동은 x,y 평면만 사용하고,
+      전후 가림(오클루전)은 z 이동이 아니라 Blender 오프라인렌더 배경과의 깊이합성(depth composite)으로 처리.
+      (z 필드는 배경 depth 대비 아바타 정렬/레이어링 참조값으로만 유지)
 
   - resource: office
     needs: [id, company_id, name, description, address]
@@ -90,6 +97,25 @@ data_requirements:
     access: read-only
     note: footer 업무 패널 요약 표시
 
+  - resource: kpi_result
+    needs: [user_id, period_type, period_key, metric, value, unit]
+    filters:
+      period_type: "daily"
+      user_id: "?self"
+    access: read-only
+    note: |
+      "나의 KPI" 카드(daily 글랜스) — §1.2.1 매핑: 게이지 = collaboration_score(헤드라인),
+      지표바 5종 = work_completed_count / work_quality_score / minutes_authored_count /
+      action_items_ontime_rate / report_fidelity_score. 분기 상세·AI 초안·조정·이의신청은
+      kpi-workflow(/admin/kpi/workflow)·kpi-objection 소관(08 §1.2·§3).
+
+  - resource: announcement
+    needs: [id, title, category, pinned, published_at, expires_at]
+    filters:
+      active: "(published_at IS NULL OR published_at<=now) AND (expires_at IS NULL OR expires_at>now)"
+    access: read-only
+    note: 우패널 공지 카드 — 활성 공지 3~5건(pinned 우선). announcement.yaml right-panel-card 재사용(06 §1.2 우패널, 04 §2.7)
+
 components:
   - id: viewport-3d-main
     type: viewport-3d
@@ -112,6 +138,13 @@ components:
     data_source:
       resources: [floor, presence, room, seat]
 
+  - id: dashboard-cards-center-bottom
+    type: panel
+    position: center-bottom # 시안: 뷰포트 하단 중앙 3카드(design-style-analysis §3)
+    function: "대시보드 3카드 — [오늘의 업무](work_log 요약: 진행/완료/예정) · [나의 KPI](kpi_result daily — collaboration_score 게이지 + 지표바 5종, §1.2.1 매핑) · [진행중 화상회의](현재 참여/입장 가능 meeting) 각 카드 클릭 시 상세(웹콘솔/뷰포트 포커스)로 이동"
+    data_source:
+      resources: [work_log, kpi_result, meeting, meeting_participant, presence, erp_user]
+
   - id: header-toolbar
     type: toolbar
     position: top
@@ -133,6 +166,20 @@ components:
     data_source:
       resources: [presence, erp_user, team_zone]
 
+  - id: panel-right-announcements
+    type: card
+    position: right
+    function: "우패널 공지 카드 — 활성 공지 최신 3~5건(pinned 우선 상단, 카테고리 라벨 병기), [전체 보기 ›] → /announcements. announcement.yaml right-panel-card 임베드(06 §1.2 우패널)"
+    data_source:
+      resource: announcement
+
+  - id: panel-right-today-schedule
+    type: card
+    position: right
+    function: "오늘의 일정 카드 — 오늘 예정/진행 회의(meeting.scheduled_at 기준: 시간·제목·회의실·호스트), 클릭 시 해당 회의 상세/입장(뷰포트 카메라 이동). 06 §1.2 우패널 구성"
+    data_source:
+      resources: [meeting, meeting_participant]
+
   - id: footer-meeting-controls
     type: panel
     position: bottom
@@ -153,11 +200,11 @@ components:
     function: "Chat Notifications: +N(회의채팅), [닫기] + Time + Current Status"
     data_source:
       resources: []
-      note: 실시간 알림 큐(백엔드 WebSocket/ENet)
+      note: 실시간 알림 큐(Colyseus(SkyOffice 이식) WebSocket 20Hz). ENet·Godot Server 폐기(D1/D27)
 
 events:
   - on: user-input-wasd-or-mouse-drag
-    do: "send movement delta to Godot Server (x, y delta) → validate collision with office_layout walls/rooms → broadcast to other clients → update own presence(x, y, z)"
+    do: "send movement delta to Colyseus room(권위 20Hz) (x, y delta — 고정 아이소 2.5D, z 자유이동 없음) → 서버가 office_layout walls/rooms 충돌 검증(권위) → 20Hz로 다른 클라이언트에 broadcast → 서버가 presence(x, y, facing) 갱신 후 FastAPI에 배치 동기화(POST /api/presence/batch)"
 
   - on: user-approach-meeting-room
     do: "distance < 2m to room.enter_trigger → show 'Enter Meeting' modal prompt"
@@ -175,7 +222,7 @@ events:
     do: "filter presence list by name/team keyword → highlight matching avatar in viewport + move camera to focus"
 
   - on: new-meeting-scheduled-or-status-change
-    do: "WebSocket broadcast → update footer meeting panel + right-panel participant list"
+    do: "Colyseus(20Hz) WebSocket broadcast → update footer meeting panel + right-panel participant list + dashboard '진행중 화상회의' 카드"
 
   - on: erp-user-online-off-office
     do: "presence.status changes (office_id/floor_id change, offline) → remove avatar from viewport, update right-panel list"
@@ -238,7 +285,7 @@ open_questions:
   - 아바타 스타일 커스터마이징(Settings) 인터페이스는 3D viewport 내 캐릭터 크리에이터로 구현? 아니면 웹 콘솔(separate tab)로 이동?
   - "\"화면 공유(Share)\" 기능이 LiveKit room 기반 화면공유인지, 아니면 viewport 자체를 스트림하는 방식인지?"
   - 집중실(Focus Room) 입장 시 다른 직원 아바타를 viewport에서 표시/숨길지 여부 (privacy)?
-  - Godot HeadlessServer ↔ Web API 간 presence 동기화 최대 지연시간(SLA)?
+  - Colyseus ↔ FastAPI presence 동기화(POST /api/presence/batch) 최대 지연시간(SLA) 및 배치 주기? (정본: 15-realtime-server-spec)
   - "\"협업 제스처\" (근접 1m 시 \"+1 nearby\") 구현은 3D viewport에 텍스트로 표시하는 방식?"
   - 회의 녹화(recording_url) 재생/다운로드 버튼의 위치 (footer / right-panel / 별도 modal)?
   - 미니맵(minimap)에서 team_zone 경계(polygon)를 색상으로 표시할지 여부?

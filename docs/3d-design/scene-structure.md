@@ -1,437 +1,320 @@
 # 3D 씬 구조 설계 (scene-structure.md)
 
-> **[D26 전환 — 2026-07-06]** 이 문서는 Godot 4 네이티브 3D 노선 기준으로 작성되었습니다.
-> D26 결정으로 가상오피스 본체는 **WorkAdventure self-host(2D Phaser · TMJ 맵 · 타일셋 PNG · 내장 WSS)**로 전환되었습니다.
-> 아래 Godot/GDScript/pak/ReflectionProbe/Forward+/GTX1650 등 렌더러·씬·에셋 세부는 **역사적 설계 참고용(보류)**이며,
-> 현행 구현은 WorkAdventure 스택을 따릅니다. 현행 정본: docs/planning/10-roadmap.md(v3.0), 05-office-layout-schema.md,
-> backend/app/services/map_generator.py, config/(Caddyfile.local·livekit·coturn).
+> 🔵 **D28 피벗(2026-07-09) — 씬 구조 대체.** "배경 풀스크린 쿼드 + 깊이합성 머티리얼 + Blender 오프라인 조명"은 폐기. 현행 = **실시간 R3F 씬 그래프**: `<Canvas>` 안 **glb 씬(가구·벽·바닥 실지오메트리) 직접 로드** + 실시간 라이팅(ambient/hemisphere/directional) + 아바타 그룹(glb) + 직교 카메라 + DOM HUD. 아바타 오클루전은 **같은 씬 실지오메트리로 자동**(깊이합성 셰이더 없음). 좌표 = glb Z-up→three.js Y-up(-90°X). 정본 = **00-decisions §I(D28)**.
 
+> 🟣 **v8.0 씬/아바타(2026-07-10, D28.1).** 씬 노드 = **V4 히어로 씬**(`SCENE_ACME_HQ_HERO_V4_001.glb` · 노드 381 · 메시 1689). 아바타 노드 = **리깅 glb + `AnimationMixer`**(정적 `<primitive>` 대체 → idle/walk 클립 재생). Z-up→Y-up(-90°X) 보정 유지. 상세 = 00-decisions §I(D28.1).
 
-**문서 버전**: 1.0  
-**작성일**: 2026-07-02  
+> 🟪 **v10.0 씬/아바타(2026-07-11, D28.2).** 씬/아바타 노드 구조는 v8과 동일(씬 노드 381·메시 1689, 아바타 18조인트 rig + `AnimationMixer` 12클립). 차이는 **GLB PBR 텍스처 내장**뿐 → R3F 씬 그래프·Z-up→Y-up 보정·오클루전 자동 그대로. 상세 = 00-decisions §I(D28.2).
+
+> 🟢 **D27 반영(2026-07-09) — 이 문서는 현행 아키텍처(R3F 오프라인렌더+깊이합성 웹임베드) 기준으로 재작성되었다.** D26(WorkAdventure 2D)+Godot 네이티브 3D 노선은 모두 폐기됨. 씬 구조는 **R3F(three.js) 컴포넌트 트리** — `<Canvas>` 안 배경 풀스크린 쿼드 + 깊이합성 머티리얼 + 아바타 그룹(GLTF) + 직교 카메라(camera.json 재현) + DOM HUD 오버레이. 배경 조명은 Blender Cycles 오프라인 구움(런타임 라이팅 노드 없음). 좌표는 실측 camera.json axis_remap(Blender→three.js). 현행 정본: **00-decisions §H(D27)** · 14-virtual-office-spec · 15-realtime-server-spec · 16-render-spike-and-roadmap · 3d-design/{design-style-analysis §5, photoreal-web-strategy}.
+
+**문서 버전**: 2.0  
+**작성일**: 2026-07-02 (초안) · **개정**: 2026-07-09 (D27 재작성)  
 **담당**: 3d-engine-specialist  
-**태스크**: P0-T0.5 — 3D 씬 구조 및 asset 레지스트리 설계  
-**참조**: 00-decisions.md(D2·D7·D8·D9·D10·D11·D25), 05-office-layout-schema.md(§5.1·§5.3), 07-3d-visual-asset-pipeline.md(§6)
+**태스크**: P0-T0.5 — 3D 씬 구조 설계 (D27: R3F 웹임베드)  
+**스택**: three ^0.168 · @react-three/fiber(R3F) ^8.17 · @react-three/drei ^9.115  
+**참조**: 00-decisions.md §H(D27), 05-office-layout-schema.md(§2.4·§5.3), 3d-design/photoreal-web-strategy(§4·§6.1), 3d-design/design-style-analysis(§5 3D 아트디렉션), spikes/depth-composite(camera.json)
 
-> 이 문서는 00-decisions.md의 정본 결정을 따른다. 충돌 시 00-decisions.md가 이긴다.
+> 이 문서는 00-decisions.md §H(D27)의 정본 결정을 따른다. 충돌 시 00-decisions.md가 이긴다.
 
 ---
 
-## 1. 씬 노드 계층 개요
+## 1. 씬 컴포넌트 계층 개요
 
-Godot 4 Forward+ 렌더러 기반 가상오피스 클라이언트의 **씬 트리 전체 구조**를 정의한다.  
-모든 스크립트는 **GDScript(D2)**, 확장자 `.gd`를 사용한다.
+R3F(react-three-fiber) 기반 가상오피스 **웹앱**의 **씬 컴포넌트 트리 전체 구조**를 정의한다.  
+런타임 렌더러는 three.js(WebGL2)이며, 씬은 React 컴포넌트로 선언한다(TSX). 별도 데스크톱 클라이언트는 없다(단일 웹앱).
 
-### 1.1 최상위 트리 다이어그램
+배경 공간(벽·바닥·가구·조명)은 **Blender Cycles로 오프라인 렌더링한 정지 이미지(`office_bg`)**로 표현되고, 아바타·이름표·상호작용만 런타임 3D/DOM으로 합성한다. 따라서 씬 트리에는 벽·문·가구 지오메트리 노드가 없고, 대신 **배경 풀스크린 쿼드 + 깊이합성 머티리얼 + 아바타 그룹**이 핵심이다.
+
+### 1.1 최상위 컴포넌트 트리 다이어그램
 
 ```mermaid
 graph TD
-    Root["RootScene (Node)
-    root.gd — 애플리케이션 진입점·게임 상태 관리"]
+    App["<OfficeApp> (React root)
+    앱 진입점·프레즌스/레이아웃 상태 관리(Zustand)"]
 
-    Root --> Office["Office (Node3D)
-    office.gd — layout 버전·draft 모드 플래그 관리"]
+    App --> Canvas["<Canvas> (R3F)
+    three.js WebGL2 렌더러·직교 카메라 마운트"]
 
-    Root --> Camera["CameraRig (Node3D)
-    camera_rig.gd — Orbit/ThirdPerson 제어·FOV 60°"]
+    App --> HUD["HUD (DOM/HTML 오버레이)
+    Canvas 위 절대배치 div — 이름표·미니맵·패널"]
 
-    Root --> HUD["HUD (CanvasLayer)
-    hud.gd — 2D UI 오버레이 루트"]
+    App --> NetSync["useNetSync (React hook)
+    WebSocket(WSS) 수신 → Zustand 스토어 갱신"]
 
-    Root --> Lighting["LightingManager (Node)
-    lighting_manager.gd — D7 라이팅 컴포넌트 관리"]
+    Canvas --> OrthoCam["<OrthographicCamera> (drei)
+    camera.json 재현 — scale 8.0·elev 35.26°·azim 45°"]
 
-    Root --> AvatarManager["AvatarManager (Node)
-    avatar_manager.gd — 로컬·원격 아바타 생성·제거"]
+    Canvas --> BgQuad["<BackgroundQuad>
+    풀스크린 쿼드 — office_bg 텍스처(Cycles 구움)"]
 
-    Root --> NetSync["NetSync (Node)
-    net_sync.gd — WebSocket(WSS) 수신 이벤트 → 씬 반영"]
+    Canvas --> DepthMat["DepthCompositeMaterial
+    office_depth 샘플 → 아바타 뷰공간 깊이 비교·discard"]
 
-    Office --> Floor0["Floor[0] (Node3D)
-    floor_node.gd — floor_height_m=0.0 오프셋"]
-    Office --> FloorN["Floor[n] (Node3D)
-    floor_node.gd — floor_height_m=n*4.2 오프셋"]
+    Canvas --> Avatars["<AvatarGroup>
+    GLTF 아바타 — 인스턴싱(InstancedMesh)·프레즌스 반영"]
 
-    Floor0 --> Zones["Zones (Node3D)
-    zone_builder.gd — Zone 경계·시각화"]
-    Floor0 --> Rooms["Rooms (Node3D)
-    room_builder.gd — 파라메트릭 벽+문 개구부"]
-    Floor0 --> Seats["Seats (Node3D)
-    seat_manager.gd — 좌석 인스턴스·상태"]
-    Floor0 --> Furniture["Furniture (Node3D)
-    furniture_builder.gd — MultiMesh 그룹 배치"]
-    Floor0 --> Colliders["StaticColliders (Node3D)
-    collider_builder.gd — 외벽·기둥"]
-    Floor0 --> Minimap3D["Minimap3D (Node3D)
-    minimap_overlay.gd — 3D 미니맵 오버레이"]
+    Canvas --> AvatarLight["<Environment> / lightProbe (drei)
+    아바타 전용 IBL — 배경 톤에 정합(런타임 라이팅 없음)"]
+
+    HUD --> NameTags["NameTags (drei <Html> 또는 DOM)
+    아바타 화면좌표 투영 이름표·상태뱃지"]
+    HUD --> Minimap["Minimap (DOM Canvas/SVG)
+    우측 하단 층/구역 토글·아바타 마커"]
+    HUD --> Panels["Panels (React)
+    직원 패널·회의 패널·상태바"]
 ```
+
+> **아트디렉션 보존**: 브랜드월, 좌석 군집, 유리 회의실, 라운지, 식물, 층 표지 등 공간 구성 의도는 그대로 유지된다 — 다만 이 구성은 런타임 지오메트리가 아니라 **Blender 씬에서 모델링·조명 후 `office_bg`/`office_depth`로 구워진다**(§2 참조).
 
 ---
 
-## 2. 노드 계층 상세
+## 2. 컴포넌트 계층 상세
 
-### 2.1 RootScene
+### 2.1 &lt;OfficeApp&gt; (React root)
 
 | 속성 | 값 |
 |------|-----|
-| 노드 타입 | `Node` |
-| 스크립트 | `godot/scripts/root.gd` |
-| 책임 | 앱 진입점·전역 상태머신(lobby→office→draft)·씬 전환 |
+| 타입 | React 함수 컴포넌트 (TSX) |
+| 파일 | `frontend/app/(protected)/office/OfficeApp.tsx` (예시 경로) |
+| 책임 | 앱 진입점·전역 상태(프레즌스·레이아웃·선택 대상)를 Zustand로 관리, `<Canvas>`와 DOM HUD 마운트 |
 
-```mermaid
-stateDiagram-v2
-    [*] --> Splash
-    Splash --> Login : 인증 완료
-    Login --> LobbyScene : JWT 발급 성공
-    LobbyScene --> OfficeScene : office 진입
-    OfficeScene --> DraftMode : --draft 플래그(D11)
-    DraftMode --> OfficeScene : 확인 후 복귀
-```
-
-**GDScript 책임 매핑 (`root.gd`)**
-- `_ready()`: AutoLoad 등록 서비스(NetSync, AvatarManager) 초기화
-- `change_scene(target: String)`: 씬 전환 + 이전 씬 dispose
-- `enter_draft_mode(layout_id: String)`: draft 레이아웃 로드 (D11 — 웹 3D 미리보기 없음, 데스크톱 클라이언트 전용)
+- 인증은 상위 `(protected)` 라우트 가드가 처리한다(별도 Login 씬 없음 — 웹앱 라우팅에 위임).
+- `<Canvas>`(three.js)와 HUD DOM 오버레이는 **형제(sibling)** 로 배치되어 같은 뷰포트에 겹친다.
 
 ---
 
-### 2.2 Office
+### 2.2 &lt;Canvas&gt; (R3F 렌더러 루트)
 
 | 속성 | 값 |
 |------|-----|
-| 노드 타입 | `Node3D` |
-| 스크립트 | `godot/scripts/world/office.gd` |
-| 책임 | office_layout JSON 수신·파싱·Floor 빌드 지시, draft 모드 진입 구조 |
+| 타입 | R3F `<Canvas>` (three.js WebGL2) |
+| 책임 | three.js 렌더러·씬 그래프 마운트, 직교 카메라·배경 쿼드·아바타 그룹 자식 렌더 |
 
-**GDScript 책임 (`office.gd`)**
-- `load_layout(layout_json: String)`: JSON 파싱 → Floor 노드 생성·배치
-- `enter_draft_mode(layout_json: String)`: draft 레이아웃(미배포) 로드, 오버레이 UI "DRAFT" 뱃지 표시
-- `on_layout_updated(event)`: 서버 `layout_updated` 이벤트 수신 → 안전 시점 재로드
+- `<Canvas orthographic>` 로 직교 투영을 사용한다(원근 왜곡 없이 배경 정지 이미지와 정합).
+- 배경 지오메트리(벽·가구·문)는 씬 그래프에 없다 — 배경은 `office_bg` 텍스처, 깊이는 `office_depth`가 담당한다.
 
 ---
 
-### 2.3 Floor[n]
+### 2.3 &lt;BackgroundQuad&gt; + 깊이합성 머티리얼
 
 | 속성 | 값 |
 |------|-----|
-| 노드 타입 | `Node3D` |
-| 스크립트 | `godot/scripts/world/floor_node.gd` |
-| 책임 | `floor_height_m` 오프셋 적용(D25), 하위 빌더 순차 호출 |
+| 타입 | 풀스크린 쿼드 (`<mesh>` + 커스텀 `ShaderMaterial`) |
+| 책임 | Blender Cycles로 구운 `office_bg`(컬러)를 화면 전체에 표시, `office_depth`(16bit)로 아바타 오클루전 판정 |
 
-**D25 좌표 오프셋 규칙**
-
-```
-floor_height_m = (level - 1) × story_height
-예: 층고 4.2m, 3층 → floor_height_m = 8.4
-```
-
-GDScript에서 Floor 노드의 `position.y = layout["floor"]["floor_height_m"]`로 설정한다.  
-다층을 동시에 로드할 때는 각 Floor 노드를 해당 `floor_height_m`만큼 Y 오프셋으로 배치한다.
-
-**GDScript 책임 (`floor_node.gd`)**
-- `initialize(floor_data: Dictionary, furniture_list: Array, ...)`: 하위 빌더 노드들에 데이터 전달
-- `set_floor_height(h: float)`: `position.y = h`
-
----
-
-### 2.4 Zones
-
-| 노드 타입 | `Node3D` |
-|-----------|---------|
-| 스크립트 | `godot/scripts/world/zone_builder.gd` |
-| 책임 | zone 경계 다각형 시각화(바닥 데칼 또는 메시), 팀 색상 적용 |
-
-- `layout["zones"]` 배열을 순회해 `polygon` 좌표를 `layout_to_world()`(§5.3 변환식)로 변환
-- zone 경계는 `MeshInstance3D`(평면 데칼 메시)로 표현, `boundary_style`(dashed/solid) 반영
-
----
-
-### 2.5 Rooms (파라메트릭 생성, D9)
-
-| 노드 타입 | `Node3D` |
-|-----------|---------|
-| 스크립트 | `godot/scripts/world/room_builder.gd` |
-| 책임 | room 경계(coords)에서 벽 세그먼트 자동 생성, `doors[]` 개구부 처리(D9), 트리거 Area3D |
-
-**D9 파라메트릭 벽 + 문 개구부 생성 흐름**
+**깊이 규약(spike 검증완료, photoreal-web §6.1)**
+- `office_depth`: **0=near … 1=far**, 16bit 단채널.
+- R3F 깊이합성 셰이더가 각 아바타 프래그먼트의 **뷰공간 깊이 vs `office_depth` 샘플**을 비교 → 배경보다 뒤(더 far)면 `discard`.
+- 결과: 아바타가 책상·기둥·유리벽 뒤로 자연스럽게 가려진다(오클루전).
 
 ```mermaid
 flowchart LR
-    A["room.coords 사각형"] --> B["4개 벽 세그먼트 목록 생성"]
-    B --> C["doors[] 순회"]
-    C --> D["(wall, offset, width)로 해당 벽 구간 제거 → 개구부"]
-    D --> E["나머지 구간 → StaticBody3D(벽 콜리전)"]
-    E --> F["문짝 에셋 배치 (door_type → asset_id 매핑)"]
-    F --> G["entrance 트리거 → Area3D(body_entered 신호)"]
+    A["office_bg (Cycles 컬러 렌더)"] --> Q["풀스크린 쿼드에 텍스처"]
+    D["office_depth (16bit, 0=near..1=far)"] --> S["DepthCompositeMaterial"]
+    AV["아바타 뷰공간 깊이"] --> S
+    S -- "아바타가 배경보다 뒤" --> X["discard (가려짐)"]
+    S -- "아바타가 배경보다 앞" --> V["정상 렌더 (앞에 보임)"]
 ```
+
+> 브랜드월·좌석 군집·유리 회의실·라운지·식물·층 표지 등 **공간 아트디렉션은 모두 `office_bg` 안에 구워져 있다**(design-style-analysis §5). 런타임에 별도 지오메트리로 생성하지 않는다.
+
+---
+
+### 2.4 &lt;OrthographicCamera&gt; (camera.json 재현)
+
+| 속성 | 값 |
+|------|-----|
+| 타입 | drei `<OrthographicCamera>` (또는 R3F `orthographic` 기본 카메라) |
+| 책임 | Blender 렌더에 사용한 카메라를 three.js 좌표계에서 **정확히 재현** — 아바타를 배경과 픽셀 정합 |
+
+**camera.json 실측값(spikes/depth-composite)**
+
+| 항목 | 값 |
+|------|-----|
+| camera_type | ORTHO |
+| ortho_scale | 8.0 |
+| elevation | 35.264° (isometric) |
+| azimuth | 45° |
+| clip near / far | 0.1 / 100.0 |
+| aspect | 16:9 (1920×1080) |
+
+- three.js에서는 `camera.json`의 **view / projection / world 행렬**을 그대로 주입해 재현하는 것이 원칙이다(오일러 재계산으로 인한 드리프트 방지).
+- 좌표 변환은 §3 axis_remap 참조.
+
+---
+
+### 2.5 &lt;AvatarGroup&gt; (GLTF · 인스턴싱)
+
+| 속성 | 값 |
+|------|-----|
+| 타입 | `<group>` + GLTF 메시 / `InstancedMesh` |
+| 책임 | 로컬·원격 아바타를 프레즌스 상태에 맞춰 배치, 대량 접속 시 인스턴싱으로 드로우콜 절감 |
 
 ```mermaid
 graph TD
-    RoomNode["Room_R_001 (Node3D)"]
-    RoomNode --> WallGroup["Walls (Node3D)
-    — StaticBody3D × 개구부 제외 세그먼트 수"]
-    RoomNode --> DoorGroup["Doors (Node3D)
-    — 문짝 MeshInstance3D × doors 수"]
-    RoomNode --> GlassWalls["GlassWalls (Node3D)
-    — 반투명 MeshInstance3D"]
-    RoomNode --> Trigger["EntranceTrigger (Area3D)
-    — entrance 좌표·크기 기반 CollisionShape3D"]
-    RoomNode --> RoomLabel["RoomLabel (Node3D)
-    — Billboard MeshInstance3D (이름·점유 상태)"]
+    AG["<AvatarGroup>"]
+    AG --> Local["로컬 아바타 (GLTF)
+    — 입력·이동 대상"]
+    AG --> Remote["원격 아바타 × N
+    — WSS 프레즌스로 위치·상태 갱신"]
+    Local --> Skin["GLTF SkinnedMesh + AnimationMixer
+    — idle/walk/interact/sit/talk"]
+    Local --> Anchor["namePos (Object3D)
+    — 이름표 DOM 투영 앵커"]
 ```
 
-**GDScript 책임 (`room_builder.gd`)**
-- `build_room(room: Dictionary, floor_h: float)`: 위 흐름 실행
-- `_segment_wall(wall_edge, doors_on_wall)`: 개구부 빼고 세그먼트 반환
-- `_on_avatar_entered(body)`: 진입 신호 → NetSync로 `room_enter_request` 전송
+- 애니메이션은 three `AnimationMixer` + `useFrame(delta)` 로 프레임 독립 구동.
+- 아바타 조명은 §2.6 참조(배경은 이미 구워져 있으므로 아바타에만 IBL 적용).
+
+**아바타 상태·이름표**
+- 이름표·상태뱃지는 3D 메시가 아니라 **DOM/HTML 오버레이**(drei `<Html>` 또는 화면좌표 투영 div)로 그린다 — 텍스트 선명도·접근성·i18n 확보.
+- 거리별 페이드/숨김, 상태 7종(D13)은 HUD 레이어에서 처리(§2.8).
 
 ---
 
-### 2.6 Seats
+### 2.6 아바타 조명 (오프라인 구움 배경 + 런타임 IBL)
 
-| 노드 타입 | `Node3D` |
-|-----------|---------|
-| 스크립트 | `godot/scripts/world/seat_manager.gd` |
-| 책임 | 좌석 인스턴스 배치, `facing` 회전 적용(D10·D25), 점유 상태 시각화 |
+| 속성 | 값 |
+|------|-----|
+| 타입 | drei `<Environment>` / lightProbe (아바타 전용) |
+| 책임 | 배경 톤·색온도에 아바타를 정합. **런타임 라이팅 노드는 없다.** |
 
-**D10 좌석 배정 분리 원칙**  
-layout JSON의 `seats[]`는 공간 구조(위치·타입·방향)만 담는다.  
-착석자 정보는 런타임에 `seat_db_id`로 `seat_assignment` API를 조회한다.
+**D27 조명 정책 (photoreal-web §4·§6.1)**
 
-**D25 facing 변환**  
-`facing`은 도(degree), 시계방향, 기준축 +X.  
-`basis = Basis(Vector3.UP, deg_to_rad(-facing))`로 Godot에 적용.
+| 항목 | 방식 |
+|------|------|
+| 배경(벽·바닥·가구) | **Blender Cycles로 오프라인 구움** → `office_bg`에 최종 픽셀로 포함. 런타임 계산 없음 |
+| 아바타 | **IBL / 라이트프로브**로 배경 환경광에 정합(HDRI 또는 배경에서 추출한 환경맵) |
+| 실시간 광원 | **없음** — DirectionalLight/OmniLight/SpotLight/ReflectionProbe/SDFGI/SSAO 노드 전부 폐기 |
+| 그림자 | 배경 그림자는 구움에 포함. 아바타 접지 그림자만 필요 시 소프트 컨택 섀도(별도 처리) |
 
----
-
-### 2.7 Furniture (MultiMesh 그룹 배치, D8·드로우콜 예산)
-
-| 노드 타입 | `Node3D` |
-|-----------|---------|
-| 스크립트 | `godot/scripts/world/furniture_builder.gd` |
-| 책임 | 동일 `asset_id`끼리 그룹핑 → `MultiMeshInstance3D` 1드로우콜 병합(07 §6.2) |
-
-```mermaid
-flowchart LR
-    A["layout.furniture 배열"] --> B["asset_id 기준 그룹핑"]
-    B --> C{"그룹 크기"}
-    C -- "1개" --> D["단일 PackedScene 인스턴스"]
-    C -- "2개 이상" --> E["MultiMesh 생성 → 1드로우콜"]
-    D --> F["씬에 추가"]
-    E --> F
-```
-
-**GDScript 책임 (`furniture_builder.gd`)**
-- `build_all(furniture_list, floor_h)`: 위 그룹핑 로직
-- `_add_multimesh(asset_id, items, floor_h)`: `MultiMesh.instance_count` + 각 `set_instance_transform()`
-- `_load_asset(asset_id) -> PackedScene`: `ASSET_CATALOG[asset_id]` 조회 → `ResourceLoader.load()`
+> Godot의 실시간 DirectionalLight3D/OmniLight3D/SpotLight3D/ReflectionProbe/WorldEnvironment(SSAO·SDFGI) 구성은 전면 폐기되었다. 런타임 라이팅 비용이 0에 수렴하므로 저사양 GPU에서도 안정적이다.
 
 ---
 
-### 2.8 AvatarManager
+### 2.7 HUD (DOM/HTML 오버레이)
 
-| 노드 타입 | `Node` (AutoLoad) |
-|-----------|-----------------|
-| 스크립트 | `godot/scripts/avatar/avatar_manager.gd` |
-| 책임 | 로컬 아바타·원격 아바타 인스턴스 생성·제거, 프레즌스 상태 반영 |
+| 속성 | 값 |
+|------|-----|
+| 타입 | React DOM (`<div>` 절대배치) — `<Canvas>` 위에 겹침 |
+| 책임 | 이름표·미니맵·직원/회의 패널·상태바 등 모든 2D UI |
 
 ```mermaid
 graph TD
-    AM["AvatarManager"]
-    AM --> LocalAvatar["LocalAvatar (CharacterBody3D)
-    local_avatar.gd — 입력·이동·카메라 앵커"]
-    AM --> RemoteAvatars["RemoteAvatars (Node3D)
-    — 접속자별 RemoteAvatar 동적 생성"]
-    LocalAvatar --> AvatarMesh["MeshInstance3D (아바타 모델)"]
-    LocalAvatar --> AvatarHUD["HUDLabel (Node3D)
-    avatar_hud.gd — Billboard 이름태그·상태뱃지"]
-    LocalAvatar --> AnimPlayer["AnimationPlayer
-    — idle/walk/run/interact/sit/stand_talk"]
-```
-
-**아바타 구성 파일**
-- `godot/scripts/avatar/avatar_hud.gd` — 거리별 페이드(20m 이상 숨김), 상태 7종(D13)
-- `godot/scripts/avatar/avatar_animation.gd` — deltaTime 기반 프레임 독립 애니메이션
-
----
-
-### 2.9 Lighting (D7: 실시간 직접광 + ReflectionProbe + SSAO)
-
-| 노드 타입 | `Node` |
-|-----------|-------|
-| 스크립트 | `godot/scripts/world/lighting_manager.gd` |
-| 책임 | D7 라이팅 구성 관리, 품질 프리셋 전환, SDFGI 토글 |
-
-```mermaid
-graph TD
-    LM["LightingManager"]
-    LM --> DL["DirectionalLight3D
-    — 자연광(창문 방향), 색온도 5600K"]
-    LM --> OmniLights["OmniLight3D × N
-    — 천장 LED 패널·포인트 라이트"]
-    LM --> SpotLights["SpotLight3D × N
-    — 국소 스팟(데스크·집중실·폰부스)"]
-    LM --> RP["ReflectionProbe × 구역별
-    — 로비·오피스·회의실 각 1개 이상"]
-    LM --> Env["WorldEnvironment
-    — SSAO(기본 ON)·스카이박스·앰비언트
-    — SDFGI(고사양 옵션 토글 OFF 기본)"]
-```
-
-**D7 라이팅 정책**
-
-| 항목 | 기본값 | 고사양 옵션 |
-|------|--------|------------|
-| 직접광 | DirectionalLight3D + OmniLight3D + SpotLight3D | 동일 |
-| GI | ReflectionProbe + SSAO | + SDFGI 토글 ON |
-| 라이트맵 | **사용 안 함** (동적 씬·런타임 생성과 양립 불가) | 불가 |
-| Occluder | 런타임 벽 단위 BoxOccluder3D 부착 | 동일 |
-
-**GDScript 책임 (`lighting_manager.gd`)**
-- `apply_preset(preset: String)`: "ultra/high/medium/low" 프리셋 적용
-- `toggle_sdfgi(enabled: bool)`: `WorldEnvironment.environment.sdfgi_enabled` 전환
-- `update_reflection_probes()`: 씬 빌드 후 ReflectionProbe 위치 재조정
-
----
-
-### 2.10 CameraRig
-
-| 노드 타입 | `Node3D` |
-|-----------|---------|
-| 스크립트 | `godot/scripts/camera/camera_rig.gd` |
-| 책임 | FOV 60°, Orbit/ThirdPerson 모드, 회전 속도 제한(모션 멀미 방지) |
-
-```mermaid
-graph TD
-    CR["CameraRig (Node3D)"]
-    CR --> SpringArm["SpringArm3D (충돌 감지)"]
-    SpringArm --> Camera3D["Camera3D
-    — fov=60, projection=PERSPECTIVE"]
-    CR --> MinimapCam["MinimapCamera (Camera3D)
-    — top-down, projection=ORTHOGONAL"]
-```
-
----
-
-### 2.11 HUD (CanvasLayer)
-
-| 노드 타입 | `CanvasLayer` |
-|-----------|--------------|
-| 스크립트 | `godot/scripts/ui/hud.gd` |
-| 책임 | 2D UI 루트, 하위 패널 가시성 관리 |
-
-```mermaid
-graph TD
-    HUD["HUD (CanvasLayer)"]
-    HUD --> EmployeePanel["EmployeePanel (Control)
-    godot/scenes/ui/employee_panel.tscn
-    — 우측 직원 패널: 이름·부서·상태·최근 회의"]
-    HUD --> MeetingPanel["MeetingPanel (Control)
-    godot/scenes/ui/meeting_panel.tscn
-    — 하단 회의 패널: 진행 중 회의 목록·join 버튼"]
-    HUD --> Minimap["Minimap (Control)
-    godot/scenes/ui/minimap.tscn
+    HUD["HUD (DOM overlay)"]
+    HUD --> NameTags["NameTags
+    — 아바타 3D 위치를 화면좌표로 투영한 이름표·상태뱃지"]
+    HUD --> Minimap["Minimap (DOM Canvas/SVG)
     — 우측 하단 고정·층/구역 토글·아바타 마커"]
-    HUD --> DraftBadge["DraftBadge (Label)
-    — draft 모드 진입 시 'DRAFT' 오버레이 표시(D11)"]
-    HUD --> StatusBar["StatusBar (HBoxContainer)
+    HUD --> EmployeePanel["EmployeePanel (React)
+    — 우측 직원 패널: 이름·부서·상태·최근 회의"]
+    HUD --> MeetingPanel["MeetingPanel (React)
+    — 하단 회의 패널: 진행 중 회의 목록·join 버튼"]
+    HUD --> StatusBar["StatusBar (React)
     — 자신의 프레즌스 상태 7종(D13) 선택"]
+    HUD --> DraftBadge["DraftBadge (React)
+    — draft 프리뷰 진입 시 'DRAFT' 워터마크(§4)"]
 ```
+
+- 미니맵·이름표는 3D 씬 노드가 아니라 DOM으로 구현하여 UI 반응성·접근성을 확보한다.
+- 아바타 이름표는 매 프레임 아바타 `namePos` 앵커를 카메라로 투영해 DOM 좌표를 갱신한다.
 
 ---
 
-## 3. layout JSON → 씬 빌드 흐름 (05 §5.3 정합)
+## 3. 좌표 변환 & 씬 마운트 흐름
+
+### 3.1 좌표 변환 (실측 camera.json axis_remap)
+
+Blender 씬(구움 원본)과 three.js 런타임 씬은 축 규약이 다르다. 아바타를 배경과 정합하려면 아래 remap을 거친다.
+
+```
+Blender (x, y, z)  →  three.js (x, z, -y)
+```
+
+- **단일 원점**: `office_layout`의 `top_left`(미터, D25)를 Blender·three.js 공통 원점으로 사용한다.
+- three.js는 **Y-up, Z-forward**. Blender는 Z-up이므로 위 axis_remap이 필요하다.
+- 카메라는 오일러를 재계산하지 않고 `camera.json`의 **view/projection/world 행렬**을 그대로 주입해 재현한다(ORTHO scale 8.0, elevation 35.26°, azimuth 45°).
+- 좌석·아바타의 `facing`(도, 시계방향, 기준축 +X)은 remap 후 three.js Y축 회전(`rotation.y`)으로 적용한다.
+
+> Godot 시절의 `layout (x,y) → Vector3(x, floor_height_m, y)` / `Basis(Vector3.UP, deg_to_rad(-angle))` 변환은 폐기되고, 위 실측 axis_remap으로 대체되었다.
+
+### 3.2 씬 마운트 흐름
 
 ```mermaid
 sequenceDiagram
-    participant Client as Godot 클라이언트
+    participant App as <OfficeApp> (웹앱)
     participant API as FastAPI
-    participant Cache as 동봉 pak (ASSET_CATALOG)
+    participant CDN as 정적 에셋 (office_bg·office_depth·GLTF)
 
-    Client->>API: GET /api/office-layouts/{layout_id} (deployed)
-    API-->>Client: office_layout JSON (검증 완료본)
+    App->>API: GET /api/office-layouts/{layout_id} (deployed)
+    API-->>App: office_layout JSON (검증 완료본)
 
-    Client->>Client: JSON.parse_string()
-    Client->>Client: Office.load_layout()
+    App->>CDN: office_bg.png · office_depth.png · camera.json 로드
+    CDN-->>App: 배경 텍스처·깊이맵·카메라 행렬
 
-    loop 층별 (floor)
-        Client->>Client: FloorNode 생성, position.y = floor_height_m
-        Client->>Client: ZoneBuilder.build_zones(zones[])
-        Client->>Client: RoomBuilder.build_rooms(rooms[]) ← doors[] 개구부 처리(D9)
-        Client->>Client: FurnitureBuilder.build_all(furniture[]) ← asset_id 그룹→MultiMesh
-        Client->>Client: SeatManager.place_seats(seats[]) ← facing 변환(D25)
-        Client->>Client: ColliderBuilder.build_colliders(colliders[])
-        Client->>Cache: ResourceLoader.load(ASSET_CATALOG[asset_id])
-        Cache-->>Client: PackedScene (.tscn, pak 동봉, D8)
-    end
+    App->>App: <Canvas> 마운트 → <OrthographicCamera> (camera.json 주입)
+    App->>App: <BackgroundQuad> (office_bg + DepthCompositeMaterial)
 
-    Client->>Client: LightingManager.rebuild()
-    Client->>Client: MinimapOverlay.update(minimap)
+    App->>App: 좌석 위치·아바타를 axis_remap(Blender→three.js)로 배치
+    App->>API: GET 착석자 = seat.assigned_user_id (+ 이력: seat_assignment_history)
+    API-->>App: 좌석별 배정 사용자
+    App->>App: <AvatarGroup> 렌더 (GLTF·인스턴싱) + IBL 정합
+    App->>App: HUD DOM 오버레이 (이름표·미니맵·패널)
 ```
 
-**좌표 변환식 (D25, 05 §5.3)**
-
-```
-layout (x, y) → Godot Vector3(x, floor_height_m, y)
-rotation(도, 시계방향) → Basis(Vector3.UP, deg_to_rad(-angle_cw))
-```
+**착석자 조회 규약 정정 (정본: 04·05 §2.4)**
+- 착석자는 **`seat.assigned_user_id`** 로 조회하며, 배정 변경 이력은 **`seat_assignment_history`** 테이블에 남는다.
+- ~~`seat_assignment` API/테이블로 조회~~ 라는 이전 서술은 **오류**다 — `seat_assignment` 테이블은 존재하지 않는다.
 
 ---
 
-## 4. draft 모드 진입 구조 (D11)
+## 4. draft 프리뷰 구조 (D27: 웹 뷰포트 내 프리뷰)
 
-D11 결정에 따라 **웹 3D 미리보기는 없다**. draft 열람은 **데스크톱 클라이언트** 전용이다.
+별도 데스크톱 클라이언트가 없으므로(단일 웹앱) draft 프리뷰는 **같은 웹앱의 뷰포트 안**에서 이뤄진다. 아직 Cycles로 구워지지 않은 미배포 레이아웃은 **플레이스홀더/지오메트리 프리뷰**(배경 정지 이미지 대신 단순 도형·경계선)로 표시하고 'DRAFT' 워터마크를 띄운다.
 
 ```mermaid
 flowchart LR
     A["웹 편집기: 저장 완료 (draft 상태)"]
-    A --> B["Next.js DraftOpenGuide 컴포넌트
-    — '데스크톱 클라이언트에서 열기' 안내 + 딥링크"]
-    B --> C["클라이언트 실행: godot --draft {layout_id}"]
-    C --> D["root.gd: --draft 플래그 감지
-    → enter_draft_mode(layout_id)"]
-    D --> E["API: GET /api/office-layouts/{layout_id}
+    A --> B["같은 웹앱에서 '프리뷰' 진입
+    — 라우트/모달, 별도 실행 불필요"]
+    B --> C["GET /api/office-layouts/{layout_id}
     (status=draft 포함)"]
-    E --> F["Office.load_layout() — 동일 씬 빌드 흐름"]
-    F --> G["HUD.DraftBadge 표시
-    — 'DRAFT' 워터마크 오버레이"]
+    C --> D["<Canvas> 프리뷰 마운트
+    — office_bg 미구움 → 플레이스홀더 지오메트리"]
+    D --> E["좌석·존·룸 경계를 단순 도형/라인으로 표시
+    (아바타는 표시 안 하거나 더미)"]
+    E --> F["HUD DraftBadge 'DRAFT' 워터마크 표시"]
 ```
 
-**GDScript 책임 (`office.gd`)**
-
-```gdscript
-# @TASK P0-T0.5 — draft 모드 진입
-# @SPEC docs/planning/00-decisions.md#D11
-func enter_draft_mode(layout_id: String) -> void:
-    var json_str := await api.get_layout_draft(layout_id)
-    load_layout(json_str)
-    hud.show_draft_badge(true)
-```
+- 배포(deployed) 상태가 되어 Cycles 렌더가 완료되면 프리뷰가 아닌 정식 `office_bg`/`office_depth` 합성 씬으로 전환된다.
+- 프리뷰는 픽셀 정합보다 **레이아웃 검수(위치·크기·동선)** 가 목적이므로 오프라인 렌더를 기다리지 않는다.
 
 ---
 
-## 5. 씬 파일 경로 매핑
+## 5. 컴포넌트 파일 경로 매핑 (예시)
 
-| 노드 | 씬/스크립트 경로 |
-|------|----------------|
-| RootScene | `godot/scenes/root.tscn` / `godot/scripts/root.gd` |
-| Office | `godot/scenes/office/office.tscn` / `godot/scripts/world/office.gd` |
-| FloorNode | `godot/scenes/office/floor_node.tscn` / `godot/scripts/world/floor_node.gd` |
-| ZoneBuilder | `godot/scripts/world/zone_builder.gd` |
-| RoomBuilder | `godot/scripts/world/room_builder.gd` |
-| SeatManager | `godot/scripts/world/seat_manager.gd` |
-| FurnitureBuilder | `godot/scripts/world/furniture_builder.gd` |
-| ColliderBuilder | `godot/scripts/world/collider_builder.gd` |
-| AvatarManager | `godot/scripts/avatar/avatar_manager.gd` (AutoLoad) |
-| LocalAvatar | `godot/scenes/avatar/local_avatar.tscn` / `godot/scripts/avatar/local_avatar.gd` |
-| AvatarHUD | `godot/scripts/avatar/avatar_hud.gd` |
-| LightingManager | `godot/scripts/world/lighting_manager.gd` |
-| CameraRig | `godot/scenes/camera/camera_rig.tscn` / `godot/scripts/camera/camera_rig.gd` |
-| HUD | `godot/scenes/ui/hud.tscn` / `godot/scripts/ui/hud.gd` |
-| EmployeePanel | `godot/scenes/ui/employee_panel.tscn` |
-| MeetingPanel | `godot/scenes/ui/meeting_panel.tscn` |
-| Minimap | `godot/scenes/ui/minimap.tscn` |
-| draft 열람(D11) | `godot/scenes/layout_draft_viewer.tscn` / `godot/scripts/layout_loader.gd` |
+> 프론트엔드는 Next.js(App Router) + R3F. 아래 경로는 예시 배치이며 실제 구현 시 조정될 수 있다.
+
+| 컴포넌트 | 파일 경로(예시) |
+|----------|----------------|
+| OfficeApp (root) | `frontend/app/(protected)/office/OfficeApp.tsx` |
+| Canvas 래퍼 | `frontend/components/office/OfficeCanvas.tsx` |
+| OrthographicCamera | `frontend/components/office/OfficeCamera.tsx` (camera.json 주입) |
+| BackgroundQuad | `frontend/components/office/BackgroundQuad.tsx` |
+| DepthCompositeMaterial | `frontend/components/office/materials/depthComposite.ts` (셰이더) |
+| AvatarGroup | `frontend/components/office/AvatarGroup.tsx` |
+| Avatar (GLTF) | `frontend/components/office/Avatar.tsx` |
+| 아바타 IBL/Environment | `frontend/components/office/AvatarLighting.tsx` |
+| HUD 오버레이 | `frontend/components/office/hud/OfficeHud.tsx` |
+| NameTags | `frontend/components/office/hud/NameTags.tsx` |
+| Minimap | `frontend/components/office/hud/Minimap.tsx` |
+| EmployeePanel | `frontend/components/office/hud/EmployeePanel.tsx` |
+| MeetingPanel | `frontend/components/office/hud/MeetingPanel.tsx` |
+| StatusBar | `frontend/components/office/hud/StatusBar.tsx` |
+| useNetSync (WSS) | `frontend/hooks/useNetSync.ts` |
+| draft 프리뷰 | `frontend/app/(protected)/office/draft/[layoutId]/page.tsx` |
+| 정적 에셋 | `office_bg.png` · `office_depth.png` · `camera.json` (CDN/정적) — 참조: `spikes/depth-composite/public/` |
 
 ---
 
@@ -439,4 +322,5 @@ func enter_draft_mode(layout_id: String) -> void:
 
 | 버전 | 일자 | 변경 내용 |
 |------|------|----------|
-| 1.0 | 2026-07-02 | P0-T0.5 초안 — D2·D7·D8·D9·D10·D11·D25 반영 |
+| 1.0 | 2026-07-02 | P0-T0.5 초안 — D2·D7·D8·D9·D10·D11·D25 반영 (Godot 4 Node3D/GDScript 기준) |
+| 2.0 | 2026-07-09 | **D27 재작성** — Godot 네이티브 3D + D26(WorkAdventure 2D) 전면 폐기. 씬 구조를 R3F(three.js) 컴포넌트 트리로 재정의(배경 풀스크린 쿼드 + 깊이합성 머티리얼 + GLTF 아바타 그룹 + 직교 카메라 camera.json 재현 + DOM HUD). 조명을 Blender Cycles 오프라인 구움 + 아바타 IBL로 교체(실시간 라이팅 노드 삭제). 좌표 변환을 실측 camera.json axis_remap(Blender→three.js)으로 교체. 착석자 조회 오류 정정(`seat.assigned_user_id` + `seat_assignment_history`, `seat_assignment` 테이블 미존재). draft를 웹 뷰포트 내 프리뷰로 재정의(데스크톱 클라이언트 없음). 공간 아트디렉션(브랜드월·좌석군집·유리회의실·라운지·식물·층표지)은 `office_bg` 구움으로 보존. |

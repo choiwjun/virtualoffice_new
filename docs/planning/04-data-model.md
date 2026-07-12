@@ -1,7 +1,7 @@
 # 04-data-model.md: 데이터 모델
 
-**최종 수정일**: 2026-07-02  
-**상태**: 확정(00-decisions.md D10·D16·D18·D19·D20 반영)  
+**최종 수정일**: 2026-07-09  
+**상태**: 확정(00-decisions.md D10·D16·D18·D19·D20·D27 반영)  
 **대상**: 개발팀(DB 설계, API 계약 검증)
 
 > **정본 우선순위**: 이 문서는 `kpi_result` 스키마와 metric 어휘 사전의 **정본(SoT)**이다(D16). 03·08 문서는 본 문서를 참조만 하며 자체 스키마를 중복 정의하지 않는다. 충돌 시 00-decisions.md > 본 문서 순으로 이긴다.
@@ -373,7 +373,7 @@ erDiagram
 
 #### **presence** (직원 실시간 상태)
 
-**역할**: 아바타 위치, 상태(온라인/회의/집중/외근). Godot 서버 → FastAPI → DB 업데이트. 실시간 동기화.
+**역할**: 아바타 위치, 상태(온라인/회의/집중/외근). Colyseus(메모리 권위) → FastAPI `POST /api/presence/batch`(1~5초 배치) → DB 업데이트 (D3/D27). 실시간 동기화.
 
 | 필드 | 타입 | 제약 | 설명 |
 |-----|------|------|------|
@@ -396,7 +396,7 @@ erDiagram
 **인덱스**: `INDEX(office_id, floor_id)` (필터용), `INDEX(status)`, `INDEX(updated_at DESC)` (타임스탬프 쿼리)
 
 **갱신**: 
-- 모바일/데스크톱 클라이언트: 매 0.5초 위치 + 상태 업로드 (또는 변경 시만)
+- R3F 웹 클라이언트 → Colyseus(20Hz, 메모리 권위) → **1~5초 배치 `POST /api/presence/batch`** → DB 영속 (D3/D27, FastAPI가 단독으로 DB 기록)
 - TTL: 5분 무활동 → status = offline (선택)
 
 **상태 정의** (섹션 3.1 참조):
@@ -677,11 +677,11 @@ D14 재작성 공식에 정합하는 최종 metric 어휘. 이 8개 외의 metri
 
 **역할**: 3D 에셋(모델, 텍스처) 메타데이터. Blender → GLB → Godot 변환 파이프라인. 라이선스/저작권 추적.
 
-> **정본 출처: 07-3d-visual-asset-pipeline.md §5.3** (2026-07-02 동기화). 아래 표는 07 v1.1 스키마의 사본이며, 충돌 시 07 §5.3이 이긴다.
+> **정본 출처: 3d-design/asset-registry.md §1.1**(D27 스키마 정본). 07-3d-visual-asset-pipeline.md는 파이프라인 참조 문서다. 아래 표는 정본 스키마의 사본이며, 충돌 시 asset-registry.md §1.1이 이긴다.
 
 | 필드 | 타입 | 제약 | 설명 |
 |-----|------|------|------|
-| asset_id | VARCHAR(64) | PK | 예: "reception-desk-v1.0" (버전은 asset 테이블·CHANGELOG로 관리) |
+| asset_id | VARCHAR(64) | PK | 예: "DESK_STANDARD_001" (05 정본 명명. 버전은 asset 테이블·CHANGELOG로 관리) |
 | asset_name | VARCHAR(256) | NN | "Reception Desk" |
 | asset_type | VARCHAR(50) | NN | furniture \| structure \| material \| ui3d \| character \| environment |
 | asset_category | VARCHAR(100) | | "office", "meeting-room", "lounge", "lobby" |
@@ -696,8 +696,8 @@ D14 재작성 공식에 정합하는 최종 metric 어휘. 이 8개 외의 metri
 | redistribution_allowed | BOOLEAN | | 재배포 허용 |
 | original_file_hash | VARCHAR(64) | | 원본 파일 SHA-256(변조 감지) |
 | optimized_file_hash | VARCHAR(64) | | 최적화 후 GLB SHA-256 |
-| tscn_path | VARCHAR(256) | NN | `res://assets/3d/models/<name>/<name>.tscn` (배포 산출물, 05 ASSET_CATALOG 조회 대상) |
-| source_glb_path | VARCHAR(256) | | 임포트 소스 glb(저장소 보관, pak 미포함) |
+| tscn_path | VARCHAR(256) | NN | ⚠️**D27 마이그레이션 대기** — Godot 잔재. D27 목표 = `gltf_path`(웹 런타임 `.glb`, 예 `frontend/public/assets/3d/<name>.glb` — 웹 서빙 규약) + 배경은 별도 렌더 산출(office_bg/depth). 정본 = 07-3d-visual-asset-pipeline·3d-design/asset-registry. 실측 `backend/app/models/tables.py:Asset`가 아직 `tscn_path`라 **Alembic 마이그레이션(tscn_path→gltf_path) 필요**. |
+| source_glb_path | VARCHAR(256) | | 임포트 소스 glb(저장소 보관). D27: 아바타·소품 런타임 GLTF의 소스 |
 | file_size_bytes | BIGINT | | 산출물 크기(성능 예산 참고용, 런타임 다운로드 없음 — D8) |
 | polygon_count | INT | | LOD 0 삼각형 수. 05 performance 파생 계산의 정본 소스 |
 | texture_resolution | VARCHAR(20) | | 예: "2048x2048" |
@@ -1072,10 +1072,12 @@ GRANT app_user TO app_admin;  -- 상속
 GRANT UPDATE(admin_adjusted_score, admin_note, admin_user_id, admin_reviewed_at,
              objection_status, objection_resolved_at, final_score, finalized_at) ON kpi_result TO app_admin;
 
--- Godot 헤드리스 서버
-CREATE ROLE godot_server WITH LOGIN PASSWORD '***';
-GRANT SELECT, UPDATE ON presence, seat TO godot_server;
-GRANT SELECT ON office, floor, room TO godot_server;
+-- Colyseus 실시간 서버 (D27: 구 godot_server 롤 대체)
+--   ⚠️ D3: presence/seat 기록은 FastAPI 단독(Colyseus 메모리 권위 → 1~5초 배치 POST /api/presence/batch).
+--      Colyseus는 DB 직접 쓰기 권한 없이 읽기 최소권한만 가진다(레이아웃·좌석·룸 조회는 FastAPI 경유가 원칙).
+CREATE ROLE colyseus_server WITH LOGIN PASSWORD '***';
+GRANT SELECT ON presence, seat TO colyseus_server;
+GRANT SELECT ON office, floor, room TO colyseus_server;
 ```
 
 > **컬럼명 정정**: 이전 문서의 `admin_adjusted_value`는 정본 스키마에서 `admin_adjusted_score`이다(§2.5 kpi_result 참조). 조정 여부는 별도 boolean 없이 `admin_adjusted_score IS NOT NULL`로 판정한다.
@@ -1117,6 +1119,78 @@ SELECT COUNT(*) FROM office; -- >= 1?
 SELECT COUNT(*) FROM seat WHERE assigned_user_id IS NULL; -- available 좌석?
 SELECT COUNT(*) FROM presence; -- 0 (시스템 가동 전)?
 ```
+
+---
+
+## 2.7 공지사항 계층 (D27 신설)
+
+> **신설 배경**: D27 포토리얼 웹임베드 전환에 따라 통합 대시보드 시안의 우측 패널에 **공지사항(announcement)** 리소스가 확정됨 (16-render-spike-and-roadmap.md §B.2 "공지 리소스" 명시). 관리자가 시스템·운영 공지를 게시하고 전 직원이 대시보드 우측 패널에서 확인하는 기능.
+
+#### **announcement** (공지사항)
+
+**역할**: 관리자가 작성한 회사 공지·시스템 안내를 전 직원에게 게시. 통합 대시보드 우측 패널에 표시. 카테고리별 분류 및 핀(상단 고정) 지원.
+
+| 필드 | 타입 | 제약 | 설명 |
+|-----|------|------|------|
+| id | UUID | PK | |
+| company_id | INTEGER | NN | 테넌트 스코프 값 (ERP company_id와 동일 값, FK 아님) |
+| title | VARCHAR(255) | NN | 공지 제목 |
+| body | TEXT | NN | 공지 본문(마크다운 허용) |
+| category | ENUM | NN, DEFAULT 'notice' | `system` \| `notice` \| `info` — system: 시스템·장애 안내, notice: 운영 공지, info: 일반 정보 |
+| pinned | BOOLEAN | NN, DEFAULT FALSE | 우측 패널 최상단 고정 여부 |
+| author_user_id | BIGINT | FK, NN | erp_user.id (작성자) |
+| published_at | TIMESTAMP | NULL | 게시 예약 시각(NULL = 즉시 게시, UTC 저장) |
+| expires_at | TIMESTAMP | NULL | 게시 만료 시각(NULL = 무기한, UTC 저장) |
+| created_at | TIMESTAMP | NN | 생성 시각(UTC) |
+| updated_at | TIMESTAMP | NN | 수정 시각(UTC) |
+
+**PK**: `id`  
+**FK**: `author_user_id` → `erp_user(id)` (ON DELETE RESTRICT — 공지 이력 보존)  
+**인덱스**:
+- `INDEX(company_id, published_at DESC)` (전사 공지 최신순 조회)
+- `INDEX(category, pinned, published_at DESC)` (카테고리+핀 필터)
+- `INDEX(expires_at)` (만료 공지 정리 배치용)
+
+**category ENUM**:
+```sql
+CREATE TYPE announcement_category AS ENUM (
+  'system',   -- 시스템·장애·점검 안내 (관리자 전용 게시)
+  'notice',   -- 운영 공지 (휴일·이벤트·규정 변경 등)
+  'info'      -- 일반 정보 (팁·뉴스레터 등)
+);
+```
+
+**게시 정책**:
+- `published_at IS NULL` 또는 `published_at <= NOW()` → 활성 공지
+- `expires_at IS NOT NULL AND expires_at < NOW()` → 만료 공지(목록에서 제외, 관리자 콘솔에서 조회 가능)
+- `pinned = TRUE` 공지는 우측 패널 상단 우선 노출, 복수 개 핀 허용
+- 작성·수정·삭제는 `role IN ('admin', 'super_admin')` 제한 (애플리케이션 레이어 검사)
+
+**SQLAlchemy 모델 관례**:
+```python
+class Announcement(Base):
+    __tablename__ = "announcement"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    company_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[AnnouncementCategory] = mapped_column(
+        SQLEnum(AnnouncementCategory), nullable=False, default=AnnouncementCategory.notice
+    )
+    pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    author_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("erp_user.id", ondelete="RESTRICT"), nullable=False)
+    published_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
+    author: Mapped["ErpUser"] = relationship("ErpUser", foreign_keys=[author_user_id])
+```
+
+**감사 대상**: 공지 게시·수정·삭제는 audit_log(`action='announcement_published'` / `'announcement_updated'` / `'announcement_deleted'`) 기록 대상.
+
+**보존**: 만료 공지는 소프트 방식으로 보존(물리 삭제 금지). 관리자 콘솔에서 archive 조회 가능.
 
 ---
 
@@ -1163,10 +1237,11 @@ SELECT COUNT(*) FROM presence; -- 0 (시스템 가동 전)?
 
 ---
 
-**문서 버전**: 1.2  
-**최종 검토**: 2026-07-02 (00-decisions.md D10·D16·D18·D19·D20 반영)
+**문서 버전**: 1.3  
+**최종 검토**: 2026-07-09 (00-decisions.md D10·D16·D18·D19·D20·D27 반영)
 
 ### 변경 이력
+- **v1.3 (2026-07-09)**: D27 정합 — §2.6 asset 정본 출처를 3d-design/asset-registry.md §1.1(D27 스키마 정본)로 교체(07은 파이프라인 참조)·asset_id 예시 05 정본 명명(DESK_STANDARD_001)·tscn_path 마이그레이션 노트 목표 경로 `frontend/public/assets/3d/` 웹 서빙 규약 표기, §2.7 announcement 계층 신설(16 §B.2 공지 리소스), presence 갱신 경로 "매 0.5초 클라이언트 업로드"·"Godot 서버→FastAPI" → **Colyseus(20Hz 메모리 권위) → 1~5초 배치 `POST /api/presence/batch` → DB**(D3)로 정정, §8.1 `godot_server` 롤 → `colyseus_server`(D3 정합, DB 직접 쓰기 권한 제거·읽기 최소권한).
 - **v1.2 (2026-07-02)**: 데이터 정본 정렬 — room/seat coords를 D25 2D top_left 미터 규약으로 정정(Godot 월드좌표는 05 §5.3 파생), asset 표를 07 §5.3 v1.1 정본으로 동기화, work_log FK RESTRICT 통일(D18), meeting_minute stt_draft·ai_summary 추가(D5·Phase 7), uk_current_seat_user UNIQUE(seat_id) 정정, company_id INTEGER 통일, ck_work_dates 앱 레이어 이관, period_type·objection_status §3.5 enum 참조 통일, work_completed_count 정의 D14-a 정합, presence 좌표 노출 문구 정정.
 - **v1.1 (2026-07-02)**: D16 kpi_result 정본 스키마 재정의(period_type/period_key, 이의신청 필드 인라인, kpi_result_review 폐기, metric 어휘 사전 신설). D18 user_team_history 신설·erp_user.is_active·평가 계층 FK RESTRICT+soft-delete. D19 타임존 저장 UTC 통일(KST 주석 정정). D20 개인정보 절 보강(5년 보존·녹화 90일·좌표 30일·audit 대상 확대·app_admin 롤 분리). D10 좌석 배정 layout 분리 원칙. ERD 오타(ERE_USER)·company_id INTEGER·work_hours 분 단위·meeting↔minute 단방향 FK 정정.
 - **v1.0 (2026-07-01)**: 초안(ERP 통합 반영).

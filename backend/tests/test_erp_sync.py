@@ -18,12 +18,11 @@ PostgresErpReader 인스턴스 생성은 lazy engine으로 asyncpg 없이도 성
 
 from datetime import date
 
-import pytest
 from sqlalchemy import select
 
 from app.erp.dtos import ErpUserDTO
-from app.erp.mock_reader import MockErpReader, MockErpSource
-from app.erp.reader import ErpSource, get_erp_reader
+from app.erp.mock_reader import MockErpReader
+from app.erp.reader import get_erp_reader
 from app.erp.sync import ErpSyncService
 from app.models.tables import ErpRole, ErpUser, UserTeamHistory
 
@@ -53,9 +52,7 @@ def test_services_erp_sync_public_api():
     """services.erp_sync 공개 이름이 정상 임포트된다."""
     from app.services.erp_sync import (
         ErpSource,
-        ErpSyncService as Svc,
         MockErpSource,
-        SyncResult,
         get_erp_source,
     )
     assert issubclass(MockErpSource, ErpSource)

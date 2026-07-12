@@ -20,7 +20,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import (
     String, Integer, Float, Boolean, DateTime, Date, JSON, Text,
     ForeignKey, Index, UniqueConstraint, CheckConstraint, Enum as SQLEnum,
-    BigInteger, Numeric, select, func, text
+    BigInteger, Numeric, text
 )
 from sqlalchemy.dialects.postgresql import JSONB as PG_JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -199,6 +199,11 @@ class MeetingParticipantRole(str, Enum):
     ORGANIZER = "organizer"     # 주최자
     PRESENTER = "presenter"     # 발표자
     PARTICIPANT = "participant" # 참석자
+
+
+class RecordingConsentType(str, Enum):
+    RECORDING = "recording"
+    STT = "stt"
 
 
 class ActionItemPriority(str, Enum):
@@ -925,6 +930,47 @@ class MeetingParticipant(Base):
     )
 
 
+class RecordingConsent(Base):
+    """회의별 참석자 녹음/STT 동의 기록."""
+    __tablename__ = "recording_consent"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    meeting_id: Mapped[UUID] = mapped_column(
+        ForeignKey("meeting.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("erp_user.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    consent_type: Mapped[RecordingConsentType] = mapped_column(
+        SQLEnum(RecordingConsentType),
+        nullable=False,
+    )
+    granted: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    meeting: Mapped["Meeting"] = relationship("Meeting")
+    user: Mapped["ErpUser"] = relationship("ErpUser")
+
+    __table_args__ = (
+        UniqueConstraint(
+            "meeting_id",
+            "user_id",
+            "consent_type",
+            name="uq_recording_consent_meeting_user_type",
+        ),
+        Index("idx_recording_consent_meeting_type", "meeting_id", "consent_type"),
+    )
+
+
 class MeetingMinute(Base, TimestampMixin):
     # @TASK T12b.0 - 회의록
     # @SPEC 04-data-model.md §2.4
@@ -1301,7 +1347,7 @@ class Asset(Base, TimestampMixin):
     # @TASK T16.0 - 3D 에셋 레지스트리
     # @SPEC docs/planning/07-3d-visual-asset-pipeline.md §5.3 v1.1 (정본, C4-c)
     """
-    3D 에셋 메타데이터 (Blender → GLB → .tscn → Godot)
+    3D 에셋 메타데이터 (Blender → GLB/glTF → 웹/R3F, D28 전환. 구 파이프라인: → .tscn → Godot)
 
     - PK는 카탈로그 키 문자열 (예: "reception-desk-v1.0") — 05 layout asset_id와 직접 조인
     - 라이선스/저작권 추적 + 성능 예산(polygon/파일 크기) 정본 소스
@@ -1345,8 +1391,8 @@ class Asset(Base, TimestampMixin):
     """원본 SHA-256 (변조 감지)"""
     optimized_file_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     """최적화 후 GLB SHA-256"""
-    tscn_path: Mapped[str] = mapped_column(String(256), nullable=False)
-    """res://assets/3d/models/<name>/<name>.tscn (배포 산출물, 05 ASSET_CATALOG 조회 대상)"""
+    gltf_path: Mapped[str] = mapped_column(String(256), nullable=False)
+    """웹 배포 산출물 glTF/GLB 경로 (D28 R3F 전환: 구 Godot res://….tscn 대체, 05 ASSET_CATALOG 조회 대상)"""
     source_glb_path: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
     """임포트 소스 glb (저장소 보관, pak 미포함)"""
     file_size_bytes: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
@@ -1451,3 +1497,57 @@ class ErpSyncLog(Base):
     trigger: Mapped[str] = mapped_column(String(20), nullable=False, default="manual")
     """manual | scheduled"""
     error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+class Notice(Base, TimestampMixin, SoftDeleteMixin):
+    """사내 공지사항 (대시보드 우측 패널 · 14-virtual-office-spec §2.8).
+
+    관리자 작성 · 전 직원 열람. is_active soft-delete, pinned 상단 고정.
+    """
+
+    __tablename__ = "notice"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    body: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    """본문 (마크다운 상세 열람용)"""
+    author: Mapped[str] = mapped_column(String(100), nullable=False, default="공지")
+    """표시 작성자 라벨 (예: 인사팀, IT팀)"""
+    pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
+    """상단 고정 여부"""
+    created_by: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        ForeignKey("erp_user.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    """작성자 ERP user.id (감사용, 표시는 author 라벨)"""
+
+    __table_args__ = (
+        Index("idx_notice_active_pinned_time", "is_active", "pinned", "created_at"),
+    )
+
+
+class UserAvatar(Base, TimestampMixin):
+    # @TASK C4 - 아바타 커스터마이징
+    # @SPEC 06-screens.md §3.9 (프리셋 + 상/하의 색상 팔레트 + 이름표)
+    """
+    직원 아바타 커스터마이징 (user_id당 1개).
+
+    경량: 프리셋 식별자 + 상/하의 색상(#RRGGBB) + 이름표 표시 여부.
+    리깅/에셋은 07-3d-visual-asset-pipeline 참조. 고도화 시 확장.
+    """
+    __tablename__ = "user_avatar"
+
+    user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("erp_user.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    """ERP user.id (PK, 1:1)"""
+    preset_id: Mapped[str] = mapped_column(String(32), nullable=False, default="humanoid_a")
+    """아바타 프리셋 식별자 (humanoid_a | humanoid_b …)"""
+    top_color: Mapped[str] = mapped_column(String(9), nullable=False, default="#3B5BFE")
+    """상의 색상 (#RRGGBB)"""
+    bottom_color: Mapped[str] = mapped_column(String(9), nullable=False, default="#1E293B")
+    """하의 색상 (#RRGGBB)"""
+    show_nameplate: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    """머리 위 이름표(이름/직급) 표시 여부"""

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>디자인 스타일 분석 &amp; 디자인 시스템 (정본)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">디자인 스타일 분석 &amp;amp; 디자인 시스템 (정본)</div><div class="sub">design-style-analysis.md</div><a class="lvl1" href="#디자인-스타일-분석-디자인-시스템-정본">디자인 스타일 분석 &amp; 디자인 시스템 (정본)</a><a class="lvl2" href="#0-전체-인상-design-dna">0. 전체 인상 (Design DNA)</a><a class="lvl2" href="#1-컬러-토큰-color-tokens">1. 컬러 토큰 (Color Tokens)</a><a class="lvl3" href="#11-배경서피스-dark-neutrals">1.1 배경/서피스 (Dark Neutrals)</a><a class="lvl3" href="#12-브랜드프라이머리-indigo-blue">1.2 브랜드/프라이머리 (Indigo-Blue)</a><a class="lvl3" href="#13-상태-시맨틱-컬러-presencestatus-매우-중요-전-화면-일관">1.3 상태 시맨틱 컬러 (Presence/Status) — **매우 중요, 전 화면 일관**</a><a class="lvl3" href="#14-텍스트">1.4 텍스트</a><a class="lvl3" href="#15-데이터-시각화">1.5 데이터 시각화</a><a class="lvl2" href="#2-타이포그래피">2. 타이포그래피</a><a class="lvl2" href="#3-레이아웃-그리드-app-shell">3. 레이아웃 &amp; 그리드 (App Shell)</a><a class="lvl2" href="#4-컴포넌트-카탈로그-시안에서-관측">4. 컴포넌트 카탈로그 (시안에서 관측)</a><a class="lvl2" href="#5-3d-뷰포트-아트-디렉션-포토리얼">5. 3D 뷰포트 아트 디렉션 (포토리얼)</a><a class="lvl2" href="#6-모션-인터랙션">6. 모션 &amp; 인터랙션</a><a class="lvl2" href="#7-톤-보이스-마이크로카피">7. 톤 &amp; 보이스 (마이크로카피)</a><a class="lvl2" href="#8-접근성">8. 접근성</a><a class="lvl2" href="#9-구현-매핑-참고">9. 구현 매핑 (참고)</a></nav>
+<main><h1 id="디자인-스타일-분석-디자인-시스템-정본">디자인 스타일 분석 &amp; 디자인 시스템 (정본)</h1>
+<blockquote>출처: 사용자 확정 디자인 시안 (<code>KPI 업무 평가 시스템</code> 통합 대시보드, 2026-07-08 첨부). 이 문서는 시안에서 추출한 <strong>디자인 언어</strong>를 토큰화한 정본이다. 모든 화면은 이 스타일을 따른다. 관련: <a href="./photoreal-web-strategy.md">photoreal-web-strategy.md</a>(3D 뷰포트 렌더 전략), 06-screens.md(화면 구조).</blockquote>
+<hr>
+<h2 id="0-전체-인상-design-dna">0. 전체 인상 (Design DNA)</h2>
+<p><strong>&quot;프리미엄 다크모드 엔터프라이즈 대시보드 + 중앙 포토리얼 3D 오피스&quot;</strong></p>
+<ul><li><strong>테마</strong>: 다크 퍼스트(deep navy/slate). 밝은 데이터·아바타가 어두운 배경 위에서 돋보이는 구조.</li><li><strong>밀도</strong>: 정보 밀집형(data-dense)이되 카드·여백·계층으로 정돈 → 답답하지 않음.</li><li><strong>중심</strong>: 화면 상단 중앙의 <strong>포토리얼 아이소메트릭 3D 오피스</strong>가 시각적 주인공. 나머지 UI는 이를 감싸는 크롬(chrome).</li><li><strong>정서</strong>: 신뢰감 있는 SaaS 툴 + 실재감 있는 공간감. 차갑지 않게 — 3D 씬의 따뜻한 목재/식물 조명이 온기 담당.</li></ul>
+<hr>
+<h2 id="1-컬러-토큰-color-tokens">1. 컬러 토큰 (Color Tokens)</h2>
+<blockquote>hex는 시안 기반 추정치. 구현 시 최종 확정. CSS 변수/Tailwind 테마로 관리.</blockquote>
+<h3 id="11-배경서피스-dark-neutrals">1.1 배경/서피스 (Dark Neutrals)</h3>
+<div class="table-wrap"><table><thead><tr><th>토큰</th><th>Hex(추정)</th><th>용도</th></tr></thead><tbody><tr><td><code>--bg-base</code></td><td><code>#0E1626</code></td><td>앱 최하단 배경(딥 네이비)</td></tr><tr><td><code>--bg-surface</code></td><td><code>#161F32</code></td><td>카드·패널 기본 서피스</td></tr><tr><td><code>--bg-surface-raised</code></td><td><code>#1E2940</code></td><td>강조 카드·호버·드롭다운</td></tr><tr><td><code>--bg-surface-translucent</code></td><td><code>rgba(22,31,50,0.72)</code></td><td>3D 뷰포트 위 오버레이 패널(글래스)</td></tr><tr><td><code>--border-subtle</code></td><td><code>#273350</code></td><td>저대비 구분선·카드 테두리</td></tr></tbody></table></div>
+<h3 id="12-브랜드프라이머리-indigo-blue">1.2 브랜드/프라이머리 (Indigo-Blue)</h3>
+<div class="table-wrap"><table><thead><tr><th>토큰</th><th>Hex(추정)</th><th>용도</th></tr></thead><tbody><tr><td><code>--primary</code></td><td><code>#3B5BFE</code></td><td>주요 버튼, 활성 내비, KPI 링, progress bar</td></tr><tr><td><code>--primary-hover</code></td><td><code>#2F4BE0</code></td><td>hover 상태</td></tr><tr><td><code>--primary-soft</code></td><td><code>rgba(59,91,254,0.15)</code></td><td>활성 내비 배경, 뱃지 배경</td></tr><tr><td><code>--accent-cyan</code></td><td><code>#38BDF8</code></td><td>회의실 유리벽 네온 엣지, 포커스 하이라이트</td></tr></tbody></table></div>
+<h3 id="13-상태-시맨틱-컬러-presencestatus-매우-중요-전-화면-일관">1.3 상태 시맨틱 컬러 (Presence/Status) — <strong>매우 중요, 전 화면 일관</strong></h3>
+<div class="table-wrap"><table><thead><tr><th>상태</th><th>토큰</th><th>Hex(추정)</th><th>의미</th></tr></thead><tbody><tr><td>온라인/업무중</td><td><code>--status-online</code></td><td><code>#22C55E</code> (emerald)</td><td>접속·업무중 (초록 점)</td></tr><tr><td>회의중</td><td><code>--status-meeting</code></td><td><code>#EF4444</code> (red)</td><td>회의 참여중 (빨강 점)</td></tr><tr><td>외근/출장</td><td><code>--status-external</code></td><td><code>#F59E0B</code> (amber)</td><td>오피스 외부 (주황 점)</td></tr><tr><td>집중모드</td><td><code>--status-focus</code></td><td><code>#8B5CF6</code> (violet)</td><td>집중 모드 (보라)</td></tr><tr><td>자리비움</td><td><code>--status-away</code></td><td><code>#94A3B8</code> (slate)</td><td>5분 무입력 (회색)</td></tr><tr><td>오프라인</td><td><code>--status-offline</code></td><td><code>#4B5568</code> (muted)</td><td>미접속</td></tr><tr><td>알림/뱃지</td><td><code>--danger</code></td><td><code>#EF4444</code></td><td>알림 카운트, 경고</td></tr></tbody></table></div>
+<h3 id="14-텍스트">1.4 텍스트</h3>
+<div class="table-wrap"><table><thead><tr><th>토큰</th><th>Hex(추정)</th><th>용도</th></tr></thead><tbody><tr><td><code>--text-primary</code></td><td><code>#F1F5F9</code></td><td>제목·주요 텍스트(거의 흰색)</td></tr><tr><td><code>--text-secondary</code></td><td><code>#B4C0D3</code></td><td>본문·라벨</td></tr><tr><td><code>--text-muted</code></td><td><code>#7A899E</code></td><td>보조·메타(시간·부가정보)</td></tr><tr><td><code>--text-on-primary</code></td><td><code>#FFFFFF</code></td><td>프라이머리 버튼 위 텍스트</td></tr></tbody></table></div>
+<h3 id="15-데이터-시각화">1.5 데이터 시각화</h3>
+<ul><li>KPI 게이지 링: <code>--status-online</code>(초록) 진행 + <code>--border-subtle</code> 트랙, 중앙 숫자 흰색.</li><li>Progress bar: <code>--primary</code>(파랑) 채움 + 어두운 트랙. 값 라벨은 우측 <code>--text-secondary</code>.</li></ul>
+<hr>
+<h2 id="2-타이포그래피">2. 타이포그래피</h2>
+<ul><li><strong>국문 서체</strong>: <strong>Pretendard</strong> 권장(모던 한글 UI 표준, 무료·가변). 대안 Noto Sans KR.</li><li><strong>영문/숫자</strong>: Pretendard 내장 라틴 또는 Inter.</li><li><strong>스케일</strong>:</li></ul>
+<div class="table-wrap"><table><thead><tr><th>역할</th><th>크기(px)</th><th>굵기</th><th>예</th></tr></thead><tbody><tr><td>대형 지표(KPI 점수)</td><td>40–44</td><td>Bold(700)</td><td><code>87</code></td></tr><tr><td>화면/섹션 제목</td><td>16–18</td><td>SemiBold(600)</td><td>&quot;나의 KPI 현황&quot;</td></tr><tr><td>카드 타이틀</td><td>14–15</td><td>SemiBold(600)</td><td>&quot;오늘의 업무&quot;</td></tr><tr><td>본문</td><td>13–14</td><td>Regular(400)</td><td>목록 텍스트</td></tr><tr><td>라벨/메타</td><td>11–12</td><td>Medium(500)</td><td>&quot;업무중&quot;, &quot;10:00&quot;</td></tr></tbody></table></div>
+<ul><li>자간: 한글 기본, 숫자·영문 라벨은 약간 tight. 줄높이 1.4~1.5.</li></ul>
+<hr>
+<h2 id="3-레이아웃-그리드-app-shell">3. 레이아웃 &amp; 그리드 (App Shell)</h2>
+<p><strong>3분할 셸 + 중앙 상하 분할</strong> (시안 구조 그대로):</p>
+<pre class="code"><code>┌──────────────────────────────────────────────────────────────────────┐
+│  Header (로고+앱명 | 오피스선택 | 검색 | 알림·메시지 | 내 프로필)         │  ~56px
+├────────┬────────────────────────────────────────────┬─────────────────┤
+│        │                                            │                 │
+│  Left  │        3D 오피스 뷰포트 (포토리얼)          │   Right Panel   │
+│  Nav   │        + 아바타/프레즌스/미니맵/미디어바      │   사용자목록     │
+│ ~240px │                                            │   일정/공지      │
+│        ├────────────────────────────────────────────┤   ~320px        │
+│        │  오늘의 업무 │ 나의 KPI │ 진행중 화상회의     │                 │
+│        │  (3-panel dashboard row)                   │                 │
+└────────┴────────────────────────────────────────────┴─────────────────┘</code></pre>
+<ul><li><strong>Left Nav</strong>: ~240px 고정. 아이콘+라벨 수직 메뉴. 활성 항목 = <code>--primary-soft</code> 배경 + <code>--primary</code> 좌측 인디케이터/텍스트. 하단에 내 프로필 카드(아바타+이름+상태+상태변경 버튼).</li><li><strong>Center</strong>: 상단 3D 뷰포트(약 55~60% 높이) + 하단 대시보드 3카드 행.</li><li><strong>Right Panel</strong>: ~320px. 리스트형 카드 스택(사용자 목록 → 오늘의 일정 → 공지사항).</li><li><strong>간격 스케일(spacing)</strong>: 4 / 8 / 12 / 16 / 24 (px). 카드 내부 패딩 16, 카드 간 12~16.</li><li><strong>반응형</strong>: 데스크톱 우선(≥1440 최적). 좁아지면 우측 패널 → 접기, 대시보드 3카드 → 세로 스택.</li></ul>
+<hr>
+<h2 id="4-컴포넌트-카탈로그-시안에서-관측">4. 컴포넌트 카탈로그 (시안에서 관측)</h2>
+<div class="table-wrap"><table><thead><tr><th>컴포넌트</th><th>스타일 규칙</th></tr></thead><tbody><tr><td><strong>카드/패널</strong></td><td>radius 14~16px, <code>--bg-surface</code>, 얇은 <code>--border-subtle</code>, 소프트 섀도우. 헤더(제목 + 우측 &quot;전체 보기 ›&quot;)</td></tr><tr><td><strong>버튼(Primary)</strong></td><td>radius 10px, <code>--primary</code> 배경, 흰 텍스트, 중간 굵기. hover 시 <code>--primary-hover</code></td></tr><tr><td><strong>버튼(Secondary/Ghost)</strong></td><td>투명/서피스 배경, <code>--border-subtle</code> 테두리, <code>--text-secondary</code></td></tr><tr><td><strong>아바타</strong></td><td>원형, 얇은 링. 상태 점(status dot) 우하단 오버레이(초록/빨강/주황)</td></tr><tr><td><strong>상태 뱃지(pill)</strong></td><td>라운드 pill, 상태색 배경 소프트(15% 투명) + 상태색 텍스트. 예: <code>● 업무중</code>(초록)</td></tr><tr><td><strong>KPI 도넛 게이지</strong></td><td>원형 프로그레스 링(초록), 중앙 큰 숫자 + &quot;/100&quot;, 두께 중간, 트랙 어두움</td></tr><tr><td><strong>Progress bar(지표)</strong></td><td>가로 막대, <code>--primary</code> 채움, 우측 값 라벨(예 <code>9/10</code>)</td></tr><tr><td><strong>리스트 아이템</strong></td><td>좌측 아바타/아이콘 + 텍스트 2줄(주/보조) + 우측 상태/메타. hover 하이라이트</td></tr><tr><td><strong>층 선택기(Floor)</strong></td><td>3D 뷰포트 우측 세로 탭(4F/3F/2F/1F/B1F), 활성 = <code>--primary</code> 채움</td></tr><tr><td><strong>미니맵</strong></td><td>좌하단 오버레이 카드, 조감도 라인 + 컬러 점(아바타/회의실), 확대/축소 버튼</td></tr><tr><td><strong>미디어 컨트롤 바</strong></td><td>뷰포트 하단 중앙 필(pill) 바: 마이크·카메라·화면공유·이모지·더보기. 활성/음소거 색 구분</td></tr><tr><td><strong>화상회의 타일</strong></td><td>참석자 그리드(2×2), 각 타일 하단 이름 라벨 + 상태, 하단 컨트롤(마이크·카메라·화면·나가기(빨강))</td></tr><tr><td><strong>드롭다운/탭</strong></td><td>상단 언더라인 탭(전체/사무실/회의중/외근·출장), 활성 언더라인 <code>--primary</code></td></tr></tbody></table></div>
+<hr>
+<h2 id="5-3d-뷰포트-아트-디렉션-포토리얼">5. 3D 뷰포트 아트 디렉션 (포토리얼)</h2>
+<blockquote>세부 렌더 파이프라인은 <a href="./photoreal-web-strategy.md">photoreal-web-strategy.md</a>. 여기서는 <strong>비주얼 톤</strong>만 규정.</blockquote>
+<ul><li><strong>시점</strong>: 고정 <strong>아이소메트릭</strong>(약 30~35° 부감). 씬 전체가 한눈에.</li><li><strong>조명</strong>: 실내 따뜻한 키라이트(리셉션 목재월·식물) + 회의실 <strong>쿨 블루 네온 엣지</strong>(<code>--accent-cyan</code>)로 공간 구분. 소프트 섀도우 + 앰비언트 오클루전.</li><li><strong>재질</strong>: 사실적 PBR — 유리(회의실 유리벽·반사), 목재(리셉션), 패브릭(소파), 금속(집기), 식물 그린.</li><li><strong>깊이감</strong>: 은은한 depth-of-field(원경 살짝 흐림), 대비 있는 그림자. 배경은 Blender Cycles 오프라인 렌더 품질.</li><li><strong>아바타</strong>: 씬 조명에 정합되는 실시간 아바타(깊이합성으로 가구·유리벽 뒤 자연 가림). 머리 위 이름+상태 HUD 라벨(반투명 pill).</li><li><strong>공간 요소</strong>: 브랜드월(회사 로고), 오픈좌석 군집, 유리 회의실(대회의실/프로젝트룸), 라운지 소파존, 식물 데코, 층 표지.</li><li><strong>상태 시각화</strong>: 회의실 헤더 라벨(&quot;대회의실 · 8명 회의중&quot;), 아바타 상태 점, 미니맵 색점.</li></ul>
+<hr>
+<h2 id="6-모션-인터랙션">6. 모션 &amp; 인터랙션</h2>
+<ul><li><strong>프레즌스 동기화</strong>: 아바타 이동은 Lerp 보간으로 부드럽게(끊김 없이).</li><li><strong>카메라</strong>: 검색/사용자 클릭 시 대상으로 부드러운 팬(pan). 층 전환 시 크로스페이드.</li><li><strong>호버</strong>: 리스트/좌석/회의실 hover 시 미세 하이라이트 + 커서 피드백.</li><li><strong>상태 전환</strong>: 뱃지 색 전환은 짧은 페이드. 알림은 슬라이드 인.</li><li><strong>깊이/글로우</strong>: 활성 회의실·선택 아바타에 은은한 글로우. 과하지 않게.</li><li><strong>원칙</strong>: 모션은 &quot;정보 전달 보조&quot;용. 장식적 과잉 애니메이션 지양(엔터프라이즈 톤 유지).</li></ul>
+<hr>
+<h2 id="7-톤-보이스-마이크로카피">7. 톤 &amp; 보이스 (마이크로카피)</h2>
+<ul><li>한국어 존댓말, 간결. 상태 라벨은 명사형(&quot;업무중&quot;, &quot;회의중&quot;, &quot;외근중&quot;).</li><li>숫자/지표 우선 노출(KPI 87/100, &quot;8명 회의중&quot;, &quot;접속중 28명&quot;).</li><li>시간 표기: 24시간제(10:00, 14:00). 날짜: YYYY.MM.DD.</li></ul>
+<hr>
+<h2 id="8-접근성">8. 접근성</h2>
+<ul><li>다크 배경 대비: 본문 텍스트 <code>--text-secondary</code> 이상으로 대비 4.5:1 확보.</li><li>상태를 <strong>색만으로</strong> 전달하지 않기 — 점 + 텍스트 라벨 병기(색맹 대응).</li><li>키보드 포커스 링(<code>--accent-cyan</code>) 가시화. 3D 뷰포트 외 UI는 완전 키보드 내비 가능.</li></ul>
+<hr>
+<h2 id="9-구현-매핑-참고">9. 구현 매핑 (참고)</h2>
+<ul><li>CSS 변수 + Tailwind <code>theme.extend.colors</code>로 위 토큰 정의.</li><li>컴포넌트 라이브러리: 공용 <code>&lt;Card&gt;</code>, <code>&lt;StatusBadge&gt;</code>, <code>&lt;Avatar&gt;</code>, <code>&lt;KpiGauge&gt;</code>, <code>&lt;ProgressMetric&gt;</code>, <code>&lt;ListItem&gt;</code>, <code>&lt;MediaBar&gt;</code> 등으로 추출(현재 페이지별 Tailwind 재구현 부채 해소).</li><li>3D 뷰포트는 별도 R3F 컴포넌트(<code>&lt;OfficeViewport&gt;</code>)로 격리.</li></ul>
+<blockquote><strong>다음</strong>: 이 디자인 시스템을 기준으로 가상사무실 기획 문서(14-virtual-office-spec) 및 화면 재설계 진행.</blockquote>
+<div class="meta-foot">원본: <code>design-style-analysis.md</code> · 자동 생성 2026-07-12 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

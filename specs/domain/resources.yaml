@@ -87,8 +87,8 @@ resources:
         type: BIGINT
         note: PK
       - name: company_id
-        type: UUID
-        note: FK
+        type: INTEGER
+        note: FK(ERP 원본 타입, erp_user와 동일 — 04 §2.2 정본)
       - name: name
         type: VARCHAR(255)
         note: 직급명(선임, 팀장 등)
@@ -110,8 +110,8 @@ resources:
         type: BIGINT
         note: PK
       - name: company_id
-        type: UUID
-        note: FK
+        type: INTEGER
+        note: FK(ERP 원본 타입, erp_user와 동일 — 04 §2.2 정본)
       - name: user_id
         type: BIGINT
         note: FK(erp_user.id)
@@ -142,8 +142,8 @@ resources:
         type: BIGINT
         note: PK
       - name: company_id
-        type: UUID
-        note: FK
+        type: INTEGER
+        note: FK(ERP 원본 타입, erp_user와 동일 — 04 §2.2 정본)
       - name: user_id
         type: BIGINT
         note: FK(erp_user.id)
@@ -180,8 +180,8 @@ resources:
         type: BIGINT
         note: PK
       - name: company_id
-        type: UUID
-        note: FK
+        type: INTEGER
+        note: FK(ERP 원본 타입, erp_user와 동일 — 04 §2.2 정본)
       - name: user_id
         type: BIGINT
         note: FK(erp_user.id)
@@ -445,7 +445,7 @@ resources:
         note: 수용인원
       - name: coords
         type: JSON
-        note: "{x, y, z} 3D 위치(Godot 월드좌표)"
+        note: "{x, y, z} 3D 위치(3D 월드좌표 — 05 §5.3 Blender→three.js 리맵)"
       - name: enter_trigger
         type: JSON
         note: "{x, y, z, radius} 진입 감지 영역"
@@ -608,7 +608,7 @@ resources:
         note: 3D 위치(월드좌표)
       - name: z
         type: FLOAT
-        note: 3D 위치(월드좌표)
+        note: "3D 위치(월드좌표) — D27: z 자유이동 아님(고정 아이소 2.5D, 이동은 x·y 평면만). 배경 깊이합성(depth composite) 정렬/레이어링 참조값"
       - name: status
         type: ENUM
         note: "offline | online | working | meeting | focus | away | external (7종 확정, D13)"
@@ -1094,7 +1094,7 @@ resources:
 
   - name: asset
     source: our-db
-    description: "3D 에셋 레지스트리. 모델, 텍스처 메타데이터. Blender→GLB→Godot 변환 파이프라인."
+    description: "3D 에셋 레지스트리. 모델, 텍스처 메타데이터. Blender→GLTF→R3F(웹) 변환 파이프라인."
     fields:
       - name: asset_id
         type: UUID
@@ -1199,3 +1199,45 @@ resources:
       - to: erp_user
         kind: many-to-one
         note: user_id (nullable, ON DELETE SET NULL)
+
+  - name: announcement
+    source: our-db
+    description: 공지사항(D27 신설). 관리자가 게시, 통합 대시보드 우패널·목록에 노출. 정본 = 04-data-model §2.7.
+    fields:
+      - name: id
+        type: UUID
+        note: PK
+      - name: company_id
+        type: INTEGER
+        note: 테넌트 스코프 값(ERP company_id와 동일, FK 아님)
+      - name: title
+        type: VARCHAR(255)
+        note: 공지 제목
+      - name: body
+        type: TEXT
+        note: 본문(마크다운 허용)
+      - name: category
+        type: ENUM
+        note: "system | notice | info (DEFAULT notice). system=시스템·장애, notice=운영, info=일반 정보"
+      - name: pinned
+        type: BOOLEAN
+        note: 우패널·목록 최상단 고정(DEFAULT FALSE, 복수 허용)
+      - name: author_user_id
+        type: BIGINT
+        note: FK(erp_user.id), 작성자, ON DELETE RESTRICT(이력 보존)
+      - name: published_at
+        type: TIMESTAMP
+        note: 게시 예약 시각(NULL=즉시, UTC 저장)
+      - name: expires_at
+        type: TIMESTAMP
+        note: 만료 시각(NULL=무기한, UTC 저장). 만료 시 목록 제외(관리자 콘솔 archive 조회)
+      - name: created_at
+        type: TIMESTAMP
+        note: 생성 시각(UTC)
+      - name: updated_at
+        type: TIMESTAMP
+        note: 수정 시각(UTC)
+    relations:
+      - to: erp_user
+        kind: many-to-one
+        note: author_user_id (ON DELETE RESTRICT)
