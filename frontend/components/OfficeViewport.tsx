@@ -23,13 +23,14 @@ const DRACO = '/draco/';
 
 // 씬 = 풀 PBR SCENE_ACME_HQ_HERO_V4_001.glb(22.4MB, 텍스처 114장, 비압축) — 압축본보다 텍스처 선명.
 const SCENE_URL = '/office/scene_v10_full.glb';
-const HERO_M = '/office/male_rigged.glb';
-const HERO_F = '/office/female_rigged.glb';
-const HERO_RECEP = '/office/receptionist_rigged.glb';
-const M1 = '/office/male01.glb';
-const MCASUAL = '/office/malecasual.glb';
-const F1 = '/office/female01.glb';
-const FBIZ = '/office/femalebiz.glb';
+// 캐릭터 = v10 패키지 원본(characters_rigged, 비압축) — 구형 Draco 재압축본은 리깅 손상(X자 팔)이라 폐기.
+const HERO_M = '/office/characters_rigged/CHAR_MALE_RIGGED_HERO_V8_001.glb';
+const HERO_F = '/office/characters_rigged/CHAR_FEMALE_RIGGED_HERO_V8_001.glb';
+const HERO_RECEP = '/office/characters_rigged/CHAR_RECEPTIONIST_RIGGED_HERO_V8_001.glb';
+const M1 = '/office/characters_rigged/CHAR_MALE_001_RIGGED_V8.glb';
+const MCASUAL = '/office/characters_rigged/CHAR_MALE_CASUAL_002_RIGGED_V8.glb';
+const F1 = '/office/characters_rigged/CHAR_FEMALE_001_RIGGED_V8.glb';
+const FBIZ = '/office/characters_rigged/CHAR_FEMALE_BUSINESS_002_RIGGED_V8.glb';
 const CHAR_URLS = [HERO_M, HERO_F, HERO_RECEP, M1, MCASUAL, F1, FBIZ];
 
 // ─────────────────────────────────────────────
