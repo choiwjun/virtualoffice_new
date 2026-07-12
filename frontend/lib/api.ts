@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:8090';
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:8000';
 
 export class ApiError extends Error {
   constructor(

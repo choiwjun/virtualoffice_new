@@ -1,5 +1,7 @@
 # 파생 게이트 (Derived Gates) — 구현 완료 판정 기준
 
+> ⚠️ **실측 재정합 2026-07-11: D27 렌더 게이트(REQ-012/013/014) D28 폐기 반영, 잔여 최대 갭=REQ-004(Colyseus).**
+
 > ✅ **D27 반영(2026-07-09 재파생) — 이 문서는 D27 정본(R3F 웹앱 + 오프라인렌더 깊이합성 + Colyseus 권위 서버) 기준으로 재작성되었다.** D26(WorkAdventure)+Godot 게이트는 폐기·재파생되었으며, 도메인 게이트(KPI·좌석·회의·ERP·개인정보)는 보존한다. 현행 정본 = 00-decisions §H(D27) · 14-virtual-office-spec · 15-realtime-server-spec · 16-render-spike-and-roadmap · 3d-design/{design-style-analysis, photoreal-web-strategy}. 구 Godot/WA/Phaser/OIDC/네이티브빌드 서술은 본 재작성으로 대체됨.
 
 **생성**: 2026-07-02 (planning-loop-supervisor LOOP 9) · **갱신**: 2026-07-09 (D27 재파생) · **소스**: 01-prd MUST 8 + SHOULD 3 (Round 1 수정 반영판) + 00-decisions §H(D27)
@@ -39,6 +41,7 @@ Hard = 통과/실패 이분법 · Metric = 수치 목표 · Domain = 도메인 �
 - **Metric**: 검증 20명 동시(설계 100명, D22), tick **20Hz 유지**, 아바타 동기화 E2E **p95 < 500ms**(15/09 정본).
 - **Domain**: presence는 Colyseus 서버 메모리 권위 + FastAPI 배치 push(D3). presence 좌표 30일 파기(D20-a).
 - **Evidence**: 20명 시뮬레이션 부하 리포트, 이동검증 8종 통과 로그, p95 측정 로그, 재접속 테스트.
+- **🔴 미구현 — 이동서버 스택 부재(최대 잔여 갭).**
 
 ## REQ-005: 회의/화상 (MUST #5) 🔄D27
 - **추적**: PRD §3 → 09 §LiveKit → meetings.yaml → 12-tasks P5-T1~T3(명시입장·LiveKit 통합·화상 타일)
@@ -53,6 +56,7 @@ Hard = 통과/실패 이분법 · Metric = 수치 목표 · Domain = 도메인 �
 - **Metric**: 한국어 발화자·액션아이템 누락률 < 5%(D22, 수동 전사 10회 대조).
 - **Domain**: 녹음 파일 90일 보존 후 파기.
 - **Evidence**: ~~S2 스파이크 — D27로 폐기(외부의존 전환)~~. 외부 STT 연동 결과, 누락률 측정표, E2E(회의→초안→확정) 테스트.
+- **🔴 501 스텁, 외부의존(P6).**
 
 ## REQ-007: KPI 산출+AI 초안+검토·이의신청 (MUST #6)
 - **추적**: PRD §3 → 08-kpi → kpi-dashboard/kpi-objection.yaml → 12-tasks P6-T4(KPI 워크플로우 화면 — 엔진·AI초안·EOD는 [구현됨] 재사용)
@@ -82,6 +86,7 @@ Hard = 통과/실패 이분법 · Metric = 수치 목표 · Domain = 도메인 �
 - **Metric**: **경계 오차 ≤ 2px**. 스파이크 PASS(2026-07-08, 커밋 b4736b1).
 - **Domain**: 배경/깊이/camera.json은 layout에서 파생(REQ-014 연계), 클라이언트는 배경을 렌더하지 않고 합성만 수행.
 - **Evidence**: 깊이합성 스파이크 리포트(경계 오차 측정), 오클루전 골든샘플 대조 스크린샷.
+- **⛔ D28 폐기(2026-07-11 재정합) — 오프라인렌더+깊이합성 노선 폐기, 실시간 단일 R3F 렌더가 오클루전·조명정합을 자동 충족. 이 게이트는 비활성.**
 
 ## REQ-013: 아바타↔배경 조명 정합 (IBL) (신규)
 - **추적**: 3d-design/{design-style-analysis, optimization-criteria} → 14-virtual-office-spec
@@ -89,6 +94,7 @@ Hard = 통과/실패 이분법 · Metric = 수치 목표 · Domain = 도메인 �
 - **Metric**: 배경 렌더 환경맵과 아바타 IBL 소스 동일. 조명 방향/색온도 일치 육안 검증 PASS.
 - **Domain**: 환경맵/조명 파라미터는 Blender 씬 빌더 산출물(REQ-014)과 동일 소스에서 도출.
 - **Evidence**: 아바타+배경 합성 골든샘플 대조, IBL 환경맵 산출 로그.
+- **⛔ D28 폐기(2026-07-11 재정합) — 오프라인렌더+깊이합성 노선 폐기, 실시간 단일 R3F 렌더가 오클루전·조명정합을 자동 충족. 이 게이트는 비활성.**
 
 ## REQ-014: Blender 파라메트릭 씬 빌더 (신규)
 - **추적**: photoreal-web-strategy → 16-render-spike-and-roadmap(render-pipeline) → spikes/depth-composite/public/{office_bg.png, office_depth.png, camera.json}
@@ -96,6 +102,7 @@ Hard = 통과/실패 이분법 · Metric = 수치 목표 · Domain = 도메인 �
 - **Metric**: 동일 layout 입력 = 동일 산출물(재현성). depth PNG가 REQ-012 오클루전 기준 충족.
 - **Domain**: 좌석 배정 데이터는 산출물에 비포함(D10) — 씬 지오메트리만. 좌표 2D top_left 미터(D25).
 - **Evidence**: layout→산출물 파이프라인 실행 로그, 재현성 테스트(동일 입력 반복), camera.json 스키마 검증.
+- **⛔ D28 폐기(2026-07-11 재정합) — 오프라인렌더+깊이합성 노선 폐기, 실시간 단일 R3F 렌더가 오클루전·조명정합을 자동 충족. 이 게이트는 비활성.**
 
 ## REQ-015: 단일 세션 JWT (Colyseus onAuth) (신규)
 - **추적**: 15-realtime-server-spec → 00-decisions §H(D27) → HG-AUTH 연계
@@ -103,6 +110,7 @@ Hard = 통과/실패 이분법 · Metric = 수치 목표 · Domain = 도메인 �
 - **Metric**: 무효/만료 JWT 접속 거부 100%. 중복 로그인 시 기존 세션 축출 동작.
 - **Domain**: JWT 24h + role 가드(HG-AUTH 정합). presence 좌표 30일 파기(D20-a).
 - **Evidence**: onAuth 거부/승인 테스트, 단일 세션 축출 E2E 테스트.
+- **🟡 JWT 로그인 ✅ / Colyseus onAuth·단일세션 eviction 미구현.**
 
 ## REQ-016: 공지·KPI 워크플로우 화면 (신규)
 - **추적**: 06-screens → design-style-analysis §3(통합 대시보드 셸) → 08-kpi/09-realtime

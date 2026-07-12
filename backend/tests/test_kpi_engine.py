@@ -649,3 +649,100 @@ async def test_quarterly_compute(db_session: AsyncSession, seed_user: ErpUser):
     assert r1 == r2
     assert r1["work_completed_count"] == 3.0
     assert r1["quarterly_total"] >= 0
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# KPI 야간 배치 스케줄러 (_kpi_batch_job) — D16 정본: daily + quarterly만
+# ──────────────────────────────────────────────────────────────────────────────
+
+def test_parse_period_batch_types_supported():
+    """배치가 넘기는 두 period_type(daily/quarterly)이 KST 현재 period_key로 파싱된다.
+
+    회귀 방지: 스케줄러가 daily+quarterly만 호출해야 한다(D16 weekly/monthly 폐기).
+    """
+    from datetime import datetime, timedelta, timezone
+
+    kst_now = datetime.now(timezone(timedelta(hours=9)))
+    daily_key = kst_now.date().isoformat()
+    quarter_key = f"{kst_now.year}-Q{(kst_now.month - 1) // 3 + 1}"
+
+    d_start, d_end = _parse_period("daily", daily_key)
+    assert d_start == d_end == kst_now.date()
+
+    q_start, q_end = _parse_period("quarterly", quarter_key)
+    assert q_start <= kst_now.date() <= q_end
+
+
+def test_parse_period_weekly_monthly_rejected():
+    """D16 정본: weekly/monthly는 폐기되어 여전히 ValueError여야 한다."""
+    with pytest.raises(ValueError):
+        _parse_period("weekly", "2026-07-01")
+    with pytest.raises(ValueError):
+        _parse_period("monthly", "2026-07")
+
+
+@pytest.mark.asyncio
+async def test_kpi_batch_job_upserts_daily_and_quarterly(
+    db_session: AsyncSession,
+    seed_user: ErpUser,
+    monkeypatch,
+):
+    """실버그 회귀: _kpi_batch_job()이 예외 없이 daily+quarterly를 upsert한다.
+
+    이전 버그: 루프가 daily/weekly/monthly + period_key=None이라
+    _parse_period에서 매번 ValueError/TypeError → 배치가 죽었다(kpi_18/kpi_21).
+    수정 후: KST 현재값으로 daily/quarterly만 계산, kpi_result 행 생성 확인.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    from app.services import scheduler as scheduler_mod
+
+    # seed_user를 active로 명시(soft-delete 기본 True지만 배치 필터 조건 충족 보장)
+    seed_user.is_active = True
+    await db_session.flush()
+
+    # 배치 job은 SessionLocal()로 자체 세션을 연다 → 테스트 세션을 yield하도록 대체.
+    class _FakeSessionLocal:
+        def __init__(self, session: AsyncSession):
+            self._session = session
+
+        async def __aenter__(self) -> AsyncSession:
+            return self._session
+
+        async def __aexit__(self, *exc) -> bool:
+            return False
+
+    monkeypatch.setattr(
+        scheduler_mod, "SessionLocal", lambda: _FakeSessionLocal(db_session)
+    )
+
+    # 예외 없이 완료되어야 한다(이전 버그면 여기서 except 브랜치로 빠져 rollback).
+    await scheduler_mod._kpi_batch_job()
+
+    kst_now = datetime.now(timezone(timedelta(hours=9)))
+    daily_key = kst_now.date().isoformat()
+    quarter_key = f"{kst_now.year}-Q{(kst_now.month - 1) // 3 + 1}"
+
+    rows = (
+        await db_session.execute(
+            select(KpiResult).where(KpiResult.user_id == seed_user.id)
+        )
+    ).scalars().all()
+
+    period_types = {r.period_type for r in rows}
+    assert "daily" in period_types
+    assert "quarterly" in period_types
+    # weekly/monthly는 절대 생성되지 않아야 한다(D16).
+    assert "weekly" not in period_types
+    assert "monthly" not in period_types
+
+    # 두 기간의 period_key가 KST 현재값과 일치.
+    daily_keys = {r.period_key for r in rows if r.period_type == "daily"}
+    quarter_keys = {r.period_key for r in rows if r.period_type == "quarterly"}
+    assert daily_keys == {daily_key}
+    assert quarter_keys == {quarter_key}
+
+    # collaboration_score metric 행이 daily/quarterly 양쪽에 존재.
+    daily_metrics = {r.metric for r in rows if r.period_type == "daily"}
+    assert "collaboration_score" in daily_metrics
+    assert "quarterly_total" in daily_metrics

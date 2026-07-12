@@ -64,19 +64,13 @@ interface EmployeePresence {
   avatar_url?: string;
 }
 
-// TODO: 공지 API 없음 — mock 사용
+// 공지사항 (14-virtual-office-spec §2.8): GET /api/notices
 interface Notice {
-  id: number;
+  id: string;
   title: string;
   created_at: string;
   author: string;
 }
-
-const MOCK_NOTICES: Notice[] = [
-  { id: 1, title: '2026년 하반기 사내 복지 포인트 지급 안내', created_at: '2026.07.08', author: '인사팀' },
-  { id: 2, title: '7월 전사 타운홀 미팅 일정 공지', created_at: '2026.07.07', author: '경영지원' },
-  { id: 3, title: '보안 패치 배포 예정 안내 (07/10 새벽 2시)', created_at: '2026.07.06', author: 'IT팀' },
-];
 
 // ─────────────────────────────────────────────
 // 좌측 내비 메뉴 정의
@@ -86,6 +80,7 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
+  disabled?: boolean;
 }
 
 function IconOffice() {
@@ -164,14 +159,14 @@ function IconSettings() {
 const NAV_ITEMS: NavItem[] = [
   { href: '/office',           label: '가상오피스',    icon: <IconOffice /> },
   { href: '/work-log',         label: '업무관리',      icon: <IconWork /> },
-  { href: '/work-status',      label: '업무현황',      icon: <IconChart /> },
-  { href: '/trip',             label: '출장관리',      icon: <IconCar /> },
+  { href: '/work-status',      label: '업무현황',      icon: <IconChart />,   disabled: true },
+  { href: '/trip',             label: '출장관리',      icon: <IconCar />,     disabled: true },
   { href: '/kpi',              label: 'KPI평가',       icon: <IconKpi /> },
-  { href: '/reports',          label: '보고서',        icon: <IconReport /> },
+  { href: '/reports',          label: '보고서',        icon: <IconReport />,  disabled: true },
   { href: '/meetings',         label: '회의실예약',    icon: <IconMeetRoom /> },
-  { href: '/chat',             label: '커뮤니케이션',  icon: <IconChat /> },
+  { href: '/chat',             label: '커뮤니케이션',  icon: <IconChat />,    disabled: true },
   { href: '/admin/employees',  label: '인사·근태',     icon: <IconHR /> },
-  { href: '/settings',         label: '설정',          icon: <IconSettings /> },
+  { href: '/settings',         label: '설정',          icon: <IconSettings />, disabled: true },
 ];
 
 // ─────────────────────────────────────────────
@@ -269,6 +264,7 @@ export default function OfficePage() {
   const [meetings, setMeetings]       = useState<Meeting[]>([]);
   const [employees, setEmployees]     = useState<EmployeePresence[]>([]);
   const [todayMeetings, setTodayMeetings] = useState<Meeting[]>([]);
+  const [notices, setNotices] = useState<Notice[]>([]);
 
   const [loadingWork, setLoadingWork]     = useState(true);
   const [loadingKpi,  setLoadingKpi]      = useState(true);
@@ -356,13 +352,24 @@ export default function OfficePage() {
     }
   }, []);
 
+  // 공지사항 (notices)
+  const fetchNotices = useCallback(async () => {
+    try {
+      const data = await api.get<{ items: Notice[] }>('/api/notices?limit=5');
+      setNotices(Array.isArray(data?.items) ? data.items : []);
+    } catch {
+      setNotices([]);
+    }
+  }, []);
+
   useEffect(() => {
     if (!me) return;
     fetchWorkLogs();
     fetchKpi();
     fetchMeetings();
     fetchEmployees();
-  }, [me, fetchWorkLogs, fetchKpi, fetchMeetings, fetchEmployees]);
+    fetchNotices();
+  }, [me, fetchWorkLogs, fetchKpi, fetchMeetings, fetchEmployees, fetchNotices]);
 
   // KPI 집계
   const avgScore = kpiResults.length
@@ -437,7 +444,21 @@ export default function OfficePage() {
         {/* 내비 메뉴 */}
         <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-0.5" aria-label="주 메뉴">
           {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+            const isActive = !item.disabled && (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)));
+            if (item.disabled) {
+              return (
+                <span
+                  key={item.href}
+                  title="준비중"
+                  aria-disabled="true"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium cursor-not-allowed opacity-40 text-text-secondary select-none"
+                >
+                  <span className="text-text-muted">{item.icon}</span>
+                  {item.label}
+                  <span className="ml-auto text-[10px] px-1 py-0.5 rounded bg-bg-surface-raised text-text-muted leading-none">준비중</span>
+                </span>
+              );
+            }
             return (
               <Link
                 key={item.href}
@@ -497,7 +518,7 @@ export default function OfficePage() {
               style={{ background: 'rgba(13,27,54,0.78)', backdropFilter: 'blur(6px)' }}
             >
               <span className="text-accent-cyan text-[10px] font-medium uppercase tracking-widest">
-                실시간 R3F · v1.1 에셋 (리깅 전)
+                실시간 R3F · v10 PBR 리깅
               </span>
             </div>
           </div>
@@ -771,18 +792,18 @@ export default function OfficePage() {
           </div>
         </section>
 
-        {/* ── 공지사항 (TODO: 공지 API 미구현 → mock) ── */}
+        {/* ── 공지사항 (GET /api/notices, 14-spec §2.8) ── */}
         <section className="flex-shrink-0">
           <div className="px-4 py-3 flex items-center justify-between">
             <span className="text-[13px] font-semibold text-text-primary">공지사항</span>
-            {/* TODO: 공지 API — 현재 mock 데이터 사용 */}
+
           </div>
           <div className="py-1">
-            {MOCK_NOTICES.map((n) => (
+            {notices.map((n) => (
               <ListItem
                 key={n.id}
                 primary={n.title}
-                secondary={`${n.author} · ${n.created_at}`}
+                secondary={`${n.author} · ${n.created_at?.slice(0, 10).replace(/-/g, '.')}`}
                 leading={
                   <span className="w-1 h-6 rounded-full bg-primary flex-shrink-0" />
                 }

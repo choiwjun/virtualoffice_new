@@ -31,8 +31,20 @@ DEFAULT_COMPANY_ID = 1
 
 
 async def _kpi_batch_job() -> None:
-    """KPI 자동계산: 전체 active 직원 대상 daily/weekly/monthly."""
+    """KPI 자동계산: 전체 active 직원 대상 daily/quarterly (D16).
+
+    period_type은 정본상 daily/quarterly 2종만 존재(D16: weekly/monthly 폐기).
+    각 period_key는 KST 기준 현재값으로 계산해 넘긴다(배치 경계=KST, D19):
+      - daily     → 'YYYY-MM-DD' (KST 오늘)
+      - quarterly → 'YYYY-Q#'    (KST 현재 분기)
+    """
     print("[Scheduler] KPI batch started")
+
+    # 배치 경계는 KST(D19). 현재 KST 기준 daily/quarterly period_key 산출.
+    kst_now = datetime.now(timezone(timedelta(hours=9)))
+    daily_key = kst_now.date().isoformat()
+    quarter_key = f"{kst_now.year}-Q{(kst_now.month - 1) // 3 + 1}"
+
     async with SessionLocal() as db:
         try:
             # 활성 직원 전체
@@ -44,15 +56,18 @@ async def _kpi_batch_job() -> None:
                     )
                 )
             ).scalars().all()
-            
+
             for user in users:
-                # daily/weekly/monthly 각각 계산 (D17)
-                for period_type in ["daily", "weekly", "monthly"]:
+                # daily/quarterly 각각 계산 (D16 — weekly/monthly 폐기)
+                for period_type, period_key in (
+                    ("daily", daily_key),
+                    ("quarterly", quarter_key),
+                ):
                     await compute_and_upsert_kpi(
                         db=db,
                         user_id=user.id,
                         period_type=period_type,
-                        period_key=None,  # None = 가장 최근 기간
+                        period_key=period_key,
                     )
             await db.commit()
             print(f"[Scheduler] KPI batch completed: {len(users)} users")
