@@ -1,0 +1,89 @@
+{
+  "asset_id": "LOUNGE_CHAIR_ROUND_001",
+  "category": "lounge",
+  "type": "chair",
+  "priority": "P2",
+  "file": "models/lounge/LOUNGE_CHAIR_ROUND_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 1.05,
+    "depth": 0.82,
+    "height": 1.09
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "",
+  "qa": {
+    "triangles": 792,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.545
+    ],
+    "size": [
+      1.05,
+      0.82,
+      1.09
+    ]
+  },
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        1.09
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        0.709
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "seat_anchor": {
+      "position": [
+        0,
+        0,
+        0.48
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "status_anchor": {
+      "position": [
+        0,
+        0,
+        1.44
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {
+    "can_sit": true
+  }
+}

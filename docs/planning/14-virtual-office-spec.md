@@ -1,5 +1,11 @@
 # 14. 가상사무실 기능 기획 (재정의 · 정본)
 
+> 🔵 **D28 피벗(2026-07-09) — 렌더 방식만 대체.** 기능·화면·상호작용 기획은 유효하나, "포토리얼 오프라인렌더+깊이합성" 전제는 **실시간 스타일라이즈드 R3F**로 교체(오클루전 자동, Blender 굽기 불필요). 정본 = **00-decisions §I(D28)**.
+
+> 🟣 **v8.0 에셋 업그레이드(2026-07-10, D28.1).** 저폴리 v1.1 → **v8.0 통합본**(`docs/virtual_office_final_dev_complete_v8_0/`): V4 히어로 씬 + **리깅+애니 휴머노이드**(idle/walk/sit/typing 등 12클립). 이 기획의 아바타 동세·People 패널 상호작용은 이제 **실제 애니메이션**으로 구현된다. 상세 = 00-decisions §I(D28.1).
+
+> 🟪 **v10.0 PBR 강화(2026-07-11, D28.2).** v8.0 → **v10.0 완제품 패키지**(`docs/virtual_office_complete_product_v10_0/`)로 교체. 씬·캐릭터 토폴로지와 rig(18조인트·12클립명 동일)는 v8과 같고, **모든 GLB에 PBR 텍스처 내장**(씬 텍스처 54→114장)이라 아바타·씬 재질감이 상승했다. 프론트는 `frontend/public/office/*.glb` 8종 파일 교체만으로 반영(로직 변경 0). 상세 = 00-decisions §I(D28.2).
+
 > 2026-07-08 작성. 사용자 확정 디자인 시안 + 포토리얼 웹임베드 전환에 따른 **가상사무실 전면 재기획**.
 > 이 문서는 가상사무실(3D 오피스) 화면과 그 전 기능을 **새 아키텍처 기준**으로 재정의한다.
 > 정본 참조: [3d-design/design-style-analysis.md](../3d-design/design-style-analysis.md)(스타일), [3d-design/photoreal-web-strategy.md](../3d-design/photoreal-web-strategy.md)(렌더), 05-office-layout-schema.md, 08-kpi-logic.md(KPI 로직·메트릭), 09-realtime-collaboration.md, 00-decisions.md.

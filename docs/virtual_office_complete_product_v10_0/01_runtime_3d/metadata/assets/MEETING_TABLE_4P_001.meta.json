@@ -1,0 +1,119 @@
+{
+  "asset_id": "MEETING_TABLE_4P_001",
+  "category": "meeting",
+  "type": "meeting_table",
+  "priority": "P2",
+  "file": "models/meeting/MEETING_TABLE_4P_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 1.6,
+    "depth": 0.95,
+    "height": 0.64
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "",
+  "qa": {
+    "triangles": 276,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.32
+    ],
+    "size": [
+      1.6,
+      0.95,
+      0.64
+    ]
+  },
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        0.64
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        0.416
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "meeting_anchors": [
+      {
+        "id": "seat_01",
+        "position": [
+          -0.56,
+          -0.895,
+          0.48
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "seat_02",
+        "position": [
+          0.56,
+          -0.895,
+          0.48
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "seat_03",
+        "position": [
+          -0.56,
+          0.895,
+          0.48
+        ],
+        "rotation": [
+          0,
+          0,
+          180
+        ]
+      },
+      {
+        "id": "seat_04",
+        "position": [
+          0.56,
+          0.895,
+          0.48
+        ],
+        "rotation": [
+          0,
+          0,
+          180
+        ]
+      }
+    ]
+  },
+  "interaction": {
+    "can_meet": true
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "asset_id": "TABLE_SIDE_001",
+  "category": "lounge",
+  "type": "table",
+  "priority": "P2",
+  "file": "models/lounge/TABLE_SIDE_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 0.65,
+    "depth": 0.45,
+    "height": 0.49
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "",
+  "qa": {
+    "triangles": 300,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.245
+    ],
+    "size": [
+      0.65,
+      0.45,
+      0.49
+    ]
+  },
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        0.49
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        0.319
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {}
+}

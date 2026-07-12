@@ -1,0 +1,63 @@
+{
+  "asset_id": "CABLE_SET_001",
+  "category": "props",
+  "type": "cable",
+  "priority": "P2",
+  "file": "models/props/CABLE_SET_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 0.532,
+    "depth": 0.08,
+    "height": 0.012
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "",
+  "qa": {
+    "triangles": 48,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.006
+    ],
+    "size": [
+      0.532,
+      0.08,
+      0.012
+    ]
+  },
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        0.012
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        0.008
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {}
+}

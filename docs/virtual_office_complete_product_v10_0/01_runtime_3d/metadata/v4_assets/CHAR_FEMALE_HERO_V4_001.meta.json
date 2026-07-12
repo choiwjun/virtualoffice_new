@@ -1,0 +1,91 @@
+{
+  "asset_id": "CHAR_FEMALE_HERO_V4_001",
+  "name": "Char Female Hero V4 001",
+  "version": "4.0",
+  "quality_tier": "v4_hero_refined_procedural",
+  "category": "characters",
+  "type": "avatar",
+  "priority": "P0",
+  "file": "models/v4_characters/CHAR_FEMALE_HERO_V4_001.glb",
+  "format": "glb/glTF 2.0 binary",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 0.55,
+    "depth": 0.3,
+    "height": 1.742
+  },
+  "triangle_count": 15552,
+  "materials": {
+    "pbr": true,
+    "v4_texture_sets": true,
+    "basecolor_baked_lighting": false,
+    "alpha_glass_or_emissive_when_required": true
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.871
+    ],
+    "size": [
+      0.55,
+      0.3,
+      1.742
+    ]
+  },
+  "anchors": {
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        0.958
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "status_anchor": {
+      "position": [
+        0,
+        0,
+        2.042
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "name_tag_anchor": {
+      "position": [
+        0,
+        0,
+        1.95
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {
+    "module": true,
+    "can_select": true
+  },
+  "tags": [
+    "v4",
+    "hero",
+    "high_detail",
+    "reference_aligned",
+    "procedural_mesh"
+  ],
+  "notes": "V4 stylized high-detail static humanoid, rig-ready proportions; replace with skinned rig for production animation.",
+  "thumbnail": "previews/v4/thumbnails/CHAR_FEMALE_HERO_V4_001.png"
+}

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>핸드오프 — v10 PBR 에셋 통합 (2026-07-11)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">핸드오프 — v10 PBR 에셋 통합 (2026-07-11)</div><div class="sub">handoff-v10-integration-2026-07-11.md</div><a class="lvl1" href="#핸드오프-v10-pbr-에셋-통합-2026-07-11">핸드오프 — v10 PBR 에셋 통합 (2026-07-11)</a><a class="lvl2" href="#0-한눈에-요약">0. 한눈에 요약</a><a class="lvl2" href="#01-공지사항notices-구현-상세-2026-07-11-p0">0.1 공지사항(Notices) 구현 상세 (2026-07-11, P0)</a><a class="lvl2" href="#1-변경-파일-이번-세션-리더-직접-수행">1. 변경 파일 (이번 세션, 리더 직접 수행)</a><a class="lvl2" href="#2-검증-재현-그대로-복붙">2. 검증 재현 (그대로 복붙)</a><a class="lvl2" href="#3-다음-액션-우선순위바로-실행-가능">3. 다음 액션 (우선순위·바로 실행 가능)</a><a class="lvl3" href="#p1-실브라우저-육안-qa-아직-안-함">P1 — 실브라우저 육안 QA (아직 안 함)</a><a class="lvl3" href="#p1-웹-로딩-최적화-draco-webp-완료">P1 — 웹 로딩 최적화  ✅ Draco + WebP 완료</a><a class="lvl3" href="#p2-v10-패키지-중복-폴더-정리">P2 — v10 패키지 중복 폴더 정리</a><a class="lvl3" href="#p3-v10-런타임-앱-개념-이식-later">P3 — v10 런타임 앱 개념 이식 (Later)</a><a class="lvl2" href="#4-롤백-v80로-되돌리기">4. 롤백 (v8.0로 되돌리기)</a><a class="lvl2" href="#5-함정-이전-핸드오프에서-유효">5. 함정 (이전 핸드오프에서 유효)</a></nav>
+<main><h1 id="핸드오프-v10-pbr-에셋-통합-2026-07-11">핸드오프 — v10 PBR 에셋 통합 (2026-07-11)</h1>
+<blockquote>다음 작업자가 <strong>재조사 없이 바로 이어받도록</strong> v10 통합 상태·검증·다음 액션을 정리한 인수인계 문서. 정본 결정 = <code>00-decisions.md §I(D28.2)</code>. 이전 상태 핸드오프 = <code>implementation-status-2026-07-06.md</code>(아카이브).</blockquote>
+<h2 id="0-한눈에-요약">0. 한눈에 요약</h2>
+<ul><li><strong>한 일</strong>: 런타임 에셋을 v8.0 → <strong>v10.0 완제품(PBR 내장)</strong> 로 교체하고 기획문서를 v10 기준으로 재정합화.</li><li><strong>핵심 성질</strong>: v10 씬/캐릭터는 v8과 <strong>토폴로지·rig(18조인트)·클립명(12종) 동일</strong>, GLB에 <strong>PBR 텍스처만 내장</strong>된 강화본 → <strong>drop-in</strong>(프론트 로직 변경 0).</li><li><strong>검증</strong>: 프론트 <code>npm run build</code> <strong>EXIT=0</strong>(18/18 라우트), 스왑 GLB 8종 전부 valid glTF·PBR 임베드, <code>asset-registry-v10.json</code> 교차대조 8/8.</li><li><strong>라이브 반영면</strong>: <code>/office</code>(주 앱, <code>page.tsx:493</code>)와 <code>/office-preview</code> <strong>둘 다</strong> <code>OfficeViewport</code>를 렌더 → 양쪽에 v10 적용됨.</li><li><strong>진행됨(2026-07-11 후속)</strong>:<ul><li>✅ <strong>에셋 최적화 완료</strong> — Draco 지오메트리 + WebP 텍스처. <code>frontend/public/office/</code> <strong>~34MB → 9.68MB (−72%)</strong>, 빌드 EXIT=0 (§3 P1).</li><li>✅ <strong>공지사항 기능 구현</strong> — 기획문서 유일 미구현 갭(14-spec §2.8 🔴). 백엔드 <code>Notice</code> 모델+<code>/api/notices</code>(조회 전직원/작성·삭제 admin)+테스트 6종, 프론트 <code>/office</code> 대시보드 MOCK 제거·실 API 배선. pytest 15 passed(+전체 440 passed), 빌드 EXIT=0 (§3 P0).</li></ul></li><li><strong>미완(Later)</strong>: 실브라우저 픽셀 육안 QA, KTX2/Basis(VRAM 절감, 네이티브 툴체인 필요), v10 패키지 중복 폴더 정리, 레이아웃 에디터 이식, <strong>실시간 이동서버(SkyOffice/Colyseus, 🆕 신규 인프라)</strong>, 외부 의존(STT·실 ERP·LiveKit 미디어).</li></ul>
+<h2 id="01-공지사항notices-구현-상세-2026-07-11-p0">0.1 공지사항(Notices) 구현 상세 (2026-07-11, P0)</h2>
+<ul><li>백엔드: <code>models/tables.py</code>에 <code>Notice</code>(id/title/body/author/pinned/created_by + Timestamp·SoftDelete 믹스인, <code>notice</code> 테이블), <code>api/notices.py</code>(GET 목록 pinned·최신순 / POST admin / DELETE admin soft-delete), <code>main.py</code> 라우터 등록, <code>models/__init__.py</code> export.</li><li>프론트: <code>app/(protected)/office/page.tsx</code> — <code>MOCK_NOTICES</code> 제거, <code>notices</code> state + <code>fetchNotices()</code>(<code>GET /api/notices?limit=5</code>) + 우측 패널 실데이터 렌더.</li><li>테스트: <code>tests/test_notices.py</code>(인증필수·빈목록·employee 403·pinned 순서·soft-delete·validation), <code>test_foundation.py</code> 테이블 카운트 22→23.</li><li><strong>관리 UI 완료(2026-07-11)</strong>: <code>app/(protected)/admin/notices/page.tsx</code>(목록+작성 폼+삭제, admin 게이트) + <code>Sidebar.tsx</code> &quot;공지 관리&quot; 메뉴(admin/super_admin). → 공지 기능 <strong>end-to-end 완성</strong>(백엔드 API + 대시보드 조회 + admin 관리). 빌드 19/19 라우트 EXIT=0.</li></ul>
+<h2 id="1-변경-파일-이번-세션-리더-직접-수행">1. 변경 파일 (이번 세션, 리더 직접 수행)</h2>
+<div class="table-wrap"><table><thead><tr><th>파일</th><th>변경</th><th>비고</th></tr></thead><tbody><tr><td><code>frontend/public/office/scene_v4.glb</code></td><td>v10 PBR 씬 스왑</td><td>13.5→22.4MB, 텍스처 54→114장</td></tr><tr><td><code>frontend/public/office/{male,female,receptionist}_rigged.glb</code></td><td>v10 PBR 히어로 캐릭터 3종</td><td>텍스처 0→15장 내장, ~1.7MB</td></tr><tr><td><code>frontend/public/office/{male01,malecasual,female01,femalebiz}.glb</code></td><td>v10 PBR 캐릭터 4종</td><td>텍스처 0→24장 내장, ~1.6MB</td></tr><tr><td><code>frontend/components/OfficeViewport.tsx</code></td><td><strong>헤더 주석/레지스트리 참조만</strong> v10 갱신</td><td>로직 0 변경(diff의 대량 라인은 사용자의 기존 v8 미커밋 작업)</td></tr><tr><td><code>docs/planning/00-decisions.md</code></td><td>§I 에 <strong>결정 D28.2</strong> 신설(+47줄)</td><td>런타임 에셋 정본 = v10</td></tr><tr><td><code>docs/planning/14-virtual-office-spec.md</code></td><td>§0.5 v10 배너</td><td></td></tr><tr><td><code>docs/planning/07-3d-visual-asset-pipeline.md</code></td><td>v10 에셋 소스 배너</td><td></td></tr><tr><td><code>docs/3d-design/asset-registry.md</code></td><td>v10 런타임 레지스트리 배너</td><td></td></tr><tr><td><code>docs/3d-design/optimization-criteria.md</code></td><td>v10 예산 갱신 배너</td><td>GLB 대형화 경고</td></tr><tr><td><code>docs/3d-design/scene-structure.md</code></td><td>v10 씬/아바타 배너</td><td></td></tr></tbody></table></div>
+<blockquote>⚠️ 작업트리에는 이 세션 이전부터의 <strong>사용자 미커밋 변경</strong>(구 <code>virtual_office_3d_assets_full_v1_0/1_1</code> 삭제, <code>frontend/public/office/char_*.glb</code> 삭제, docs <code>_html/*</code> 등)이 다수 존재한다. 이번 세션은 위 표의 파일만 건드렸고 나머지는 <strong>보존</strong>했다.</blockquote>
+<h2 id="2-검증-재현-그대로-복붙">2. 검증 재현 (그대로 복붙)</h2>
+<pre class="code lang-bash"><code># (a) 스왑 GLB 유효성 + PBR/rig 확인
+python3 - &lt;&lt;'PY'
+import struct,json,glob
+for p in sorted(glob.glob(&quot;frontend/public/office/*.glb&quot;)):
+    with open(p,'rb') as f:
+        ok=f.read(4)==b'glTF'; f.read(8)
+        cl,_=struct.unpack('&lt;II',f.read(8)); j=json.loads(f.read(cl))
+    print(p.split('/')[-1], &quot;valid&quot;,ok, &quot;img&quot;,len(j.get('images',[])),
+          &quot;joints&quot;,len(j['skins'][0]['joints']) if j.get('skins') else 0,
+          &quot;anims&quot;,len(j.get('animations',[])))
+PY
+
+# (b) 프론트 빌드 (npm 사용, pnpm 금지 / /mnt/c라 수 분)
+cd frontend &amp;&amp; npm run build   # 기대: ✓ Compiled successfully, EXIT=0</code></pre>
+<p>기대치: 씬 img=114·joints=0·anims=0, 캐릭터 img=15~24·joints=18·anims=12. 빌드 18/18 라우트 통과.</p>
+<h2 id="3-다음-액션-우선순위바로-실행-가능">3. 다음 액션 (우선순위·바로 실행 가능)</h2>
+<h3 id="p1-실브라우저-육안-qa-아직-안-함">P1 — 실브라우저 육안 QA (아직 안 함)</h3>
+<p>빌드는 통과했으나 <strong>실제 렌더 육안 확인 미수행</strong>. v10 PBR 재질이 IBL+ACES+Bloom과 잘 맞는지, 아바타 애니(12클립)·오클루전 확인 필요.</p>
+<pre class="code lang-bash"><code>cd frontend &amp;&amp; npm run dev        # http://localhost:3000/office-preview (인증 불필요)
+# 또는 로그인 후 /office (주 앱). 계정: alice/bob/charlie @virtualoffice.local / password123</code></pre>
+<ul><li>WSL 헤드리스 캡처는 <code>frontend/_shot.mjs</code> 또는 <code>artifacts/webconsole/</code> 스크립트 참고(puppeteer 컨테이너 <code>--network host</code>).</li></ul>
+<h3 id="p1-웹-로딩-최적화-draco-webp-완료">P1 — 웹 로딩 최적화  ✅ Draco + WebP 완료</h3>
+<p><strong>완료(2026-07-11)</strong>: 8종 GLB를 <strong>master→WebP 텍스처→Draco 지오메트리</strong> 파이프라인으로 재생성. <code>frontend/public/office/</code> 합계 <strong>~34MB → 9.68MB (−72%)</strong>.</p>
+<ul><li>씬 <code>scene_v4.glb</code> 22.45→<strong>6.06MB</strong>(−73%), 캐릭터 각 1.6~1.75→<strong>0.45~0.57MB</strong>.</li><li>확장: <code>EXT_texture_webp</code> + <code>KHR_draco_mesh_compression</code>. rig(18조인트)·12클립·머티리얼 보존, <code>gltf-transform inspect</code> 디코드 검증, 빌드 EXIT=0.</li><li><strong>배선</strong>: Draco = 로컬 디코더 <code>frontend/public/draco/</code> + <code>OfficeViewport.tsx const DRACO='/draco/'</code>. WebP = <strong>배선 불필요</strong>(three r168 <code>EXT_texture_webp</code> 네이티브, 브라우저 디코드).</li><li>재현: <code>npx --yes @gltf-transform/cli@4 webp &lt;master.glb&gt; /tmp/w.glb &amp;&amp; npx --yes @gltf-transform/cli@4 draco /tmp/w.glb frontend/public/office/&lt;name&gt;.glb</code></li><li>⚠️ 압축본은 프론트에만. <code>docs/.../v10_0/</code> 원본은 비압축 마스터로 유지.</li><li>잔여 최대 절감은 KTX2/Basis(GPU 상주 VRAM↓, 네이티브 <code>ktx</code> 툴체인 필요) — 현 WebP로 첫 로딩은 충분히 경량화됨.</li></ul>
+<h3 id="p2-v10-패키지-중복-폴더-정리">P2 — v10 패키지 중복 폴더 정리</h3>
+<p><code>docs/virtual_office_complete_product_v10_0/01_runtime_3d/models_pbr_v10/</code> 의 <code>characters_rigged/</code> 와 <code>characters_rigged_v8/</code> 는 <strong>동일 8파일 미러</strong>. 배포 시 하나만 유지 권장(용량·혼선).</p>
+<h3 id="p3-v10-런타임-앱-개념-이식-later">P3 — v10 런타임 앱 개념 이식 (Later)</h3>
+<p><code>docs/virtual_office_complete_product_v10_0/11_complete_runtime_app/</code>(자유배치 레이아웃 에디터 + A* + 좌석 앵커)와 <code>12_layout_presets/</code>(프리셋 3종)는 <strong>바닐라 Three.js 별개 스택</strong>. R3F 프론트로 이식 시 좌석 앵커/프리셋 JSON을 <code>05-office-layout-schema</code> 스키마와 매핑. 우선순위 낮음.</p>
+<h2 id="4-롤백-v80로-되돌리기">4. 롤백 (v8.0로 되돌리기)</h2>
+<p>스왑 소스는 원본 유지됨. 필요 시:</p>
+<pre class="code lang-bash"><code>S=docs/virtual_office_final_dev_complete_v8_0   # v8 원본 패키지 위치 확인 후
+# (v8 파일들을 frontend/public/office/ 로 재복사) + OfficeViewport 헤더 D28.1로 복구</code></pre>
+<p>문서는 D28.1 배너가 그대로 있으므로 D28.2 블록만 제거하면 원복.</p>
+<h2 id="5-함정-이전-핸드오프에서-유효">5. 함정 (이전 핸드오프에서 유효)</h2>
+<ol><li><strong>npm 전용</strong>(pnpm 금지). <code>/mnt/c</code> 빌드·설치 수 분.</li><li>CORS는 <code>localhost:3000</code>만 허용(127.0.0.1 차단).</li><li><code>$team</code> tmux 워커는 이 환경에서 느린 <code>/mnt/c</code> 긴 툴콜(npm build) 동안 <strong>claim 리스 만료로 스래싱</strong> → 이번엔 리더 직접 수행이 확실. 대안: worktree 모드 또는 리더 직접.</li><li>스크린샷 게이트 엔트로피: 캔버스(3D) 캡처는 검증기 통과 어려움 — 텍스트 오버레이 병행.</li></ol>
+<div class="meta-foot">원본: <code>handoff-v10-integration-2026-07-11.md</code> · 자동 생성 2026-07-12 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

@@ -1,0 +1,89 @@
+{
+  "asset_id": "RECEPTION_STAFF_CHAIR_001",
+  "category": "reception",
+  "type": "chair",
+  "priority": "P2",
+  "file": "models/reception/RECEPTION_STAFF_CHAIR_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 0.868,
+    "depth": 0.889,
+    "height": 1.325
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "",
+  "qa": {
+    "triangles": 988,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.662
+    ],
+    "size": [
+      0.868,
+      0.889,
+      1.325
+    ]
+  },
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        0.861
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "seat_anchor": {
+      "position": [
+        0,
+        0,
+        0.48
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "status_anchor": {
+      "position": [
+        0,
+        0,
+        1.675
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {
+    "can_sit": true
+  }
+}

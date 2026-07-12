@@ -1,0 +1,85 @@
+{
+  "prefab_id": "KIT_PANTRY_CAFE_HERO_001",
+  "description": "Marble pantry counter with stools and machines",
+  "instances": [
+    {
+      "asset_id": "PANTRY_COUNTER_MARBLE_HERO_001",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "asset_id": "COFFEE_MACHINE_001",
+      "position": [
+        -0.8,
+        -0.25,
+        0.92
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "asset_id": "WATER_DISPENSER_001",
+      "position": [
+        1.6,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "asset_id": "CHAIR_STOOL_BAR_001",
+      "position": [
+        -0.8,
+        -0.9,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "asset_id": "CHAIR_STOOL_BAR_001",
+      "position": [
+        0,
+        -0.9,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "asset_id": "CHAIR_STOOL_BAR_001",
+      "position": [
+        0.8,
+        -0.9,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "anchors": {}
+}

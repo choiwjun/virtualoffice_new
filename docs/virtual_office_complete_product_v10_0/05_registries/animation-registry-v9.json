@@ -1,0 +1,115 @@
+{
+  "version": "9.0",
+  "rig_id": "VO_HUMANOID_18_V9",
+  "clip_count": 12,
+  "clips": [
+    {
+      "clip_id": "ANIM_CLAP_001",
+      "file": "01_runtime_3d/animations/humanoid/ANIM_CLAP_001.glb",
+      "duration_seconds": 1.0,
+      "loop": false,
+      "root_motion": false,
+      "channels": 5,
+      "compatible_rig": "VO_HUMANOID_18_V9"
+    },
+    {
+      "clip_id": "ANIM_IDLE_001",
+      "file": "01_runtime_3d/animations/humanoid/ANIM_IDLE_001.glb",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "root_motion": false,
+      "channels": 5,
+      "compatible_rig": "VO_HUMANOID_18_V9"
+    },
+    {
+      "clip_id": "ANIM_MEETING_IDLE_001",
+      "file": "01_runtime_3d/animations/humanoid/ANIM_MEETING_IDLE_001.glb",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "root_motion": false,
+      "channels": 12,
+      "compatible_rig": "VO_HUMANOID_18_V9"
+    },
+    {
+      "clip_id": "ANIM_PHONE_CALL_001",
+      "file": "01_runtime_3d/animations/humanoid/ANIM_PHONE_CALL_001.glb",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "root_motion": false,
+      "channels": 5,
+      "compatible_rig": "VO_HUMANOID_18_V9"
+    },
+    {
+      "clip_id": "ANIM_POINT_001",
+      "file": "01_runtime_3d/animations/humanoid/ANIM_POINT_001.glb",
+      "duration_seconds": 1.0,
+      "loop": false,
+      "root_motion": false,
+      "channels": 5,
+      "compatible_rig": "VO_HUMANOID_18_V9"
+    },
+    {
+      "clip_id": "ANIM_SIT_001",
+      "file": "01_runtime_3d/animations/humanoid/ANIM_SIT_001.glb",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "root_motion": false,
+      "channels": 12,
+      "compatible_rig": "VO_HUMANOID_18_V9"
+    },
+    {
+      "clip_id": "ANIM_SIT_DOWN_001",
+      "file": "01_runtime_3d/animations/humanoid/ANIM_SIT_DOWN_001.glb",
+      "duration_seconds": 1.0,
+      "loop": false,
+      "root_motion": false,
+      "channels": 12,
+      "compatible_rig": "VO_HUMANOID_18_V9"
+    },
+    {
+      "clip_id": "ANIM_STAND_UP_001",
+      "file": "01_runtime_3d/animations/humanoid/ANIM_STAND_UP_001.glb",
+      "duration_seconds": 1.0,
+      "loop": false,
+      "root_motion": false,
+      "channels": 8,
+      "compatible_rig": "VO_HUMANOID_18_V9"
+    },
+    {
+      "clip_id": "ANIM_TALK_001",
+      "file": "01_runtime_3d/animations/humanoid/ANIM_TALK_001.glb",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "root_motion": false,
+      "channels": 6,
+      "compatible_rig": "VO_HUMANOID_18_V9"
+    },
+    {
+      "clip_id": "ANIM_TYPING_001",
+      "file": "01_runtime_3d/animations/humanoid/ANIM_TYPING_001.glb",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "root_motion": false,
+      "channels": 13,
+      "compatible_rig": "VO_HUMANOID_18_V9"
+    },
+    {
+      "clip_id": "ANIM_WALK_001",
+      "file": "01_runtime_3d/animations/humanoid/ANIM_WALK_001.glb",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "root_motion": true,
+      "channels": 13,
+      "compatible_rig": "VO_HUMANOID_18_V9"
+    },
+    {
+      "clip_id": "ANIM_WAVE_001",
+      "file": "01_runtime_3d/animations/humanoid/ANIM_WAVE_001.glb",
+      "duration_seconds": 1.0,
+      "loop": false,
+      "root_motion": false,
+      "channels": 5,
+      "compatible_rig": "VO_HUMANOID_18_V9"
+    }
+  ]
+}

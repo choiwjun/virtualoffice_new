@@ -83,7 +83,7 @@ img{max-width:100%;border-radius:8px}
 <h2 id="7-조치-완료-2026-07-07-후속-실행">7. 조치 완료 (2026-07-07, 후속 실행)</h2>
 <p>audit 실행가능 항목 전량 처리:</p>
 <ul><li><strong>§3 D26 문서 드리프트</strong>: docs/3d-design/{scene-structure,asset-registry,optimization-criteria}.md + 02-trd·11-tech-stack·01-prd 상단에 D26 전환 배너 추가. (virtual-office-3d.yaml은 기존 배너 확인)</li><li><strong>§4 계약 정렬</strong>: docs/api/management-api.yaml description에 구현 정합 부록(경로/메서드 드리프트 + 미문서 엔드포인트 전량 목록) 추가.</li><li><strong>§2 MED 코드</strong>:<ul><li><strong>PUT /api/seat-assignments/{seat_id}</strong>(관리자 재배정, history 승계) 구현 + 테스트.</li><li><strong>presence 30일 좌표 파기</strong>(D20-a): scheduler <code>_presence_purge_job</code> 매일 03:00 KST(x/y/z NULL) + 테스트.</li><li><strong>WAM areas 배선</strong>(D24): map<em>generator.generate</em>wam(zones→focusable area, mapUrl 포함) + generate<em>and</em>upload_map 번들. <strong>map-storage 업로드 200, org-map.wam 6 areas 실검증.</strong></li><li><strong>회의 예약 충돌 검증(D23)</strong>: 실측 결과 <strong>이미 구현됨</strong>(meetings.py 409 room<em>time</em>conflict) — audit false-negative 정정.</li></ul></li><li>검증: pytest <strong>417 passed</strong>(+5), 스케줄러 4잡(presence_purge 포함) lifespan 확인, WAM 업로드 실검증.</li><li><strong>잔여(외부 의존, 미착수)</strong>: STT(S2 PoC·엔진), AI 서술초안 생성(Claude), 실 ERP push 전송/DB, WA Room API 고급 scripting — 외부 리소스 필요.</li></ul>
-<div class="meta-foot">원본: <code>audit-2026-07-07.md</code> · 자동 생성 2026-07-09 · md-to-html</div>
+<div class="meta-foot">원본: <code>audit-2026-07-07.md</code> · 자동 생성 2026-07-12 · md-to-html</div>
 </main>
 </div>
 

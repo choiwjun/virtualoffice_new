@@ -1,0 +1,63 @@
+{
+  "asset_id": "COFFEE_TAKEOUT_001",
+  "category": "props",
+  "type": "cup",
+  "priority": "P1",
+  "file": "models/props/COFFEE_TAKEOUT_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 0.116,
+    "depth": 0.12,
+    "height": 0.162
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "",
+  "qa": {
+    "triangles": 204,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.081
+    ],
+    "size": [
+      0.116,
+      0.12,
+      0.162
+    ]
+  },
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        0.162
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        0.105
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {}
+}

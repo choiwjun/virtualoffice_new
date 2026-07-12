@@ -1,0 +1,115 @@
+{
+  "asset_id": "CHAR_FEMALE_BUSINESS_002_RIGGED_V8",
+  "source_static_asset_id": "CHAR_FEMALE_BUSINESS_002",
+  "category": "character",
+  "type": "rigged_humanoid_avatar",
+  "priority": "P1",
+  "file": "models/characters_rigged_v8/CHAR_FEMALE_BUSINESS_002_RIGGED_V8.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "rig": {
+    "type": "humanoid",
+    "skin": true,
+    "joint_count": 18,
+    "bone_names": [
+      "ROOT",
+      "HIPS",
+      "SPINE",
+      "CHEST",
+      "NECK",
+      "HEAD",
+      "UPPER_ARM_L",
+      "LOWER_ARM_L",
+      "HAND_L",
+      "UPPER_ARM_R",
+      "LOWER_ARM_R",
+      "HAND_R",
+      "UPPER_LEG_L",
+      "LOWER_LEG_L",
+      "FOOT_L",
+      "UPPER_LEG_R",
+      "LOWER_LEG_R",
+      "FOOT_R"
+    ],
+    "humanoid_bone_map": {
+      "ROOT": "HipsRoot",
+      "HIPS": "Hips",
+      "SPINE": "Spine",
+      "CHEST": "Chest",
+      "NECK": "Neck",
+      "HEAD": "Head",
+      "UPPER_ARM_L": "LeftUpperArm",
+      "LOWER_ARM_L": "LeftLowerArm",
+      "HAND_L": "LeftHand",
+      "UPPER_ARM_R": "RightUpperArm",
+      "LOWER_ARM_R": "RightLowerArm",
+      "HAND_R": "RightHand",
+      "UPPER_LEG_L": "LeftUpperLeg",
+      "LOWER_LEG_L": "LeftLowerLeg",
+      "FOOT_L": "LeftFoot",
+      "UPPER_LEG_R": "RightUpperLeg",
+      "LOWER_LEG_R": "RightLowerLeg",
+      "FOOT_R": "RightFoot"
+    },
+    "retargeting": "Unity Humanoid / Three.js SkeletonUtils / Babylon.js AnimationGroup compatible"
+  },
+  "animations": [
+    "ANIM_IDLE_001",
+    "ANIM_WALK_001",
+    "ANIM_SIT_001",
+    "ANIM_SIT_DOWN_001",
+    "ANIM_STAND_UP_001",
+    "ANIM_TYPING_001",
+    "ANIM_TALK_001",
+    "ANIM_WAVE_001",
+    "ANIM_MEETING_IDLE_001",
+    "ANIM_POINT_001",
+    "ANIM_PHONE_CALL_001",
+    "ANIM_CLAP_001"
+  ],
+  "anchors": {
+    "name_tag_anchor": {
+      "position": [
+        0,
+        0,
+        1.95
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "status_dot_anchor": {
+      "position": [
+        0.28,
+        0,
+        1.95
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        1.25
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "qa": {
+    "embedded_animation_clip_count": 12,
+    "rig_validation": "generated_and_json_glb_validated",
+    "source": "v8_skeletal_upgrade"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "asset_id": "MEETING_WHITEBOARD_WALL_001",
+  "category": "meeting",
+  "type": "whiteboard",
+  "priority": "P1",
+  "file": "models/meeting/MEETING_WHITEBOARD_WALL_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 1.38,
+    "depth": 0.053,
+    "height": 1.165
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "",
+  "qa": {
+    "triangles": 184,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.583
+    ],
+    "size": [
+      1.38,
+      0.053,
+      1.165
+    ]
+  },
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        1.165
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        0.757
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {}
+}

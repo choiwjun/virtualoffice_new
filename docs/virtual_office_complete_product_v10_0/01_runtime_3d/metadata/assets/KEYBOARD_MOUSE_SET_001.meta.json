@@ -1,0 +1,63 @@
+{
+  "asset_id": "KEYBOARD_MOUSE_SET_001",
+  "category": "props",
+  "type": "keyboard_mouse",
+  "priority": "P1",
+  "file": "models/props/KEYBOARD_MOUSE_SET_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 0.643,
+    "depth": 0.161,
+    "height": 0.049
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "",
+  "qa": {
+    "triangles": 588,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.025
+    ],
+    "size": [
+      0.643,
+      0.161,
+      0.049
+    ]
+  },
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        0.049
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        0.032
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {}
+}

@@ -1,0 +1,24 @@
+using UnityEngine;
+
+public enum VirtualOfficeClipId {
+    ANIM_IDLE_001,
+    ANIM_WALK_001,
+    ANIM_SIT_001,
+    ANIM_TYPING_001,
+    ANIM_TALK_001,
+    ANIM_WAVE_001,
+    ANIM_MEETING_IDLE_001,
+    ANIM_STAND_UP_001,
+    ANIM_SIT_DOWN_001,
+    ANIM_POINT_001,
+    ANIM_PHONE_CALL_001,
+    ANIM_CLAP_001
+}
+
+public class VirtualOfficeAvatarAnimationDriver : MonoBehaviour {
+    public Animator animator;
+    public void Play(VirtualOfficeClipId clip) {
+        if (animator == null) animator = GetComponent<Animator>();
+        animator.CrossFade(clip.ToString(), 0.18f);
+    }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "virtual-office-assets-babylon-v9",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@babylonjs/core": "*",
+    "@babylonjs/loaders": "*"
+  },
+  "devDependencies": {
+    "typescript": "*"
+  }
+}

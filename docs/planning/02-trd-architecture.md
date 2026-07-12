@@ -1,5 +1,7 @@
 # 기술 아키텍처(TRD) — 가상오피스 운영 플랫폼
 
+> 🔵 **D28 피벗(2026-07-09) — 렌더 아키텍처 대체.** 아래 "Blender Cycles 오프라인 렌더 배경 + 깊이합성"은 폐기, 현행 = **실시간 스타일라이즈드 R3F 단일 렌더**(같은 렌더러라 오클루전 자동 — 별도 깊이합성 없음). Colyseus 이동서버·단일세션 JWT·데이터/ERP/보안/KPI/회의 시퀀스는 유지. 정본 = **00-decisions §I(D28)**.
+
 > ✅ **D27 반영(2026-07-09) — 포토리얼 웹임베드 아키텍처로 재작성 완료.** D26(WorkAdventure) 및 그 이전의 Godot 네이티브 스택은 **전면 폐기**되었다. 현행 정본 = 00-decisions §H(D27) · 14-virtual-office-spec · 15-realtime-server-spec · 16-render-spike-and-roadmap · 3d-design/{design-style-analysis, photoreal-web-strategy}. 데이터 계층·ERP 연동·보안·KPI·회의 시퀀스의 도메인 로직은 D27에서도 유효하며 보존한다.
 
 > **[전환 이력]** ① Godot 4 네이티브 데스크톱/헤드리스 서버(v1.x) → ② D26 WorkAdventure self-host(2026-07-06) → ③ **D27 포토리얼 웹임베드(2026-07-08)**. 최종 확정 = R3F(three.js) 뷰포트 + Blender Cycles 오프라인 렌더 배경 + 깊이합성 + Colyseus(Node/TS) 권위 서버 + 단일세션 JWT. 이전 두 아키텍처의 렌더·클라·서버·배포 서술은 모두 폐기됨(도메인 로직 제외).

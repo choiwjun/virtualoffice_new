@@ -1,0 +1,89 @@
+{
+  "asset_id": "DESK_BENCH_4P_HERO_001",
+  "category": "workstation",
+  "type": "desk_cluster",
+  "priority": "P1",
+  "file": "models/workstation/DESK_BENCH_4P_HERO_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 3.4,
+    "depth": 1.45,
+    "height": 1.305
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "",
+  "qa": {
+    "triangles": 1628,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.652
+    ],
+    "size": [
+      3.4,
+      1.45,
+      1.305
+    ]
+  },
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        0.848
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "work_anchor": {
+      "position": [
+        0,
+        -0.925,
+        0.75
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "chair_snap_anchor": {
+      "position": [
+        0,
+        -1.275,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {
+    "can_work": true
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "asset_id": "ARCH_GLASS_MEETING_ROOM_HERO_001",
+  "category": "architecture",
+  "type": "room_shell",
+  "priority": "P1",
+  "file": "models/architecture/ARCH_GLASS_MEETING_ROOM_HERO_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 3.912,
+    "depth": 2.837,
+    "height": 2.322
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "",
+  "qa": {
+    "triangles": 292,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      1.161
+    ],
+    "size": [
+      3.912,
+      2.837,
+      2.322
+    ]
+  },
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        1.509
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "room_label_anchor": {
+      "position": [
+        0,
+        -1.669,
+        2.622
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {
+    "can_enter": true
+  }
+}

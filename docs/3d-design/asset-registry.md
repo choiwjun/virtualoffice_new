@@ -1,5 +1,11 @@
 # Asset 레지스트리 명세 (asset-registry.md)
 
+> 🔵 **D28 피벗(2026-07-09) — 배포 산출물 정정.** 배경 = Blender 오프라인 렌더(`office_bg.png`·`office_depth.png`) 전제는 **폐기**. D28에선 **배경도 실시간 `.glb`**(씬 지오메트리)로 로드한다 → 산출물 = **씬 glb + 아바타/소품 glb**(모두 런타임 로드), `office_depth.png`·깊이합성 산출물 불필요. asset 스키마의 `gltf_path`는 유효, "배경 렌더 이미지" 필드 전제는 무효. 정본 = **00-decisions §I(D28)**.
+
+> 🟣 **v8.0 런타임 레지스트리(2026-07-10, D28.1).** 실제 런타임 자산 정본 = **`05_registries/asset-registry-v8.json`**(`docs/virtual_office_final_dev_complete_v8_0/`). 씬=`SCENE_ACME_HQ_HERO_V4_001.glb`, 캐릭터=`characters_rigged_v8/*.glb`(스킨+애니 12클립 내장 · 18본 휴머노이드 · pivot BOTTOM_CENTER · up-axis Z). 상세 = 00-decisions §I(D28.1).
+
+> 🟪 **v10.0 런타임 레지스트리(2026-07-11, D28.2).** 실제 런타임 자산 정본 = **`05_registries/asset-registry-v10.json`**(`docs/virtual_office_complete_product_v10_0/`, 137 에셋). 씬=`scenes_pbr_v10/SCENE_ACME_HQ_HERO_V4_001.glb`(PBR 내장), 캐릭터=`models_pbr_v10/characters_rigged/*.glb`(동일 V8 rig, PBR 텍스처 내장). pivot BOTTOM_CENTER·up-axis Z 유지. 상세 = 00-decisions §I(D28.2).
+
 > 🟢 **D27 반영(2026-07-09 재작성) — 포토리얼 웹 임베드(three.js/R3F) 노선 정본.** D26(WorkAdventure 2D)+Godot 노선은 모두 폐기(D27). 이 문서는 그 전환을 반영해 재작성되었다.
 > **배포 산출물**: 배경 = Blender Cycles **오프라인 렌더 산출물**(`office_bg.png` · `office_depth.png` · `camera.json`, 층·레이아웃 버전별). 아바타·소품 = 경량 **GLTF**(`.glb`, 런타임 로드).
 > **웹 최적 포맷**: GLTF + Draco/meshopt + KTX2/Basis(three.js/R3F 웹 표준 권장). Godot .tscn/.pak 동봉·ASSET_CATALOG GDScript·압축금지 정책은 모두 폐기됐다.

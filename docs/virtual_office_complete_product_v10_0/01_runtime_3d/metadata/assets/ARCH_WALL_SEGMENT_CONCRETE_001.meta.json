@@ -1,0 +1,63 @@
+{
+  "asset_id": "ARCH_WALL_SEGMENT_CONCRETE_001",
+  "category": "architecture",
+  "type": "wall",
+  "priority": "P1",
+  "file": "models/architecture/ARCH_WALL_SEGMENT_CONCRETE_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 2.0,
+    "depth": 0.16,
+    "height": 2.7
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "",
+  "qa": {
+    "triangles": 12,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      1.35
+    ],
+    "size": [
+      2.0,
+      0.16,
+      2.7
+    ]
+  },
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        1.755
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {}
+}

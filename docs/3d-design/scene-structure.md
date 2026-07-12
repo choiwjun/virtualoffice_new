@@ -1,5 +1,11 @@
 # 3D 씬 구조 설계 (scene-structure.md)
 
+> 🔵 **D28 피벗(2026-07-09) — 씬 구조 대체.** "배경 풀스크린 쿼드 + 깊이합성 머티리얼 + Blender 오프라인 조명"은 폐기. 현행 = **실시간 R3F 씬 그래프**: `<Canvas>` 안 **glb 씬(가구·벽·바닥 실지오메트리) 직접 로드** + 실시간 라이팅(ambient/hemisphere/directional) + 아바타 그룹(glb) + 직교 카메라 + DOM HUD. 아바타 오클루전은 **같은 씬 실지오메트리로 자동**(깊이합성 셰이더 없음). 좌표 = glb Z-up→three.js Y-up(-90°X). 정본 = **00-decisions §I(D28)**.
+
+> 🟣 **v8.0 씬/아바타(2026-07-10, D28.1).** 씬 노드 = **V4 히어로 씬**(`SCENE_ACME_HQ_HERO_V4_001.glb` · 노드 381 · 메시 1689). 아바타 노드 = **리깅 glb + `AnimationMixer`**(정적 `<primitive>` 대체 → idle/walk 클립 재생). Z-up→Y-up(-90°X) 보정 유지. 상세 = 00-decisions §I(D28.1).
+
+> 🟪 **v10.0 씬/아바타(2026-07-11, D28.2).** 씬/아바타 노드 구조는 v8과 동일(씬 노드 381·메시 1689, 아바타 18조인트 rig + `AnimationMixer` 12클립). 차이는 **GLB PBR 텍스처 내장**뿐 → R3F 씬 그래프·Z-up→Y-up 보정·오클루전 자동 그대로. 상세 = 00-decisions §I(D28.2).
+
 > 🟢 **D27 반영(2026-07-09) — 이 문서는 현행 아키텍처(R3F 오프라인렌더+깊이합성 웹임베드) 기준으로 재작성되었다.** D26(WorkAdventure 2D)+Godot 네이티브 3D 노선은 모두 폐기됨. 씬 구조는 **R3F(three.js) 컴포넌트 트리** — `<Canvas>` 안 배경 풀스크린 쿼드 + 깊이합성 머티리얼 + 아바타 그룹(GLTF) + 직교 카메라(camera.json 재현) + DOM HUD 오버레이. 배경 조명은 Blender Cycles 오프라인 구움(런타임 라이팅 노드 없음). 좌표는 실측 camera.json axis_remap(Blender→three.js). 현행 정본: **00-decisions §H(D27)** · 14-virtual-office-spec · 15-realtime-server-spec · 16-render-spike-and-roadmap · 3d-design/{design-style-analysis §5, photoreal-web-strategy}.
 
 **문서 버전**: 2.0  

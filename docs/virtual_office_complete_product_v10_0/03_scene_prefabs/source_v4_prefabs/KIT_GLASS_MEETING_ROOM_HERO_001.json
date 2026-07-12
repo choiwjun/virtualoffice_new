@@ -1,0 +1,46 @@
+{
+  "prefab_id": "KIT_GLASS_MEETING_ROOM_HERO_001",
+  "description": "Glass meeting room with neon edge and 8P setup",
+  "instances": [
+    {
+      "asset_id": "ARCH_GLASS_MEETING_ROOM_HERO_001",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "asset_id": "MEETING_TABLE_8P_HERO_001",
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "asset_id": "MEETING_TV_WALL_001",
+      "position": [
+        0,
+        1.37,
+        0.3
+      ],
+      "rotation": [
+        0,
+        0,
+        180
+      ]
+    }
+  ],
+  "anchors": {}
+}

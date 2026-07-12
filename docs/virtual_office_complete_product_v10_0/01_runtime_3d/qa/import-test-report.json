@@ -1,0 +1,17 @@
+[
+  {
+    "file": "scenes/SCENE_ACME_HQ_HERO_V3_001.glb",
+    "load_ok": true,
+    "type": "<class 'trimesh.scene.scene.Scene'>"
+  },
+  {
+    "file": "models/characters/CHAR_MALE_001.glb",
+    "load_ok": true,
+    "type": "<class 'trimesh.scene.scene.Scene'>"
+  },
+  {
+    "file": "models/reception/RECEPTION_DESK_MARBLE_HERO_001.glb",
+    "load_ok": true,
+    "type": "<class 'trimesh.scene.scene.Scene'>"
+  }
+]

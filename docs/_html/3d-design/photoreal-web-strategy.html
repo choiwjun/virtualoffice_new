@@ -54,6 +54,7 @@ img{max-width:100%;border-radius:8px}
 <div class="layout">
 <nav class="toc"><div class="brand">포토리얼 웹 렌더 전략 (정본)</div><div class="sub">photoreal-web-strategy.md</div><a class="lvl1" href="#포토리얼-웹-렌더-전략-정본">포토리얼 웹 렌더 전략 (정본)</a><a class="lvl2" href="#0-왜-전환했나-godot-폐기-사유">0. 왜 전환했나 (Godot 폐기 사유)</a><a class="lvl2" href="#1-확정-스택">1. 확정 스택</a><a class="lvl2" href="#2-핵심-아이디어-구운-배경-실시간-아바타-깊이합성">2. 핵심 아이디어: &quot;구운 배경 + 실시간 아바타 깊이합성&quot;</a><a class="lvl2" href="#3-미검증-리스크-phase-0-스파이크-착수-전-필수">3. 미검증 리스크 = Phase 0 스파이크 (착수 전 필수)</a><a class="lvl2" href="#4-파이프라인-배경-생성-웹-서빙">4. 파이프라인 (배경 생성 → 웹 서빙)</a><a class="lvl2" href="#5-좌표계-정합-web-blender-서버">5. 좌표계 정합 (Web ↔ Blender ↔ 서버)</a><a class="lvl2" href="#6-남은-실행-항목스파이크-이후">6. 남은 실행 항목(스파이크 이후)</a><a class="lvl2" href="#7-한-줄-요약">7. 한 줄 요약</a></nav>
 <main><h1 id="포토리얼-웹-렌더-전략-정본">포토리얼 웹 렌더 전략 (정본)</h1>
+<blockquote>🔵 <strong>D28 피벗(2026-07-09) — 이 전략(오프라인렌더+깊이합성)은 폐기·보관.</strong> 실측 결과 사용자 제작 스타일라이즈드 저폴리 에셋으로 <strong>실시간 R3F 단일 렌더</strong>가 3대 난제(깊이합성·유리·아바타 조명매칭)를 원천 제거하며 목표를 충족 → 이 문서의 오프라인렌더/깊이합성/유리 전략은 <strong>채택하지 않는다</strong>. 현행 정본 = <strong>00-decisions §I(D28)</strong>. (문서는 대안 검토 이력으로 보존)</blockquote>
 <blockquote>2026-07-05 확정 · 2026-07-08 복원/정리. 유실됐던 정본을 재작성. 가상오피스 3D 뷰를 <strong>Godot 실시간 웹에서 웹 오프라인렌더 하이브리드로 전환</strong>한 확정 전략. 관련: <a href="./design-style-analysis.md">design-style-analysis.md</a>(비주얼 톤), 14-virtual-office-spec(기능).</blockquote>
 <hr>
 <h2 id="0-왜-전환했나-godot-폐기-사유">0. 왜 전환했나 (Godot 폐기 사유)</h2>
@@ -99,7 +100,7 @@ img{max-width:100%;border-radius:8px}
 <hr>
 <h2 id="7-한-줄-요약">7. 한 줄 요약</h2>
 <p><strong>실시간 렌더로는 못 넘는 포토리얼을, &quot;오프라인으로 구운 배경 + 실시간 아바타 깊이합성&quot;으로 넘는다. 대가는 고정 아이소 시점(2.5D). 성패는 깊이합성 스파이크 하나에 달렸다.</strong></p>
-<div class="meta-foot">원본: <code>photoreal-web-strategy.md</code> · 자동 생성 2026-07-09 · md-to-html</div>
+<div class="meta-foot">원본: <code>photoreal-web-strategy.md</code> · 자동 생성 2026-07-12 · md-to-html</div>
 </main>
 </div>
 

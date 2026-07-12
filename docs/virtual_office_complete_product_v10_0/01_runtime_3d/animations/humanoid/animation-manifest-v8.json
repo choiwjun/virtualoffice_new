@@ -1,0 +1,102 @@
+{
+  "version": "8.0-rigged-animation-complete",
+  "rig": "HUMANOID_RIG_V8",
+  "clip_count": 12,
+  "clips": [
+    {
+      "clip_id": "ANIM_IDLE_001",
+      "file": "animations/humanoid/ANIM_IDLE_001.glb",
+      "rig": "HUMANOID_RIG_V8",
+      "duration_sec": 1.0,
+      "loop": true
+    },
+    {
+      "clip_id": "ANIM_WALK_001",
+      "file": "animations/humanoid/ANIM_WALK_001.glb",
+      "rig": "HUMANOID_RIG_V8",
+      "duration_sec": 1.0,
+      "loop": true
+    },
+    {
+      "clip_id": "ANIM_SIT_001",
+      "file": "animations/humanoid/ANIM_SIT_001.glb",
+      "rig": "HUMANOID_RIG_V8",
+      "duration_sec": 1.0,
+      "loop": false
+    },
+    {
+      "clip_id": "ANIM_SIT_DOWN_001",
+      "file": "animations/humanoid/ANIM_SIT_DOWN_001.glb",
+      "rig": "HUMANOID_RIG_V8",
+      "duration_sec": 1.0,
+      "loop": false
+    },
+    {
+      "clip_id": "ANIM_STAND_UP_001",
+      "file": "animations/humanoid/ANIM_STAND_UP_001.glb",
+      "rig": "HUMANOID_RIG_V8",
+      "duration_sec": 1.0,
+      "loop": false
+    },
+    {
+      "clip_id": "ANIM_TYPING_001",
+      "file": "animations/humanoid/ANIM_TYPING_001.glb",
+      "rig": "HUMANOID_RIG_V8",
+      "duration_sec": 1.0,
+      "loop": true
+    },
+    {
+      "clip_id": "ANIM_TALK_001",
+      "file": "animations/humanoid/ANIM_TALK_001.glb",
+      "rig": "HUMANOID_RIG_V8",
+      "duration_sec": 1.0,
+      "loop": true
+    },
+    {
+      "clip_id": "ANIM_WAVE_001",
+      "file": "animations/humanoid/ANIM_WAVE_001.glb",
+      "rig": "HUMANOID_RIG_V8",
+      "duration_sec": 1.0,
+      "loop": false
+    },
+    {
+      "clip_id": "ANIM_MEETING_IDLE_001",
+      "file": "animations/humanoid/ANIM_MEETING_IDLE_001.glb",
+      "rig": "HUMANOID_RIG_V8",
+      "duration_sec": 1.0,
+      "loop": true
+    },
+    {
+      "clip_id": "ANIM_POINT_001",
+      "file": "animations/humanoid/ANIM_POINT_001.glb",
+      "rig": "HUMANOID_RIG_V8",
+      "duration_sec": 1.0,
+      "loop": false
+    },
+    {
+      "clip_id": "ANIM_PHONE_CALL_001",
+      "file": "animations/humanoid/ANIM_PHONE_CALL_001.glb",
+      "rig": "HUMANOID_RIG_V8",
+      "duration_sec": 1.0,
+      "loop": false
+    },
+    {
+      "clip_id": "ANIM_CLAP_001",
+      "file": "animations/humanoid/ANIM_CLAP_001.glb",
+      "rig": "HUMANOID_RIG_V8",
+      "duration_sec": 1.0,
+      "loop": true
+    }
+  ],
+  "embedded_in_character_assets": [
+    "CHAR_FEMALE_001_RIGGED_V8.glb",
+    "CHAR_FEMALE_BUSINESS_002_RIGGED_V8.glb",
+    "CHAR_MALE_001_RIGGED_V8.glb",
+    "CHAR_MALE_CASUAL_002_RIGGED_V8.glb",
+    "CHAR_RECEPTIONIST_001_RIGGED_V8.glb",
+    "CHAR_FEMALE_RIGGED_HERO_V8_001.glb",
+    "CHAR_MALE_RIGGED_HERO_V8_001.glb",
+    "CHAR_RECEPTIONIST_RIGGED_HERO_V8_001.glb"
+  ],
+  "notes": "Each rigged character GLB embeds the full animation set. The animations/humanoid folder also contains retargetable skeleton-only clip GLBs. Coordinate convention follows the existing asset set: meter scale, Z-up, bottom-center pivot."
+}

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>핸드오프 — 구현 전수조사 + 실버그/문서정합 핫픽스 (2026-07-11)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">핸드오프 — 구현 전수조사 + 실버그/문서정합 핫픽스 (2026-07-11)</div><div class="sub">handoff-gap-audit-and-hotfix-2026-07-11.md</div><a class="lvl1" href="#핸드오프-구현-전수조사-실버그문서정합-핫픽스-2026-07-11">핸드오프 — 구현 전수조사 + 실버그/문서정합 핫픽스 (2026-07-11)</a><a class="lvl2" href="#0-한눈에-요약">0. 한눈에 요약</a><a class="lvl2" href="#1-이번-세션-변경-파일-미커밋-7개">1. 이번 세션 변경 파일 (미커밋 · 7개)</a><a class="lvl3" href="#커밋-제안-원할-때">커밋 제안 (원할 때)</a><a class="lvl2" href="#2-검증-재현-그대로-복붙">2. 검증 재현 (그대로 복붙)</a><a class="lvl2" href="#3-전수조사-결과-기획문서-대비-구현-갭-정본-스냅샷">3. 전수조사 결과 — 기획문서 대비 구현 갭 (정본 스냅샷)</a><a class="lvl3" href="#31-critical-핵심-미구현-실시간-계층-대부분-c1이-뿌리">3.1 🔴 Critical — 핵심 미구현 (실시간 계층, 대부분 C1이 뿌리)</a><a class="lvl3" href="#32-외부의존-스텁-예상된-미완-코드만으론-불가">3.2 🔴 외부의존 스텁 (예상된 미완 — 코드만으론 불가)</a><a class="lvl3" href="#33-partial-구현됐으나-미흡">3.3 🟡 Partial — 구현됐으나 미흡</a><a class="lvl3" href="#34-실버그-이번-세션-4건-수정-완료-잔여-확인">3.4 🐛 실버그 — **이번 세션 4건 수정 완료**, 잔여 확인</a><a class="lvl3" href="#35-보안-갭-hg-sec-p7-t5">3.5 🔒 보안 갭 (HG-SEC / P7-T5)</a><a class="lvl3" href="#36-문서-드리프트-이번-세션-일부-정합">3.6 👻 문서 드리프트 — **이번 세션 일부 정합**</a><a class="lvl3" href="#37-잘-된-것-재작업-불필요">3.7 ✅ 잘 된 것 (재작업 불필요)</a><a class="lvl2" href="#4-다음-액션-우선순위">4. 다음 액션 (우선순위)</a><a class="lvl2" href="#5-함정-환경-주의">5. 함정 / 환경 주의</a></nav>
+<main><h1 id="핸드오프-구현-전수조사-실버그문서정합-핫픽스-2026-07-11">핸드오프 — 구현 전수조사 + 실버그/문서정합 핫픽스 (2026-07-11)</h1>
+<blockquote>다음 작업자가 <strong>재조사 없이 바로 이어받도록</strong> 이번 세션의 전수조사 결과·핫픽스·미커밋 상태·다음 액션을 정리한 인수인계 문서. 선행 핸드오프 = <code>handoff-v10-integration-2026-07-11.md</code>(v10 PBR 에셋 통합). 정본 결정 = <code>00-decisions.md §I(D28.2)</code>. 브랜치 = <code>fix/remove-wa-link-and-login-active</code>. 이번 세션 변경은 <strong>전부 미커밋</strong>(리더 직접 검토 대기).</blockquote>
+<h2 id="0-한눈에-요약">0. 한눈에 요약</h2>
+<ul><li><strong>한 일</strong>: ① 기획문서 전체 대비 <strong>구현 전수조사</strong>(백엔드 22테이블·17 API모듈·~445테스트 + 프론트 15화면 실측) → 갭 리포트 확정. ② <code>/orchestrate</code> <strong>반자동화</strong>로 &quot;실버그+문서정합&quot; 스코프 처리(전문가 3인 병렬 + 리더 직접 1건).</li><li><strong>핵심 발견</strong>: 관리 콘솔·백엔드 도메인은 사실상 완성(~90%). <strong>정작 제품 정체성인 &quot;실시간 3D 가상오피스&quot;의 실시간 계층(Colyseus 이동서버·실시간 프레즌스·LiveKit 실미디어)이 통째로 부재(~15%).</strong></li><li><strong>이번 세션 수정(미커밋 7파일)</strong>: KPI 스케줄러 런타임버그, 프론트 config drift·깨진 네비·stale 라벨, 마이그레이션 테스트 스테일 단언, 12-tasks/derived-gates 실측 정합.</li><li><strong>검증</strong>: 백엔드 pytest <strong>445 passed / 0 failed 예상</strong>(KPI 스코프 58 passed, test_migrations 2 passed 직접 확인). 프론트 <strong>tsc 0 errors</strong>. (<code>npm run build</code> 실전은 미실행 — /mnt/c 수 분.)</li><li><strong>다음 최우선</strong>: (a) 7파일 커밋 여부 결정, (b) <strong>C1 실시간 이동서버(Colyseus)</strong> — 최대 잔여 갭.</li></ul>
+<hr>
+<h2 id="1-이번-세션-변경-파일-미커밋-7개">1. 이번 세션 변경 파일 (미커밋 · 7개)</h2>
+<div class="table-wrap"><table><thead><tr><th>파일</th><th>변경</th><th>검증</th></tr></thead><tbody><tr><td><code>backend/app/services/scheduler.py</code></td><td><code>_kpi_batch_job</code>: <code>daily/weekly/monthly + period_key=None</code>(런타임 예외) → <strong><code>daily + quarterly</code> KST 구체 period_key</strong>(D16 정본). docstring 정정</td><td>KPI 58 passed</td></tr><tr><td><code>backend/tests/test_kpi_engine.py</code></td><td>회귀 테스트 3건 추가(배치 예외없이 daily·quarterly upsert / period 파싱 / weekly·monthly는 여전히 ValueError)</td><td>〃</td></tr><tr><td><code>backend/tests/test_migrations.py</code></td><td>매직넘버 <code>assert len(tables)==21</code> → <strong><code>len(Base.metadata.tables)+1</code></strong> 연동(스테일 방지) + <code>notice</code> 표본 추가</td><td>2 passed</td></tr><tr><td><code>frontend/lib/api.ts</code></td><td><code>BASE_URL</code> 하드코딩 <code>:8090</code> → <strong><code>process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:8000'</code></strong></td><td>tsc pass</td></tr><tr><td><code>frontend/app/(protected)/office/page.tsx</code></td><td><code>/office</code> 좌측 네비 5종(404) → <strong>&quot;준비중&quot; 비활성화</strong>(<code>&lt;span aria-disabled&gt;</code>), stale 라벨 <code>v1.1 (리깅 전)</code> → <code>v10 PBR 리깅</code></td><td>〃</td></tr><tr><td><code>docs/planning/12-tasks.md</code></td><td><strong>30태스크 실측 상태표기</strong>(✅구현/🟡부분/🔴미구현/⛔D28폐기) + 상단 재정합 배너</td><td>—</td></tr><tr><td><code>docs/planning/loop/08-derived-gates.md</code></td><td><strong>6게이트 주석</strong>(REQ-012/013/014 D28폐기, REQ-004 미구현, REQ-006 501, REQ-015 부분) + 배너</td><td>—</td></tr></tbody></table></div>
+<blockquote>⚠️ 작업 트리엔 <strong>이전 세션의 미커밋 변경도 다수</strong>(v10 에셋, <code>docs/_html/*</code> 재생성, <code>backend/app/main.py</code>·<code>models/tables.py</code> 등). 커밋 시 <code>git add .</code> 금지 — <strong>위 7개만 선별 스테이징</strong>.</blockquote>
+<h3 id="커밋-제안-원할-때">커밋 제안 (원할 때)</h3>
+<pre class="code lang-bash"><code>git add backend/app/services/scheduler.py backend/tests/test_kpi_engine.py \
+        backend/tests/test_migrations.py frontend/lib/api.ts \
+        &quot;frontend/app/(protected)/office/page.tsx&quot; \
+        docs/planning/12-tasks.md docs/planning/loop/08-derived-gates.md
+git commit -m &quot;fix: KPI 스케줄러 daily/quarterly + 프론트 config·네비·라벨 + 문서 실측정합&quot;</code></pre>
+<hr>
+<h2 id="2-검증-재현-그대로-복붙">2. 검증 재현 (그대로 복붙)</h2>
+<pre class="code lang-bash"><code># 백엔드 (⚠️ PATH python 아님 — 전용 venv 사용)
+cd backend
+./.venv/Scripts/python.exe -m pytest tests/test_kpi_engine.py tests/test_migrations.py -q
+# 기대: KPI/마이그 테스트 all pass. 전체: ./.venv/Scripts/python.exe -m pytest -q → 445 passed 예상
+
+# 프론트 타입
+cd frontend &amp;&amp; npx tsc --noEmit         # 기대: 0 errors
+# (선택) 실전 빌드: npm run build  (npm 전용, pnpm 금지, /mnt/c 수 분)</code></pre>
+<hr>
+<h2 id="3-전수조사-결과-기획문서-대비-구현-갭-정본-스냅샷">3. 전수조사 결과 — 기획문서 대비 구현 갭 (정본 스냅샷)</h2>
+<blockquote>방법: 백엔드/프론트 실측 인벤토리 × 기획(14-spec §2·12-tasks·derived-gates REQ-001~016·06-screens·08-kpi·09-realtime·04-data-model). 상태: ✅구현 / 🟡부분 / 🔴미구현 / 👻문서드리프트.</blockquote>
+<h3 id="31-critical-핵심-미구현-실시간-계층-대부분-c1이-뿌리">3.1 🔴 Critical — 핵심 미구현 (실시간 계층, 대부분 C1이 뿌리)</h3>
+<div class="table-wrap"><table><thead><tr><th>ID</th><th>갭</th><th>근거</th><th>실측 증거</th></tr></thead><tbody><tr><td><strong>C1</strong></td><td><strong>실시간 이동서버(Colyseus) 전체 부재</strong></td><td>REQ-004·09-realtime</td><td>서버 디렉토리·package.json 자체 없음. 20Hz tick·이동검증8·근접검증8(LOS)·reconnect 스냅샷 전무</td></tr><tr><td><strong>C2</strong></td><td>3D 아바타 실시간 이동/프레즌스 미배선</td><td>REQ-001·14 §2.1</td><td>프론트 WS/Colyseus 클라이언트 0개. <code>OfficeViewport</code> 아바타=하드코딩 정적. 우패널 프레즌스=<code>GET /api/presence/employees</code> 1회성</td></tr><tr><td><strong>C3</strong></td><td>회의실 LiveKit 실미디어 미배선</td><td>REQ-005·14 §2.4</td><td><code>meetings.py</code>에 livekit-token 엔드포인트 <strong>없음</strong>(정본 <code>/api/meetings/{id}/livekit-token</code> 부재). legacy <code>/api/wa/livekit-token</code>(<strong>미인증</strong>)만. 프론트 <code>MediaBar</code> onClick 없음</td></tr><tr><td><strong>C4</strong></td><td>아바타 커스터마이징 완전 부재</td><td>06 §3.9·04 <code>user_avatar</code></td><td><strong><code>user_avatar</code> 테이블 없음</strong>(실측). 설정/커스터마이징 화면·프리셋 전무</td></tr><tr><td><strong>C5</strong></td><td>회의실 근접(2m) 명시입장 트리거 미구현</td><td>REQ-005/D24</td><td>백엔드 join/consent ✅이나 2m 근접 트리거는 C1 의존</td></tr></tbody></table></div>
+<h3 id="32-외부의존-스텁-예상된-미완-코드만으론-불가">3.2 🔴 외부의존 스텁 (예상된 미완 — 코드만으론 불가)</h3>
+<ul><li><strong>STT 회의록</strong>: <code>meeting_minutes.py</code> <code>POST /stt-draft</code> → <strong>HTTP 501</strong>(동의 체크 후). REQ-006/P6.</li><li><strong>실 ERP write-back</strong>: <code>eod_push.py:44</code> → <code>raise NotImplementedError</code>(엔드포인트 설정 시). 기본 <code>{&quot;mock&quot;:True}</code>.</li><li><strong>실 ERP 소스</strong>: 기본 <code>MockErpReader</code>(5명 시드). <code>ERP_DATABASE_URL</code> 시에만 실 DB. <code>postgres_reader.fetch_org_groups</code>=<code>[]</code>(TODO).</li><li><strong>AI 초안(Claude)</strong>: <code>ai_draft.py</code> 기본 mock(<code>ai_draft_enabled=False</code>).</li><li><strong>AI 회의록 요약</strong>: <code>ai_summary</code> 컬럼만, 생성 미배선. P6-T3.</li></ul>
+<h3 id="33-partial-구현됐으나-미흡">3.3 🟡 Partial — 구현됐으나 미흡</h3>
+<ul><li><code>/office</code> mock 요소: 화상오버레이 참석자 하드코딩(<code>Olivia/Liam/Mia/Noah</code>), 미니맵 가짜 점, 헤더 검색/🔔 핸들러 없음. <strong>(플로어셀렉터·라벨·네비는 이번 세션 일부 정리)</strong></li><li>대시보드 3카드: 실배선됐으나 <code>className=&quot;hidden&quot;</code>로 숨김.</li><li>공지 모델 스펙 미달: spec의 category(system/notice/info)·published<em>at·expires</em>at·md렌더 없음(Notice=title/body/author/pinned/created_by).</li><li>자율좌석 3D 클릭 UX 없음(백엔드 ✅).</li><li>단일세션 eviction 미구현(REQ-015). 레이아웃 검증 box rotation 미지원(validator TODO).</li><li>RBAC 전용 화면(권한 매트릭스/권한없음) 없음(게이팅 자체는 ✅).</li></ul>
+<h3 id="34-실버그-이번-세션-4건-수정-완료-잔여-확인">3.4 🐛 실버그 — <strong>이번 세션 4건 수정 완료</strong>, 잔여 확인</h3>
+<ul><li>✅수정: KPI 스케줄러 예외 / config drift(:8090) / <code>/office</code> 네비 404 5종 / stale 라벨 / 마이그 테스트 스테일 단언.</li><li>잔여(경미): <code>/admin/kpi/objections</code> 네비 고아(직접 URL만 도달). <code>/office-preview</code> 임시 페이지(배포 전 삭제 대상).</li></ul>
+<h3 id="35-보안-갭-hg-sec-p7-t5">3.5 🔒 보안 갭 (HG-SEC / P7-T5)</h3>
+<ul><li>미인증 엔드포인트: <code>GET /api/seats</code>, <code>POST /api/maps/*</code>, <code>GET /api/wa/presence/stream</code>, <code>POST /api/wa/presence</code>, <code>POST /api/wa/livekit-token</code>(<strong>body user_id 무검증 신뢰</strong>).</li><li><code>/oidc/token</code>이 <code>client_secret</code> <strong>값 미검증</strong>(client_id만).</li><li>인증 스토어 전부 in-memory(로그인 backoff·OIDC·SSE·RSA키 부팅재생성) → 단일 인스턴스 전용.</li></ul>
+<h3 id="36-문서-드리프트-이번-세션-일부-정합">3.6 👻 문서 드리프트 — <strong>이번 세션 일부 정합</strong></h3>
+<ul><li>✅정합: <code>12-tasks.md</code>(30태스크 실측표기), <code>08-derived-gates.md</code>(D27 폐기게이트 정리).</li><li>잔여: <strong>WorkAdventure 잔재 미정리</strong>(P7-T1 — <code>/api/wa/*</code>·<code>oidc.py</code>·<code>map_generator</code>(TMJ)·<code>docker-compose.local.yml</code>). <strong><code>asset.tscn_path → gltf_path</code> 마이그레이션 미완</strong>(<code>tables.py:1394</code> <code>tscn_path</code> 잔존, D28 정본은 gltf_path).</li></ul>
+<h3 id="37-잘-된-것-재작업-불필요">3.7 ✅ 잘 된 것 (재작업 불필요)</h3>
+<p>백엔드 전 도메인(ERP동기화 soft-delete·좌석/배정이력·회의 D23충돌·회의록/액션·KPI 결정론 8메트릭·이의신청 상태머신·office_layout D12 BFS도달성 검증·감사로그·EOD 멱등배치, ~445테스트). 웹 콘솔 15화면 실 API 배선. KPI 워크플로우 end-to-end. 좌석/레이아웃 에디터. 공지 end-to-end.</p>
+<hr>
+<h2 id="4-다음-액션-우선순위">4. 다음 액션 (우선순위)</h2>
+<div class="table-wrap"><table><thead><tr><th>순위</th><th>작업</th><th>근거</th></tr></thead><tbody><tr><td><strong>P0</strong></td><td>7파일 커밋 결정(§1.1)</td><td>이번 세션 산출 확정</td></tr><tr><td><strong>P0</strong></td><td><strong>C1 실시간 이동서버(Colyseus) 착수</strong> — 설계 스파이크부터</td><td>C1이 C2/C3/C5의 뿌리. 제품 정체성</td></tr><tr><td><strong>P1</strong></td><td><code>/office</code> mock 제거(화상오버레이·미니맵) + 3카드 hidden 처리</td><td>&quot;구현된 척&quot; 오독 제거</td></tr><tr><td><strong>P1</strong></td><td>보안: 미인증 엔드포인트 인증 부착, OIDC client_secret 검증</td><td>HG-SEC</td></tr><tr><td><strong>P2</strong></td><td>WA 잔재 정리(P7-T1) + <code>asset.tscn_path→gltf_path</code> 마이그레이션</td><td>기술부채</td></tr><tr><td><strong>P2</strong></td><td>아바타 커스터마이징(user_avatar 테이블+화면, C4)</td><td>스펙 필수</td></tr><tr><td><strong>Later</strong></td><td>STT·실ERP·LiveKit 실미디어</td><td>외부 리소스 확보 후</td></tr></tbody></table></div>
+<hr>
+<h2 id="5-함정-환경-주의">5. 함정 / 환경 주의</h2>
+<ol><li><strong>백엔드 python은 PATH가 아니라 <code>backend/.venv/Scripts/python.exe</code></strong> (PATH python엔 pytest 없음).</li><li><strong>포트</strong>: 백엔드 FastAPI 실제 = <strong>8000</strong>(docker-compose expose, uvicorn --port 8000). <strong>8090은 제거 대상 WA/Caddy 프록시</strong>. CORS는 <code>localhost:3000</code>만 허용(config.py).</li><li><strong>npm 전용</strong>(pnpm 금지). <code>/mnt/c</code> 빌드·pytest 수 분 — 긴 툴콜 인내.</li><li><strong>미커밋 혼재 트리</strong>: v10 에셋·<code>docs/_html/*</code>·<code>main.py</code>/<code>tables.py</code> 등 이전 세션 변경 보존됨 → 커밋은 항상 파일 선별.</li><li><strong>마이그레이션 규약</strong>: <code>0001_initial_schema.py</code>가 <code>Base.metadata.create_all</code>(pre-prod, 모델 자동 반영). <strong>첫 운영 배포 전까지</strong> 모델 추가는 마이그레이션 별도 작성 불필요(테스트는 <code>Base.metadata</code>에 자동 연동됨). 배포 후엔 autogenerate 신규 리비전 규약.</li><li>스크린샷/캔버스(3D) 육안 QA는 여전히 미수행(빌드만 통과) — 실브라우저 확인은 별도 필요.</li></ol>
+<div class="meta-foot">원본: <code>handoff-gap-audit-and-hotfix-2026-07-11.md</code> · 자동 생성 2026-07-12 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

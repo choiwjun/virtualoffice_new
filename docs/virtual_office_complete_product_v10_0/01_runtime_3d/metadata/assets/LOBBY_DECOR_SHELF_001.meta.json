@@ -1,0 +1,63 @@
+{
+  "asset_id": "LOBBY_DECOR_SHELF_001",
+  "category": "reception",
+  "type": "shelf",
+  "priority": "P1",
+  "file": "models/reception/LOBBY_DECOR_SHELF_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 1.4,
+    "depth": 0.57,
+    "height": 1.6
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "",
+  "qa": {
+    "triangles": 868,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.8
+    ],
+    "size": [
+      1.4,
+      0.57,
+      1.6
+    ]
+  },
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        1.04
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {}
+}

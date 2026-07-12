@@ -1,0 +1,98 @@
+{
+  "asset_id": "CHAR_MALE_CASUAL_002",
+  "category": "characters",
+  "type": "character",
+  "priority": "P2",
+  "file": "models/characters/CHAR_MALE_CASUAL_002.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 1.719,
+    "depth": 0.292,
+    "height": 1.722
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "unrigged T-pose mesh, Mixamo-ready",
+  "qa": {
+    "triangles": 1740,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.861
+    ],
+    "size": [
+      1.719,
+      0.292,
+      1.722
+    ]
+  },
+  "rig_status": "unrigged_t_pose_mixamo_ready",
+  "required_animation_clips": [
+    "idle",
+    "walk",
+    "sit",
+    "typing",
+    "wave",
+    "talk"
+  ],
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        1.119
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "name_tag_anchor": {
+      "position": [
+        0,
+        0,
+        1.95
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "status_dot_anchor": {
+      "position": [
+        0.25,
+        0,
+        1.95
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {
+    "avatar": true
+  }
+}

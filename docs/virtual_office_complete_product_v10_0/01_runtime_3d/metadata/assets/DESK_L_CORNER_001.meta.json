@@ -1,0 +1,89 @@
+{
+  "asset_id": "DESK_L_CORNER_001",
+  "category": "workstation",
+  "type": "desk",
+  "priority": "P2",
+  "file": "models/workstation/DESK_L_CORNER_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 1.815,
+    "depth": 1.555,
+    "height": 0.815
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "",
+  "qa": {
+    "triangles": 356,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.407
+    ],
+    "size": [
+      1.815,
+      1.555,
+      0.815
+    ]
+  },
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        0.815
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        0.53
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "work_anchor": {
+      "position": [
+        0,
+        -0.978,
+        0.75
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "chair_snap_anchor": {
+      "position": [
+        0,
+        -1.328,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {
+    "can_work": true
+  }
+}

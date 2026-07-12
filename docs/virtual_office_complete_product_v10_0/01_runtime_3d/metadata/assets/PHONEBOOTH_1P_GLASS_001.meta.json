@@ -1,0 +1,77 @@
+{
+  "asset_id": "PHONEBOOTH_1P_GLASS_001",
+  "category": "focus",
+  "type": "phonebooth",
+  "priority": "P2",
+  "file": "models/focus/PHONEBOOTH_1P_GLASS_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 1.16,
+    "depth": 1.177,
+    "height": 3.3
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "",
+  "qa": {
+    "triangles": 296,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      1.65
+    ],
+    "size": [
+      1.16,
+      1.177,
+      3.3
+    ]
+  },
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        2.145
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "room_label_anchor": {
+      "position": [
+        0,
+        -0.839,
+        3.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {
+    "can_enter": true
+  }
+}

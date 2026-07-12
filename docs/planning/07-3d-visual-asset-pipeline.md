@@ -1,5 +1,11 @@
 # 07-3D 비주얼 & 오픈에셋 파이프라인
 
+> 🔵 **D28 피벗(2026-07-09) — 렌더 방식 대체. 아래 "Blender Cycles 오프라인 렌더 + 깊이합성" 서술은 폐기·보류.** 현행 = **실시간 스타일라이즈드 R3F**(사용자 제작 저폴리 glb를 three.js로 실시간 렌더 — 같은 렌더러라 오클루전 자동, 깊이합성·Blender 오프라인 굽기 불필요). 정본 = **00-decisions §I(D28)**. 이 문서에서 **여전히 유효** = 에셋 규약(glb·미터·바닥중심 피벗·산출 경로 `frontend/public/assets/3d/...`)·아바타 폴리곤 예산·좌표(Z-up→Y-up 보정). **무효(D28)** = Blender/Cycles/오프라인 배경렌더/깊이합성/유리 2레이어 절.
+
+> 🟣 **v8.0 에셋 소스(2026-07-10, D28.1).** 런타임 에셋 산출 정본 = **v8.0 통합본**(`docs/virtual_office_final_dev_complete_v8_0/`, 레지스트리 `asset-registry-v8.json`). glb·미터·바닥중심 피벗·Z-up→Y-up 규약 유효. 캐릭터는 **리깅+애니 12클립 내장**(정적 포즈 폐기). 상세 = 00-decisions §I(D28.1).
+
+> 🟪 **v10.0 에셋 소스(2026-07-11, D28.2).** 런타임 에셋 산출 정본 = **v10.0 완제품**(`docs/virtual_office_complete_product_v10_0/`, 레지스트리 `asset-registry-v10.json`). glb·미터·바닥중심 피벗·Z-up→Y-up 규약 유효. v8 대비 **PBR(BaseColor·Normal·Metallic-Roughness) 텍스처를 GLB에 내장**(114 GLB·2127장)한 것이 핵심 차이. 상세 = 00-decisions §I(D28.2).
+
 > 🟢 **D27 반영(2026-07-09 재작성) — 포토리얼 웹임베드 정본.** D26(WorkAdventure)+Godot 실시간 렌더는 폐기되고, **Blender Cycles 오프라인 렌더로 배경을 굽고 R3F(three.js)가 깊이합성으로 실시간 아바타를 가리는 고정 아이소 2.5D**가 현행 아키텍처다. 실측 근거 = 스파이크 `spikes/depth-composite`(PASS 2026-07-08). 정본 = 00-decisions §H(D27) · 3d-design/{photoreal-web-strategy, design-style-analysis, scene-structure} · 14/15/16. 본문에서 Godot/실시간GI/`.tscn`·`.pak`·Draco금지·VRAM BC·GDScript LOD/Occluder/MultiMesh 서술은 전부 폐기·교체되었다.
 
 ## 메타 정보

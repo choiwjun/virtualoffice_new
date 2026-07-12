@@ -1,0 +1,63 @@
+{
+  "asset_id": "PLANT_LARGE_REALISTIC_HERO_001",
+  "category": "plants",
+  "type": "plant",
+  "priority": "P1",
+  "file": "models/plants/PLANT_LARGE_REALISTIC_HERO_001.glb",
+  "unit": "meter",
+  "up_axis": "Z",
+  "pivot": "BOTTOM_CENTER",
+  "floor_z": 0,
+  "dimensions_m": {
+    "width": 0.852,
+    "depth": 0.872,
+    "height": 1.388
+  },
+  "pbr_materials": true,
+  "baked_lighting_in_basecolor": false,
+  "notes": "",
+  "qa": {
+    "triangles": 7792,
+    "source": "procedural_v3_hero_quality"
+  },
+  "collision": {
+    "type": "BOX",
+    "center": [
+      0,
+      0,
+      0.694
+    ],
+    "size": [
+      0.852,
+      0.872,
+      1.388
+    ]
+  },
+  "anchors": {
+    "interaction_anchor": {
+      "position": [
+        0,
+        0,
+        1.2
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    "camera_focus_anchor": {
+      "position": [
+        0,
+        0,
+        0.902
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "interaction": {}
+}
