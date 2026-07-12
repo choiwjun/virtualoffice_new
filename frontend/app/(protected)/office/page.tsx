@@ -20,12 +20,12 @@ import type { Room } from 'livekit-client';
 import { ListItem } from '@/components/ui/ListItem';
 import dynamic from 'next/dynamic';
 
-// R3F Canvas는 클라이언트 전용(WebGL) → SSR 비활성 dynamic import
-const OfficeViewport = dynamic(() => import('@/components/OfficeViewport'), {
+// 2.5D 뷰포트는 브라우저 전용(WebSocket/DOM 계측) → SSR 비활성 dynamic import
+const OfficeViewport2D = dynamic(() => import('@/components/OfficeViewport2D'), {
   ssr: false,
   loading: () => (
     <div className="absolute inset-0 flex items-center justify-center text-text-muted text-sm">
-      3D 오피스 로딩 중…
+      가상오피스 로딩 중…
     </div>
   ),
 });
@@ -540,20 +540,10 @@ export default function OfficePage() {
 
       {/* ── 중앙 영역 ── */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* 3D 뷰포트 = 화면 전체 (시안: 메인이 가상사무실) */}
+        {/* 가상오피스 씬 = 2.5D 클린 플레이트 + 실시간 아바타 (v2.2 팩 + realtime Colyseus) */}
         <div className="relative flex-1 min-h-0">
-          {/* 3D 뷰포트 = 실시간 R3F (스타일라이즈드 v1.1 에셋, 씬 + 걷는 캐릭터) */}
           <div className="absolute inset-0 overflow-hidden" style={{ background: '#0d1b36' }}>
-            <OfficeViewport />
-            {/* 상태 라벨 (좌상단) */}
-            <div
-              className="absolute left-3 top-3 z-10 px-3 py-1.5 rounded-lg border border-border-subtle pointer-events-none"
-              style={{ background: 'rgba(13,27,54,0.78)', backdropFilter: 'blur(6px)' }}
-            >
-              <span className="text-accent-cyan text-[10px] font-medium uppercase tracking-widest">
-                실시간 R3F · v10 PBR 리깅
-              </span>
-            </div>
+            <OfficeViewport2D />
           </div>
 
           {/* 미디어 바 (하단 중앙) — 회의 연결 시 실제 마이크/카메라 제어(C3) */}
@@ -598,19 +588,9 @@ export default function OfficePage() {
             </div>
           )}
 
-          {/* "회의실 앞에서 E" 힌트 (시안: bottom center) */}
-          <div
-            className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10 px-3 py-1.5 rounded-full border border-border-subtle pointer-events-none flex items-center gap-2"
-            style={{ background: 'rgba(13,27,54,0.85)', backdropFilter: 'blur(6px)' }}
-          >
-            <kbd className="px-1.5 py-0.5 rounded bg-bg-surface-raised text-[10px] font-bold text-text-primary border border-border-subtle">
-              E
-            </kbd>
-            <span className="text-[11px] text-text-secondary">회의실 앞에서 눌러 입장</span>
-          </div>
         </div>
 
-        {/* 대시보드 3카드 행 — 시안 B: 3D가 화면 전체라 숨김. 복원하려면 hidden 제거 */}
+        {/* 대시보드 3카드 행 — 시안 B: 씬 영역이 화면 전체라 숨김. 복원하려면 hidden 제거 */}
         <div className="hidden">
           <div className="grid grid-cols-3 gap-3 h-full min-h-[220px]">
             {/* ─ 카드 1: 오늘의 업무 ─ */}

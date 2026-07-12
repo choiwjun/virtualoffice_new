@@ -5,7 +5,7 @@
  * 로컬 입력(move_request)을 보낸다. DOM/React 비의존 → Node 통합 스모크로 검증 가능.
  *
  * 성능: 서버는 20Hz로 state delta를 보낸다. 매 틱 React setState 하면 20Hz 재렌더가 되므로,
- * players는 **in-place로 갱신되는 Map(mutable)**으로 노출하고 R3F useFrame이 imperative하게 읽는다.
+ * players는 **in-place로 갱신되는 Map(mutable)**으로 노출하고 뷰포트 rAF 루프가 imperative하게 읽는다.
  * React state 갱신은 (a) 연결 상태, (b) 로스터(입장/퇴장 시 sessionId 집합 변경)에만 사용.
  *
  * 프로토콜 정본: realtime/README.md, docs/planning/15-realtime-server-spec.md.
@@ -125,11 +125,23 @@ export async function createOfficeConnection(
   // 거부되면 서버 위치가 안 바뀌므로 다음 스텝이 같은 위치에서 재계산 → 자연 정정.
   const STEP_MS = 100;
   const STEP_DIST = 0.09; // < 첫 요청 예산 0.105m (1.4·0.05·1.5). ≈0.9 m/s.
+  const STALL_TICKS = 15; // 벽(가구 충돌)에 막혀 1.5초간 전진 없으면 목적지 포기.
   let dest: { x: number; y: number } | null = null;
+  let stall = 0;
+  let lastX = 0;
+  let lastY = 0;
   const walkTimer: ReturnType<typeof setInterval> = setInterval(() => {
     if (!dest) return;
     const self = players.get(room.sessionId);
     if (!self) return;
+    // 진행 정체 감지 — 서버가 스텝을 계속 거부하면(경로가 벽을 가로지름) 무한 재시도 방지.
+    if (Math.hypot(self.x - lastX, self.y - lastY) < 0.01) {
+      if (++stall >= STALL_TICKS) { dest = null; stall = 0; return; }
+    } else {
+      stall = 0;
+    }
+    lastX = self.x;
+    lastY = self.y;
     const dx = dest.x - self.x;
     const dy = dest.y - self.y;
     const d = Math.hypot(dx, dy);

@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * useOfficeRoom — OfficeViewport용 Colyseus 연결 훅 (C2).
+ * useOfficeRoom — 2.5D OfficeViewport용 Colyseus 연결 훅 (C2).
  *
  * 로그인 사용자로 realtime OfficeRoom에 접속. 서버 미기동/실패 시 status='error'로
- * graceful degradation(뷰포트는 씬만 렌더). players는 ref(mutable)로 노출 → R3F가 imperative 소비.
+ * graceful degradation(뷰포트는 로컬 이동 폴백). players는 ref(mutable)로 노출 → rAF 루프가 imperative 소비.
  */
 
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
@@ -24,7 +24,7 @@ export interface UseOfficeRoom {
   status: ConnStatus;
   /** 현재 방의 sessionId 목록(입장/퇴장 시에만 변경) — 아바타 mount/unmount 구동. */
   roster: string[];
-  /** 서버 권위 플레이어(20Hz in-place 갱신). useFrame에서 .current로 읽는다. */
+  /** 서버 권위 플레이어(20Hz in-place 갱신). rAF 루프에서 .current로 읽는다. */
   playersRef: MutableRefObject<Map<string, NetPlayer>>;
   /** 본인 sessionId. */
   selfIdRef: MutableRefObject<string>;
