@@ -11,6 +11,7 @@ import {
   PRESENCE_SINK_URL,
   PRESENCE_SINK_TOKEN,
   LAYOUT_SOURCE_URL,
+  SCENE_FLOOR,
   JWT_SECRET,
   JWT_ALGORITHM,
   JWT_REQUIRED,
@@ -78,7 +79,7 @@ export class OfficeRoom extends Room<OfficeState> {
 
   constructor() {
     super();
-    this.layoutProvider = createFloorLayoutProvider(LAYOUT_SOURCE_URL, PRESENCE_SINK_TOKEN);
+    this.layoutProvider = createFloorLayoutProvider(LAYOUT_SOURCE_URL, PRESENCE_SINK_TOKEN, SCENE_FLOOR);
     this.presenceSink = createPresenceSink(PRESENCE_SINK_URL, PRESENCE_SINK_TOKEN);
   }
 
@@ -145,9 +146,9 @@ export class OfficeRoom extends Room<OfficeState> {
     player.status = "online";
     player.anim = "idle";
     player.lastActivityAt = Date.now();
-    // Spawn at floor centre.
-    player.x = this.layout.bounds.x + this.layout.bounds.w / 2;
-    player.y = this.layout.bounds.y + this.layout.bounds.h / 2;
+    // Spawn: 레이아웃 지정 스폰(씬 플로어) 우선, 없으면 floor centre.
+    player.x = this.layout.spawn?.x ?? this.layout.bounds.x + this.layout.bounds.w / 2;
+    player.y = this.layout.spawn?.y ?? this.layout.bounds.y + this.layout.bounds.h / 2;
 
     this.state.players.set(client.sessionId, player);
 

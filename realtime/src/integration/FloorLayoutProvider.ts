@@ -50,6 +50,8 @@ export interface FloorLayout {
   walls: WallSegment[];
   seats: Seat[];
   meetingZones: MeetingZone[];
+  /** 스폰 위치(미터). 없으면 방이 bounds 중심을 사용. */
+  spawn?: { x: number; y: number };
 }
 
 /** Pluggable provider interface — real impl fetches from FastAPI. */
@@ -118,7 +120,98 @@ export class HttpFloorLayoutProvider implements FloorLayoutProvider {
   }
 }
 
-/** Factory: LAYOUT_SOURCE_URL 설정 시 Http(폴백=Demo), 아니면 Demo. */
-export function createFloorLayoutProvider(url: string, token = ""): FloorLayoutProvider {
-  return url ? new HttpFloorLayoutProvider(url, token) : new DemoFloorLayoutProvider();
+// ---------------------------------------------------------------------------
+// 2.5D 씬 플로어 (v2.2 modular_brandable 팩)
+// ---------------------------------------------------------------------------
+
+/**
+ * 2.5D 플레이트 좌표계 ↔ 미터 변환 상수.
+ * 플레이트 = 1672×941px (16:9). 가로 20m로 스케일 → 세로 = 941/1672·20.
+ * 프론트(lib/office2d.ts)의 SCENE_W_M/SCENE_H_M과 반드시 동일해야 한다.
+ */
+export const SCENE_W_M = 20;
+export const SCENE_H_M = (941 / 1672) * SCENE_W_M; // ≈ 11.256
+
+/**
+ * HORIZON_OPEN_PLAN 보행 폴리곤 (정규 0~1, 정본:
+ * docs/virtual_office_2_5d_modular_brandable_v2_2_hotfix/05_layouts/HORIZON_OPEN_PLAN.json).
+ */
+const HORIZON_WALK_AREA: Array<[number, number]> = [
+  [0.2, 0.25],
+  [0.78, 0.22],
+  [0.91, 0.82],
+  [0.13, 0.86],
+];
+
+/**
+ * 플레이트에 구워진 가구 충돌 폴리곤(정규) — 변을 벽으로 등록해 가구 위 보행을 막는다.
+ * 프론트 lib/office2d.ts의 OBSTACLES와 반드시 동일해야 한다.
+ */
+export const HORIZON_OBSTACLES: Array<Array<[number, number]>> = [
+  // 리셉션 데스크
+  [[0.195, 0.335], [0.295, 0.255], [0.395, 0.315], [0.265, 0.415]],
+  // 중앙 8인 회의 테이블(+의자)
+  [[0.415, 0.455], [0.545, 0.375], [0.615, 0.44], [0.475, 0.53]],
+  // 워크스테이션 클러스터(좌측 2열)
+  [[0.31, 0.575], [0.475, 0.465], [0.575, 0.565], [0.42, 0.70]],
+  // 워크스테이션 클러스터(우측 하단)
+  [[0.52, 0.70], [0.655, 0.615], [0.735, 0.70], [0.60, 0.80]],
+  // 팬트리 아일랜드(+스툴)
+  [[0.135, 0.66], [0.27, 0.575], [0.36, 0.66], [0.225, 0.76]],
+  // 카페 원탁(+의자)
+  [[0.22, 0.84], [0.30, 0.78], [0.38, 0.84], [0.30, 0.91]],
+  // 중앙 우측 유리회의실 테이블
+  [[0.655, 0.42], [0.755, 0.375], [0.80, 0.425], [0.70, 0.475]],
+  // 보드룸 테이블(우상단, 보행영역 접경부)
+  [[0.705, 0.255], [0.845, 0.21], [0.90, 0.255], [0.76, 0.30]],
+];
+
+/** HORIZON 로비 스폰(정규 0.38, 0.44 — 개활지). bounds 중심은 워크스테이션과 겹쳐 스폰 불가. */
+const HORIZON_SPAWN_N: [number, number] = [0.38, 0.44];
+
+/**
+ * SceneFloorLayoutProvider — 2.5D 씬 레이아웃의 보행 폴리곤을 미터로 변환해
+ * 플로어 지오메트리로 쓴다. bounds = 폴리곤 bbox, walls = 폴리곤 변(경계 밖 이동 차단).
+ * 좌석은 좌석 앵커 아트 미납 상태라 비움, 회의존 = Board Room bbox(정원 8).
+ */
+export class SceneFloorLayoutProvider implements FloorLayoutProvider {
+  async getLayout(officeId: string, floorId: string): Promise<FloorLayout> {
+    const toM = ([nx, ny]: [number, number]) => ({ x: nx * SCENE_W_M, y: ny * SCENE_H_M });
+    const polygonWalls = (poly: Array<[number, number]>): WallSegment[] =>
+      poly.map((pt, i) => {
+        const p = toM(pt);
+        const q = toM(poly[(i + 1) % poly.length]);
+        return { x1: p.x, y1: p.y, x2: q.x, y2: q.y, glass: false };
+      });
+
+    const pts = HORIZON_WALK_AREA.map(toM);
+    const xs = pts.map((p) => p.x);
+    const ys = pts.map((p) => p.y);
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    // 벽 = 보행 폴리곤 경계 + 가구 폴리곤 변 전부(가구 위 보행 차단).
+    const walls: WallSegment[] = [
+      ...polygonWalls(HORIZON_WALK_AREA),
+      ...HORIZON_OBSTACLES.flatMap(polygonWalls),
+    ];
+    return {
+      officeId,
+      floorId,
+      bounds: { x: minX, y: minY, w: Math.max(...xs) - minX, h: Math.max(...ys) - minY },
+      walls,
+      seats: [],
+      meetingZones: [
+        // Board Room (HORIZON rooms.boardroom bbox → 미터). 이동은 막지 않고 정원만 검사.
+        { roomId: "boardroom", bounds: { x: 12.8, y: 0.9, w: 6.2, h: 2.93 }, capacity: 8 },
+      ],
+      spawn: toM(HORIZON_SPAWN_N),
+    };
+  }
+}
+
+/** Factory: LAYOUT_SOURCE_URL 설정 시 Http(폴백=Demo) → SCENE_FLOOR 설정 시 Scene → 기본 Demo. */
+export function createFloorLayoutProvider(url: string, token = "", sceneFloor = ""): FloorLayoutProvider {
+  if (url) return new HttpFloorLayoutProvider(url, token);
+  if (sceneFloor === "horizon") return new SceneFloorLayoutProvider();
+  return new DemoFloorLayoutProvider();
 }

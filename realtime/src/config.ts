@@ -71,6 +71,13 @@ export const PRESENCE_SINK_TOKEN = process.env.PRESENCE_SINK_TOKEN ?? "";
 export const LAYOUT_SOURCE_URL = process.env.LAYOUT_SOURCE_URL ?? "";
 
 /**
+ * 2.5D 씬 플로어 선택. "horizon" 설정 시(LAYOUT_SOURCE_URL 미설정일 때)
+ * HORIZON_OPEN_PLAN(v2.2 팩 05_layouts) 보행 폴리곤 기반 플로어를 사용한다.
+ * 미설정 시 기존 데모 플로어(기존 테스트 호환).
+ */
+export const SCENE_FLOOR = process.env.SCENE_FLOOR ?? "";
+
+/**
  * FastAPI JWT 검증 (D4: HS256 자체 시크릿). onAuth에서 join 시 전달된 토큰을 검증한다.
  * JWT_SECRET은 백엔드 settings.jwt_secret_key와 **동일**해야 함(로컬 기본값 일치).
  */
