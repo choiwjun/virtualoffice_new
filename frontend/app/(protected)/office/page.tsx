@@ -198,33 +198,23 @@ function FloorSelector({ active, onChange }: { active: string; onChange: (f: str
 }
 
 // ─────────────────────────────────────────────
-// 미니맵 (정적 비주얼)
+// 미니맵 (정적 층 도면 스케치)
+// 실시간 아바타 위치는 이동서버(Colyseus C1) 연동 후 표시 예정 → 현재는 가짜 점 미표시
 // ─────────────────────────────────────────────
 function MiniMap() {
   return (
     <div className="w-28 rounded-lg bg-bg-base border border-border-subtle p-2 flex flex-col gap-1.5">
       <div className="flex items-center justify-between mb-0.5">
         <span className="text-[10px] text-text-muted font-medium">미니맵</span>
-        <div className="flex gap-1">
-          <button className="text-text-muted hover:text-text-secondary text-[10px] px-1 rounded" title="확대">+</button>
-          <button className="text-text-muted hover:text-text-secondary text-[10px] px-1 rounded" title="축소">-</button>
-        </div>
+        <span className="text-[9px] text-text-muted px-1 py-0.5 rounded bg-bg-surface-raised leading-none">준비중</span>
       </div>
-      {/* 가상 조감도 */}
+      {/* 정적 층 도면 (실시간 위치는 이동서버 연동 후) */}
       <svg viewBox="0 0 80 60" className="w-full rounded" style={{ background: '#0E1626' }}>
         {/* 방 영역들 */}
         <rect x="2" y="2" width="35" height="25" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
         <rect x="42" y="2" width="36" height="25" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
         <rect x="2" y="32" width="24" height="26" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
         <rect x="30" y="32" width="48" height="26" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
-        {/* 아바타 점들 */}
-        <circle cx="12" cy="14" r="2.5" fill="#22C55E" />
-        <circle cx="20" cy="10" r="2.5" fill="#22C55E" />
-        <circle cx="28" cy="16" r="2.5" fill="#EF4444" />
-        <circle cx="52" cy="12" r="2.5" fill="#22C55E" />
-        <circle cx="62" cy="8"  r="2.5" fill="#F59E0B" />
-        <circle cx="14" cy="44" r="2.5" fill="#8B5CF6" />
-        <circle cx="45" cy="44" r="2.5" fill="#22C55E" />
       </svg>
     </div>
   );
@@ -408,14 +398,19 @@ export default function OfficePage() {
           </button>
         </div>
         <div className="flex-1 max-w-md mx-6 hidden md:block">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-surface text-text-muted text-[13px] border border-border-subtle">
+          {/* 검색 UI — 핸들러 미배선(준비중). 배선 시 aria-disabled/opacity 제거 */}
+          <div
+            title="준비중"
+            aria-disabled="true"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-surface text-text-muted text-[13px] border border-border-subtle opacity-50 cursor-not-allowed select-none"
+          >
             <span>🔍</span><span>검색...</span>
-            <span className="ml-auto text-[11px] px-1.5 py-0.5 rounded bg-bg-surface-raised">⌘K</span>
+            <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-bg-surface-raised">준비중</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="w-8 h-8 rounded-lg hover:bg-bg-surface-raised flex items-center justify-center text-text-secondary transition-colors">📅</button>
-          <button className="w-8 h-8 rounded-lg hover:bg-bg-surface-raised flex items-center justify-center text-text-secondary transition-colors">🔔</button>
+          <button title="준비중" aria-disabled="true" disabled className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted opacity-40 cursor-not-allowed">📅</button>
+          <button title="준비중" aria-disabled="true" disabled className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted opacity-40 cursor-not-allowed">🔔</button>
           <div className="flex items-center gap-2 pl-1">
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold">
               {me?.name?.charAt(0)?.toUpperCase() ?? '?'}
@@ -538,32 +533,28 @@ export default function OfficePage() {
             <MediaBar />
           </div>
 
-          {/* 진행중 화상회의 오버레이 (시안: Product Sync · LIVE, 우하단) */}
-          <div
-            className="absolute right-3 bottom-3 z-10 w-56 rounded-xl border border-border-subtle overflow-hidden"
-            style={{ background: 'rgba(13,27,54,0.92)', backdropFilter: 'blur(6px)' }}
-          >
-            <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-danger flex-shrink-0" />
-                <span className="text-[11px] font-semibold text-text-primary truncate">Product Sync</span>
-              </div>
-              <span className="text-[9px] font-bold text-danger tracking-wider flex-shrink-0">● LIVE</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1 p-2">
-              {['Olivia', 'Liam', 'Mia', 'Noah'].map((n) => (
-                <div
-                  key={n}
-                  className="aspect-square rounded-md bg-bg-surface-raised flex items-center justify-center text-[11px] font-bold text-text-secondary"
-                >
-                  {n.charAt(0)}
+          {/* 진행중 화상회의 오버레이 — 실 데이터(GET /api/meetings?status=in_progress). 진행중 회의 없으면 미표시 */}
+          {meetings.length > 0 && (
+            <Link
+              href="/meetings"
+              className="absolute right-3 bottom-3 z-10 w-56 rounded-xl border border-border-subtle overflow-hidden block hover:border-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+              style={{ background: 'rgba(13,27,54,0.92)', backdropFilter: 'blur(6px)' }}
+            >
+              <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-danger flex-shrink-0 animate-pulse" />
+                  <span className="text-[11px] font-semibold text-text-primary truncate">{meetings[0].title}</span>
                 </div>
-              ))}
-              <div className="aspect-square rounded-md bg-bg-surface-raised flex items-center justify-center text-[10px] text-text-muted">
-                +2
+                <span className="text-[9px] font-bold text-danger tracking-wider flex-shrink-0">● LIVE</span>
               </div>
-            </div>
-          </div>
+              <div className="px-3 py-2 flex items-center justify-between">
+                <span className="text-[11px] text-text-secondary">
+                  {meetings[0].participant_count != null ? `${meetings[0].participant_count}명 참여중` : '진행중'}
+                </span>
+                <span className="text-[10px] text-primary font-medium">회의실 보기 ›</span>
+              </div>
+            </Link>
+          )}
 
           {/* "회의실 앞에서 E" 힌트 (시안: bottom center) */}
           <div
