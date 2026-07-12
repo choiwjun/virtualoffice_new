@@ -10,13 +10,12 @@ test_ai_draft.py — AI KPI 서술 초안 생성 + D20 가명화 (REQ-007).
 
 from __future__ import annotations
 
-import pytest
 import pytest_asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.tables import ErpUser, KpiResult
-from app.services.ai_draft import generate_draft, generate_and_attach_draft, _mock_draft
+from app.services.ai_draft import generate_draft, _mock_draft
 from app.services.kpi_engine import compute_and_upsert_kpi
 from app.services.pseudonymize import (
     pseudonymize_user,

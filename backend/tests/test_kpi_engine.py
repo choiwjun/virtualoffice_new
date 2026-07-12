@@ -20,7 +20,6 @@ from uuid import UUID
 import pytest
 import pytest_asyncio
 from datetime import date, datetime, timezone
-from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -37,7 +36,6 @@ from app.models.tables import (
     WorkLog,
     WorkLogStatus,
     KpiResult,
-    KpiPeriodType,
 )
 from app.services.kpi_engine import (
     _synthesize_collaboration_score,

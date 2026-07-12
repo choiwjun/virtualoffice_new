@@ -210,7 +210,6 @@ async def create_meeting(
             detail="room_time_conflict",
         )
 
-    now = datetime.now(timezone.utc)
     meeting = Meeting(
         id=uuid4(),
         room_id=room_uuid,

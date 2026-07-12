@@ -21,7 +21,7 @@ from app.models.tables import ErpSyncLog, ErpUser, Presence
 from app.services.kpi_engine import compute_and_upsert_kpi
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
+    pass
 
 DEFAULT_COMPANY_ID = 1
 

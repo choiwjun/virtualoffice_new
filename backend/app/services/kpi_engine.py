@@ -27,16 +27,12 @@ import re
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any
-from uuid import uuid4
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.tables import (
     ActionItem,
-    DailyStatusPush,
-    DailyStatusPushStatus,
-    DailyStatusPushTarget,
     KpiObjectionStatus,
     KpiPeriodType,
     KpiResult,
@@ -308,7 +304,7 @@ async def _calc_report_fidelity_score(
     day_scores = []
     for day_logs in daily.values():
         score = 50.0  # 작성 기본점
-        completed = [l for l in day_logs if l.status == WorkLogStatus.COMPLETED]
+        completed = [wl for wl in day_logs if wl.status == WorkLogStatus.COMPLETED]
         if completed:
             score += 30.0
         # quality bonus
@@ -462,8 +458,6 @@ async def compute_and_upsert_kpi(
     UNIQUE(user_id, period_type, period_key, metric) 기준 upsert.
     정량 값은 결정론적(D14-e). AI 서술 초안(ai_draft)은 집계 metric 행에 별도 생성(REQ-007).
     """
-    from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-    from sqlalchemy import insert as sa_insert
 
     metrics = await compute_kpi(db, user_id, period_type, period_key)
 

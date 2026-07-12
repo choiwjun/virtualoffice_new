@@ -5,10 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from app.core.security import hash_password
 from app.models.tables import (
-    ErpRole,
-    ErpUser,
     Floor,
     Presence,
     PresenceStatus,

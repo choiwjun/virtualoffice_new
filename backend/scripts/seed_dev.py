@@ -20,12 +20,12 @@ sys.path.insert(0, str(_ROOT))
 
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./dev.db")
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
+from sqlalchemy import select  # noqa: E402
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine  # noqa: E402
+from sqlalchemy.pool import StaticPool  # noqa: E402
 
-from app.core.security import hash_password
-from app.models.tables import Base, ErpRole, ErpUser
+from app.core.security import hash_password  # noqa: E402
+from app.models.tables import Base, ErpRole, ErpUser  # noqa: E402
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 

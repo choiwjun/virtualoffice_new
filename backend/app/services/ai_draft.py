@@ -16,7 +16,6 @@ AI KPI 서술 초안 생성 (REQ-007, D14-e, D17).
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from decimal import Decimal
 from typing import Any, Optional
 
 from sqlalchemy import select

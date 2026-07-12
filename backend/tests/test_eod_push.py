@@ -13,9 +13,7 @@ from __future__ import annotations
 
 from datetime import date
 
-import pytest
 import pytest_asyncio
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.tables import (

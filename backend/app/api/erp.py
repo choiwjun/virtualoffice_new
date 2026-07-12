@@ -173,7 +173,7 @@ class SyncStatusOut(BaseModel):
     failure_count: int
 
 
-def _log_out(l: ErpSyncLog) -> "SyncLogOut":
+def _log_out(entry: ErpSyncLog) -> "SyncLogOut":
     def _iso(dt):
         if dt is None:
             return None
@@ -181,9 +181,9 @@ def _log_out(l: ErpSyncLog) -> "SyncLogOut":
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.isoformat()
     return SyncLogOut(
-        id=str(l.id), started_at=_iso(l.started_at), finished_at=_iso(l.finished_at),
-        created=l.created, updated=l.updated, deactivated=l.deactivated,
-        status=l.status, trigger=l.trigger, error=l.error,
+        id=str(entry.id), started_at=_iso(entry.started_at), finished_at=_iso(entry.finished_at),
+        created=entry.created, updated=entry.updated, deactivated=entry.deactivated,
+        status=entry.status, trigger=entry.trigger, error=entry.error,
     )
 
 

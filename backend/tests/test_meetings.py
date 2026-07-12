@@ -314,7 +314,6 @@ async def test_join_meeting_upsert(async_client, seeded, auth_headers):
 
     r1 = await async_client.post(f"/api/meetings/{meeting_id}/join", headers=auth_headers)
     assert r1.status_code == 200
-    joined1 = r1.json()["joined_at"]
 
     import asyncio
     await asyncio.sleep(0.01)

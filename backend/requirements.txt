@@ -16,3 +16,4 @@ python-multipart>=0.0.9    # OAuth2 form / 파일 업로드
 httpx>=0.27,<0.29          # 내부 HTTP 클라이언트 (ERP 연동 등)
 apscheduler>=3.10,<4.0     # 배치 스케줄러 (KPI/ERP 자동화 D17/D18)
 jsonschema>=4.20,<5.0     # D12 office_layout 스키마 검증(Draft2020-12)
+livekit-api>=1.0,<2.0     # C3 회의 LiveKit AccessToken 발급 (app/api/meetings.py)

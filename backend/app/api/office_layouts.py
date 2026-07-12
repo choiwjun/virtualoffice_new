@@ -56,15 +56,15 @@ class ValidateOut(BaseModel):
     warnings: list[dict]
 
 
-def _out(l: OfficeLayout) -> LayoutOut:
+def _out(layout: OfficeLayout) -> LayoutOut:
     return LayoutOut(
-        id=str(l.id),
-        office_id=str(l.office_id),
-        floor_id=str(l.floor_id),
-        version=l.version,
-        status=l.status.value if hasattr(l.status, "value") else l.status,
-        deployed_at=l.deployed_at.isoformat() if l.deployed_at else None,
-        created_at=l.created_at.isoformat() if l.created_at else "",
+        id=str(layout.id),
+        office_id=str(layout.office_id),
+        floor_id=str(layout.floor_id),
+        version=layout.version,
+        status=layout.status.value if hasattr(layout.status, "value") else layout.status,
+        deployed_at=layout.deployed_at.isoformat() if layout.deployed_at else None,
+        created_at=layout.created_at.isoformat() if layout.created_at else "",
     )
 
 

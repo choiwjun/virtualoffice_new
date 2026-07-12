@@ -24,7 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import StaticPool
 
 from app.db import Base
-from app.models.tables import Presence, PresenceStatus
+from app.models.tables import PresenceStatus
 from app.services.presence_store import presence_pubsub, upsert_presence
 
 

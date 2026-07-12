@@ -29,8 +29,6 @@ from app.core.security import create_access_token
 from app.db import Base, get_db
 from app.main import app
 from app.models.tables import (
-    ErpRole,
-    ErpUser,
     Seat,
     SeatAssignmentHistory,
     SeatStatus,

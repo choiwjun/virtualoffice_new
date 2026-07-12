@@ -20,7 +20,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import (
     String, Integer, Float, Boolean, DateTime, Date, JSON, Text,
     ForeignKey, Index, UniqueConstraint, CheckConstraint, Enum as SQLEnum,
-    BigInteger, Numeric, select, func, text
+    BigInteger, Numeric, text
 )
 from sqlalchemy.dialects.postgresql import JSONB as PG_JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship

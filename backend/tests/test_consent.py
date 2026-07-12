@@ -13,7 +13,6 @@ from app.core.security import create_access_token
 from app.models.tables import (
     ErpRole,
     ErpUser,
-    MeetingParticipant,
     RecordingConsent,
     Room,
     RoomStatus,

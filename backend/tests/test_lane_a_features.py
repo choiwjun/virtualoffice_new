@@ -11,7 +11,6 @@ import pytest
 from datetime import date, datetime, timezone, timedelta
 from uuid import uuid4
 
-from sqlalchemy import select
 
 from app.models.tables import (
     ErpRole,
