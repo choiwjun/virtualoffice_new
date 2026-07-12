@@ -1,0 +1,260 @@
+--- a/11_complete_runtime_app/src/runtime/OfficeApp.ts
++++ b/11_complete_runtime_app/src/runtime/OfficeApp.ts
+@@ -25,7 +25,7 @@
+   editor!: LayoutEditor;
+   raycaster = new THREE.Raycaster();
+   pointer = new THREE.Vector2();
+-  ground = new THREE.Mesh(new THREE.PlaneGeometry(14, 10), new THREE.MeshStandardMaterial({ color: 0x8b8985, roughness: 0.78 }));
++  ground = new THREE.Mesh(new THREE.PlaneGeometry(14, 10), new THREE.MeshStandardMaterial({ color: 0x64676b, roughness: 0.92, metalness: 0.0 }));
+   clock = new THREE.Clock();
+   nameTag = document.createElement('div');
+   status = '준비 중';
+@@ -33,30 +33,30 @@
+ 
+   constructor(public container: HTMLElement) {
+     THREE.Object3D.DEFAULT_UP.set(0, 0, 1);
+-    this.scene.background = new THREE.Color(0x111821);
+-    this.scene.fog = new THREE.FogExp2(0x111821, 0.016);
+-    this.camera = new THREE.PerspectiveCamera(42, 1, 0.05, 90);
++    this.scene.background = new THREE.Color(0x151b24);
++    this.scene.fog = new THREE.FogExp2(0x151b24, 0.006);
++    this.camera = new THREE.PerspectiveCamera(36, 1, 0.05, 120);
+     this.camera.up.set(0, 0, 1);
+-    this.camera.position.set(10.8, -12.4, 10.2);
+-    this.camera.lookAt(0, 0, 0.8);
++    this.camera.position.set(12.8, -15.8, 13.6);
++    this.camera.lookAt(0, 0, 0.65);
+     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+-    this.renderer.toneMappingExposure = 1.08;
++    this.renderer.toneMappingExposure = 0.72;
+     this.renderer.shadowMap.enabled = true;
+     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+     container.append(this.renderer.domElement);
+     this.labels.domElement.className = 'label-layer';
+     container.append(this.labels.domElement);
+     this.controls = new OrbitControls(this.camera, this.labels.domElement);
+-    this.controls.target.set(0, 0, 0.8);
++    this.controls.target.set(0, 0, 0.65);
+     this.controls.enableDamping = true;
+     this.controls.maxPolarAngle = Math.PI * 0.46;
+     this.controls.minDistance = 5;
+     this.controls.maxDistance = 28;
+     this.composer = new EffectComposer(this.renderer);
+     this.composer.addPass(new RenderPass(this.scene, this.camera));
+-    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.45, 0.58, 0.78);
++    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.10, 0.24, 0.92);
+     this.composer.addPass(bloom);
+     this.composer.addPass(new OutputPass());
+     this.setupEnvironment();
+@@ -67,18 +67,20 @@
+   private setupEnvironment(): void {
+     const pmrem = new THREE.PMREMGenerator(this.renderer);
+     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
++    this.scene.environmentIntensity = 0.55;
+     pmrem.dispose();
+-    const hemi = new THREE.HemisphereLight(0xbdd8ff, 0x3a2d22, 1.2);
++    const hemi = new THREE.HemisphereLight(0xbfd4ef, 0x342d27, 0.42);
+     this.scene.add(hemi);
+-    const sun = new THREE.DirectionalLight(0xfff1dc, 4.2);
++    const sun = new THREE.DirectionalLight(0xfff0dc, 1.65);
+     sun.position.set(-5, -6, 11);
+     sun.castShadow = true;
+     sun.shadow.mapSize.set(2048, 2048);
+     sun.shadow.camera.left = -10; sun.shadow.camera.right = 10;
+     sun.shadow.camera.top = 8; sun.shadow.camera.bottom = -8;
+-    sun.shadow.bias = -0.0002;
++    sun.shadow.bias = -0.00015;
++    sun.shadow.normalBias = 0.025;
+     this.scene.add(sun);
+-    const fill = new THREE.DirectionalLight(0x7ba9ff, 1.1);
++    const fill = new THREE.DirectionalLight(0x91b5ea, 0.28);
+     fill.position.set(8, 4, 7); this.scene.add(fill);
+     this.ground.rotation.x = 0;
+     this.ground.position.z = -0.02;
+@@ -90,6 +92,7 @@
+     grid.position.z = 0.005;
+     (grid.material as THREE.Material).transparent = true;
+     (grid.material as THREE.Material).opacity = 0.18;
++    grid.visible = false; // editor에서만 필요할 때 켜기
+     this.scene.add(grid);
+   }
+ 
+@@ -210,6 +213,7 @@
+     requestAnimationFrame(this.animate);
+     const dt = Math.min(this.clock.getDelta(), 0.05);
+     this.avatar.update(dt);
++    this.editor?.update(dt);
+     this.controls.update();
+     this.composer.render();
+     this.labels.render(this.scene, this.camera);
+--- a/11_complete_runtime_app/src/runtime/AssetStore.ts
++++ b/11_complete_runtime_app/src/runtime/AssetStore.ts
+@@ -3,10 +3,20 @@
+ import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
+ import type { AssetRecord, AssetRegistry } from '../types.js';
+ 
++interface CachedAsset {
++  scene: THREE.Object3D;
++  animations: THREE.AnimationClip[];
++}
++
++export interface InstantiatedAsset {
++  root: THREE.Object3D;
++  animations: THREE.AnimationClip[];
++}
++
+ export class AssetStore {
+   readonly loader = new GLTFLoader();
+   readonly records = new Map<string, AssetRecord>();
+-  private cache = new Map<string, THREE.Object3D>();
++  private cache = new Map<string, CachedAsset>();
+ 
+   async initialize(): Promise<void> {
+     const response = await fetch('/05_registries/asset-registry-v10.json');
+@@ -26,18 +36,24 @@
+   }
+ 
+   async instantiate(assetId: string): Promise<THREE.Object3D> {
++    return (await this.instantiateBundle(assetId)).root;
++  }
++
++  async instantiateBundle(assetId: string): Promise<InstantiatedAsset> {
+     const record = this.get(assetId);
+     let template = this.cache.get(record.file);
+     if (!template) {
+       const gltf = await this.loader.loadAsync(`/${record.file}`);
+-      template = gltf.scene;
++      template = { scene: gltf.scene, animations: gltf.animations };
+       this.cache.set(record.file, template);
+     }
+-    const hasSkin = template.getObjectByProperty('type', 'SkinnedMesh') !== undefined;
+-    const root = hasSkin ? cloneSkeleton(template) : template.clone(true);
++
++    const hasSkin = template.scene.getObjectByProperty('type', 'SkinnedMesh') !== undefined;
++    const root = hasSkin ? cloneSkeleton(template.scene) : template.scene.clone(true);
+     root.name = assetId;
+     root.userData.assetId = assetId;
+     root.userData.assetRecord = record;
++
+     root.traverse((object: THREE.Object3D) => {
+       const mesh = object as THREE.Mesh;
+       if (!mesh.isMesh) return;
+@@ -47,11 +63,69 @@
+       for (const material of materials) {
+         if (!material) continue;
+         const std = material as THREE.MeshStandardMaterial;
++        const name = (std.name || '').toUpperCase();
++
++        // Color textures are sRGB. Data textures must stay linear / NoColorSpace.
+         if (std.map) std.map.colorSpace = THREE.SRGBColorSpace;
+         if (std.emissiveMap) std.emissiveMap.colorSpace = THREE.SRGBColorSpace;
++        if (std.normalMap) std.normalMap.colorSpace = THREE.NoColorSpace;
++        if (std.roughnessMap) std.roughnessMap.colorSpace = THREE.NoColorSpace;
++        if (std.metalnessMap) std.metalnessMap.colorSpace = THREE.NoColorSpace;
++        if (std.aoMap) std.aoMap.colorSpace = THREE.NoColorSpace;
++
++        std.envMapIntensity = 0.55;
++
++        // Clamp the source pack's very strong emissive values.
++        if (name.includes('NEON') || name.includes('EMISSIVE')) {
++          std.emissiveIntensity = name.includes('BLUE') ? 0.82 : 0.48;
++        } else if (name.includes('SCREEN') || name.includes('DISPLAY') || name.includes('TV')) {
++          std.emissiveIntensity = 0.35;
++        } else {
++          std.emissiveIntensity = Math.min(std.emissiveIntensity ?? 1, 1);
++        }
++
++        // Temporary physically-plausible profiles. Proper authored PBR maps are still
++        // required for final visual quality.
++        if (name.includes('SKIN')) {
++          std.metalness = 0.0;
++          std.roughnessMap = null;
++          std.roughness = 0.68;
++        } else if (name.includes('MARBLE')) {
++          std.metalness = 0.0;
++          std.roughnessMap = null;
++          std.roughness = 0.40;
++        } else if (name.includes('CONCRETE')) {
++          std.metalness = 0.0;
++          std.roughnessMap = null;
++          std.roughness = 0.76;
++        } else if (name.includes('PLASTIC')) {
++          std.metalness = 0.0;
++          std.roughnessMap = null;
++          std.roughness = 0.56;
++        } else if (name.includes('LEATHER')) {
++          std.metalness = 0.0;
++          std.roughnessMap = null;
++          std.roughness = 0.48;
++        }
++
++        if (name.includes('GLASS') && (std as THREE.MeshPhysicalMaterial).isMeshPhysicalMaterial) {
++          const glass = std as THREE.MeshPhysicalMaterial;
++          glass.color.set(0xd9ebf4);
++          glass.metalness = 0.0;
++          glass.roughness = 0.08;
++          glass.transmission = 0.90;
++          glass.thickness = 0.02;
++          glass.ior = 1.45;
++          glass.opacity = 1.0;
++          glass.transparent = true;
++          glass.depthWrite = false;
++          glass.side = THREE.DoubleSide;
++        }
++
+         std.needsUpdate = true;
+       }
+     });
+-    return root;
++
++    return { root, animations: template.animations };
+   }
+ }
+--- a/11_complete_runtime_app/src/runtime/LayoutEditor.ts
++++ b/11_complete_runtime_app/src/runtime/LayoutEditor.ts
+@@ -5,7 +5,7 @@
+ import { AssetStore } from './AssetStore.js';
+ import type { ObstacleRect } from './GridNav.js';
+ 
+-interface RuntimeInstance { spec: LayoutInstance; root: THREE.Object3D; record: AssetRecord; }
++interface RuntimeInstance { spec: LayoutInstance; root: THREE.Object3D; record: AssetRecord; mixer?: THREE.AnimationMixer; }
+ 
+ export class LayoutEditor extends EventTarget {
+   instances = new Map<string, RuntimeInstance>();
+@@ -44,14 +44,21 @@
+ 
+   async spawn(assetId: string, position: Vec3 = [0, 0, 0], rotationZDeg = 0, id?: string): Promise<RuntimeInstance> {
+     const record = this.store.get(assetId);
+-    const root = await this.store.instantiate(assetId);
++    const bundle = await this.store.instantiateBundle(assetId);
++    const root = bundle.root;
+     root.position.fromArray(position);
+     root.rotation.z = THREE.MathUtils.degToRad(rotationZDeg);
+     const instanceId = id ?? `${assetId}_${crypto.randomUUID().slice(0, 8)}`;
+     root.userData.instanceId = instanceId;
+     this.scene.add(root);
+     const spec: LayoutInstance = { instance_id: instanceId, asset_id: assetId, position: [...position] as Vec3, rotation_z_deg: rotationZDeg, scale: [1, 1, 1] };
+-    const runtime = { spec, root, record };
++    let mixer: THREE.AnimationMixer | undefined;
++    if (bundle.animations.length > 0) {
++      mixer = new THREE.AnimationMixer(root);
++      const idle = bundle.animations.find((clip) => clip.name === 'ANIM_IDLE_001') ?? bundle.animations[0];
++      if (idle) mixer.clipAction(idle).reset().play();
++    }
++    const runtime: RuntimeInstance = { spec, root, record, mixer };
+     this.instances.set(instanceId, runtime);
+     this.dispatchEvent(new Event('layoutchange'));
+     return runtime;
+@@ -115,6 +122,10 @@
+     };
+   }
+ 
++  update(dt: number): void {
++    for (const item of this.instances.values()) item.mixer?.update(dt);
++  }
++
+   getObstacles(): ObstacleRect[] {
+     const obstacles: ObstacleRect[] = [];
+     for (const item of this.instances.values()) {

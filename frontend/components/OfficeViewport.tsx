@@ -96,36 +96,82 @@ function RoomLabel({ pos, name, sub }: { pos: [number, number, number]; name: st
 
 // 씬에 구워진 정적 T포즈 인물 노드명 (가구 아님) — 이 접두사로 시작하면 숨긴다.
 const BAKED_PEOPLE = /^(worker_|ethan_|walk_|receptionist_|meeting_person)/i;
-// 발광 부스트는 진짜 발광체(네온/LED/스크린)만 — 'warm/light' 등 이름만 밝은 가구 재질을 태우면 안 됨.
-const EMISSIVE_MAT = /neon|led|screen|display|monitor/i;
+// ─────────────────────────────────────────────
+// v10 비주얼 핫픽스 패치(docs/virtual_office_v10_visual_hotfix_patch/AssetStore.ts) 이식:
+// 텍스처 colorSpace 정정 · 환경반사 0.55 · emissive 클램프(NEON/SCREEN) ·
+// 피부/대리석/콘크리트/플라스틱/가죽 임시 PBR 프로필 · 유리 transmission/depthWrite 보정.
+// 씬과 캐릭터 모두에 적용한다.
+// ─────────────────────────────────────────────
+function applyHotfixMaterials(root: THREE.Object3D): void {
+  root.traverse((object) => {
+    const mesh = object as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const material of materials) {
+      if (!material) continue;
+      const std = material as THREE.MeshStandardMaterial;
+      const name = (std.name || '').toUpperCase();
+
+      if (std.map) std.map.colorSpace = THREE.SRGBColorSpace;
+      if (std.emissiveMap) std.emissiveMap.colorSpace = THREE.SRGBColorSpace;
+      if (std.normalMap) std.normalMap.colorSpace = THREE.NoColorSpace;
+      if (std.roughnessMap) std.roughnessMap.colorSpace = THREE.NoColorSpace;
+      if (std.metalnessMap) std.metalnessMap.colorSpace = THREE.NoColorSpace;
+      if (std.aoMap) std.aoMap.colorSpace = THREE.NoColorSpace;
+
+      std.envMapIntensity = 0.55;
+
+      // 소스 팩의 과도한 emissive 클램프
+      if (name.includes('NEON') || name.includes('EMISSIVE')) {
+        std.emissiveIntensity = name.includes('BLUE') ? 0.82 : 0.48;
+      } else if (name.includes('SCREEN') || name.includes('DISPLAY') || name.includes('TV')) {
+        std.emissiveIntensity = 0.35;
+      } else {
+        std.emissiveIntensity = Math.min(std.emissiveIntensity ?? 1, 1);
+      }
+
+      // 임시 물리 기반 재질 프로필 (최종 품질은 authored PBR 맵 필요 — 패치 한계 명시)
+      if (name.includes('SKIN')) {
+        std.metalness = 0.0; std.roughnessMap = null; std.roughness = 0.68;
+      } else if (name.includes('MARBLE')) {
+        std.metalness = 0.0; std.roughnessMap = null; std.roughness = 0.40;
+      } else if (name.includes('CONCRETE')) {
+        std.metalness = 0.0; std.roughnessMap = null; std.roughness = 0.76;
+      } else if (name.includes('PLASTIC')) {
+        std.metalness = 0.0; std.roughnessMap = null; std.roughness = 0.56;
+      } else if (name.includes('LEATHER')) {
+        std.metalness = 0.0; std.roughnessMap = null; std.roughness = 0.48;
+      }
+
+      if (name.includes('GLASS') && (std as THREE.MeshPhysicalMaterial).isMeshPhysicalMaterial) {
+        const glass = std as THREE.MeshPhysicalMaterial;
+        glass.color.set(0xd9ebf4);
+        glass.metalness = 0.0;
+        glass.roughness = 0.08;
+        glass.transmission = 0.90;
+        glass.thickness = 0.02;
+        glass.ior = 1.45;
+        glass.opacity = 1.0;
+        glass.transparent = true;
+        glass.depthWrite = false;
+        glass.side = THREE.DoubleSide;
+      }
+
+      std.needsUpdate = true;
+    }
+  });
+}
 
 function OfficeScene() {
   const { scene } = useGLTF(SCENE_URL, DRACO);
   useMemo(() => {
     scene.traverse((o) => {
-      if (BAKED_PEOPLE.test(o.name)) {
-        o.visible = false;
-        return;
-      }
-      const mesh = o as THREE.Mesh;
-      if (mesh.isMesh) {
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-        mats.forEach((m) => {
-          const mm = m as THREE.MeshStandardMaterial;
-          // 이미 emissive 색이 있는 진짜 발광체만 부스트 — 흰 가구가 광원처럼 타는 버그 방지.
-          if (
-            mm &&
-            EMISSIVE_MAT.test(mm.name || '') &&
-            mm.emissive &&
-            mm.emissive.r + mm.emissive.g + mm.emissive.b > 0.01
-          ) {
-            mm.emissiveIntensity = 2.2;
-          }
-        });
-      }
+      if (BAKED_PEOPLE.test(o.name)) o.visible = false;
     });
+    // v10 비주얼 핫픽스: 텍스처 colorSpace·emissive 클램프·재질 프로필·유리 보정
+    applyHotfixMaterials(scene);
   }, [scene]);
   return <primitive object={scene} rotation={ZUP} />;
 }
@@ -139,10 +185,8 @@ function useRiggedCharacter(url: string, clip: string) {
   const rate = useRef(1);
   const inst = useMemo(() => {
     const c = skeletonClone(scene);
-    c.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (m.isMesh) m.castShadow = true;
-    });
+    // v10 비주얼 핫픽스: 캐릭터에도 동일 적용(SKIN roughness 0.68 등 — 플라스틱 피부 완화)
+    applyHotfixMaterials(c);
     return c;
   }, [scene]);
   const mixer = useMemo(() => new THREE.AnimationMixer(inst), [inst]);
@@ -398,6 +442,7 @@ function StudioEnvironment() {
     const pmrem = new THREE.PMREMGenerator(gl);
     const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = envTex;
+    scene.environmentIntensity = 0.55; // v10 핫픽스: 환경반사 강도 감소
     return () => {
       scene.environment = null;
       envTex.dispose();
@@ -413,36 +458,34 @@ export default function OfficeViewport() {
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
     <Canvas
       // 정본 렌더링(OfficeApp.ts): Perspective + ACES exposure 1.08 + PCFSoft 그림자.
-      camera={{ fov: 38, position: [8.2, 6.6, 9.2], near: 0.05, far: 200 }}
+      // v10 비주얼 핫픽스 패치(OfficeApp.ts) 정합: fov 36 · 높은 전체 구도 · exposure 0.72
+      camera={{ fov: 36, position: [12.8, 13.6, 15.8], near: 0.05, far: 120 }}
       gl={{ toneMapping: THREE.ACESFilmicToneMapping, outputColorSpace: THREE.SRGBColorSpace, antialias: true, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {
-        gl.toneMappingExposure = 1.05;
+        gl.toneMappingExposure = 0.72;
         gl.shadowMap.type = THREE.PCFSoftShadowMap;
       }}
       shadows
       dpr={[1, 2]}
       style={{ width: '100%', height: '100%' }}
     >
-      {/* 배경/포그: 레퍼런스(07_visual_reference) 딥네이비 */}
-      <color attach="background" args={['#0b1220']} />
-      <fogExp2 attach="fog" args={['#0b1220', 0.01]} />
-      {/* 정본 라이팅(OfficeApp.ts) + 레퍼런스 밝은 실내 무드 상향 */}
-      <hemisphereLight args={['#bdd8ff', '#3a2d22', 1.2]} />
+      {/* 배경/포그: 패치값 0x151b24 / 0.006 */}
+      <color attach="background" args={['#151b24']} />
+      <fogExp2 attach="fog" args={['#151b24', 0.006]} />
+      {/* 패치 라이팅: hemi 0.42 · 주광 1.65 · fill 0.28 (과노출 해소, 포인트라이트 없음) */}
+      <hemisphereLight args={['#bfd4ef', '#342d27', 0.42]} />
       <directionalLight
         position={[12, 20, 10]}
-        intensity={4.2}
-        color="#fff1dc"
+        intensity={1.65}
+        color="#fff0dc"
         castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-bias={-0.0002}
+        shadow-bias={-0.00015}
+        shadow-normalBias={0.025}
       >
         <orthographicCamera attach="shadow-camera" args={[-11, 11, 11, -11, 0.1, 70]} />
       </directionalLight>
-      <directionalLight position={[-8, 6, -7]} intensity={1.1} color="#7ba9ff" />
-      {/* 실내 웜 포인트라이트: 리셉션·라운지 온광 + 회의실 쿨광 (레퍼런스 무드) */}
-      <pointLight position={[-3.7, 2.4, -1.6]} color="#ffd2a3" intensity={4.5} distance={6.5} />
-      <pointLight position={[-1.7, 2.5, 2.8]} color="#ffe0b8" intensity={3.5} distance={6} />
-      <pointLight position={[3.2, 2.4, 0.7]} color="#bcd6ff" intensity={3} distance={5.5} />
+      <directionalLight position={[-8, 6, -7]} intensity={0.28} color="#91b5ea" />
       <Suspense fallback={null}>
         {/* 스튜디오 IBL(RoomEnvironment PMREM) — PBR 재질 반사/필 (정본과 동일) */}
         <StudioEnvironment />
@@ -462,10 +505,10 @@ export default function OfficeViewport() {
         <MoveGround onMove={requestMove} />
         <ContactShadows position={[0, 0.01, 0]} opacity={0.45} scale={28} blur={2.6} far={6} />
       </Suspense>
-      <OrbitControls target={[0, 0.4, 0]} enablePan={false} minDistance={6} maxDistance={26} maxPolarAngle={Math.PI / 2.2} />
+      <OrbitControls target={[0, 0.65, 0]} enablePan={false} minDistance={5} maxDistance={28} maxPolarAngle={Math.PI * 0.46} />
       <EffectComposer multisampling={4}>
-        {/* LED 스트립·스크린·블루 네온 글로우 (레퍼런스의 회의실 네온 프레임 강조) */}
-        <Bloom luminanceThreshold={0.92} luminanceSmoothing={0.2} mipmapBlur intensity={0.55} radius={0.7} />
+        {/* 패치 Bloom: strength 0.10 · radius 0.24 · threshold 0.92 (과글로우 제거) */}
+        <Bloom luminanceThreshold={0.92} luminanceSmoothing={0.2} mipmapBlur intensity={0.1} radius={0.24} />
       </EffectComposer>
     </Canvas>
       <ConnBadge status={status} count={roster.length} />
