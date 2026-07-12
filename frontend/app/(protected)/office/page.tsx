@@ -15,6 +15,8 @@ import { StatusBadge, type PresenceStatus } from '@/components/ui/StatusBadge';
 import { KpiGauge } from '@/components/ui/KpiGauge';
 import { ProgressMetric } from '@/components/ui/ProgressMetric';
 import { MediaBar } from '@/components/ui/MediaBar';
+import { connectToMeeting, disconnectRoom } from '@/lib/livekit';
+import type { Room } from 'livekit-client';
 import { ListItem } from '@/components/ui/ListItem';
 import dynamic from 'next/dynamic';
 
@@ -48,7 +50,7 @@ interface KpiResult {
 }
 
 interface Meeting {
-  id: number;
+  id: string;
   title: string;
   start_time: string;
   end_time: string;
@@ -255,6 +257,30 @@ export default function OfficePage() {
   const [employees, setEmployees]     = useState<EmployeePresence[]>([]);
   const [todayMeetings, setTodayMeetings] = useState<Meeting[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
+
+  // C3: 회의 LiveKit 실미디어 연결
+  const [activeRoom, setActiveRoom] = useState<Room | null>(null);
+  const [joining, setJoining] = useState(false);
+
+  const handleJoinMeeting = useCallback(async (meetingId: string) => {
+    setJoining(true);
+    try {
+      const room = await connectToMeeting(meetingId);
+      setActiveRoom(room);
+    } catch {
+      setActiveRoom(null);
+    } finally {
+      setJoining(false);
+    }
+  }, []);
+
+  const handleLeaveMeeting = useCallback(async () => {
+    await disconnectRoom(activeRoom);
+    setActiveRoom(null);
+  }, [activeRoom]);
+
+  // 페이지 이탈/룸 교체 시 연결 정리(disconnectRoom은 중복 호출 안전).
+  useEffect(() => () => { void disconnectRoom(activeRoom); }, [activeRoom]);
 
   const [loadingWork, setLoadingWork]     = useState(true);
   const [loadingKpi,  setLoadingKpi]      = useState(true);
@@ -528,16 +554,15 @@ export default function OfficePage() {
             <MiniMap />
           </div>
 
-          {/* 미디어 바 (하단 중앙) */}
+          {/* 미디어 바 (하단 중앙) — 회의 연결 시 실제 마이크/카메라 제어(C3) */}
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10">
-            <MediaBar />
+            <MediaBar room={activeRoom} onLeave={handleLeaveMeeting} />
           </div>
 
-          {/* 진행중 화상회의 오버레이 — 실 데이터(GET /api/meetings?status=in_progress). 진행중 회의 없으면 미표시 */}
+          {/* 진행중 화상회의 오버레이 — 실 데이터(GET /api/meetings?status=in_progress). C3: 입장 시 LiveKit 연결 */}
           {meetings.length > 0 && (
-            <Link
-              href="/meetings"
-              className="absolute right-3 bottom-3 z-10 w-56 rounded-xl border border-border-subtle overflow-hidden block hover:border-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+            <div
+              className="absolute right-3 bottom-3 z-10 w-56 rounded-xl border border-border-subtle overflow-hidden"
               style={{ background: 'rgba(13,27,54,0.92)', backdropFilter: 'blur(6px)' }}
             >
               <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle">
@@ -547,13 +572,28 @@ export default function OfficePage() {
                 </div>
                 <span className="text-[9px] font-bold text-danger tracking-wider flex-shrink-0">● LIVE</span>
               </div>
-              <div className="px-3 py-2 flex items-center justify-between">
-                <span className="text-[11px] text-text-secondary">
-                  {meetings[0].participant_count != null ? `${meetings[0].participant_count}명 참여중` : '진행중'}
+              <div className="px-3 py-2 flex items-center justify-between gap-2">
+                <span className="text-[11px] text-text-secondary truncate">
+                  {activeRoom
+                    ? '회의 연결됨'
+                    : meetings[0].participant_count != null
+                      ? `${meetings[0].participant_count}명 참여중`
+                      : '진행중'}
                 </span>
-                <span className="text-[10px] text-primary font-medium">회의실 보기 ›</span>
+                {activeRoom ? (
+                  <span className="text-[10px] text-status-online font-medium flex-shrink-0">● 연결됨</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleJoinMeeting(meetings[0].id)}
+                    disabled={joining}
+                    className="text-[10px] font-medium px-2 py-1 rounded bg-primary text-white hover:bg-primary-hover disabled:opacity-50 flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                  >
+                    {joining ? '연결 중…' : '입장하기'}
+                  </button>
+                )}
               </div>
-            </Link>
+            </div>
           )}
 
           {/* "회의실 앞에서 E" 힌트 (시안: bottom center) */}
