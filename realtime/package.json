@@ -14,7 +14,8 @@
     "smoke": "tsx src/__tests__/room.smoke.test.ts",
     "client-smoke": "tsx scripts/client-smoke.ts",
     "presence-smoke": "tsx scripts/presence-sink-smoke.ts",
-    "layout-smoke": "tsx scripts/layout-smoke.ts"
+    "layout-smoke": "tsx scripts/layout-smoke.ts",
+    "live-check": "tsx scripts/live-check.ts"
   },
   "dependencies": {
     "@colyseus/core": "0.15.57",
