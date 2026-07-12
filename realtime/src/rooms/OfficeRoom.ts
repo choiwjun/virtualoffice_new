@@ -9,6 +9,7 @@ import {
   RECONNECT_WINDOW_SEC,
   MEETING_PROXIMITY_M,
   PRESENCE_SINK_URL,
+  PRESENCE_SINK_TOKEN,
   JWT_SECRET,
   JWT_ALGORITHM,
   JWT_REQUIRED,
@@ -77,7 +78,7 @@ export class OfficeRoom extends Room<OfficeState> {
   constructor() {
     super();
     this.layoutProvider = new DemoFloorLayoutProvider();
-    this.presenceSink = createPresenceSink(PRESENCE_SINK_URL);
+    this.presenceSink = createPresenceSink(PRESENCE_SINK_URL, PRESENCE_SINK_TOKEN);
   }
 
   // -------------------------------------------------------------------------

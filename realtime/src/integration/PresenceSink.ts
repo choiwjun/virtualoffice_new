@@ -44,14 +44,20 @@ export class ConsolePresenceSink implements PresenceSink {
  * backend never crashes the realtime tick loop (fault isolation, 09 risk note).
  */
 export class HttpPresenceSink implements PresenceSink {
-  constructor(private readonly url: string) {}
+  constructor(
+    private readonly url: string,
+    private readonly token: string = "",
+  ) {}
 
   async push(batch: PresenceRecord[]): Promise<void> {
     if (batch.length === 0) return;
     try {
+      const headers: Record<string, string> = { "content-type": "application/json" };
+      // 서버간 내부 토큰(D3) — 백엔드 require_internal(Bearer)과 매칭.
+      if (this.token) headers["authorization"] = `Bearer ${this.token}`;
       const res = await fetch(`${this.url}/api/presence/batch`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers,
         body: JSON.stringify({ records: batch }),
       });
       if (!res.ok) {
@@ -66,6 +72,6 @@ export class HttpPresenceSink implements PresenceSink {
 }
 
 /** Factory: HttpPresenceSink when PRESENCE_SINK_URL set, else ConsolePresenceSink. */
-export function createPresenceSink(url: string): PresenceSink {
-  return url ? new HttpPresenceSink(url) : new ConsolePresenceSink();
+export function createPresenceSink(url: string, token = ""): PresenceSink {
+  return url ? new HttpPresenceSink(url, token) : new ConsolePresenceSink();
 }

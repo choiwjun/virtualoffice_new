@@ -12,7 +12,8 @@
     "start": "node dist/index.js",
     "test": "tsx src/__tests__/room.smoke.test.ts",
     "smoke": "tsx src/__tests__/room.smoke.test.ts",
-    "client-smoke": "tsx scripts/client-smoke.ts"
+    "client-smoke": "tsx scripts/client-smoke.ts",
+    "presence-smoke": "tsx scripts/presence-sink-smoke.ts"
   },
   "dependencies": {
     "@colyseus/core": "0.15.57",

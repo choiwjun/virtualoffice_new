@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_hours: int = 24  # D4 확정: 24h
 
+    # ── 서버간 내부 API (Colyseus 이동서버 → FastAPI presence batch write, D3) ──
+    # 운영: .env에서 강한 랜덤값 주입. Colyseus의 PRESENCE_SINK_TOKEN과 동일해야 함.
+    internal_api_token: str = "dev-internal-token-CHANGE-IN-PRODUCTION"
+
     # ── CORS (Next.js 웹 관리콘솔) ──
     cors_origins: list[str] = ["http://localhost:3000"]
     # ── LiveKit SFU (D24: 명시적 입장, G004) ──
