@@ -95,7 +95,8 @@ function RoomLabel({ pos, name, sub }: { pos: [number, number, number]; name: st
 
 // 씬에 구워진 정적 T포즈 인물 노드명 (가구 아님) — 이 접두사로 시작하면 숨긴다.
 const BAKED_PEOPLE = /^(worker_|ethan_|walk_|receptionist_|meeting_person)/i;
-const EMISSIVE_MAT = /emissive|neon|led|glow|warm|screen|ui|light/i;
+// 발광 부스트는 진짜 발광체(네온/LED/스크린)만 — 'warm/light' 등 이름만 밝은 가구 재질을 태우면 안 됨.
+const EMISSIVE_MAT = /neon|led|screen|display|monitor/i;
 
 function OfficeScene() {
   const { scene } = useGLTF(SCENE_URL, DRACO);
@@ -112,7 +113,15 @@ function OfficeScene() {
         const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
         mats.forEach((m) => {
           const mm = m as THREE.MeshStandardMaterial;
-          if (mm && EMISSIVE_MAT.test(mm.name || '')) mm.emissiveIntensity = 2.6; // Bloom 대상으로 발광 부스트
+          // 이미 emissive 색이 있는 진짜 발광체만 부스트 — 흰 가구가 광원처럼 타는 버그 방지.
+          if (
+            mm &&
+            EMISSIVE_MAT.test(mm.name || '') &&
+            mm.emissive &&
+            mm.emissive.r + mm.emissive.g + mm.emissive.b > 0.01
+          ) {
+            mm.emissiveIntensity = 2.2;
+          }
         });
       }
     });
@@ -402,7 +411,7 @@ export default function OfficeViewport() {
       camera={{ fov: 38, position: [8.2, 6.6, 9.2], near: 0.05, far: 200 }}
       gl={{ toneMapping: THREE.ACESFilmicToneMapping, outputColorSpace: THREE.SRGBColorSpace, antialias: true, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {
-        gl.toneMappingExposure = 1.22;
+        gl.toneMappingExposure = 1.05;
         gl.shadowMap.type = THREE.PCFSoftShadowMap;
       }}
       shadows
@@ -413,10 +422,10 @@ export default function OfficeViewport() {
       <color attach="background" args={['#0b1220']} />
       <fogExp2 attach="fog" args={['#0b1220', 0.01]} />
       {/* 정본 라이팅(OfficeApp.ts) + 레퍼런스 밝은 실내 무드 상향 */}
-      <hemisphereLight args={['#cfe2ff', '#4a3a2c', 1.35]} />
+      <hemisphereLight args={['#bdd8ff', '#3a2d22', 1.2]} />
       <directionalLight
         position={[12, 20, 10]}
-        intensity={4.5}
+        intensity={4.2}
         color="#fff1dc"
         castShadow
         shadow-mapSize={[2048, 2048]}
@@ -426,9 +435,9 @@ export default function OfficeViewport() {
       </directionalLight>
       <directionalLight position={[-8, 6, -7]} intensity={1.1} color="#7ba9ff" />
       {/* 실내 웜 포인트라이트: 리셉션·라운지 온광 + 회의실 쿨광 (레퍼런스 무드) */}
-      <pointLight position={[-3.7, 2.4, -1.6]} color="#ffd2a3" intensity={14} distance={7} />
-      <pointLight position={[-1.7, 2.5, 2.8]} color="#ffe0b8" intensity={11} distance={6.5} />
-      <pointLight position={[3.2, 2.4, 0.7]} color="#bcd6ff" intensity={9} distance={6} />
+      <pointLight position={[-3.7, 2.4, -1.6]} color="#ffd2a3" intensity={4.5} distance={6.5} />
+      <pointLight position={[-1.7, 2.5, 2.8]} color="#ffe0b8" intensity={3.5} distance={6} />
+      <pointLight position={[3.2, 2.4, 0.7]} color="#bcd6ff" intensity={3} distance={5.5} />
       <Suspense fallback={null}>
         {/* 스튜디오 IBL(RoomEnvironment PMREM) — PBR 재질 반사/필 (정본과 동일) */}
         <StudioEnvironment />
@@ -436,7 +445,7 @@ export default function OfficeViewport() {
         {/* 룸 라벨 pill (레퍼런스: Reception / Board Room / Lounge) */}
         <RoomLabel pos={[-4.1, 2.2, -1.9]} name="Reception" sub="리셉션" />
         <RoomLabel pos={[3.3, 2.3, 0.3]} name="Board Room" sub="회의실 · 유리룸" />
-        <RoomLabel pos={[-2.1, 1.9, 2.5]} name="Lounge" sub="라운지 · 카페" />
+        <RoomLabel pos={[-3.4, 2.4, 1.9]} name="Lounge" sub="라운지 · 카페" />
         {PEOPLE.map((p, i) => (
           <Person key={`p${i}`} {...p} />
         ))}
@@ -451,7 +460,7 @@ export default function OfficeViewport() {
       <OrbitControls target={[0, 0.4, 0]} enablePan={false} minDistance={6} maxDistance={26} maxPolarAngle={Math.PI / 2.2} />
       <EffectComposer multisampling={4}>
         {/* LED 스트립·스크린·블루 네온 글로우 (레퍼런스의 회의실 네온 프레임 강조) */}
-        <Bloom luminanceThreshold={0.85} luminanceSmoothing={0.25} mipmapBlur intensity={0.8} radius={0.75} />
+        <Bloom luminanceThreshold={0.92} luminanceSmoothing={0.2} mipmapBlur intensity={0.55} radius={0.7} />
       </EffectComposer>
     </Canvas>
       <ConnBadge status={status} count={roster.length} />
