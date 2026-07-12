@@ -166,7 +166,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/meetings',         label: '회의실예약',    icon: <IconMeetRoom /> },
   { href: '/chat',             label: '커뮤니케이션',  icon: <IconChat />,    disabled: true },
   { href: '/admin/employees',  label: '인사·근태',     icon: <IconHR /> },
-  { href: '/settings',         label: '설정',          icon: <IconSettings />, disabled: true },
+  { href: '/settings',         label: '설정',          icon: <IconSettings /> },
 ];
 
 // ─────────────────────────────────────────────

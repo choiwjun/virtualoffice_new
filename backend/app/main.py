@@ -89,3 +89,5 @@ from app.api import consent  # noqa: E402
 app.include_router(consent.router)
 from app.api import notices  # noqa: E402  공지사항 (14-spec §2.8)
 app.include_router(notices.router)            # /api/notices — 사내 공지 (조회 전직원 / 작성·삭제 admin)
+from app.api import avatar  # noqa: E402  아바타 커스터마이징 (C4, 06-screens §3.9)
+app.include_router(avatar.router)             # /api/avatar — 내 아바타 조회/설정 (본인 전용)

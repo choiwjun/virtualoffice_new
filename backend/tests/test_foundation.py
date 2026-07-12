@@ -36,9 +36,10 @@ async def test_health_endpoint(async_client):
 
 # ── DB 스키마 ─────────────────────────────────────────────
 def test_all_tables_registered():
-    assert len(Base.metadata.tables) == 22
+    assert len(Base.metadata.tables) == 24  # +user_avatar (C4, 06-screens §3.9, 2026-07-12)
     assert "erp_user" in Base.metadata.tables
     assert "kpi_result" in Base.metadata.tables
+    assert "user_avatar" in Base.metadata.tables
 
 
 async def test_db_session_usable(db_session):

@@ -1524,3 +1524,30 @@ class Notice(Base, TimestampMixin, SoftDeleteMixin):
     __table_args__ = (
         Index("idx_notice_active_pinned_time", "is_active", "pinned", "created_at"),
     )
+
+
+class UserAvatar(Base, TimestampMixin):
+    # @TASK C4 - 아바타 커스터마이징
+    # @SPEC 06-screens.md §3.9 (프리셋 + 상/하의 색상 팔레트 + 이름표)
+    """
+    직원 아바타 커스터마이징 (user_id당 1개).
+
+    경량: 프리셋 식별자 + 상/하의 색상(#RRGGBB) + 이름표 표시 여부.
+    리깅/에셋은 07-3d-visual-asset-pipeline 참조. 고도화 시 확장.
+    """
+    __tablename__ = "user_avatar"
+
+    user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("erp_user.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    """ERP user.id (PK, 1:1)"""
+    preset_id: Mapped[str] = mapped_column(String(32), nullable=False, default="humanoid_a")
+    """아바타 프리셋 식별자 (humanoid_a | humanoid_b …)"""
+    top_color: Mapped[str] = mapped_column(String(9), nullable=False, default="#3B5BFE")
+    """상의 색상 (#RRGGBB)"""
+    bottom_color: Mapped[str] = mapped_column(String(9), nullable=False, default="#1E293B")
+    """하의 색상 (#RRGGBB)"""
+    show_nameplate: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    """머리 위 이름표(이름/직급) 표시 여부"""

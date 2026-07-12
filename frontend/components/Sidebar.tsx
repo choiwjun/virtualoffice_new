@@ -73,6 +73,19 @@ const MENU_ITEMS: MenuItem[] = [
     roles: ['admin', 'super_admin'],
     icon: '📜',
   },
+  {
+    href: '/admin/notices',
+    label: '공지 관리',
+    roles: ['admin', 'super_admin'],
+    icon: '📢',
+  },
+  {
+    // C4: 아바타 커스터마이징 (06-screens §3.9)
+    href: '/settings',
+    label: '아바타 설정',
+    roles: ['admin', 'super_admin', 'leader', 'employee'],
+    icon: '🧑‍🎨',
+  },
 ];
 
 interface SidebarProps {
