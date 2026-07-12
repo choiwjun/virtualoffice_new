@@ -129,21 +129,18 @@ function OfficeScene() {
   return <primitive object={scene} rotation={ZUP} />;
 }
 
-// 제공 캐릭터 리그는 팔이 벌어진 A/T 바인드포즈 + 클립이 팔을 거의 안 내림 →
-// 윗팔 본을 로컬 Y축으로 회전해 몸통 옆으로 내린다. (양팔 대칭)
-const ARM_DOWN = THREE.MathUtils.degToRad(70);
-
 // 리깅 캐릭터 독립 인스턴스: SkeletonUtils.clone로 스켈레톤까지 복제 후 지정 클립 루프 재생.
+// 정본 런타임(11_complete_runtime_app/AvatarController.ts)과 동일 — 클립을 트랙 필터/본 보정 없이
+// 그대로 재생한다(v10 클립이 팔 포즈를 소유. 구버전 '팔 내림 핵'은 X자 팔 버그의 원인이었음).
+// rate: 재생속도 ref — 걷기 시 실제 이동속도에 맞춰 발 미끄러짐(문워크) 방지.
 function useRiggedCharacter(url: string, clip: string) {
   const { scene, animations } = useGLTF(url, DRACO);
+  const rate = useRef(1);
   const inst = useMemo(() => {
     const c = skeletonClone(scene);
     c.traverse((o) => {
       const m = o as THREE.Mesh;
       if (m.isMesh) m.castShadow = true;
-      const up = o.name.toUpperCase();
-      if (up.endsWith('UPPER_ARM_R')) o.rotateY(ARM_DOWN); // 오른팔 내림
-      if (up.endsWith('UPPER_ARM_L')) o.rotateY(-ARM_DOWN); // 왼팔 내림
     });
     return c;
   }, [scene]);
@@ -151,19 +148,19 @@ function useRiggedCharacter(url: string, clip: string) {
   useEffect(() => {
     const src = THREE.AnimationClip.findByName(animations, clip) ?? animations[0];
     if (!src) return;
-    // 팔/손 트랙 제거 → 위 팔내림 보정이 유지되게(믹서가 덮어쓰지 않게). 다리·몸통은 정상 애니.
-    const c = src.clone();
-    c.tracks = c.tracks.filter((t) => !/ARM|HAND/i.test(t.name));
-    const action = mixer.clipAction(c);
+    const action = mixer.clipAction(src);
     action.reset().fadeIn(0.25).play();
     return () => {
       action.fadeOut(0.1);
       mixer.stopAllAction();
     };
   }, [mixer, animations, clip]);
-  useFrame((_, dt) => mixer.update(dt));
-  return inst;
+  useFrame((_, dt) => mixer.update(dt * rate.current));
+  return { inst, rate };
 }
+
+/** 걷기 클립이 기준하는 보행속도(정본 AvatarController speed=1.35 u/s). 실이동/기준 비율로 재생속도 동기화. */
+const WALK_CLIP_SPEED = 1.35;
 
 function Person({
   url,
@@ -180,7 +177,7 @@ function Person({
   name?: string;
   dot?: string;
 }) {
-  const inst = useRiggedCharacter(url, clip);
+  const { inst } = useRiggedCharacter(url, clip);
   return (
     <group position={pos} rotation={[0, rot, 0]}>
       <primitive object={inst} rotation={ZUP} />
@@ -198,10 +195,10 @@ function Walker({
   clip: string;
   path: (t: number) => [number, number];
 }) {
-  const inst = useRiggedCharacter(url, clip);
+  const { inst, rate } = useRiggedCharacter(url, clip);
   const g = useRef<THREE.Group>(null!);
   const prev = useRef<[number, number]>([0, 0]);
-  useFrame((state) => {
+  useFrame((state, dt) => {
     if (!g.current) return;
     const t = state.clock.getElapsedTime();
     const [x, z] = path(t);
@@ -209,6 +206,9 @@ function Walker({
     const [px, pz] = prev.current;
     const dx = x - px, dz = z - pz;
     if (Math.abs(dx) + Math.abs(dz) > 1e-4) g.current.rotation.y = Math.atan2(dx, dz);
+    // 발 미끄러짐 방지: 걷기 클립 재생속도를 실제 경로 속도에 동기화.
+    const sp = Math.hypot(dx, dz) / Math.max(dt, 1e-4);
+    rate.current = THREE.MathUtils.clamp(sp / WALK_CLIP_SPEED, 0.3, 1.3);
     prev.current = [x, z];
   });
   return (
@@ -256,14 +256,14 @@ function NetworkedAvatar({
     [sessionId, playersRef],
   );
   const [clip, setClip] = useState('ANIM_IDLE_001');
-  const inst = useRiggedCharacter(url, clip);
+  const { inst, rate } = useRiggedCharacter(url, clip);
   const g = useRef<THREE.Group>(null!);
   const prev = useRef<[number, number]>([0, 0]);
   const idleFrames = useRef(99);
   const isWalk = useRef(false);
   const spawned = useRef(false);
 
-  useFrame(() => {
+  useFrame((_, dt) => {
     const p = playersRef.current.get(sessionId);
     if (!p || !g.current) return;
     const [tx, tz] = floorToWorld(p.x, p.y);
@@ -290,6 +290,9 @@ function NetworkedAvatar({
       isWalk.current = wantWalk;
       setClip(wantWalk ? 'ANIM_WALK_001' : 'ANIM_IDLE_001');
     }
+    // 발 미끄러짐 방지: 걷기 클립 재생속도를 화면상 실제 이동속도에 동기화.
+    const sp = Math.hypot(dx, dz) / Math.max(dt, 1e-4);
+    rate.current = wantWalk ? THREE.MathUtils.clamp(sp / WALK_CLIP_SPEED, 0.3, 1.2) : 1;
   });
 
   const displayName = playersRef.current.get(sessionId)?.name || (isSelf ? '나' : '게스트');
