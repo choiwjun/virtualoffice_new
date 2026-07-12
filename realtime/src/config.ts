@@ -60,3 +60,15 @@ export type PresenceStatus = (typeof PRESENCE_STATES)[number];
 
 /** Presence sink target (FastAPI). When unset, presence pushes log to console. Spec §6. */
 export const PRESENCE_SINK_URL = process.env.PRESENCE_SINK_URL ?? "";
+
+/** 서버간 presence 배치 인증 토큰 — 백엔드 settings.internal_api_token과 동일해야 함. */
+export const PRESENCE_SINK_TOKEN = process.env.PRESENCE_SINK_TOKEN ?? "";
+
+/**
+ * FastAPI JWT 검증 (D4: HS256 자체 시크릿). onAuth에서 join 시 전달된 토큰을 검증한다.
+ * JWT_SECRET은 백엔드 settings.jwt_secret_key와 **동일**해야 함(로컬 기본값 일치).
+ */
+export const JWT_SECRET = process.env.JWT_SECRET ?? "dev-only-secret-CHANGE-IN-PRODUCTION";
+export const JWT_ALGORITHM = "HS256" as const;
+/** true면 유효 JWT 없는 join 거부(운영). 기본 false: 로컬/테스트는 토큰 없이도 허용. */
+export const JWT_REQUIRED = (process.env.JWT_REQUIRED ?? "false").toLowerCase() === "true";

@@ -16,7 +16,9 @@ import { createServer } from 'http';
 import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import { Client, Room } from 'colyseus.js';
+import jwt from 'jsonwebtoken';
 import { OfficeRoom } from '../src/rooms/OfficeRoom';
+import { JWT_SECRET } from '../src/config';
 
 const PORT = 2599;
 let passed = 0;
@@ -73,14 +75,15 @@ async function main(): Promise<void> {
 
   // 2) 먼 목적지로 걷기 — walker 스텝 스트리밍이 서버 위치를 전진시켜야 함
   walker.moveTo(14, 11);
+  let sawWalk = false;
   const moved = await waitFor(() => {
     const p = selfOf(room)!;
+    if (p.anim === 'walk') sawWalk = true; // 이동 창 어느 샘플에서든 walk 관측(스트리밍상 walk↔idle 오감)
     return Math.hypot(p.x - start.x, p.y - start.y) > 1.0;
   }, 5000);
   const p1 = selfOf(room)!;
   assert(moved, `avatar walked toward dest (moved ${Math.hypot(p1.x - start.x, p1.y - start.y).toFixed(2)}m → ${p1.x.toFixed(2)},${p1.y.toFixed(2)})`);
-  const arrived = Math.hypot(p1.x - 14, p1.y - 11) < 0.3;
-  assert(p1.anim === 'walk' || arrived, `anim=walk while moving (anim=${p1.anim}, arrived=${arrived})`);
+  assert(sawWalk, 'server set anim=walk during movement');
 
   // 3) client 2 접속 → 로스터 증가, 상호 가시
   const c2 = new Client(`ws://localhost:${PORT}`);
@@ -93,9 +96,27 @@ async function main(): Promise<void> {
   const back1 = await waitFor(() => sizeOf(room) === 1, 5000);
   assert(back1, `roster shrinks after client2 leave (size=${sizeOf(room)})`);
 
+  // 5) onAuth: 유효 JWT → 토큰 sub로 identity (client가 준 userId 무시 = 위조 방지)
+  const token = jwt.sign({ sub: '777', email: 'z@x.com' }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '1h' });
+  const c3 = new Client(`ws://localhost:${PORT}`);
+  const room3 = await c3.joinOrCreate('office', { userId: 'SPOOFED', name: 'Z', officeId: 'office-demo', floorId: 'floor-1', jwt: token });
+  await waitFor(() => !!selfOf(room3));
+  assert(selfOf(room3)!.userId === '777', `valid JWT → userId from token sub, spoof ignored (got ${selfOf(room3)!.userId})`);
+  await room3.leave(true);
+
+  // 6) onAuth: 위조 JWT → join 거부
+  let rejected = false;
+  try {
+    const cbad = new Client(`ws://localhost:${PORT}`);
+    await cbad.joinOrCreate('office', { userId: 'x', officeId: 'office-demo', floorId: 'floor-1', jwt: 'bad.token.value' });
+  } catch { rejected = true; }
+  assert(rejected, 'invalid JWT → join rejected');
+
   walker.stop();
   await room.leave(true);
+  await sleep(200); // 소켓 close 핸들러 정착(Windows libuv 종료 레이스 회피)
   await gameServer.gracefullyShutdown(false);
+  await sleep(200);
   console.log(`\n=== client-smoke: ${passed} passed, ${failed} failed ===`);
   process.exit(failed ? 1 : 0);
 }

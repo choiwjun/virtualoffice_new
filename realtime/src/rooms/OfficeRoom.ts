@@ -1,4 +1,5 @@
 import { Room, Client } from "@colyseus/core";
+import jwt from "jsonwebtoken";
 import { OfficeState, Player } from "../state/OfficeState";
 import {
   TICK_MS,
@@ -8,6 +9,9 @@ import {
   RECONNECT_WINDOW_SEC,
   MEETING_PROXIMITY_M,
   PRESENCE_SINK_URL,
+  JWT_SECRET,
+  JWT_ALGORITHM,
+  JWT_REQUIRED,
   PresenceStatus,
 } from "../config";
 import {
@@ -106,17 +110,36 @@ export class OfficeRoom extends Room<OfficeState> {
    * identity; returning a truthy value authorizes the join.
    */
   async onAuth(_client: Client, options: JoinOptions): Promise<JoinOptions> {
-    // TODO: verify options.jwt against FastAPI shared secret (HS256); reject on failure.
-    return options ?? {};
+    const token = options?.jwt;
+    if (!token) {
+      if (JWT_REQUIRED) throw new Error("unauthorized: missing token");
+      return options ?? {}; // 로컬/테스트 관용(JWT_REQUIRED=false)
+    }
+    try {
+      const payload = jwt.verify(token, JWT_SECRET, { algorithms: [JWT_ALGORITHM] }) as {
+        sub?: string;
+        email?: string;
+      };
+      // 토큰 identity를 신뢰 — 클라이언트가 준 userId를 토큰 sub로 덮어써 위조를 막는다(D4).
+      return {
+        ...options,
+        userId: payload.sub ?? options.userId,
+        name: options.name ?? payload.email,
+      };
+    } catch {
+      throw new Error("unauthorized: invalid token");
+    }
   }
 
-  onJoin(client: Client, options: JoinOptions): void {
+  onJoin(client: Client, options: JoinOptions, auth?: JoinOptions): void {
+    // onAuth 반환(토큰 검증 identity)이 있으면 그것을 신뢰, 없으면(관용 모드) 원본 options.
+    const id: JoinOptions = auth ?? options;
     const player = new Player();
-    player.userId = options.userId ?? client.sessionId;
-    player.name = options.name ?? player.userId;
-    player.companyId = options.companyId ?? this.companyId;
-    player.officeId = options.officeId ?? this.officeId;
-    player.floorId = options.floorId ?? this.floorId;
+    player.userId = id.userId ?? client.sessionId;
+    player.name = id.name ?? player.userId;
+    player.companyId = id.companyId ?? this.companyId;
+    player.officeId = id.officeId ?? this.officeId;
+    player.floorId = id.floorId ?? this.floorId;
     player.status = "online";
     player.anim = "idle";
     player.lastActivityAt = Date.now();

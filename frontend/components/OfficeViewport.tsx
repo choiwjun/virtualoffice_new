@@ -203,7 +203,8 @@ function NetworkedAvatar({
   const inst = useRiggedCharacter(url, clip);
   const g = useRef<THREE.Group>(null!);
   const prev = useRef<[number, number]>([0, 0]);
-  const lastAnim = useRef('idle');
+  const idleFrames = useRef(99);
+  const isWalk = useRef(false);
   const spawned = useRef(false);
 
   useFrame(() => {
@@ -221,11 +222,17 @@ function NetworkedAvatar({
     const [px, pz] = prev.current;
     const dx = g.current.position.x - px;
     const dz = g.current.position.z - pz;
-    if (Math.abs(dx) + Math.abs(dz) > 1e-4) g.current.rotation.y = Math.atan2(dx, dz);
+    const moved = Math.abs(dx) + Math.abs(dz);
+    if (moved > 1e-4) g.current.rotation.y = Math.atan2(dx, dz);
     prev.current = [g.current.position.x, g.current.position.z];
-    if (p.anim !== lastAnim.current) {
-      lastAnim.current = p.anim;
-      setClip(p.anim === 'walk' ? 'ANIM_WALK_001' : 'ANIM_IDLE_001');
+    // 서버 anim 필드는 스트리밍 이동상 walk↔idle이 잦게 오간다 → 실제 위치변화 + 정지 hysteresis로
+    // walk/idle 판정(기존 Walker 패턴)해 클립 깜빡임을 방지.
+    if (moved > 0.003) idleFrames.current = 0;
+    else idleFrames.current++;
+    const wantWalk = idleFrames.current < 10;
+    if (wantWalk !== isWalk.current) {
+      isWalk.current = wantWalk;
+      setClip(wantWalk ? 'ANIM_WALK_001' : 'ANIM_IDLE_001');
     }
   });
 
