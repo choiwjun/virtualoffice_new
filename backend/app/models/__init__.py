@@ -27,9 +27,10 @@ from app.models.tables import (
     # ── KPI / ERP push ──
     KpiResult,
     DailyStatusPush,
-    # ── 에셋 / 감사 ──
+    # ── 에셋 / 감사 / 공지 ──
     Asset,
     AuditLog,
+    Notice,
 )
 
 __all__ = [
@@ -56,4 +57,5 @@ __all__ = [
     "DailyStatusPush",
     "Asset",
     "AuditLog",
+    "Notice",
 ]
