@@ -39,6 +39,19 @@ if os.name == "nt":
 DATABASE_URL_TEST = "sqlite+aiosqlite:///:memory:"
 
 
+@pytest.fixture(autouse=True)
+def _force_mock_ai():
+    """테스트는 항상 결정론적 mock AI 사용 — 외부 NVIDIA 호출·비용·네트워크 차단.
+    개발자 셸에 AI_DRAFT_ENABLED/NVIDIA_API_KEY가 있어도 무시(재현성·격리)."""
+    from app.config import settings
+
+    prev = settings.ai_draft_enabled
+    settings.ai_draft_enabled = False
+    try:
+        yield
+    finally:
+        settings.ai_draft_enabled = prev
+
 # ============================================================================
 # DB: 테스트별 격리 인메모리 엔진
 # ============================================================================
