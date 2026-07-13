@@ -24,7 +24,12 @@
 
 ## 1. 확정 결함 — 즉시 조치 (코드가 정본 위반)
 
-> **조치 현황 (2026-07-13)**: #1·#2는 `fix/p0-rbac-objection-teamscope` 브랜치에서 수리 완료 — review_objection admin 전용화(`_check_admin_only`) + `_check_team_scope`에 평가기간 user_team_history 검사 추가(이력 0행 폴백=현재 소속, leader 팀은 DB 우선 조회로 JWT 스테일 해소). 회귀 테스트 3종 추가, 전체 스위트 333 passed.
+> **조치 현황 (2026-07-13, `fix/p0-rbac-objection-teamscope` 브랜치)**: **#1~#5 전부 수리 완료.**
+> - #1·#2: review_objection admin 전용화 + `_check_team_scope` 평가기간 user_team_history 검사(이력 0행 폴백=현재 소속, leader 팀 DB 우선 조회로 JWT 스테일 해소).
+> - #3: seats.py `_ADMIN` → deps.ADMIN_ROLES(admin·super_admin) — leader 제거, office_layouts와 통일.
+> - #4: **규정 정정** — 08 §4.1·D17 원문 재확인 결과 정본은 "18:00=EOD push / 21:00=KPI 정량+AI 단일 배치"로, ④트랙의 '분리 필요' 규정이 부정확했음. 실제 드리프트는 정본에 없는 18:00 KPI 잡의 존재 → `kpi_18` 잡 제거 + EOD 18:05→18:00 정렬. 21:00의 정량+초안 결합은 스펙 그대로 유지.
+> - #5: `require_role`에 super_admin 자동 상위 호환(rbac.yaml §12) + deps.py에 ADMIN_ROLES/MANAGER_ROLES 단일 상수 신설(QA #17 구조 개선 착수).
+> - 회귀 테스트 5종 추가(이의검토 403·기간 이력 스코프·무이력 폴백·좌석 leader 403+super_admin 상속·스케줄러 잡 정본 검증). 전체 스위트 335 passed.
 
 | # | 심각도 | 결함 | 정본 근거 | 증거 | 조치 |
 |---|---|---|---|---|---|
