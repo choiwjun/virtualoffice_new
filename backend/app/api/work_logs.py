@@ -34,7 +34,7 @@ from app.models.tables import WorkLog, WorkLogStatus
 
 router = APIRouter(prefix="/api", tags=["work-logs"])
 
-ADMIN_ROLES = {"admin", "leader"}
+ADMIN_ROLES = {"admin", "super_admin", "leader"}
 
 
 # ---------------------------------------------------------------------------

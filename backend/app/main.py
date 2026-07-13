@@ -93,3 +93,9 @@ from app.api import presence  # noqa: E402  실시간 프레즌스 batch (D3, Co
 app.include_router(presence.router)           # /api/presence/batch — 이동서버 presence write (내부 토큰)
 from app.api import realtime_layout  # noqa: E402  이동서버용 층 레이아웃 (05→FloorLayout 매핑)
 app.include_router(realtime_layout.router)    # /api/realtime/floor-layout — deployed 레이아웃 조회 (내부 토큰)
+from app.api import trips  # noqa: E402  출장 신청·승인 (06-screens '출장관리')
+app.include_router(trips.router)              # /api/trips — 신청/승인/반려/완료 워크플로우
+from app.api import reports  # noqa: E402  업무 보고서 (06-screens '보고서')
+app.include_router(reports.router)            # /api/reports — 일일/주간/월간 draft→submitted
+from app.api import chat  # noqa: E402  커뮤니케이션 채널 메시지 (06-screens '커뮤니케이션')
+app.include_router(chat.router)               # /api/chat/* — general/team 채널, 폴링 조회

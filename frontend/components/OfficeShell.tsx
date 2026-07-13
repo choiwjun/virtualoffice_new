@@ -162,12 +162,12 @@ function IconSettings() {
 const NAV_ITEMS: NavItem[] = [
   { href: '/office',           label: '가상오피스',    icon: <IconOffice /> },
   { href: '/work-log',         label: '업무관리',      icon: <IconWork /> },
-  { href: '/work-status',      label: '업무현황',      icon: <IconChart />,   disabled: true },
-  { href: '/trip',             label: '출장관리',      icon: <IconCar />,     disabled: true },
+  { href: '/work-status',      label: '업무현황',      icon: <IconChart /> },
+  { href: '/trip',             label: '출장관리',      icon: <IconCar /> },
   { href: '/kpi',              label: 'KPI평가',       icon: <IconKpi /> },
-  { href: '/reports',          label: '보고서',        icon: <IconReport />,  disabled: true },
+  { href: '/reports',          label: '보고서',        icon: <IconReport /> },
   { href: '/meetings',         label: '회의실예약',    icon: <IconMeetRoom /> },
-  { href: '/chat',             label: '커뮤니케이션',  icon: <IconChat />,    disabled: true },
+  { href: '/chat',             label: '커뮤니케이션',  icon: <IconChat /> },
   { href: '/admin/employees',  label: '인사·근태',     icon: <IconHR /> },
   { href: '/settings',         label: '설정',          icon: <IconSettings /> },
 ];

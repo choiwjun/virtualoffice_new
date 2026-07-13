@@ -1577,3 +1577,158 @@ class UserAvatar(Base, TimestampMixin):
     """하의 색상 (#RRGGBB)"""
     show_nameplate: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     """머리 위 이름표(이름/직급) 표시 여부"""
+
+
+# ============================================================================
+# R. 출장·보고서·커뮤니케이션 (06-screens 좌내비 메뉴: 출장관리/보고서/커뮤니케이션)
+# ============================================================================
+
+class TripStatus(str, Enum):
+    """출장 상태 (신청 → 승인/반려 → 완료, 취소 가능)"""
+    REQUESTED = "requested"     # 신청(승인 대기)
+    APPROVED = "approved"       # 승인됨
+    REJECTED = "rejected"       # 반려됨
+    CANCELLED = "cancelled"     # 취소(본인)
+    COMPLETED = "completed"     # 완료(결과 보고 포함)
+
+
+class ReportType(str, Enum):
+    """보고서 유형"""
+    DAILY = "daily"             # 일일 보고
+    WEEKLY = "weekly"           # 주간 보고
+    MONTHLY = "monthly"         # 월간 보고
+
+
+class ReportStatus(str, Enum):
+    """보고서 상태"""
+    DRAFT = "draft"             # 작성 중
+    SUBMITTED = "submitted"     # 제출됨(수정 불가)
+
+
+class BusinessTrip(Base, TimestampMixin):
+    # @SPEC 06-screens.md §2 좌내비 '출장관리'
+    """
+    출장 신청·승인 워크플로우.
+
+    본인 신청(requested) → leader/admin 승인(approved)/반려(rejected).
+    승인 후 본인이 결과 보고와 함께 완료(completed) 처리. requested/approved는 본인 취소 가능.
+    """
+    __tablename__ = "business_trip"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("erp_user.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True
+    )
+    """신청자 (RESTRICT: 근태 기록 보존)"""
+    destination: Mapped[str] = mapped_column(String(255), nullable=False)
+    """출장지"""
+    purpose: Mapped[str] = mapped_column(String(500), nullable=False)
+    """출장 목적"""
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    end_date: Mapped[date] = mapped_column(Date, nullable=False)
+    status: Mapped[TripStatus] = mapped_column(
+        SQLEnum(TripStatus),
+        nullable=False,
+        default=TripStatus.REQUESTED,
+        index=True
+    )
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    """비고 (교통편, 동행자 등)"""
+    report: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    """출장 결과 보고 (완료 전환 시 작성)"""
+    approver_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        ForeignKey("erp_user.id", ondelete="SET NULL"),
+        nullable=True
+    )
+    """승인/반려 처리자"""
+    decided_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    """승인/반려 시각 (UTC)"""
+    reject_reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    """반려 사유"""
+
+    user: Mapped["ErpUser"] = relationship("ErpUser", foreign_keys=[user_id])
+
+    __table_args__ = (
+        Index("idx_business_trip_user_start", "user_id", "start_date"),
+        Index("idx_business_trip_status_start", "status", "start_date"),
+    )
+
+
+class Report(Base, TimestampMixin):
+    # @SPEC 06-screens.md §2 좌내비 '보고서'
+    """
+    업무 보고서 (일일/주간/월간).
+
+    draft 상태에서만 수정·삭제 가능. submitted 전환 시 submitted_at 기록 후 불변.
+    """
+    __tablename__ = "report"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("erp_user.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True
+    )
+    """작성자"""
+    report_type: Mapped[ReportType] = mapped_column(
+        SQLEnum(ReportType),
+        nullable=False,
+        index=True
+    )
+    report_date: Mapped[date] = mapped_column(Date, nullable=False)
+    """보고 기준일 (주간=해당 주 월요일, 월간=해당 월 1일 권장)"""
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[ReportStatus] = mapped_column(
+        SQLEnum(ReportStatus),
+        nullable=False,
+        default=ReportStatus.DRAFT,
+        index=True
+    )
+    submitted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    """제출 시각 (UTC). submitted 전환 시 자동 기록."""
+
+    user: Mapped["ErpUser"] = relationship("ErpUser")
+
+    __table_args__ = (
+        Index("idx_report_user_date", "user_id", "report_date"),
+        Index("idx_report_status_date", "status", "report_date"),
+    )
+
+
+class ChatMessage(Base):
+    # @SPEC 06-screens.md §2 좌내비 '커뮤니케이션' (본격 채팅은 P7 고도화 — MVP: 채널 메시지)
+    """
+    채널 채팅 메시지 (불변 — 수정 없음, 폴링 조회).
+
+    채널 키: 'general'(전사) | 'team:{erp_team_id}'(팀). 채널 테이블 없이 키 파생.
+    """
+    __tablename__ = "chat_message"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    channel: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("erp_user.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True
+    )
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    """메시지 본문 (API 레벨 1~2000자 제한)"""
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        index=True
+    )
+
+    user: Mapped["ErpUser"] = relationship("ErpUser")
+
+    __table_args__ = (
+        Index("idx_chat_message_channel_created", "channel", "created_at"),
+    )
