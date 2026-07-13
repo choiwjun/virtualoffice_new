@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>17-asset-rework-spec.md: 2.5D 신규 에셋 요구 스펙 (D30 정본)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">17-asset-rework-spec.md: 2.5D 신규 에셋 요구 스펙 (D30 정본)</div><div class="sub">17-asset-rework-spec.md</div><a class="lvl1" href="#17-asset-rework-specmd-25d-신규-에셋-요구-스펙-d30-정본">17-asset-rework-spec.md: 2.5D 신규 에셋 요구 스펙 (D30 정본)</a><a class="lvl2" href="#1-납품-폴더-구조-계약">1. 납품 폴더 구조 (계약)</a><a class="lvl2" href="#2-플레이트-요구-스펙">2. 플레이트 요구 스펙</a><a class="lvl2" href="#3-캐릭터-프레임-요구-스펙">3. 캐릭터 프레임 요구 스펙</a><a class="lvl2" href="#4-품질-게이트-수용-기준-01-prd-v41-7-연동">4. 품질 게이트 (수용 기준 — 01-prd v4.1 §7 연동)</a><a class="lvl2" href="#5-지오메트리-캘리브레이션-플레이트-확정-후-1회">5. 지오메트리 캘리브레이션 (플레이트 확정 후 1회)</a><a class="lvl2" href="#6-제작-경로-후보-참고">6. 제작 경로 후보 (참고)</a></nav>
+<main><h1 id="17-asset-rework-specmd-25d-신규-에셋-요구-스펙-d30-정본">17-asset-rework-spec.md: 2.5D 신규 에셋 요구 스펙 (D30 정본)</h1>
+<p><strong>작성일</strong>: 2026-07-13 <strong>배경</strong>: D30 — 기존 에셋(2.5D 팩 v1.0~v2.2·캐릭터 팩 v3·3D 유산) 전량 폐기. 2.5D 방향은 유지하되 에셋을 처음부터 재작업한다. <strong>원칙</strong>: 에셋과 엔진 분리. 아래 계약을 지키면 <strong>파일 배치 + 플래그 1개 전환</strong>으로 즉시 런타임 복원된다.</p>
+<hr>
+<h2 id="1-납품-폴더-구조-계약">1. 납품 폴더 구조 (계약)</h2>
+<pre class="code"><code>frontend/public/office2d/
+├─ plates/
+│   └─ horizon.png            ← 1층 클린플레이트 (인물·이펙트 없는 빈 사무실)
+└─ characters/
+    └─ {CHARACTER_ID}/        ← 캐릭터별 폴더 (대문자 ID)
+        ├─ idle_00.png … idle_05.png   (6프레임)
+        └─ walk_00.png … walk_07.png   (8프레임)</code></pre>
+<p>납품 후 <code>frontend/lib/office2d.ts</code>의 <code>ASSETS_READY = true</code> 전환 → 플레이스홀더 자동 해제.</p>
+<h2 id="2-플레이트-요구-스펙">2. 플레이트 요구 스펙</h2>
+<div class="table-wrap"><table><thead><tr><th>항목</th><th>요구값</th><th>근거</th></tr></thead><tbody><tr><td>화면비</td><td><strong>1672:941 (≈16:9)</strong> 고정 — 해상도는 2배(3344×1882)까지 허용</td><td>좌표 계약(SCENE 20×11.256m)이 이 비율에 캘리브레이션됨. 비율이 바뀌면 realtime 폴리곤 재캘리브레이션 필요(§5)</td></tr><tr><td>시점</td><td>고정 아이소(부감) 단일 시점</td><td>D27~D29 방향 유지 — 카메라 이동 없음</td></tr><tr><td>내용물</td><td><strong>빈 사무실</strong> — 인물·그림자 인물·모니터 화면 콘텐츠 금지</td><td>아바타는 런타임 스프라이트로 합성. 구워진 인물이 있으면 이중 표시</td></tr><tr><td>조명·톤</td><td>균일 톤 1장 (시간대 변형은 후속)</td><td>프레임 스프라이트와 톤 정합 필수 — 같은 라이팅 기준으로 제작</td></tr><tr><td>공간 구성</td><td>리셉션 / 보드룸 / 글라스 회의실 / 오픈 워크존 / 팬트리·카페 — 배치 자유. 단, 완성 후 §5 폴리곤 캘리브레이션 필수</td><td>06 §1 공간 요구</td></tr><tr><td>포맷</td><td>PNG(불투명) 또는 WebP, 2MB 이하 권장</td><td>뷰포트 로딩 &lt; 3초 (01-prd v4.1 §7)</td></tr></tbody></table></div>
+<h2 id="3-캐릭터-프레임-요구-스펙">3. 캐릭터 프레임 요구 스펙</h2>
+<div class="table-wrap"><table><thead><tr><th>항목</th><th>요구값</th><th>근거</th></tr></thead><tbody><tr><td>상태·프레임 수</td><td><strong>idle 6프레임 / walk 8프레임</strong> (엔진 계약 <code>AVATAR_ANIM</code>)</td><td>프레임 수 변경 시 office2d.ts 상수만 수정하면 되나, 납품 일관성 위해 고정 권장</td></tr><tr><td>방향</td><td><strong>우향(→) 기준 1방향</strong> — 좌향은 엔진이 scaleX(-1) 플립</td><td>8방향 불필요 (엔진이 좌우만 구분)</td></tr><tr><td>캔버스</td><td>프레임 간 발 기준점(bottom-center) 정렬, 투명 배경 PNG</td><td>transformOrigin '50% 100%' — 발 고정 애니</td></tr><tr><td>크기</td><td>세로 380~560px 원본 (엔진이 깊이 기반 축소 표시: 화면높이의 13~17.5%)</td><td>avatarHeightFrac 캘리브레이션</td></tr><tr><td>인원</td><td>8종 (엔진 계약 <code>CHARACTER_IDS</code> — ID·이름 변경 가능, 개수 변경 시 상수 동기)</td><td>userId 해시 배정 + 아바타 설정 프리셋</td></tr><tr><td>톤</td><td>플레이트와 동일 라이팅·채도 기준</td><td>D29 실패 교훈 — 배경·인물 톤 불일치가 품질 저하 주범</td></tr><tr><td>추가 상태(후속)</td><td>sit / typing (착석 연출) — 1차 납품 범위 아님</td><td>06 §3.11</td></tr></tbody></table></div>
+<h2 id="4-품질-게이트-수용-기준-01-prd-v41-7-연동">4. 품질 게이트 (수용 기준 — 01-prd v4.1 §7 연동)</h2>
+<ul><li class="task"><input type="checkbox" disabled> 플레이트 단독 육안 QA: 인물·아티팩트 없음, 방 경계 식별 가능</li><li class="task"><input type="checkbox" disabled> 아바타 8종 × idle/walk 프레임 재생 시 발 미끄러짐·기준점 튐 없음</li><li class="task"><input type="checkbox" disabled> 플레이트 위 아바타 합성 샷: 톤 위화감 없음(라이팅 방향·그림자 농도)</li><li class="task"><input type="checkbox" disabled> 뷰포트 초기 로딩 &lt; 3초 (플레이트 + 등장 캐릭터 프리로드)</li><li class="task"><input type="checkbox" disabled> y기반 z-정렬 확인: 가구 폴리곤 뒤/앞 이동 시 전후 관계 자연스러움</li></ul>
+<h2 id="5-지오메트리-캘리브레이션-플레이트-확정-후-1회">5. 지오메트리 캘리브레이션 (플레이트 확정 후 1회)</h2>
+<p>새 플레이트의 공간 배치에 맞춰 아래를 <strong>동기 갱신</strong>한다 (좌표는 정규 0~1):</p>
+<div class="table-wrap"><table><thead><tr><th>대상</th><th>파일</th><th>항목</th></tr></thead><tbody><tr><td>프론트 좌표 정본</td><td><code>frontend/lib/office2d.ts</code></td><td><code>WALK_AREA</code>(보행 폴리곤) · <code>ROOMS</code>(방 폴리곤·라벨) · <code>OBSTACLES</code>(가구 충돌) · <code>SPAWNS</code>(스폰 4종)</td></tr><tr><td>이동서버 검증</td><td><code>realtime/src/integration/FloorLayoutProvider.ts</code> (HORIZON)</td><td>동일 폴리곤 미터 환산본 — <strong>양쪽 불일치 = 유령 충돌/벽 통과</strong></td></tr><tr><td>검증</td><td><code>realtime</code> scene-floor 테스트 + <code>npm run load-sim</code></td><td>폴리곤 정합·부하 재확인</td></tr></tbody></table></div>
+<blockquote>화면비 1672:941을 유지하면 미터 스케일(20×11.256m)은 그대로 — 폴리곤 좌표만 새 배치에 맞춰 갱신.</blockquote>
+<h2 id="6-제작-경로-후보-참고">6. 제작 경로 후보 (참고)</h2>
+<ul><li>자체 제작(권장 — 톤 통제 최상): 아이소 플레이트 1장 + 캐릭터 시트. 스타일 가이드를 먼저 1장 확정 후 확장</li><li>외주/에셋 커미션: 본 문서를 워크오더로 그대로 전달 가능</li><li>AI 생성 보조: 플레이트 초안 생성 → 수작업 클린업 (프레임 애니는 수작업 권장 — 프레임 간 일관성)</li></ul>
+<hr>
+<p><em>정본: 00-decisions §K (D30). 이 스펙 충족 → <code>ASSETS_READY=true</code> 전환으로 즉시 런타임 복원.</em></p>
+<div class="meta-foot">원본: <code>17-asset-rework-spec.md</code> · 자동 생성 2026-07-13 · md-to-html</div>
+</main>
+</div>
+
+</body></html>
