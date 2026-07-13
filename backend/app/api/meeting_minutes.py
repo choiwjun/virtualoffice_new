@@ -41,6 +41,8 @@ from app.models.tables import (
     RecordingConsentType,
 )
 
+from app.services.ai_summary import generate_meeting_summary
+
 router = APIRouter(prefix="/api", tags=["meeting-minutes"])
 
 
@@ -350,6 +352,30 @@ async def finalize_minute(
     minute.status = MeetingMinuteStatus.FINALIZED
     minute.reviewed_by = current_user.user_id
 
+    await db.flush()
+    await db.commit()
+    await db.refresh(minute)
+    return _minute_out(minute)
+
+
+@router.post("/meeting-minutes/{minute_id}/ai-summary", response_model=MeetingMinuteOut)
+async def generate_ai_summary(
+    minute_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MeetingMinuteOut:
+    """POST /api/meeting-minutes/{minute_id}/ai-summary — AI 요약 생성·저장.
+
+    ai_draft_enabled+키면 Claude, 아니면 결정론적 mock(외부의존 없이 동작).
+    ai_summary 필드에 저장하며 재호출 시 덮어쓴다(멱등적 재생성).
+    """
+    minute = await _get_minute_or_404(minute_id, db)
+    minute.ai_summary = await generate_meeting_summary(
+        decisions=minute.decisions,
+        summary=minute.summary,
+        notes=minute.notes,
+        stt_draft=minute.stt_draft,
+    )
     await db.flush()
     await db.commit()
     await db.refresh(minute)

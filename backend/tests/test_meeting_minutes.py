@@ -315,6 +315,28 @@ async def test_stt_draft_501(async_client, seeded, auth_headers):
     assert resp.status_code == 501
 
 
+@pytest.mark.asyncio
+async def test_ai_summary_generates_mock(async_client, seeded, auth_headers):
+    """AI 요약 생성(외부의존 없이 결정론적 mock) → ai_summary 저장."""
+    room_id = str(seeded["room"].id)
+    meeting_id = await _create_meeting(async_client, room_id, auth_headers)
+    minute_id = await _create_minute(async_client, meeting_id, auth_headers)
+    resp = await async_client.post(
+        f"/api/meeting-minutes/{minute_id}/ai-summary", headers=auth_headers
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["ai_summary"]
+    assert "[자동 요약]" in data["ai_summary"]
+
+
+@pytest.mark.asyncio
+async def test_ai_summary_minute_not_found(async_client, auth_headers):
+    resp = await async_client.post(
+        f"/api/meeting-minutes/{uuid4()}/ai-summary", headers=auth_headers
+    )
+    assert resp.status_code == 404
+
 # ---------------------------------------------------------------------------
 # 액션아이템 테스트
 # ---------------------------------------------------------------------------

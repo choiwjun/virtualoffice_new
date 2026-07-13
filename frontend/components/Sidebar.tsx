@@ -92,21 +92,21 @@ interface SidebarProps {
   role: UserRole;
 }
 
+// 콘솔 사이드바 — /office 셸과 동일한 디자인 토큰(다크 네이비)으로 통일.
+// (design-style-analysis §1/§3 — 라우트 이동 시 헤더/네비 디자인이 바뀌지 않도록)
 export default function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
 
   const visibleItems = MENU_ITEMS.filter((item) => item.roles.includes(role));
 
   return (
-    <aside className="w-56 flex-shrink-0 bg-gray-900 text-white flex flex-col">
-      <div className="px-5 py-5 border-b border-gray-700">
-        <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">VirtualOffice</div>
-        <div className="font-bold text-white text-base">관리콘솔</div>
+    <aside className="w-60 flex-shrink-0 bg-bg-surface text-text-primary border-r border-border-subtle flex flex-col">
+      <div className="px-5 py-4 border-b border-border-subtle">
+        <div className="text-[10px] text-text-muted uppercase tracking-widest mb-0.5">VirtualOffice</div>
+        <div className="font-bold text-text-primary text-base">관리콘솔</div>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {/* D26 WorkAdventure 외부링크(가상 오피스 입장 → localhost:8090) 제거 —
-            D27에서 가상오피스는 앱 내 R3F 뷰포트(/office)로 대체됨. WA 별도앱/OIDC 폐기. */}
+      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto" aria-label="주 메뉴">
         {visibleItems.map((item) => {
           const isActive =
             pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -114,21 +114,24 @@ export default function Sidebar({ role }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              aria-current={isActive ? 'page' : undefined}
+              className={[
+                'flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan',
                 isActive
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-              }`}
+                  ? 'bg-[rgba(59,91,254,0.15)] text-primary border-l-2 border-primary pl-[10px]'
+                  : 'text-text-secondary hover:bg-bg-surface-raised hover:text-text-primary',
+              ].join(' ')}
             >
-              <span className="text-base">{item.icon}</span>
+              <span className="text-base leading-none">{item.icon}</span>
               <span>{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="px-5 py-3 border-t border-gray-700">
-        <div className="text-xs text-gray-500">
+      <div className="px-5 py-3 border-t border-border-subtle">
+        <div className="text-xs text-text-muted">
           {role === 'admin' || role === 'super_admin'
             ? '관리자'
             : role === 'leader'
