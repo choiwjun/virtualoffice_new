@@ -1,7 +1,7 @@
 """
 배치 스케줄러 (APScheduler) — KPI 자동계산 + ERP 정기 동기화.
 
-D17: KPI 매일 18:00/21:00 KST 자동계산
+D17 (08 §4.1 정본): EOD daily_reports push = 18:00 KST / KPI(정량+AI 초안) = 21:00 KST 야간 배치
 D18: ERP 매시간+00:00 KST 증분 동기화
 
 수동 트리거는 기존 API 유지 (POST /api/kpi-results/compute, POST /api/erp/sync).
@@ -260,14 +260,8 @@ def start_scheduler() -> None:
     
     _scheduler = AsyncIOScheduler(timezone="Asia/Seoul")
     
-    # D17: KPI 매일 18:00, 21:00 KST
-    _scheduler.add_job(
-        _kpi_batch_job,
-        CronTrigger(hour=18, minute=0, timezone="Asia/Seoul"),
-        id="kpi_18",
-        name="KPI 18:00 batch",
-        replace_existing=True,
-    )
+    # D17·08 §4.1 정본: KPI(정량 계산 + AI 서술 초안) = 매일 21:00 KST 야간 배치 단일.
+    # 종전 18:00 KPI 잡은 정본에 없는 드리프트라 제거 — 18:00은 EOD daily_reports push 전용.
     _scheduler.add_job(
         _kpi_batch_job,
         CronTrigger(hour=21, minute=0, timezone="Asia/Seoul"),
@@ -285,10 +279,10 @@ def start_scheduler() -> None:
         replace_existing=True,
     )
 
-    # REQ-008/D18: EOD ERP 전송 — 매일 18:05 KST (KPI 18:00 배치 직후)
+    # REQ-008/D17: EOD ERP 전송 — 매일 18:00 KST (D17 정본. 18:00 이후 활동은 익일 귀속)
     _scheduler.add_job(
         _eod_push_job,
-        CronTrigger(hour=18, minute=5, timezone="Asia/Seoul"),
+        CronTrigger(hour=18, minute=0, timezone="Asia/Seoul"),
         id="eod_push",
         name="EOD ERP push",
         replace_existing=True,
@@ -322,7 +316,7 @@ def start_scheduler() -> None:
     )
 
     _scheduler.start()
-    print("[Scheduler] Started: KPI 18:00/21:00, ERP hourly:00, EOD push 18:05, presence purge 03:00, KPI auto-finalize 09:00, seat release :30")
+    print("[Scheduler] Started: KPI 21:00, ERP hourly:00, EOD push 18:00, presence purge 03:00, KPI auto-finalize 09:00, seat release :30")
 
 
 def stop_scheduler() -> None:

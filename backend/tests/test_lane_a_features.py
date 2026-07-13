@@ -257,12 +257,19 @@ async def test_lifespan_starts_and_stops_scheduler():
 
 @pytest.mark.asyncio
 async def test_scheduler_registers_expected_jobs():
-    """스케줄러에 KPI/ERP 배치 잡이 등록된다 (D17/D18)."""
+    """스케줄러 잡 등록이 D17/D18 정본과 일치 (08 §4.1: KPI=21:00 단일, EOD=18:00)."""
     import app.services.scheduler as sched
 
     sched.start_scheduler()
     try:
         jobs = sched._scheduler.get_jobs()
-        assert len(jobs) >= 2, f"expected KPI/ERP batch jobs, got {len(jobs)}"
+        ids = {j.id for j in jobs}
+        assert "kpi_21" in ids, "KPI 21:00 야간 배치 누락"
+        assert "kpi_18" not in ids, "18:00 KPI 잡은 D17 정본에 없음 (18:00=EOD push 전용)"
+        assert "eod_push" in ids, "EOD 18:00 push 잡 누락"
+        assert "erp_hourly" in ids, "ERP 매시간 동기화 잡 누락"
+        eod = next(j for j in jobs if j.id == "eod_push")
+        trigger = str(eod.trigger)
+        assert "hour='18'" in trigger and "minute='0'" in trigger, f"EOD는 18:00 KST 정본: {trigger}"
     finally:
         sched.stop_scheduler()
