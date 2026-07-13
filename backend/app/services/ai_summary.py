@@ -1,14 +1,14 @@
 """회의록 AI 요약 (P7 — decisions/summary/notes/stt_draft 기반).
 
 정책은 ai_draft와 동일:
-- settings.ai_draft_enabled=True AND anthropic_api_key 존재 → 실제 Claude 호출.
+- settings.ai_draft_enabled=True AND nvidia_api_key 존재 → 실제 NVIDIA(OpenAI 호환) 호출.
 - 그 외(기본) → 결정론적 mock 요약. 네트워크·키·비용 없이 테스트/도그푸딩 가능.
 - 실패 시 항상 mock 폴백 → 요약 생성이 요청을 죽이지 않음.
 """
 
 from __future__ import annotations
 
-from app.config import settings
+from app.services.ai_client import chat_completion, llm_enabled
 
 _MAX_EXCERPT = 220
 
@@ -30,15 +30,10 @@ def _mock_summary(source: str, *, decisions_count: int) -> str:
     return prefix + excerpt
 
 
-async def _claude_summary(source: str) -> str:
-    """실제 Claude 호출. 실패 시 예외 → 호출부에서 mock 폴백."""
-    from anthropic import AsyncAnthropic  # 지연 import(미설치 환경 보호)
-
-    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
-    msg = await client.messages.create(
-        model=settings.ai_draft_model,
-        max_tokens=512,
-        messages=[
+async def _llm_summary(source: str) -> str:
+    """실제 NVIDIA(OpenAI 호환) 호출. 실패 시 예외 → 호출부에서 mock 폴백."""
+    text = await chat_completion(
+        [
             {
                 "role": "user",
                 "content": (
@@ -47,8 +42,9 @@ async def _claude_summary(source: str) -> str:
                 ),
             }
         ],
+        max_tokens=512,
+        temperature=0.3,
     )
-    text = "".join(getattr(b, "text", "") for b in msg.content).strip()
     return text or _mock_summary(source, decisions_count=_count_decisions(source))
 
 
@@ -61,9 +57,9 @@ async def generate_meeting_summary(
 ) -> str:
     """회의록 요약 문자열 생성. 가명화 불필요(회의록은 본문 그대로 사내 저장)."""
     source = "\n".join(s for s in (summary, decisions, notes, stt_draft) if s)
-    if settings.ai_draft_enabled and settings.anthropic_api_key:
+    if llm_enabled():
         try:
-            return await _claude_summary(source)
+            return await _llm_summary(source)
         except Exception:
             pass
     return _mock_summary(source, decisions_count=_count_decisions(decisions))

@@ -1209,7 +1209,7 @@ class KpiResult(Base, TimestampMixin):
         DateTime(timezone=True),
         nullable=True
     )
-    ai_model: Mapped[str] = mapped_column(String(50), nullable=False, default="claude-opus")
+    ai_model: Mapped[str] = mapped_column(String(50), nullable=False, default="mock")
 
     # 관리자 검토 (D15)
     admin_adjusted_score: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)

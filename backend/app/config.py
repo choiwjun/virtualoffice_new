@@ -39,11 +39,13 @@ class Settings(BaseSettings):
     # ERP write-back(EOD 전송) 대상. 비어있으면 mock 전송(상태머신만 동작, 실 ERP 미접속).
     erp_push_endpoint: str = ""
 
-    # ── AI 서술 초안 (REQ-007, D14-e, D20 가명화) ──
-    # anthropic_api_key 비어있거나 ai_draft_enabled=False면 결정론적 mock 초안 사용(네트워크·비용 없음).
-    anthropic_api_key: str = ""
+    # ── AI 서술 초안/회의록 요약 (REQ-007, D14-e, D20 가명화) ──
+    # NVIDIA Integrate API(OpenAI 호환). nvidia_api_key 비었거나 ai_draft_enabled=False면
+    # 결정론적 mock 사용(네트워크·비용 없음). 실패 시에도 항상 mock 폴백.
+    nvidia_api_key: str = ""
+    nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
     ai_draft_enabled: bool = False
-    ai_draft_model: str = "claude-opus-4-8"
+    ai_draft_model: str = "google/gemma-4-31b-it"
 
     # ── JWT (D4: HS256 + 자체 시크릿, ERP와 미공유) ──
     jwt_secret_key: str = "dev-only-secret-CHANGE-IN-PRODUCTION"
