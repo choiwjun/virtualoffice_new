@@ -74,6 +74,8 @@ export class OfficeRoom extends Room<OfficeState> {
   private meetingOccupancy = new Map<string, number>();
   /** Per-player intended move target (integrated on the tick). */
   private moveTargets = new Map<string, { x: number; y: number; seq: number; at: number }>();
+  /** 단일 세션 강제(#7/REQ-015): 축출 중인 sessionId — onLeave가 reconnection 대기를 건너뛴다. */
+  private evicting = new Set<string>();
 
   private presenceFlushHandle?: ReturnType<typeof setInterval>;
 
@@ -150,6 +152,14 @@ export class OfficeRoom extends Room<OfficeState> {
     player.x = this.layout.spawn?.x ?? this.layout.bounds.x + this.layout.bounds.w / 2;
     player.y = this.layout.spawn?.y ?? this.layout.bounds.y + this.layout.bounds.h / 2;
 
+    // 단일 세션 강제(#7 / REQ-015): 같은 userId의 기존 세션이 있으면 축출.
+    this.state.players.forEach((existing, sid) => {
+      if (sid !== client.sessionId && existing.userId === player.userId) {
+        this.evicting.add(sid);
+        this.clients.find((c) => c.sessionId === sid)?.leave(4000); // 4000 = single-session eviction
+      }
+    });
+
     this.state.players.set(client.sessionId, player);
 
     // Initial full snapshot on join (§3 / 09 §5.4 step 9).
@@ -163,6 +173,12 @@ export class OfficeRoom extends Room<OfficeState> {
    * remove the player and release resources.
    */
   async onLeave(client: Client, consented: boolean): Promise<void> {
+    // 축출된 세션(#7)은 reconnection 대기 없이 즉시 정리.
+    if (this.evicting.has(client.sessionId)) {
+      this.evicting.delete(client.sessionId);
+      this.releasePlayer(client.sessionId);
+      return;
+    }
     const player = this.state.players.get(client.sessionId);
     if (player) player.status = "away";
 

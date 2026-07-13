@@ -10,7 +10,12 @@ office_layout 검증기 회귀 테스트 (REQ-003 / D12).
 import uuid
 from datetime import datetime, timezone
 
-from app.services.office_layout_validator import validate_office_layout, _CollisionGrid
+from app.services.office_layout_validator import (
+    validate_office_layout,
+    _CollisionGrid,
+    _convex_overlap,
+    _rot_box_corners,
+)
 
 
 def _u() -> str:
@@ -118,3 +123,29 @@ def test_room_missing_door_errors():
     layout["rooms"][0]["doors"] = []
     result = validate_office_layout(layout)
     assert len(result.errors) > 0
+
+# ── #10 회전 인식 충돌(OBB/SAT) ──────────────────────────────────────────────
+
+def test_convex_overlap_axis_aligned():
+    a = _rot_box_corners(0, 0, 1, 1, 0)      # [-1,1]x[-1,1]
+    hit = _rot_box_corners(0.5, 0.5, 1, 1, 0)  # 겹침
+    miss = _rot_box_corners(3, 0, 1, 1, 0)     # 분리
+    assert _convex_overlap(a, hit) is True
+    assert _convex_overlap(a, miss) is False
+
+
+def test_convex_overlap_touching_edge_is_not_overlap():
+    """변끼리 맞닿기만 하면 겹침 아님(AABB `<` 정합)."""
+    a = _rot_box_corners(0, 0, 1, 1, 0)   # x[-1,1]
+    b = _rot_box_corners(2, 0, 1, 1, 0)   # x[1,3] — x=1에서 접촉
+    assert _convex_overlap(a, b) is False
+
+
+def test_convex_overlap_rotation_changes_result():
+    """0°에선 분리, 회전(90°) 시 겹치는 케이스 — 회전이 실제 반영되는지."""
+    # 가로로 긴 얇은 박스(반크기 2 x 0.2)
+    flat0 = _rot_box_corners(0, 0, 2, 0.2, 0)    # y[-0.2,0.2]
+    flat90 = _rot_box_corners(0, 0, 2, 0.2, 90)  # 회전 후 y[-2,2]
+    target = _rot_box_corners(0, 1.0, 0.1, 0.1, 0)  # y[0.9,1.1]
+    assert _convex_overlap(flat0, target) is False   # 0°: y로 분리
+    assert _convex_overlap(flat90, target) is True   # 90°: 회전으로 겹침

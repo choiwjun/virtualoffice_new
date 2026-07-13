@@ -145,6 +145,27 @@ export function characterFor(userId: string): CharacterId {
   return CHARACTER_IDS[Math.abs(h) % CHARACTER_IDS.length];
 }
 
+/** 2.5D 스프라이트 캐릭터 표시 라벨(아바타 설정 프리셋용). */
+export const CHARACTER_LABELS: Record<CharacterId, string> = {
+  JAMES: '제임스', OLIVIA: '올리비아', ETHAN: '이든', SOPHIA: '소피아',
+  NOAH: '노아', AVA: '에이바', LIAM: '리암', MAYA: '마야',
+};
+
+const _CHAR_SET: ReadonlySet<string> = new Set(CHARACTER_IDS);
+
+/** 문자열이 유효한 2.5D 스프라이트 캐릭터 id인지. */
+export function isCharacterId(v: string | null | undefined): v is CharacterId {
+  return !!v && _CHAR_SET.has(v);
+}
+
+/**
+ * 아바타 프리셋(preset_id)이 2.5D 스프라이트 캐릭터면 그걸 사용, 아니면 userId 해시 폴백.
+ * (구 preset humanoid_a/b 등 스프라이트 아닌 값은 해시로 안정 배정 — 하위호환.)
+ */
+export function characterForAvatar(userId: string, presetId?: string | null): CharacterId {
+  return isCharacterId(presetId) ? presetId : characterFor(userId);
+}
+
 // ---------------------------------------------------------------------------
 // 지오메트리 유틸
 // ---------------------------------------------------------------------------

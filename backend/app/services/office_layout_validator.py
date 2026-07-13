@@ -341,17 +341,17 @@ def _validate_seat_furniture_link(layout: dict[str, Any], result: ValidationResu
 def _validate_object_overlaps(layout: dict[str, Any], result: ValidationResult) -> None:
     """
     오브젝트 충돌(§3.2 — ERROR): 가구/방이 정적 콜리전(외벽·기둥)과 겹치는지.
-    AABB 근사(회전 미반영 — box rotation은 TODO). 좌석↔가구는 §3.2에서 좌표 일치가
-    정상이므로 겹침 검사에서 제외한다.
+    박스(가구/box 콜라이더)는 rotation을 반영한 OBB(SAT)로 판정한다.
+    폴리곤 콜라이더는 보수적으로 AABB 바운드로 근사한다(기존 동작 유지). 좌석↔가구는
+    §3.2에서 좌표 일치가 정상이므로 겹침 검사에서 제외한다.
     """
-    collider_rects = _collider_aabbs(layout)
-    # 가구 AABB
+    collider_polys = _collider_polys(layout)
     for i, f in enumerate(layout.get("furniture", []) or []):
         if not f.get("collision", True):
             continue
-        fr = _furniture_aabb(f)
-        for cr in collider_rects:
-            if _aabb_overlap(fr, cr):
+        fp = _furniture_poly(f)
+        for cp in collider_polys:
+            if _convex_overlap(fp, cp):
                 result.error(
                     "OBJECT_COLLISION",
                     f"가구 '{f.get('furniture_id')}'가 콜리전 영역과 겹칩니다.",
@@ -651,21 +651,6 @@ def _device_tier(polygons: int) -> str:
 Rect = tuple[float, float, float, float]  # (x, y, w, h) top_left AABB
 
 
-def _aabb_overlap(a: Rect, b: Rect) -> bool:
-    ax, ay, aw, ah = a
-    bx, by, bw, bh = b
-    return ax < bx + bw and ax + aw > bx and ay < by + bh and ay + ah > by
-
-
-def _furniture_aabb(f: dict[str, Any]) -> Rect:
-    c = f.get("coords", {})
-    d = f.get("dimension", {})
-    w = d.get("width", 0.0)
-    h = d.get("depth", 0.0)  # 평면 y축은 깊이(depth)에 매핑
-    # coords는 중심 좌표로 간주 → 좌상단 변환
-    return (c.get("x", 0) - w / 2, c.get("y", 0) - h / 2, w, h)
-
-
 def _collider_aabbs(layout: dict[str, Any]) -> list[Rect]:
     rects: list[Rect] = []
     for c in layout.get("colliders", []) or []:
@@ -681,6 +666,67 @@ def _collider_aabbs(layout: dict[str, Any]) -> list[Rect]:
                 ys = [p.get("y", 0) for p in pts]
                 rects.append((min(xs), min(ys), max(xs) - min(xs), max(ys) - min(ys)))
     return rects
+
+
+Poly = list[tuple[float, float]]
+
+
+def _rot_box_corners(cx: float, cy: float, hw: float, hh: float, rotation_deg: float) -> Poly:
+    """중심(cx,cy)·반크기(hw,hh)·회전(도, 시계방향 +X 기준) 박스의 4개 코너(월드좌표)."""
+    a = math.radians(rotation_deg or 0.0)
+    ca, sa = math.cos(a), math.sin(a)
+    local = [(-hw, -hh), (hw, -hh), (hw, hh), (-hw, hh)]
+    return [(cx + lx * ca - ly * sa, cy + lx * sa + ly * ca) for lx, ly in local]
+
+
+def _convex_overlap(a: Poly, b: Poly) -> bool:
+    """두 볼록 다각형의 겹침(SAT). 변끼리 맞닿기만 하면(겹침 아님) False — AABB `<` 정합."""
+    if not a or not b:
+        return False
+    for poly in (a, b):
+        n = len(poly)
+        for i in range(n):
+            x1, y1 = poly[i]
+            x2, y2 = poly[(i + 1) % n]
+            # 변의 법선축(정규화 불필요 — 분리 판정만).
+            nx, ny = -(y2 - y1), (x2 - x1)
+            a_min = min(nx * px + ny * py for px, py in a)
+            a_max = max(nx * px + ny * py for px, py in a)
+            b_min = min(nx * px + ny * py for px, py in b)
+            b_max = max(nx * px + ny * py for px, py in b)
+            if a_max <= b_min or b_max <= a_min:
+                return False  # 이 축에서 분리 → 겹치지 않음
+    return True
+
+
+def _furniture_poly(f: dict[str, Any]) -> Poly:
+    c = f.get("coords", {})
+    d = f.get("dimension", {})
+    w = d.get("width", 0.0)
+    h = d.get("depth", 0.0)  # 평면 y축 = 깊이(depth)
+    rot = c.get("rotation", 0.0)
+    return _rot_box_corners(c.get("x", 0), c.get("y", 0), w / 2, h / 2, rot)
+
+
+def _collider_polys(layout: dict[str, Any]) -> list[Poly]:
+    """box 콜라이더는 rotation 반영 OBB, polygon 콜라이더는 AABB 바운드(보수적)."""
+    polys: list[Poly] = []
+    for c in layout.get("colliders", []) or []:
+        if not (c.get("physics", {}) or {}).get("block_avatar", True):
+            continue
+        if c.get("shape") == "box":
+            b = c.get("box", {})
+            x, y = b.get("x", 0), b.get("y", 0)
+            w, h = b.get("width", 0), b.get("height", 0)
+            polys.append(_rot_box_corners(x + w / 2, y + h / 2, w / 2, h / 2, b.get("rotation", 0.0)))
+        elif c.get("shape") == "polygon":
+            pts = c.get("polygon", []) or []
+            if pts:
+                xs = [p.get("x", 0) for p in pts]
+                ys = [p.get("y", 0) for p in pts]
+                mnx, mny, mxx, mxy = min(xs), min(ys), max(xs), max(ys)
+                polys.append([(mnx, mny), (mxx, mny), (mxx, mxy), (mnx, mxy)])
+    return polys
 
 
 def _point_in_room(coords: dict[str, Any], room_coords: dict[str, Any]) -> bool:

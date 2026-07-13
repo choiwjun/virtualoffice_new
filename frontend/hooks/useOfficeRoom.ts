@@ -14,6 +14,7 @@ import {
   type ConnStatus,
   type NetPlayer,
   type OfficeConnection,
+  type MeetingEntryResult,
 } from '@/lib/realtime';
 
 const REALTIME_URL = process.env.NEXT_PUBLIC_REALTIME_URL ?? 'ws://localhost:2567';
@@ -30,14 +31,21 @@ export interface UseOfficeRoom {
   selfIdRef: MutableRefObject<string>;
   /** 로컬 이동 의도 전송(서버 좌표 x,y 미터). */
   requestMove: (x: number, y: number) => void;
+  /** 회의 명시입장(D24) 요청 — 서버가 2m 근접+정원 검증 후 onMeetingEntry로 응답. */
+  enterMeeting: (roomId: string) => void;
 }
 
-export function useOfficeRoom(enabled = true): UseOfficeRoom {
+export function useOfficeRoom(
+  enabled = true,
+  onMeetingEntry?: (r: MeetingEntryResult) => void,
+): UseOfficeRoom {
   const [status, setStatus] = useState<ConnStatus>('connecting');
   const [roster, setRoster] = useState<string[]>([]);
   const connRef = useRef<OfficeConnection | null>(null);
   const playersRef = useRef<Map<string, NetPlayer>>(new Map());
   const selfIdRef = useRef<string>('');
+  const onMeetingEntryRef = useRef(onMeetingEntry);
+  onMeetingEntryRef.current = onMeetingEntry;
 
   useEffect(() => {
     if (!enabled) return;
@@ -55,6 +63,7 @@ export function useOfficeRoom(enabled = true): UseOfficeRoom {
     createOfficeConnection(REALTIME_URL, join, {
       onStatus: (s) => { if (!cancelled) setStatus(s); },
       onRoster: (ids) => { if (!cancelled) setRoster(ids); },
+      onMeetingEntry: (r) => { if (!cancelled) onMeetingEntryRef.current?.(r); },
     })
       .then((conn) => {
         if (cancelled) { conn.leave(); return; }
@@ -77,5 +86,9 @@ export function useOfficeRoom(enabled = true): UseOfficeRoom {
     connRef.current?.requestMove(x, y);
   }, []);
 
-  return { status, roster, playersRef, selfIdRef, requestMove };
+  const enterMeeting = useCallback((roomId: string) => {
+    connRef.current?.enterMeeting(roomId);
+  }, []);
+
+  return { status, roster, playersRef, selfIdRef, requestMove, enterMeeting };
 }

@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
+import { CHARACTER_IDS, CHARACTER_LABELS, frameUrl, isCharacterId } from '@/lib/office2d';
 
 interface Avatar {
   user_id: number;
@@ -15,45 +16,47 @@ interface Avatar {
   show_nameplate: boolean;
 }
 
-const PRESETS: { id: string; label: string }[] = [
-  { id: 'humanoid_a', label: '기본 휴머노이드 A' },
-  { id: 'humanoid_b', label: '기본 휴머노이드 B' },
-];
+// 2.5D 뷰포트 스프라이트 8종을 프리셋으로 정합(래스터라 preset_id=캐릭터 선택).
+const PRESETS: { id: string; label: string }[] = CHARACTER_IDS.map((id) => ({
+  id,
+  label: CHARACTER_LABELS[id],
+}));
 
 const TOP_COLORS = ['#3B5BFE', '#EF4444', '#22C55E', '#F59E0B', '#8B5CF6'];
 const BOTTOM_COLORS = ['#1E293B', '#64748B', '#0F766E', '#7C2D12', '#334155'];
 
 const DEFAULT_AVATAR: Omit<Avatar, 'user_id'> = {
-  preset_id: 'humanoid_a',
+  preset_id: CHARACTER_IDS[0],
   top_color: TOP_COLORS[0],
   bottom_color: BOTTOM_COLORS[0],
   show_nameplate: true,
 };
 
-// 경량 휴머노이드 미리보기 (프리셋별 실루엣 + 상/하의 색상)
+// 2.5D 스프라이트 미리보기 + 이름표 강조색(top_color). 래스터 스프라이트라 의류 색은 미적용.
 function AvatarPreview({
   preset,
   top,
-  bottom,
 }: {
   preset: string;
   top: string;
-  bottom: string;
 }) {
-  const headR = preset === 'humanoid_b' ? 11 : 13;
+  const char = isCharacterId(preset) ? preset : CHARACTER_IDS[0];
   return (
-    <svg viewBox="0 0 100 140" className="w-32 h-44" role="img" aria-label="아바타 미리보기">
-      {/* 머리 */}
-      <circle cx="50" cy={26} r={headR} fill="#E9C6A8" stroke="#00000022" />
-      {/* 상의 (몸통) */}
-      <rect x="30" y="42" width="40" height="46" rx="10" fill={top} />
-      {/* 팔 */}
-      <rect x="20" y="46" width="10" height="38" rx="5" fill={top} />
-      <rect x="70" y="46" width="10" height="38" rx="5" fill={top} />
-      {/* 하의 (다리) */}
-      <rect x="34" y="86" width="14" height="44" rx="6" fill={bottom} />
-      <rect x="52" y="86" width="14" height="44" rx="6" fill={bottom} />
-    </svg>
+    <div className="flex flex-col items-center gap-2">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={frameUrl(char, 'idle', 0)}
+        alt="아바타 미리보기"
+        className="h-44 w-auto object-contain"
+        draggable={false}
+      />
+      <span
+        className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
+        style={{ background: 'rgba(7,16,29,.92)', border: `1px solid ${top}` }}
+      >
+        이름표
+      </span>
+    </div>
   );
 }
 
@@ -142,7 +145,7 @@ export default function SettingsPage() {
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gray-800">아바타 설정</h1>
         <p className="text-sm text-gray-500 mt-1">
-          가상 오피스에서 표시될 내 아바타의 프리셋과 색상을 설정합니다. (06-screens §3.9)
+          가상 오피스에서 표시될 내 캐릭터와 이름표 색상을 설정합니다. (06-screens §3.9)
         </p>
       </div>
 
@@ -153,7 +156,7 @@ export default function SettingsPage() {
           {/* 미리보기 */}
           <div className="flex flex-col items-center gap-2 flex-shrink-0">
             <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
-              <AvatarPreview preset={draft.preset_id} top={draft.top_color} bottom={draft.bottom_color} />
+              <AvatarPreview preset={draft.preset_id} top={draft.top_color} />
             </div>
             {draft.show_nameplate && (
               <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-800 text-white">이름표 표시</span>
@@ -164,7 +167,7 @@ export default function SettingsPage() {
           <div className="flex-1 flex flex-col gap-5">
             {/* 프리셋 */}
             <fieldset>
-              <legend className="text-sm font-semibold text-gray-700 mb-2">프리셋</legend>
+              <legend className="text-sm font-semibold text-gray-700 mb-2">캐릭터</legend>
               <div className="flex flex-col gap-2">
                 {PRESETS.map((p) => (
                   <label key={p.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
@@ -184,7 +187,7 @@ export default function SettingsPage() {
 
             {/* 상의 색상 */}
             <div>
-              <div className="text-sm font-semibold text-gray-700 mb-2">상의 색상</div>
+              <div className="text-sm font-semibold text-gray-700 mb-2">이름표 색상</div>
               <div className="flex gap-2">
                 {TOP_COLORS.map((c) => (
                   <Swatch key={c} color={c} selected={draft.top_color === c} onClick={() => setDraft((d) => ({ ...d, top_color: c }))} />
@@ -194,7 +197,7 @@ export default function SettingsPage() {
 
             {/* 하의 색상 */}
             <div>
-              <div className="text-sm font-semibold text-gray-700 mb-2">하의 색상</div>
+              <div className="text-sm font-semibold text-gray-700 mb-2">보조 색상 (예비)</div>
               <div className="flex gap-2">
                 {BOTTOM_COLORS.map((c) => (
                   <Swatch key={c} color={c} selected={draft.bottom_color === c} onClick={() => setDraft((d) => ({ ...d, bottom_color: c }))} />

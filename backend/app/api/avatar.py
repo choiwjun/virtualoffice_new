@@ -10,8 +10,9 @@ D4: 항상 로그인 사용자 본인의 아바타만 조회/수정 (user_id = �
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import CurrentUser, get_current_user
@@ -61,6 +62,26 @@ async def get_my_avatar(
             detail="avatar not set",
         )
     return _to_out(row)
+
+
+@router.get("/avatars", response_model=list[AvatarOut])
+async def list_avatars(
+    user_ids: str = Query(..., description="쉼표 구분 user_id 목록 (뷰포트 로스터 반영용)"),
+    _: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[AvatarOut]:
+    """여러 사용자의 아바타 외형(공개 표시용) 일괄 조회.
+
+    아바타 외형은 민감정보가 아니므로 인증된 사용자는 타인 것도 조회 가능(D4 인증 요구).
+    미설정 사용자는 결과에서 생략(클라가 기본값으로 렌더). 최대 200건.
+    """
+    ids = [int(x) for x in user_ids.split(",") if x.strip().lstrip("-").isdigit()][:200]
+    if not ids:
+        return []
+    rows = (
+        await db.execute(select(UserAvatar).where(UserAvatar.user_id.in_(ids)))
+    ).scalars().all()
+    return [_to_out(r) for r in rows]
 
 
 @router.put("/avatar", response_model=AvatarOut)

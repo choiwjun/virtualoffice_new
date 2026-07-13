@@ -280,6 +280,17 @@ export default function OfficePage() {
     setActiveRoom(null);
   }, [activeRoom]);
 
+  // D24: 뷰포트 회의실 근접 프롬프트 확인 → 진행중 회의에 명시 입장(LiveKit).
+  // (레이아웃 room ↔ meeting 정밀 매핑은 후속 — 현재는 진행중 회의에 입장.)
+  const handleViewportJoin = useCallback(
+    (_roomId: string) => {
+      if (activeRoom) return; // 이미 연결됨
+      const m = meetings[0];
+      if (m) void handleJoinMeeting(m.id);
+    },
+    [meetings, activeRoom, handleJoinMeeting],
+  );
+
   // 페이지 이탈/룸 교체 시 연결 정리(disconnectRoom은 중복 호출 안전).
   useEffect(() => () => { void disconnectRoom(activeRoom); }, [activeRoom]);
 
@@ -543,7 +554,7 @@ export default function OfficePage() {
         {/* 가상오피스 씬 = 2.5D 클린 플레이트 + 실시간 아바타 (v2.2 팩 + realtime Colyseus) */}
         <div className="relative flex-1 min-h-0">
           <div className="absolute inset-0 overflow-hidden" style={{ background: '#0d1b36' }}>
-            <OfficeViewport2D />
+            <OfficeViewport2D onJoinMeeting={handleViewportJoin} />
           </div>
 
           {/* 미디어 바 (하단 중앙) — 회의 연결 시 실제 마이크/카메라 제어(C3) */}

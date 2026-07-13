@@ -14,7 +14,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getUser } from '@/lib/auth';
+import { api } from '@/lib/api';
 import { useOfficeRoom } from '@/hooks/useOfficeRoom';
+import type { MeetingEntryResult } from '@/lib/realtime';
 import {
   AVATAR_ANIM,
   AvatarState,
@@ -25,7 +27,7 @@ import {
   ROOMS,
   SPAWNS,
   avatarHeightFrac,
-  characterFor,
+  characterForAvatar,
   clampToWalkable,
   isWalkable,
   frameUrl,
@@ -62,16 +64,46 @@ interface ShellInfo {
   char: CharacterId;
   name: string;
   isSelf: boolean;
+  /** 이 아바타의 이름표 표시 여부(user_avatar.show_nameplate). */
+  showNameplate: boolean;
+  /** 이름표 강조색(user_avatar.top_color) — 2.5D 래스터 스프라이트 재염색 불가라 정체성 색으로 사용. */
+  accent: string;
 }
 
-export default function OfficeViewport2D() {
+/** 아바타 외형 프리셋(공개 표시용, GET /api/avatars). */
+interface AvatarPref {
+  preset_id: string;
+  top_color: string;
+  show_nameplate: boolean;
+}
+
+interface OfficeViewport2DProps {
+  /** 회의 명시입장(D24) 확인 시 호출 — 페이지가 LiveKit join 흐름을 실행. */
+  onJoinMeeting?: (roomId: string) => void;
+}
+
+export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProps = {}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [stage, setStage] = useState({ w: 0, h: 0 });
-  const { status, roster, playersRef, selfIdRef, requestMove } = useOfficeRoom(true);
+
+  // 회의 명시입장(D24) 프롬프트 — 서버 allowed 응답 시 표시.
+  const [meetingPrompt, setMeetingPrompt] = useState<{ roomId: string; label: string } | null>(null);
+  const handleMeetingEntry = useCallback((r: MeetingEntryResult) => {
+    if (!r.ok) return; // denied(too_far/full/unknown_room) → 무시
+    const room = ROOMS.find((rm) => rm.id === r.roomId);
+    setMeetingPrompt({ roomId: r.roomId, label: room?.label ?? r.roomId });
+  }, []);
+  const { status, roster, playersRef, selfIdRef, requestMove, enterMeeting } = useOfficeRoom(
+    true,
+    handleMeetingEntry,
+  );
 
   const me = useMemo(() => getUser(), []);
   const myName = me?.name ?? 'Guest';
-  const myChar = characterFor(String(me?.id ?? 'guest'));
+  const myId = String(me?.id ?? 'guest');
+
+  // 아바타 외형(프리셋/색상/이름표) — 로스터 전원 반영(#6). 본인 포함 batch 조회.
+  const [avatarPrefs, setAvatarPrefs] = useState<Record<string, AvatarPref>>({});
 
   // 서버 오프라인 폴백(본인만 로컬 시뮬레이션).
   const offline = status === 'error' || status === 'disconnected';
@@ -99,25 +131,113 @@ export default function OfficeViewport2D() {
     return () => ro.disconnect();
   }, []);
 
+  // ── 아바타 외형 batch 조회(로스터 userId + 본인) ─────────────────────────
+  useEffect(() => {
+    const players = playersRef.current;
+    const ids = new Set<string>();
+    if (me?.id != null) ids.add(String(me.id));
+    for (const sid of roster) {
+      const p = players.get(sid);
+      if (p?.userId) ids.add(p.userId);
+    }
+    const list = Array.from(ids).filter((x) => /^-?\d+$/.test(x));
+    if (list.length === 0) return;
+    let cancelled = false;
+    api
+      .get<Array<{ user_id: number; preset_id: string; top_color: string; show_nameplate: boolean }>>(
+        `/api/avatars?user_ids=${list.join(',')}`,
+      )
+      .then((rows) => {
+        if (cancelled) return;
+        setAvatarPrefs((prev) => {
+          const next = { ...prev };
+          for (const r of rows) {
+            next[String(r.user_id)] = {
+              preset_id: r.preset_id,
+              top_color: r.top_color,
+              show_nameplate: r.show_nameplate,
+            };
+          }
+          return next;
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // playersRef는 ref — roster 변경 시점에만 조회.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roster, me?.id]);
+
+  // ── 회의실 근접(2m) → enter_meeting(D24) — 방 진입 전환 시 서버에 요청 ─────────
+  const currentRoomRef = useRef<string | null>(null);
+  useEffect(() => {
+    const id = setInterval(() => {
+      const self = playersRef.current.get(selfIdRef.current);
+      if (!self) {
+        currentRoomRef.current = null;
+        return;
+      }
+      const n = metersToNorm({ x: self.x, y: self.y });
+      const room = ROOMS.find((rm) => pointInPolygon(n, rm.polygon));
+      const rid = room?.id ?? null;
+      if (rid !== currentRoomRef.current) {
+        currentRoomRef.current = rid;
+        setMeetingPrompt(null); // 방 전환 시 이전 프롬프트 정리
+        if (rid) enterMeeting(rid); // 회의존 아니면 서버가 denied → 무시
+      }
+    }, 600);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── 미니맵 실시간 아바타 위치(#12) — 300ms 스냅샷을 React state로 ────────────
+  const [dots, setDots] = useState<Array<{ key: string; nx: number; ny: number; isSelf: boolean }>>([]);
+  useEffect(() => {
+    const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+    const id = setInterval(() => {
+      const players = playersRef.current;
+      const selfId = selfIdRef.current;
+      const next: Array<{ key: string; nx: number; ny: number; isSelf: boolean }> = [];
+      players.forEach((p, key) => {
+        const n = metersToNorm({ x: p.x, y: p.y });
+        next.push({ key, nx: clamp01(n.x), ny: clamp01(n.y), isSelf: key === selfId });
+      });
+      if (next.length === 0 && offlineRef.current) {
+        const n = metersToNorm(localRef.current.pos);
+        next.push({ key: '__local__', nx: clamp01(n.x), ny: clamp01(n.y), isSelf: true });
+      }
+      setDots(next);
+    }, 300);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── 아바타 셸 목록(React 렌더) ─────────────────────────────────────────
   const shells: ShellInfo[] = useMemo(() => {
+    const build = (key: string, userId: string, name: string, isSelf: boolean): ShellInfo => {
+      const pref = avatarPrefs[userId];
+      return {
+        key,
+        char: characterForAvatar(userId, pref?.preset_id),
+        name,
+        isSelf,
+        showNameplate: pref?.show_nameplate ?? true,
+        accent: pref?.top_color ?? (isSelf ? '#3B5BFE' : 'rgba(255,255,255,.32)'),
+      };
+    };
     if (offline || roster.length === 0) {
       // 오프라인(또는 아직 미접속): 본인 로컬 아바타만.
-      return offline ? [{ key: '__local__', char: myChar, name: myName, isSelf: true }] : [];
+      return offline ? [build('__local__', myId, myName, true)] : [];
     }
     const players = playersRef.current;
     return roster.map((sid) => {
       const p = players.get(sid);
-      return {
-        key: sid,
-        char: characterFor(p?.userId ?? sid),
-        name: p?.name ?? '…',
-        isSelf: sid === selfIdRef.current,
-      };
+      return build(sid, p?.userId ?? sid, p?.name ?? '…', sid === selfIdRef.current);
     });
-    // playersRef/selfIdRef는 ref — roster 변경 시점에만 재계산하면 충분.
+    // playersRef/selfIdRef는 ref — roster/prefs 변경 시점에만 재계산하면 충분.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roster, offline, myChar, myName]);
+  }, [roster, offline, myName, myId, avatarPrefs]);
 
   // 아바타 DOM 레지스트리(rAF 루프가 갱신).
   const visualsRef = useRef<Map<string, AvatarVisual>>(new Map());
@@ -393,22 +513,89 @@ export default function OfficeViewport2D() {
                 style={{ display: 'block', transformOrigin: '50% 100%' }}
               />
             </div>
-            {/* 이름표 */}
-            <div
-              className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-semibold text-white flex items-center gap-1"
-              style={{
-                top: -20,
-                background: 'rgba(7,16,29,.92)',
-                border: s.isSelf ? '1px solid #3B5BFE' : '1px solid rgba(255,255,255,.14)',
-              }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#38D67A' }} />
-              {s.name}
-              {s.isSelf ? ' (나)' : ''}
-            </div>
+            {/* 이름표 (show_nameplate=false면 숨김, #6) */}
+            {s.showNameplate && (
+              <div
+                className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-semibold text-white flex items-center gap-1"
+                style={{
+                  top: -20,
+                  background: 'rgba(7,16,29,.92)',
+                  border: `1px solid ${s.accent}`,
+                  boxShadow: s.isSelf ? `0 0 0 1px ${s.accent}` : undefined,
+                }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: s.accent }} />
+                {s.name}
+                {s.isSelf ? ' (나)' : ''}
+              </div>
+            )}
           </div>
         ))}
 
+        {/* 회의 명시입장 프롬프트(D24) — 서버 2m 근접+정원 통과 시 표시 */}
+        {meetingPrompt && (
+          <div
+            className="absolute left-1/2 top-3 -translate-x-1/2 flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-[13px] text-white shadow-lg"
+            style={{ background: 'rgba(7,16,29,.96)', border: '1px solid #3B5BFE', zIndex: 23000 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span>
+              <b>{meetingPrompt.label}</b> 회의실에 입장하시겠어요?
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                onJoinMeeting?.(meetingPrompt.roomId);
+                setMeetingPrompt(null);
+              }}
+              className="px-3 py-1 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-hover"
+            >
+              입장하기
+            </button>
+            <button
+              type="button"
+              onClick={() => setMeetingPrompt(null)}
+              className="px-2 py-1 rounded-md text-text-muted text-xs hover:text-white"
+            >
+              취소
+            </button>
+          </div>
+        )}
+        {/* 미니맵 (좌하단 오버레이, design-style §4) — 실시간 아바타 위치(#12) */}
+        <div
+          className="absolute left-3 bottom-3 rounded-lg overflow-hidden pointer-events-none"
+          style={{
+            width: 152,
+            height: Math.round((152 * PLATE_H) / PLATE_W),
+            background: 'rgba(7,16,29,.9)',
+            border: '1px solid #273350',
+            zIndex: 22000,
+          }}
+        >
+          <svg viewBox="0 0 100 56.3" className="w-full h-full" preserveAspectRatio="none">
+            {ROOMS.map((r) => (
+              <polygon
+                key={r.id}
+                points={r.polygon.map((p) => `${p.x * 100},${p.y * 56.3}`).join(' ')}
+                fill="#1E2940"
+                stroke="#38BDF8"
+                strokeWidth={0.4}
+                opacity={0.5}
+              />
+            ))}
+            {dots.map((d) => (
+              <circle
+                key={d.key}
+                cx={d.nx * 100}
+                cy={d.ny * 56.3}
+                r={d.isSelf ? 2 : 1.5}
+                fill={d.isSelf ? '#3B5BFE' : '#22C55E'}
+                stroke={d.isSelf ? '#ffffff' : 'none'}
+                strokeWidth={0.5}
+              />
+            ))}
+          </svg>
+        </div>
         {/* 연결 상태 칩 */}
         <div
           className="absolute left-3 top-3 px-2.5 py-1 rounded-lg text-[10px] font-medium tracking-wide flex items-center gap-1.5 pointer-events-none"
