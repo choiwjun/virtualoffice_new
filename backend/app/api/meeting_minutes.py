@@ -297,7 +297,7 @@ async def patch_minute(
     # 기록자 또는 관리자만 수정 가능
     if (
         minute.created_by != current_user.user_id
-        and current_user.role not in ("admin", "leader")
+        and current_user.role not in ("admin", "super_admin", "leader")
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -341,7 +341,7 @@ async def finalize_minute(
 
     # 관리자, 리더, 또는 기록자만 확정 가능
     if (
-        current_user.role not in ("admin", "leader")
+        current_user.role not in ("admin", "super_admin", "leader")
         and minute.created_by != current_user.user_id
     ):
         raise HTTPException(
@@ -413,15 +413,17 @@ async def stt_draft(
             )
         )
         granted_user_ids = set(consent_result.scalars().all())
-        if participant_ids - granted_user_ids:
+        # 06 §3.5.2 D20-b: 미동의 참석자는 STT 대상에서 '제외'하고 진행 (전원 동의 강제 아님).
+        # 단, 동의자가 한 명도 없으면 STT 자체가 불가 → 403.
+        if not granted_user_ids:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="consent_required",
+                detail="consent_required",  # 동의한 참석자 없음
             )
 
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="stt_not_implemented",
+        detail="stt_not_implemented",  # P6 후속 — 구현 시 granted_user_ids만 화자 대상
     )
 
 

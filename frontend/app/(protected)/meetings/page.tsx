@@ -5,17 +5,29 @@ import { api, ApiError } from '@/lib/api';
 import { getUser, isLeaderOrAbove } from '@/lib/auth';
 import { formatKst } from '@/lib/kpi';
 
+type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+
 interface Meeting {
   id: string;
   room_id: string;
   title: string;
   description: string | null;
   scheduled_at: string;
+  duration_minutes: number;
   started_at: string | null;
   ended_at: string | null;
-  status: string;
+  status: MeetingStatus;
   host_user_id: number;
+  participant_count: number;
   livekit_room: string | null;
+}
+
+interface Room {
+  id: string;
+  name: string;
+  type: string;
+  capacity: number;
+  floor_id: string;
 }
 
 interface Participant {
@@ -24,6 +36,12 @@ interface Participant {
   user_id: number;
   joined_at: string | null;
   role: string;
+}
+
+interface ConsentRow {
+  user_id: number;
+  recording: boolean | null;
+  stt: boolean | null;
 }
 
 interface Minute {
@@ -39,21 +57,40 @@ interface Minute {
   created_at: string;
 }
 
+type ActionItemStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
+
 interface ActionItem {
   id: string;
   title: string;
   assignee_user_id: number;
   due_date: string;
   priority: string;
-  status: string;
+  status: ActionItemStatus;
 }
 
-const STATUS_LABEL: Record<string, { label: string; color: string }> = {
-  scheduled: { label: '예정', color: 'bg-blue-100 text-blue-700' },
-  started: { label: '진행중', color: 'bg-green-100 text-green-700' },
-  ended: { label: '종료', color: 'bg-gray-100 text-gray-500' },
+const STATUS_LABEL: Record<string, { label: string; color: string; pulse?: boolean }> = {
+  scheduled: { label: '시작 전', color: 'bg-gray-100 text-gray-500' },
+  in_progress: { label: '진행중', color: 'bg-green-100 text-green-700', pulse: true },
+  completed: { label: '종료', color: 'bg-blue-100 text-blue-700' },
   cancelled: { label: '취소', color: 'bg-red-100 text-red-600' },
 };
+
+const AI_STATUS: Record<string, { label: string; dot: string; badge: string }> = {
+  completed: { label: '완료', dot: 'bg-green-500', badge: 'bg-green-100 text-green-700' },
+  in_progress: { label: '진행', dot: 'bg-blue-500', badge: 'bg-blue-100 text-blue-700' },
+  open: { label: '대기', dot: 'bg-gray-300', badge: 'bg-gray-100 text-gray-500' },
+  cancelled: { label: '취소', dot: 'bg-red-400', badge: 'bg-red-100 text-red-600' },
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const st = STATUS_LABEL[status] ?? { label: status, color: 'bg-gray-100 text-gray-500' };
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded ${st.color}`}>
+      {st.pulse && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />}
+      {st.label}
+    </span>
+  );
+}
 
 type RangeTab = 'day' | 'week' | 'month';
 
@@ -95,8 +132,10 @@ export default function MeetingsPage() {
   const [showDash, setShowDash] = useState(false);
   const [dash, setDash] = useState<{ item: ActionItem; meeting: string }[]>([]);
   const [dashLoading, setDashLoading] = useState(false);
-  const [consentedMeetings, setConsentedMeetings] = useState<Record<string, boolean>>({});
+  const [consentState, setConsentState] = useState<Record<string, 'granted' | 'declined'>>({});
   const [consentSaving, setConsentSaving] = useState(false);
+
+  const canManage = (m: Meeting) => !!me && (me.id === m.host_user_id || isLeaderOrAbove(me));
 
   const loadDash = useCallback(async () => {
     setDashLoading(true);
@@ -128,7 +167,7 @@ export default function MeetingsPage() {
       const data = await api.get<Meeting[]>(`/api/meetings?${qs.toString()}`);
       setMeetings(data);
     } catch (err) {
-      setError(err instanceof ApiError ? `조회 실패 (${err.status})` : '서버 연결 오류');
+      setError(err instanceof ApiError ? `조회 실패: ${err.message}` : '서버 연결 오류');
     } finally {
       setLoading(false);
     }
@@ -142,12 +181,21 @@ export default function MeetingsPage() {
     setSelected(m);
     setDetailLoading(true);
     try {
-      const [p, mn] = await Promise.all([
+      const [p, mn, consents] = await Promise.all([
         api.get<Participant[]>(`/api/meetings/${m.id}/participants`).catch(() => [] as Participant[]),
         api.get<Minute[]>(`/api/meeting-minutes?meeting_id=${m.id}`).catch(() => [] as Minute[]),
+        api.get<ConsentRow[]>(`/api/meetings/${m.id}/consent`).catch(() => [] as ConsentRow[]),
       ]);
       setParticipants(p);
       setMinutes(mn);
+      const mine = consents.find((c) => c.user_id === me?.id);
+      setConsentState((prev) => {
+        const next = { ...prev };
+        if (mine && mine.recording === true && mine.stt === true) next[m.id] = 'granted';
+        else if (mine && (mine.recording === false || mine.stt === false)) next[m.id] = 'declined';
+        else delete next[m.id];
+        return next;
+      });
       if (mn.length > 0) {
         const items = await api
           .get<ActionItem[]>(`/api/meeting-minutes/${mn[0].id}/action-items`)
@@ -159,7 +207,18 @@ export default function MeetingsPage() {
     } finally {
       setDetailLoading(false);
     }
-  }, []);
+  }, [me?.id]);
+
+  const transitionMeeting = useCallback(async (m: Meeting, action: 'start' | 'end') => {
+    try {
+      const updated = await api.post<Meeting>(`/api/meetings/${m.id}/${action}`, {});
+      setSelected((prev) => (prev && prev.id === m.id ? { ...prev, ...updated } : prev));
+      fetchMeetings();
+      flash(action === 'start' ? '회의가 시작되었습니다.' : '회의가 종료되었습니다.');
+    } catch (err) {
+      window.alert(err instanceof ApiError ? err.message : '서버 연결 오류');
+    }
+  }, [fetchMeetings]);
 
   async function join() {
     if (!selected) return;
@@ -169,22 +228,22 @@ export default function MeetingsPage() {
       setParticipants(p);
       flash('참석 처리되었습니다.');
     } catch (err) {
-      flash(err instanceof ApiError ? `참석 실패 (${err.status})` : '오류');
+      flash(err instanceof ApiError ? `참석 실패: ${err.message}` : '오류');
     }
   }
 
-  async function grantRecordingConsent() {
+  async function submitConsent(granted: boolean) {
     if (!selected) return;
     setConsentSaving(true);
     try {
       await Promise.all([
-        api.post(`/api/meetings/${selected.id}/consent`, { consent_type: 'recording', granted: true }),
-        api.post(`/api/meetings/${selected.id}/consent`, { consent_type: 'stt', granted: true }),
+        api.post(`/api/meetings/${selected.id}/consent`, { consent_type: 'recording', granted }),
+        api.post(`/api/meetings/${selected.id}/consent`, { consent_type: 'stt', granted }),
       ]);
-      setConsentedMeetings((prev) => ({ ...prev, [selected.id]: true }));
-      flash('녹음/STT 사용에 동의했습니다.');
+      setConsentState((prev) => ({ ...prev, [selected.id]: granted ? 'granted' : 'declined' }));
+      flash(granted ? '녹음/STT 사용에 동의했습니다.' : '녹음/STT를 거부했습니다. 회의에는 참여할 수 있습니다.');
     } catch (err) {
-      flash(err instanceof ApiError ? `동의 실패 (${err.status})` : '오류');
+      flash(err instanceof ApiError ? `동의 처리 실패: ${err.message}` : '오류');
     } finally {
       setConsentSaving(false);
     }
@@ -199,7 +258,7 @@ export default function MeetingsPage() {
       fetchMeetings();
       flash('회의가 취소되었습니다.');
     } catch (err) {
-      flash(err instanceof ApiError ? `취소 실패 (${err.status})` : '오류');
+      flash(err instanceof ApiError ? `취소 실패: ${err.message}` : '오류');
     }
   }
 
@@ -209,7 +268,7 @@ export default function MeetingsPage() {
       setMinutes((prev) => prev.map((x) => (x.id === id ? updated : x)));
       flash('회의록이 확정되었습니다.');
     } catch (err) {
-      flash(err instanceof ApiError ? `확정 실패 (${err.status})` : '오류');
+      flash(err instanceof ApiError ? `확정 실패: ${err.message}` : '오류');
     }
   }
 
@@ -219,6 +278,9 @@ export default function MeetingsPage() {
     const key = new Date(m.scheduled_at).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' });
     (groups[key] ||= []).push(m);
   }
+
+  const selectedConsent = selected ? consentState[selected.id] : undefined;
+  const dashActive = dash.filter((d) => d.item.status !== 'cancelled');
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -256,7 +318,7 @@ export default function MeetingsPage() {
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold text-gray-700">액션 아이템 대시보드</span>
             <span className="text-xs text-gray-400">
-              {dash.length}건 · 완료 {dash.filter((d) => d.item.status === 'completed').length} · 진행 {dash.filter((d) => d.item.status !== 'completed').length}
+              {dashActive.length}건 · 완료 {dashActive.filter((d) => d.item.status === 'completed').length} · 진행 {dashActive.filter((d) => d.item.status === 'in_progress').length} · 대기 {dashActive.filter((d) => d.item.status === 'open').length}
             </span>
           </div>
           {dashLoading ? (
@@ -265,17 +327,18 @@ export default function MeetingsPage() {
             <p className="text-xs text-gray-400">이 기간의 액션 아이템이 없습니다.</p>
           ) : (
             <div className="space-y-1">
-              {dash.map(({ item, meeting }) => (
-                <div key={item.id} className="flex items-center gap-2 text-sm border-b border-gray-50 last:border-0 py-1">
-                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.status === 'completed' ? 'bg-green-500' : 'bg-amber-400'}`} />
-                  <span className="text-gray-800 flex-1 truncate">{item.title}</span>
-                  <span className="text-xs text-gray-400 truncate">{meeting}</span>
-                  <span className="text-xs text-gray-400">~{item.due_date}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${item.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                    {item.status === 'completed' ? '완료' : '진행'}
-                  </span>
-                </div>
-              ))}
+              {dash.map(({ item, meeting }) => {
+                const st = AI_STATUS[item.status] ?? AI_STATUS.open;
+                return (
+                  <div key={item.id} className="flex items-center gap-2 text-sm border-b border-gray-50 last:border-0 py-1">
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${st.dot}`} />
+                    <span className={`flex-1 truncate ${item.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{item.title}</span>
+                    <span className="text-xs text-gray-400 truncate">{meeting}</span>
+                    <span className="text-xs text-gray-400">~{item.due_date}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${st.badge}`}>{st.label}</span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -298,24 +361,42 @@ export default function MeetingsPage() {
             <div key={date}>
               <div className="text-xs font-semibold text-gray-400 mb-2">{date}</div>
               <div className="space-y-2">
-                {list.map((m) => {
-                  const st = STATUS_LABEL[m.status] ?? { label: m.status, color: 'bg-gray-100 text-gray-500' };
-                  return (
-                    <button
-                      key={m.id}
-                      onClick={() => openDetail(m)}
-                      className="w-full text-left bg-white border border-gray-200 rounded-lg px-4 py-3 hover:border-indigo-300 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-gray-800">{m.title}</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${st.color}`}>{st.label}</span>
+                {list.map((m) => (
+                  <div
+                    key={m.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openDetail(m)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openDetail(m); }}
+                    className="w-full text-left bg-white border border-gray-200 rounded-lg px-4 py-3 hover:border-indigo-300 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-gray-800">{m.title}</span>
+                      <div className="flex items-center gap-2">
+                        {canManage(m) && m.status === 'scheduled' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); transitionMeeting(m, 'start'); }}
+                            className="text-[10px] px-2 py-0.5 rounded border border-green-300 text-green-700 hover:bg-green-50"
+                          >
+                            회의 시작
+                          </button>
+                        )}
+                        {canManage(m) && m.status === 'in_progress' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); transitionMeeting(m, 'end'); }}
+                            className="text-[10px] px-2 py-0.5 rounded border border-blue-300 text-blue-700 hover:bg-blue-50"
+                          >
+                            회의 종료
+                          </button>
+                        )}
+                        <StatusBadge status={m.status} />
                       </div>
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        {new Date(m.scheduled_at).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit' })} · {m.room_id}
-                      </div>
-                    </button>
-                  );
-                })}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {new Date(m.scheduled_at).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit' })} · {m.duration_minutes ?? 60}분 · 참석 {m.participant_count ?? 0}명
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -326,8 +407,21 @@ export default function MeetingsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setSelected(null)}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-800">{selected.title}</h2>
               <div className="flex items-center gap-2">
+                <h2 className="font-semibold text-gray-800">{selected.title}</h2>
+                <StatusBadge status={selected.status} />
+              </div>
+              <div className="flex items-center gap-2">
+                {canManage(selected) && selected.status === 'scheduled' && (
+                  <button onClick={() => transitionMeeting(selected, 'start')} className="text-xs px-2 py-1 border border-green-300 text-green-700 rounded hover:bg-green-50">
+                    회의 시작
+                  </button>
+                )}
+                {canManage(selected) && selected.status === 'in_progress' && (
+                  <button onClick={() => transitionMeeting(selected, 'end')} className="text-xs px-2 py-1 border border-blue-300 text-blue-700 rounded hover:bg-blue-50">
+                    회의 종료
+                  </button>
+                )}
                 {isLeaderOrAbove(me) && selected.status !== 'cancelled' && (
                   <button onClick={cancelMeeting} className="text-xs px-2 py-1 border border-red-300 text-red-600 rounded hover:bg-red-50">
                     회의 취소
@@ -338,32 +432,49 @@ export default function MeetingsPage() {
             </div>
             <div className="px-6 py-4 space-y-4 text-sm">
               <div className="text-gray-500 text-xs">
-                {formatKst(selected.scheduled_at)} · 방 {selected.room_id} · 호스트 user {selected.host_user_id}
+                {formatKst(selected.scheduled_at)} · {selected.duration_minutes ?? 60}분 · 참석 {selected.participant_count ?? 0}명 · 호스트 user {selected.host_user_id}
               </div>
               {selected.description && <p className="text-gray-700">{selected.description}</p>}
 
-              <div className={`rounded-lg border px-3 py-3 ${consentedMeetings[selected.id] ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}>
+              <div className={`rounded-lg border px-3 py-3 ${selectedConsent === 'granted' ? 'border-green-200 bg-green-50' : selectedConsent === 'declined' ? 'border-gray-200 bg-gray-50' : 'border-amber-200 bg-amber-50'}`}>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className={`text-sm font-medium ${consentedMeetings[selected.id] ? 'text-green-800' : 'text-amber-800'}`}>
-                      {consentedMeetings[selected.id] ? '녹음/STT 동의됨' : '이 회의는 녹음/STT가 사용될 수 있습니다'}
+                    <p className={`text-sm font-medium ${selectedConsent === 'granted' ? 'text-green-800' : selectedConsent === 'declined' ? 'text-gray-700' : 'text-amber-800'}`}>
+                      {selectedConsent === 'granted'
+                        ? '녹음/STT 동의됨'
+                        : selectedConsent === 'declined'
+                          ? '녹음/STT 거부됨 (회의 참여만)'
+                          : '이 회의는 녹음/STT가 사용될 수 있습니다'}
                     </p>
-                    <p className={`mt-0.5 text-xs ${consentedMeetings[selected.id] ? 'text-green-700' : 'text-amber-700'}`}>
-                      참석자 동의 후 초안 생성 가능
+                    <p className={`mt-0.5 text-xs ${selectedConsent === 'granted' ? 'text-green-700' : selectedConsent === 'declined' ? 'text-gray-500' : 'text-amber-700'}`}>
+                      {selectedConsent === 'declined' ? '내 발화는 녹음/STT에 사용되지 않습니다' : '참석자 동의 후 초안 생성 가능'}
                     </p>
                   </div>
-                  {consentedMeetings[selected.id] ? (
+                  {selectedConsent === 'granted' ? (
                     <span className="shrink-0 rounded-md bg-white px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-green-200">
                       동의됨
                     </span>
+                  ) : selectedConsent === 'declined' ? (
+                    <span className="shrink-0 rounded-md bg-white px-2 py-1 text-xs font-medium text-gray-500 ring-1 ring-gray-200">
+                      거부됨
+                    </span>
                   ) : (
-                    <button
-                      onClick={grantRecordingConsent}
-                      disabled={consentSaving}
-                      className="shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
-                    >
-                      {consentSaving ? '처리 중...' : '동의'}
-                    </button>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <button
+                        onClick={() => submitConsent(true)}
+                        disabled={consentSaving}
+                        className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+                      >
+                        {consentSaving ? '처리 중...' : '동의'}
+                      </button>
+                      <button
+                        onClick={() => submitConsent(false)}
+                        disabled={consentSaving}
+                        className="rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                      >
+                        거부(참여만)
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -421,12 +532,17 @@ export default function MeetingsPage() {
                 <div>
                   <span className="font-medium text-gray-700">액션 아이템 ({actionItems.length})</span>
                   <div className="mt-1 space-y-1">
-                    {actionItems.map((ai) => (
-                      <div key={ai.id} className="text-xs text-gray-600 flex items-center gap-2">
-                        <span className={`w-1.5 h-1.5 rounded-full ${ai.status === 'completed' ? 'bg-green-500' : 'bg-amber-400'}`} />
-                        {ai.title} <span className="text-gray-400">· ~{ai.due_date} · user {ai.assignee_user_id}</span>
-                      </div>
-                    ))}
+                    {actionItems.map((ai) => {
+                      const st = AI_STATUS[ai.status] ?? AI_STATUS.open;
+                      return (
+                        <div key={ai.id} className="text-xs text-gray-600 flex items-center gap-2">
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${st.dot}`} />
+                          <span className={`truncate ${ai.status === 'cancelled' ? 'text-gray-400 line-through' : ''}`}>{ai.title}</span>
+                          <span className="text-gray-400">· ~{ai.due_date} · user {ai.assignee_user_id}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${st.badge}`}>{st.label}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -447,16 +563,39 @@ export default function MeetingsPage() {
   );
 }
 
+const DURATION_OPTIONS = [30, 60, 90, 120];
+
 function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [roomId, setRoomId] = useState('room-1');
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [roomsLoading, setRoomsLoading] = useState(true);
+  const [roomId, setRoomId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
+  const [duration, setDuration] = useState(60);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const data = await api.get<Room[]>('/api/rooms');
+        if (!alive) return;
+        setRooms(data);
+        if (data.length > 0) setRoomId(data[0].id);
+      } catch (e) {
+        if (alive) setErr(e instanceof ApiError ? `회의실 목록 조회 실패: ${e.message}` : '서버 오류');
+      } finally {
+        if (alive) setRoomsLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
   async function save() {
     if (!title.trim() || !scheduledAt) { setErr('제목과 시간은 필수입니다.'); return; }
+    if (!roomId) { setErr('회의실을 선택하세요.'); return; }
     setSaving(true);
     setErr('');
     try {
@@ -465,10 +604,11 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
         title,
         description: description.trim() || null,
         scheduled_at: new Date(scheduledAt).toISOString(),
+        duration_minutes: duration,
       });
       onCreated();
     } catch (e) {
-      if (e instanceof ApiError) setErr(e.status === 409 ? '해당 시간에 회의실이 이미 예약되어 있습니다.' : `예약 실패 (${e.status})`);
+      if (e instanceof ApiError) setErr(e.status === 409 ? '해당 시간에 회의실이 이미 예약되어 있습니다.' : `예약 실패: ${e.message}`);
       else setErr('서버 오류');
     } finally {
       setSaving(false);
@@ -487,14 +627,40 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
             <label className="block text-sm font-medium text-gray-700 mb-1">제목</label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">회의실</label>
+            {roomsLoading ? (
+              <p className="text-xs text-gray-400 py-2">회의실 목록 불러오는 중...</p>
+            ) : rooms.length === 0 ? (
+              <p className="text-xs text-gray-400 py-2">등록된 회의실이 없습니다</p>
+            ) : (
+              <select
+                value={roomId}
+                onChange={(e) => setRoomId(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                {rooms.map((r) => (
+                  <option key={r.id} value={r.id}>{r.name} (정원 {r.capacity}명)</option>
+                ))}
+              </select>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">회의실</label>
-              <input value={roomId} onChange={(e) => setRoomId(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">시간</label>
               <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">소요시간</label>
+              <select
+                value={duration}
+                onChange={(e) => setDuration(Number(e.target.value))}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                {DURATION_OPTIONS.map((d) => (
+                  <option key={d} value={d}>{d}분</option>
+                ))}
+              </select>
             </div>
           </div>
           <div>
@@ -504,7 +670,7 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
           {err && <p className="text-sm text-red-600">{err}</p>}
           <div className="flex gap-2 pt-1">
             <button onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">취소</button>
-            <button onClick={save} disabled={saving} className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50">{saving ? '예약 중...' : '예약'}</button>
+            <button onClick={save} disabled={saving || roomsLoading || rooms.length === 0} className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50">{saving ? '예약 중...' : '예약'}</button>
           </div>
         </div>
       </div>
@@ -550,7 +716,7 @@ function CreateMinuteModal({ meetingId, onClose, onCreated }: { meetingId: strin
       }
       onCreated();
     } catch (e) {
-      setErr(e instanceof ApiError ? `작성 실패 (${e.status})` : '서버 오류');
+      setErr(e instanceof ApiError ? `작성 실패: ${e.message}` : '서버 오류');
     } finally {
       setSaving(false);
     }

@@ -113,21 +113,46 @@ async def _erp_sync_batch_job() -> None:
 
 
 async def _eod_push_job() -> None:
-    """REQ-008/D18: EOD ERP 전송 — pending daily_status_push를 ERP로 전송(pending→sent)."""
-    print("[Scheduler] EOD push started")
-    from app.services.eod_push import run_eod_push
+    """REQ-008/D18/D17: EOD ERP 전송.
 
+    D17: 주말 스킵(공휴일은 달력 소스 미확보 — 외부 의존, TODO), 배치가 당일 push row
+    자동 생성(ensure_eod_rows) 후 pending(+failed<MAX_RETRY)을 전송.
+    """
+    from app.services.eod_push import ensure_eod_rows, run_eod_push
+
+    kst_now = datetime.now(timezone(timedelta(hours=9)))
+    if kst_now.weekday() >= 5:  # 토(5)·일(6) — D17 주말 스킵
+        print("[Scheduler] EOD push skipped (weekend, D17)")
+        return
+
+    print("[Scheduler] EOD push started")
     async with SessionLocal() as db:
         try:
+            created = await ensure_eod_rows(db, kst_now.date())
             summary = await run_eod_push(db)
             await db.commit()
             print(
-                f"[Scheduler] EOD push completed: sent={summary['sent']} "
+                f"[Scheduler] EOD push completed: auto_created={created} sent={summary['sent']} "
                 f"failed={summary['failed']} total={summary['total']} run_id={summary['run_id']}"
             )
         except Exception as exc:
             await db.rollback()
             print(f"[Scheduler] EOD push failed: {exc}")
+
+
+async def _kpi_auto_finalize_job() -> None:
+    """08 §3.3: 공개 후 7일 경과 & 무이의 kpi_result 자동확정 + ERP push 적재."""
+    print("[Scheduler] KPI auto-finalize started")
+    from app.services.kpi_engine import auto_finalize_expired
+
+    async with SessionLocal() as db:
+        try:
+            count = await auto_finalize_expired(db)
+            await db.commit()
+            print(f"[Scheduler] KPI auto-finalize completed: {count} results finalized")
+        except Exception as exc:
+            await db.rollback()
+            print(f"[Scheduler] KPI auto-finalize failed: {exc}")
 
 
 async def _presence_purge_job() -> None:
@@ -207,8 +232,17 @@ def start_scheduler() -> None:
         replace_existing=True,
     )
 
+    # 08 §3.3: 무이의 7일 자동확정 — 매일 09:00 KST
+    _scheduler.add_job(
+        _kpi_auto_finalize_job,
+        CronTrigger(hour=9, minute=0, timezone="Asia/Seoul"),
+        id="kpi_auto_finalize",
+        name="KPI 7d auto-finalize",
+        replace_existing=True,
+    )
+
     _scheduler.start()
-    print("[Scheduler] Started: KPI 18:00/21:00, ERP hourly:00, EOD push 18:05, presence purge 03:00")
+    print("[Scheduler] Started: KPI 18:00/21:00, ERP hourly:00, EOD push 18:05, presence purge 03:00, KPI auto-finalize 09:00")
 
 
 def stop_scheduler() -> None:

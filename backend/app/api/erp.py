@@ -213,11 +213,18 @@ async def list_attendances(
     start: date = Query(..., description="조회 시작일"),
     end: date = Query(..., description="조회 종료일"),
     reader: ErpReader = Depends(get_reader),
-    _: CurrentUser = Depends(get_current_user),
+    user: CurrentUser = Depends(get_current_user),
 ):
+    """GET /api/attendances — 근태 조회.
+
+    06 §3.12: 전 직원 근태는 관리자 전용. 일반 직원은 본인 것만 필터해 반환.
+    """
     if start > end:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_date_range")
     dtos = await reader.fetch_attendances(DEFAULT_COMPANY_ID, start, end)
+    # 06 §3.10 매트릭스: 전체 근태는 admin/super_admin만 (leader ✗) — 그 외 본인 것만
+    if user.role not in ("admin", "super_admin"):
+        dtos = [d for d in dtos if d.user_id == user.user_id]
     return [AttendanceOut(**vars(d)) for d in dtos]
 # ── EOD Push 조회 (관리자) ──────────────────────────────────────
 
@@ -239,13 +246,21 @@ async def list_daily_status_push(
     status_filter: Optional[str] = Query(None, alias="status", description="상태 필터 (pending/sent/failed)"),
     limit: int = Query(100, le=500, description="최대 결과 수"),
     db=Depends(get_db),
-    _: CurrentUser = Depends(require_role("admin", "super_admin")),
+    user: CurrentUser = Depends(get_current_user),
 ) -> list[DailyStatusPushOut]:
-    """GET /api/daily-status-push — ERP 전송 큐 조회 (관리자, REQ-008)."""
+    """GET /api/daily-status-push — ERP 전송 큐 조회.
+
+    관리자(admin/super_admin)=전체, 일반 직원=본인 것만 (06 §3.6 'ERP 동기화 확인').
+    """
     from app.models.tables import DailyStatusPush
-    
+
+    if user.role not in ("admin", "super_admin"):
+        if user_id is not None and user_id != user.user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="insufficient_permissions")
+        user_id = user.user_id
+
     query = select(DailyStatusPush).order_by(DailyStatusPush.created_at.desc())
-    
+
     if user_id:
         query = query.where(DailyStatusPush.user_id == user_id)
     
@@ -310,6 +325,11 @@ async def create_daily_status_push(
         DailyStatusPushTarget,
     )
 
+    # 타인 명의 큐잉 차단 — user_id 지정은 관리자만 (QA 2026-07-13 P0)
+    if body.user_id is not None and body.user_id != user.user_id:
+        if user.role not in ("admin", "super_admin"):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="insufficient_permissions")
+
     pd = _date.fromisoformat(body.push_date) if body.push_date else _date.today()
     try:
         target = DailyStatusPushTarget(body.target) if body.target else DailyStatusPushTarget.ERP_DAILY_REPORTS
@@ -353,9 +373,13 @@ async def retry_daily_status_push(
     db=Depends(get_db),
     _: CurrentUser = Depends(require_role("admin", "super_admin")),
 ) -> DailyStatusPushOut:
-    """POST /api/daily-status-push/{id}/retry — 실패한 전송을 pending으로 재큐잉 (관리자, REQ-008)."""
+    """POST /api/daily-status-push/{id}/retry — 실패한 전송을 pending으로 재큐잉 (관리자, REQ-008).
+
+    D17-7: 재시도 상한 MAX_RETRY(3) 초과 시 409.
+    """
     import uuid as _uuid
     from app.models.tables import DailyStatusPush, DailyStatusPushStatus
+    from app.services.eod_push import MAX_RETRY
 
     try:
         pid = _uuid.UUID(push_id)
@@ -366,6 +390,8 @@ async def retry_daily_status_push(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="push_not_found")
     if row.status != DailyStatusPushStatus.FAILED:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="only_failed_can_retry")
+    if (row.retry_count or 0) >= MAX_RETRY:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="retry_limit_exceeded")
     row.status = DailyStatusPushStatus.PENDING
     row.retry_count = (row.retry_count or 0) + 1
     row.error_message = None

@@ -22,7 +22,7 @@ from app.models.tables import (
     OrgGroupType,
 )
 
-COMPANY_UUID = uuid4()
+COMPANY_ID = 1  # 04 §2.2: INTEGER (erp_user.company_id 동일 타입)
 
 
 @pytest_asyncio.fixture
@@ -32,8 +32,8 @@ async def seed_dir(db_session: AsyncSession):
         ErpUser(id=2, company_id=1, email="leader@example.com", name="Lead", erp_team_id=10, role="leader"),
         ErpUser(id=3, company_id=1, email="admin@example.com", name="Adm", erp_team_id=20, role="admin"),
     ]
-    div = OrgGroup(id=uuid4(), company_id=COMPANY_UUID, name="개발본부", type=OrgGroupType.DIVISION, sort_order=1)
-    dept = OrgGroup(id=uuid4(), company_id=COMPANY_UUID, name="플랫폼부", type=OrgGroupType.DEPARTMENT, parent_id=div.id, sort_order=2)
+    div = OrgGroup(id=uuid4(), company_id=COMPANY_ID, name="개발본부", type=OrgGroupType.DIVISION, sort_order=1)
+    dept = OrgGroup(id=uuid4(), company_id=COMPANY_ID, name="플랫폼부", type=OrgGroupType.DEPARTMENT, parent_id=div.id, sort_order=2)
     db_session.add_all([*users, div, dept])
     await db_session.flush()
     return {"div": div, "dept": dept}

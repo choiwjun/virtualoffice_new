@@ -183,9 +183,10 @@ class ActionItemStatus(str, Enum):
 
 
 class WorkLogStatus(str, Enum):
-    """업무 로그 상태"""
+    """업무 로그 상태 (06 §3.6: started|completed|aborted)"""
     STARTED = "started"         # 시작
     COMPLETED = "completed"     # 완료
+    ABORTED = "aborted"         # 중단 (KPI 산출 제외, 삭제 허용)
 
 
 class MeetingMinuteStatus(str, Enum):
@@ -331,7 +332,8 @@ class OrgGroup(Base, TimestampMixin):
     __tablename__ = "org_group"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
+    company_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    """사내 회사 ID — erp_user.company_id와 동일 타입 (04 §2.2 INTEGER 정본, QA 2026-07-13)"""
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     type: Mapped[OrgGroupType] = mapped_column(SQLEnum(OrgGroupType), nullable=False, index=True)
     parent_id: Mapped[Optional[UUID]] = mapped_column(
@@ -408,8 +410,8 @@ class Office(Base, TimestampMixin):
     __tablename__ = "office"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    company_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
-    """멀티테넌트 스코프"""
+    company_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    """멀티테넌트 스코프 — erp_user.company_id와 동일 타입 (04 §2.2 INTEGER 정본)"""
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     """사무실명 (예: "본사", "판교")"""
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -834,6 +836,8 @@ class Meeting(Base, TimestampMixin):
         nullable=False
     )
     """예정 시각 (UTC)"""
+    duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=60)
+    """계획 소요시간(분) — D23 시간대 겹침 충돌 검사 기준 (06 §3.5.1 시간 범위)"""
     started_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
         nullable=True

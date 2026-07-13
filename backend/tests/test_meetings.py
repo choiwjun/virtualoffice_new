@@ -351,3 +351,196 @@ async def test_list_participants(async_client, seeded, auth_headers, admin_heade
 async def test_unauthenticated_401(async_client, seeded):
     resp = await async_client.get("/api/meetings")
     assert resp.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# QA 2026-07-13 수리분: rooms 피커 / 시간대 겹침(D23) / 상태 전이 / 정원 / leave
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_list_rooms_for_picker(async_client, seeded, auth_headers):
+    """GET /api/rooms — 예약 피커용 방 목록 (06 §3.5.1)."""
+    resp = await async_client.get("/api/rooms", headers=auth_headers)
+    assert resp.status_code == 200
+    rooms = resp.json()
+    assert len(rooms) == 1
+    assert rooms[0]["name"] == "회의실 A"
+    assert rooms[0]["capacity"] == 10
+    assert rooms[0]["type"] == "meeting"
+
+
+@pytest.mark.asyncio
+async def test_conflict_overlapping_window(async_client, seeded, auth_headers):
+    """D23: [start, start+duration) 겹침 → 409, 인접(끝==시작)·이전 시간대는 허용."""
+    room_id = str(seeded["room"].id)
+    base = datetime.now(timezone.utc) + timedelta(days=1)
+    base = base.replace(minute=0, second=0, microsecond=0)
+
+    r1 = await async_client.post(
+        "/api/meetings",
+        json={"room_id": room_id, "title": "10시 회의", "scheduled_at": base.isoformat(), "duration_minutes": 60},
+        headers=auth_headers,
+    )
+    assert r1.status_code == 201, r1.text
+
+    # 30분 뒤 시작 (겹침) → 409
+    r2 = await async_client.post(
+        "/api/meetings",
+        json={"room_id": room_id, "title": "10시반 회의", "scheduled_at": (base + timedelta(minutes=30)).isoformat(), "duration_minutes": 60},
+        headers=auth_headers,
+    )
+    assert r2.status_code == 409
+    assert "room_time_conflict" in r2.text
+
+    # 기존 회의보다 이른 시간대(끝이 기존 시작과 겹치지 않음) → 허용 (구버전 오작동 케이스)
+    r3 = await async_client.post(
+        "/api/meetings",
+        json={"room_id": room_id, "title": "9시 회의", "scheduled_at": (base - timedelta(minutes=60)).isoformat(), "duration_minutes": 30},
+        headers=auth_headers,
+    )
+    assert r3.status_code == 201, r3.text
+
+    # 정확히 종료 시각에 시작 (반개구간 — 겹침 아님) → 허용
+    r4 = await async_client.post(
+        "/api/meetings",
+        json={"room_id": room_id, "title": "11시 회의", "scheduled_at": (base + timedelta(minutes=60)).isoformat(), "duration_minutes": 30},
+        headers=auth_headers,
+    )
+    assert r4.status_code == 201, r4.text
+
+    # 이른 회의가 새 회의 시간대를 관통 (09:30 시작 60분 vs 기존 10:00) → 409
+    r5 = await async_client.post(
+        "/api/meetings",
+        json={"room_id": room_id, "title": "9시반 관통", "scheduled_at": (base - timedelta(minutes=30)).isoformat(), "duration_minutes": 60},
+        headers=auth_headers,
+    )
+    assert r5.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_meeting_lifecycle_start_end(async_client, seeded, auth_headers, admin_headers):
+    """상태 전이: scheduled → in_progress → completed. 호스트/관리자만, 잘못된 전이 409."""
+    room_id = str(seeded["room"].id)
+    create = await async_client.post(
+        "/api/meetings",
+        json={"room_id": room_id, "title": "전이 테스트", "scheduled_at": _future_utc(3)},
+        headers=auth_headers,  # host = 1001
+    )
+    mid = create.json()["id"]
+    assert create.json()["status"] == "scheduled"
+    assert create.json()["participant_count"] == 1  # 호스트 organizer 자동 등록
+
+    # end before start → 409
+    r0 = await async_client.post(f"/api/meetings/{mid}/end", headers=auth_headers)
+    assert r0.status_code == 409
+
+    # 시작 (호스트)
+    r1 = await async_client.post(f"/api/meetings/{mid}/start", headers=auth_headers)
+    assert r1.status_code == 200, r1.text
+    assert r1.json()["status"] == "in_progress"
+    assert r1.json()["started_at"] is not None
+
+    # 중복 시작 → 409
+    r2 = await async_client.post(f"/api/meetings/{mid}/start", headers=auth_headers)
+    assert r2.status_code == 409
+
+    # 종료 (관리자도 가능)
+    r3 = await async_client.post(f"/api/meetings/{mid}/end", headers=admin_headers)
+    assert r3.status_code == 200
+    assert r3.json()["status"] == "completed"
+    assert r3.json()["ended_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_start_requires_host_or_admin(async_client, seeded, auth_headers, admin_headers):
+    """비호스트 일반 직원은 시작 불가 (403)."""
+    room_id = str(seeded["room"].id)
+    create = await async_client.post(
+        "/api/meetings",
+        json={"room_id": room_id, "title": "권한 테스트", "scheduled_at": _future_utc(4)},
+        headers=admin_headers,  # host = 1002(admin)
+    )
+    mid = create.json()["id"]
+    other_employee = create_access_token({"sub": "1001", "email": "alice@test.local", "role": "employee"})
+    r = await async_client.post(
+        f"/api/meetings/{mid}/start", headers={"Authorization": f"Bearer {other_employee}"}
+    )
+    assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_join_blocked_after_cancel_or_complete(async_client, seeded, auth_headers, admin_headers):
+    """취소/종료된 회의 join → 409 (06 §5.2)."""
+    room_id = str(seeded["room"].id)
+    create = await async_client.post(
+        "/api/meetings",
+        json={"room_id": room_id, "title": "취소될 회의", "scheduled_at": _future_utc(5)},
+        headers=auth_headers,
+    )
+    mid = create.json()["id"]
+    await async_client.delete(f"/api/meetings/{mid}", headers=admin_headers)  # cancel
+
+    r = await async_client.post(f"/api/meetings/{mid}/join", headers=auth_headers)
+    assert r.status_code == 409
+    assert "meeting_not_joinable" in r.text
+
+
+@pytest.mark.asyncio
+async def test_join_capacity_and_leave(async_client, db_session, seeded, auth_headers, admin_headers):
+    """정원 초과 join → 409, leave 후 재입장 가능 + left_at 기록."""
+    # capacity 1 방 생성
+    small = Room(
+        id=uuid4(), floor_id=uuid4(), type=RoomType.MEETING, name="폰부스",
+        capacity=1, coords={"x": 0, "y": 0, "width": 2, "height": 2}, status=RoomStatus.ACTIVE,
+    )
+    db_session.add(small)
+    await db_session.commit()
+
+    create = await async_client.post(
+        "/api/meetings",
+        json={"room_id": str(small.id), "title": "1인실 회의", "scheduled_at": _future_utc(6)},
+        headers=auth_headers,
+    )
+    mid = create.json()["id"]
+
+    r1 = await async_client.post(f"/api/meetings/{mid}/join", headers=auth_headers)
+    assert r1.status_code == 200
+
+    r2 = await async_client.post(f"/api/meetings/{mid}/join", headers=admin_headers)
+    assert r2.status_code == 409
+    assert "room_capacity_exceeded" in r2.text
+
+    # 첫 참석자 leave → 자리 확보
+    r3 = await async_client.post(f"/api/meetings/{mid}/leave", headers=auth_headers)
+    assert r3.status_code == 200
+    assert r3.json()["left_at"] is not None
+
+    r4 = await async_client.post(f"/api/meetings/{mid}/join", headers=admin_headers)
+    assert r4.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_list_meetings_status_filter(async_client, seeded, auth_headers):
+    """GET /api/meetings?status= 필터 (진행중 오버레이용)."""
+    room_id = str(seeded["room"].id)
+    c1 = await async_client.post(
+        "/api/meetings",
+        json={"room_id": room_id, "title": "예정 회의", "scheduled_at": _future_utc(7)},
+        headers=auth_headers,
+    )
+    c2 = await async_client.post(
+        "/api/meetings",
+        json={"room_id": room_id, "title": "진행중 회의", "scheduled_at": _future_utc(9)},
+        headers=auth_headers,
+    )
+    await async_client.post(f"/api/meetings/{c2.json()['id']}/start", headers=auth_headers)
+
+    r = await async_client.get("/api/meetings?status=in_progress", headers=auth_headers)
+    assert r.status_code == 200
+    items = r.json()
+    assert len(items) == 1
+    assert items[0]["title"] == "진행중 회의"
+
+    r2 = await async_client.get("/api/meetings?status=bogus", headers=auth_headers)
+    assert r2.status_code == 400

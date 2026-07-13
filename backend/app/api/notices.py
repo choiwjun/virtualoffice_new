@@ -2,7 +2,10 @@
 
 - GET  /api/notices        전 직원 열람 (활성·게시·미만료 공지, pinned 우선·최신순)
 - POST /api/notices        admin 작성 (분류·게시/만료 시각 지정 가능)
+- PATCH /api/notices/{id}  admin 수정 (06 §3.14.2)
 - DELETE /api/notices/{id} admin soft-delete (is_active=False)
+
+감사: 게시/수정/삭제 시 audit_log 기록 (06 §3.14.2 announcement_published/updated/deleted).
 """
 
 from __future__ import annotations
@@ -18,6 +21,7 @@ from sqlalchemy import or_, select
 from app.core.deps import CurrentUser, get_current_user, require_role
 from app.db import get_db
 from app.models.tables import Notice, NoticeCategory
+from app.services.audit import record_audit
 
 router = APIRouter(prefix="/api", tags=["notices"])
 
@@ -117,6 +121,54 @@ async def create_notice(
     db.add(notice)
     await db.commit()
     await db.refresh(notice)
+    await record_audit(
+        db, user_id=user.user_id, action="announcement_published",
+        entity_type="notice", entity_id=str(notice.id),
+        new_value={"title": notice.title, "category": _out(notice).category, "pinned": notice.pinned},
+    )
+    return _out(notice)
+
+
+class NoticeUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=1, max_length=255)
+    body: Optional[str] = None
+    author: Optional[str] = Field(None, max_length=100)
+    category: Optional[NoticeCategory] = None
+    pinned: Optional[bool] = None
+    published_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+
+
+@router.patch("/notices/{notice_id}", response_model=NoticeOut)
+async def update_notice(
+    notice_id: UUID,
+    payload: NoticeUpdate,
+    db=Depends(get_db),
+    user: CurrentUser = Depends(require_role("admin", "super_admin")),
+) -> NoticeOut:
+    """공지 수정 (admin, 06 §3.14.2)."""
+    notice = (
+        await db.execute(select(Notice).where(Notice.id == notice_id))
+    ).scalar_one_or_none()
+    if notice is None or not notice.is_active:
+        raise HTTPException(status_code=404, detail="notice_not_found")
+
+    old_value = {"title": notice.title, "pinned": notice.pinned}
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, val in update_data.items():
+        setattr(notice, field, val)
+
+    if notice.expires_at is not None and notice.expires_at <= notice.published_at:
+        raise HTTPException(status_code=422, detail="expires_at_before_published_at")
+
+    await db.commit()
+    await db.refresh(notice)
+    await record_audit(
+        db, user_id=user.user_id, action="announcement_updated",
+        entity_type="notice", entity_id=str(notice.id),
+        old_value=old_value,
+        new_value={"title": notice.title, "pinned": notice.pinned},
+    )
     return _out(notice)
 
 
@@ -124,7 +176,7 @@ async def create_notice(
 async def delete_notice(
     notice_id: UUID,
     db=Depends(get_db),
-    _: CurrentUser = Depends(require_role("admin", "super_admin")),
+    user: CurrentUser = Depends(require_role("admin", "super_admin")),
 ) -> None:
     """공지 soft-delete (admin). is_active=False 로 비활성화."""
     notice = (
@@ -134,4 +186,9 @@ async def delete_notice(
         raise HTTPException(status_code=404, detail="notice_not_found")
     notice.is_active = False
     await db.commit()
+    await record_audit(
+        db, user_id=user.user_id, action="announcement_deleted",
+        entity_type="notice", entity_id=str(notice.id),
+        old_value={"title": notice.title},
+    )
     return None

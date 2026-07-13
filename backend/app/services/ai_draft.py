@@ -29,11 +29,10 @@ from app.services.ai_client import chat_completion, llm_enabled
 from app.services.pseudonymize import pseudonymize_user
 
 # 서술의 기준이 되는 집계 metric (이 행에 초안을 부착)
+# D16: period_type은 daily/quarterly 2종만 존재. AI 서술 초안은 분기에만 생성
+# (06 §3.13.1 "AI 서술 초안은 분기에만 존재", 08 §6.2.2 분기별 1회).
 _AGGREGATE_METRIC_BY_PERIOD = {
     "quarterly": "quarterly_total",
-    "monthly": "quarterly_total",
-    "weekly": "collaboration_score",
-    "daily": "collaboration_score",
 }
 
 
@@ -158,12 +157,16 @@ async def generate_and_attach_draft(
     if not rows:
         return None
 
+    # AI 서술 초안은 분기(quarterly)에만 생성 — daily는 정량 지표만 (06 §3.13.1, 08 §6.2.2)
+    if period_type not in _AGGREGATE_METRIC_BY_PERIOD:
+        return None
+
     if metrics is None:
         metrics = {r.metric: float(r.value) for r in rows}
 
     draft = await generate_draft(metrics, user_id=user_id)
 
-    agg_metric = _AGGREGATE_METRIC_BY_PERIOD.get(period_type, "collaboration_score")
+    agg_metric = _AGGREGATE_METRIC_BY_PERIOD[period_type]
     target = next((r for r in rows if r.metric == agg_metric), rows[0])
     target.ai_draft = draft
     target.ai_draft_generated_at = datetime.now(timezone.utc)

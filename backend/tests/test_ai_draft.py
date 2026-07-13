@@ -90,21 +90,24 @@ async def test_generate_draft_no_pii_leak():
 # ── kpi_engine 통합 ───────────────────────────────────────────
 
 async def test_compute_attaches_ai_draft(db_session: AsyncSession, seed_user: ErpUser):
-    results = await compute_and_upsert_kpi(db_session, seed_user.id, "daily", "2026-07-01")
-    assert results  # 정량 계산은 유효
+    """AI 서술 초안은 분기(quarterly)에만 부착 — daily는 정량만 (06 §3.13.1, 08 §6.2.2)."""
+    daily = await compute_and_upsert_kpi(db_session, seed_user.id, "daily", "2026-07-01")
+    assert daily  # 정량 계산은 유효
+    assert not any(isinstance(r.ai_draft, dict) for r in daily)  # daily에는 초안 없음
 
+    await compute_and_upsert_kpi(db_session, seed_user.id, "quarterly", "2026-Q3")
     all_rows = (
         await db_session.execute(
             select(KpiResult).where(
                 KpiResult.user_id == seed_user.id,
-                KpiResult.period_type == "daily",
-                KpiResult.period_key == "2026-07-01",
+                KpiResult.period_type == "quarterly",
+                KpiResult.period_key == "2026-Q3",
             )
         )
     ).scalars().all()
     # JSONB None은 SQLite에서 JSON-null로 저장 → SQL 필터 대신 Python으로 dict 판별
     with_draft = [r for r in all_rows if isinstance(r.ai_draft, dict)]
-    assert len(with_draft) == 1  # 집계 metric 1행에 초안 부착
+    assert len(with_draft) == 1  # 집계 metric(quarterly_total) 1행에 초안 부착
     draft = with_draft[0].ai_draft
     assert "강점" in draft and "개선" in draft
     assert with_draft[0].ai_draft_generated_at is not None

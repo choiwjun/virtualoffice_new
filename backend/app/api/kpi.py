@@ -10,10 +10,17 @@ KPI 결과 API (Lane C — G003)
   POST /api/kpi-results/{id}/objections — 이의신청 접수
   POST /api/kpi-results/{id}/objections/review — 이의신청 검토·처리
 
-권한:
-  - compute/adjust/finalize/objections-review: admin | leader
+권한 (06 §3.10 접근 매트릭스):
+  - compute/finalize: admin | super_admin
+  - adjust/objections-review: admin | super_admin | leader(자기 팀 한정)
   - objections(접수): 본인(employee)
-  - GET: 본인 or admin/leader
+  - GET: 본인 or admin/super_admin/leader(자기 팀 한정)
+
+정책 (08 §3.2·§3.3):
+  - 조정은 원점수(value) 대비 ±10% 범위 + 조정사유 ≥30자 (백엔드 강제)
+  - 이의신청은 공개(admin_reviewed_at ?? created_at) 후 7일 내, 확정 전에만 접수
+  - resolve 시 final_score·finalized_at 확정 + ERP push 적재(재조정=재push)
+  - 무이의 7일 경과 자동확정은 scheduler의 kpi_auto_finalize 잡이 수행
 """
 
 from __future__ import annotations
@@ -34,6 +41,7 @@ from app.models.tables import (
     DailyStatusPush,
     DailyStatusPushStatus,
     DailyStatusPushTarget,
+    ErpUser,
     KpiObjectionStatus,
     KpiResult,
 )
@@ -42,7 +50,13 @@ from app.services.audit import record_audit
 
 router = APIRouter(prefix="/api/kpi-results", tags=["kpi"])
 
-_ADMIN_ROLES = {"admin", "leader"}
+_ADMIN_ONLY = {"admin", "super_admin"}                  # compute/finalize (06 §3.10: 확정=admin)
+_MANAGER_ROLES = {"admin", "super_admin", "leader"}     # 조회/조정/이의검토 (leader=팀 한정)
+
+# 이의신청 창 (08 §3.3: 공개 후 7일)
+OBJECTION_WINDOW_DAYS = 7
+# 이의신청 카테고리 (08 §3.3 제출 형식)
+OBJECTION_CATEGORIES = {"score_basis", "missing_signal", "data_error"}
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -120,18 +134,23 @@ class ComputeResponse(BaseModel):
 
 
 class AdjustRequest(BaseModel):
-    admin_adjusted_score: float = Field(..., description="관리자 조정 점수")
-    admin_note: str = Field(..., min_length=1, description="조정 사유 (≥30자 권장)")
+    admin_adjusted_score: float = Field(..., description="관리자 조정 점수 (원점수 ±10% 이내)")
+    admin_note: str = Field(..., min_length=30, description="조정 사유 (08 §3.2: 필수 ≥30자)")
 
 
 class FinalizeRequest(BaseModel):
     pass  # 별도 입력 없음: final_score = admin_adjusted_score ?? value
 
 
+class EvidenceItem(BaseModel):
+    type: str = Field("link", max_length=20)
+    url: str = Field(..., max_length=1000)
+
+
 class ObjectionRequest(BaseModel):
-    category: str = Field(..., description="이의신청 카테고리")
+    category: str = Field(..., description="score_basis | missing_signal | data_error (08 §3.3)")
     text: str = Field(..., min_length=10, description="이의신청 내용")
-    evidence: Optional[str] = Field(None, description="증거/근거 링크")
+    evidence: Optional[list[EvidenceItem]] = Field(None, description="증거 [{type,url}] (08 §3.3)")
 
 
 class ObjectionReviewRequest(BaseModel):
@@ -155,9 +174,56 @@ async def _get_result_or_404(db: AsyncSession, result_id: str) -> KpiResult:
     return r
 
 
-def _check_admin(user: CurrentUser) -> None:
-    if user.role not in _ADMIN_ROLES:
+def _check_admin_only(user: CurrentUser) -> None:
+    """compute/finalize — admin/super_admin 전용 (06 §3.10: 확정에 leader ✗)."""
+    if user.role not in _ADMIN_ONLY:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="admin_required")
+
+
+def _check_manager(user: CurrentUser) -> None:
+    if user.role not in _MANAGER_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="admin_required")
+
+
+async def _check_team_scope(db: AsyncSession, user: CurrentUser, target_user_id: int) -> None:
+    """leader는 자기 팀(erp_team_id == token team_id)만 접근 (06 §3.10)."""
+    if user.role in _ADMIN_ONLY or target_user_id == user.user_id:
+        return
+    if user.role == "leader":
+        target = await db.get(ErpUser, target_user_id)
+        if target is None or user.team_id is None or target.erp_team_id != user.team_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="team_scope_violation")
+        return
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+
+def _as_utc(dt: datetime) -> datetime:
+    """SQLite naive datetime → UTC aware."""
+    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+
+
+def _published_at(r: KpiResult) -> datetime:
+    """이의신청 창 기산점 = 공개 시점 근사(admin_reviewed_at ?? created_at) — 08 §3.3."""
+    return _as_utc(r.admin_reviewed_at or r.created_at)
+
+
+def _queue_erp_push(db: AsyncSession, r: KpiResult, now: datetime) -> None:
+    """확정 점수 ERP push 적재 (D15: 실전송 제외). 재확정 시 재호출=재push(upsert)."""
+    db.add(DailyStatusPush(
+        user_id=r.user_id,
+        push_date=now.date(),
+        target=DailyStatusPushTarget.ERP_KPI_RESULTS,
+        payload={
+            "kpi_result_id": str(r.id),
+            "user_id": r.user_id,
+            "period_type": r.period_type.value if hasattr(r.period_type, "value") else r.period_type,
+            "period_key": r.period_key,
+            "metric": r.metric,
+            "final_score": float(r.final_score),
+            "finalized_at": now.isoformat(),
+        },
+        status=DailyStatusPushStatus.PENDING,
+    ))
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -179,7 +245,7 @@ async def compute_kpi_results(
     결정론적 엔진으로 계산 후 kpi_result 롱포맷 upsert.
     스케줄러(D17) 대체용 수동 엔드포인트.
     """
-    _check_admin(user)
+    _check_admin_only(user)
 
     if body.period_type not in ("daily", "quarterly"):
         raise HTTPException(
@@ -212,10 +278,12 @@ async def list_kpi_results(
     """
     GET /api/kpi-results — D16 라우팅:
       - 본인: 자신의 kpi_result만 조회
-      - 관리자(admin|leader): user_id 파라미터로 타인 조회 가능
+      - admin/super_admin: user_id 파라미터로 타인 조회 가능
+      - leader: 자기 팀 소속만 타인 조회 가능 (06 §3.10)
     """
-    if user.role in _ADMIN_ROLES:
+    if user.role in _MANAGER_ROLES:
         target_user_id = user_id if user_id is not None else user.user_id
+        await _check_team_scope(db, user, target_user_id)
     else:
         # 일반 직원: 본인 것만
         if user_id is not None and user_id != user.user_id:
@@ -240,10 +308,11 @@ async def get_kpi_result(
     db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ) -> KpiResultOut:
-    """GET /api/kpi-results/{id} — 단건 조회."""
+    """GET /api/kpi-results/{id} — 단건 조회 (본인 또는 관리자, leader=팀 한정)."""
     r = await _get_result_or_404(db, result_id)
-    if user.role not in _ADMIN_ROLES and r.user_id != user.user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="forbidden")
+    if r.user_id != user.user_id:
+        _check_manager(user)
+        await _check_team_scope(db, user, r.user_id)
     return _to_out(r)
 
 
@@ -257,12 +326,30 @@ async def adjust_kpi_result(
     """
     POST /api/kpi-results/{id}/adjust — 관리자 점수 조정.
 
-    admin_adjusted_score 설정. 미조정 시 NULL → value가 유효.
-    조정 시 audit_log 생성은 후속(현재는 admin_reviewed_at/admin_user_id로 추적).
+    - 원점수(value) 대비 ±10% 범위만 허용 (08 §3.2, 백분율 단일 기준)
+    - 조정 사유 ≥30자 필수, leader는 자기 팀만
+    - admin_adjusted_score 설정. 미조정 시 NULL → value가 유효.
     """
-    _check_admin(user)
+    _check_manager(user)
     r = await _get_result_or_404(db, result_id)
+    await _check_team_scope(db, user, r.user_id)
 
+    if r.finalized_at is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="already_finalized")
+
+    # ±10% 강제 (원점수 0이면 조정 불가 — 0의 ±10%는 0)
+    base = float(r.value)
+    lo, hi = min(base * 0.9, base * 1.1), max(base * 0.9, base * 1.1)
+    if not (lo <= body.admin_adjusted_score <= hi):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="adjusted_score_out_of_range",  # 08 §3.2: value ±10%
+        )
+
+    old_value = {
+        "admin_adjusted_score": float(r.admin_adjusted_score) if r.admin_adjusted_score is not None else None,
+        "value": base,
+    }
     r.admin_adjusted_score = Decimal(str(body.admin_adjusted_score))
     r.admin_note = body.admin_note
     r.admin_user_id = user.user_id
@@ -277,6 +364,7 @@ async def adjust_kpi_result(
         action="kpi_adjusted",
         entity_type="kpi_result",
         entity_id=str(r.id),
+        old_value=old_value,
         new_value={"admin_adjusted_score": float(body.admin_adjusted_score), "admin_note": body.admin_note},
     )
     return _to_out(r)
@@ -294,8 +382,11 @@ async def finalize_kpi_result(
     final_score = admin_adjusted_score ?? value
     finalized_at 설정.
     daily_status_push target=erp_kpi_results status=pending 적재 (실전송 제외 — D15).
+
+    - admin/super_admin 전용 (06 §3.10)
+    - 이의신청 진행 중(submitted/reviewing)이면 409 — resolve로만 확정 가능 (08 §3.3)
     """
-    _check_admin(user)
+    _check_admin_only(user)
     r = await _get_result_or_404(db, result_id)
 
     if r.finalized_at is not None:
@@ -304,29 +395,17 @@ async def finalize_kpi_result(
             detail="already_finalized",
         )
 
+    obj_status = r.objection_status.value if hasattr(r.objection_status, "value") else r.objection_status
+    if obj_status in ("submitted", "reviewing"):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="objection_in_progress")
+
     now = datetime.now(timezone.utc)
     # final_score = admin_adjusted_score ?? value
     r.final_score = r.admin_adjusted_score if r.admin_adjusted_score is not None else r.value
     r.finalized_at = now
     r.updated_at = now
 
-    # D15: daily_status_push target=erp_kpi_results 적재 (실전송 제외)
-    push = DailyStatusPush(
-        user_id=r.user_id,
-        push_date=now.date(),
-        target=DailyStatusPushTarget.ERP_KPI_RESULTS,
-        payload={
-            "kpi_result_id": str(r.id),
-            "user_id": r.user_id,
-            "period_type": r.period_type.value if hasattr(r.period_type, "value") else r.period_type,
-            "period_key": r.period_key,
-            "metric": r.metric,
-            "final_score": float(r.final_score),
-            "finalized_at": now.isoformat(),
-        },
-        status=DailyStatusPushStatus.PENDING,  # 실전송은 feature-flag off
-    )
-    db.add(push)
+    _queue_erp_push(db, r, now)  # D15: 실전송 제외 pending 적재
 
     await db.commit()
     await db.refresh(r)
@@ -351,8 +430,9 @@ async def submit_objection(
     """
     POST /api/kpi-results/{id}/objections — 이의신청 접수 (none → submitted).
 
+    08 §3.3 상태머신 정방향:
     - 본인만 접수 가능
-    - finalized_at 설정 후 7일 창 내에서만 접수
+    - 공개(admin_reviewed_at ?? created_at) 후 7일 내, **확정 전**에만 접수
     - objection_status = none → submitted
     """
     r = await _get_result_or_404(db, result_id)
@@ -361,19 +441,23 @@ async def submit_objection(
     if r.user_id != user.user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="forbidden")
 
-    # finalized_at 확인
-    if r.finalized_at is None:
+    # 카테고리 검증 (08 §3.3 제출 형식)
+    if body.category not in OBJECTION_CATEGORIES:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="not_finalized_yet",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="invalid_objection_category",  # score_basis | missing_signal | data_error
         )
 
-    # 7일 창 확인 (SQLite는 naive datetime 반환 → UTC로 처리)
+    # 확정 후에는 접수 불가 (스펙: 공개 후 7일 창 → 무이의 시 자동확정)
+    if r.finalized_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="already_finalized",
+        )
+
+    # 7일 창 확인 — 기산점 = 공개 시점 (08 §3.3 "[평가 공개] … 공개 후 7일 이내")
     now = datetime.now(timezone.utc)
-    finalized = r.finalized_at
-    if finalized.tzinfo is None:
-        finalized = finalized.replace(tzinfo=timezone.utc)
-    deadline = finalized + timedelta(days=7)
+    deadline = _published_at(r) + timedelta(days=OBJECTION_WINDOW_DAYS)
     if now > deadline:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -393,9 +477,10 @@ async def submit_objection(
     r.objection_status = KpiObjectionStatus.SUBMITTED
     r.objection_submitted_at = now
     r.objection_detail = {
-        "category": body.category,
-        "text": body.text,
-        "evidence": body.evidence,
+        "kpi_result_id": str(r.id),
+        "objection_category": body.category,
+        "objection_text": body.text,
+        "evidence": [e.model_dump() for e in body.evidence] if body.evidence else [],
         "submitted_at": now.isoformat(),
     }
     r.updated_at = now
@@ -425,14 +510,23 @@ async def review_objection(
 
     action = "advance": submitted → reviewing
     action = "resolve": reviewing → resolved (+ final_score 재조정 선택)
+
+    08 §3.3: resolve 시 final_score·finalized_at 확정 + ERP push 적재(재조정=재push).
+    leader는 자기 팀 건만 처리 가능.
     """
-    _check_admin(user)
+    _check_manager(user)
     r = await _get_result_or_404(db, result_id)
+    await _check_team_scope(db, user, r.user_id)
 
     now = datetime.now(timezone.utc)
     obj_status = r.objection_status
     if hasattr(obj_status, "value"):
         obj_status = obj_status.value
+
+    old_value = {
+        "objection_status": obj_status,
+        "final_score": float(r.final_score) if r.final_score is not None else None,
+    }
 
     if body.action == "advance":
         if obj_status != "submitted":
@@ -451,14 +545,25 @@ async def review_objection(
         r.objection_status = KpiObjectionStatus.RESOLVED
         r.objection_resolved_at = now
 
-        # 재조정 점수 선택적
+        # 재조정 점수 선택적 — ±10% 한도는 이의 재조정에도 동일 적용 (08 §3.2)
         if body.revised_score is not None:
+            base = float(r.value)
+            lo, hi = min(base * 0.9, base * 1.1), max(base * 0.9, base * 1.1)
+            if not (lo <= body.revised_score <= hi):
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="adjusted_score_out_of_range",
+                )
             r.admin_adjusted_score = Decimal(str(body.revised_score))
-            r.final_score = Decimal(str(body.revised_score))
             r.admin_user_id = user.user_id
             r.admin_reviewed_at = now
             if body.note:
                 r.admin_note = body.note
+
+        # 08 §3.3: resolved 시 final_score·finalized_at 확정 → push (정정 시 재push)
+        r.final_score = r.admin_adjusted_score if r.admin_adjusted_score is not None else r.value
+        r.finalized_at = now
+        _queue_erp_push(db, r, now)
 
     else:
         raise HTTPException(
@@ -469,6 +574,19 @@ async def review_objection(
     r.updated_at = now
     await db.commit()
     await db.refresh(r)
+    await record_audit(
+        db,
+        user_id=user.user_id,
+        action=f"kpi_objection_{body.action}",  # kpi_objection_advance | kpi_objection_resolve
+        entity_type="kpi_result",
+        entity_id=str(r.id),
+        old_value=old_value,
+        new_value={
+            "objection_status": r.objection_status.value if hasattr(r.objection_status, "value") else r.objection_status,
+            "final_score": float(r.final_score) if r.final_score is not None else None,
+            "note": body.note,
+        },
+    )
     return _to_out(r)
 
 
@@ -480,7 +598,7 @@ class ObjectionOut(BaseModel):
     objection_status: str
     category: Optional[str] = None
     text: Optional[str] = None
-    evidence: Optional[str] = None
+    evidence: Optional[list[dict]] = None
     submitted_at: Optional[str] = None
     resolved_at: Optional[str] = None
     admin_note: Optional[str] = None
@@ -493,22 +611,27 @@ async def get_objection(
     db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ) -> ObjectionOut:
-    """이의신청 내역 조회 (본인 또는 관리자). 없으면 objection_status=none."""
+    """이의신청 내역 조회 (본인 또는 관리자, leader=팀 한정). 없으면 objection_status=none."""
     r = await _get_result_or_404(db, result_id)
-    if user.role not in _ADMIN_ROLES and r.user_id != user.user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="forbidden")
+    if r.user_id != user.user_id:
+        _check_manager(user)
+        await _check_team_scope(db, user, r.user_id)
 
     obj_status = r.objection_status.value if hasattr(r.objection_status, "value") else r.objection_status
     detail = r.objection_detail or {}
+    # 구 포맷(category/text/evidence 문자열) 호환 폴백
+    raw_evidence = detail.get("evidence")
+    if isinstance(raw_evidence, str):
+        raw_evidence = [{"type": "link", "url": raw_evidence}]
     return ObjectionOut(
         result_id=str(r.id),
         metric=r.metric,
         period_type=r.period_type.value if hasattr(r.period_type, "value") else r.period_type,
         period_key=r.period_key,
         objection_status=obj_status,
-        category=detail.get("category"),
-        text=detail.get("text"),
-        evidence=detail.get("evidence"),
+        category=detail.get("objection_category") or detail.get("category"),
+        text=detail.get("objection_text") or detail.get("text"),
+        evidence=raw_evidence,
         submitted_at=r.objection_submitted_at.isoformat() if r.objection_submitted_at else None,
         resolved_at=r.objection_resolved_at.isoformat() if r.objection_resolved_at else None,
         admin_note=r.admin_note,

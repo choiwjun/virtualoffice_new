@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QA 감사 리포트 — 전체 메뉴 기획 정합성 (2026-07-13)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">QA 감사 리포트 — 전체 메뉴 기획 정합성 (2026-07-13)</div><div class="sub">qa-audit-2026-07-13.md</div><a class="lvl1" href="#qa-감사-리포트-전체-메뉴-기획-정합성-2026-07-13">QA 감사 리포트 — 전체 메뉴 기획 정합성 (2026-07-13)</a><a class="lvl2" href="#처리-현황-2026-07-13-당일-수리-완료분">✅ 처리 현황 (2026-07-13 당일 수리 완료분)</a><a class="lvl2" href="#0-총평">0. 총평</a><a class="lvl2" href="#1-p0-즉시-수정-필요-실동작-버그-권한-결함">1. P0 — 즉시 수정 필요 (실동작 버그 · 권한 결함)</a><a class="lvl3" href="#11-권한-결함-보안">1.1 권한 결함 (보안)</a><a class="lvl3" href="#12-실동작-버그">1.2 실동작 버그</a><a class="lvl2" href="#2-p1-스펙-핵심-플로우-공백">2. P1 — 스펙 핵심 플로우 공백</a><a class="lvl2" href="#3-p2-데이터-정합성">3. P2 — 데이터 정합성</a><a class="lvl2" href="#4-문서-미갱신-04-data-modelmd-등">4. 문서 미갱신 (04-data-model.md 등)</a><a class="lvl2" href="#5-ui-스펙-미달-medlow-발췌">5. UI 스펙 미달 (Med/Low 발췌)</a><a class="lvl2" href="#6-후순위-로드맵-정합-결함-아님">6. 후순위 (로드맵 정합 — 결함 아님)</a><a class="lvl2" href="#7-권장-수리-순서">7. 권장 수리 순서</a></nav>
+<main><h1 id="qa-감사-리포트-전체-메뉴-기획-정합성-2026-07-13">QA 감사 리포트 — 전체 메뉴 기획 정합성 (2026-07-13)</h1>
+<h2 id="처리-현황-2026-07-13-당일-수리-완료분">✅ 처리 현황 (2026-07-13 당일 수리 완료분)</h2>
+<blockquote>검증: 백엔드 pytest 327 passed(신규 테스트 15+ 포함), 프론트 tsc 0·build 23/23·전 라우트 200, 라이브 API 스모크(회의 예약→겹침 409→시작→종료, KPI ±10% 강제, EOD 타인 명의 403, 근태 본인 스코프) 통과.</blockquote>
+<p><strong>수리 완료</strong>: §1 P0 전체 9건 (KPI 권한·±10%·30자·팀스코프·finalize admin 전용 / EOD 본인 강제 / 근태 admin 스코프 / aborted enum / 회의 예약 3중 결함: rooms 피커 API+UI·시간대 겹침 충돌검사·duration 도입 / 진행중 오버레이 status 쿼리 / Meeting 계약 통일 / presence working 7종+우패널 실배선). §2 중 10·11·12·16 (회의 상태전이 start/end·정원·leave / 동의 본인조회·거부 경로·STT 거부자 제외 게이트 / 이의 7일 창 정방향화+무이의 자동확정 배치+resolve 확정·재push / EOD row 자동생성·주말 스킵·재시도 상한). §3 정합 17~20·23~25·27 (역할 집합 정리, company<em>id INTEGER, id 타입, KST 날짜 유틸, 에러코드 한국어 매핑, attachments/issues, ActionItem 4상태, ai</em>draft 분기 한정). §4 문서 (04 v1.4 — 테이블 6종 등재·정정, 06 §3.15~3.17 신설). §5 다수 (공지 수정+감사기록+예약게시, 감사로그 날짜필터+old_value, CSV RFC4180, KPI 조정 모달·이의 카테고리 enum·D-n 표시, 오늘의 일정 KST 필터, 입장 실패 표시, 외근 필터 offline 분리).</p>
+<p><strong>미수리 (후속 과제, 규모 순)</strong>: ① 자율좌석 뷰포트 배선(§2-13: 서버·API 준비됨, 뷰포트 좌석 렌더/클릭/sit<em>request 발신 + 자동 반납 배치 + realtime claim 엔드포인트 안내 불일치) ② 좌석 편집 draft 격리 재설계(§2-14) ③ 주간/월간 자동 집계 리포트(§2-15, 06 §3.6) ④ 회의 참석자 초대/응답·캘린더 뷰·회의록 휴지통 ⑤ 셸 잔여(검색/알림, 내 상태변경 UI — realtime setStatus 노출 필요, 3카드 hidden 결정, WSS 단절 오버레이, 층 선택, 뷰포트 회의실↔회의 매핑) ⑥ KPI 관리자 보조요소(추이·팀 벤치마크·±30% 경고)·quarterly</em>total 산식 정본화 ⑦ notice↔announcement(04 §2.7) 스키마 개편 ⑧ presence NN 필드 복원 ⑨ /refresh 토큰 typ 구분 ⑩ 세션 만료 임시저장, 아바타 색상 외형(스프라이트 한계).</p>
+<p><strong>신규 발견 (dev 환경)</strong>: 매시간 ERP 동기화 배치가 mock 리더(샘플 5계정)로 전체 대사를 수행해 <strong>시드 계정(alice/bob/charlie)을 soft-delete</strong> — <code>scripts.seed_dev</code> 재실행으로 복구했으나, 근본 해결(mock 리더에 시드 포함 또는 dev에서 대사 비활성화) 필요. dev.db에 Room 미시드였던 것도 본사(HQ) 1F + 회의실 3종 시드로 해소.</p>
+<hr>
+<blockquote>대상: 좌내비 10개 메뉴 + 관리 메뉴 6종 + 셸/뷰포트/프레즌스. 기준: 06-screens.md(화면 정본), 04-data-model.md(데이터 정본), 08-kpi-logic.md, 14-virtual-office-spec.md, 00-decisions.md(D13/D17/D18/D19/D20/D23/D24). 방법: 영역별 6트랙 병렬 감사(스펙 §단위 대조 + 코드 증거 file:line). 로드맵(10 §D27) P5~P7 범위 미구현은 '후순위'로 분리.</blockquote>
+<h2 id="0-총평">0. 총평</h2>
+<div class="table-wrap"><table><thead><tr><th>영역</th><th>발견</th><th>High</th><th>상태 한 줄</th></tr></thead><tbody><tr><td>셸·뷰포트·프레즌스</td><td>21</td><td>5</td><td>이동·회의입장 코어는 견고, 프레즌스 표시·좌석 상호작용이 미배선</td></tr><tr><td>업무기록·업무현황·보고서</td><td>12</td><td>3</td><td>CRUD 견고, '중단' 상태 버그·EOD 자동화 공백</td></tr><tr><td>KPI (평가·대시보드·이의)</td><td>18</td><td>2</td><td>상태머신 견고, <strong>권한·검증 규칙 다수 미강제</strong></td></tr><tr><td>회의·회의록</td><td>21</td><td>5</td><td><strong>예약 코어가 실사용 불가 수준</strong> — 최우선 수리 영역</td></tr><tr><td>관리자 화면 6종+인증</td><td>24</td><td>4</td><td>화면 골격 완성, 세부 스펙 요소·감사 기록 공백</td></tr><tr><td>데이터 모델 정합(횡단)</td><td>18</td><td>3</td><td>UTC/D18 준수 양호, <strong>권한 집합 3원화·문서 드리프트</strong></td></tr></tbody></table></div>
+<h2 id="1-p0-즉시-수정-필요-실동작-버그-권한-결함">1. P0 — 즉시 수정 필요 (실동작 버그 · 권한 결함)</h2>
+<h3 id="11-권한-결함-보안">1.1 권한 결함 (보안)</h3>
+<ol><li><strong>KPI 권한 집합 오류</strong> — <code>kpi.py:45</code> <code>_ADMIN_ROLES={&quot;admin&quot;,&quot;leader&quot;}</code>:<ul><li>super<em>admin이 KPI 조정·확정·이의 재검토에서 403 (모든 타 라우터는 super</em>admin 포함).</li><li>leader 팀 스코프 검사 없음 → 타 팀 임의 user의 점수 조정 가능 (06 §3.10: leader=자기 팀 한정).</li><li>finalize(확정)는 스펙상 admin 전용인데 leader 가능 (06 §3.10 매트릭스).</li></ul></li><li><strong>±10% 조정 한도 미강제</strong> — <code>kpi.py:122-124,266</code>: AdjustRequest에 범위 검증 없음, 0→100 조정 가능 (08 §3.2). revised<em>score(455-457행)도 동일. 조정 사유 ≥30자도 min</em>length=1로 격하.</li><li><strong>EOD 타인 명의 큐잉</strong> — <code>erp.py:295,326</code>: <code>user_id=body.user_id or user.user_id</code>에 role 검사 없음 → 일반 직원이 타인 명의 ERP 일일보고 생성·전송 가능.</li><li><strong>근태 API 미게이트</strong> — <code>erp.py:211-221</code>: GET /api/attendances가 인증만 요구 → 일반 직원이 전 직원 출퇴근 시각 조회 가능 (06 §3.12: 관리자 전용).</li></ol>
+<h3 id="12-실동작-버그">1.2 실동작 버그</h3>
+<ol><li><strong>업무 '중단' 저장 실패</strong> — <code>tables.py:185-188</code> WorkLogStatus에 aborted 없음, UI(work-log/page.tsx:669)는 '중단' 옵션 제공 → 선택 시 422. (06 §3.6은 aborted 명시)</li><li><strong>회의 예약이 사실상 불가</strong> — 3중 결함:<ul><li>room_id가 자유 텍스트(기본 'room-1')인데 백엔드는 UUID 요구 → 기본값 예약 항상 실패 (meetings/page.tsx:451,493). 방 목록/피커 API·UI 없음.</li><li>충돌 검사(D23) 오작동 — <code>meetings.py:197-203</code> or_() 3분기: 같은 방에 미래 회의가 있으면 그보다 이른 예약 전부 409.</li><li>종료 시각/duration 개념 없음 → 시간대 겹침 검출 불가.</li></ul></li><li><strong>'진행중 화상회의' 오버레이 오표시</strong> — <code>OfficeShell.tsx:364-366</code>이 미지원 쿼리 <code>?status=in_progress</code> 호출 → 예정·취소 포함 모든 회의가 LIVE 표시.</li><li><strong>회의 데이터 계약 불일치</strong> — OfficeShell.tsx:53-60 <code>start_time/end_time/participant_count</code> vs 백엔드 <code>scheduled_at/started_at/ended_at</code> → 오늘의 일정 &quot;Invalid Date&quot;. meetings 페이지 STATUS_LABEL 키도 <code>started/ended</code> vs 백엔드 <code>in_progress/completed</code>.</li><li><strong>프레즌스 표시 결함 2종</strong>:<ul><li>StatusBadge 7종 중 <code>working</code> 누락(StatusBadge.tsx:6-12) → working 사용자가 offline 뱃지로 표시, 우패널 필터에서도 누락.</li><li>우패널이 존재하지 않는 <code>GET /api/presence/employees</code> 호출(404) → <code>/api/employees</code> 폴백 후 전원 'online' 하드코딩(OfficeShell.tsx:380-391). erp.py가 반환하는 presence_status 무시.</li></ul></li></ol>
+<h2 id="2-p1-스펙-핵심-플로우-공백">2. P1 — 스펙 핵심 플로우 공백</h2>
+<ol><li><strong>회의 상태 전이 부재</strong> — 시작/종료 엔드포인트 없음 → in<em>progress/completed 도달 불가, started</em>at/ended<em>at 영구 NULL (<code>meetings.py:220,466</code>). join 시 상태·정원 검사 없음, left</em>at 미기록.</li><li><strong>녹음/STT 동의 게이트 부재 (D20-b 컴플라이언스)</strong> — LiveKit 입장이 동의 확인 없이 연결(OfficeShell.tsx:287-297). '오디오 없이 참여' 거부 경로 없음. 참석자 본인 동의 상태 조회 API도 호스트 전용(consent.py:125-129) → 새로고침 시 동의 여부 유실. STT 게이트 의미도 역전: 스펙=거부자만 제외, 구현=1명 미동의 시 전체 403(meeting_minutes.py:400-420).</li><li><strong>이의신청 7일 창 타이밍 역전</strong> — 스펙: 공개 후 7일 내 이의 → resolved 시 확정. 구현: 확정 후에만 이의 접수(<code>kpi.py:365-381</code>), resolve 시 finalized_at 미갱신. 7일 무이의 자동확정 배치도 없음(scheduler.py). 확정 즉시 ERP push 적재(이의 창 개시 전) + 재조정 시 재push 없음.</li><li><strong>자율좌석 상호작용 미배선 (06 §3.11)</strong> — 뷰포트에 좌석 렌더/클릭 없음. realtime sit_request 핸들러(OfficeRoom.ts:309-340)·백엔드 API(seats.py)는 준비됨 — 프론트만 공백. 퇴근/장기 away 자동 반납 경로 없음. realtime이 안내하는 확정 엔드포인트 <code>POST /api/seats/claim</code>도 실제(<code>/api/seat-assignments</code>)와 불일치(OfficeRoom.ts:340).</li><li><strong>좌석 편집 draft 격리 붕괴</strong> — 드래그/생성/삭제가 즉시 운영 seats 테이블에 반영(office-layout/page.tsx:154-183), 레이아웃 버전은 사후 스냅샷 → 검증·배포·롤백 상태머신(06 §3.3) 무력화. 롤백 백엔드는 있으나 UI 버튼 없음. draft 3D 프리뷰 없음. 팔레트 도구 4종만(Door/Spawn/Trigger 등 하드코딩 자동생성).</li><li><strong>주간/월간 자동 리포트 미구현</strong> — 06 §3.6: work_log 자동 집계(회의시간 합산·시간 기반 카테고리 분포·상태 요약 편집·CSV). 현재 reports는 자유텍스트 수기 작성으로 대체 — 스펙과 다른 물건. 신규 report와 KPI/EOD 체계 간 관계도 미정의(일일보고 이중 체계 위험).</li><li><strong>EOD 자동화 공백 (D17)</strong> — 배치가 push row 자동 생성 안 함(폼 미제출 날은 푸시 없음, eod<em>push.py:67-74), 주말·공휴일 스킵 없음, MAX</em>RETRY=3 선언만 되고 미사용. 직원 본인 전송상태 확인 UI 없음(GET이 admin 전용), 재제출마다 중복 pending row.</li></ol>
+<h2 id="3-p2-데이터-정합성">3. P2 — 데이터 정합성</h2>
+<ol><li><strong>관리자 역할 집합 3원화 (횡단)</strong> — <code>{&quot;admin&quot;,&quot;leader&quot;}</code>(kpi, meeting<em>minutes) / <code>{&quot;admin&quot;,&quot;super_admin&quot;}</code>(chat·consent·directory·office</em>layouts·erp·audit·notices) / <code>{&quot;admin&quot;,&quot;super_admin&quot;,&quot;leader&quot;}</code>(trips·reports·work_logs·meetings·seats). 모듈별 임의 → 단일 정의(core/deps.py 상수)로 통일 필요.</li><li><strong>company<em>id 타입 충돌</strong> — erp</em>user.company<em>id=Integer vs org</em>group/office=UUID(tables.py:334,411) — 같은 테넌트 스코프인데 조인 불가 (04 §2.2: INTEGER 정본).</li><li><strong>id 타입 계약 위반 (런타임 무증상)</strong> — Trip.id·Report.id 프론트 <code>number</code> vs 백엔드 UUID 문자열.</li><li><strong>날짜 경계 KST 미준수 (D19 표시 규칙)</strong> — 프론트 <code>toISOString()</code> UTC 날짜 → KST 00~09시에 '오늘'=전일(work-log:64, work-status:54). 백엔드 <code>date.today()</code> 서버 로컬. D17 '18:00 이후 익일 귀속' 규칙 미구현.</li><li><strong>notice vs announcement(04 §2.7 정본) 괴리</strong> — 테이블명·company_id 부재·body nullable·author 자유문자열(임의 작성자명 가능).</li><li><strong>presence 필수 필드 nullable화</strong> — 04 §2.4 NN 정본이 전면 Optional로 완화(tables.py:754-768).</li><li><strong>에러코드 미매핑</strong> — 백엔드 detail 코드(<code>trip_not_editable</code> 등)가 JSON 원문 그대로 사용자 노출(lib/api.ts:40-43).</li><li><strong>attachments·issues 전 구간 누락</strong> — 테이블엔 있으나 API 스키마·폼에 없음 → 파일 첨부·이슈 기록 불가(work_logs.py:44-92).</li><li><strong>ActionItemStatus 이진 표시</strong> — 백엔드 4상태 중 completed 외 전부 '진행'(cancelled 포함).</li><li><strong>quarterly<em>total 산식</strong> — 스펙 '13주 합산' vs 구현 <code>score×(일수/91)</code> 스케일(kpi</em>engine.py:411-420).</li><li><strong>ai<em>draft 구조 불일치</strong> — 08 §6.2.2 구조(strengths[]/overall/team</em>percentile) vs 평면 <code>{강점,개선,근거}</code>; 프론트는 JSON.stringify 원문 노출. daily에도 초안 생성(스펙: 분기만). D16 폐기된 weekly/monthly 키 잔존.</li></ol>
+<h2 id="4-문서-미갱신-04-data-modelmd-등">4. 문서 미갱신 (04-data-model.md 등)</h2>
+<ul><li>신규 3테이블(business<em>trip/report/chat</em>message) + 기존 3테이블(recording<em>consent/erp</em>sync<em>log/user</em>avatar) 총 <strong>6종이 04 정본에 미등재</strong>.</li><li>work<em>log.completed</em>at, erp<em>user.password</em>hash(D20-f 긴장) 미문서화.</li><li>kpi<em>result.ai</em>model 기본값('claude-opus' vs 'mock'), asset gltf_path 전환 완료(문서 경고가 역으로 스테일).</li><li><strong>출장관리·커뮤니케이션·보고서(수기)는 06에 상세 스펙 섹션 자체가 없음</strong> — 좌내비 이름만 존재. 구현이 스펙 근거 없이 상태머신을 자체 확정(→ 06 §3.15~3.17 추가 필요).</li><li>커뮤니케이션 구현 스코프가 기획 원칙(§2: &quot;회의 메모·근접 DM 수준, 본격 채팅은 Phase 7&quot;) 초과 — 채널 채팅 선구현. 기획 결정 재확인 또는 문서 개정 필요.</li></ul>
+<h2 id="5-ui-스펙-미달-medlow-발췌">5. UI 스펙 미달 (Med/Low 발췌)</h2>
+<ul><li>셸: 헤더 검색/알림 '준비중', 내 상태 하드코딩('online' 고정, 상태변경 UI 없음 — realtime setStatus 미노출), 3카드 행 hidden(시안 B 결정 vs 06 정본 드리프트), WSS 단절 오버레이 대신 칩+로컬 폴백, 층 선택 무기능, 아바타 HUD에 직급·상태점 없음, 회의 입장이 roomId 무시하고 meetings[0] 고정, 입장 실패 무음 처리.</li><li>회의: 참석자 초대/응답 없음(self-join만, role 항상 PARTICIPANT), 캘린더 뷰·검색 없음, 회의록 휴지통/재작성 없음, 녹화 기능 없음(P5).</li><li>KPI: 관리자 검토 화면 보조 요소 일괄 부재(추이·팀 벤치마크·±30% 경고·prompt 2개로 조정), 직원 대시보드 추이 차트·비교·내보내기 없음, 이의 D-n 표시 없음, 이의 처리 감사 로그 없음, 감사 old_value 미기록.</li><li>관리자: 공지 수정 기능·감사 기록·예약 게시 노출 없음, 동기화 콘솔 배치 상태·EOD run 트리거 없음, 직원명부 상세 필드 미달(Slack/GitHub 컬럼 자체 부재), CSV RFC4180 미준수, 감사로그 날짜 필터 없음, 세션 만료 시 폼 유실, /refresh 죽은 코드(typ 미구분 — access로 무한 갱신 가능 스킴), 아바타 색상 외형 미적용(스프라이트 한계 주석 있음).</li><li>업무: 기간 탭 축소(지난주·연간 없음), '외근·출장' 필터에 offline 혼입(OfficeShell.tsx:433).</li></ul>
+<h2 id="6-후순위-로드맵-정합-결함-아님">6. 후순위 (로드맵 정합 — 결함 아님)</h2>
+<ul><li>P5: 화상 참석자 타일(2×2)·녹화(Egress)·미디어바 확장.</li><li>P6: STT 자동 초안(현재 명시적 501 — 정합), KPI 워크플로우 화면 고도화 잔여.</li><li>P3/고도화: 조직도 편집기 잔여(team_zone 매핑·노드 편집·Undo).</li><li>Phase 7: 본격 채팅(DM·스레드 등 — 현 구현은 이미 이 방향으로 반 발 나감, §4 결정 필요).</li></ul>
+<h2 id="7-권장-수리-순서">7. 권장 수리 순서</h2>
+<ol><li><strong>권한 핫픽스</strong> (반나절): §1.1 4건 — 역할 집합 단일화 + ±10%/팀 스코프 강제 + EOD 본인 강제 + attendances 게이트.</li><li><strong>동작 버그</strong> (1일): §1.2 — aborted enum, 회의 예약(방 피커+충돌 검사 수정+상태 쿼리 지원), Meeting 계약 통일, presence working/우패널 배선.</li><li><strong>플로우 공백</strong> (수일): §2 — 회의 상태 전이, 동의 게이트, 이의 7일 창, 좌석 draft 격리, EOD 자동화.</li><li><strong>문서 정합</strong> (반나절): 04/06 갱신 + 커뮤니케이션 스코프 결정 기록.</li></ol>
+<hr>
+<p><em>생성: 2026-07-13, 6트랙 병렬 감사 종합. 증거는 감사 시점 file:line.</em></p>
+<div class="meta-foot">원본: <code>qa-audit-2026-07-13.md</code> · 자동 생성 2026-07-13 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

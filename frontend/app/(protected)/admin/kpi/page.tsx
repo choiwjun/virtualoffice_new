@@ -10,6 +10,7 @@ import {
   formatScore,
   formatKst,
   currentQuarterKey,
+  OBJECTION_STATUS,
 } from '@/lib/kpi';
 
 interface Employee {
@@ -18,6 +19,182 @@ interface Employee {
   email: string;
   erp_team_id: number;
   role: string;
+}
+
+// ai_draft 구조 (D17 배치, mock/nvidia 공통) — 분기(quarterly)에만 존재
+interface AiDraft {
+  강점?: string[] | string;
+  개선?: string[] | string;
+  근거?: string;
+  _source?: string;
+}
+
+// lib/apiErrors 공통 맵에 없는 이 화면 전용 코드 보강 (08 §3.2/§3.3)
+const KNOWN_ERRORS: Record<string, string> = {
+  admin_required: '관리자 권한이 필요합니다.',
+  forbidden: '권한이 없습니다.',
+  not_found: '대상을 찾을 수 없습니다.',
+};
+
+// ApiError.message 노출 (QA #7)
+function errMsg(err: unknown, prefix: string): string {
+  if (err instanceof ApiError) {
+    const known = err.code ? KNOWN_ERRORS[err.code] : undefined;
+    return `${prefix} (${err.status}): ${known ?? err.message}`;
+  }
+  return '서버 연결 오류';
+}
+
+// AI 초안 필드별 렌더 (강점/개선/근거 — 배열이면 목록)
+function AiDraftView({ draft }: { draft: unknown }) {
+  if (typeof draft === 'string') {
+    return <p className="text-sm text-gray-600 whitespace-pre-wrap">{draft}</p>;
+  }
+  if (!draft || typeof draft !== 'object') return null;
+  const d = draft as AiDraft;
+  const renderVal = (v: string[] | string | undefined) => {
+    if (Array.isArray(v)) {
+      return (
+        <ul className="list-disc list-inside space-y-0.5 text-sm text-gray-600">
+          {v.map((s, i) => (
+            <li key={i}>{s}</li>
+          ))}
+        </ul>
+      );
+    }
+    if (v) return <p className="text-sm text-gray-600 whitespace-pre-wrap">{v}</p>;
+    return <p className="text-sm text-gray-400">—</p>;
+  };
+  return (
+    <div className="space-y-3">
+      {d._source && (
+        <span
+          className={`inline-block text-[10px] px-1.5 py-0.5 rounded ${d._source === 'nvidia' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}
+        >
+          {d._source === 'nvidia' ? 'NVIDIA 생성' : 'MOCK 생성'}
+        </span>
+      )}
+      <div>
+        <div className="text-xs font-semibold text-gray-500 mb-1">강점</div>
+        {renderVal(d.강점)}
+      </div>
+      <div>
+        <div className="text-xs font-semibold text-gray-500 mb-1">개선</div>
+        {renderVal(d.개선)}
+      </div>
+      <div>
+        <div className="text-xs font-semibold text-gray-500 mb-1">근거</div>
+        {renderVal(d.근거)}
+      </div>
+    </div>
+  );
+}
+
+// 조정/이의 처리 공용 모달 — 원점수 ±10% 클라이언트 검증 (08 §3.2)
+interface ScoreNoteModalProps {
+  title: string;
+  description?: string;
+  origin: number; // 원점수(value)
+  scoreLabel: string;
+  scoreOptional?: boolean; // true면 비워두기 허용(점수 유지)
+  scoreValue: string;
+  onScoreChange: (v: string) => void;
+  noteLabel: string;
+  noteMinLen: number; // 0이면 선택 입력
+  notePlaceholder: string;
+  noteValue: string;
+  onNoteChange: (v: string) => void;
+  error: string;
+  saving: boolean;
+  submitLabel: string;
+  savingLabel: string;
+  onClose: () => void;
+  onSubmit: () => void;
+}
+
+function ScoreNoteModal(p: ScoreNoteModalProps) {
+  const lo = Math.min(p.origin * 0.9, p.origin * 1.1);
+  const hi = Math.max(p.origin * 0.9, p.origin * 1.1);
+  const scoreEmpty = p.scoreValue.trim() === '';
+  const scoreNum = Number(p.scoreValue);
+  const scoreValid = scoreEmpty
+    ? !!p.scoreOptional
+    : !Number.isNaN(scoreNum) && scoreNum >= lo && scoreNum <= hi;
+  const noteLen = p.noteValue.trim().length;
+  const noteValid = noteLen >= p.noteMinLen;
+  const canSubmit = scoreValid && noteValid && !p.saving;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-800">{p.title}</h2>
+          <button onClick={p.onClose} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+        </div>
+        <div className="px-6 py-4 space-y-4">
+          {p.description && <p className="text-xs text-gray-500">{p.description}</p>}
+          <div className="flex items-center justify-between bg-gray-50 rounded-md px-3 py-2 text-sm">
+            <span className="text-gray-500">원점수</span>
+            <span className="font-semibold text-gray-800">{formatScore(p.origin)}</span>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{p.scoreLabel}</label>
+            <input
+              type="number"
+              step="0.1"
+              min={lo}
+              max={hi}
+              value={p.scoreValue}
+              onChange={(e) => p.onScoreChange(e.target.value)}
+              placeholder={p.scoreOptional ? '비워두면 점수 유지' : formatScore(p.origin)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <p className="mt-1 text-xs text-gray-400">
+              허용 범위 {lo.toFixed(1)} ~ {hi.toFixed(1)} (원점수 ±10%)
+            </p>
+            {!scoreEmpty && !scoreValid && (
+              <p className="mt-1 text-xs text-red-600">
+                {Number.isNaN(scoreNum) ? '숫자를 입력하세요.' : '±10% 범위를 벗어났습니다.'}
+              </p>
+            )}
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-gray-700">{p.noteLabel}</label>
+              {p.noteMinLen > 0 && (
+                <span className={`text-xs ${noteValid ? 'text-gray-400' : 'text-red-600'}`}>
+                  {noteLen}/{p.noteMinLen}자
+                </span>
+              )}
+            </div>
+            <textarea
+              value={p.noteValue}
+              onChange={(e) => p.onNoteChange(e.target.value)}
+              rows={4}
+              placeholder={p.notePlaceholder}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          {p.error && <p className="text-sm text-red-600">{p.error}</p>}
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={p.onClose}
+              className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50"
+            >
+              취소
+            </button>
+            <button
+              onClick={p.onSubmit}
+              disabled={!canSubmit}
+              className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {p.saving ? p.savingLabel : p.submitLabel}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function AdminKpiPage() {
@@ -32,7 +209,16 @@ export default function AdminKpiPage() {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  const [warn, setWarn] = useState('');
   const [toast, setToast] = useState('');
+
+  // 조정/이의 처리 모달 상태
+  const [adjustTarget, setAdjustTarget] = useState<KpiResult | null>(null);
+  const [resolveTarget, setResolveTarget] = useState<KpiResult | null>(null);
+  const [modalScore, setModalScore] = useState('');
+  const [modalNote, setModalNote] = useState('');
+  const [modalError, setModalError] = useState('');
+  const [modalSaving, setModalSaving] = useState(false);
 
   useEffect(() => {
     if (!allowed) return;
@@ -48,7 +234,7 @@ export default function AdminKpiPage() {
       if (periodKey) qs.set('period_key', periodKey);
       setResults(await api.get<KpiResult[]>(`/api/kpi-results?${qs.toString()}`));
     } catch (err) {
-      setError(err instanceof ApiError ? `조회 실패 (${err.status})` : '서버 연결 오류');
+      setError(errMsg(err, '조회 실패'));
     } finally {
       setLoading(false);
     }
@@ -75,43 +261,95 @@ export default function AdminKpiPage() {
       setResults(res.results);
       flash(`계산 완료: ${res.computed}개 metric`);
     } catch (err) {
-      setError(err instanceof ApiError ? `계산 실패 (${err.status})` : '계산 오류');
+      setError(errMsg(err, '계산 실패'));
     } finally {
       setBusy('');
     }
   }
 
-  async function adjust(r: KpiResult) {
-    const raw = window.prompt(`[${metricLabel(r.metric)}] 조정 점수 (현재 ${formatScore(r.value)})`, formatScore(r.value));
-    if (raw === null) return;
-    const score = Number(raw);
-    if (Number.isNaN(score)) return flash('숫자를 입력하세요');
-    const note = window.prompt('조정 사유 (필수)') || '';
-    if (!note.trim()) return flash('사유는 필수입니다');
-    setBusy(r.id);
+  // 조정 모달 열기 (window.prompt 제거 — QA #4)
+  function openAdjust(r: KpiResult) {
+    setAdjustTarget(r);
+    setResolveTarget(null);
+    setModalScore(String(r.value ?? ''));
+    setModalNote('');
+    setModalError('');
+  }
+
+  async function submitAdjust() {
+    if (!adjustTarget) return;
+    setModalSaving(true);
+    setModalError('');
     try {
-      const updated = await api.post<KpiResult>(`/api/kpi-results/${r.id}/adjust`, {
-        admin_adjusted_score: score,
-        admin_note: note,
+      const updated = await api.post<KpiResult>(`/api/kpi-results/${adjustTarget.id}/adjust`, {
+        admin_adjusted_score: Number(modalScore),
+        admin_note: modalNote.trim(),
       });
-      setResults((prev) => prev.map((x) => (x.id === r.id ? updated : x)));
+      setResults((prev) => prev.map((x) => (x.id === adjustTarget.id ? updated : x)));
+      setAdjustTarget(null);
       flash('조정 저장됨');
     } catch (err) {
-      flash(err instanceof ApiError ? `조정 실패 (${err.status})` : '오류');
+      setModalError(errMsg(err, '조정 실패'));
+    } finally {
+      setModalSaving(false);
+    }
+  }
+
+  // 이의 검토 시작 (submitted → reviewing)
+  async function advanceObjection(r: KpiResult) {
+    if (!window.confirm(`[${metricLabel(r.metric)}] 이의신청 검토를 시작하시겠습니까? (submitted → reviewing)`)) return;
+    setBusy(r.id);
+    try {
+      const updated = await api.post<KpiResult>(`/api/kpi-results/${r.id}/objections/review`, { action: 'advance' });
+      setResults((prev) => prev.map((x) => (x.id === r.id ? updated : x)));
+      flash('검토 시작(reviewing)');
+    } catch (err) {
+      setError(errMsg(err, '검토 시작 실패'));
     } finally {
       setBusy('');
+    }
+  }
+
+  // 이의 처리(resolve) 모달 열기 — revised_score도 ±10% 동일 검증 (QA #4)
+  function openResolve(r: KpiResult) {
+    setResolveTarget(r);
+    setAdjustTarget(null);
+    setModalScore('');
+    setModalNote('');
+    setModalError('');
+  }
+
+  async function submitResolve() {
+    if (!resolveTarget) return;
+    setModalSaving(true);
+    setModalError('');
+    try {
+      const body: Record<string, unknown> = { action: 'resolve' };
+      if (modalNote.trim()) body.note = modalNote.trim();
+      if (modalScore.trim() !== '') body.revised_score = Number(modalScore);
+      const updated = await api.post<KpiResult>(
+        `/api/kpi-results/${resolveTarget.id}/objections/review`,
+        body,
+      );
+      setResults((prev) => prev.map((x) => (x.id === resolveTarget.id ? updated : x)));
+      setResolveTarget(null);
+      flash('이의 처리 완료(resolved) — 최종 점수 확정');
+    } catch (err) {
+      setModalError(errMsg(err, '이의 처리 실패'));
+    } finally {
+      setModalSaving(false);
     }
   }
 
   async function finalize(r: KpiResult) {
-    if (!window.confirm(`[${metricLabel(r.metric)}] 확정하시겠습니까? 확정 후 이의신청 창(7일)이 열립니다.`)) return;
+    if (!window.confirm(`[${metricLabel(r.metric)}] 확정하시겠습니까? 확정 후에는 이의신청을 접수할 수 없습니다.`)) return;
     setBusy(r.id);
     try {
       const updated = await api.post<KpiResult>(`/api/kpi-results/${r.id}/finalize`, {});
       setResults((prev) => prev.map((x) => (x.id === r.id ? updated : x)));
       flash('확정 완료');
     } catch (err) {
-      flash(err instanceof ApiError ? `확정 실패 (${err.status})` : '오류');
+      setError(errMsg(err, '확정 실패'));
     } finally {
       setBusy('');
     }
@@ -123,8 +361,23 @@ export default function AdminKpiPage() {
   const [pushing, setPushing] = useState(false);
 
   async function exportErp() {
-    const finals = results.filter((r) => r.finalized_at && r.metric === 'quarterly_total');
-    if (finals.length === 0) { flash('확정된 종합 점수가 없습니다'); return; }
+    // 이의신청 진행 중(submitted/reviewing)인 행은 push 대상에서 제외 (QA #4)
+    const candidates = results.filter((r) => r.finalized_at && r.metric === 'quarterly_total');
+    const excluded = candidates.filter(
+      (r) => r.objection_status === 'submitted' || r.objection_status === 'reviewing',
+    );
+    const finals = candidates.filter(
+      (r) => r.objection_status !== 'submitted' && r.objection_status !== 'reviewing',
+    );
+    setWarn(
+      excluded.length
+        ? `이의신청 진행 중(접수/검토중)인 ${excluded.length}건은 ERP 전송 대상에서 제외되었습니다.`
+        : '',
+    );
+    if (finals.length === 0) {
+      flash(excluded.length ? '전송 가능한 행이 없습니다 (이의 진행 중 제외)' : '확정된 종합 점수가 없습니다');
+      return;
+    }
     setPushing(true);
     try {
       for (const r of finals) {
@@ -134,9 +387,9 @@ export default function AdminKpiPage() {
           payload: { metric: r.metric, final_score: r.final_score, period_key: r.period_key },
         });
       }
-      flash('ERP 전송 큐잉 완료 (erp_kpi_results)');
+      flash(`ERP 전송 큐잉 완료 ${finals.length}건 (erp_kpi_results)`);
     } catch (e) {
-      flash(e instanceof ApiError ? `푸시 실패 (${e.status})` : '오류');
+      setError(errMsg(e, '푸시 실패'));
     } finally {
       setPushing(false);
     }
@@ -252,6 +505,9 @@ export default function AdminKpiPage() {
       {toast && (
         <div className="mb-3 px-3 py-2 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">{toast}</div>
       )}
+      {warn && (
+        <div className="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-md text-sm text-amber-700">{warn}</div>
+      )}
       {error && (
         <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">{error}</div>
       )}
@@ -269,16 +525,14 @@ export default function AdminKpiPage() {
         ))}
       </div>
 
-      {/* AI 초안 (ai-draft-display) */}
-      {tab === 'detail' && sorted.length > 0 && (() => {
+      {/* AI 초안 (ai-draft-display) — 분기(quarterly)에만 존재 */}
+      {tab === 'detail' && periodType === 'quarterly' && sorted.length > 0 && (() => {
         const withDraft = sorted.find((r) => r.ai_draft);
         return (
           <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
             <div className="text-sm font-semibold text-gray-700 mb-2">AI 평가 초안</div>
             {withDraft ? (
-              <div className="text-sm text-gray-600 whitespace-pre-wrap">
-                {typeof withDraft.ai_draft === 'string' ? withDraft.ai_draft : JSON.stringify(withDraft.ai_draft, null, 2)}
-              </div>
+              <AiDraftView draft={withDraft.ai_draft} />
             ) : (
               <p className="text-xs text-gray-400">AI 초안이 아직 없습니다. 21:00 야간 배치(D17)에서 생성됩니다.</p>
             )}
@@ -349,19 +603,42 @@ export default function AdminKpiPage() {
                       );
                     })()}
                   </td>
-                  <td className="px-4 py-2.5 text-center">
+                  <td className="px-4 py-2.5 text-center whitespace-nowrap">
                     {r.finalized_at ? (
                       <span className="text-xs text-green-600" title={formatKst(r.finalized_at)}>확정</span>
                     ) : (
                       <span className="text-xs text-gray-400">미확정</span>
+                    )}
+                    {r.objection_status !== 'none' && (
+                      <span className={`ml-1 text-[10px] px-1 py-0.5 rounded ${OBJECTION_STATUS[r.objection_status].color}`}>
+                        {OBJECTION_STATUS[r.objection_status].label}
+                      </span>
                     )}
                     {r.pushed_to_erp && (
                       <span className="ml-1 text-[10px] px-1 py-0.5 rounded bg-blue-100 text-blue-600" title={formatKst(r.pushed_at)}>ERP↑</span>
                     )}
                   </td>
                   <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                    {r.objection_status === 'submitted' && (
+                      <button
+                        onClick={() => advanceObjection(r)}
+                        disabled={busy === r.id}
+                        className="text-xs px-2 py-1 border border-blue-300 text-blue-700 rounded hover:bg-blue-50 disabled:opacity-40 mr-1"
+                      >
+                        검토 시작
+                      </button>
+                    )}
+                    {r.objection_status === 'reviewing' && (
+                      <button
+                        onClick={() => openResolve(r)}
+                        disabled={busy === r.id}
+                        className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-40 mr-1"
+                      >
+                        이의 처리
+                      </button>
+                    )}
                     <button
-                      onClick={() => adjust(r)}
+                      onClick={() => openAdjust(r)}
                       disabled={busy === r.id || !!r.finalized_at}
                       className="text-xs px-2 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-40 mr-1"
                     >
@@ -381,6 +658,53 @@ export default function AdminKpiPage() {
           </table>
         </div>
       ))}
+
+      {/* 조정 모달 (window.prompt 대체) */}
+      {adjustTarget && (
+        <ScoreNoteModal
+          title={`점수 조정 — ${metricLabel(adjustTarget.metric)}`}
+          description="관리자 조정은 원점수 ±10% 이내에서만 허용됩니다 (08 §3.2)."
+          origin={adjustTarget.value}
+          scoreLabel="조정 점수"
+          scoreValue={modalScore}
+          onScoreChange={setModalScore}
+          noteLabel="조정 사유 (30자 이상 필수)"
+          noteMinLen={30}
+          notePlaceholder="조정 근거를 30자 이상 구체적으로 작성하세요."
+          noteValue={modalNote}
+          onNoteChange={setModalNote}
+          error={modalError}
+          saving={modalSaving}
+          submitLabel="조정 저장"
+          savingLabel="저장 중..."
+          onClose={() => setAdjustTarget(null)}
+          onSubmit={submitAdjust}
+        />
+      )}
+
+      {/* 이의 처리(resolve) 모달 — revised_score도 ±10% 동일 검증 */}
+      {resolveTarget && (
+        <ScoreNoteModal
+          title={`이의 처리 — ${metricLabel(resolveTarget.metric)}`}
+          description="처리(resolve) 시 final_score와 finalized_at이 확정됩니다. 재조정 점수는 원점수 ±10% 이내."
+          origin={resolveTarget.value}
+          scoreLabel="재조정 점수 (선택)"
+          scoreOptional
+          scoreValue={modalScore}
+          onScoreChange={setModalScore}
+          noteLabel="처리 메모 (선택)"
+          noteMinLen={0}
+          notePlaceholder="처리 결과 메모 (선택)"
+          noteValue={modalNote}
+          onNoteChange={setModalNote}
+          error={modalError}
+          saving={modalSaving}
+          submitLabel="처리 완료 (확정)"
+          savingLabel="처리 중..."
+          onClose={() => setResolveTarget(null)}
+          onSubmit={submitResolve}
+        />
+      )}
     </div>
   );
 }

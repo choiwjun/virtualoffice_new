@@ -12,7 +12,7 @@ import { api, ApiError } from '@/lib/api';
 import { getUser, logout, type User, type UserRole } from '@/lib/auth';
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
-import { StatusBadge, type PresenceStatus } from '@/components/ui/StatusBadge';
+import { StatusBadge, type EmployeePresenceStatus } from '@/components/ui/StatusBadge';
 import { KpiGauge } from '@/components/ui/KpiGauge';
 import { ProgressMetric } from '@/components/ui/ProgressMetric';
 import { MediaBar } from '@/components/ui/MediaBar';
@@ -50,12 +50,17 @@ interface KpiResult {
   period_key: string;
 }
 
+// GET /api/meetings 계약 — scheduled_at + duration_minutes 기반 (start_time/end_time 필드 없음)
 interface Meeting {
   id: string;
+  room_id?: number;
   title: string;
-  start_time: string;
-  end_time: string;
-  status: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  started_at?: string | null;
+  ended_at?: string | null;
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  host_user_id?: number;
   participant_count?: number;
 }
 
@@ -63,7 +68,7 @@ interface EmployeePresence {
   id: number;
   name: string;
   team_name?: string;
-  status: PresenceStatus;
+  status: EmployeePresenceStatus;
   avatar_url?: string;
 }
 
@@ -245,11 +250,12 @@ const FILTER_TABS: { key: PresenceFilter; label: string }[] = [
   { key: 'external', label: '외근·출장' },
 ];
 
-// 시안 People 패널: 상태 그룹 헤더(재실/회의중/자리비움/오프라인)
-const PRESENCE_GROUPS: { key: string; label: string; color: string; statuses: PresenceStatus[] }[] = [
-  { key: 'office',   label: '사무실 재실', color: '#22C55E', statuses: ['online', 'focus'] },
+// 시안 People 패널: 상태 그룹 헤더(재실/회의중/자리비움/외근·출장/오프라인)
+const PRESENCE_GROUPS: { key: string; label: string; color: string; statuses: EmployeePresenceStatus[] }[] = [
+  { key: 'office',   label: '사무실 재실', color: '#22C55E', statuses: ['online', 'working', 'focus'] },
   { key: 'meeting',  label: '회의중',      color: '#EF4444', statuses: ['meeting'] },
-  { key: 'away',     label: '자리비움',    color: '#F59E0B', statuses: ['away', 'external'] },
+  { key: 'away',     label: '자리비움',    color: '#94A3B8', statuses: ['away'] },
+  { key: 'external', label: '외근·출장',   color: '#F59E0B', statuses: ['external'] },
   { key: 'offline',  label: '오프라인',    color: '#64748B', statuses: ['offline'] },
 ];
 
@@ -283,14 +289,22 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
   // C3: 회의 LiveKit 실미디어 연결
   const [activeRoom, setActiveRoom] = useState<Room | null>(null);
   const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   const handleJoinMeeting = useCallback(async (meetingId: string) => {
     setJoining(true);
+    setJoinError(null);
     try {
       const room = await connectToMeeting(meetingId);
       setActiveRoom(room);
-    } catch {
+    } catch (err) {
+      // 입장 실패 무음 처리 해소 — 실패 사유 인라인 배너 표시
       setActiveRoom(null);
+      setJoinError(
+        err instanceof ApiError
+          ? `회의 입장 실패: ${err.message}`
+          : '회의 입장에 실패했습니다. 잠시 후 다시 시도해주세요.',
+      );
     } finally {
       setJoining(false);
     }
@@ -363,7 +377,14 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
     try {
       const data = await api.get<Meeting[]>('/api/meetings?status=in_progress&limit=4');
       setMeetings(Array.isArray(data) ? data : []);
-      const today = await api.get<Meeting[]>('/api/meetings?limit=5');
+      // 오늘의 일정: KST(UTC+9) 오늘 0시~24시를 UTC ISO로 변환해 조회
+      const kstDay = new Date(Date.now() + 9 * 3600_000);
+      kstDay.setUTCHours(0, 0, 0, 0);
+      const from = new Date(kstDay.getTime() - 9 * 3600_000);
+      const to = new Date(from.getTime() + 24 * 3600_000);
+      const today = await api.get<Meeting[]>(
+        `/api/meetings?scheduled_from=${encodeURIComponent(from.toISOString())}&scheduled_to=${encodeURIComponent(to.toISOString())}&limit=5`,
+      );
       setTodayMeetings(Array.isArray(today) ? today : []);
     } catch {
       setMeetings([]);
@@ -373,29 +394,21 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
     }
   }, []);
 
-  // 사용자 목록 (presence/employees)
+  // 사용자 목록 (GET /api/employees — 응답 presence_status 사용, 없으면 offline 폴백)
   const fetchEmployees = useCallback(async () => {
     setLoadingEmp(true);
     try {
-      const data = await api.get<EmployeePresence[]>('/api/presence/employees?limit=30');
-      setEmployees(Array.isArray(data) ? data : []);
-    } catch (err) {
-      // presence API 없을 경우 employees 폴백
-      if (err instanceof ApiError && err.status === 404) {
-        try {
-          const fallback = await api.get<{ id: number; name: string }[]>('/api/employees?limit=20');
-          setEmployees(
-            (Array.isArray(fallback) ? fallback : []).map((e) => ({
-              ...e,
-              status: 'online' as PresenceStatus,
-            })),
-          );
-        } catch {
-          setEmployees([]);
-        }
-      } else {
-        setEmployees([]);
-      }
+      const data = await api.get<
+        (Omit<EmployeePresence, 'status'> & { presence_status?: EmployeePresenceStatus | null })[]
+      >('/api/employees?limit=30');
+      setEmployees(
+        (Array.isArray(data) ? data : []).map((e) => ({
+          ...e,
+          status: e.presence_status ?? 'offline',
+        })),
+      );
+    } catch {
+      setEmployees([]);
     } finally {
       setLoadingEmp(false);
     }
@@ -425,19 +438,23 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
     ? Math.round(kpiResults.reduce((s, r) => s + r.score, 0) / kpiResults.length)
     : 0;
 
-  // 사용자 필터
+  // 사용자 필터 — offline은 '전체'에서만 노출
   const filteredEmployees = employees.filter((e) => {
     if (presenceFilter === 'all') return true;
-    if (presenceFilter === 'office')   return e.status === 'online' || e.status === 'focus' || e.status === 'away';
+    if (presenceFilter === 'office')   return e.status === 'online' || e.status === 'working' || e.status === 'focus' || e.status === 'away';
     if (presenceFilter === 'meeting')  return e.status === 'meeting';
-    if (presenceFilter === 'external') return e.status === 'external' || e.status === 'offline';
+    if (presenceFilter === 'external') return e.status === 'external';
     return true;
   });
 
-  const formatTime = (iso: string) => {
-    try { return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }); }
-    catch { return iso; }
+  // KST 기준 HH:MM
+  const formatTime = (iso: string | Date) => {
+    try { return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Seoul' }); }
+    catch { return String(iso); }
   };
+  // meetings 계약: scheduled_at + duration_minutes → 종료시각 계산
+  const meetingEndsAt = (m: Meeting) =>
+    new Date(new Date(m.scheduled_at).getTime() + (m.duration_minutes ?? 0) * 60_000);
 
   // 내비 링크 렌더러 — 기본/관리 섹션 공용
   const renderNav = (item: NavItem) => {
@@ -626,6 +643,12 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                   </button>
                 )}
               </div>
+              {/* 회의 입장 실패 사유 인라인 배너 */}
+              {joinError && (
+                <div role="alert" className="px-3 pb-2 text-[10px] text-danger leading-snug">
+                  {joinError}
+                </div>
+              )}
             </div>
           )}
 
@@ -740,7 +763,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                         <div className="text-[12px] font-semibold text-text-primary truncate">{m.title}</div>
                         <div className="flex items-center justify-between gap-1">
                           <span className="text-[10px] text-text-muted">
-                            {formatTime(m.start_time)}
+                            {formatTime(m.scheduled_at)}
                           </span>
                           {m.participant_count != null && (
                             <span className="text-[10px] text-status-meeting font-medium">
@@ -813,7 +836,10 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                     {members.map((emp) => (
                       <ListItem
                         key={emp.id}
-                        leading={<Avatar name={emp.name} status={emp.status} size="sm" />}
+                        leading={
+                          // Avatar 상태 점은 6종 union만 지원 — working은 online 점으로 표시(뱃지는 업무중)
+                          <Avatar name={emp.name} status={emp.status === 'working' ? 'online' : emp.status} size="sm" />
+                        }
                         primary={emp.name}
                         secondary={emp.team_name ?? ''}
                         trailing={<StatusBadge status={emp.status} showDot={false} />}
@@ -841,23 +867,28 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
               <div className="px-4 py-3 text-[12px] text-text-muted">오늘 일정이 없습니다</div>
             ) : (
               todayMeetings.map((m) => (
-                <ListItem
+                <Link
                   key={m.id}
-                  leading={
-                    <span className="w-8 text-center text-[11px] text-text-muted font-medium leading-tight">
-                      {formatTime(m.start_time)}
-                    </span>
-                  }
-                  primary={m.title}
-                  secondary={`${formatTime(m.start_time)} – ${formatTime(m.end_time)}`}
-                  trailing={
-                    m.status === 'in_progress' ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[rgba(239,68,68,0.15)] text-status-meeting font-medium">
-                        진행중
+                  href="/meetings"
+                  className="block rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                >
+                  <ListItem
+                    leading={
+                      <span className="w-8 text-center text-[11px] text-text-muted font-medium leading-tight">
+                        {formatTime(m.scheduled_at)}
                       </span>
-                    ) : null
-                  }
-                />
+                    }
+                    primary={m.title}
+                    secondary={`${formatTime(m.scheduled_at)} – ${formatTime(meetingEndsAt(m))}`}
+                    trailing={
+                      m.status === 'in_progress' ? (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[rgba(239,68,68,0.15)] text-status-meeting font-medium">
+                          진행중
+                        </span>
+                      ) : null
+                    }
+                  />
+                </Link>
               ))
             )}
           </div>

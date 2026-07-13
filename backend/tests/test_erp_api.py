@@ -49,11 +49,16 @@ async def test_sync_idempotent_via_api(async_client, admin_auth_headers):
 
 
 # ── 근태 read-through ─────────────────────────────────────
-async def test_attendances_read_through(async_client, auth_headers):
+async def test_attendances_read_through(async_client, auth_headers, admin_auth_headers):
     d = date(2026, 7, 1).isoformat()
+    # 일반 직원: 본인(user_id=1) 근태만 (06 §3.12 — 전체 근태는 관리자 전용)
     r = await async_client.get(f"/api/attendances?start={d}&end={d}", headers=auth_headers)
     assert r.status_code == 200
-    assert len(r.json()) == 5
+    assert len(r.json()) == 1
+    assert r.json()[0]["user_id"] == 1
+    # 관리자: 전체
+    r2 = await async_client.get(f"/api/attendances?start={d}&end={d}", headers=admin_auth_headers)
+    assert len(r2.json()) == 5
 
 
 async def test_attendances_invalid_range(async_client, auth_headers):

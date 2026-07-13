@@ -26,9 +26,79 @@ from app.models.tables import (
     DailyStatusPush,
     DailyStatusPushStatus,
     DailyStatusPushTarget,
+    ErpUser,
+    WorkLog,
+    WorkLogStatus,
 )
 
 MAX_RETRY = 3
+DEFAULT_COMPANY_ID = 1
+
+
+async def ensure_eod_rows(db: AsyncSession, push_date: date) -> int:
+    """D17 워크플로우 3단계: 배치가 당일 push row를 자동 생성.
+
+    직원이 폼을 제출하지 않았어도 당일 work_log가 있는 활성 직원에 대해
+    work_log 요약 payload로 pending row를 생성한다 (수동 제출 행이 있으면 스킵).
+    Returns: 생성된 row 수.
+    """
+    # 당일 work_log 보유 사용자
+    logs = (
+        await db.execute(select(WorkLog).where(WorkLog.work_date == push_date))
+    ).scalars().all()
+    by_user: dict[int, list[WorkLog]] = {}
+    for wl in logs:
+        by_user.setdefault(wl.user_id, []).append(wl)
+    if not by_user:
+        return 0
+
+    # 활성 직원 필터
+    active_ids = set(
+        (
+            await db.execute(
+                select(ErpUser.id).where(
+                    ErpUser.company_id == DEFAULT_COMPANY_ID,
+                    ErpUser.is_active.is_(True),
+                    ErpUser.id.in_(by_user.keys()),
+                )
+            )
+        ).scalars().all()
+    )
+
+    # 이미 해당 날짜 row가 있는 사용자(수동 제출 포함)는 스킵
+    existing = set(
+        (
+            await db.execute(
+                select(DailyStatusPush.user_id).where(
+                    DailyStatusPush.push_date == push_date,
+                    DailyStatusPush.target == DailyStatusPushTarget.ERP_DAILY_REPORTS,
+                )
+            )
+        ).scalars().all()
+    )
+
+    created = 0
+    for user_id, user_logs in by_user.items():
+        if user_id not in active_ids or user_id in existing:
+            continue
+        completed = [wl.title for wl in user_logs if wl.status == WorkLogStatus.COMPLETED]
+        in_progress = [wl.title for wl in user_logs if wl.status != WorkLogStatus.COMPLETED]
+        db.add(DailyStatusPush(
+            id=uuid4(),
+            user_id=user_id,
+            push_date=push_date,
+            target=DailyStatusPushTarget.ERP_DAILY_REPORTS,
+            payload={
+                "auto_generated": True,   # 배치 자동 생성 (수동 제출 아님)
+                "completed": completed,
+                "in_progress": in_progress,
+                "work_log_count": len(user_logs),
+            },
+            status=DailyStatusPushStatus.PENDING,
+        ))
+        created += 1
+    await db.flush()
+    return created
 
 
 async def _transmit(push: DailyStatusPush) -> dict:
@@ -64,9 +134,16 @@ async def run_eod_push(
     """
     run_id = run_id or uuid4()
 
+    # pending + 재시도 대상(failed & retry_count < MAX_RETRY, D17-7 상한) 함께 전송
     conds = [
-        DailyStatusPush.status == DailyStatusPushStatus.PENDING,
         DailyStatusPush.target == target,
+        (
+            (DailyStatusPush.status == DailyStatusPushStatus.PENDING)
+            | (
+                (DailyStatusPush.status == DailyStatusPushStatus.FAILED)
+                & (DailyStatusPush.retry_count < MAX_RETRY)
+            )
+        ),
     ]
     if push_date is not None:
         conds.append(DailyStatusPush.push_date == push_date)

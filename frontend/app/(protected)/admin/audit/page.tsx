@@ -33,6 +33,20 @@ const ACTION_COLOR: Record<string, string> = {
 
 const PAGE = 30;
 
+// ApiError.message 노출 (QA #7)
+function errMsg(err: unknown, prefix: string): string {
+  if (err instanceof ApiError) return `${prefix} (${err.status}): ${err.message}`;
+  return '서버 연결 오류';
+}
+
+// '변경' 열: old_value가 있으면 `old → new` 형식으로 표시
+function formatChange(log: AuditLog): string {
+  if (log.old_value) {
+    return `${JSON.stringify(log.old_value)} → ${log.new_value ? JSON.stringify(log.new_value) : '—'}`;
+  }
+  return log.new_value ? JSON.stringify(log.new_value) : '—';
+}
+
 export default function AuditLogPage() {
   const me = getUser();
   const allowed = isAdmin(me);
@@ -42,6 +56,8 @@ export default function AuditLogPage() {
   const [error, setError] = useState('');
   const [action, setAction] = useState('');
   const [entityType, setEntityType] = useState('');
+  const [startDate, setStartDate] = useState(''); // YYYY-MM-DD (포함)
+  const [endDate, setEndDate] = useState(''); // YYYY-MM-DD (포함)
   const [offset, setOffset] = useState(0);
 
   const fetchLogs = useCallback(async () => {
@@ -52,15 +68,18 @@ export default function AuditLogPage() {
       const qs = new URLSearchParams({ limit: String(PAGE), offset: String(offset) });
       if (action) qs.set('action', action);
       if (entityType) qs.set('entity_type', entityType);
+      // audit.py: start/end — ISO8601 포함 비교. 종료일은 그날 전체 포함되도록 23:59:59 부여.
+      if (startDate) qs.set('start', startDate);
+      if (endDate) qs.set('end', `${endDate}T23:59:59`);
       const data = await api.get<AuditListResponse>(`/api/audit-logs?${qs.toString()}`);
       setItems(data.items);
       setTotal(data.total);
     } catch (err) {
-      setError(err instanceof ApiError ? `조회 실패 (${err.status})` : '서버 연결 오류');
+      setError(errMsg(err, '조회 실패'));
     } finally {
       setLoading(false);
     }
-  }, [allowed, action, entityType, offset]);
+  }, [allowed, action, entityType, startDate, endDate, offset]);
 
   useEffect(() => {
     fetchLogs();
@@ -103,6 +122,32 @@ export default function AuditLogPage() {
           <option value="meeting">meeting</option>
           <option value="office_layout">office_layout</option>
         </select>
+        <label className="flex items-center gap-1 text-xs text-gray-500">
+          시작일
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => { setOffset(0); setStartDate(e.target.value); }}
+            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </label>
+        <label className="flex items-center gap-1 text-xs text-gray-500">
+          종료일
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => { setOffset(0); setEndDate(e.target.value); }}
+            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </label>
+        {(startDate || endDate) && (
+          <button
+            onClick={() => { setOffset(0); setStartDate(''); setEndDate(''); }}
+            className="text-xs text-indigo-600 hover:underline"
+          >
+            기간 초기화
+          </button>
+        )}
         <button onClick={fetchLogs} disabled={loading} className="px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50">새로고침</button>
         <span className="text-xs text-gray-400 ml-auto">총 {total}건</span>
       </div>
@@ -134,7 +179,9 @@ export default function AuditLogPage() {
                   <td className="px-4 py-2 text-gray-600">{log.entity_type}</td>
                   <td className="px-4 py-2 text-gray-400 font-mono text-xs">{log.entity_id.slice(0, 12)}</td>
                   <td className="px-4 py-2 text-gray-600">{log.user_id ?? '시스템'}</td>
-                  <td className="px-4 py-2 text-gray-500 text-xs truncate max-w-xs">{log.new_value ? JSON.stringify(log.new_value) : '—'}</td>
+                  <td className="px-4 py-2 text-gray-500 text-xs max-w-xs">
+                    <span className="block truncate" title={formatChange(log)}>{formatChange(log)}</span>
+                  </td>
                 </tr>
               ))}
             </tbody>

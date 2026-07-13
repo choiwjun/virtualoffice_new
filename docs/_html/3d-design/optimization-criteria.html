@@ -195,7 +195,7 @@ function disposeObject(obj: THREE.Object3D) {
 <hr>
 <h2 id="12-변경-이력">12. 변경 이력</h2>
 <div class="table-wrap"><table><thead><tr><th>버전</th><th>일자</th><th>변경 내용</th></tr></thead><tbody><tr><td><strong>2.0</strong></td><td><strong>2026-07-09</strong></td><td><strong>D27 재작성</strong> — 최적화 대상을 &quot;실시간 아바타+깊이합성+후처리&quot;로 전면 재정의. 배경은 Blender Cycles 오프라인 렌더 이미지라 런타임 폴리곤/드로우콜/GI 예산 제외. Godot 성능예산(GTX1650 60fps·MultiMesh 드로우콜·SDFGI·Forward+) 폐기 → 웹 60fps 목표. VRAM BC(BC1/BC3/BC5) 폐기 → KTX2/Basis + Draco/meshopt. 컬링/LOD를 Godot API→three.js(THREE.LOD·frustumCulled·깊이합성 오클루전)로 교체. 측정도구 Godot Debugger/GPU-Z→devtools/stats.js/Spector.js. 게이트 3축(깊이합성 ≤2px·웹 60fps·Colyseus p95&lt;500ms). dispose 패턴을 three.js로 교체</td></tr><tr><td>1.0</td><td>2026-07-02</td><td>P0-T0.5 초안 — D7·D22 성능 기준, BC 압축, MultiMesh 집행 규칙, 서버 파생 검증(05 §3.4 정합), GTX1650/내장 측정 절차</td></tr></tbody></table></div>
-<div class="meta-foot">원본: <code>optimization-criteria.md</code> · 자동 생성 2026-07-12 · md-to-html</div>
+<div class="meta-foot">원본: <code>optimization-criteria.md</code> · 자동 생성 2026-07-13 · md-to-html</div>
 </main>
 </div>
 

@@ -76,7 +76,7 @@ img{max-width:100%;border-radius:8px}
 <hr>
 <h2 id="4-함정-환경-선행-핸드오프에서-계승-갱신">4. 함정 / 환경 (선행 핸드오프에서 계승 + 갱신)</h2>
 <ol><li>백엔드 python = <code>backend/.venv/Scripts/python.exe</code> (PATH 아님). 전체 pytest ~75s(/mnt/c).</li><li>백엔드 포트 <strong>8000</strong>. (8090 WA/Caddy 프록시는 제거 대상 — 이번에 WA 코드 제거, docker-compose.local.yml의 wa-*/caddy 서비스 정리는 <strong>미완</strong>, 다음 P2).</li><li>npm 전용(pnpm 금지). Colyseus는 <code>realtime/</code>에서 별도 <code>npm i</code>.</li><li>커밋은 항상 파일 선별. 트리에 이전 세션 미커밋 다수 보존됨.</li><li><strong>테이블 카운트 트립와이어</strong>: <code>test_foundation.py::test_all_tables_registered</code>가 <code>len(Base.metadata.tables)==24</code> 하드코딩 — 모델 추가/삭제 시 이 숫자와 <code>test_migrations</code>(동적) 함께 확인.</li><li>3D 뷰포트 육안 QA(실브라우저)는 여전히 미수행 — 빌드/타입/스모크만 통과.</li><li><code>docker-compose.local.yml</code> 아직 wa-*/caddy 참조 잔존(코드는 제거됨) → 인프라 정리 필요.</li></ol>
-<div class="meta-foot">원본: <code>handoff-session-2026-07-12.md</code> · 자동 생성 2026-07-12 · md-to-html</div>
+<div class="meta-foot">원본: <code>handoff-session-2026-07-12.md</code> · 자동 생성 2026-07-13 · md-to-html</div>
 </main>
 </div>
 

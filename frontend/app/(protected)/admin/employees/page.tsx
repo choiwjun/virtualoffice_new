@@ -117,6 +117,12 @@ export default function EmployeesPage() {
     setPage(1);
   }, [teamFilter, searchQuery, statusFilter]);
 
+  // RFC 4180: 쉼표/따옴표/줄바꿈 포함 값은 큰따옴표로 감싸고 내부 " 는 "" 로 이스케이프
+  function csvField(value: string | number): string {
+    const s = String(value);
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+
   // CSV export
   function exportCsv() {
     const headers = ['ID', '이름', '이메일', '팀', '직급', '역할', '근무형태'];
@@ -129,7 +135,7 @@ export default function EmployeesPage() {
       ROLE_LABELS[e.role] ?? e.role,
       e.work_type ?? '',
     ]);
-    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
+    const csv = [headers, ...rows].map((row) => row.map(csvField).join(',')).join('\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

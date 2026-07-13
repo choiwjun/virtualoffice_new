@@ -303,10 +303,25 @@ async def test_patch_finalized_409(async_client, seeded, auth_headers):
 
 @pytest.mark.asyncio
 async def test_stt_draft_501(async_client, seeded, auth_headers):
-    """STT 초안 엔드포인트 → 501 Not Implemented."""
+    """STT 초안: 동의자 0명 → 403, 동의자 있으면 501 Not Implemented (P6 후속)."""
     room_id = str(seeded["room"].id)
     meeting_id = await _create_meeting(async_client, room_id, auth_headers, offset_hours=80)
     minute_id = await _create_minute(async_client, meeting_id, auth_headers)
+
+    # D20-b: 미동의자는 '제외' 방식이지만 동의자가 아무도 없으면 STT 불가 → 403
+    resp0 = await async_client.post(
+        f"/api/meeting-minutes/{minute_id}/stt-draft",
+        headers=auth_headers,
+    )
+    assert resp0.status_code == 403
+
+    # 호스트(자동 organizer 참석자)가 STT 동의 → 게이트 통과 → 501
+    consent = await async_client.post(
+        f"/api/meetings/{meeting_id}/consent",
+        json={"consent_type": "stt", "granted": True},
+        headers=auth_headers,
+    )
+    assert consent.status_code in (200, 201), consent.text
 
     resp = await async_client.post(
         f"/api/meeting-minutes/{minute_id}/stt-draft",

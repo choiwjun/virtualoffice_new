@@ -510,3 +510,68 @@ async def compute_and_upsert_kpi(
         print(f"[KPI] ai_draft generation skipped for user={user_id}: {exc}")
 
     return results
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 무이의 7일 자동확정 (08 §3.3)
+# ──────────────────────────────────────────────────────────────────────────────
+
+OBJECTION_WINDOW_DAYS = 7
+
+
+async def auto_finalize_expired(db: AsyncSession) -> int:
+    """08 §3.3: 공개(admin_reviewed_at ?? created_at) 후 7일 경과 & 무이의 건 자동확정.
+
+    final_score = admin_adjusted_score ?? value, finalized_at 설정,
+    daily_status_push(erp_kpi_results) pending 적재. Returns: 확정 건수.
+    """
+    from datetime import timedelta
+
+    from app.models.tables import (
+        DailyStatusPush,
+        DailyStatusPushStatus,
+        DailyStatusPushTarget,
+    )
+
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=OBJECTION_WINDOW_DAYS)
+
+    rows = (
+        await db.execute(
+            select(KpiResult).where(
+                KpiResult.finalized_at.is_(None),
+                KpiResult.objection_status == KpiObjectionStatus.NONE,
+            )
+        )
+    ).scalars().all()
+
+    finalized = 0
+    for r in rows:
+        published = r.admin_reviewed_at or r.created_at
+        if published.tzinfo is None:
+            published = published.replace(tzinfo=timezone.utc)
+        if published > cutoff:
+            continue  # 아직 7일 창 내
+        r.final_score = r.admin_adjusted_score if r.admin_adjusted_score is not None else r.value
+        r.finalized_at = now
+        r.updated_at = now
+        db.add(DailyStatusPush(
+            user_id=r.user_id,
+            push_date=now.date(),
+            target=DailyStatusPushTarget.ERP_KPI_RESULTS,
+            payload={
+                "kpi_result_id": str(r.id),
+                "user_id": r.user_id,
+                "period_type": r.period_type.value if hasattr(r.period_type, "value") else r.period_type,
+                "period_key": r.period_key,
+                "metric": r.metric,
+                "final_score": float(r.final_score),
+                "finalized_at": now.isoformat(),
+                "auto_finalized": True,
+            },
+            status=DailyStatusPushStatus.PENDING,
+        ))
+        finalized += 1
+
+    await db.flush()
+    return finalized

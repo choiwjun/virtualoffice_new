@@ -53,7 +53,7 @@ def _make_user(user_id: int, manager_id: int | None = None) -> ErpUser:
 
 
 async def _seed_office_floor(session):
-    office = Office(company_id=uuid4(), name="본사")
+    office = Office(company_id=1, name="본사")
     session.add(office)
     await session.flush()
     floor = Floor(office_id=office.id, level=1, name="1F")
@@ -93,7 +93,7 @@ async def test_erp_user_manager_self_fk_direction(db_session):
 
 async def test_org_group_parent_self_fk_direction(db_session):
     """parent(스칼라) → 상위 조직, children(컬렉션) → 하위 조직 방향으로 로드돼야 한다."""
-    company = uuid4()
+    company = 1  # 04 §2.2: INTEGER (erp_user.company_id 동일 타입)
     root = OrgGroup(company_id=company, name="본부", type=OrgGroupType.DIVISION)
     db_session.add(root)
     await db_session.flush()

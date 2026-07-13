@@ -15,6 +15,71 @@ import {
 
 type PeriodType = 'quarterly' | 'daily';
 
+// ai_draft 구조 (D17 배치, mock/nvidia 공통) — 분기(quarterly)에만 존재
+interface AiDraft {
+  강점?: string[] | string;
+  개선?: string[] | string;
+  근거?: string;
+  _source?: string;
+}
+
+// ApiError.message 노출 (QA #7)
+function errMsg(err: unknown, prefix: string): string {
+  if (err instanceof ApiError) return `${prefix} (${err.status}): ${err.message}`;
+  return '서버 연결 오류';
+}
+
+// AI 초안 필드별 렌더 (강점/개선/근거 — 배열이면 목록)
+function AiDraftView({ draft }: { draft: unknown }) {
+  if (typeof draft === 'string') {
+    return <p className="whitespace-pre-wrap">{draft}</p>;
+  }
+  if (!draft || typeof draft !== 'object') return null;
+  const d = draft as AiDraft;
+  const renderVal = (v: string[] | string | undefined) => {
+    if (Array.isArray(v)) {
+      return (
+        <ul className="list-disc list-inside space-y-0.5">
+          {v.map((s, i) => (
+            <li key={i}>{s}</li>
+          ))}
+        </ul>
+      );
+    }
+    if (v) return <p className="whitespace-pre-wrap">{v}</p>;
+    return null;
+  };
+  return (
+    <div className="space-y-1.5">
+      {d._source && (
+        <span
+          className={`inline-block text-[9px] px-1 py-0.5 rounded ${d._source === 'nvidia' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}
+        >
+          {d._source === 'nvidia' ? 'NVIDIA 생성' : 'MOCK 생성'}
+        </span>
+      )}
+      {d.강점 && (
+        <div>
+          <span className="font-semibold text-gray-500">강점</span>
+          {renderVal(d.강점)}
+        </div>
+      )}
+      {d.개선 && (
+        <div>
+          <span className="font-semibold text-gray-500">개선</span>
+          {renderVal(d.개선)}
+        </div>
+      )}
+      {d.근거 && (
+        <div>
+          <span className="font-semibold text-gray-500">근거</span>
+          {renderVal(d.근거)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MyKpiPage() {
   const [results, setResults] = useState<KpiResult[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +99,7 @@ export default function MyKpiPage() {
       const data = await api.get<KpiResult[]>(`/api/kpi-results?${qs.toString()}`);
       setResults(data);
     } catch (err) {
-      setError(err instanceof ApiError ? `조회 실패 (${err.status})` : '서버 연결 오류');
+      setError(errMsg(err, '조회 실패'));
     } finally {
       setLoading(false);
     }
@@ -128,10 +193,11 @@ export default function MyKpiPage() {
                 {r.finalized_at && (
                   <div className="mt-2 text-[11px] text-green-600">확정 {formatKst(r.finalized_at)}</div>
                 )}
-                {r.ai_draft ? (
-                  <div className="mt-2 text-[11px] text-gray-500 border-t border-gray-100 pt-1 whitespace-pre-wrap line-clamp-3">
-                    <span className="text-gray-400">AI 초안: </span>
-                    {typeof r.ai_draft === 'string' ? r.ai_draft : JSON.stringify(r.ai_draft)}
+                {/* AI 초안은 분기(quarterly) 데이터에만 존재 — daily 행에는 표시하지 않음 */}
+                {periodType === 'quarterly' && r.ai_draft ? (
+                  <div className="mt-2 text-[11px] text-gray-500 border-t border-gray-100 pt-1.5">
+                    <div className="text-gray-400 mb-1">AI 초안</div>
+                    <AiDraftView draft={r.ai_draft} />
                   </div>
                 ) : null}
               </div>

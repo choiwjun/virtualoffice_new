@@ -1,9 +1,12 @@
+import { mapApiError } from './apiErrors';
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:8000';
 
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    public readonly code?: string,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -39,8 +42,21 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new ApiError(res.status, text);
+    const text = await res.text().catch(() => '');
+    let code: string | undefined;
+    try {
+      const parsed: unknown = JSON.parse(text);
+      if (
+        parsed != null &&
+        typeof parsed === 'object' &&
+        typeof (parsed as { detail?: unknown }).detail === 'string'
+      ) {
+        code = (parsed as { detail: string }).detail;
+      }
+    } catch {
+      // 본문이 JSON이 아니면 코드 없음 → statusText로 폴백
+    }
+    throw new ApiError(res.status, mapApiError(code) ?? code ?? res.statusText, code);
   }
 
   if (res.status === 204) return {} as T;

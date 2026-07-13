@@ -145,12 +145,9 @@ class OrgValidateOut(BaseModel):
     warnings: list[dict]
 
 
-async def _company_id(db) -> "_uuid.UUID":
-    """기존 org_group의 company_id 재사용, 없으면 결정론적 기본값."""
-    row = (await db.execute(select(OrgGroup).limit(1))).scalar_one_or_none()
-    if row is not None:
-        return row.company_id
-    return _uuid.uuid5(_uuid.NAMESPACE_DNS, "virtualoffice-default-company")
+def _company_id() -> int:
+    """단일 조직 전제 — erp_user.company_id와 동일한 INTEGER 스코프 (04 §2.2, QA 2026-07-13)."""
+    return DEFAULT_COMPANY_ID
 
 
 def _org_type(v: str) -> OrgGroupType:
@@ -169,7 +166,7 @@ async def create_org_group(body: OrgGroupCreate, db=Depends(get_db), _: CurrentU
         except ValueError:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_parent_id")
     g = OrgGroup(
-        id=_uuid.uuid4(), company_id=await _company_id(db), name=body.name,
+        id=_uuid.uuid4(), company_id=_company_id(), name=body.name,
         type=_org_type(body.type), parent_id=parent, color=body.color, sort_order=body.sort_order,
     )
     db.add(g)

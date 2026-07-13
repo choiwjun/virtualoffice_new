@@ -3,13 +3,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isLeaderOrAbove, type User } from '@/lib/auth';
+import { kstToday } from '@/lib/dates';
 
 type ReportType = 'daily' | 'weekly' | 'monthly';
 type ReportStatus = 'draft' | 'submitted';
 type StatusTab = '' | ReportStatus;
 
 interface Report {
-  id: number;
+  id: string;
   user_id: number;
   report_type: ReportType;
   report_date: string;
@@ -53,7 +54,7 @@ interface ReportFormData {
 function defaultForm(): ReportFormData {
   return {
     report_type: 'daily',
-    report_date: new Date().toISOString().split('T')[0],
+    report_date: kstToday(),
     title: '',
     content: '',
   };

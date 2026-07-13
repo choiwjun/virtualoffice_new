@@ -55,6 +55,8 @@ class WorkLogCreate(BaseModel):
     result_description: Optional[str] = None
     related_project: Optional[str] = None
     url: Optional[str] = None
+    attachments: Optional[list] = None    # 결과물 첨부 URL 목록 (04 §2.5)
+    issues: Optional[list] = None         # 이슈/블로커 자유텍스트 배열 (04 §2.5)
 
 
 class WorkLogUpdate(BaseModel):
@@ -70,6 +72,8 @@ class WorkLogUpdate(BaseModel):
     result_description: Optional[str] = None
     related_project: Optional[str] = None
     url: Optional[str] = None
+    attachments: Optional[list] = None
+    issues: Optional[list] = None
 
 
 class WorkLogOut(BaseModel):
@@ -87,6 +91,8 @@ class WorkLogOut(BaseModel):
     result_description: Optional[str]
     related_project: Optional[str]
     url: Optional[str]
+    attachments: Optional[list]
+    issues: Optional[list]
     completed_at: Optional[str]
     created_at: str
     updated_at: str
@@ -108,6 +114,8 @@ class WorkLogOut(BaseModel):
             result_description=w.result_description,
             related_project=w.related_project,
             url=w.url,
+            attachments=w.attachments,
+            issues=w.issues,
             completed_at=w.completed_at.isoformat() if w.completed_at else None,
             created_at=w.created_at.isoformat(),
             updated_at=w.updated_at.isoformat(),
@@ -217,6 +225,8 @@ async def create_work_log(
         result_description=body.result_description,
         related_project=body.related_project,
         url=body.url,
+        attachments=body.attachments,
+        issues=body.issues,
         completed_at=completed_at,
     )
     db.add(wl)
@@ -346,7 +356,7 @@ async def list_work_logs(
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="invalid status: must be started|completed",
+                detail="invalid status: must be started|completed|aborted",
             )
 
     q = q.order_by(WorkLog.work_date.desc(), WorkLog.created_at.desc())

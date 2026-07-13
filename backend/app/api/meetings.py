@@ -1,14 +1,19 @@
 """
 meetings API — G002 Lane B
 
-POST   /api/meetings                        — 회의 예약
-GET    /api/meetings                        — 회의 목록 (scheduled_at 범위 필터)
+POST   /api/meetings                        — 회의 예약 (duration_minutes 포함)
+GET    /api/meetings                        — 회의 목록 (scheduled_at 범위·status 필터)
 GET    /api/meetings/{meeting_id}           — 회의 상세
-POST   /api/meetings/{meeting_id}/join      — 참석 등록 (upsert)
+POST   /api/meetings/{meeting_id}/start     — 시작 (scheduled → in_progress, 호스트/관리자)
+POST   /api/meetings/{meeting_id}/end       — 종료 (in_progress → completed, 호스트/관리자)
+POST   /api/meetings/{meeting_id}/join      — 참석 등록 (upsert, 상태·정원 검사)
+POST   /api/meetings/{meeting_id}/leave     — 퇴장 (left_at 기록)
 GET    /api/meetings/{meeting_id}/participants — 참석자 목록
+GET    /api/rooms                           — 회의 가능한 방 목록 (예약 피커용)
 
-D23: 동일 room + 시간 겹침 → 409
+D23: 동일 room + 시간대 [scheduled_at, +duration) 겹침 → 409
 D19: UTC 저장
+상태 전이 (06 §3.5.1): scheduled → in_progress → completed | scheduled → cancelled
 """
 
 from __future__ import annotations
@@ -19,8 +24,8 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from livekit import api as livekit_api
-from pydantic import BaseModel
-from sqlalchemy import and_, or_, select
+from pydantic import BaseModel, Field
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -32,6 +37,8 @@ from app.models.tables import (
     MeetingParticipantRole,
     MeetingStatus,
     Room,
+    RoomStatus,
+    RoomType,
 )
 from app.services.audit import record_audit
 
@@ -43,11 +50,15 @@ router = APIRouter(prefix="/api", tags=["meetings"])
 # ---------------------------------------------------------------------------
 
 
+MAX_DURATION_MINUTES = 480
+
+
 class MeetingCreate(BaseModel):
     room_id: str
     title: str
     description: Optional[str] = None
     scheduled_at: datetime          # UTC ISO8601
+    duration_minutes: int = Field(60, ge=15, le=MAX_DURATION_MINUTES, description="계획 소요시간(분)")
     host_user_id: Optional[int] = None  # None → current_user
     livekit_room: Optional[str] = None
 
@@ -58,14 +69,24 @@ class MeetingOut(BaseModel):
     title: str
     description: Optional[str]
     scheduled_at: str
+    duration_minutes: int
     started_at: Optional[str]
     ended_at: Optional[str]
     status: str
     host_user_id: int
     livekit_room: Optional[str]
     recording_url: Optional[str]
+    participant_count: int = 0
     created_at: str
     updated_at: str
+
+
+class RoomOut(BaseModel):
+    id: str
+    name: str
+    type: str
+    capacity: int
+    floor_id: str
 
 
 class MeetingParticipantOut(BaseModel):
@@ -84,22 +105,76 @@ class MeetingParticipantOut(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def _meeting_out(m: Meeting) -> MeetingOut:
+def _meeting_out(m: Meeting, participant_count: int = 0) -> MeetingOut:
     return MeetingOut(
         id=str(m.id),
         room_id=str(m.room_id),
         title=m.title,
         description=m.description,
         scheduled_at=m.scheduled_at.isoformat(),
+        duration_minutes=m.duration_minutes or 60,
         started_at=m.started_at.isoformat() if m.started_at else None,
         ended_at=m.ended_at.isoformat() if m.ended_at else None,
         status=m.status.value,
         host_user_id=m.host_user_id,
         livekit_room=m.livekit_room,
         recording_url=m.recording_url,
+        participant_count=participant_count,
         created_at=m.created_at.isoformat(),
         updated_at=m.updated_at.isoformat(),
     )
+
+
+def _as_utc(dt: datetime) -> datetime:
+    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+
+
+async def _participant_counts(db: AsyncSession, meeting_ids: list) -> dict:
+    """meeting_id → 참석자 수 (participant 행 기준)."""
+    if not meeting_ids:
+        return {}
+    rows = (
+        await db.execute(
+            select(MeetingParticipant.meeting_id, func.count(MeetingParticipant.id))
+            .where(MeetingParticipant.meeting_id.in_(meeting_ids))
+            .group_by(MeetingParticipant.meeting_id)
+        )
+    ).all()
+    return {mid: cnt for mid, cnt in rows}
+
+
+async def _check_room_conflict(
+    db: AsyncSession,
+    room_uuid: UUID,
+    new_start: datetime,
+    new_duration_min: int,
+    exclude_meeting_id: Optional[UUID] = None,
+) -> None:
+    """D23: 동일 room 시간대 겹침 검사 — [start, start+duration) 창 기준.
+
+    SQLite/PG 양쪽 호환을 위해 후보(±최대 회의시간 창)를 조회 후 Python에서 겹침 판정.
+    """
+    new_end = new_start + timedelta(minutes=new_duration_min)
+    window_lo = new_start - timedelta(minutes=MAX_DURATION_MINUTES)
+    q = select(Meeting).where(
+        and_(
+            Meeting.room_id == room_uuid,
+            Meeting.status != MeetingStatus.CANCELLED,
+            Meeting.scheduled_at >= window_lo,
+            Meeting.scheduled_at < new_end,
+        )
+    )
+    if exclude_meeting_id is not None:
+        q = q.where(Meeting.id != exclude_meeting_id)
+    candidates = (await db.execute(q)).scalars().all()
+    for m in candidates:
+        m_start = _as_utc(m.scheduled_at)
+        m_end = m_start + timedelta(minutes=m.duration_minutes or 60)
+        if m_start < new_end and new_start < m_end:  # 반개구간 겹침
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="room_time_conflict",
+            )
 
 
 def _participant_out(p: MeetingParticipant) -> MeetingParticipantOut:
@@ -170,71 +245,69 @@ async def create_meeting(
     host_user_id = body.host_user_id if body.host_user_id is not None else current_user.user_id
 
     # scheduled_at UTC 보장
-    scheduled_at = body.scheduled_at
-    if scheduled_at.tzinfo is None:
-        scheduled_at = scheduled_at.replace(tzinfo=timezone.utc)
+    scheduled_at = _as_utc(body.scheduled_at)
 
-    # D23: 동일 room 시간겹침 검사 (취소된 회의 제외)
-    # 겹침 조건: existing.scheduled_at < new (we treat each meeting as instantaneous point;
-    # for safety check ±0 overlap — any other non-cancelled meeting at same time or
-    # strictly overlapping [started_at, ended_at] window)
-    overlap_q = select(Meeting).where(
-        and_(
-            Meeting.room_id == room_uuid,
-            Meeting.status != MeetingStatus.CANCELLED,
-            # ended_at이 없으면 scheduled_at을 종료 시점으로 가정
-            # 새 회의 scheduled_at이 기존 회의 [scheduled_at, ended_at or scheduled_at] 안에 들면 겹침
-            or_(
-                and_(
-                    Meeting.ended_at.is_(None),
-                    Meeting.scheduled_at == scheduled_at,
-                ),
-                and_(
-                    Meeting.ended_at.isnot(None),
-                    Meeting.scheduled_at <= scheduled_at,
-                    Meeting.ended_at > scheduled_at,
-                ),
-                and_(
-                    Meeting.ended_at.is_(None),
-                    Meeting.scheduled_at > scheduled_at,
-                    # 이 회의가 새 회의보다 나중에 시작하지만 아직 끝나지 않은 겹침은 없음
-                    # 정확한 겹침: 새 meeting도 예상 종료 없으므로 시작 시각 동일만 체크
-                ),
-            ),
-        )
-    )
-    overlap_result = await db.execute(overlap_q)
-    if overlap_result.scalar_one_or_none() is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="room_time_conflict",
-        )
+    # D23: 동일 room 시간대 겹침 검사 ([start, start+duration) 반개구간)
+    await _check_room_conflict(db, room_uuid, scheduled_at, body.duration_minutes)
 
+    now = datetime.now(timezone.utc)
     meeting = Meeting(
         id=uuid4(),
         room_id=room_uuid,
         title=body.title,
         description=body.description,
         scheduled_at=scheduled_at,
+        duration_minutes=body.duration_minutes,
         host_user_id=host_user_id,
         status=MeetingStatus.SCHEDULED,
         livekit_room=body.livekit_room,
     )
     db.add(meeting)
+    # 호스트를 organizer 참석자로 자동 등록 (06 §3.5.1)
+    db.add(MeetingParticipant(
+        id=uuid4(),
+        meeting_id=meeting.id,
+        user_id=host_user_id,
+        invited_at=now,
+        role=MeetingParticipantRole.ORGANIZER,
+    ))
     await db.flush()
     await db.commit()
     await db.refresh(meeting)
-    return _meeting_out(meeting)
+    return _meeting_out(meeting, participant_count=1)
+
+
+@router.get("/rooms", response_model=list[RoomOut])
+async def list_rooms(
+    room_type: Optional[str] = Query(None, alias="type", description="meeting_room 등 RoomType 필터"),
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[RoomOut]:
+    """GET /api/rooms — 예약 가능한 방 목록 (06 §3.5.1 회의실 선택 피커)."""
+    q = select(Room).where(Room.status == RoomStatus.ACTIVE)
+    if room_type:
+        try:
+            rt = RoomType(room_type)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_room_type")
+        q = q.where(Room.type == rt)
+    rooms = (await db.execute(q.order_by(Room.name))).scalars().all()
+    return [
+        RoomOut(id=str(r.id), name=r.name, type=r.type.value, capacity=r.capacity, floor_id=str(r.floor_id))
+        for r in rooms
+    ]
 
 
 @router.get("/meetings", response_model=list[MeetingOut])
 async def list_meetings(
     scheduled_from: Optional[str] = Query(None, description="ISO8601 UTC 시작"),
     scheduled_to: Optional[str] = Query(None, description="ISO8601 UTC 종료"),
+    status_filter: Optional[str] = Query(None, alias="status", description="scheduled|in_progress|completed|cancelled"),
+    limit: int = Query(200, ge=1, le=500),
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[MeetingOut]:
-    """GET /api/meetings — 회의 목록 (scheduled_at 범위 캘린더 필터)."""
+    """GET /api/meetings — 회의 목록 (scheduled_at 범위·status 필터, participant_count 포함)."""
     q = select(Meeting)
     if scheduled_from:
         try:
@@ -254,11 +327,21 @@ async def list_meetings(
                 detail="invalid scheduled_to",
             )
         q = q.where(Meeting.scheduled_at <= dt_to)
+    if status_filter:
+        try:
+            st = MeetingStatus(status_filter)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="invalid status: must be scheduled|in_progress|completed|cancelled",
+            )
+        q = q.where(Meeting.status == st)
 
-    q = q.order_by(Meeting.scheduled_at)
+    q = q.order_by(Meeting.scheduled_at).limit(limit)
     result = await db.execute(q)
     meetings = result.scalars().all()
-    return [_meeting_out(m) for m in meetings]
+    counts = await _participant_counts(db, [m.id for m in meetings])
+    return [_meeting_out(m, counts.get(m.id, 0)) for m in meetings]
 
 
 @router.get("/meetings/{meeting_id}", response_model=MeetingOut)
@@ -269,7 +352,72 @@ async def get_meeting(
 ) -> MeetingOut:
     """GET /api/meetings/{meeting_id} — 회의 상세."""
     meeting = await _get_meeting_or_404(meeting_id, db)
-    return _meeting_out(meeting)
+    counts = await _participant_counts(db, [meeting.id])
+    return _meeting_out(meeting, counts.get(meeting.id, 0))
+
+
+@router.post("/meetings/{meeting_id}/start", response_model=MeetingOut)
+async def start_meeting(
+    meeting_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MeetingOut:
+    """POST /api/meetings/{id}/start — scheduled → in_progress (호스트 또는 관리자, 06 §3.5.1)."""
+    meeting = await _get_meeting_or_404(meeting_id, db)
+    if meeting.host_user_id != current_user.user_id and current_user.role not in _MTG_ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="host_or_admin_required")
+    if meeting.status != MeetingStatus.SCHEDULED:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="invalid_status_transition")
+
+    now = datetime.now(timezone.utc)
+    meeting.status = MeetingStatus.IN_PROGRESS
+    meeting.started_at = now
+    meeting.updated_at = now
+    await db.commit()
+    await db.refresh(meeting)
+    await record_audit(db, user_id=current_user.user_id, action="meeting_started",
+                       entity_type="meeting", entity_id=str(meeting.id))
+    counts = await _participant_counts(db, [meeting.id])
+    return _meeting_out(meeting, counts.get(meeting.id, 0))
+
+
+@router.post("/meetings/{meeting_id}/end", response_model=MeetingOut)
+async def end_meeting(
+    meeting_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MeetingOut:
+    """POST /api/meetings/{id}/end — in_progress → completed (호스트 또는 관리자)."""
+    meeting = await _get_meeting_or_404(meeting_id, db)
+    if meeting.host_user_id != current_user.user_id and current_user.role not in _MTG_ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="host_or_admin_required")
+    if meeting.status != MeetingStatus.IN_PROGRESS:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="invalid_status_transition")
+
+    now = datetime.now(timezone.utc)
+    meeting.status = MeetingStatus.COMPLETED
+    meeting.ended_at = now
+    meeting.updated_at = now
+    # 아직 나가지 않은 참석자 left_at 일괄 기록
+    open_participants = (
+        await db.execute(
+            select(MeetingParticipant).where(
+                and_(
+                    MeetingParticipant.meeting_id == meeting.id,
+                    MeetingParticipant.joined_at.isnot(None),
+                    MeetingParticipant.left_at.is_(None),
+                )
+            )
+        )
+    ).scalars().all()
+    for p in open_participants:
+        p.left_at = now
+    await db.commit()
+    await db.refresh(meeting)
+    await record_audit(db, user_id=current_user.user_id, action="meeting_ended",
+                       entity_type="meeting", entity_id=str(meeting.id))
+    counts = await _participant_counts(db, [meeting.id])
+    return _meeting_out(meeting, counts.get(meeting.id, 0))
 
 
 @router.post(
@@ -282,10 +430,34 @@ async def join_meeting(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> MeetingParticipantOut:
-    """POST /api/meetings/{meeting_id}/join — 참석 등록 (upsert joined_at)."""
+    """POST /api/meetings/{meeting_id}/join — 참석 등록 (upsert joined_at).
+
+    06 §5.2: 취소/종료된 회의 입장 409, 방 정원 초과 409.
+    """
     meeting = await _get_meeting_or_404(meeting_id, db)
 
+    if meeting.status in (MeetingStatus.CANCELLED, MeetingStatus.COMPLETED):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="meeting_not_joinable")
+
     now = datetime.now(timezone.utc)
+
+    # 방 정원 검사 (현재 입장 중 = joined_at 있고 left_at 없음)
+    room = (await db.execute(select(Room).where(Room.id == meeting.room_id))).scalar_one_or_none()
+    if room is not None:
+        active_count = (
+            await db.execute(
+                select(func.count(MeetingParticipant.id)).where(
+                    and_(
+                        MeetingParticipant.meeting_id == meeting.id,
+                        MeetingParticipant.joined_at.isnot(None),
+                        MeetingParticipant.left_at.is_(None),
+                        MeetingParticipant.user_id != current_user.user_id,
+                    )
+                )
+            )
+        ).scalar_one()
+        if active_count >= room.capacity:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="room_capacity_exceeded")
 
     # upsert: 이미 participant 행이 있으면 joined_at만 갱신
     existing_q = await db.execute(
@@ -312,6 +484,35 @@ async def join_meeting(
         participant.joined_at = now
 
     await db.flush()
+    await db.commit()
+    await db.refresh(participant)
+    return _participant_out(participant)
+
+
+@router.post(
+    "/meetings/{meeting_id}/leave",
+    response_model=MeetingParticipantOut,
+)
+async def leave_meeting(
+    meeting_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MeetingParticipantOut:
+    """POST /api/meetings/{meeting_id}/leave — 퇴장 (left_at 기록, 06 §3.5 Data Req)."""
+    meeting = await _get_meeting_or_404(meeting_id, db)
+    q = await db.execute(
+        select(MeetingParticipant).where(
+            and_(
+                MeetingParticipant.meeting_id == meeting.id,
+                MeetingParticipant.user_id == current_user.user_id,
+            )
+        )
+    )
+    participant = q.scalar_one_or_none()
+    if participant is None or participant.joined_at is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="participant_not_joined")
+
+    participant.left_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(participant)
     return _participant_out(participant)
@@ -398,6 +599,7 @@ class MeetingUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     scheduled_at: Optional[datetime] = None
+    duration_minutes: Optional[int] = Field(None, ge=15, le=MAX_DURATION_MINUTES)
     room_id: Optional[str] = None
 
 
@@ -421,26 +623,12 @@ async def update_meeting(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid room_id")
     new_time = meeting.scheduled_at
     if body.scheduled_at is not None:
-        new_time = body.scheduled_at
-        if new_time.tzinfo is None:
-            new_time = new_time.replace(tzinfo=timezone.utc)
+        new_time = _as_utc(body.scheduled_at)
+    new_duration = body.duration_minutes if body.duration_minutes is not None else (meeting.duration_minutes or 60)
 
-    # D23: 동일 room·동일 시각 다른 회의 겹침 재검증 (자기 자신 제외)
-    if body.room_id is not None or body.scheduled_at is not None:
-        clash = (
-            await db.execute(
-                select(Meeting).where(
-                    and_(
-                        Meeting.room_id == new_room,
-                        Meeting.id != meeting.id,
-                        Meeting.status != MeetingStatus.CANCELLED,
-                        Meeting.scheduled_at == new_time,
-                    )
-                )
-            )
-        ).scalar_one_or_none()
-        if clash is not None:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="room_time_conflict")
+    # D23: 동일 room 시간대 겹침 재검증 (자기 자신 제외)
+    if body.room_id is not None or body.scheduled_at is not None or body.duration_minutes is not None:
+        await _check_room_conflict(db, new_room, _as_utc(new_time), new_duration, exclude_meeting_id=meeting.id)
 
     if body.title is not None:
         meeting.title = body.title
@@ -448,6 +636,7 @@ async def update_meeting(
         meeting.description = body.description
     meeting.room_id = new_room
     meeting.scheduled_at = new_time
+    meeting.duration_minutes = new_duration
     meeting.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(meeting)

@@ -67,11 +67,19 @@ export default function AdminObjectionsPage() {
     let revised: number | null = null;
     let note = '';
     if (action === 'resolve') {
-      const raw = window.prompt('재조정 최종 점수 (변경 없으면 비워두고 확인)', '');
+      // ±10% 한도(08 §3.2)는 백엔드에서도 강제되지만 입력 단계에서 안내·검증
+      const base = r.value;
+      const lo = Math.min(base * 0.9, base * 1.1);
+      const hi = Math.max(base * 0.9, base * 1.1);
+      const raw = window.prompt(
+        `재조정 최종 점수 (원점수 ${formatScore(base)}의 ±10%: ${formatScore(lo)}~${formatScore(hi)}, 변경 없으면 비워두고 확인)\n※ 처리 완료 시 final_score가 확정됩니다`,
+        '',
+      );
       if (raw === null) return;
       if (raw.trim() !== '') {
         revised = Number(raw);
         if (Number.isNaN(revised)) return flash('숫자를 입력하세요');
+        if (revised < lo || revised > hi) return flash(`조정 점수는 원점수 ±10%(${formatScore(lo)}~${formatScore(hi)}) 이내여야 합니다`);
       }
       note = window.prompt('처리 메모 (선택)') || '';
     }
@@ -82,12 +90,26 @@ export default function AdminObjectionsPage() {
       if (revised !== null) body.revised_score = revised;
       const updated = await api.post<KpiResult>(`/api/kpi-results/${r.id}/objections/review`, body);
       setRows((prev) => prev.map((x) => (x.id === r.id ? { ...updated, _employee: r._employee } : x)));
-      flash(action === 'advance' ? '검토 시작(reviewing)' : '처리 완료(resolved)');
+      flash(action === 'advance' ? '검토 시작(reviewing)' : '처리 완료(resolved — final_score 확정)');
     } catch (err) {
-      flash(err instanceof ApiError ? `실패 (${err.status})` : '오류');
+      flash(err instanceof ApiError ? `실패: ${err.message}` : '오류');
     } finally {
       setBusy('');
     }
+  }
+
+  // 신/구 objection_detail 포맷 호환 (구: category/text/evidence 문자열, 신: objection_category/objection_text/evidence 배열)
+  function detailView(d: Record<string, unknown> | null | undefined): { category: string; text: string; links: string[] } | null {
+    if (!d) return null;
+    const category = String(d.objection_category ?? d.category ?? '');
+    const text = String(d.objection_text ?? d.text ?? '');
+    const ev = d.evidence;
+    const links = Array.isArray(ev)
+      ? ev.map((e) => (typeof e === 'object' && e !== null && 'url' in e ? String((e as { url: unknown }).url) : String(e))).filter(Boolean)
+      : typeof ev === 'string' && ev
+        ? [ev]
+        : [];
+    return { category, text, links };
   }
 
   if (!allowed) {
@@ -137,14 +159,20 @@ export default function AdminObjectionsPage() {
                     <div className="text-xs text-gray-500 mt-1">
                       최종 {formatScore(r.final_score ?? r.value)} · 접수 {formatKst(r.objection_submitted_at)}
                     </div>
-                    {r.objection_detail && (
-                      <div className="text-xs text-gray-600 mt-1 bg-gray-50 rounded px-2 py-1.5">
-                        <span className="text-gray-400">[{r.objection_detail.category}]</span> {r.objection_detail.text}
-                        {r.objection_detail.evidence && (
-                          <a href={r.objection_detail.evidence} target="_blank" rel="noreferrer" className="text-indigo-600 underline ml-1">증거</a>
-                        )}
-                      </div>
-                    )}
+                    {(() => {
+                      const d = detailView(r.objection_detail as Record<string, unknown> | null);
+                      if (!d) return null;
+                      return (
+                        <div className="text-xs text-gray-600 mt-1 bg-gray-50 rounded px-2 py-1.5">
+                          <span className="text-gray-400">[{d.category}]</span> {d.text}
+                          {d.links.map((url, i) => (
+                            <a key={i} href={url} target="_blank" rel="noreferrer" className="text-indigo-600 underline ml-1">
+                              증거{d.links.length > 1 ? i + 1 : ''}
+                            </a>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="flex flex-col gap-1 shrink-0">
                     <button

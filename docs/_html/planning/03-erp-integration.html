@@ -1016,7 +1016,7 @@ class AuditLog(SQLModel, table=True):
 <p><strong>작성</strong>: Documentation Specialist <strong>최종 수정</strong>: 2026-07-02 (00-decisions.md D15·D16·D17·D18·D19·D20 반영) <strong>검수</strong>: (pending ERP 담당자 확인)</p>
 <h3 id="변경-이력">변경 이력</h3>
 <ul><li><strong>v1.1 (2026-07-02)</strong>: D18 동기화 재설계(매시간 증분 + 00:00 KST 전체 대사 → 하드 삭제 감지·soft-delete, 중첩 윈도우 5분). D20-f 미러링 최소수집(GPS·slack/github/jira 제외, 화이트리스트 VIEW). D17 배치 3단계 분리(18:00 daily<em>reports / 21:00 AI 초안 / 확정·분기 마감 push), metric 단위 멱등 upsert, run</em>id + advisory lock, AI 실패 폴백, feature flag + backfill(§6.5). D15 ai<em>draft push → final</em>score push, 이의신청→확정→재push 흐름. D16 엔드포인트 정본 <code>POST /api/kpi-results</code>, period→period<em>type/period</em>key, kpi<em>result</em>review 폐기, metric 어휘 통일. 재시도 정책 단일화(지수 백오프·최대 3회·target 분리·정규 배치 우선). 스키마 드리프트 검증에 kpi_results 존재 검사 추가.</li><li><strong>v1.0 (2026-07-01)</strong>: 초안.</li></ul>
-<div class="meta-foot">원본: <code>03-erp-integration.md</code> · 자동 생성 2026-07-12 · md-to-html</div>
+<div class="meta-foot">원본: <code>03-erp-integration.md</code> · 자동 생성 2026-07-13 · md-to-html</div>
 </main>
 </div>
 

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isLeaderOrAbove, type User } from '@/lib/auth';
+import { kstToday, kstDateString } from '@/lib/dates';
 
 interface SummaryPeriod {
   period: string;
@@ -50,17 +51,14 @@ const SCOPE_LABELS: Record<Scope, string> = {
 };
 
 function getDateRange(tab: PeriodTab): { start: string; end: string } {
-  const now = new Date();
-  const toIso = (d: Date) => d.toISOString().split('T')[0];
+  const today = kstToday();
   if (tab === 'week') {
-    const day = now.getDay(); // 0=Sun
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((day + 6) % 7));
-    return { start: toIso(monday), end: toIso(now) };
+    const day = new Date(`${today}T00:00:00`).getDay(); // 0=Sun (KST 자정 기준)
+    const monday = kstDateString(new Date(Date.now() - ((day + 6) % 7) * 86400000));
+    return { start: monday, end: today };
   }
-  // month
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  return { start: toIso(start), end: toIso(now) };
+  // month: KST 기준 이번 달 1일
+  return { start: `${today.slice(0, 7)}-01`, end: today };
 }
 
 function listDates(start: string, end: string): string[] {

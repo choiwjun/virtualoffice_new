@@ -180,10 +180,13 @@ async def test_daily_status_push_query_with_data(client, admin_headers, db_sessi
 
 
 @pytest.mark.asyncio
-async def test_daily_status_push_requires_admin(client, user_headers):
-    """비관리자는 403."""
+async def test_daily_status_push_employee_self_scope(client, user_headers):
+    """비관리자: 본인 것만 조회 가능(06 §3.6 'ERP 동기화 확인'), 타인 user_id 지정 시 403."""
     resp = await client.get("/api/daily-status-push", headers=user_headers)
-    assert resp.status_code == 403
+    assert resp.status_code == 200  # 본인 스코프 자동 적용
+
+    resp2 = await client.get("/api/daily-status-push?user_id=9999", headers=user_headers)
+    assert resp2.status_code == 403
 
 
 # ── Login backoff (HG-AUTH) ───────────────────────────────────────────────────

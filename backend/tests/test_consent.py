@@ -243,4 +243,6 @@ async def test_admin_or_host_can_view_participant_consent(
     assert host_response.status_code == 200
     assert admin_response.status_code == 200
     assert host_response.json() == admin_response.json()
-    assert host_response.json()[0]["recording"] is True
+    # 호스트가 organizer 참석자로 자동 등록되므로(QA 2026-07-13) 동의한 참석자 행을 특정해 검증
+    granted_rows = [r for r in host_response.json() if r["recording"] is True]
+    assert len(granted_rows) == 1

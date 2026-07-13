@@ -1194,6 +1194,61 @@ class Announcement(Base):
 
 ---
 
+## 2.8 출장·보고서·커뮤니케이션 계층 (2026-07-13 신설 — 06 §2 좌내비 메뉴 구현분)
+
+> 구현 정본: `backend/app/models/tables.py`. 화면 스펙: 06-screens §3.15~§3.17.
+
+### business_trip — 출장 신청·승인
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| id | UUID | PK | |
+| user_id | BIGINT | FK erp_user.id RESTRICT, NN | 신청자 (근태 이력 보존) |
+| destination | VARCHAR(255) | NN | 출장지 |
+| purpose | VARCHAR(500) | NN | 목적 |
+| start_date / end_date | DATE | NN, end≥start(앱 검증) | 기간 |
+| status | ENUM | NN, requested\|approved\|rejected\|cancelled\|completed | 상태머신 §아래 |
+| note / report | TEXT | NULL | 비고 / 완료 결과보고 |
+| approver_id | BIGINT | FK erp_user.id SET NULL | 승인/반려 처리자 |
+| decided_at | TIMESTAMPTZ | NULL | 처리 시각 (UTC, D19) |
+| reject_reason | VARCHAR(500) | NULL | 반려 사유 |
+
+상태머신: requested → approved/rejected(leader/admin/super_admin) · requested/approved → cancelled(본인) · approved → completed(본인, report 필수). 처리된 건 DELETE 불가(409, D18 준용). 인덱스: (user_id,start_date), (status,start_date).
+
+### report — 업무 보고서 (일일/주간/월간, 수기)
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| id | UUID | PK | |
+| user_id | BIGINT | FK erp_user.id RESTRICT, NN | 작성자 |
+| report_type | ENUM | NN, daily\|weekly\|monthly | |
+| report_date | DATE | NN | 기준일 |
+| title | VARCHAR(255) / content TEXT | NN | |
+| status | ENUM | NN, draft\|submitted | submitted 후 불변 |
+| submitted_at | TIMESTAMPTZ | NULL | 제출 시각 |
+
+draft에서만 수정·삭제. ⚠ 06 §3.6의 "주간/월간 자동 집계 리포트"(work_log 집계·CSV)와는 별개 리소스 — 자동 집계 리포트는 후속 과제(06 §3.16 참조).
+
+### chat_message — 커뮤니케이션 채널 메시지
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| id | UUID | PK | |
+| channel | VARCHAR(50) | NN, IDX | 'general' \| 'team:{erp_team_id}' (테이블 없이 키 파생) |
+| user_id | BIGINT | FK erp_user.id RESTRICT, NN | 발신자 |
+| content | TEXT | NN, 1~2000자(앱 검증) | 불변(수정·삭제 없음) |
+| created_at | TIMESTAMPTZ | NN, IDX | UTC |
+
+접근: general=전 직원, team:{id}=팀원 또는 admin/super_admin. ⚠ 기획 원칙(06 §2: "회의 메모·근접 DM 수준, 본격 채팅은 Phase 7")보다 앞선 구현 — 스코프 결정 기록은 06 §3.17 참조.
+
+### 기존 문서와의 정합 정정 (v1.4)
+- **work_log**: `completed_at TIMESTAMPTZ NULL` 컬럼 추가 등재(D14-a 완료 전환 시각), status enum에 `aborted` 추가(06 §3.6 정본 반영).
+- **meeting**: `duration_minutes INTEGER NN DEFAULT 60` 추가 등재 — D23 시간대 겹침 충돌검사 기준([scheduled_at, +duration) 반개구간).
+- **org_group.company_id / office.company_id**: UUID로 잘못 구현되어 있던 것을 v1.2 정본(INTEGER, erp_user.company_id 동일)으로 구현 정정 완료(2026-07-13).
+- **kpi_result.ai_model 기본값**: 구현은 `'mock'`(NVIDIA 미설정 시) — v1.3의 'claude-opus' 표기는 D-NVIDIA 전환으로 폐기.
+- **asset.tscn_path 마이그레이션 노트**: 구현은 이미 `gltf_path` 전환 완료 — §2.6 경고 문구는 스테일(해소됨).
+- **미등재 보조 테이블 3종 등재**: `recording_consent`(D20-b 녹음/STT 동의, meeting_id+user_id+consent_type 업서트), `erp_sync_log`(동기화 이력·실패 추적), `user_avatar`(user_id PK 1:1, 프리셋+색상+이름표) — 상세는 tables.py 참조.
+- **erp_user.password_hash**: dev/도그푸딩 로컬 인증 전용 컬럼(ERP 동기화 무관). 운영 전 제거 또는 별도 자격증명 테이블 분리 검토(D20-f).
+
+---
+
 ## Loop Metadata
 
 ### Upstream Documents Referenced
@@ -1237,10 +1292,11 @@ class Announcement(Base):
 
 ---
 
-**문서 버전**: 1.3  
-**최종 검토**: 2026-07-09 (00-decisions.md D10·D16·D18·D19·D20·D27 반영)
+**문서 버전**: 1.4  
+**최종 검토**: 2026-07-13 (QA 감사 후속 — §2.8 신설·구현 정합 정정)
 
 ### 변경 이력
+- **v1.4 (2026-07-13)**: QA 감사(qa-audit-2026-07-13.md) 후속. §2.8 신설 — business_trip/report/chat_message 3테이블 등재 + recording_consent/erp_sync_log/user_avatar 등재 누락 해소. work_log.completed_at·aborted, meeting.duration_minutes 등재. org_group/office company_id UUID→INTEGER 구현 정정 확인. ai_model 기본값·tscn_path 스테일 노트 정리. password_hash dev 전용 명시.
 - **v1.3 (2026-07-09)**: D27 정합 — §2.6 asset 정본 출처를 3d-design/asset-registry.md §1.1(D27 스키마 정본)로 교체(07은 파이프라인 참조)·asset_id 예시 05 정본 명명(DESK_STANDARD_001)·tscn_path 마이그레이션 노트 목표 경로 `frontend/public/assets/3d/` 웹 서빙 규약 표기, §2.7 announcement 계층 신설(16 §B.2 공지 리소스), presence 갱신 경로 "매 0.5초 클라이언트 업로드"·"Godot 서버→FastAPI" → **Colyseus(20Hz 메모리 권위) → 1~5초 배치 `POST /api/presence/batch` → DB**(D3)로 정정, §8.1 `godot_server` 롤 → `colyseus_server`(D3 정합, DB 직접 쓰기 권한 제거·읽기 최소권한).
 - **v1.2 (2026-07-02)**: 데이터 정본 정렬 — room/seat coords를 D25 2D top_left 미터 규약으로 정정(Godot 월드좌표는 05 §5.3 파생), asset 표를 07 §5.3 v1.1 정본으로 동기화, work_log FK RESTRICT 통일(D18), meeting_minute stt_draft·ai_summary 추가(D5·Phase 7), uk_current_seat_user UNIQUE(seat_id) 정정, company_id INTEGER 통일, ck_work_dates 앱 레이어 이관, period_type·objection_status §3.5 enum 참조 통일, work_completed_count 정의 D14-a 정합, presence 좌표 노출 문구 정정.
 - **v1.1 (2026-07-02)**: D16 kpi_result 정본 스키마 재정의(period_type/period_key, 이의신청 필드 인라인, kpi_result_review 폐기, metric 어휘 사전 신설). D18 user_team_history 신설·erp_user.is_active·평가 계층 FK RESTRICT+soft-delete. D19 타임존 저장 UTC 통일(KST 주석 정정). D20 개인정보 절 보강(5년 보존·녹화 90일·좌표 30일·audit 대상 확대·app_admin 롤 분리). D10 좌석 배정 layout 분리 원칙. ERD 오타(ERE_USER)·company_id INTEGER·work_hours 분 단위·meeting↔minute 단방향 FK 정정.

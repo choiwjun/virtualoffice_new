@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { api, ApiError } from '@/lib/api';
+import { kstToday, kstDateString } from '@/lib/dates';
 
 interface WorkLog {
   id: string;
@@ -18,6 +19,8 @@ interface WorkLog {
   result_description: string | null;
   related_project: string | null;
   url: string | null;
+  issues: string[] | null;
+  attachments: string[] | null;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -60,21 +63,17 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 function getDateRange(tab: DateTab): { start: string; end: string } {
-  const now = new Date();
-  const toIso = (d: Date) => d.toISOString().split('T')[0];
+  const today = kstToday();
   if (tab === 'today') {
-    const s = toIso(now);
-    return { start: s, end: s };
+    return { start: today, end: today };
   }
   if (tab === 'week') {
-    const day = now.getDay(); // 0=Sun
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - ((day + 6) % 7));
-    return { start: toIso(monday), end: toIso(now) };
+    const day = new Date(`${today}T00:00:00`).getDay(); // 0=Sun (KST 자정 기준)
+    const monday = kstDateString(new Date(Date.now() - ((day + 6) % 7) * 86400000));
+    return { start: monday, end: today };
   }
-  // month
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  return { start: toIso(start), end: toIso(now) };
+  // month: KST 기준 이번 달 1일
+  return { start: `${today.slice(0, 7)}-01`, end: today };
 }
 
 function formatMinutes(m: number | null): string {
@@ -97,11 +96,13 @@ interface WorkFormData {
   url: string;
   next_action: string;
   result_description: string;
+  issues: string;
+  attachments: string;
 }
 
 const DEFAULT_FORM: WorkFormData = {
   title: '',
-  work_date: new Date().toISOString().split('T')[0],
+  work_date: '',
   category: '',
   goal: '',
   est_minutes: '',
@@ -112,7 +113,18 @@ const DEFAULT_FORM: WorkFormData = {
   url: '',
   next_action: '',
   result_description: '',
+  issues: '',
+  attachments: '',
 };
+
+/** textarea 줄 단위 입력 → string[] (빈 줄 제거), 없으면 null */
+function linesToList(text: string): string[] | null {
+  const list = text
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return list.length > 0 ? list : null;
+}
 
 export default function WorkLogPage() {
   const [activeTab, setActiveTab] = useState<DateTab>('today');
@@ -152,8 +164,8 @@ export default function WorkLogPage() {
   }
 
   async function copyYesterday() {
-    const y = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    const today = new Date().toISOString().split('T')[0];
+    const y = kstDateString(new Date(Date.now() - 86400000));
+    const today = kstToday();
     try {
       const prev = await api.get<WorkLog[]>(`/api/work-logs?start_date=${y}&end_date=${y}`);
       if (prev.length === 0) { setError('어제 복사할 업무가 없습니다.'); return; }
@@ -211,7 +223,7 @@ export default function WorkLogPage() {
 
   function openCreateModal() {
     setEditLog(null);
-    setForm({ ...DEFAULT_FORM, work_date: new Date().toISOString().split('T')[0] });
+    setForm({ ...DEFAULT_FORM, work_date: kstToday() });
     setSaveError('');
     setModalOpen(true);
   }
@@ -231,6 +243,8 @@ export default function WorkLogPage() {
       url: log.url ?? '',
       next_action: log.next_action ?? '',
       result_description: log.result_description ?? '',
+      issues: (log.issues ?? []).join('\n'),
+      attachments: (log.attachments ?? []).join('\n'),
     });
     setSaveError('');
     setModalOpen(true);
@@ -254,6 +268,8 @@ export default function WorkLogPage() {
         url: form.url || null,
         next_action: form.next_action || null,
         result_description: form.result_description || null,
+        issues: linesToList(form.issues),
+        attachments: linesToList(form.attachments),
       };
 
       if (editLog) {
@@ -541,6 +557,15 @@ export default function WorkLogPage() {
                         <p className="text-xs text-gray-500 mt-1 line-clamp-1">🎯 {log.goal}</p>
                       )}
 
+                      {log.issues && log.issues.length > 0 && (
+                        <p
+                          className="text-xs text-red-500 mt-1 line-clamp-2"
+                          title={log.issues.join('\n')}
+                        >
+                          ⚠ {log.issues.join(' · ')}
+                        </p>
+                      )}
+
                       <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
                         {log.est_minutes != null && (
                           <span>예상 {formatMinutes(log.est_minutes)}</span>
@@ -548,6 +573,17 @@ export default function WorkLogPage() {
                         {log.actual_minutes != null && (
                           <span>실제 {formatMinutes(log.actual_minutes)}</span>
                         )}
+                        {log.attachments?.map((url, i) => (
+                          <a
+                            key={`${url}-${i}`}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-indigo-500 hover:underline"
+                          >
+                            📎 첨부{log.attachments!.length > 1 ? ` ${i + 1}` : ''}
+                          </a>
+                        ))}
                         {log.result_url && (
                           <a
                             href={log.result_url}
@@ -759,6 +795,32 @@ export default function WorkLogPage() {
                   rows={2}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="업무 결과를 간략히 설명하세요"
+                />
+              </div>
+
+              {/* Issues / blockers */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  이슈/블로커
+                </label>
+                <textarea
+                  value={form.issues}
+                  onChange={(e) => setForm({ ...form, issues: e.target.value })}
+                  rows={2}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="한 줄에 하나씩 입력하세요"
+                />
+              </div>
+
+              {/* Attachments */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">첨부 URL</label>
+                <textarea
+                  value={form.attachments}
+                  onChange={(e) => setForm({ ...form, attachments: e.target.value })}
+                  rows={2}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder={'https://... (한 줄에 하나씩)'}
                 />
               </div>
 

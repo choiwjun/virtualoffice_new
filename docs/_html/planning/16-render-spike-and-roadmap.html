@@ -54,6 +54,7 @@ img{max-width:100%;border-radius:8px}
 <div class="layout">
 <nav class="toc"><div class="brand">16. 렌더 스파이크 계획 + 가상사무실 재구축 로드맵 (정본)</div><div class="sub">16-render-spike-and-roadmap.md</div><a class="lvl1" href="#16-렌더-스파이크-계획-가상사무실-재구축-로드맵-정본">16. 렌더 스파이크 계획 + 가상사무실 재구축 로드맵 (정본)</a><a class="lvl2" href="#part-a-phase-0-스파이크-깊이합성-검증-착수-전-필수-게이트">Part A. Phase 0 스파이크 — 깊이합성 검증 (착수 전 필수 게이트)</a><a class="lvl3" href="#a1-목표">A.1 목표</a><a class="lvl3" href="#a2-작업-항목">A.2 작업 항목</a><a class="lvl3" href="#a3-수용-기준-판정-상세2026-07-08-pass-2026-07-09-증거-실측-정정">A.3 수용 기준 — 판정 상세(2026-07-08 PASS, 2026-07-09 증거 실측 정정)</a><a class="lvl3" href="#a6-잔여-검증-글래스-레이어-스파이크-시안-유리-투과-대응-신규">A.6 잔여 검증 — 글래스 레이어 스파이크 (시안 유리 투과 대응, 신규)</a><a class="lvl3" href="#a4-실패-시-폴백">A.4 실패 시 폴백</a><a class="lvl3" href="#a5-소요-35일-산출물-render-pipeline-최소본-r3f-데모-증거-스크린샷-판정-리포트">A.5 소요: **3~5일**. 산출물: render-pipeline 최소본 + R3F 데모 + 증거 스크린샷 + 판정 리포트.</a><a class="lvl2" href="#part-b-재구축-로드맵-phase-0-통과-이후">Part B. 재구축 로드맵 (Phase 0 통과 이후)</a><a class="lvl3" href="#b1-이미-확보된-자산재사용">B.1 이미 확보된 자산(재사용)</a><a class="lvl3" href="#b2-신규외부">B.2 신규/외부</a><a class="lvl3" href="#b3-정리-대상d27">B.3 정리 대상(D27)</a><a class="lvl2" href="#part-c-기획-문서-진행-체크리스트">Part C. 기획 문서 진행 체크리스트</a></nav>
 <main><h1 id="16-렌더-스파이크-계획-가상사무실-재구축-로드맵-정본">16. 렌더 스파이크 계획 + 가상사무실 재구축 로드맵 (정본)</h1>
+<blockquote>🟦 <strong>D29 피벗(2026-07-12) — 렌더 노선 2.5D로 재대체.</strong> Part A/B의 &quot;Blender 오프라인렌더·깊이합성·실시간 3D glb&quot; 전제는 폐기·보관. 현행 = <strong>2.5D 클린플레이트 PNG + DOM 스프라이트</strong>(<code>OfficeViewport2D</code>). P0 깊이합성 스파이크는 이력 보관(미채택). 정본 = <strong>00-decisions §J(D29)</strong>.</blockquote>
 <blockquote>🔵 <strong>D28 피벗(2026-07-09) — Part A 깊이합성 스파이크는 &quot;PASS 후 미채택(보관)&quot;으로 갱신.</strong> 스파이크는 기술적으로 성립했으나, 사용자 제작 스타일라이즈드 에셋으로 <strong>실시간 R3F 단일 렌더</strong>(깊이합성 불필요)가 더 단순해 그쪽을 채택했다. 로드맵의 &quot;오프라인 배경렌더&quot; 전제는 <strong>실시간 glb 로드</strong>로 대체(P1 이후 태스크에 반영 필요). 정본 = <strong>00-decisions §I(D28)</strong>.</blockquote>
 <blockquote>2026-07-08 작성. D27(포토리얼 웹임베드) 착수 계획. Phase 0 스파이크 수용기준 + 이후 단계 재산정. 정본 참조: [3d-design/photoreal-web-strategy.md], 14-virtual-office-spec, 15-realtime-server-spec, 00-decisions D6/D27.</blockquote>
 <hr>
@@ -84,7 +85,7 @@ img{max-width:100%;border-radius:8px}
 <hr>
 <h2 id="part-c-기획-문서-진행-체크리스트">Part C. 기획 문서 진행 체크리스트</h2>
 <ul><li class="task"><input type="checkbox" disabled checked> design-style-analysis.md · photoreal-web-strategy.md · 14-virtual-office-spec.md</li><li class="task"><input type="checkbox" disabled checked> 15-realtime-server-spec.md · 16(본 문서) · 00-decisions D27</li><li class="task"><input type="checkbox" disabled checked> specs/screens/virtual-office-3d.yaml v3.0 (D27 반영 — 2026-07-09 완료)</li><li class="task"><input type="checkbox" disabled checked> 10-roadmap.md v3.1 D27 정합 정리 (2026-07-09 완료 — 주 단위 숫자는 원칙대로 미확정 유지)</li><li class="task"><input type="checkbox" disabled checked> 공지사항 리소스 데이터모델 추가 = 04-data-model §2.7 (2026-07-08~09 완료, specs 리소스·화면 yaml 포함)</li><li class="task"><input type="checkbox" disabled checked> 06-screens.md §3.13 KPI평가 워크플로우 화면 (2026-07-09 완료)</li></ul>
-<div class="meta-foot">원본: <code>16-render-spike-and-roadmap.md</code> · 자동 생성 2026-07-12 · md-to-html</div>
+<div class="meta-foot">원본: <code>16-render-spike-and-roadmap.md</code> · 자동 생성 2026-07-13 · md-to-html</div>
 </main>
 </div>
 

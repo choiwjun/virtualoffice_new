@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isLeaderOrAbove, type User } from '@/lib/auth';
+import { kstToday } from '@/lib/dates';
 
 interface Trip {
-  id: number;
+  id: string;
   user_id: number;
   destination: string;
   purpose: string;
@@ -51,10 +52,6 @@ interface TripFormData {
   start_date: string;
   end_date: string;
   note: string;
-}
-
-function todayIso(): string {
-  return new Date().toISOString().split('T')[0];
 }
 
 const DEFAULT_FORM: TripFormData = {
@@ -152,7 +149,8 @@ export default function TripPage() {
 
   function openCreateModal() {
     setEditTrip(null);
-    setForm({ ...DEFAULT_FORM, start_date: todayIso(), end_date: todayIso() });
+    const today = kstToday();
+    setForm({ ...DEFAULT_FORM, start_date: today, end_date: today });
     setSaveError('');
     setModalOpen(true);
   }
