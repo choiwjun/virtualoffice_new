@@ -1,14 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { getToken, getUser, logout, User } from '@/lib/auth';
-import Sidebar from '@/components/Sidebar';
+import { useRouter } from 'next/navigation';
+import { getToken } from '@/lib/auth';
+import OfficeShell from '@/components/OfficeShell';
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
-  const [user, setUser] = useState<User | null>(null);
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
@@ -17,61 +15,18 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
       router.replace('/login');
       return;
     }
-    setUser(getUser());
     setChecked(true);
   }, [router]);
 
   if (!checked) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-400 text-sm">로딩 중...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0E1626' }}>
+        <div className="text-sm text-text-muted">로딩 중...</div>
       </div>
     );
   }
 
-  // /office(및 하위)는 자체 D27 셸(좌내비+3D 뷰포트+우패널)이 전체 화면을 채움
-  // → 콘솔 Sidebar/header 미표시(이중 사이드바 제거). 인증 체크는 위에서 이미 통과.
-  if (pathname?.startsWith('/office')) {
-    return <div className="h-screen w-screen overflow-hidden">{children}</div>;
-  }
-
-  const role = user?.role ?? 'employee';
-  // Normalize super_admin → admin for sidebar
-  const sidebarRole = role === 'super_admin' ? 'admin' : role;
-
-  return (
-    <div className="flex h-screen bg-gray-100 overflow-hidden">
-      <Sidebar role={sidebarRole as 'admin' | 'leader' | 'employee'} />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top header — /office 셸과 동일한 다크 토큰(라우트 이동 시 헤더 디자인 일관) */}
-        <header className="flex-shrink-0 bg-bg-base border-b border-border-subtle px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-text-muted">VirtualOffice</span>
-            <span className="text-text-muted">/</span>
-            <span className="text-sm font-medium text-text-secondary">관리콘솔</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className="text-sm font-medium text-text-primary">{user?.name ?? '—'}</div>
-              <div className="text-xs text-text-muted">{user?.email ?? ''}</div>
-            </div>
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold">
-              {user?.name?.charAt(0)?.toUpperCase() ?? '?'}
-            </div>
-            <button
-              onClick={logout}
-              className="text-sm text-text-muted hover:text-danger transition-colors"
-            >
-              로그아웃
-            </button>
-          </div>
-        </header>
-
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto">{children}</main>
-      </div>
-    </div>
-  );
+  // D29 셸 단일화: 모든 (protected) 라우트가 하나의 오피스 셸 안에서 렌더.
+  // 메뉴 페이지는 셸 위 오버레이 창(children) → 라우트 이동에도 뷰포트·실시간 연결·디자인 유지.
+  return <OfficeShell>{children}</OfficeShell>;
 }

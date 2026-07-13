@@ -49,7 +49,7 @@ function LoginForm() {
         <div className="text-center mb-6">
           <div className="text-3xl mb-2">🏢</div>
           <h1 className="text-2xl font-bold text-gray-800">VirtualOffice</h1>
-          <p className="text-sm text-gray-500 mt-1">관리콘솔 로그인</p>
+          <p className="text-sm text-gray-500 mt-1">가상오피스 로그인</p>
         </div>
 
         {/* Session expired banner */}

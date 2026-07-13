@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'VirtualOffice 관리콘솔',
+  title: 'VirtualOffice 가상오피스',
   description: 'VirtualOffice Web Admin Console',
 };
 
