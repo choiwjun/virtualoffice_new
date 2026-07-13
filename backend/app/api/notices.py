@@ -1,7 +1,7 @@
-"""사내 공지사항 API (14-virtual-office-spec §2.8).
+"""사내 공지사항 API (14-virtual-office-spec §2.8, 04-data-model §2.7).
 
-- GET  /api/notices        전 직원 열람 (활성 공지, pinned 우선·최신순)
-- POST /api/notices        admin 작성
+- GET  /api/notices        전 직원 열람 (활성·게시·미만료 공지, pinned 우선·최신순)
+- POST /api/notices        admin 작성 (분류·게시/만료 시각 지정 가능)
 - DELETE /api/notices/{id} admin soft-delete (is_active=False)
 """
 
@@ -13,11 +13,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.core.deps import CurrentUser, get_current_user, require_role
 from app.db import get_db
-from app.models.tables import Notice
+from app.models.tables import Notice, NoticeCategory
 
 router = APIRouter(prefix="/api", tags=["notices"])
 
@@ -33,7 +33,10 @@ class NoticeOut(BaseModel):
     title: str
     body: Optional[str] = None
     author: str
+    category: str
     pinned: bool
+    published_at: str
+    expires_at: Optional[str] = None
     created_at: str
 
 
@@ -46,7 +49,11 @@ class NoticeCreate(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     body: Optional[str] = None
     author: str = Field(default="공지", max_length=100)
+    category: NoticeCategory = NoticeCategory.NOTICE
     pinned: bool = False
+    # 미지정 시 즉시 게시 / 만료 없음.
+    published_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
 
 
 def _out(n: Notice) -> NoticeOut:
@@ -55,7 +62,10 @@ def _out(n: Notice) -> NoticeOut:
         title=n.title,
         body=n.body,
         author=n.author,
+        category=n.category.value if hasattr(n.category, "value") else str(n.category),
         pinned=n.pinned,
+        published_at=_iso(n.published_at),
+        expires_at=_iso(n.expires_at) if n.expires_at else None,
         created_at=_iso(n.created_at),
     )
 
@@ -66,11 +76,16 @@ async def list_notices(
     db=Depends(get_db),
     _: CurrentUser = Depends(get_current_user),
 ) -> NoticeListOut:
-    """활성 공지 목록. pinned 상단 고정 후 최신순."""
+    """활성·게시·미만료 공지 목록. pinned 상단 고정 후 게시 최신순."""
+    now = datetime.now(timezone.utc)
     stmt = (
         select(Notice)
-        .where(Notice.is_active.is_(True))
-        .order_by(Notice.pinned.desc(), Notice.created_at.desc())
+        .where(
+            Notice.is_active.is_(True),
+            Notice.published_at <= now,
+            or_(Notice.expires_at.is_(None), Notice.expires_at > now),
+        )
+        .order_by(Notice.pinned.desc(), Notice.published_at.desc())
         .limit(limit)
     )
     rows = (await db.execute(stmt)).scalars().all()
@@ -85,11 +100,18 @@ async def create_notice(
     user: CurrentUser = Depends(require_role("admin", "super_admin")),
 ) -> NoticeOut:
     """공지 작성 (admin)."""
+    if payload.expires_at is not None:
+        published = payload.published_at or datetime.now(timezone.utc)
+        if payload.expires_at <= published:
+            raise HTTPException(status_code=422, detail="expires_at_before_published_at")
     notice = Notice(
         title=payload.title,
         body=payload.body,
         author=payload.author,
+        category=payload.category,
         pinned=payload.pinned,
+        published_at=payload.published_at or datetime.now(timezone.utc),
+        expires_at=payload.expires_at,
         created_by=user.user_id,
     )
     db.add(notice)

@@ -75,3 +75,32 @@ class TestAvatar:
         assert (
             await async_client.put("/api/avatar", json=_VALID)
         ).status_code in (401, 403)
+
+    async def test_list_avatars_returns_set_omits_unset(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
+        # user 1(본인) 설정, user 2는 미설정
+        await async_client.put("/api/avatar", headers=auth_headers, json=_VALID)
+        resp = await async_client.get(
+            "/api/avatars?user_ids=1,2", headers=auth_headers
+        )
+        assert resp.status_code == 200
+        rows = resp.json()
+        assert isinstance(rows, list)
+        ids = {r["user_id"] for r in rows}
+        assert 1 in ids  # 설정된 사용자 포함
+        assert 2 not in ids  # 미설정 사용자는 생략
+
+    async def test_list_avatars_empty_when_no_valid_ids(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
+        resp = await async_client.get(
+            "/api/avatars?user_ids=abc,", headers=auth_headers
+        )
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    async def test_list_avatars_requires_auth(self, async_client: AsyncClient):
+        assert (
+            await async_client.get("/api/avatars?user_ids=1")
+        ).status_code in (401, 403)

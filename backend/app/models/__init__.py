@@ -31,6 +31,7 @@ from app.models.tables import (
     Asset,
     AuditLog,
     Notice,
+    NoticeCategory,
 )
 
 __all__ = [
@@ -58,4 +59,5 @@ __all__ = [
     "Asset",
     "AuditLog",
     "Notice",
+    "NoticeCategory",
 ]

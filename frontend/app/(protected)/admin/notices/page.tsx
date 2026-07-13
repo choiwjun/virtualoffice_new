@@ -5,19 +5,36 @@ import { api, ApiError } from '@/lib/api';
 import { getUser, isAdmin } from '@/lib/auth';
 import { formatKst } from '@/lib/kpi';
 
-// 공지사항 관리 (14-virtual-office-spec §2.8). 작성/삭제=admin. 목록은 대시보드 우측 패널과 동일 소스.
+// 공지사항 관리 (14-virtual-office-spec §2.8, 04-data-model §2.7). 작성/삭제=admin.
 interface Notice {
   id: string;
   title: string;
   body: string | null;
   author: string;
+  category: string;
   pinned: boolean;
+  published_at: string;
+  expires_at: string | null;
   created_at: string;
 }
 
 interface NoticeListResponse {
   items: Notice[];
   total: number;
+}
+
+// 분류 표시 메타 (04-data-model §2.7: system | notice | info)
+const CATEGORY_META: Record<string, { label: string; cls: string }> = {
+  system: { label: '시스템', cls: 'bg-red-100 text-red-700' },
+  notice: { label: '공지', cls: 'bg-indigo-100 text-indigo-700' },
+  info: { label: '안내', cls: 'bg-gray-100 text-gray-600' },
+};
+
+function CategoryBadge({ category }: { category: string }) {
+  const meta = CATEGORY_META[category] ?? CATEGORY_META.notice;
+  return (
+    <span className={`text-[10px] px-1.5 py-0.5 rounded ${meta.cls}`}>{meta.label}</span>
+  );
 }
 
 export default function AdminNoticesPage() {
@@ -32,7 +49,9 @@ export default function AdminNoticesPage() {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [body, setBody] = useState('');
+  const [category, setCategory] = useState('notice');
   const [pinned, setPinned] = useState(false);
+  const [expiresAt, setExpiresAt] = useState(''); // datetime-local (로컬시각) — 비우면 만료 없음
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -68,12 +87,17 @@ export default function AdminNoticesPage() {
           title: title.trim(),
           author: author.trim() || '공지',
           body: body.trim() || null,
+          category,
           pinned,
+          // datetime-local(로컬) → ISO(UTC 포함) 변환. 비우면 만료 없음.
+          expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
         });
         setTitle('');
         setAuthor('');
         setBody('');
+        setCategory('notice');
         setPinned(false);
+        setExpiresAt('');
         await fetchNotices();
       } catch (err) {
         setFormError(err instanceof ApiError ? `등록 실패 (${err.status})` : '서버 연결 오류');
@@ -81,7 +105,7 @@ export default function AdminNoticesPage() {
         setSubmitting(false);
       }
     },
-    [title, author, body, pinned, fetchNotices],
+    [title, author, body, category, pinned, expiresAt, fetchNotices],
   );
 
   const handleDelete = useCallback(
@@ -124,6 +148,15 @@ export default function AdminNoticesPage() {
             maxLength={255}
             className="flex-1 min-w-[240px] border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-28 border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="notice">공지</option>
+            <option value="system">시스템</option>
+            <option value="info">안내</option>
+          </select>
           <input
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
@@ -139,11 +172,22 @@ export default function AdminNoticesPage() {
           rows={2}
           className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
-        <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 text-sm text-gray-600">
-            <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
-            상단 고정
-          </label>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
+              상단 고정
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              만료
+              <input
+                type="datetime-local"
+                value={expiresAt}
+                onChange={(e) => setExpiresAt(e.target.value)}
+                className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </label>
+          </div>
           <div className="flex items-center gap-3">
             {formError && <span className="text-xs text-red-600">{formError}</span>}
             <button
@@ -173,9 +217,10 @@ export default function AdminNoticesPage() {
             <thead className="bg-gray-50 text-gray-500 text-xs">
               <tr>
                 <th className="text-left px-4 py-2.5 font-medium w-8"></th>
+                <th className="text-left px-4 py-2.5 font-medium w-16">분류</th>
                 <th className="text-left px-4 py-2.5 font-medium">제목</th>
                 <th className="text-left px-4 py-2.5 font-medium w-28">작성자</th>
-                <th className="text-left px-4 py-2.5 font-medium w-40">등록 (KST)</th>
+                <th className="text-left px-4 py-2.5 font-medium w-40">게시 (KST)</th>
                 <th className="text-right px-4 py-2.5 font-medium w-20"></th>
               </tr>
             </thead>
@@ -185,9 +230,10 @@ export default function AdminNoticesPage() {
                   <td className="px-4 py-2">
                     {n.pinned && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">고정</span>}
                   </td>
+                  <td className="px-4 py-2"><CategoryBadge category={n.category} /></td>
                   <td className="px-4 py-2 text-gray-700">{n.title}</td>
                   <td className="px-4 py-2 text-gray-500">{n.author}</td>
-                  <td className="px-4 py-2 text-gray-400 whitespace-nowrap">{formatKst(n.created_at)}</td>
+                  <td className="px-4 py-2 text-gray-400 whitespace-nowrap">{formatKst(n.published_at ?? n.created_at)}</td>
                   <td className="px-4 py-2 text-right">
                     <button onClick={() => handleDelete(n.id)} className="text-xs text-red-600 hover:underline">삭제</button>
                   </td>

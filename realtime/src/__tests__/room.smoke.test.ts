@@ -264,8 +264,55 @@ async function main(): Promise<void> {
     eq(PROXIMITY_M, 5, "PROXIMITY_M = 5m per spec");
   }
 
+  console.log("\n[7] single-session eviction (same userId)");
+  {
+    const room7 = makeRoom();
+    (room7 as unknown as { state: OfficeState }).state = new OfficeState();
+    (room7 as unknown as { layout: unknown }).layout = layout;
+    (room7 as unknown as { broadcast(t: string, m: unknown): void }).broadcast = () => {};
+
+    const leaveCode: Record<string, number> = {};
+    type MC = { sessionId: string; send(): void; leave(code: number): void };
+    const mk = (sid: string): MC => ({
+      sessionId: sid,
+      send() {},
+      leave(code: number) {
+        leaveCode[sid] = code;
+      },
+    });
+    const c1 = mk("sess-A");
+    const c2 = mk("sess-B");
+    type Cli = Parameters<OfficeRoom["onJoin"]>[0];
+    type JOpt = Parameters<OfficeRoom["onJoin"]>[1];
+    const opt = (name: string): JOpt =>
+      ({ userId: "dup", name, companyId: "company-demo", officeId: "office-demo", floorId: "floor-1" }) as JOpt;
+
+    (room7 as unknown as { clients: MC[] }).clients = [c1];
+    room7.onJoin(c1 as unknown as Cli, opt("A"), opt("A"));
+    (room7 as unknown as { clients: MC[] }).clients = [c1, c2];
+    room7.onJoin(c2 as unknown as Cli, opt("A2"), opt("A2"));
+
+    eq(leaveCode["sess-A"], 4000, "old session evicted with code 4000");
+    assert(
+      (room7 as unknown as { evicting: Set<string> }).evicting.has("sess-A"),
+      "old session marked evicting",
+    );
+
+    // Evicted onLeave must finalize immediately (no reconnection wait).
+    await room7.onLeave(c1 as unknown as Cli, false);
+    const players = (room7 as unknown as { state: OfficeState }).state.players;
+    assert(!players.has("sess-A"), "evicted session removed from state");
+    assert(players.has("sess-B"), "new session retained");
+    assert(
+      !(room7 as unknown as { evicting: Set<string> }).evicting.has("sess-A"),
+      "evicting flag cleared after cleanup",
+    );
+  }
+
   console.log(`\n=== smoke: ${passed} passed, ${failed} failed ===`);
-  if (failed > 0) process.exit(1);
+  // 명시 종료: 하니스가 matchMaker 없이 룸을 생성하므로 Colyseus 내부 타이머가 남아
+  // 자연 종료가 지연될 수 있다(테스트는 위에서 이미 완료). 결과 코드로 결정적 종료.
+  process.exit(failed > 0 ? 1 : 0);
 }
 
 main().catch((err) => {

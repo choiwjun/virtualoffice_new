@@ -1498,6 +1498,13 @@ class ErpSyncLog(Base):
     """manual | scheduled"""
     error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+class NoticeCategory(str, Enum):
+    """공지 분류 (04-data-model §2.7)."""
+    SYSTEM = "system"   # 시스템/장애 공지
+    NOTICE = "notice"   # 일반 공지
+    INFO = "info"       # 안내/정보
+
+
 class Notice(Base, TimestampMixin, SoftDeleteMixin):
     """사내 공지사항 (대시보드 우측 패널 · 14-virtual-office-spec §2.8).
 
@@ -1514,6 +1521,25 @@ class Notice(Base, TimestampMixin, SoftDeleteMixin):
     """표시 작성자 라벨 (예: 인사팀, IT팀)"""
     pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
     """상단 고정 여부"""
+    category: Mapped[NoticeCategory] = mapped_column(
+        SQLEnum(NoticeCategory),
+        nullable=False,
+        default=NoticeCategory.NOTICE,
+        index=True,
+    )
+    """분류 (system | notice | info) — 04-data-model §2.7"""
+    published_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        index=True,
+    )
+    """게시 시각 (UTC). 이 시각 이후부터 노출."""
+    expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    """만료 시각 (UTC, NULL = 만료 없음). 이 시각 이후 목록에서 숨김."""
     created_by: Mapped[Optional[int]] = mapped_column(
         BigInteger,
         ForeignKey("erp_user.id", ondelete="SET NULL"),

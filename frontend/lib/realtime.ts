@@ -41,6 +41,8 @@ export interface OfficeConnectionHandlers {
   onStatus?: (s: ConnStatus) => void;
   /** 플레이어 집합(sessionId)이 바뀔 때만 호출 — React 로스터 갱신용. */
   onRoster?: (sessionIds: string[]) => void;
+  /** 회의 명시입장(D24) 서버 판정 결과 — enter_meeting 응답. */
+  onMeetingEntry?: (r: MeetingEntryResult) => void;
 }
 
 export interface OfficeConnection {
@@ -48,8 +50,17 @@ export interface OfficeConnection {
   /** 서버 권위 플레이어 — in-place 갱신되는 live map. useFrame에서 직접 읽는다. */
   players: Map<string, NetPlayer>;
   requestMove: (x: number, y: number) => void;
+  /** 회의 명시입장(D24) 요청 — 서버 판정은 onMeetingEntry로 통지. */
+  enterMeeting: (roomId: string) => void;
   setStatus: (status: string, dnd?: boolean) => void;
   leave: () => void;
+}
+
+/** enter_meeting(D24 1단계) 서버 판정 결과. ok면 클라가 명시 입장(POST /meetings/join) 진행. */
+export interface MeetingEntryResult {
+  roomId: string;
+  ok: boolean;
+  reason?: string;
 }
 
 // 서버 스키마는 colyseus.js가 제네릭 디코드 → 느슨하게 접근.
@@ -110,6 +121,13 @@ export async function createOfficeConnection(
   // 초기 스냅샷(join 직후)도 상태로 반영됨. 명시적 snapshot 메시지는 로깅만.
   room.onMessage('snapshot', () => syncFromState());
   room.onMessage('move_rejected', () => { /* 서버 권위 위치가 state로 정정됨 → 별도 처리 불필요 */ });
+  // 회의 명시입장(D24) 서버 판정 — allowed면 클라가 프롬프트 후 명시 join.
+  room.onMessage('meeting_entry_allowed', (m: { roomId?: string }) =>
+    handlers.onMeetingEntry?.({ roomId: m?.roomId ?? '', ok: true }),
+  );
+  room.onMessage('meeting_entry_denied', (m: { roomId?: string; reason?: string }) =>
+    handlers.onMeetingEntry?.({ roomId: m?.roomId ?? '', ok: false, reason: m?.reason }),
+  );
 
   room.onLeave((code) => {
     if (left) return;
@@ -162,6 +180,9 @@ export async function createOfficeConnection(
     requestMove: (x: number, y: number) => {
       // 목적지 설정 → walker가 스텝을 스트리밍.
       dest = { x, y };
+    },
+    enterMeeting: (roomId: string) => {
+      room.send('enter_meeting', { roomId });
     },
     setStatus: (status: string, dnd?: boolean) => {
       room.send('status_change', { status, dnd });
