@@ -1,1 +1,0 @@
-Load each `ID_STATE.png` as an image, then apply a Tween to `y`, `angle`, and `scaleY` using `02_shared/character-motion-profiles.json`. Movement is done on the sprite container; flip with `setFlipX`.

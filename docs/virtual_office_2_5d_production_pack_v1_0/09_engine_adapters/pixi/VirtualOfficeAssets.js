@@ -1,1 +1,0 @@
-export async function loadVirtualOfficeAssets(Assets,base='../'){const r=await fetch(base+'07_metadata/asset-registry.json').then(x=>x.json());await Assets.load(r.assets.filter(a=>a.type==='sprite').map(a=>({alias:a.asset_id,src:base+a.file})));return r}

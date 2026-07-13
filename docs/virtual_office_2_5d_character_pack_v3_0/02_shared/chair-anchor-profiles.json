@@ -1,8 +1,0 @@
-{
-  "version": "3.0",
-  "profiles": {
-    "TASK_CHAIR": {"characterAnchor": [0.50,0.92], "chairBackLayer": 10, "characterLayer": 20, "chairFrontLayer": 30},
-    "MEETING_CHAIR": {"characterAnchor": [0.50,0.91], "chairBackLayer": 10, "characterLayer": 20, "tableFrontLayer": 35},
-    "BAR_STOOL": {"characterAnchor": [0.50,0.90], "chairBackLayer": 10, "characterLayer": 20, "counterFrontLayer": 35}
-  }
-}

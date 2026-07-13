@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
-import { CHARACTER_IDS, CHARACTER_LABELS, frameUrl, isCharacterId } from '@/lib/office2d';
+import { ASSETS_READY, CHARACTER_IDS, CHARACTER_LABELS, frameUrl, isCharacterId } from '@/lib/office2d';
 
 interface Avatar {
   user_id: number;
@@ -43,13 +43,32 @@ function AvatarPreview({
   const char = isCharacterId(preset) ? preset : CHARACTER_IDS[0];
   return (
     <div className="flex flex-col items-center gap-2">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={frameUrl(char, 'idle', 0)}
-        alt="아바타 미리보기"
-        className="h-44 w-auto object-contain"
-        draggable={false}
-      />
+      {ASSETS_READY ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={frameUrl(char, 'idle', 0)}
+          alt="아바타 미리보기"
+          className="h-44 w-auto object-contain"
+          draggable={false}
+        />
+      ) : (
+        /* D30: 에셋 재작업 중 — 도트 미리보기 */
+        <div
+          className="h-44 flex items-end justify-center"
+          style={{
+            aspectRatio: '0.46',
+            borderRadius: '999px',
+            background: `linear-gradient(180deg, ${top} 0%, rgba(20,32,52,.95) 90%)`,
+            border: '1px solid rgba(255,255,255,.25)',
+            color: '#fff',
+            fontWeight: 700,
+            fontSize: 20,
+            paddingBottom: 12,
+          }}
+        >
+          {CHARACTER_LABELS[char].charAt(0)}
+        </div>
+      )}
       <span
         className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
         style={{ background: 'rgba(7,16,29,.92)', border: `1px solid ${top}` }}
