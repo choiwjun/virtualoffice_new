@@ -268,6 +268,7 @@ async def test_scheduler_registers_expected_jobs():
         assert "kpi_18" not in ids, "18:00 KPI 잡은 D17 정본에 없음 (18:00=EOD push 전용)"
         assert "eod_push" in ids, "EOD 18:00 push 잡 누락"
         assert "erp_hourly" in ids, "ERP 매시간 동기화 잡 누락"
+        assert "audit_retention_purge" in ids, "audit_log 5년 파기 잡 누락 (D20-e)"
         eod = next(j for j in jobs if j.id == "eod_push")
         trigger = str(eod.trigger)
         assert "hour='18'" in trigger and "minute='0'" in trigger, f"EOD는 18:00 KST 정본: {trigger}"

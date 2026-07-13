@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     erp_database_url: str = ""
     # ERP write-back(EOD 전송) 대상. 비어있으면 mock 전송(상태머신만 동작, 실 ERP 미접속).
     erp_push_endpoint: str = ""
+    # D17 공휴일 스킵: EOD 배치를 건너뛸 KST 날짜(ISO, 콤마 구분). 예: "2026-01-01,2026-03-01"
+    # 외부 공휴일 캘린더 API 연동 전까지 운영자가 연 단위로 유지한다.
+    eod_holidays: str = ""
 
     # ── AI 서술 초안/회의록 요약 (REQ-007, D14-e, D20 가명화) ──
     # NVIDIA Integrate API(OpenAI 호환). nvidia_api_key 비었거나 ai_draft_enabled=False면

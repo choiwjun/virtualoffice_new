@@ -33,11 +33,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.tables import (
     ActionItem,
+    ErpUser,
     KpiObjectionStatus,
     KpiPeriodType,
     KpiResult,
     KpiSource,
     MeetingMinute,
+    TeamZone,
+    UserTeamHistory,
     WorkLog,
     WorkLogStatus,
 )
@@ -575,3 +578,156 @@ async def auto_finalize_expired(db: AsyncSession) -> int:
 
     await db.flush()
     return finalized
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 팀 벤치마크 (team_percentile) — 08 §5.4, user_team_history 기준
+# ──────────────────────────────────────────────────────────────────────────────
+
+_PERCENTILE_MIN_POOL = 5  # 08 §5.4: 모수 < 5명이면 부서 폴백, 그래도 부족하면 미표시(None)
+
+
+def _overlaps(h: UserTeamHistory, start_dt: datetime, end_dt: datetime) -> bool:
+    """이력 구간이 평가 기간과 겹치는가 — 08 §5.4 판정 쿼리와 동일 의미.
+
+    valid_from <= period_end AND (valid_to IS NULL OR valid_to > period_start)
+    """
+    vf = h.valid_from.replace(tzinfo=timezone.utc) if h.valid_from.tzinfo is None else h.valid_from
+    vt = None
+    if h.valid_to is not None:
+        vt = h.valid_to.replace(tzinfo=timezone.utc) if h.valid_to.tzinfo is None else h.valid_to
+    return vf <= end_dt and (vt is None or vt > start_dt)
+
+
+async def _team_for_period(
+    db: AsyncSession, user_id: int, start_dt: datetime, end_dt: datetime
+) -> int | None:
+    """평가 기간의 실소속 팀 — user_team_history 겹침 중 가장 최근 구간, 이력 없으면 현재 팀."""
+    hist = (
+        await db.execute(select(UserTeamHistory).where(UserTeamHistory.user_id == user_id))
+    ).scalars().all()
+    overlapping = [h for h in hist if _overlaps(h, start_dt, end_dt)]
+    if overlapping:
+        overlapping.sort(key=lambda h: h.valid_from)
+        return overlapping[-1].erp_team_id
+    user = await db.get(ErpUser, user_id)
+    return user.erp_team_id if user is not None else None
+
+
+async def _members_for_period(
+    db: AsyncSession, team_ids: set[int], start_dt: datetime, end_dt: datetime
+) -> set[int]:
+    """기간에 team_ids 중 하나에 소속했던 활성 직원 집합.
+
+    이력이 있는 사용자는 이력 겹침 기준, 이력이 전혀 없는 사용자는 현재 erp_team_id 폴백.
+    """
+    hist = (
+        await db.execute(
+            select(UserTeamHistory).where(UserTeamHistory.erp_team_id.in_(team_ids))
+        )
+    ).scalars().all()
+    members = {h.user_id for h in hist if _overlaps(h, start_dt, end_dt)}
+
+    # 이력 0행 사용자 폴백: 현재 소속이 team_ids
+    has_any_hist = set(
+        (
+            await db.execute(select(UserTeamHistory.user_id).distinct())
+        ).scalars().all()
+    )
+    no_hist_current = (
+        await db.execute(
+            select(ErpUser.id).where(
+                ErpUser.erp_team_id.in_(team_ids),
+                ErpUser.is_active.is_(True),
+            )
+        )
+    ).scalars().all()
+    members |= {uid for uid in no_hist_current if uid not in has_any_hist}
+
+    # 활성 필터
+    if members:
+        active = set(
+            (
+                await db.execute(
+                    select(ErpUser.id).where(
+                        ErpUser.id.in_(members), ErpUser.is_active.is_(True)
+                    )
+                )
+            ).scalars().all()
+        )
+        members &= active
+    return members
+
+
+async def _org_sibling_teams(db: AsyncSession, team_id: int) -> set[int]:
+    """부서 폴백(08 §5.4): team_zone으로 팀→org_group을 찾고, 같은 org_group의 전체 팀."""
+    zone = (
+        await db.execute(select(TeamZone).where(TeamZone.erp_team_id == team_id).limit(1))
+    ).scalar_one_or_none()
+    if zone is None:
+        return set()
+    rows = (
+        await db.execute(
+            select(TeamZone.erp_team_id).where(TeamZone.org_group_id == zone.org_group_id)
+        )
+    ).scalars().all()
+    return set(rows)
+
+
+async def compute_team_percentile(
+    db: AsyncSession, user_id: int, period_type: str, period_key: str
+) -> float | None:
+    """
+    팀 내 백분위 (08 §5.4) — quarterly_total 분포 기준. 코드가 계산해 AI 입력으로 제공(D14-e).
+
+    - 모수: 평가 기간 실소속 팀(user_team_history, 이력 없으면 현재 팀)의 활성 직원
+      quarterly_total 값 분포 (해당 period_key의 kpi_result가 이미 계산돼 있어야 함)
+    - 모수 < 5명 → 부서(org_group, team_zone 매핑) 단위 폴백
+    - 그래도 < 5명 → None (백분위 미표시, 과대 해석 방지)
+    - 산식: (아래 + 0.5×동률) / 모수 × 100, 소수 1자리
+    """
+    pt = period_type.value if hasattr(period_type, "value") else period_type
+    if pt != "quarterly":
+        return None  # daily에는 백분위 없음 (분기 벤치마크 전용)
+
+    start, end = _parse_period(pt, period_key)
+    start_dt = datetime(start.year, start.month, start.day, tzinfo=timezone.utc)
+    end_dt = datetime(end.year, end.month, end.day, 23, 59, 59, tzinfo=timezone.utc)
+
+    team_id = await _team_for_period(db, user_id, start_dt, end_dt)
+    if team_id is None:
+        return None
+
+    async def _pool(team_ids: set[int]) -> dict[int, float]:
+        members = await _members_for_period(db, team_ids, start_dt, end_dt)
+        if not members:
+            return {}
+        rows = (
+            await db.execute(
+                select(KpiResult.user_id, KpiResult.value).where(
+                    KpiResult.user_id.in_(members),
+                    KpiResult.period_type == pt,
+                    KpiResult.period_key == period_key,
+                    KpiResult.metric == "quarterly_total",
+                )
+            )
+        ).all()
+        return {uid: float(v) for uid, v in rows}
+
+    values = await _pool({team_id})
+    if user_id not in values:
+        return None
+    if len(values) < _PERCENTILE_MIN_POOL:
+        siblings = await _org_sibling_teams(db, team_id)
+        if siblings and siblings != {team_id}:
+            widened = await _pool(siblings | {team_id})
+            if user_id in widened:
+                values = widened
+        if len(values) < _PERCENTILE_MIN_POOL:
+            return None
+
+    mine = values[user_id]
+    n = len(values)
+    below = sum(1 for v in values.values() if v < mine)
+    equal = sum(1 for v in values.values() if v == mine)
+    return round((below + 0.5 * equal) / n * 100, 1)
