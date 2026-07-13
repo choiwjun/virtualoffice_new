@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>기획문서 ↔ 구현 소스 전수조사 (2026-07-13, HEAD=311968b)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">기획문서 ↔ 구현 소스 전수조사 (2026-07-13, HEAD=311968b)</div><div class="sub">spec-impl-gap-audit-2026-07-13.md</div><a class="lvl1" href="#기획문서-구현-소스-전수조사-2026-07-13-head311968b">기획문서 ↔ 구현 소스 전수조사 (2026-07-13, HEAD=311968b)</a><a class="lvl2" href="#0-총평">0. 총평</a><a class="lvl2" href="#1-확정-결함-즉시-조치-코드가-정본-위반">1. 확정 결함 — 즉시 조치 (코드가 정본 위반)</a><a class="lvl2" href="#2-미구현-외부-의존-게이트-코드-결함-아님-진행-차단-요소">2. 미구현 — 외부 의존 게이트 (코드 결함 아님, 진행 차단 요소)</a><a class="lvl2" href="#3-미구현-후순위-로드맵-정합-결함-아님">3. 미구현 — 후순위 (로드맵 정합, 결함 아님)</a><a class="lvl2" href="#4-부분-구현-잔존-qa-27항목-중-부분수리-9건-화면-상세">4. 부분 구현 잔존 (QA 27항목 중 부분수리 9건 + 화면 상세)</a><a class="lvl2" href="#5-문서-결함-코드가-아니라-문서를-고칠-것">5. 문서 결함 (코드가 아니라 문서를 고칠 것)</a><a class="lvl2" href="#6-오탐-기각-기록-감사-신뢰성">6. 오탐 기각 기록 (감사 신뢰성)</a><a class="lvl2" href="#7-권장-조치-순서">7. 권장 조치 순서</a></nav>
+<main><h1 id="기획문서-구현-소스-전수조사-2026-07-13-head311968b">기획문서 ↔ 구현 소스 전수조사 (2026-07-13, HEAD=311968b)</h1>
+<blockquote>6트랙 병렬 감사(①QA잔존 ②데이터모델·RBAC ③화면 ④KPI·ERP ⑤실시간·2.5D ⑥PRD·로드맵) + 메인 세션 직접 교차검증. 에이전트 오탐 4건(Colyseus 미구현설·D24 미구현설·presence TTL 미구현설·조직도 API 부재설)은 라인 증거로 <strong>기각</strong> 후 반영. 실측 규모: 백엔드 라우트 99개(19파일) · DB 테이블 27개 · 프론트 페이지 20개 · 백엔드 테스트 37파일 · realtime 검증 이동9/근접8.</blockquote>
+<hr>
+<h2 id="0-총평">0. 총평</h2>
+<div class="table-wrap"><table><thead><tr><th>영역</th><th>동기화율</th><th>비고</th></tr></thead><tbody><tr><td>데이터모델 (04 vs tables.py)</td><td><strong>~99%</strong></td><td>실결함 0. 과거 QA §4 미등재 6테이블은 04 v1.4 개정으로 전부 등재 완료</td></tr><tr><td>KPI·ERP 로직 (08/03)</td><td><strong>~90%</strong></td><td>산식·이의 상태머신·±10%·감사로그 정합. 잔여=외부 ERP 의존 + 배치 분리</td></tr><tr><td>RBAC (rbac.yaml vs API)</td><td><strong>~73% 정합</strong></td><td>게이트 존재율 100%, 정본 일치 11/15. <strong>실결함 2건(P0)</strong></td></tr><tr><td>실시간 서버 (15/09 vs realtime/)</td><td><strong>~95%</strong></td><td>프로토콜 5종·검증 8+8·단일세션·재접속 전부 정합</td></tr><tr><td>화면 (06 vs frontend)</td><td>라우트 100% / 상세 ~85%</td><td>유령 화면 0. 신설 4종 문서화 후행 완료(§3.15~3.17)</td></tr><tr><td>PRD MUST 커버리지</td><td><strong>~85%</strong> (외부의존 제외 ~94%)</td><td>치명적 코드 모순 0건. 잔여 갭 = 외부 연동·실측 게이트</td></tr><tr><td>QA감사(2026-07-13) 27결함</td><td><strong>수리 23 / 부분수리 4 / 잔존 0</strong></td><td>커밋 6ac65fc·311968b 수리 주장 사실로 확인. 부분수리 4건(#14 완전격리=P7 유보·#17 단일상수·#21 스키마 유보·#27 ai_draft 구조)은 전부 의도적 유보 기록 존재. 잔여 확인 1건: D17 '18:00 이후 익일 귀속' 명시 구현 미확인</td></tr></tbody></table></div>
+<p><strong>한 줄 결론</strong>: 코드 골격(D29 2.5D 렌더·Colyseus 20Hz·JWT 단일세션·KPI D14/D15/D16·WA 제거·좌표계 D25)은 전부 스펙 정합. 남은 것은 ①RBAC 실결함 2건, ②부분수리 9건 마감, ③외부 인프라 게이트 3종, ④문서 스테일(특히 01-prd).</p>
+<hr>
+<h2 id="1-확정-결함-즉시-조치-코드가-정본-위반">1. 확정 결함 — 즉시 조치 (코드가 정본 위반)</h2>
+<blockquote><strong>조치 현황 (2026-07-13)</strong>: #1·#2는 <code>fix/p0-rbac-objection-teamscope</code> 브랜치에서 수리 완료 — review<em>objection admin 전용화(<code>_check_admin_only</code>) + <code>_check_team_scope</code>에 평가기간 user</em>team_history 검사 추가(이력 0행 폴백=현재 소속, leader 팀은 DB 우선 조회로 JWT 스테일 해소). 회귀 테스트 3종 추가, 전체 스위트 333 passed.</blockquote>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>심각도</th><th>결함</th><th>정본 근거</th><th>증거</th><th>조치</th></tr></thead><tbody><tr><td>1</td><td>🔴 <strong>P0</strong></td><td><strong>이의신청 재검토·확정에 leader 허용</strong> — resolve가 final<em>score·finalized</em>at 확정까지 수행하므로 leader가 &quot;KPI 최종 확정(admin 전용)&quot;을 이의검토 경로로 우회 가능한 <strong>권한상승</strong></td><td>rbac.yaml: 재검토=admin only, leader deny</td><td><code>kpi.py:517</code> <code>_check_manager</code>(leader 포함), 확정 <code>kpi.py:564-565</code></td><td><code>review_objection</code>을 <code>_check_admin_only</code>로 교체하거나 rbac.yaml 개정(정본 확정 필요). kpi.py 상단 주석도 정정</td></tr><tr><td>2</td><td>🔴 <strong>P0</strong></td><td><strong>팀 스코프가 user<em>team</em>history 미반영</strong> — JWT 발급 시점 team<em>id == 대상자 현재 erp</em>team_id로만 판정. 분기 중 팀 이동자 KPI 부당 접근/접근 불가. 리더 본인 팀 이동도 재로그인 전까지 옛 팀 접근</td><td>08 §1.3·§5.4, rbac.yaml §113 (평가기간 실소속=user<em>team</em>history)</td><td><code>kpi.py:188-197</code> (<code>UserTeamHistory</code> 테이블은 존재 <code>tables.py:697</code>, 읽지 않음)</td><td><code>_check_team_scope</code>에 period_key 기준 history 조회 추가</td></tr><tr><td>3</td><td>🟡 P1</td><td><strong>좌석 CRUD에 leader 허용</strong> — 매트릭스는 admin 전용. 동일 도메인 office_layouts는 admin만이라 파일 간 비일관</td><td>rbac.yaml: 좌석 배치 편집=admin only</td><td><code>seats.py:254</code> <code>_ADMIN=(&quot;admin&quot;,&quot;super_admin&quot;,&quot;leader&quot;)</code> vs <code>office_layouts.py:27</code></td><td>leader 제거 또는 매트릭스 개정</td></tr><tr><td>4</td><td>🟡 P1</td><td><strong>KPI 배치 18:00/21:00 논리 미분리</strong> — 동일 <code>_kpi_batch_job()</code> 이 두 시각 호출. 스펙 의도=18:00 정량만/21:00 AI만</td><td>08 §4.1 (D17)</td><td><code>scheduler.py:264-277</code></td><td>compute/draft 잡 분리 (ai<em>draft</em>enabled 폴백으로 기능은 동작 — 낮은 위험)</td></tr><tr><td>5</td><td>🟡 P1</td><td><strong>require<em>role에 super</em>admin 자동상속 부재</strong> — 현재는 전 엔드포인트가 쌍으로 명시해 무결하나, 신규 엔드포인트에서 <code>require_role(&quot;admin&quot;)</code>만 쓰면 super_admin 차단되는 실수 지점</td><td>rbac.yaml §12 &quot;super_admin=admin 상위 호환&quot;</td><td><code>deps.py:53</code></td><td>자동 포함 로직 또는 린트 규약. (QA #17의 'core/deps.py 단일 상수화'도 미실시 — 모듈별 정의 잔존)</td></tr></tbody></table></div>
+<hr>
+<h2 id="2-미구현-외부-의존-게이트-코드-결함-아님-진행-차단-요소">2. 미구현 — 외부 의존 게이트 (코드 결함 아님, 진행 차단 요소)</h2>
+<div class="table-wrap"><table><thead><tr><th>항목</th><th>정본</th><th>현황</th><th>증거</th></tr></thead><tbody><tr><td>STT 자동초안</td><td>D5 MUST → 00-decisions §H에서 P6 외부의존 이관 확정</td><td><strong>501 스텁</strong> (정합 — 폴백=수동 회의록+AI 요약 동작)</td><td>meeting_minutes.py, 14-spec §2.5</td></tr><tr><td>LiveKit 실미디어</td><td>D24, P5</td><td>토큰 발급·2단계 입장 게이트까지 완료, <strong>미디어 릴레이·Egress 인프라 미가동</strong></td><td>livekit_client.py, VideoTileGrid 마크업</td></tr><tr><td>실 ERP kpi_results push</td><td>03 §5.1~5.2 (D15/D17)</td><td>push 로직 완성, <code>erp_push_endpoint</code> 미설정 시 <strong>mock 적재</strong> — ERP <code>feature/virtual-office-integration</code> 브랜치 배포 대기</td><td><code>eod_push.py:104-114</code></td></tr><tr><td>ERP 전체 대사(reconcile)</td><td>03 §2.2 D18 (매일 00:00 hard-delete 감지)</td><td><strong>skeleton</strong> — 증분 동기화(매시간)는 동작</td><td>erp/sync.py (④트랙 실측; ⑥트랙 &quot;완료&quot; 주장은 미검증 일반화로 기각)</td></tr></tbody></table></div>
+<h2 id="3-미구현-후순위-로드맵-정합-결함-아님">3. 미구현 — 후순위 (로드맵 정합, 결함 아님)</h2>
+<ul><li>다층 렌더·<strong>층 전환</strong>(층 선택기 = 정적 UI, <code>OfficeShell.tsx:205</code> 주석 명시) — P7-T2</li><li>20명 부하검증 (smoke는 2인 PASS) — P7-T4</li><li>audit_log·kpi 5년 보존 파기 배치 (08 §7.3 D20-e) — 향후</li><li>공휴일 캘린더 (EOD 스킵은 토·일만) — P2 개선</li><li>모바일 알림 — COULD</li><li>조직도 편집기 잔여(React Flow 노드 편집·Undo) — P3</li></ul>
+<hr>
+<h2 id="4-부분-구현-잔존-qa-27항목-중-부분수리-9건-화면-상세">4. 부분 구현 잔존 (QA 27항목 중 부분수리 9건 + 화면 상세)</h2>
+<p>QA감사 27건 판정: <strong>수리 18 / 부분수리 9</strong> (전면 잔존 0)</p>
+<div class="table-wrap"><table><thead><tr><th>QA#</th><th>항목</th><th>잔여 내용</th><th>증거</th></tr></thead><tbody><tr><td>11</td><td>녹음/STT 동의 게이트</td><td>동의 테이블·<strong>프론트 고지 배너는 구현</strong>(<code>meetings/page.tsx:619-660</code>, D20-b) — LiveKit join 시 백엔드 동의 강제 여부만 미확인</td><td>consent.py</td></tr><tr><td>14</td><td>좌석 draft 격리</td><td>백엔드 draft→validate→deploy→<strong>rollback API 완비</strong>(<code>office_layouts.py:99-230</code>) — 프론트 롤백 버튼 UI 미확인</td><td>—</td></tr><tr><td>17</td><td>역할 집합</td><td>3원화 자체는 해소(전 모듈 admin+super_admin 일관) — 단일 상수화 미실시 + §1의 결함 1·3 잔존</td><td>본 문서 §1</td></tr><tr><td>19</td><td>Trip/Report id 타입 (프론트 number vs UUID)</td><td>재확인 필요</td><td>frontend lib</td></tr><tr><td>20</td><td>날짜 경계 KST</td><td>프론트 <code>toISOString()</code> UTC 혼재 가능 — 공통 유틸 강제 필요</td><td>work-log/work-status</td></tr><tr><td>23</td><td>에러코드 한국어 매핑</td><td>apiErrors 존재, 전 detail 코드 커버리지 미확인</td><td>lib/api</td></tr><tr><td>24</td><td>attachments·issues</td><td>테이블 컬럼만 존재, API 스키마·폼 미노출</td><td>work_logs.py</td></tr><tr><td>25</td><td>ActionItem 4상태 표시</td><td>enum 4상태 정의됨, 프론트 렌더 이진 여부 재확인</td><td>tables.py:179-182</td></tr><tr><td>27</td><td>ai_draft 구조</td><td>08 §6.2.2 구조(strengths[]/overall/percentile) vs 구현 평면 구조·daily 생성 여부 재확인</td><td>ai_draft.py</td></tr></tbody></table></div>
+<p>화면 상세 잔여(③트랙): 아바타 커스터마이징 UI 상세(§3.9), KPI 워크플로우 전용 페이지 vs /admin/kpi 병합 여부(§3.13), 우측 패널·3카드 행(D29 시안 B로 <strong>의도적 hidden 확인</strong> — 복원 여부는 제품 결정), 좌석 편집 팔레트 전체 도구.</p>
+<hr>
+<h2 id="5-문서-결함-코드가-아니라-문서를-고칠-것">5. 문서 결함 (코드가 아니라 문서를 고칠 것)</h2>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>문서</th><th>문제</th><th>조치</th></tr></thead><tbody><tr><td>1</td><td><strong>01-prd.md</strong></td><td>🔴 D28/D29 미반영 스테일 — &quot;R3F+Blender 깊이합성&quot; 서술 잔존(<code>:14,78,81</code>), §7 수용기준(깊이합성 픽셀정확·R3F&lt;5s·IBL)이 폐기 기술 기준이라 <strong>무효</strong>. 00-decisions §J 배너 대상에서 01-prd 누락</td><td>D29 배너 부착 + §7을 2.5D 기준(스프라이트 로딩·z정렬)으로 재정의</td></tr><tr><td>2</td><td>14-virtual-office-spec / 16-render-spike</td><td>🟡 D29 피벗 미반영 스테일 (오프라인렌더 서술)</td><td>배너 부착 또는 개정</td></tr><tr><td>3</td><td>15-realtime-server-spec</td><td>이동검증 &quot;8항목&quot; → 실측 <strong>9개</strong>(checkMeetingCapacity 추가)</td><td>숫자 정정</td></tr><tr><td>4</td><td>rbac.yaml</td><td>신규 기능 7종(trips/reports/chat/avatar/consent/audit/EOD) 매트릭스 미등재</td><td>access_matrix 행 추가</td></tr><tr><td>5</td><td>01-prd 범위표</td><td>chat(채널 채팅) 미등재 — 06 §3.17은 &quot;Phase 7 후보 vs MVP 승인&quot; <strong>스코프 결정 미결</strong> 상태로 구현이 선행</td><td>제품 결정 기록 후 등재</td></tr><tr><td>6</td><td>12-tasks.md</td><td>일부 상태 표기 드리프트(P1 항목들 &quot;구현중&quot; 표기이나 완료 등 — 역방향 위주)</td><td>상태 갱신</td></tr><tr><td>7</td><td>소청소</td><td><code>integrations/__init__.py</code> WA 주석 1줄 잔재</td><td>삭제</td></tr></tbody></table></div>
+<p>※ 역방향(문서가 코드보다 뒤처짐) 해소 확인: 공지(14-spec &quot;신규 필요&quot;→구현 완료), 셸 단일화, 출장·보고서(06 §3.15~3.16 후행 등재 완료), 04 v1.4 테이블 6종 등재.</p>
+<hr>
+<h2 id="6-오탐-기각-기록-감사-신뢰성">6. 오탐 기각 기록 (감사 신뢰성)</h2>
+<div class="table-wrap"><table><thead><tr><th>주장</th><th>기각 근거</th></tr></thead><tbody><tr><td>&quot;Colyseus 이동서버 미구현, P3=10%&quot; (⑥ 초안)</td><td><code>movement.ts:82-169</code>(9검증)·<code>proximity.ts:70-149</code>(LOS 포함 8검증)·<code>OfficeRoom.ts:212-427</code>·20Hz(<code>config.ts:9-11</code>) 실측. ⑥ 최종본에서 자체 정정</td></tr><tr><td>&quot;D24 근접 명시입장 미구현&quot; (⑥ 초안)</td><td><code>OfficeRoom.ts:350-384</code> 2m+정원 → 클라 명시 클릭 → FastAPI /join 2단계</td></tr><tr><td>&quot;presence TTL 30일 미구현&quot; (⑥ 초안)</td><td><code>scheduler.py:229-246</code> <code>_presence_purge_job()</code></td></tr><tr><td>&quot;business<em>trip 등 6테이블 04 미등재 / tscn</em>path 잔존 / notice.company_id 구현&quot; (② 상세본)</td><td>04 v1.4 <code>:1203,1232,1249,1301</code> 등재 확인 / <code>tables.py:1411</code> gltf<em>path만 존재 / Notice에 company</em>id 없음(문서 명시 의도)</td></tr><tr><td>&quot;프론트 2.5D 뷰포트·office2d.ts 미존재&quot; (⑤ 본체)</td><td><code>OfficeViewport2D.tsx:112-952</code>·<code>lib/office2d.ts:1-222</code>·오프라인 폴백(<code>:141-142</code>) — ⑤ 하위 탐색이 라인 단위 실측</td></tr></tbody></table></div>
+<hr>
+<h2 id="7-권장-조치-순서">7. 권장 조치 순서</h2>
+<ol><li><strong>P0 반나절</strong>: §1-1(이의 재검토 admin 전용화 or 정본 개정) + §1-2(team scope history 반영)</li><li><strong>P1 1일</strong>: §1-3 seats leader 정리, §1-4 배치 분리, §1-5 require_role 상속, QA 부분수리 9건 중 백엔드 몫(#24 attachments API, #11 join 동의 강제)</li><li><strong>프론트 마감 1일</strong>: #14 롤백 버튼, #19/#20/#23/#25/#27 정합, 아바타 상세</li><li><strong>문서 반나절</strong>: 01-prd D29 재정의(최우선), 14/16 배너, 15-spec 9항목, rbac.yaml 확장, chat 스코프 결정 기록</li><li><strong>외부 게이트 (코드 외)</strong>: ERP kpi_results 배포 확인, LiveKit 인프라, STT 엔진 선정, reconcile 실장, 20명 부하 실측</li></ol>
+<hr>
+<p><em>생성: 2026-07-13, 6트랙 병렬 감사 + 메인 세션 교차검증. 증거는 감사 시점 file:line. 선행 문서: qa-audit-2026-07-13.md(수리 전 상태), 본 문서(수리 후 잔존).</em></p>
+<div class="meta-foot">원본: <code>spec-impl-gap-audit-2026-07-13.md</code> · 자동 생성 2026-07-13 · md-to-html</div>
+</main>
+</div>
+
+</body></html>
