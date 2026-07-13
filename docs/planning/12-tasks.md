@@ -24,6 +24,8 @@
 > - **주 단위 기간은 스파이크 후 확정**(억지 숫자 금지). 구 45주/58주 간트·86태스크 편성 폐기. 규모는 상대 표기(S/M/L).
 >
 > **이전 이력 요약**: v2.1(2026-07-02) Godot/WA 기준 86태스크 편성 → D27로 전면 폐기. v3.0에서 P0~P7 D27 편성으로 재생성.
+>
+> 🟦 **실측 재정합 v3.1 (2026-07-13)** — spec-impl-gap-audit-2026-07-13 기준 상태 표기 전면 갱신: **P3(Colyseus) 전체 ✅구현**(2026-07-12 C1·C2, 종전 '🔴 서버 부재' 표기는 스테일), P4 미니맵·자율좌석 ✅, P5 근접입장·livekit-token ✅/🟡, P6-T3 AI요약 ✅(NVIDIA). D29 피벗으로 R3F·GLTF 아바타 태스크는 ⛔폐기 재표기.
 
 ---
 
@@ -70,7 +72,7 @@
 > **의존**: P0 통과(✅). **선행**: 1인 개발 순차 원칙(R7).
 > **재사용 전제**: 백엔드 KPI·업무(work_log)·유저(directory/erp)·좌석·프레즌스 API 대부분 존재(pytest 417+) → 프런트 배선 중심.
 
-### [ ] P1-T1: 디자인 토큰 + Tailwind 테마 + 공용 컴포넌트 카탈로그 [신규] — ✅구현 (frontend/components/ui/*)
+### [x] P1-T1: 디자인 토큰 + Tailwind 테마 + 공용 컴포넌트 카탈로그 [신규] — ✅구현 (frontend/components/ui/*)
 
 - **담당**: frontend-specialist
 - **의존**: 없음
@@ -82,7 +84,7 @@
   - 다크 퍼스트 토큰 전량 정의, status 7종(online/meeting/external/focus/away/offline + danger) 색·라벨 병기(색맹 대응, §8)
   - 컴포넌트 스토리/스냅샷 렌더 검증, 대비 4.5:1 확인
 
-### [ ] P1-T2: App Shell 레이아웃 (Header / Left Nav / Center 상하분할 / Right Panel) [신규] — ✅구현 (/office 셸 + Sidebar + (protected)/layout)
+### [x] P1-T2: App Shell 레이아웃 (Header / Left Nav / Center 상하분할 / Right Panel) [신규] — ✅구현 (/office 셸 + 오버레이 창 단일화 — 32717e3·311968b)
 
 - **담당**: frontend-specialist
 - **의존**: P1-T1
@@ -95,7 +97,7 @@
   - 시안 구조 픽셀 재현(≥1440 최적), Left Nav 활성 항목 `--primary-soft` + 좌측 인디케이터
   - 하단 내 프로필 카드(아바타+이름+상태+상태변경 버튼)
 
-### [ ] P1-T3: 3D 뷰포트 placeholder 컴포넌트 (`<OfficeViewport>`) [신규] — ✅구현 (실 R3F v10, placeholder 넘어섬)
+### [x] P1-T3: 뷰포트 컴포넌트 [신규] — ✅구현 (D29: 2.5D `OfficeViewport2D` — R3F v10도 폐기·대체)
 
 - **담당**: frontend-specialist + 3d-engine-specialist
 - **의존**: P1-T2
@@ -106,7 +108,7 @@
   - R3F 마운트 지점 격리(P2에서 배경 텍스처만 주입 가능한 인터페이스)
   - placeholder에서 셸 레이아웃 깨짐 없음
 
-### [ ] P1-T4: 대시보드 3카드 데이터 연결 (오늘의 업무 · 나의 KPI · 진행중 화상회의) [배선] — 🟡부분 (실 API 배선됨이나 className="hidden"으로 숨김)
+### [x] P1-T4: 대시보드 3카드 데이터 연결 (오늘의 업무 · 나의 KPI · 진행중 화상회의) [배선] — ✅구현 (실 API 배선. hidden은 D29 시안 B 셸 단일화의 의도적 결정 — 결함 아님)
 
 - **담당**: frontend-specialist
 - **의존**: P1-T2
@@ -117,7 +119,7 @@
   - `<KpiGauge>`에 본인 KPI 점수 렌더(도넛 게이지, 0~100)
   - 오늘의 업무 목록·진행중 회의 목록 실데이터 표시(로딩/빈 상태 처리)
 
-### [ ] P1-T5: 공지 리소스 API (announcement) [신규 — 백엔드] — ✅구현 (backend/app/api/notices.py + Notice 모델)
+### [x] P1-T5: 공지 리소스 API (announcement) [신규 — 백엔드] — ✅구현 (backend/app/api/notices.py + Notice 모델)
 
 - **담당**: backend-specialist
 - **의존**: 없음(04-data-model §2.7 정본)
@@ -129,7 +131,7 @@
   - 활성/만료/핀 필터 정확성(published_at·expires_at·pinned), company_id 스코프
   - 게시·수정·삭제 audit_log 기록, 만료 공지 소프트 보존(물리 삭제 금지)
 
-### [ ] P1-T6: Right Panel — 사용자 목록 · 일정 · 공지사항 배선 [배선] — 🟡부분 (배선됨, 단 프레즌스는 1회성 fetch=실시간 아님)
+### [ ] P1-T6: Right Panel — 사용자 목록 · 일정 · 공지사항 배선 [배선] — 🟡부분 (배선 ✅ + presence 실값(QA #9 수리) — 갱신은 폴링, WSS push 아님)
 
 - **담당**: frontend-specialist
 - **의존**: P1-T2, P1-T5
@@ -159,7 +161,7 @@
 > **의존**: P0 통과(✅) + P1(셸 뷰포트 자리). 순차 원칙.
 > **정본**: photoreal-web-strategy.md, design-style-analysis §5(아트 디렉션).
 
-### [ ] P2-T1: office_layout JSON → Blender 파라메트릭 씬 빌더 [신규] — ⛔D28폐기 (오프라인렌더+깊이합성 노선 폐기, 실시간 R3F로 대체 — 미구현이 아니라 불필요)
+### [ ] P2-T1: office_layout JSON → Blender 파라메트릭 씬 빌더 [신규] — ⛔D28/D29폐기 (최종: 2.5D 클린플레이트 팩 — 렌더 파이프라인 태스크 자체가 불필요)
 
 - **담당**: 3d-engine-specialist + backend-specialist
 - **의존**: P0-T1
@@ -170,7 +172,7 @@
   - 임의 office_layout JSON 1건 → 씬 자동 빌드(좌석/벽/개구부 배치 정합)
   - 아이소메트릭 30~35° 부감 카메라, PBR 재질(유리 반사·목재·패브릭·금속·식물)
 
-### [ ] P2-T2: 1개 층 포토리얼 배경 렌더 + 깊이패스 + camera.json 자동생성 [신규] — ⛔D28폐기 (오프라인렌더+깊이합성 노선 폐기)
+### [ ] P2-T2: 1개 층 포토리얼 배경 렌더 + 깊이패스 + camera.json 자동생성 [신규] — ⛔D28/D29폐기 (최종: horizon.png 클린플레이트)
 
 - **담당**: 3d-engine-specialist
 - **의존**: P2-T1
@@ -181,7 +183,7 @@
   - 1개 층 layout → 배경/깊이/카메라 3종 자동 생성(수동 개입 없이)
   - 깊이 정밀도가 깊이합성 오클루전(경계 ≤2px)에 충분
 
-### [ ] P2-T3: R3F 뷰포트 배경 표시 + 깊이 텍스처 로드 [신규] — ⛔D28폐기 (오프라인렌더+깊이합성 노선 폐기)
+### [ ] P2-T3: R3F 뷰포트 배경 표시 + 깊이 텍스처 로드 [신규] — ⛔D28/D29폐기 (최종: OfficeViewport2D DOM 합성)
 
 - **담당**: 3d-engine-specialist + frontend-specialist
 - **의존**: P2-T2, P1-T3
@@ -211,7 +213,7 @@
 > **정본**: 15-realtime-server-spec, 09-realtime-collaboration §5, D1/D3/D4/D22.
 > **재사용**: FastAPI presence 수집(`presence_store`/`presence_stream`)·좌석·JWT 존재 → Colyseus에서 호출.
 
-### [ ] P3-T1: Colyseus 서버 + OfficeRoom(층 단위) + JWT onAuth [신규] — 🔴미구현 (Colyseus 서버 자체 부재 = 최대 갭)
+### [x] P3-T1: Colyseus 서버 + OfficeRoom(층 단위) + JWT onAuth [신규] — ✅구현 (realtime/src — C1 2026-07-12, onAuth HS256·단일세션 축출)
 
 - **담당**: backend-specialist(Node/TS)
 - **의존**: P2 (레이아웃 콜라이더 필요)
@@ -223,7 +225,7 @@
   - JWT join → 초기 snapshot 전송, 20Hz tick 루프
   - 룸=층 단위 격리, players Schema delta 브로드캐스트
 
-### [ ] P3-T2: 이동 검증 8항목 + reconcile [신규] — 🔴미구현 (Colyseus 서버 부재)
+### [x] P3-T2: 이동 검증 8항목 + reconcile [신규] — ✅구현 (validation/movement.ts — 9함수=문서 8항목, 15-spec §4 정합 노트)
 
 - **담당**: backend-specialist(Node/TS)
 - **의존**: P3-T1
@@ -234,7 +236,7 @@
   - 벽/유리벽 통과·속도 초과·권한 없는 zone 진입 거부 테스트
   - reconcile 정합, `world_update{server_seq, players[delta]}` 20Hz 송신
 
-### [ ] P3-T3: 근접 상호작용 검증 8항목 (LOS 광선 포함) [신규] — 🔴미구현 (Colyseus 서버 부재)
+### [x] P3-T3: 근접 상호작용 검증 8항목 (LOS 광선 포함) [신규] — ✅구현 (validation/proximity.ts)
 
 - **담당**: backend-specialist(Node/TS)
 - **의존**: P3-T2
@@ -244,7 +246,7 @@
   - 유리벽 뒤 상대 근접 차단(LOS), 쿨다운·집중모드 존중
   - 근접 메뉴 응답 <200ms(D22)
 
-### [ ] P3-T4: 아바타 GLTF + 애니메이션 + 깊이합성 렌더 [신규] — 🟡부분 (v8.0 리깅+애니 통합 완료 — Colyseus 의존 부분만 미구현)
+### [ ] P3-T4: 아바타 GLTF + 애니메이션 + 깊이합성 렌더 [신규] — ⛔D29폐기 (GLTF 아바타 → 2.5D 프레임 스프라이트 idle6f/walk8f로 대체)
 
 - **담당**: 3d-engine-specialist
 - **의존**: P3-T1, P2-T3
@@ -256,7 +258,7 @@
   - 멀티유저 아바타 이동 부드러움(Lerp), 깊이합성 오클루전 정확
   - HUD 빌보드 유지, 20명 렌더 프레임 예산 확인
 
-### [ ] P3-T5: presence 배치 push 배선 (Colyseus → FastAPI → DB) [배선] — 🔴미구현 (Colyseus 서버 부재)
+### [x] P3-T5: presence 배치 push 배선 (Colyseus → FastAPI → DB) [배선] — ✅구현 (PresenceSink ~3s → POST /api/presence/batch 내부토큰)
 
 - **담당**: backend-specialist
 - **의존**: P3-T2
@@ -287,7 +289,7 @@
 > **의존**: P3 완료(이동·presence). 순차 원칙.
 > **재사용**: 좌석(`/api/seats`)·프레즌스 API + presence 7종(D13) 백엔드 구현됨.
 
-### [ ] P4-T1: 7종 상태 HUD + 우패널 실시간 프레즌스 [배선] — 🟡부분 (StatusBadge 있음, 실시간 아님)
+### [x] P4-T1: 7종 상태 HUD + 우패널 프레즌스 [배선] — ✅구현 (StatusBadge 7종 + /api/employees presence 실값 — QA 2026-07-13 #9 수리)
 
 - **담당**: frontend-specialist
 - **의존**: P3-T4, P3-T5
@@ -298,7 +300,7 @@
   - presence 변경 시 HUD·우패널 실시간 갱신, 색+라벨 병기
   - "회의중 N명·접속중 N명" 카운트
 
-### [ ] P4-T2: 미니맵 (조감 + 컬러 점 아바타/회의실) [신규] — 🟡부분 (하드코딩 가짜 아바타 점)
+### [x] P4-T2: 미니맵 (조감 + 컬러 점 아바타/회의실) [신규] — ✅구현 (가짜 점 제거 + 실 아바타/회의근접 배선 — d833a42)
 
 - **담당**: frontend-specialist + 3d-engine-specialist
 - **의존**: P3-T4
@@ -307,7 +309,7 @@
 - **완료 조건**:
   - 아바타 위치 실시간 반영, 회의실 점유 색점, 클릭 시 카메라 팬(§6)
 
-### [ ] P4-T3: 자율좌석 클릭 점유/반납 [배선] — 🟡부분 (백엔드 ✅, 3D 클릭 UX 미구현)
+### [x] P4-T3: 자율좌석 클릭 점유/반납 [배선] — ✅구현 (뷰포트 클릭 착석/반납 REST + 12h 자동반납 배치 — 311968b)
 
 - **담당**: frontend-specialist + backend-specialist
 - **의존**: P3-T2
@@ -335,7 +337,7 @@
 > **의존**: P4 완료(프레즌스·좌석). 순차 원칙.
 > **재사용**: 회의 API(`/api/meetings`)·consent(`/api/consent`, `backend/app/api/consent.py`)·wa_livekit·egress·meeting_minutes 백엔드 구현됨 → LiveKit 실미디어 배선·프런트 중심.
 
-### [ ] P5-T1: 회의실 명시입장 (2m 근접 트리거 + 동의 배너) [배선] — 🟡부분 (백엔드 join/consent ✅, 2m 근접 트리거는 이동서버 의존 → 미구현)
+### [x] P5-T1: 회의실 명시입장 (2m 근접 트리거 + 동의 배너) [배선] — ✅구현 (Colyseus enter_meeting 2m+정원 → 명시 클릭 → /join 2단계 + D20-b 동의 배너)
 
 - **담당**: frontend-specialist + backend-specialist
 - **의존**: P4-T1, P3-T3
@@ -347,7 +349,7 @@
   - 명시입장 흐름(다이얼로그→클릭→토큰), 동의 거부 시 미수집(D20)
   - 정원 초과·중복 진입 거부, status=meeting 전이
 
-### [ ] P5-T2: LiveKit 오디오/영상 통합 (실미디어) [배선] — 🔴미구현 (정본 `/api/meetings/{id}/livekit-token` 부재, legacy `/api/wa/livekit-token`만; 프론트 MediaBar 비기능)
+### [ ] P5-T2: LiveKit 오디오/영상 통합 (실미디어) [배선] — 🟡부분 (정본 `/api/meetings/{id}/livekit-token` ✅ + 회의 join 재검증 ✅ — 실미디어 릴레이·Egress 인프라는 외부의존)
 
 - **담당**: backend-specialist(인프라 겸임)
 - **의존**: P5-T1
@@ -359,7 +361,7 @@
   - `docker-compose up` 성공, health check, 오디오/영상 송수신
   - 음성 지연 <200ms(사내망, D22)
 
-### [ ] P5-T3: 화상 타일 UI (참석자 그리드 + 미디어바) [신규] — 🟡부분 (mock 참석자)
+### [ ] P5-T3: 화상 타일 UI (참석자 그리드 + 미디어바) [신규] — 🟡부분 (VideoTileGrid 실참석자 데이터 — 미디어 스트림은 인프라 대기)
 
 - **담당**: frontend-specialist
 - **의존**: P5-T2
@@ -412,7 +414,7 @@
 - **완료 조건**:
   - 초안 편집→확정 저장, 누락률 <5%(수동 전사 대조, D22)
 
-### [ ] P6-T3: 회의록 AI 요약 [배선] — 🔴미구현 (`ai_summary` 컬럼만)
+### [x] P6-T3: 회의록 AI 요약 [배선] — ✅구현 (NVIDIA LLM `/ai-summary` + mock 폴백 — 2d0b164·1350522)
 
 - **담당**: backend-specialist
 - **의존**: P6-T2
@@ -421,7 +423,7 @@
 - **완료 조건**:
   - 요약 100~300자 생성, Claude 기본, 오류 처리
 
-### [ ] P6-T4: KPI 워크플로우 화면 (관리자 검토 + 이의신청 상태머신) [신규 UI + 배선] — ✅구현 (`/admin/kpi`, `/admin/kpi/objections`, `/kpi/objection`)
+### [x] P6-T4: KPI 워크플로우 화면 (관리자 검토 + 이의신청 상태머신) [신규 UI + 배선] — ✅구현 (`/admin/kpi`, `/admin/kpi/objections`, `/kpi/objection` — 이의검토는 admin 전용, 2026-07-13 P0 수리)
 
 - **담당**: frontend-specialist + backend-specialist
 - **의존**: P1-T4
