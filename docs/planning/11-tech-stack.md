@@ -1,5 +1,7 @@
 # 11. 기술 스택 결정
 
+> 🟦 **D29 피벗(2026-07-12) — 클라 렌더 스택 재정정(2.5D).** §2.1의 "R3F/three.js 실시간 3D + Blender/깊이합성"은 **폐기**. 현행 클라 렌더 = **2.5D DOM 합성(`OfficeViewport2D`, three.js/R3F/draco 제거)** + 클린플레이트 PNG + 프레임 스프라이트. Colyseus·FastAPI·DB·KPI·ERP·STT 스택은 유지. 정본 = **00-decisions §J(D29)**.
+
 > 🔵 **D28 피벗(2026-07-09) — 클라이언트 렌더 스택 정정.** 가상오피스 클라 = **R3F 실시간 스타일라이즈드 렌더**(저폴리 glb). "Blender Cycles 오프라인 배경렌더 + 깊이합성"은 폐기(Blender/Cycles는 스택에서 제외). Colyseus·FastAPI·DB·스케줄러·보안·KPI·ERP·STT 스택은 유지. 정본 = **00-decisions §I(D28)**.
 
 > ✅ **D27 반영(2026-07-09 재작성) — 포토리얼 웹임베드 스택 확정.** D26(WorkAdventure)은 **전면 폐기**, 그 이전 Godot 네이티브 노선도 폐기. 현행 정본 = 00-decisions §H(D27) · 14-virtual-office-spec · 15-realtime-server-spec · 16-render-spike-and-roadmap · 3d-design/{design-style-analysis, photoreal-web-strategy}. 가상오피스 클라이언트 = react-three-fiber(R3F) + Blender Cycles 오프라인 배경렌더 + 깊이합성, 실시간 서버 = Colyseus(Node/TS). FastAPI/DB/스케줄러/보안/KPI/ERP/STT 스택은 D27에서도 유효하게 보존.

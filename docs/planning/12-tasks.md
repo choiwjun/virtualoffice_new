@@ -1,5 +1,7 @@
 # 12-tasks.md
 
+> 🟦 **D29 정합(2026-07-12):** 렌더가 2.5D 클린플레이트(DOM 스프라이트, `OfficeViewport2D`)로 전환됨(00-decisions §J) — P2 "Blender 렌더 파이프라인"(P2-T1~T3)은 D28에 이어 **D29에서도 불요/폐기**. **P3 이동서버(Colyseus)는 구현 완료(main)**: `OfficeRoom` 20Hz·이동검증8·근접검증8(LOS)·onAuth JWT·presence 배치. P1 후속 배선(아바타 스프라이트 반영·회의 2m 근접입장·미니맵)·단일세션 축출·공지 스펙(category/게시·만료)·레이아웃 회전충돌(OBB)은 별도 PR.
+
 ## 태스크 분해 및 로드맵 실행 계획 (D27 포토리얼 웹임베드)
 
 **프로젝트**: 가상오피스 운영 플랫폼 (vituraloffice_new)

@@ -2,6 +2,8 @@
 
 > ⚠️ **실측 재정합 2026-07-11: D27 렌더 게이트(REQ-012/013/014) D28 폐기 반영, 잔여 최대 갭=REQ-004(Colyseus).**
 
+> 🟦 **D29 재정합(2026-07-12):** REQ-004(Colyseus 이동서버)는 **구현 완료(main)** — 아래 "🔴 미구현"은 폐기. REQ-015 onAuth+단일세션 축출도 구현. **REQ-001 렌더는 2.5D 클린플레이트(DOM 스프라이트)로 전환**(00-decisions §J D29) — R3F/3D·오프라인렌더 전제 폐기. 렌더 게이트(REQ-012/013/014)는 D28에 이어 D29에서도 비활성(2.5D는 깊이합성 불요).
+
 > ✅ **D27 반영(2026-07-09 재파생) — 이 문서는 D27 정본(R3F 웹앱 + 오프라인렌더 깊이합성 + Colyseus 권위 서버) 기준으로 재작성되었다.** D26(WorkAdventure)+Godot 게이트는 폐기·재파생되었으며, 도메인 게이트(KPI·좌석·회의·ERP·개인정보)는 보존한다. 현행 정본 = 00-decisions §H(D27) · 14-virtual-office-spec · 15-realtime-server-spec · 16-render-spike-and-roadmap · 3d-design/{design-style-analysis, photoreal-web-strategy}. 구 Godot/WA/Phaser/OIDC/네이티브빌드 서술은 본 재작성으로 대체됨.
 
 **생성**: 2026-07-02 (planning-loop-supervisor LOOP 9) · **갱신**: 2026-07-09 (D27 재파생) · **소스**: 01-prd MUST 8 + SHOULD 3 (Round 1 수정 반영판) + 00-decisions §H(D27)
@@ -41,7 +43,7 @@ Hard = 통과/실패 이분법 · Metric = 수치 목표 · Domain = 도메인 �
 - **Metric**: 검증 20명 동시(설계 100명, D22), tick **20Hz 유지**, 아바타 동기화 E2E **p95 < 500ms**(15/09 정본).
 - **Domain**: presence는 Colyseus 서버 메모리 권위 + FastAPI 배치 push(D3). presence 좌표 30일 파기(D20-a).
 - **Evidence**: 20명 시뮬레이션 부하 리포트, 이동검증 8종 통과 로그, p95 측정 로그, 재접속 테스트.
-- **🔴 미구현 — 이동서버 스택 부재(최대 잔여 갭).**
+- **✅ 구현(main, 2026-07-12) — `realtime/`(Colyseus) `OfficeRoom` 20Hz·이동검증 8·근접검증 8(LOS)·onAuth JWT·reconnect(스냅샷)·presence 배치 push. 검증: room.smoke 30/0·client-smoke 8/0·live-check 4/0. 잔여: 20/100명 부하검증(P7).**
 
 ## REQ-005: 회의/화상 (MUST #5) 🔄D27
 - **추적**: PRD §3 → 09 §LiveKit → meetings.yaml → 12-tasks P5-T1~T3(명시입장·LiveKit 통합·화상 타일)
@@ -110,7 +112,7 @@ Hard = 통과/실패 이분법 · Metric = 수치 목표 · Domain = 도메인 �
 - **Metric**: 무효/만료 JWT 접속 거부 100%. 중복 로그인 시 기존 세션 축출 동작.
 - **Domain**: JWT 24h + role 가드(HG-AUTH 정합). presence 좌표 30일 파기(D20-a).
 - **Evidence**: onAuth 거부/승인 테스트, 단일 세션 축출 E2E 테스트.
-- **🟡 JWT 로그인 ✅ / Colyseus onAuth·단일세션 eviction 미구현.**
+- **✅ 구현(main+PR, 2026-07-12) — JWT 로그인·Colyseus onAuth 검증(토큰 sub로 userId 위조 무시)·동일 userId 단일세션 축출(close 4000, room.smoke 5건). 잔여: HTTP JWT 무상태 축출(토큰 버저닝)은 별도 사안.**
 
 ## REQ-016: 공지·KPI 워크플로우 화면 (신규)
 - **추적**: 06-screens → design-style-analysis §3(통합 대시보드 셸) → 08-kpi/09-realtime

@@ -167,6 +167,29 @@
 - **추가(Later 범위)**: v10 패키지에는 독립 실행형 Three.js 런타임 앱(`11_complete_runtime_app/`: 자유배치 레이아웃 에디터 + A* 이동 + 좌석 앵커), 레이아웃 프리셋 3종(`12_layout_presets/`), 에셋 팔레트가 포함된다. 이는 **Next.js/R3F 프론트와 별개 스택**이라 이번엔 씬/캐릭터만 통합하고 레이아웃 에디터 이식은 Later.
 - **예산 주의**: PBR 내장으로 개별 GLB가 커졌다(씬 22.4MB, 캐릭터 ~1.6MB×7). 웹 첫 로딩 부담 → **Draco/meshopt 지오메트리 압축 + KTX2 텍스처 압축 권장**(`3d-design/optimization-criteria.md` 참조).
 
+
+## J. 2.5D 클린플레이트 렌더 피벗 (D29, 2026-07-12) — **D28 실시간 3D R3F 대체**
+
+> D28(실시간 스타일라이즈드 3D R3F)·D28.1(v8 rig)·D28.2(v10 PBR)로 3D 노선을 강화했으나, 실측상 (1) v10 PBR GLB의 웹 첫 로딩 부담(씬 22.4MB), (2) 3D 리깅 캐릭터의 팔 포즈·조명정합·오클루전 튜닝 부담, (3) 고정 아이소 뷰에서 실시간 3D 이점 대비 비용 과다 → 사용자 제작 **2.5D 클린플레이트 프로덕션 팩**으로 렌더 방식을 전환한다. 임베드·단일세션·Colyseus 이동서버·고정 아이소·좌표계 등 D27~D28 골격은 유지하며 **"렌더 방식"만 D29로 대체**한다.
+
+| ID | 결정 | 내용 | 대체되는 것 |
+|----|------|------|-------------|
+| **D29** | 가상오피스 렌더 = **2.5D 클린플레이트 + DOM 스프라이트 아바타** (실시간 3D R3F·GLB 폐기) | 배경 = 고정 아이소 클린플레이트 PNG(`docs/virtual_office_2_5d_modular_brandable_v2_2_hotfix` 팩 → `frontend/public/office2d/plates/horizon.png`). 아바타 = DOM `<img>` 프레임 스프라이트(idle 6f/walk 8f, `office2d/characters/{id}/`) + 깊이 기반 원근 스케일·y기반 z-정렬. 렌더러 = **`OfficeViewport2D`**(three.js/R3F 제거, DOM 합성). 좌표계 = 20×11.256m top_left 미터(`lib/office2d.ts` = realtime `SceneFloorLayoutProvider` HORIZON과 동일). | D28/D28.1/D28.2 실시간 3D R3F(three.js·GLB·Draco·AnimationMixer), `OfficeViewport.tsx`, v10 PBR GLB 8종 |
+
+### D29로 인한 D28 계열 조정
+| 결정/항목 | D28.2 상태 | D29 상태 | 사유 |
+|---|---|---|---|
+| **렌더 방식** | 실시간 3D R3F(v10 PBR GLB) | **대체(2.5D 클린플레이트 PNG + DOM 스프라이트)** | 웹 로딩·3D 튜닝 부담 제거, 고정 아이소에 충분 |
+| three.js/R3F/postprocessing/Draco 의존 | 사용 | **프론트에서 제거** | DOM 합성으로 대체 |
+| v8/v10 3D GLB 에셋 패키지 | 런타임 정본 | **런타임 미사용(문서 아카이브 보존)** | 2.5D 팩으로 대체. 3D 팩은 `docs/`에 이력 보존 |
+| **임베드·단일세션·Colyseus 20Hz·고정아이소·좌표계(D25)·office_layout(D12)** | 확정 | **유지** | 렌더 방식과 무관 — D27~D28 골격 계속 |
+
+- **바뀌지 않는 것**: 통합 대시보드 셸, 단일세션 JWT(Colyseus onAuth), Colyseus 권위 이동서버(20Hz·이동검증8·근접검증8 LOS), presence 7종, 회의 D24 명시입장, office_layout(D12)·좌표계(D25), 미니맵·이름표·상태 뱃지.
+- **바뀌는 것(코드, 이미 main 반영)**: `OfficeViewport`(R3F) → `OfficeViewport2D`(DOM 2.5D), `three`/`@react-three/*`/draco 의존 제거, `public/office/*.glb`(3D) → `public/office2d/`(클린플레이트+프레임 스프라이트), `lib/office2d.ts` 좌표 정본. 커밋: `aac4fca`(R3F 제거·2.5D 전환) · `f2a9e20`(v10 3D 팩 폐기·2.5D 프로덕션 팩 v1.0~v2.2 도입) · `a4c98f4`(realtime HORIZON 2.5D 씬 플로어).
+- **오클루전**: D28의 "같은 렌더러 자동 오클루전"은 D29에서 **y좌표 기반 z-정렬 + 보행폴리곤/가구충돌 클램프**로 대체(깊이합성 셰이더 불필요). 아바타는 가구 위로 걷지 못하고, 화면 아래(가까움)일수록 앞에 그려진다.
+- **D29 영향 문서(렌더 서술은 D29 기준으로 읽을 것)**: `14-virtual-office-spec` · `16-render-spike-and-roadmap` · `07-3d-visual-asset-pipeline` · `11-tech-stack §2.1` · `3d-design/{design-style-analysis §5, photoreal-web-strategy, scene-structure, optimization-criteria, asset-registry}` → 상단 D29 배너 부착.
+- **D29 이후 실시간 배선(P1/P2, PR 진행 중)**: 아바타 커스터마이징 2.5D 스프라이트 반영(preset→스프라이트·이름표색), 회의 2m 근접 명시입장 클라 배선(D24), 미니맵 실시간 위치, 단일세션 축출, 공지 스펙(category/게시·만료), 레이아웃 회전충돌(OBB/SAT).
+
 ---
 
 ## 문서별 반영 체크리스트
