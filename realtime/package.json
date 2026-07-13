@@ -15,7 +15,8 @@
     "client-smoke": "tsx scripts/client-smoke.ts",
     "presence-smoke": "tsx scripts/presence-sink-smoke.ts",
     "layout-smoke": "tsx scripts/layout-smoke.ts",
-    "live-check": "tsx scripts/live-check.ts"
+    "live-check": "tsx scripts/live-check.ts",
+    "load-sim": "tsx scripts/load-sim-20.ts"
   },
   "dependencies": {
     "@colyseus/core": "0.15.57",
