@@ -18,9 +18,11 @@ import { api, ApiError } from '@/lib/api';
 import { useOfficeRoom } from '@/hooks/useOfficeRoom';
 import type { MeetingEntryResult } from '@/lib/realtime';
 import {
+  ASSETS_READY,
   AVATAR_ANIM,
   AvatarState,
   CharacterId,
+  OBSTACLES,
   PLATE_URL,
   PLATE_W,
   PLATE_H,
@@ -35,6 +37,7 @@ import {
   normToMeters,
   pointInPolygon,
   polygonCentroid,
+  WALK_AREA,
   type Vec2,
 } from '@/lib/office2d';
 
@@ -46,7 +49,8 @@ interface AvatarVisual {
   root: HTMLDivElement;
   /** 코드 모션(바운스/기울임) 래퍼 — 상태 전환 시 클래스만 교체. */
   motion: HTMLDivElement;
-  img: HTMLImageElement;
+  /** 본체 — 에셋 모드=<img>(프레임), 플레이스홀더 모드=<div>(도트). */
+  img: HTMLElement;
   /** 표시 위치(미터) — 서버 위치로 보간. */
   disp: Vec2;
   /** 마지막 표시 위치(속도/방향 추정용). */
@@ -401,7 +405,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
         return;
       }
       const motion = el.querySelector<HTMLDivElement>('.vo-motion');
-      const img = el.querySelector('img');
+      const img = el.querySelector<HTMLElement>('.vo-body');
       if (!motion || !img) return;
       const start =
         key === '__local__'
@@ -413,7 +417,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
       visuals.set(key, {
         root: el,
         motion,
-        img: img as HTMLImageElement,
+        img,
         disp: { ...start },
         prev: { ...start },
         state: 'idle',
@@ -428,8 +432,9 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
     [],
   );
 
-  // 프레임 프리로드(등장한 캐릭터만).
+  // 프레임 프리로드(등장한 캐릭터만). 플레이스홀더 모드(D30)엔 로드할 에셋 없음.
   useEffect(() => {
+    if (!ASSETS_READY) return;
     const chars = new Set(shells.map((s) => s.char));
     chars.forEach((c) => {
       (['idle', 'walk'] as AvatarState[]).forEach((st) => {
@@ -516,7 +521,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           if (v.frameAcc >= frameDur) {
             v.frameAcc %= frameDur;
             v.frame = (v.frame + 1) % anim.frames;
-            v.img.src = frameUrl(v.char, v.state, v.frame);
+            if (ASSETS_READY) (v.img as HTMLImageElement).src = frameUrl(v.char, v.state, v.frame);
           }
 
           // 화면 배치. 높이는 깊이(원근) 기반 — 뒤쪽일수록 작게.
@@ -589,13 +594,54 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
         style={{ width: stage.w, height: stage.h, cursor: 'pointer' }}
         onClick={handleStageClick}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={PLATE_URL}
-          alt="가상오피스 평면"
-          draggable={false}
-          className="absolute inset-0 w-full h-full"
-        />
+        {ASSETS_READY ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={PLATE_URL}
+            alt="가상오피스 평면"
+            draggable={false}
+            className="absolute inset-0 w-full h-full"
+          />
+        ) : (
+          /* D30 플레이스홀더 플레이트 — 좌표 계약(보행영역·방·장애물)만 시각화 */
+          <div
+            className="absolute inset-0 w-full h-full"
+            style={{ background: 'linear-gradient(160deg,#1c2941 0%,#141f33 55%,#0f1828 100%)' }}
+          >
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1 1" preserveAspectRatio="none">
+              <polygon
+                points={WALK_AREA.map((v) => `${v.x},${v.y}`).join(' ')}
+                fill="rgba(46,123,255,.07)"
+                stroke="rgba(120,150,200,.35)"
+                strokeWidth={0.003}
+              />
+              {ROOMS.map((r) => (
+                <polygon
+                  key={r.id}
+                  points={r.polygon.map((v) => `${v.x},${v.y}`).join(' ')}
+                  fill="rgba(255,255,255,.03)"
+                  stroke="rgba(160,180,220,.28)"
+                  strokeWidth={0.002}
+                />
+              ))}
+              {OBSTACLES.map((o, i) => (
+                <polygon
+                  key={i}
+                  points={o.map((v) => `${v.x},${v.y}`).join(' ')}
+                  fill="rgba(90,110,150,.18)"
+                  stroke="rgba(90,110,150,.3)"
+                  strokeWidth={0.0015}
+                />
+              ))}
+            </svg>
+            <div
+              className="absolute left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[11px] font-semibold"
+              style={{ top: 10, background: 'rgba(7,16,29,.85)', color: '#8fa8cf', border: '1px solid rgba(120,150,200,.3)', zIndex: 5 }}
+            >
+              새 에셋 제작 중 — 플레이스홀더 플레이트 (D30)
+            </div>
+          </div>
+        )}
 
         {/* 방 클릭 글로우 (overlay-tokens.activeGlow) */}
         {glowRect && (
@@ -712,13 +758,34 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
             />
             {/* 코드 모션 래퍼(바운스) 안에 프레임 이미지 — flip(scaleX)은 img, 바운스는 래퍼로 분리 */}
             <div className="vo-motion vo-anim-idle">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={frameUrl(s.char, 'idle', 0)}
-                alt={s.name}
-                draggable={false}
-                style={{ display: 'block', transformOrigin: '50% 100%' }}
-              />
+              {ASSETS_READY ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  className="vo-body"
+                  src={frameUrl(s.char, 'idle', 0)}
+                  alt={s.name}
+                  draggable={false}
+                  style={{ display: 'block', transformOrigin: '50% 100%' }}
+                />
+              ) : (
+                /* D30 도트 아바타 — 높이는 rAF가 깊이 기반으로 설정 */
+                <div
+                  className="vo-body flex items-end justify-center"
+                  style={{
+                    aspectRatio: '0.46',
+                    transformOrigin: '50% 100%',
+                    borderRadius: '999px',
+                    background: `linear-gradient(180deg, ${s.accent} 0%, rgba(20,32,52,.95) 90%)`,
+                    border: '1px solid rgba(255,255,255,.25)',
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: 12,
+                    paddingBottom: 6,
+                  }}
+                >
+                  {s.name.charAt(0)}
+                </div>
+              )}
             </div>
             {/* 이름표 (show_nameplate=false면 숨김, #6) */}
             {s.showNameplate && (

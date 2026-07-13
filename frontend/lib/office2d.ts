@@ -1,13 +1,18 @@
 /**
  * office2d.ts — 2.5D 가상오피스 씬 설정 + 좌표계 (정본).
  *
- * 씬 지오메트리 정본: docs/virtual_office_2_5d_modular_brandable_v2_2_hotfix/05_layouts/HORIZON_OPEN_PLAN.json
- * 캐릭터 표시 메타 정본: docs/virtual_office_2_5d_character_pack_v3_0/03_registry/character-registry-v3.json
- * 캐릭터 프레임 아트: v1 production pack frames(부감 신작 납품 시 public/office2d/characters만 교체).
+ * ⚠ D30 (2026-07-13): 기존 에셋 팩(플레이트·캐릭터 프레임) 전량 폐기 — 품질 재작업.
+ * 신규 에셋 납품 전까지 ASSETS_READY=false → 뷰포트는 플레이스홀더(단색 플레이트 +
+ * 도트 아바타)로 동작한다. 납품 시: public/office2d/에 배치 후 ASSETS_READY=true.
+ * 신규 에셋 요구 스펙 = docs/planning/17-asset-rework-spec.md.
  *
- * 좌표계: 플레이트 1672×941px. 서버(realtime)와 미터 단위 공유 — 가로 20m 스케일.
+ * 좌표계(유지): 플레이트 1672×941px 비율. 서버(realtime)와 미터 단위 공유 — 가로 20m 스케일.
  * realtime/src/integration/FloorLayoutProvider.ts 의 SCENE_W_M/SCENE_H_M 과 동일해야 한다.
+ * 보행영역·방·장애물 폴리곤은 이동서버 검증 계약이므로 에셋과 독립적으로 유지.
  */
+
+/** 에셋 존재 여부 — 신규 팩 납품 후 true로 전환 (D30). */
+export const ASSETS_READY = false;
 
 export const PLATE_URL = '/office2d/plates/horizon.png';
 export const PLATE_W = 1672;
