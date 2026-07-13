@@ -37,7 +37,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import CurrentUser, get_current_user
+from app.core.deps import ADMIN_ROLES, MANAGER_ROLES, CurrentUser, get_current_user
 from app.db import get_db
 from app.models.tables import (
     DailyStatusPush,
@@ -53,8 +53,8 @@ from app.services.audit import record_audit
 
 router = APIRouter(prefix="/api/kpi-results", tags=["kpi"])
 
-_ADMIN_ONLY = {"admin", "super_admin"}                  # compute/finalize (06 §3.10: 확정=admin)
-_MANAGER_ROLES = {"admin", "super_admin", "leader"}     # 조회/조정/이의검토 (leader=팀 한정)
+_ADMIN_ONLY = set(ADMIN_ROLES)                          # compute/finalize (06 §3.10: 확정=admin)
+_MANAGER_ROLES = set(MANAGER_ROLES)                     # 조회/조정 (leader=팀 한정. 이의검토는 admin 전용)
 
 # 이의신청 창 (08 §3.3: 공개 후 7일)
 OBJECTION_WINDOW_DAYS = 7

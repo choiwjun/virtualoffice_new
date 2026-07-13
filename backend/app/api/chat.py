@@ -22,13 +22,13 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import CurrentUser, get_current_user
+from app.core.deps import ADMIN_ROLES as _DEPS_ADMIN_ROLES, CurrentUser, get_current_user
 from app.db import get_db
 from app.models.tables import ChatMessage, ErpUser
 
 router = APIRouter(prefix="/api", tags=["chat"])
 
-ADMIN_ROLES = {"admin", "super_admin"}
+ADMIN_ROLES = _DEPS_ADMIN_ROLES  # deps 단일 정의 (qa#17)
 
 GENERAL_CHANNEL = "general"
 TEAM_PREFIX = "team:"

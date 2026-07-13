@@ -28,7 +28,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import CurrentUser, get_current_user
+from app.core.deps import MANAGER_ROLES, CurrentUser, get_current_user
 from app.db import get_db
 from app.models.tables import Meeting, MeetingParticipant, WorkLog, WorkLogStatus
 
@@ -36,7 +36,7 @@ KST = timezone(timedelta(hours=9))
 
 router = APIRouter(prefix="/api", tags=["work-logs"])
 
-ADMIN_ROLES = {"admin", "super_admin", "leader"}
+ADMIN_ROLES = MANAGER_ROLES  # 타인 열람 = leader 포함 (deps 단일 정의, qa#17)
 
 
 # ---------------------------------------------------------------------------

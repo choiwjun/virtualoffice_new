@@ -23,13 +23,13 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import CurrentUser, get_current_user
+from app.core.deps import MANAGER_ROLES, CurrentUser, get_current_user
 from app.db import get_db
 from app.models.tables import Report, ReportStatus, ReportType
 
 router = APIRouter(prefix="/api", tags=["reports"])
 
-ADMIN_ROLES = {"admin", "super_admin", "leader"}
+ADMIN_ROLES = MANAGER_ROLES  # 전체조회 = leader 포함 (deps 단일 정의, qa#17)
 
 
 # ---------------------------------------------------------------------------

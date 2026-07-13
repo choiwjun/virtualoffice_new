@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import CurrentUser, get_current_user
+from app.core.deps import ADMIN_ROLES, CurrentUser, get_current_user
 from app.db import get_db
 from app.models.tables import (
     Meeting,
@@ -20,7 +20,7 @@ from app.models.tables import (
 
 router = APIRouter(prefix="/api", tags=["consent"])
 
-_ADMIN_ROLES = {"admin", "super_admin"}
+_ADMIN_ROLES = ADMIN_ROLES  # deps 단일 정의 (qa#17)
 
 
 class ConsentIn(BaseModel):

@@ -1,9 +1,9 @@
 """
 EOD(End-of-Day) ERP 전송 배치 (REQ-008, D18).
 
-정본: 03-erp-integration.md, 00-decisions.md D18.
+정본: 03-erp-integration.md, 00-decisions.md D17/D18.
 - daily_status_push 큐(status=pending)를 ERP로 전송하고 pending→sent 전이.
-- 매일 18:05 KST 배치(KPI 18:00 이후) + 관리자 수동 트리거.
+- 매일 18:00 KST 배치(D17) + 관리자 수동 트리거.
 - 멱등: 이미 sent인 행은 재전송하지 않음. run_id로 배치 회차를 태깅.
 - 실패 시 status=failed, retry_count+1, error_message 기록 (retry API로 pending 재큐잉).
 
@@ -14,7 +14,7 @@ EOD(End-of-Day) ERP 전송 배치 (REQ-008, D18).
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID, uuid4
 
@@ -33,6 +33,7 @@ from app.models.tables import (
 
 MAX_RETRY = 3
 DEFAULT_COMPANY_ID = 1
+_KST = timezone(timedelta(hours=9))
 
 
 async def ensure_eod_rows(db: AsyncSession, push_date: date) -> int:
@@ -40,11 +41,24 @@ async def ensure_eod_rows(db: AsyncSession, push_date: date) -> int:
 
     직원이 폼을 제출하지 않았어도 당일 work_log가 있는 활성 직원에 대해
     work_log 요약 payload로 pending row를 생성한다 (수동 제출 행이 있으면 스킵).
+
+    D17 '18:00 이후 활동은 익일 귀속': 전일 배치(전일 18:00 KST)가 이미 지나간 뒤
+    생성된 전일자(work_date=전일) 로그는 전일 push에 포함되지 못했으므로,
+    당일 배치가 함께 수집한다(누락 방지 스윕).
     Returns: 생성된 row 수.
     """
-    # 당일 work_log 보유 사용자
+    # 당일 work_log + 전일 18:00 KST 이후 생성된 전일자 work_log(익일 귀속)
+    prev_date = push_date - timedelta(days=1)
+    prev_cutoff = datetime(
+        prev_date.year, prev_date.month, prev_date.day, 18, 0, tzinfo=_KST
+    ).astimezone(timezone.utc)
     logs = (
-        await db.execute(select(WorkLog).where(WorkLog.work_date == push_date))
+        await db.execute(
+            select(WorkLog).where(
+                (WorkLog.work_date == push_date)
+                | ((WorkLog.work_date == prev_date) & (WorkLog.created_at >= prev_cutoff))
+            )
+        )
     ).scalars().all()
     by_user: dict[int, list[WorkLog]] = {}
     for wl in logs:

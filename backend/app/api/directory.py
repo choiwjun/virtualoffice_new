@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from app.core.deps import CurrentUser, get_current_user, require_role
+from app.core.deps import ADMIN_ROLES, CurrentUser, get_current_user, require_role
 from app.db import get_db
 from app.models.tables import ErpUser, OrgGroup, OrgGroupType
 
@@ -120,7 +120,7 @@ async def list_org_groups(
 # ── org_group CRUD · 검증 · 배포 (관리자, REQ-011) ──────────────────────
 import uuid as _uuid  # noqa: E402
 
-_ADMIN = ("admin", "super_admin")
+_ADMIN = ADMIN_ROLES  # deps 단일 정의 (qa#17)
 
 
 class OrgGroupCreate(BaseModel):

@@ -91,3 +91,51 @@ def test_scheduler_registers_eod_job():
     from app.services import scheduler as sch
 
     assert hasattr(sch, "_eod_push_job")
+
+
+async def test_ensure_eod_rows_carries_over_after_1800_logs(db_session: AsyncSession, seed_user: ErpUser):
+    """D17 '18:00 이후 활동 익일 귀속': 전일 18:00 KST 이후 생성된 전일자 로그가
+    당일 배치에 수집된다 (전일 배치는 이미 지나가 누락되던 갭 — gap-audit §4 #20 잔여)."""
+    from datetime import datetime, timedelta, timezone
+
+    from app.models.tables import WorkLog, WorkLogStatus
+    from app.services.eod_push import ensure_eod_rows
+
+    kst = timezone(timedelta(hours=9))
+    push_date = date(2026, 7, 10)
+    prev_date = date(2026, 7, 9)
+
+    # 전일 17:00 KST 생성(전일 배치에 포함됐어야 함 → 당일 스윕 대상 아님)
+    early = WorkLog(
+        user_id=seed_user.id, work_date=prev_date, title="early", status=WorkLogStatus.COMPLETED,
+        created_at=datetime(2026, 7, 9, 17, 0, tzinfo=kst).astimezone(timezone.utc),
+    )
+    # 전일 19:00 KST 생성(전일 배치 이후 → 익일 귀속 스윕 대상)
+    late = WorkLog(
+        user_id=seed_user.id, work_date=prev_date, title="late-carryover", status=WorkLogStatus.COMPLETED,
+        created_at=datetime(2026, 7, 9, 19, 0, tzinfo=kst).astimezone(timezone.utc),
+    )
+    # 당일 로그
+    today = WorkLog(
+        user_id=seed_user.id, work_date=push_date, title="today", status=WorkLogStatus.STARTED,
+        created_at=datetime(2026, 7, 10, 10, 0, tzinfo=kst).astimezone(timezone.utc),
+    )
+    db_session.add_all([early, late, today])
+    await db_session.flush()
+
+    created = await ensure_eod_rows(db_session, push_date)
+    assert created == 1
+
+    from sqlalchemy import select
+    row = (
+        await db_session.execute(
+            select(DailyStatusPush).where(
+                DailyStatusPush.push_date == push_date,
+                DailyStatusPush.user_id == seed_user.id,
+            )
+        )
+    ).scalar_one()
+    titles = set(row.payload["completed"]) | set(row.payload["in_progress"])
+    assert "late-carryover" in titles, "전일 18:00 이후 로그가 익일 push에 귀속돼야 함 (D17)"
+    assert "today" in titles
+    assert "early" not in titles, "전일 18:00 이전 로그는 전일 push 몫 — 중복 귀속 금지"
