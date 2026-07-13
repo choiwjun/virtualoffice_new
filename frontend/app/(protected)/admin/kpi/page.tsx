@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isLeaderOrAbove } from '@/lib/auth';
+import AiDraftView from '@/components/AiDraftView';
 import {
   KpiResult,
   METRIC_ORDER,
@@ -19,14 +20,6 @@ interface Employee {
   email: string;
   erp_team_id: number;
   role: string;
-}
-
-// ai_draft 구조 (D17 배치, mock/nvidia 공통) — 분기(quarterly)에만 존재
-interface AiDraft {
-  강점?: string[] | string;
-  개선?: string[] | string;
-  근거?: string;
-  _source?: string;
 }
 
 // lib/apiErrors 공통 맵에 없는 이 화면 전용 코드 보강 (08 §3.2/§3.3)
@@ -59,51 +52,6 @@ function errMsg(err: unknown, prefix: string): string {
     return `${prefix} (${err.status}): ${known ?? err.message}`;
   }
   return '서버 연결 오류';
-}
-
-// AI 초안 필드별 렌더 (강점/개선/근거 — 배열이면 목록)
-function AiDraftView({ draft }: { draft: unknown }) {
-  if (typeof draft === 'string') {
-    return <p className="text-sm text-gray-600 whitespace-pre-wrap">{draft}</p>;
-  }
-  if (!draft || typeof draft !== 'object') return null;
-  const d = draft as AiDraft;
-  const renderVal = (v: string[] | string | undefined) => {
-    if (Array.isArray(v)) {
-      return (
-        <ul className="list-disc list-inside space-y-0.5 text-sm text-gray-600">
-          {v.map((s, i) => (
-            <li key={i}>{s}</li>
-          ))}
-        </ul>
-      );
-    }
-    if (v) return <p className="text-sm text-gray-600 whitespace-pre-wrap">{v}</p>;
-    return <p className="text-sm text-gray-400">—</p>;
-  };
-  return (
-    <div className="space-y-3">
-      {d._source && (
-        <span
-          className={`inline-block text-[10px] px-1.5 py-0.5 rounded ${d._source === 'nvidia' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}
-        >
-          {d._source === 'nvidia' ? 'NVIDIA 생성' : 'MOCK 생성'}
-        </span>
-      )}
-      <div>
-        <div className="text-xs font-semibold text-gray-500 mb-1">강점</div>
-        {renderVal(d.강점)}
-      </div>
-      <div>
-        <div className="text-xs font-semibold text-gray-500 mb-1">개선</div>
-        {renderVal(d.개선)}
-      </div>
-      <div>
-        <div className="text-xs font-semibold text-gray-500 mb-1">근거</div>
-        {renderVal(d.근거)}
-      </div>
-    </div>
-  );
 }
 
 // 조정 모달 보조 뷰 — 데이터 없으면 조용히 생략 (CSS 인라인 바, 라이브러리 없음)

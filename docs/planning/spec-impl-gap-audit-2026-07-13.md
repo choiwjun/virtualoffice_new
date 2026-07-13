@@ -43,6 +43,13 @@
 
 ## 2. 미구현 — 외부 의존 게이트 (코드 결함 아님, 진행 차단 요소)
 
+> **조치 현황 (2026-07-13 3차, `work/gap-closure-followups`)**:
+> - **ERP reconcile "skeleton" 판정은 오탐으로 정정** — `sync_users`(erp/sync.py:48-154)가 매 호출 전체 대사(stale soft-delete + 팀이동 이력)를 이미 수행, 매시간 잡 배선·테스트 존재. 실장 갭 아님.
+> - **#27 종결**: kpi_engine.compute_team_percentile(08 §5.4 — 기간 실소속 모수·5명 미만 부서 폴백·(아래+0.5×동률)/n 산식) + ai_draft 08 §6.2.2 구조 전환(strengths[]/improvement_areas[]/overall/team_percentile, 신구 병행 렌더 공용 AiDraftView) 구현.
+> - **운영 배치 2종**: audit_log 5년 파기(03:30 KST, D20-e) + EOD 공휴일 스킵(settings.eod_holidays, D17).
+> - **P7-T4 부하 게이트(인프로세스) PASS**: 20/20 접속 유지, E2E p50=72ms/p95=131ms/max=140ms (<500ms D22, realtime/scripts/load-sim-20.ts). 실배포망 RTT 포함 실측은 외부 게이트로 잔존.
+> - 검증: pytest 343 passed·realtime smoke+scene 전부 PASS·next build OK.
+
 | 항목 | 정본 | 현황 | 증거 |
 |---|---|---|---|
 | STT 자동초안 | D5 MUST → 00-decisions §H에서 P6 외부의존 이관 확정 | **501 스텁** (정합 — 폴백=수동 회의록+AI 요약 동작) | meeting_minutes.py, 14-spec §2.5 |

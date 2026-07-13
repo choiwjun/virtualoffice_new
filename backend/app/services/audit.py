@@ -6,8 +6,10 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.tables import AuditLog
@@ -42,3 +44,14 @@ async def record_audit(
         await db.commit()
     except Exception:  # pragma: no cover - 감사 실패가 기능을 막지 않음
         await db.rollback()
+
+
+AUDIT_RETENTION_DAYS = 1826  # 5년 + 윤년 여유 1일 (D20-e, 08 §7.3)
+
+
+async def purge_expired_audit_logs(db: AsyncSession, *, now: Optional[datetime] = None) -> int:
+    """D20-e: 보존 기한(5년) 초과 audit_log 파기. 삭제 행 수 반환 (commit은 호출측)."""
+    now = now or datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=AUDIT_RETENTION_DAYS)
+    res = await db.execute(delete(AuditLog).where(AuditLog.created_at < cutoff))
+    return res.rowcount or 0

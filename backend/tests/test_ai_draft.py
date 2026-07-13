@@ -69,12 +69,24 @@ def test_scrub_pii():
 # ── mock 초안 ─────────────────────────────────────────────────
 
 def test_mock_draft_structure_deterministic():
+    """08 §6.2.2 구조 (2026-07-13 #27 전환): strengths[]/improvement_areas[]/overall/percentile."""
     metrics = {"work_completed_count": 6, "action_items_ontime_rate": 90, "collaboration_score": 75}
     d1 = _mock_draft(metrics, subject="EMP-abc123")
     d2 = _mock_draft(metrics, subject="EMP-abc123")
     assert d1 == d2  # 결정론
-    assert set(["강점", "개선", "근거", "_source"]).issubset(d1.keys())
+    assert set(
+        ["strengths", "improvement_areas", "overall_assessment", "overall_rationale", "team_percentile", "_source"]
+    ).issubset(d1.keys())
     assert d1["_source"] == "mock"
+    assert isinstance(d1["strengths"], list) and d1["strengths"]
+    assert {"strength", "example"} <= set(d1["strengths"][0].keys())
+    assert isinstance(d1["improvement_areas"], list) and d1["improvement_areas"]
+    assert {"area", "rationale", "actions"} <= set(d1["improvement_areas"][0].keys())
+    assert d1["overall_assessment"] in {"상", "중상", "중", "중하", "하"}
+    assert d1["team_percentile"] is None  # 미주입 시 None
+
+    d3 = _mock_draft(metrics, subject="EMP-abc123", team_percentile=73.5)
+    assert d3["team_percentile"] == 73.5
 
 
 async def test_generate_draft_no_pii_leak():
@@ -83,8 +95,8 @@ async def test_generate_draft_no_pii_leak():
     draft = await generate_draft(metrics, user_id=100)
     blob = str(draft)
     assert "김앨리스" not in blob
-    assert "@" not in draft["근거"]
-    assert pseudonymize_user(100) in draft["근거"]  # 가명 라벨은 포함
+    assert "@" not in draft["overall_rationale"]
+    assert pseudonymize_user(100) in draft["overall_rationale"]  # 가명 라벨은 포함
 
 
 # ── kpi_engine 통합 ───────────────────────────────────────────
@@ -109,5 +121,6 @@ async def test_compute_attaches_ai_draft(db_session: AsyncSession, seed_user: Er
     with_draft = [r for r in all_rows if isinstance(r.ai_draft, dict)]
     assert len(with_draft) == 1  # 집계 metric(quarterly_total) 1행에 초안 부착
     draft = with_draft[0].ai_draft
-    assert "강점" in draft and "개선" in draft
+    assert "strengths" in draft and "improvement_areas" in draft  # 08 §6.2.2 구조
+    assert "team_percentile" in draft  # 코드 산출 주입(모수 부족 시 None)
     assert with_draft[0].ai_draft_generated_at is not None

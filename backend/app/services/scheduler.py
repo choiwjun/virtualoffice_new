@@ -115,12 +115,18 @@ async def _erp_sync_batch_job() -> None:
 async def _eod_push_job() -> None:
     """REQ-008/D18/D17: EOD ERP 전송.
 
-    D17: 주말 스킵(공휴일은 달력 소스 미확보 — 외부 의존, TODO), 배치가 당일 push row
-    자동 생성(ensure_eod_rows) 후 pending(+failed<MAX_RETRY)을 전송.
+    D17: 주말·공휴일 스킵(공휴일 = settings.eod_holidays 운영자 유지 목록 — 외부 캘린더
+    API 연동 전 잠정), 배치가 당일 push row 자동 생성(ensure_eod_rows) 후
+    pending(+failed<MAX_RETRY)을 전송.
     """
+    from app.config import settings
     from app.services.eod_push import ensure_eod_rows, run_eod_push
 
     kst_now = datetime.now(timezone(timedelta(hours=9)))
+    holidays = {s.strip() for s in settings.eod_holidays.split(",") if s.strip()}
+    if kst_now.date().isoformat() in holidays:
+        print(f"[Scheduler] EOD push skipped: holiday {kst_now.date().isoformat()} (D17)")
+        return
     if kst_now.weekday() >= 5:  # 토(5)·일(6) — D17 주말 스킵
         print("[Scheduler] EOD push skipped (weekend, D17)")
         return
@@ -245,6 +251,20 @@ async def _presence_purge_job() -> None:
             await db.rollback()
             print(f"[Scheduler] presence purge failed: {exc}")
 
+async def _audit_retention_purge_job() -> None:
+    """D20-e: audit_log 5년 보존 후 파기 (08 §7.3) — services/audit.purge_expired_audit_logs 위임."""
+    print("[Scheduler] audit retention purge started")
+    from app.services.audit import purge_expired_audit_logs
+
+    async with SessionLocal() as db:
+        try:
+            deleted = await purge_expired_audit_logs(db)
+            await db.commit()
+            print(f"[Scheduler] audit retention purge completed: {deleted} rows deleted")
+        except Exception as exc:
+            await db.rollback()
+            print(f"[Scheduler] audit retention purge failed: {exc}")
+
 # ──────────────────────────────────────────────────────────────────────────────
 # 스케줄러 초기화
 # ──────────────────────────────────────────────────────────────────────────────
@@ -297,6 +317,15 @@ def start_scheduler() -> None:
         replace_existing=True,
     )
 
+
+    # D20-e: audit_log 5년 보존 파기 — 매일 03:30 KST (presence purge 직후)
+    _scheduler.add_job(
+        _audit_retention_purge_job,
+        CronTrigger(hour=3, minute=30, timezone="Asia/Seoul"),
+        id="audit_retention_purge",
+        name="Audit log 5y retention purge",
+        replace_existing=True,
+    )
     # 08 §3.3: 무이의 7일 자동확정 — 매일 09:00 KST
     _scheduler.add_job(
         _kpi_auto_finalize_job,
@@ -316,7 +345,7 @@ def start_scheduler() -> None:
     )
 
     _scheduler.start()
-    print("[Scheduler] Started: KPI 21:00, ERP hourly:00, EOD push 18:00, presence purge 03:00, KPI auto-finalize 09:00, seat release :30")
+    print("[Scheduler] Started: KPI 21:00, ERP hourly:00, EOD push 18:00, presence purge 03:00, audit purge 03:30, KPI auto-finalize 09:00, seat release :30")
 
 
 def stop_scheduler() -> None:

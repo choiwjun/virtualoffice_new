@@ -12,72 +12,14 @@ import {
   currentQuarterKey,
   OBJECTION_STATUS,
 } from '@/lib/kpi';
+import AiDraftView from '@/components/AiDraftView';
 
 type PeriodType = 'quarterly' | 'daily';
-
-// ai_draft 구조 (D17 배치, mock/nvidia 공통) — 분기(quarterly)에만 존재
-interface AiDraft {
-  강점?: string[] | string;
-  개선?: string[] | string;
-  근거?: string;
-  _source?: string;
-}
 
 // ApiError.message 노출 (QA #7)
 function errMsg(err: unknown, prefix: string): string {
   if (err instanceof ApiError) return `${prefix} (${err.status}): ${err.message}`;
   return '서버 연결 오류';
-}
-
-// AI 초안 필드별 렌더 (강점/개선/근거 — 배열이면 목록)
-function AiDraftView({ draft }: { draft: unknown }) {
-  if (typeof draft === 'string') {
-    return <p className="whitespace-pre-wrap">{draft}</p>;
-  }
-  if (!draft || typeof draft !== 'object') return null;
-  const d = draft as AiDraft;
-  const renderVal = (v: string[] | string | undefined) => {
-    if (Array.isArray(v)) {
-      return (
-        <ul className="list-disc list-inside space-y-0.5">
-          {v.map((s, i) => (
-            <li key={i}>{s}</li>
-          ))}
-        </ul>
-      );
-    }
-    if (v) return <p className="whitespace-pre-wrap">{v}</p>;
-    return null;
-  };
-  return (
-    <div className="space-y-1.5">
-      {d._source && (
-        <span
-          className={`inline-block text-[9px] px-1 py-0.5 rounded ${d._source === 'nvidia' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}
-        >
-          {d._source === 'nvidia' ? 'NVIDIA 생성' : 'MOCK 생성'}
-        </span>
-      )}
-      {d.강점 && (
-        <div>
-          <span className="font-semibold text-gray-500">강점</span>
-          {renderVal(d.강점)}
-        </div>
-      )}
-      {d.개선 && (
-        <div>
-          <span className="font-semibold text-gray-500">개선</span>
-          {renderVal(d.개선)}
-        </div>
-      )}
-      {d.근거 && (
-        <div>
-          <span className="font-semibold text-gray-500">근거</span>
-          {renderVal(d.근거)}
-        </div>
-      )}
-    </div>
-  );
 }
 
 export default function MyKpiPage() {

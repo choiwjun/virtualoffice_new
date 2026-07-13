@@ -1,0 +1,23 @@
+
+       ___      _
+      / __\___ | |_   _ ___  ___ _   _ ___
+     / /  / _ \| | | | / __|/ _ \ | | / __|
+    / /__| (_) | | |_| \__ \  __/ |_| \__ \
+    \____/\___/|_|\__, |___/\___|\__,_|___/
+                  |___/
+
+     · Multiplayer Framework for Node.js ·
+
+💖 Consider becoming a Sponsor on GitHub → https://github.com/sponsors/endel
+🌟 Give us a star on GitHub → https://github.com/colyseus/colyseus
+☁️  Deploy and scale your project on Colyseus Cloud → https://cloud.colyseus.io
+
+
+[load-sim] server up on :2599
+[load-sim] 20/20 clients joined in 454ms
+
+===== load-sim-20 결과 (P7-T4 / D22) =====
+접속 유지: 20/20
+프로버 표본: 25/25 (move_rejected 175건)
+E2E(송신→원격 관측) p50=72ms p95=131ms max=140ms
+PASS  20명 동시접속 + p95 < 500ms (D22)

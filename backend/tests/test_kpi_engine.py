@@ -619,7 +619,7 @@ async def test_upsert_ai_draft_on_aggregate_only(db_session: AsyncSession, seed_
     with_draft = [r for r in results if isinstance(r.ai_draft, dict)]
     assert len(with_draft) == 1  # 집계 metric 1행에만
     assert with_draft[0].metric == "quarterly_total"
-    assert "강점" in with_draft[0].ai_draft
+    assert "strengths" in with_draft[0].ai_draft  # 08 §6.2.2 구조 (2026-07-13 #27 전환)
     # 나머지 정량 metric 행은 서술 없음
     for r in results:
         if r.metric != "quarterly_total":
