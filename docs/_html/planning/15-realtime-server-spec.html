@@ -80,7 +80,9 @@ Player {
 <hr>
 <h2 id="4-이동-검증-8항목-09-5-d22">4. 이동 검증 8항목 (09 §5 / D22)</h2>
 <p>서버 tick마다 <code>move_request</code> 검증:</p>
-<ol><li>company<em>id 일치(테넌트 격리) 2. office</em>id 일치 3. floor_id 일치</li><li>좌표 유효·<strong>충돌</strong>(office_layout colliders AABB/polygon) 5. <strong>속도 제한</strong>(tick당 이동거리 상한)</li><li>권한(spawn/zone 접근) 7. 좌석 점유 충돌 8. 회의실 정원</li><li>실패 시: 서버 권위 위치로 <strong>되돌림</strong>(reconcile). 클라이언트 예측과 &gt;0.5m 차이 → Lerp 5프레임 보정.</li></ol>
+<ol><li>company<em>id 일치(테넌트 격리) 2. office</em>id 일치 3. floor_id 일치</li><li>좌표 유효·<strong>충돌</strong>(office_layout colliders AABB/polygon) 5. <strong>속도 제한</strong>(tick당 이동거리 상한)</li><li>권한(spawn/zone 접근) 7. 좌석 점유 충돌 8. 회의실 정원</li></ol>
+<blockquote>구현 정합(2026-07-13): <code>realtime/src/validation/movement.ts</code>는 ④(좌표 유효·충돌)를 checkBounds/checkCollision 2개 함수로 분리해 <strong>총 9개 함수</strong>로 구현 — 의미 항목 수는 본 절의 8과 동일(드리프트 아님).</blockquote>
+<ul><li>실패 시: 서버 권위 위치로 <strong>되돌림</strong>(reconcile). 클라이언트 예측과 &gt;0.5m 차이 → Lerp 5프레임 보정.</li></ul>
 <h2 id="5-근접-상호작용-검증-8항목-09-5">5. 근접 상호작용 검증 8항목 (09 §5)</h2>
 <p>company<em>id / office</em>id / floor_id 일치 · 거리&lt;5m · <strong>벽/유리벽 LOS 광선(가림 시 불가)</strong> · 상대 status≠offline · 요청 쿨다운 1초 · 상대 방해금지/집중모드 미활성.</p>
 <hr>

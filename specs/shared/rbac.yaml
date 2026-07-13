@@ -103,6 +103,56 @@ access_matrix:
     leader: deny
     admin: allow # admin·super_admin 전용(04 §2.7)
 
+  # ── 2026-07-13 확장: 구현 선행 기능 등재 (spec-impl-gap-audit-2026-07-13 §5-4) ──
+
+  - feature: 출장관리 (신청·조회 self / 승인·반려)
+    screen: screen-trip # 06 §3.15
+    employee: allow (scope=self)
+    leader: allow (승인·반려 + 조회 scope=team↑) # trips.py ADMIN_ROLES
+    admin: allow
+
+  - feature: 보고서 (작성·조회 self / 전체 조회)
+    screen: screen-reports # 06 §3.16
+    employee: allow (scope=self)
+    leader: allow (조회 scope=team↑) # reports.py ADMIN_ROLES
+    admin: allow
+
+  - feature: 커뮤니케이션 채널 채팅 (general/team)
+    screen: screen-chat # 06 §3.17 — 본격 채팅은 Phase 7
+    employee: allow (general + 본인 팀 채널)
+    leader: allow (general + 본인 팀 채널)
+    admin: allow # 전 채널
+
+  - feature: 아바타 커스터마이징
+    screen: screen-settings # 06 §3.9
+    employee: allow (scope=self)
+    leader: allow (scope=self)
+    admin: allow (scope=self)
+
+  - feature: 녹음/STT 동의 (제출·본인 상태 조회)
+    screen: screen-meetings # D20-b
+    employee: allow (scope=self)
+    leader: allow (scope=self)
+    admin: allow # 회의 단위 동의 현황 조회 포함
+
+  - feature: 감사 로그 조회
+    screen: screen-audit-log
+    employee: deny
+    leader: deny
+    admin: allow
+
+  - feature: 근태 조회 / EOD push 트리거
+    screen: screen-sync-monitoring # D17
+    employee: allow (근태 scope=self, EOD 본인 큐잉만)
+    leader: allow (근태 scope=self)
+    admin: allow # 전체 근태 + EOD run 트리거
+
+  - feature: 좌석 배정 이력 조회 (관리)
+    screen: screen-seat-layout-editor
+    employee: deny
+    leader: deny # 좌석 편집기와 동일 집합 (seats.py ADMIN_ROLES, 2026-07-13 정합)
+    admin: allow
+
 unauthorized_screen:
   # 권한 없는 접근 시 공통 표시(06 §3.10)
   message: "🔒 접근 권한이 없습니다 — 이 화면은 관리자 전용입니다."
