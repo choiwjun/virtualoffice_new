@@ -427,8 +427,9 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
     };
   }, [glowRoom]);
 
+  // isolate: 내부의 큰 z-index(아바타·라벨 ≤23000)를 이 컴포넌트 안에 가둬 셸 오버레이(z-20)를 뚫지 않게 함
   return (
-    <div ref={containerRef} className="absolute inset-0 flex items-center justify-center overflow-hidden">
+    <div ref={containerRef} className="absolute inset-0 isolate flex items-center justify-center overflow-hidden">
       {/* 스테이지 = 플레이트 비율 고정(contain) */}
       <div
         className="relative select-none"
