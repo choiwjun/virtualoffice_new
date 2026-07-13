@@ -245,6 +245,8 @@ DO UPDATE SET value = EXCLUDED.value, updated_at = now();
 
 > AI 응답에는 `quantitative_scores`가 없다. 정량은 kpi_result.value(코드 계산)가 유일한 출처다.
 
+> ⚠ **구현 정합 (2026-07-13, spec-impl-gap-audit §4 #27)**: 현행 구현(`ai_draft.py`)의 저장 구조는 위 상세 스키마의 **축약형** — `{"강점": str, "개선": str, "근거": str, "_source": "nvidia"|"mock"}` 평면 한국어 키. "서술 전용·정량 미개입·분기만 생성·가명화" 원칙은 전부 준수하나, `strengths[]` 구조화 배열·`overall_assessment` 5단계·`team_percentile` 입력(§5.4의 벤치마크 산출 자체 미구현)은 미반영. 프론트(`/kpi`)가 평면 키를 직접 렌더하므로 **구조 전환 시 백엔드·프론트 동시 개정 필요** — team_percentile(§5.4) 구현과 묶어 후속 과제로 관리하며, 그 전까지 저장 구조 정본 = ai_draft.py.
+
 ### 3.2 관리자 검토 & 조정
 
 **담당**: team leader / manager (ERP users.role = leader | admin)

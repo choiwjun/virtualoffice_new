@@ -27,7 +27,7 @@ from pydantic import BaseModel
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import CurrentUser, get_current_user
+from app.core.deps import MANAGER_ROLES, CurrentUser, get_current_user
 from app.db import get_db
 from app.models.tables import (
     ActionItem,
@@ -297,7 +297,7 @@ async def patch_minute(
     # 기록자 또는 관리자만 수정 가능
     if (
         minute.created_by != current_user.user_id
-        and current_user.role not in ("admin", "super_admin", "leader")
+        and current_user.role not in MANAGER_ROLES
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -341,7 +341,7 @@ async def delete_minute(
         )
     if (
         minute.created_by != current_user.user_id
-        and current_user.role not in ("admin", "super_admin", "leader")
+        and current_user.role not in MANAGER_ROLES
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -372,7 +372,7 @@ async def finalize_minute(
 
     # 관리자, 리더, 또는 기록자만 확정 가능
     if (
-        current_user.role not in ("admin", "super_admin", "leader")
+        current_user.role not in MANAGER_ROLES
         and minute.created_by != current_user.user_id
     ):
         raise HTTPException(

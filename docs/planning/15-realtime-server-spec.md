@@ -68,6 +68,8 @@ Player {
 4. 좌표 유효·**충돌**(office_layout colliders AABB/polygon) 5. **속도 제한**(tick당 이동거리 상한)
 6. 권한(spawn/zone 접근) 7. 좌석 점유 충돌 8. 회의실 정원
 
+> 구현 정합(2026-07-13): `realtime/src/validation/movement.ts`는 ④(좌표 유효·충돌)를 checkBounds/checkCollision 2개 함수로 분리해 **총 9개 함수**로 구현 — 의미 항목 수는 본 절의 8과 동일(드리프트 아님).
+
 - 실패 시: 서버 권위 위치로 **되돌림**(reconcile). 클라이언트 예측과 >0.5m 차이 → Lerp 5프레임 보정.
 
 ## 5. 근접 상호작용 검증 8항목 (09 §5)

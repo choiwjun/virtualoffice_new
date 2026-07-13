@@ -788,3 +788,142 @@ async def test_filter_by_period_type_and_key(
     data = resp.json()
     assert all(r["period_key"] == "2026-07-01" for r in data)
     assert len(data) == 8
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# P0 RBAC 수리 (spec-impl-gap-audit-2026-07-13 §1)
+#   1) 이의신청 재검토·확정 = admin 전용 (rbac.yaml·08 §7.1 — leader 확정 우회 차단)
+#   2) leader 팀 스코프 = 평가 기간 실소속(user_team_history) 기준 (08 §5.4)
+# ──────────────────────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_objection_review_leader_forbidden(
+    async_client: AsyncClient,
+    published_result: dict,
+    auth_headers: dict,
+):
+    """이의 재검토(advance/resolve)는 admin 전용 — 같은 팀 leader라도 403 (rbac.yaml)."""
+    rid = published_result["id"]
+    await async_client.post(
+        f"/api/kpi-results/{rid}/objections",
+        json={"category": "data_error", "text": "이의신청 사유 텍스트"},
+        headers=auth_headers,
+    )
+    # 같은 팀(team_id=10) leader — resolve가 final_score 확정을 수행하므로 차단돼야 함
+    same_team_leader = create_access_token(
+        {"sub": "2", "email": "leader@example.com", "role": "leader", "team_id": 10},
+    )
+    leader_headers = {"Authorization": f"Bearer {same_team_leader}"}
+
+    resp = await async_client.post(
+        f"/api/kpi-results/{rid}/objections/review",
+        json={"action": "advance"},
+        headers=leader_headers,
+    )
+    assert resp.status_code == 403, resp.text
+    assert resp.json()["detail"] == "admin_required"
+
+    resp = await async_client.post(
+        f"/api/kpi-results/{rid}/objections/review",
+        json={"action": "resolve"},
+        headers=leader_headers,
+    )
+    assert resp.status_code == 403, resp.text
+
+
+@pytest.mark.asyncio
+async def test_team_scope_uses_period_team_history(
+    async_client: AsyncClient,
+    db_session: AsyncSession,
+    users,
+    admin_auth_headers: dict,
+):
+    """
+    분기 중 팀 이동자(08 §5.4): 평가 기간 실소속 팀 리더만 접근.
+
+    user 5: 2026-07-15까지 팀 10 → 이후 팀 20(현재).
+    평가 기간 2026-07-01(daily) 기준:
+      - 당시 팀(10) leader → 200
+      - 현재 팀(20) leader → 403 (당시 미소속)
+    """
+    from datetime import datetime, timezone
+    from app.models.tables import UserTeamHistory
+
+    mover = ErpUser(id=5, company_id=1, email="mover@example.com", name="Mover", erp_team_id=20, role="employee")
+    db_session.add(mover)
+    db_session.add_all([
+        UserTeamHistory(
+            user_id=5, erp_team_id=10,
+            valid_from=datetime(2026, 1, 1, tzinfo=timezone.utc),
+            valid_to=datetime(2026, 7, 15, tzinfo=timezone.utc),
+        ),
+        UserTeamHistory(
+            user_id=5, erp_team_id=20,
+            valid_from=datetime(2026, 7, 15, tzinfo=timezone.utc),
+            valid_to=None,
+        ),
+    ])
+    await db_session.flush()
+
+    compute_resp = await async_client.post(
+        "/api/kpi-results/compute",
+        json={"user_id": 5, "period_type": "daily", "period_key": "2026-07-01"},
+        headers=admin_auth_headers,
+    )
+    assert compute_resp.status_code == 200, compute_resp.text
+    rid = compute_resp.json()["results"][0]["id"]
+
+    old_team_leader = create_access_token(
+        {"sub": "6", "email": "lead10@example.com", "role": "leader", "team_id": 10},
+    )
+    resp = await async_client.get(
+        f"/api/kpi-results/{rid}",
+        headers={"Authorization": f"Bearer {old_team_leader}"},
+    )
+    assert resp.status_code == 200, resp.text
+
+    current_team_leader = create_access_token(
+        {"sub": "7", "email": "lead20@example.com", "role": "leader", "team_id": 20},
+    )
+    resp = await async_client.get(
+        f"/api/kpi-results/{rid}",
+        headers={"Authorization": f"Bearer {current_team_leader}"},
+    )
+    assert resp.status_code == 403, resp.text
+    assert resp.json()["detail"] == "team_scope_violation"
+
+
+@pytest.mark.asyncio
+async def test_team_scope_no_history_falls_back_to_current_team(
+    async_client: AsyncClient,
+    db_session: AsyncSession,
+    users,
+    seed_work_logs,
+    admin_auth_headers: dict,
+):
+    """이력 미적재(0행) 환경 폴백: 현재 소속(erp_team_id) 기준 — 기존 동작 보존."""
+    compute_resp = await async_client.post(
+        "/api/kpi-results/compute",
+        json={"user_id": 1, "period_type": "daily", "period_key": "2026-07-01"},
+        headers=admin_auth_headers,
+    )
+    rid = compute_resp.json()["results"][0]["id"]
+
+    # user 1의 현재 팀 = 10 (users 픽스처), 이력 0행
+    same_team_leader = create_access_token(
+        {"sub": "6", "email": "lead10@example.com", "role": "leader", "team_id": 10},
+    )
+    resp = await async_client.get(
+        f"/api/kpi-results/{rid}",
+        headers={"Authorization": f"Bearer {same_team_leader}"},
+    )
+    assert resp.status_code == 200, resp.text
+
+    other_team_leader = create_access_token(
+        {"sub": "7", "email": "lead99@example.com", "role": "leader", "team_id": 99},
+    )
+    resp = await async_client.get(
+        f"/api/kpi-results/{rid}",
+        headers={"Authorization": f"Bearer {other_team_leader}"},
+    )
+    assert resp.status_code == 403, resp.text

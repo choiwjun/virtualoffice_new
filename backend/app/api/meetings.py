@@ -29,7 +29,7 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.core.deps import CurrentUser, get_current_user, require_role
+from app.core.deps import MANAGER_ROLES, CurrentUser, get_current_user, require_role
 from app.db import get_db
 from app.models.tables import (
     ErpUser,
@@ -711,7 +711,7 @@ async def respond_to_invite(
 # 회의 수정/취소 (관리자·리더) — management-api.yaml
 # ---------------------------------------------------------------------------
 
-_MTG_ADMIN = ("admin", "super_admin", "leader")
+_MTG_ADMIN = MANAGER_ROLES  # deps 단일 정의 (qa#17)
 
 
 class MeetingUpdate(BaseModel):

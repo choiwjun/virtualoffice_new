@@ -23,7 +23,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import CurrentUser, get_current_user, require_role
+from app.core.deps import ADMIN_ROLES, CurrentUser, get_current_user, require_role
 from app.db import get_db
 from app.models.tables import Floor, Seat, SeatAssignmentHistory, SeatStatus, SeatType
 from app.services.audit import record_audit
@@ -251,7 +251,9 @@ async def release_seat(
 # 좌석 CRUD (관리자) — management-api.yaml /seats
 # ---------------------------------------------------------------------------
 
-_ADMIN = ("admin", "super_admin", "leader")
+# rbac.yaml: 좌석 배치 편집기 = admin 전용 (leader deny) — office_layouts.py와 동일 집합.
+# leader 포함이던 종전 집합은 정본 위반 (spec-impl-gap-audit-2026-07-13 §1-3).
+_ADMIN = ADMIN_ROLES
 
 class ReassignRequest(BaseModel):
     user_id: int

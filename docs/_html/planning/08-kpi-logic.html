@@ -207,6 +207,7 @@ DO UPDATE SET value = EXCLUDED.value, updated_at = now();</code></pre>
   &quot;model&quot;: &quot;claude-opus&quot;
 }</code></pre>
 <blockquote>AI 응답에는 <code>quantitative_scores</code>가 없다. 정량은 kpi_result.value(코드 계산)가 유일한 출처다.</blockquote>
+<blockquote>⚠ <strong>구현 정합 (2026-07-13, spec-impl-gap-audit §4 #27)</strong>: 현행 구현(<code>ai_draft.py</code>)의 저장 구조는 위 상세 스키마의 <strong>축약형</strong> — <code>{&quot;강점&quot;: str, &quot;개선&quot;: str, &quot;근거&quot;: str, &quot;_source&quot;: &quot;nvidia&quot;|&quot;mock&quot;}</code> 평면 한국어 키. &quot;서술 전용·정량 미개입·분기만 생성·가명화&quot; 원칙은 전부 준수하나, <code>strengths[]</code> 구조화 배열·<code>overall_assessment</code> 5단계·<code>team_percentile</code> 입력(§5.4의 벤치마크 산출 자체 미구현)은 미반영. 프론트(<code>/kpi</code>)가 평면 키를 직접 렌더하므로 <strong>구조 전환 시 백엔드·프론트 동시 개정 필요</strong> — team<em>percentile(§5.4) 구현과 묶어 후속 과제로 관리하며, 그 전까지 저장 구조 정본 = ai</em>draft.py.</blockquote>
 <h3 id="32-관리자-검토-조정">3.2 관리자 검토 &amp; 조정</h3>
 <p><strong>담당</strong>: team leader / manager (ERP users.role = leader | admin)</p>
 <p><strong>프로세스</strong>:</p>

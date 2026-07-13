@@ -467,3 +467,36 @@ class TestReleaseAndReassign:
         await db_session.refresh(seat)
         assert seat.assigned_user_id == 1002
         assert seat.status == SeatStatus.OCCUPIED
+
+
+# ---------------------------------------------------------------------------
+# P1 RBAC 수리 (spec-impl-gap-audit-2026-07-13 §1-3, §1-5)
+# ---------------------------------------------------------------------------
+
+class TestSeatCrudRbac:
+    """좌석 CRUD = admin 전용 (rbac.yaml: 좌석 배치 편집기 leader deny)."""
+
+    @pytest.mark.asyncio
+    async def test_leader_cannot_create_seat(self, async_client):
+        leader = create_access_token(
+            {"sub": "1003", "email": "lead@test.local", "role": "leader", "team_id": 10}
+        )
+        resp = await async_client.post(
+            "/api/seats",
+            json={"floor_id": str(uuid4()), "type": "free", "coords": {"x": 1.0, "y": 1.0}},
+            headers={"Authorization": f"Bearer {leader}"},
+        )
+        assert resp.status_code == 403, resp.text
+
+    @pytest.mark.asyncio
+    async def test_super_admin_via_require_role_admin_inheritance(self, async_client):
+        """require_role('admin' 포함 집합)이 super_admin을 자동 허용 (rbac.yaml §12 상위 호환)."""
+        sadmin = create_access_token(
+            {"sub": "1004", "email": "sa@test.local", "role": "super_admin"}
+        )
+        resp = await async_client.post(
+            "/api/seats",
+            json={"floor_id": str(uuid4()), "type": "free", "coords": {"x": 2.0, "y": 2.0}},
+            headers={"Authorization": f"Bearer {sadmin}"},
+        )
+        assert resp.status_code == 201, resp.text
