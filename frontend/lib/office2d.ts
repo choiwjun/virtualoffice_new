@@ -1,10 +1,10 @@
 /**
  * office2d.ts — 2.5D 가상오피스 씬 설정 + 좌표계 (정본).
  *
- * ⚠ D30 (2026-07-13): 기존 에셋 팩(플레이트·캐릭터 프레임) 전량 폐기 — 품질 재작업.
- * 신규 에셋 납품 전까지 ASSETS_READY=false → 뷰포트는 플레이스홀더(단색 플레이트 +
- * 도트 아바타)로 동작한다. 납품 시: public/office2d/에 배치 후 ASSETS_READY=true.
- * 신규 에셋 요구 스펙 = docs/planning/17-asset-rework-spec.md.
+ * D30 v1 팩 (2026-07-13): 에셋·지오메트리 정본 = tools/asset-gen (프로시저럴 생성).
+ * 아래 WALK_AREA/ROOMS/OBSTACLES/SPAWNS는 tools/asset-gen/out/layout.json에서 주입 —
+ * 수정은 tools/asset-gen/src/plate.js에서 하고 `node generate.js all --final` 후 재동기.
+ * 요구 스펙 = docs/planning/17-asset-rework-spec.md.
  *
  * 좌표계(유지): 플레이트 1672×941px 비율. 서버(realtime)와 미터 단위 공유 — 가로 20m 스케일.
  * realtime/src/integration/FloorLayoutProvider.ts 의 SCENE_W_M/SCENE_H_M 과 동일해야 한다.
@@ -12,7 +12,7 @@
  */
 
 /** 에셋 존재 여부 — 신규 팩 납품 후 true로 전환 (D30). */
-export const ASSETS_READY = false;
+export const ASSETS_READY = true; // v1 신규 팩 납품(2026-07-13, tools/asset-gen 생성)
 
 export const PLATE_URL = '/office2d/plates/horizon.png';
 export const PLATE_W = 1672;
@@ -38,10 +38,10 @@ export function metersToNorm(p: Vec2): Vec2 {
 
 /** 보행 가능 폴리곤(정규 좌표) — HORIZON_OPEN_PLAN walkArea. */
 export const WALK_AREA: Vec2[] = [
-  { x: 0.2, y: 0.25 },
-  { x: 0.78, y: 0.22 },
-  { x: 0.91, y: 0.82 },
-  { x: 0.13, y: 0.86 },
+  { x: 0.4085, y: 0.1762 },
+  { x: 0.9362, y: 0.6451 },
+  { x: 0.5915, y: 0.9513 },
+  { x: 0.0638, y: 0.4825 },
 ];
 
 export interface SceneRoom {
@@ -52,35 +52,21 @@ export interface SceneRoom {
 }
 
 export const ROOMS: SceneRoom[] = [
-  {
-    id: 'reception',
-    label: 'Reception',
-    polygon: [
-      { x: 0.12, y: 0.08 }, { x: 0.42, y: 0.08 }, { x: 0.44, y: 0.34 }, { x: 0.14, y: 0.35 },
-    ],
-  },
-  {
-    id: 'boardroom',
-    label: 'Board Room',
-    polygon: [
-      { x: 0.66, y: 0.08 }, { x: 0.95, y: 0.08 }, { x: 0.94, y: 0.34 }, { x: 0.64, y: 0.33 },
-    ],
-  },
-  {
-    id: 'lounge',
-    label: 'Lounge',
-    polygon: [
-      { x: 0.37, y: 0.08 }, { x: 0.66, y: 0.08 }, { x: 0.64, y: 0.29 }, { x: 0.4, y: 0.3 },
-    ],
-  },
+  { id: 'reception', label: 'Reception', polygon: [{ x: 0.439, y: 0.1952 }, { x: 0.5793, y: 0.3199 }, { x: 0.4878, y: 0.4012 }, { x: 0.3475, y: 0.2765 }] },
+  { id: 'lounge', label: 'Lounge', polygon: [{ x: 0.5976, y: 0.3416 }, { x: 0.7349, y: 0.4635 }, { x: 0.6373, y: 0.5502 }, { x: 0.5, y: 0.4283 }] },
+  { id: 'boardroom', label: 'Board Room', polygon: [{ x: 0.7715, y: 0.4906 }, { x: 0.9331, y: 0.6342 }, { x: 0.805, y: 0.748 }, { x: 0.6434, y: 0.6044 }] },
+  { id: 'meeting-a', label: 'Meeting Room', polygon: [{ x: 0.622, y: 0.683 }, { x: 0.7318, y: 0.7806 }, { x: 0.6403, y: 0.8618 }, { x: 0.5305, y: 0.7643 }] },
+  { id: 'pantry', label: 'Pantry', polygon: [{ x: 0.259, y: 0.3117 }, { x: 0.3688, y: 0.4093 }, { x: 0.2621, y: 0.5041 }, { x: 0.1523, y: 0.4066 }] },
+  { id: 'cafe', label: 'Cafe', polygon: [{ x: 0.1645, y: 0.4228 }, { x: 0.2651, y: 0.5123 }, { x: 0.1797, y: 0.5882 }, { x: 0.0791, y: 0.4987 }] },
+  { id: 'booth', label: 'Phone Booth', polygon: [{ x: 0.6098, y: 0.8727 }, { x: 0.6525, y: 0.9106 }, { x: 0.5976, y: 0.9594 }, { x: 0.5549, y: 0.9215 }] },
 ];
 
 /** 스폰 포인트(정규) — HORIZON_OPEN_PLAN spawnPoints. */
 export const SPAWNS: Record<string, Vec2> = {
-  lobby: { x: 0.38, y: 0.44 },
-  work: { x: 0.48, y: 0.57 },
-  meeting: { x: 0.75, y: 0.34 },
-  cafe: { x: 0.3, y: 0.77 },
+  lobby: { x: 0.4176, y: 0.3768 },
+  work: { x: 0.4908, y: 0.5502 },
+  meeting: { x: 0.7227, y: 0.7236 },
+  cafe: { x: 0.2621, y: 0.5475 },
 };
 
 /**
@@ -89,22 +75,27 @@ export const SPAWNS: Record<string, Vec2> = {
  * HORIZON_OBSTACLES와 반드시 동일해야 한다(서버는 이 변을 벽으로 등록).
  */
 export const OBSTACLES: Vec2[][] = [
-  // 리셉션 데스크
-  [{ x: 0.195, y: 0.335 }, { x: 0.295, y: 0.255 }, { x: 0.395, y: 0.315 }, { x: 0.265, y: 0.415 }],
-  // 중앙 8인 회의 테이블(+의자)
-  [{ x: 0.415, y: 0.455 }, { x: 0.545, y: 0.375 }, { x: 0.615, y: 0.44 }, { x: 0.475, y: 0.53 }],
-  // 워크스테이션 클러스터(좌측 2열)
-  [{ x: 0.31, y: 0.575 }, { x: 0.475, y: 0.465 }, { x: 0.575, y: 0.565 }, { x: 0.42, y: 0.70 }],
-  // 워크스테이션 클러스터(우측 하단)
-  [{ x: 0.52, y: 0.70 }, { x: 0.655, y: 0.615 }, { x: 0.735, y: 0.70 }, { x: 0.60, y: 0.80 }],
-  // 팬트리 아일랜드(+스툴)
-  [{ x: 0.135, y: 0.66 }, { x: 0.27, y: 0.575 }, { x: 0.36, y: 0.66 }, { x: 0.225, y: 0.76 }],
-  // 카페 원탁(+의자)
-  [{ x: 0.22, y: 0.84 }, { x: 0.30, y: 0.78 }, { x: 0.38, y: 0.84 }, { x: 0.30, y: 0.91 }],
-  // 중앙 우측 유리회의실 테이블
-  [{ x: 0.655, y: 0.42 }, { x: 0.755, y: 0.375 }, { x: 0.80, y: 0.425 }, { x: 0.70, y: 0.475 }],
-  // 보드룸 테이블(우상단, 보행영역 접경부)
-  [{ x: 0.705, y: 0.255 }, { x: 0.845, y: 0.21 }, { x: 0.90, y: 0.255 }, { x: 0.76, y: 0.30 }],
+  [{ x: 0.442, y: 0.2413 }, { x: 0.5275, y: 0.3172 }, { x: 0.4954, y: 0.3456 }, { x: 0.41, y: 0.2697 }],
+  [{ x: 0.5946, y: 0.3605 }, { x: 0.6739, y: 0.431 }, { x: 0.6373, y: 0.4635 }, { x: 0.558, y: 0.393 }],
+  [{ x: 0.5427, y: 0.4066 }, { x: 0.622, y: 0.477 }, { x: 0.5885, y: 0.5069 }, { x: 0.5092, y: 0.4364 }],
+  [{ x: 0.6556, y: 0.4581 }, { x: 0.6922, y: 0.4906 }, { x: 0.6617, y: 0.5177 }, { x: 0.6251, y: 0.4852 }],
+  [{ x: 0.7654, y: 0.5448 }, { x: 0.8752, y: 0.6423 }, { x: 0.8294, y: 0.683 }, { x: 0.7196, y: 0.5854 }],
+  [{ x: 0.7654, y: 0.4852 }, { x: 0.773, y: 0.492 }, { x: 0.6449, y: 0.6058 }, { x: 0.6373, y: 0.599 }],
+  [{ x: 0.6434, y: 0.599 }, { x: 0.7349, y: 0.6803 }, { x: 0.7288, y: 0.6857 }, { x: 0.6373, y: 0.6044 }],
+  [{ x: 0.7715, y: 0.7128 }, { x: 0.8081, y: 0.7453 }, { x: 0.802, y: 0.7507 }, { x: 0.7654, y: 0.7182 }],
+  [{ x: 0.4115, y: 0.4012 }, { x: 0.5275, y: 0.5041 }, { x: 0.4176, y: 0.6017 }, { x: 0.3017, y: 0.4987 }],
+  [{ x: 0.6281, y: 0.7264 }, { x: 0.683, y: 0.7751 }, { x: 0.6373, y: 0.8158 }, { x: 0.5824, y: 0.767 }],
+  [{ x: 0.622, y: 0.6776 }, { x: 0.7379, y: 0.7806 }, { x: 0.7303, y: 0.7873 }, { x: 0.6144, y: 0.6844 }],
+  [{ x: 0.619, y: 0.6803 }, { x: 0.6266, y: 0.6871 }, { x: 0.5351, y: 0.7684 }, { x: 0.5275, y: 0.7616 }],
+  [{ x: 0.5336, y: 0.7616 }, { x: 0.5702, y: 0.7941 }, { x: 0.5625, y: 0.8009 }, { x: 0.5259, y: 0.7684 }],
+  [{ x: 0.6068, y: 0.8266 }, { x: 0.6434, y: 0.8591 }, { x: 0.6357, y: 0.8659 }, { x: 0.5991, y: 0.8334 }],
+  [{ x: 0.2621, y: 0.347 }, { x: 0.3353, y: 0.412 }, { x: 0.2804, y: 0.4608 }, { x: 0.2072, y: 0.3957 }],
+  [{ x: 0.2438, y: 0.309 }, { x: 0.259, y: 0.3226 }, { x: 0.1797, y: 0.393 }, { x: 0.1645, y: 0.3795 }],
+  [{ x: 0.4664, y: 0.5909 }, { x: 0.5824, y: 0.6938 }, { x: 0.4725, y: 0.7914 }, { x: 0.3566, y: 0.6884 }],
+  [{ x: 0.1706, y: 0.477 }, { x: 0.2102, y: 0.5123 }, { x: 0.1736, y: 0.5448 }, { x: 0.134, y: 0.5096 }],
+  [{ x: 0.6098, y: 0.8727 }, { x: 0.6525, y: 0.9106 }, { x: 0.6418, y: 0.9201 }, { x: 0.5991, y: 0.8822 }],
+  [{ x: 0.6052, y: 0.874 }, { x: 0.6129, y: 0.8808 }, { x: 0.5641, y: 0.9242 }, { x: 0.5564, y: 0.9174 }],
+  [{ x: 0.6449, y: 0.9093 }, { x: 0.6525, y: 0.916 }, { x: 0.6037, y: 0.9594 }, { x: 0.5961, y: 0.9526 }],
 ];
 
 // ---------------------------------------------------------------------------
@@ -112,7 +103,7 @@ export const OBSTACLES: Vec2[][] = [
 // ---------------------------------------------------------------------------
 
 export const CHARACTER_IDS = [
-  'JAMES', 'OLIVIA', 'ETHAN', 'SOPHIA', 'NOAH', 'AVA', 'LIAM', 'MAYA',
+  'CEO', 'MANAGER', 'DEVELOPER', 'DESIGNER', 'SALES', 'HR', 'MARKETER', 'INTERN',
 ] as const;
 export type CharacterId = (typeof CHARACTER_IDS)[number];
 
@@ -121,7 +112,7 @@ export type AvatarState = 'idle' | 'walk';
 /** 상태별 프레임 애니 스펙(v1 frames). 표시 높이는 avatarHeightFrac()이 깊이 기반으로 계산. */
 export const AVATAR_ANIM: Record<AvatarState, { frames: number; fps: number; heightScale: number }> = {
   idle: { frames: 6, fps: 6, heightScale: 1 },
-  walk: { frames: 8, fps: 10, heightScale: 188 / 190 },
+  walk: { frames: 8, fps: 10, heightScale: 1 }, // v1 팩: 상태 공통 220×460 캔버스
 };
 
 /**
@@ -129,10 +120,10 @@ export const AVATAR_ANIM: Record<AvatarState, { frames: number; fps: number; hei
  * 화면 위쪽(멀리) 발 y≈0.36에서 신장 ≈ 화면높이 0.14, 아래쪽(가까이) y≈0.80에서 ≈0.17.
  * 보행영역 상단(0.22)~하단(0.86)에 선형 매핑.
  */
-const HEIGHT_FRAC_BACK = 0.13;  // ny = WALK_TOP에서
-const HEIGHT_FRAC_FRONT = 0.175; // ny = WALK_BOTTOM에서
-const WALK_TOP = 0.22;
-const WALK_BOTTOM = 0.86;
+const HEIGHT_FRAC_BACK = 0.088;  // v1 아이소 팩: 원근 없음 — 가독용 미세 변화만
+const HEIGHT_FRAC_FRONT = 0.102;
+const WALK_TOP = 0.18;
+const WALK_BOTTOM = 0.95;
 
 export function avatarHeightFrac(ny: number, state: AvatarState): number {
   const t = Math.min(1, Math.max(0, (ny - WALK_TOP) / (WALK_BOTTOM - WALK_TOP)));
@@ -152,8 +143,8 @@ export function characterFor(userId: string): CharacterId {
 
 /** 2.5D 스프라이트 캐릭터 표시 라벨(아바타 설정 프리셋용). */
 export const CHARACTER_LABELS: Record<CharacterId, string> = {
-  JAMES: '제임스', OLIVIA: '올리비아', ETHAN: '이든', SOPHIA: '소피아',
-  NOAH: '노아', AVA: '에이바', LIAM: '리암', MAYA: '마야',
+  CEO: 'CEO', MANAGER: '매니저', DEVELOPER: '개발자', DESIGNER: '디자이너',
+  SALES: '영업', HR: '인사', MARKETER: '마케터', INTERN: '인턴',
 };
 
 const _CHAR_SET: ReadonlySet<string> = new Set(CHARACTER_IDS);

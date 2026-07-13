@@ -206,6 +206,7 @@
 - **바뀌지 않는 것**: 2.5D 방향 자체(D29 렌더 방식론), 좌표계·보행/장애물 폴리곤(이동서버 검증 계약), Colyseus·프레즌스·회의 D24·콘솔 전 기능.
 - **바뀌는 것**: 에셋 파일 전부(플레이트 PNG·캐릭터 프레임), 그리고 그것을 참조하던 문서 팩·파이프라인 유산.
 - **복원 절차(신규 팩 납품 시)**: `frontend/public/office2d/plates/`·`characters/` 배치 → `lib/office2d.ts ASSETS_READY=true` → (지오메트리 변경 시) WALK_AREA/ROOMS/OBSTACLES + realtime HORIZON 폴리곤 동기 갱신.
+- ✅ **v1 팩 납품 완료 (2026-07-13, 당일)**: `tools/asset-gen` 프로시저럴 생성기(아이소 SVG→PNG, 시안 정합 팔레트) — 플레이트+캐릭터 8직군×14프레임+layout.json 단일 소스. ASSETS_READY=true 복원, realtime HORIZON v1 지오메트리 동기(scene-floor 12 PASS). 상세 = 17-asset-rework-spec.md.
 
 ---
 
