@@ -44,25 +44,25 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
       <Sidebar role={sidebarRole as 'admin' | 'leader' | 'employee'} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top header */}
-        <header className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+        {/* Top header — /office 셸과 동일한 다크 토큰(라우트 이동 시 헤더 디자인 일관) */}
+        <header className="flex-shrink-0 bg-bg-base border-b border-border-subtle px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400">VirtualOffice</span>
-            <span className="text-gray-300">/</span>
-            <span className="text-sm font-medium text-gray-700">관리콘솔</span>
+            <span className="text-xs text-text-muted">VirtualOffice</span>
+            <span className="text-text-muted">/</span>
+            <span className="text-sm font-medium text-text-secondary">관리콘솔</span>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <div className="text-sm font-medium text-gray-700">{user?.name ?? '—'}</div>
-              <div className="text-xs text-gray-400">{user?.email ?? ''}</div>
+              <div className="text-sm font-medium text-text-primary">{user?.name ?? '—'}</div>
+              <div className="text-xs text-text-muted">{user?.email ?? ''}</div>
             </div>
-            <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-bold">
+            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold">
               {user?.name?.charAt(0)?.toUpperCase() ?? '?'}
             </div>
             <button
               onClick={logout}
-              className="text-sm text-gray-500 hover:text-red-500 transition-colors"
+              className="text-sm text-text-muted hover:text-danger transition-colors"
             >
               로그아웃
             </button>
