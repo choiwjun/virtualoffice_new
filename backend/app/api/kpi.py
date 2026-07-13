@@ -10,11 +10,13 @@ KPI 결과 API (Lane C — G003)
   POST /api/kpi-results/{id}/objections — 이의신청 접수
   POST /api/kpi-results/{id}/objections/review — 이의신청 검토·처리
 
-권한 (06 §3.10 접근 매트릭스):
+권한 (06 §3.10 접근 매트릭스, rbac.yaml 정본):
   - compute/finalize: admin | super_admin
-  - adjust/objections-review: admin | super_admin | leader(자기 팀 한정)
+  - adjust: admin | super_admin | leader(자기 팀 한정)
+  - objections-review: admin | super_admin (08 §7.1: 최종 확정=관리자 — resolve가 확정을 수행하므로 leader ✗)
   - objections(접수): 본인(employee)
   - GET: 본인 or admin/super_admin/leader(자기 팀 한정)
+  - leader 팀 스코프는 평가 기간 실소속(user_team_history) 기준 (08 §5.4)
 
 정책 (08 §3.2·§3.3):
   - 조정은 원점수(value) 대비 ±10% 범위 + 조정사유 ≥30자 (백엔드 강제)
@@ -44,8 +46,9 @@ from app.models.tables import (
     ErpUser,
     KpiObjectionStatus,
     KpiResult,
+    UserTeamHistory,
 )
-from app.services.kpi_engine import compute_and_upsert_kpi
+from app.services.kpi_engine import _parse_period, compute_and_upsert_kpi
 from app.services.audit import record_audit
 
 router = APIRouter(prefix="/api/kpi-results", tags=["kpi"])
@@ -185,16 +188,66 @@ def _check_manager(user: CurrentUser) -> None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="admin_required")
 
 
-async def _check_team_scope(db: AsyncSession, user: CurrentUser, target_user_id: int) -> None:
-    """leader는 자기 팀(erp_team_id == token team_id)만 접근 (06 §3.10)."""
+async def _leader_team_id(db: AsyncSession, user: CurrentUser) -> Optional[int]:
+    """leader의 현재 팀 — DB 우선(토큰 team_id는 로그인 시점 고정이라 스테일 가능), 미존재 시 토큰 폴백."""
+    row = await db.get(ErpUser, user.user_id)
+    if row is not None and row.erp_team_id is not None:
+        return row.erp_team_id
+    return user.team_id
+
+
+async def _check_team_scope(
+    db: AsyncSession,
+    user: CurrentUser,
+    target_user_id: int,
+    result: Optional[KpiResult] = None,
+) -> None:
+    """
+    leader 팀 스코프 검사 (06 §3.10).
+
+    - result 제공 시: 평가 기간 실소속(user_team_history) 기준 (08 §5.4) —
+      대상자가 해당 평가 기간에 leader의 팀에 소속했어야 접근 허용.
+      이력 미적재(0행) 환경은 현재 소속(erp_team_id) 폴백.
+    - result 미제공(목록 조회 등): 현재 소속 기준.
+    """
     if user.role in _ADMIN_ONLY or target_user_id == user.user_id:
         return
-    if user.role == "leader":
-        target = await db.get(ErpUser, target_user_id)
-        if target is None or user.team_id is None or target.erp_team_id != user.team_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="team_scope_violation")
-        return
-    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="forbidden")
+    if user.role != "leader":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="forbidden")
+
+    leader_team = await _leader_team_id(db, user)
+    if leader_team is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="team_scope_violation")
+
+    if result is not None:
+        try:
+            period_type = result.period_type.value if hasattr(result.period_type, "value") else result.period_type
+            start, end = _parse_period(period_type, result.period_key)
+        except ValueError:
+            start = end = None  # 기간 해석 불가 → 현재 소속 폴백
+        if start is not None:
+            rows = await db.execute(
+                select(UserTeamHistory).where(UserTeamHistory.user_id == target_user_id)
+            )
+            hist = rows.scalars().all()
+            if hist:
+                start_dt = datetime(start.year, start.month, start.day, tzinfo=timezone.utc)
+                end_dt = datetime(end.year, end.month, end.day, 23, 59, 59, tzinfo=timezone.utc)
+                overlapping = [
+                    h for h in hist
+                    if _as_utc(h.valid_from) <= end_dt
+                    and (h.valid_to is None or _as_utc(h.valid_to) >= start_dt)
+                ]
+                if any(h.erp_team_id == leader_team for h in overlapping):
+                    return
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="team_scope_violation"
+                )
+
+    # 현재 소속 폴백 (목록 조회·이력 미적재·기간 해석 불가)
+    target = await db.get(ErpUser, target_user_id)
+    if target is None or target.erp_team_id != leader_team:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="team_scope_violation")
 
 
 def _as_utc(dt: datetime) -> datetime:
@@ -312,7 +365,7 @@ async def get_kpi_result(
     r = await _get_result_or_404(db, result_id)
     if r.user_id != user.user_id:
         _check_manager(user)
-        await _check_team_scope(db, user, r.user_id)
+        await _check_team_scope(db, user, r.user_id, result=r)
     return _to_out(r)
 
 
@@ -332,7 +385,7 @@ async def adjust_kpi_result(
     """
     _check_manager(user)
     r = await _get_result_or_404(db, result_id)
-    await _check_team_scope(db, user, r.user_id)
+    await _check_team_scope(db, user, r.user_id, result=r)
 
     if r.finalized_at is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="already_finalized")
@@ -512,11 +565,11 @@ async def review_objection(
     action = "resolve": reviewing → resolved (+ final_score 재조정 선택)
 
     08 §3.3: resolve 시 final_score·finalized_at 확정 + ERP push 적재(재조정=재push).
-    leader는 자기 팀 건만 처리 가능.
+    admin/super_admin 전용 (rbac.yaml·08 §7.1: 재검토·확정=관리자 —
+    resolve가 final_score·finalized_at 확정을 수행하므로 leader 허용 시 확정 우회 경로가 됨).
     """
-    _check_manager(user)
+    _check_admin_only(user)
     r = await _get_result_or_404(db, result_id)
-    await _check_team_scope(db, user, r.user_id)
 
     now = datetime.now(timezone.utc)
     obj_status = r.objection_status
