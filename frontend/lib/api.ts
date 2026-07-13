@@ -36,7 +36,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
-      window.location.href = '/login?expired=1';
+      // 세션 만료 복귀(06 §3.8): 로그인 후 원래 화면으로 돌아가도록 현재 경로를 returnTo로 전달
+      const path = window.location.pathname;
+      const returnTo =
+        path && path !== '/login' ? `&returnTo=${encodeURIComponent(path)}` : '';
+      window.location.href = `/login?expired=1${returnTo}`;
     }
     throw new ApiError(401, 'Unauthorized');
   }

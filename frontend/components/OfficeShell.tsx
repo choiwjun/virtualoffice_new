@@ -19,6 +19,7 @@ import { MediaBar } from '@/components/ui/MediaBar';
 import { connectToMeeting, disconnectRoom } from '@/lib/livekit';
 import type { Room } from 'livekit-client';
 import { ListItem } from '@/components/ui/ListItem';
+import { ROOMS as VIEWPORT_ROOMS } from '@/lib/office2d';
 import dynamic from 'next/dynamic';
 
 // 2.5D 뷰포트는 브라우저 전용(WebSocket/DOM 계측) → SSR 비활성 dynamic import
@@ -53,7 +54,8 @@ interface KpiResult {
 // GET /api/meetings 계약 — scheduled_at + duration_minutes 기반 (start_time/end_time 필드 없음)
 interface Meeting {
   id: string;
-  room_id?: number;
+  /** GET /api/rooms Room.id (UUID) */
+  room_id?: string;
   title: string;
   scheduled_at: string;
   duration_minutes: number;
@@ -76,8 +78,20 @@ interface EmployeePresence {
 interface Notice {
   id: string;
   title: string;
+  category?: string;
+  pinned?: boolean;
+  published_at?: string;
   created_at: string;
   author: string;
+}
+
+// 회의실 (GET /api/rooms): 뷰포트 방 라벨 ↔ Room.name 매칭에 사용 (livekit Room과 이름 충돌 방지)
+interface RoomInfo {
+  id: string; // UUID
+  name: string; // 'Board Room' | 'Lounge' …
+  type?: string;
+  capacity?: number;
+  floor_id?: string;
 }
 
 // ─────────────────────────────────────────────
@@ -268,6 +282,12 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
   const [activeFloor, setActiveFloor] = useState('2F');
   const [presenceFilter, setPresenceFilter] = useState<PresenceFilter>('all');
 
+  // 헤더 검색(06 §1.2) — 우측 패널 직원 목록 이름/팀 필터. 셸에서 공유.
+  const [searchQuery, setSearchQuery] = useState('');
+  // 알림 드롭다운 + 마지막 확인 시각(localStorage 'notices_seen_at')
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const [noticesSeenAt, setNoticesSeenAt] = useState<string | null>(null);
+
   // 역할 게이트 관리 메뉴 + 오버레이(비-/office 라우트) 타이틀
   const role = (me?.role ?? 'employee') as UserRole;
   const adminItems = ADMIN_ITEMS.filter((i) => i.roles.includes(role));
@@ -285,6 +305,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
   const [employees, setEmployees]     = useState<EmployeePresence[]>([]);
   const [todayMeetings, setTodayMeetings] = useState<Meeting[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
+  const [rooms, setRooms] = useState<RoomInfo[]>([]);
 
   // C3: 회의 LiveKit 실미디어 연결
   const [activeRoom, setActiveRoom] = useState<Room | null>(null);
@@ -315,15 +336,32 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
     setActiveRoom(null);
   }, [activeRoom]);
 
-  // D24: 뷰포트 회의실 근접 프롬프트 확인 → 진행중 회의에 명시 입장(LiveKit).
-  // (레이아웃 room ↔ meeting 정밀 매핑은 후속 — 현재는 진행중 회의에 입장.)
+  // D24: 뷰포트 회의실 근접 프롬프트 확인 → 해당 방의 회의에 명시 입장(LiveKit).
+  // 뷰포트 방 라벨(Reception/Lounge/Board Room…) ↔ GET /api/rooms Room.name 대소문자 무시 매칭
+  // → 그 room_id의 진행중 회의(없으면 오늘 예정 중 가장 가까운 회의)에 입장.
   const handleViewportJoin = useCallback(
-    (_roomId: string) => {
+    (roomId: string) => {
       if (activeRoom) return; // 이미 연결됨
-      const m = meetings[0];
-      if (m) void handleJoinMeeting(m.id);
+      const label = VIEWPORT_ROOMS.find((r) => r.id === roomId)?.label ?? roomId;
+      const room = rooms.find((r) => r.name?.toLowerCase() === label.toLowerCase());
+      const inProgress = room ? meetings.find((m) => m.room_id === room.id) : undefined;
+      const nearestScheduled = room
+        ? todayMeetings
+            .filter((m) => m.room_id === room.id && m.status === 'scheduled')
+            .sort(
+              (a, b) =>
+                Math.abs(new Date(a.scheduled_at).getTime() - Date.now()) -
+                Math.abs(new Date(b.scheduled_at).getTime() - Date.now()),
+            )[0]
+        : undefined;
+      const target = inProgress ?? nearestScheduled;
+      if (target) {
+        void handleJoinMeeting(target.id);
+      } else {
+        setJoinError('이 회의실에 진행 중인 회의가 없습니다');
+      }
     },
-    [meetings, activeRoom, handleJoinMeeting],
+    [rooms, meetings, todayMeetings, activeRoom, handleJoinMeeting],
   );
 
   // 페이지 이탈/룸 교체 시 연결 정리(disconnectRoom은 중복 호출 안전).
@@ -336,6 +374,11 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     setMe(getUser());
+    try {
+      setNoticesSeenAt(localStorage.getItem('notices_seen_at'));
+    } catch {
+      // localStorage 접근 불가 시 무시 (배지=전체 신규 취급)
+    }
   }, []);
 
   // 오늘의 업무 (work-logs)
@@ -424,6 +467,16 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
     }
   }, []);
 
+  // 회의실 목록 (GET /api/rooms) — 뷰포트 방 ↔ 회의 매핑용, 셸에서 1회 로드
+  const fetchRooms = useCallback(async () => {
+    try {
+      const data = await api.get<RoomInfo[]>('/api/rooms');
+      setRooms(Array.isArray(data) ? data : []);
+    } catch {
+      setRooms([]);
+    }
+  }, []);
+
   useEffect(() => {
     if (!me) return;
     fetchWorkLogs();
@@ -431,21 +484,55 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
     fetchMeetings();
     fetchEmployees();
     fetchNotices();
-  }, [me, fetchWorkLogs, fetchKpi, fetchMeetings, fetchEmployees, fetchNotices]);
+    fetchRooms();
+  }, [me, fetchWorkLogs, fetchKpi, fetchMeetings, fetchEmployees, fetchNotices, fetchRooms]);
 
   // KPI 집계
   const avgScore = kpiResults.length
     ? Math.round(kpiResults.reduce((s, r) => s + r.score, 0) / kpiResults.length)
     : 0;
 
-  // 사용자 필터 — offline은 '전체'에서만 노출
+  // 사용자 필터 — offline은 '전체'에서만 노출. 헤더 검색어(이름/팀)와 AND 결합(06 §1.2)
+  const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredEmployees = employees.filter((e) => {
+    if (
+      normalizedQuery &&
+      !e.name?.toLowerCase().includes(normalizedQuery) &&
+      !e.team_name?.toLowerCase().includes(normalizedQuery)
+    ) {
+      return false;
+    }
     if (presenceFilter === 'all') return true;
     if (presenceFilter === 'office')   return e.status === 'online' || e.status === 'working' || e.status === 'focus' || e.status === 'away';
     if (presenceFilter === 'meeting')  return e.status === 'meeting';
     if (presenceFilter === 'external') return e.status === 'external';
     return true;
   });
+
+  // 새 공지 배지 — published_at(없으면 created_at)이 마지막 확인 시각 이후인 공지 수
+  const unseenNoticeCount = notices.filter((n) => {
+    const ts = n.published_at ?? n.created_at;
+    if (!ts) return false;
+    if (!noticesSeenAt) return true;
+    return new Date(ts).getTime() > new Date(noticesSeenAt).getTime();
+  }).length;
+
+  // 알림 드롭다운 토글 — 열 때 확인 시각 갱신(localStorage 'notices_seen_at') → 배지 해소
+  const handleNoticeToggle = () => {
+    if (!noticeOpen) {
+      const now = new Date().toISOString();
+      try {
+        localStorage.setItem('notices_seen_at', now);
+      } catch {
+        // localStorage 접근 불가 시 무시
+      }
+      setNoticesSeenAt(now);
+    }
+    setNoticeOpen(!noticeOpen);
+  };
+
+  // 공지 목록 페이지는 관리자용(/admin/notices)만 존재 → '전체 보기'는 관리자에게만 노출
+  const canViewAllNotices = role === 'admin' || role === 'super_admin';
 
   // KST 기준 HH:MM
   const formatTime = (iso: string | Date) => {
@@ -510,23 +597,102 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
           </button>
         </div>
         <div className="flex-1 max-w-md mx-6 hidden md:block">
-          {/* 검색 UI — 핸들러 미배선(준비중). 배선 시 aria-disabled/opacity 제거 */}
-          <div
-            title="준비중"
-            aria-disabled="true"
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-surface text-text-muted text-[13px] border border-border-subtle opacity-50 cursor-not-allowed select-none"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg><span>검색...</span>
-            <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-bg-surface-raised">준비중</span>
+          {/* 헤더 검색(06 §1.2) — 우측 패널 직원 목록을 이름/팀으로 필터.
+              뷰포트 아바타 강조·카메라 팬은 스코프 외(후속). */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-surface text-text-muted text-[13px] border border-border-subtle focus-within:ring-2 focus-within:ring-accent-cyan">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 flex-shrink-0"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="구성원 검색 (이름·팀)"
+              aria-label="구성원 검색"
+              className="flex-1 min-w-0 bg-transparent outline-none text-text-primary placeholder:text-text-muted [&::-webkit-search-cancel-button]:hidden"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                aria-label="검색어 지우기"
+                className="flex-shrink-0 text-text-muted hover:text-text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan rounded"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+              </button>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button title="준비중" aria-disabled="true" disabled className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted opacity-40 cursor-not-allowed">
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" /></svg>
-          </button>
-          <button title="준비중" aria-disabled="true" disabled className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted opacity-40 cursor-not-allowed">
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" /></svg>
-          </button>
+          {/* 메시지 → 커뮤니케이션(/chat) 이동 */}
+          <Link
+            href="/chat"
+            title="커뮤니케이션"
+            aria-label="커뮤니케이션"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-surface-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" /><path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" /></svg>
+          </Link>
+          {/* 알림 — 최근 공지 5건 드롭다운 + 새 공지 배지(notices_seen_at 비교) */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={handleNoticeToggle}
+              title="알림"
+              aria-label={unseenNoticeCount > 0 ? `알림 — 새 공지 ${unseenNoticeCount}건` : '알림'}
+              aria-haspopup="true"
+              aria-expanded={noticeOpen}
+              className="relative w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-surface-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" /></svg>
+              {unseenNoticeCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-danger text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                  {unseenNoticeCount > 9 ? '9+' : unseenNoticeCount}
+                </span>
+              )}
+            </button>
+            {noticeOpen && (
+              <>
+                {/* 바깥 클릭 시 닫힘 백드롭 */}
+                <div className="fixed inset-0 z-30" aria-hidden="true" onClick={() => setNoticeOpen(false)} />
+                <div
+                  role="menu"
+                  aria-label="최근 공지"
+                  className="absolute right-0 top-10 z-40 w-72 rounded-xl border border-border-subtle shadow-2xl overflow-hidden"
+                  style={{ background: '#161F32' }}
+                >
+                  <div className="px-3 py-2.5 border-b border-border-subtle text-[12px] font-semibold text-text-primary">최근 공지</div>
+                  <div className="max-h-80 overflow-y-auto py-1">
+                    {notices.length === 0 ? (
+                      <div className="px-3 py-4 text-[12px] text-text-muted text-center">공지사항이 없습니다</div>
+                    ) : (
+                      notices.map((n) => (
+                        // 공지 전용 페이지 부재 → 드롭다운 내 읽기 전용 항목
+                        <div key={n.id} className="px-3 py-2 hover:bg-bg-surface-raised transition-colors">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {n.pinned && (
+                              <span className="flex-shrink-0 text-[9px] font-semibold px-1 py-0.5 rounded bg-[rgba(59,91,254,0.2)] text-primary leading-none">고정</span>
+                            )}
+                            <span className="text-[12px] text-text-primary truncate">{n.title}</span>
+                          </div>
+                          <div className="text-[10px] text-text-muted mt-0.5">
+                            {(n.published_at ?? n.created_at)?.slice(0, 10).replace(/-/g, '.')}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {canViewAllNotices && (
+                    <Link
+                      href="/admin/notices"
+                      onClick={() => setNoticeOpen(false)}
+                      className="block px-3 py-2 border-t border-border-subtle text-center text-[11px] font-medium text-primary hover:bg-bg-surface-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                    >
+                      전체 보기 ›
+                    </Link>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
           <div className="flex items-center gap-2 pl-1">
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold">
               {me?.name?.charAt(0)?.toUpperCase() ?? '?'}
@@ -609,44 +775,54 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
             <MediaBar room={activeRoom} onLeave={handleLeaveMeeting} />
           </div>
 
-          {/* 진행중 화상회의 오버레이 — 실 데이터(GET /api/meetings?status=in_progress). C3: 입장 시 LiveKit 연결 */}
-          {meetings.length > 0 && (
-            <div
-              className="absolute right-3 bottom-3 z-10 w-56 rounded-xl border border-border-subtle overflow-hidden"
-              style={{ background: 'rgba(13,27,54,0.92)', backdropFilter: 'blur(6px)' }}
-            >
-              <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-danger flex-shrink-0 animate-pulse" />
-                  <span className="text-[11px] font-semibold text-text-primary truncate">{meetings[0].title}</span>
-                </div>
-                <span className="text-[9px] font-bold text-danger tracking-wider flex-shrink-0">● LIVE</span>
-              </div>
-              <div className="px-3 py-2 flex items-center justify-between gap-2">
-                <span className="text-[11px] text-text-secondary truncate">
-                  {activeRoom
-                    ? '회의 연결됨'
-                    : meetings[0].participant_count != null
-                      ? `${meetings[0].participant_count}명 참여중`
-                      : '진행중'}
-                </span>
-                {activeRoom ? (
-                  <span className="text-[10px] text-status-online font-medium flex-shrink-0">● 연결됨</span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleJoinMeeting(meetings[0].id)}
-                    disabled={joining}
-                    className="text-[10px] font-medium px-2 py-1 rounded bg-primary text-white hover:bg-primary-hover disabled:opacity-50 flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
-                  >
-                    {joining ? '연결 중…' : '입장하기'}
-                  </button>
-                )}
-              </div>
-              {/* 회의 입장 실패 사유 인라인 배너 */}
+          {/* 진행중 화상회의 오버레이 + 입장 실패/회의 없음 인라인 배너 — 세로 스택으로
+              배너가 진행중 회의 유무와 무관하게 노출되도록 구성 */}
+          {(meetings.length > 0 || joinError) && (
+            <div className="absolute right-3 bottom-3 z-10 flex flex-col items-end gap-2">
+              {/* 회의 입장 실패/해당 방 회의 없음 사유 인라인 배너 */}
               {joinError && (
-                <div role="alert" className="px-3 pb-2 text-[10px] text-danger leading-snug">
+                <div
+                  role="alert"
+                  className="w-56 rounded-xl border border-border-subtle px-3 py-2 text-[10px] text-danger leading-snug"
+                  style={{ background: 'rgba(13,27,54,0.92)', backdropFilter: 'blur(6px)' }}
+                >
                   {joinError}
+                </div>
+              )}
+              {/* 진행중 화상회의 — 실 데이터(GET /api/meetings?status=in_progress). C3: 입장 시 LiveKit 연결 */}
+              {meetings.length > 0 && (
+                <div
+                  className="w-56 rounded-xl border border-border-subtle overflow-hidden"
+                  style={{ background: 'rgba(13,27,54,0.92)', backdropFilter: 'blur(6px)' }}
+                >
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-danger flex-shrink-0 animate-pulse" />
+                      <span className="text-[11px] font-semibold text-text-primary truncate">{meetings[0].title}</span>
+                    </div>
+                    <span className="text-[9px] font-bold text-danger tracking-wider flex-shrink-0">● LIVE</span>
+                  </div>
+                  <div className="px-3 py-2 flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-text-secondary truncate">
+                      {activeRoom
+                        ? '회의 연결됨'
+                        : meetings[0].participant_count != null
+                          ? `${meetings[0].participant_count}명 참여중`
+                          : '진행중'}
+                    </span>
+                    {activeRoom ? (
+                      <span className="text-[10px] text-status-online font-medium flex-shrink-0">● 연결됨</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleJoinMeeting(meetings[0].id)}
+                        disabled={joining}
+                        className="text-[10px] font-medium px-2 py-1 rounded bg-primary text-white hover:bg-primary-hover disabled:opacity-50 flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                      >
+                        {joining ? '연결 중…' : '입장하기'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -796,6 +972,21 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
             <span className="text-[13px] font-semibold text-text-primary">구성원 ({employees.length})</span>
             <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded bg-bg-surface-raised">실시간</span>
           </div>
+          {/* 헤더 검색어 활성 표시(06 §1.2) — 필터 결과 수 + 지우기 */}
+          {normalizedQuery && (
+            <div className="px-4 pb-2 flex items-center justify-between gap-2">
+              <span className="text-[11px] text-primary truncate">
+                검색: {searchQuery.trim()} ({filteredEmployees.length}명)
+              </span>
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="flex-shrink-0 text-[10px] text-text-muted hover:text-text-primary px-1.5 py-0.5 rounded bg-bg-surface-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+              >
+                지우기
+              </button>
+            </div>
+          )}
           {/* 상태 필터 탭 */}
           <div className="flex border-b border-border-subtle" role="tablist" aria-label="상태 필터">
             {FILTER_TABS.map((t) => (
@@ -820,7 +1011,9 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
             {loadingEmp ? (
               <div className="px-4 py-3 text-[12px] text-text-muted">로딩 중...</div>
             ) : filteredEmployees.length === 0 ? (
-              <div className="px-4 py-3 text-[12px] text-text-muted">해당 상태 사용자 없음</div>
+              <div className="px-4 py-3 text-[12px] text-text-muted">
+                {normalizedQuery ? '검색 결과가 없습니다' : '해당 상태 사용자 없음'}
+              </div>
             ) : (
               PRESENCE_GROUPS.map((g) => {
                 const members = filteredEmployees.filter((e) => g.statuses.includes(e.status));

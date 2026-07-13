@@ -10,6 +10,17 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const expired = searchParams.get('expired') === '1';
 
+  // 세션 만료 복귀(06 §3.8): 안전한 내부 경로만 허용(/로 시작, //·백슬래시 아님 → 오픈 리다이렉트 차단)
+  const returnToParam = searchParams.get('returnTo');
+  const returnTo =
+    returnToParam &&
+    returnToParam.startsWith('/') &&
+    !returnToParam.startsWith('//') &&
+    !returnToParam.startsWith('/\\')
+      ? returnToParam
+      : null;
+  const destination = returnTo ?? '/office';
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,9 +29,9 @@ function LoginForm() {
   // Already logged in → redirect
   useEffect(() => {
     if (getToken()) {
-      router.replace('/office');
+      router.replace(destination);
     }
-  }, [router]);
+  }, [router, destination]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,7 +40,8 @@ function LoginForm() {
     setError('');
     try {
       await login(email, password);
-      router.replace('/office');
+      // returnTo가 안전한 내부 경로면 원래 화면으로 복귀, 아니면 기본 목적지(/office)
+      router.replace(destination);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setError('이메일 또는 비밀번호 오류');

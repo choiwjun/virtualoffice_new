@@ -32,6 +32,8 @@ from app.config import settings
 from app.core.deps import CurrentUser, get_current_user, require_role
 from app.db import get_db
 from app.models.tables import (
+    ErpUser,
+    InviteStatus,
     Meeting,
     MeetingParticipant,
     MeetingParticipantRole,
@@ -93,10 +95,12 @@ class MeetingParticipantOut(BaseModel):
     id: str
     meeting_id: str
     user_id: int
+    user_name: Optional[str] = None
     invited_at: str
     joined_at: Optional[str]
     left_at: Optional[str]
     role: str
+    invite_status: str = "invited"
     created_at: str
 
 
@@ -177,15 +181,17 @@ async def _check_room_conflict(
             )
 
 
-def _participant_out(p: MeetingParticipant) -> MeetingParticipantOut:
+def _participant_out(p: MeetingParticipant, user_name: Optional[str] = None) -> MeetingParticipantOut:
     return MeetingParticipantOut(
         id=str(p.id),
         meeting_id=str(p.meeting_id),
         user_id=p.user_id,
+        user_name=user_name,
         invited_at=p.invited_at.isoformat(),
         joined_at=p.joined_at.isoformat() if p.joined_at else None,
         left_at=p.left_at.isoformat() if p.left_at else None,
         role=p.role.value,
+        invite_status=p.invite_status.value if hasattr(p.invite_status, "value") else (p.invite_status or "invited"),
         created_at=p.created_at.isoformat(),
     )
 
@@ -263,13 +269,14 @@ async def create_meeting(
         livekit_room=body.livekit_room,
     )
     db.add(meeting)
-    # 호스트를 organizer 참석자로 자동 등록 (06 §3.5.1)
+    # 호스트를 organizer 참석자로 자동 등록 (06 §3.5.1) — 본인이므로 수락 상태
     db.add(MeetingParticipant(
         id=uuid4(),
         meeting_id=meeting.id,
         user_id=host_user_id,
         invited_at=now,
         role=MeetingParticipantRole.ORGANIZER,
+        invite_status=InviteStatus.ACCEPTED,
     ))
     await db.flush()
     await db.commit()
@@ -478,10 +485,12 @@ async def join_meeting(
             invited_at=now,
             joined_at=now,
             role=MeetingParticipantRole.PARTICIPANT,
+            invite_status=InviteStatus.ACCEPTED,  # self-join = 수락
         )
         db.add(participant)
     else:
         participant.joined_at = now
+        participant.invite_status = InviteStatus.ACCEPTED  # 입장 = 수락 확정
 
     await db.flush()
     await db.commit()
@@ -577,15 +586,125 @@ async def list_participants(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[MeetingParticipantOut]:
-    """GET /api/meetings/{meeting_id}/participants — 참석자 목록."""
+    """GET /api/meetings/{meeting_id}/participants — 참석자 목록 (이름·응답 상태 포함)."""
     meeting = await _get_meeting_or_404(meeting_id, db)
-    result = await db.execute(
-        select(MeetingParticipant)
-        .where(MeetingParticipant.meeting_id == meeting.id)
-        .order_by(MeetingParticipant.joined_at)
+    rows = (
+        await db.execute(
+            select(MeetingParticipant, ErpUser.name)
+            .outerjoin(ErpUser, MeetingParticipant.user_id == ErpUser.id)
+            .where(MeetingParticipant.meeting_id == meeting.id)
+            .order_by(MeetingParticipant.invited_at)
+        )
+    ).all()
+    return [_participant_out(p, name) for p, name in rows]
+
+
+class InviteRequest(BaseModel):
+    user_ids: list[int] = Field(..., min_length=1, max_length=50, description="초대할 직원 id 목록")
+
+
+@router.post(
+    "/meetings/{meeting_id}/participants",
+    response_model=list[MeetingParticipantOut],
+    status_code=status.HTTP_201_CREATED,
+)
+async def invite_participants(
+    meeting_id: str,
+    body: InviteRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[MeetingParticipantOut]:
+    """POST /api/meetings/{id}/participants — 참석자 초대 (호스트/관리자, 06 §3.5.1).
+
+    이미 등록된 사용자는 스킵(멱등). invite_status=invited로 생성.
+    """
+    meeting = await _get_meeting_or_404(meeting_id, db)
+    if meeting.host_user_id != current_user.user_id and current_user.role not in _MTG_ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="host_or_admin_required")
+    if meeting.status in (MeetingStatus.CANCELLED, MeetingStatus.COMPLETED):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="meeting_not_joinable")
+
+    existing_ids = set(
+        (
+            await db.execute(
+                select(MeetingParticipant.user_id).where(MeetingParticipant.meeting_id == meeting.id)
+            )
+        ).scalars().all()
     )
-    participants = result.scalars().all()
-    return [_participant_out(p) for p in participants]
+    valid_users = set(
+        (
+            await db.execute(select(ErpUser.id).where(ErpUser.id.in_(body.user_ids), ErpUser.is_active.is_(True)))
+        ).scalars().all()
+    )
+
+    now = datetime.now(timezone.utc)
+    created: list[MeetingParticipant] = []
+    for uid in body.user_ids:
+        if uid in existing_ids or uid not in valid_users:
+            continue
+        p = MeetingParticipant(
+            id=uuid4(),
+            meeting_id=meeting.id,
+            user_id=uid,
+            invited_at=now,
+            role=MeetingParticipantRole.PARTICIPANT,
+            invite_status=InviteStatus.INVITED,
+        )
+        db.add(p)
+        created.append(p)
+        existing_ids.add(uid)
+
+    await db.flush()
+    await db.commit()
+    for p in created:
+        await db.refresh(p)
+    names = {
+        uid: name
+        for uid, name in (
+            await db.execute(select(ErpUser.id, ErpUser.name).where(ErpUser.id.in_([p.user_id for p in created])))
+        ).all()
+    } if created else {}
+    return [_participant_out(p, names.get(p.user_id)) for p in created]
+
+
+class InviteResponseRequest(BaseModel):
+    status: str = Field(..., description="'accepted' | 'declined'")
+
+
+@router.patch(
+    "/meetings/{meeting_id}/participants/me",
+    response_model=MeetingParticipantOut,
+)
+async def respond_to_invite(
+    meeting_id: str,
+    body: InviteResponseRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MeetingParticipantOut:
+    """PATCH /api/meetings/{id}/participants/me — 초대 응답 (수락/거절, 06 §3.5.1)."""
+    if body.status not in ("accepted", "declined"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="status must be 'accepted' or 'declined'",
+        )
+    meeting = await _get_meeting_or_404(meeting_id, db)
+    participant = (
+        await db.execute(
+            select(MeetingParticipant).where(
+                and_(
+                    MeetingParticipant.meeting_id == meeting.id,
+                    MeetingParticipant.user_id == current_user.user_id,
+                )
+            )
+        )
+    ).scalar_one_or_none()
+    if participant is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not_invited")
+
+    participant.invite_status = InviteStatus(body.status)
+    await db.commit()
+    await db.refresh(participant)
+    return _participant_out(participant)
 
 
 # ---------------------------------------------------------------------------

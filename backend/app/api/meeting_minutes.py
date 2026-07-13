@@ -321,6 +321,37 @@ async def patch_minute(
     return _minute_out(minute)
 
 
+@router.delete("/meeting-minutes/{minute_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_minute(
+    minute_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """DELETE /api/meeting-minutes/{minute_id} — 회의록 휴지통 (06 §3.5.2).
+
+    draft만 삭제 가능(확정본은 평가·의사결정 근거로 보존, 409 — D18 준용).
+    기록자 또는 관리자만.
+    """
+    minute = await _get_minute_or_404(minute_id, db)
+
+    if minute.status == MeetingMinuteStatus.FINALIZED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="cannot_delete_finalized_minute",
+        )
+    if (
+        minute.created_by != current_user.user_id
+        and current_user.role not in ("admin", "super_admin", "leader")
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="insufficient_permissions",
+        )
+
+    await db.delete(minute)
+    await db.commit()
+
+
 @router.post(
     "/meeting-minutes/{minute_id}/finalize",
     response_model=MeetingMinuteOut,

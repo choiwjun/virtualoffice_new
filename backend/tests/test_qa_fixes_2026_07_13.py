@@ -107,3 +107,77 @@ async def test_auto_finalize_expired_after_7_days(db_session):
     ).scalar_one()
     assert push.payload["auto_finalized"] is True
     assert push.payload["kpi_result_id"] == str(expired.id)
+
+
+# ---------------------------------------------------------------------------
+# 후속(goal): summary 회의시간·카테고리 시간분포 (06 §3.6) / sync dev 계정 보존
+# ---------------------------------------------------------------------------
+
+from uuid import uuid4 as _uuid4
+
+from app.erp.sync import ErpSyncService
+from app.erp.reader import get_erp_reader
+from app.models.tables import Meeting, MeetingParticipant, MeetingStatus
+
+
+@pytest.mark.asyncio
+async def test_summary_includes_meeting_minutes_and_category_time(async_client, db_session, auth_headers):
+    """summary에 total_meeting_minutes·categories_minutes 포함 (06 §3.6 자동 집계)."""
+    d = date(2026, 7, 13)
+    db_session.add_all([
+        ErpUser(id=1, company_id=1, email="a@x.com", name="A", erp_team_id=1, role=ErpRole.EMPLOYEE),
+        WorkLog(user_id=1, work_date=d, title="개발 업무", category="개발",
+                status=WorkLogStatus.COMPLETED, actual_minutes=120),
+        WorkLog(user_id=1, work_date=d, title="문서 업무", category="문서",
+                status=WorkLogStatus.STARTED, actual_minutes=30),
+    ])
+    # 45분 참석한 회의 (KST 기준 같은 날짜)
+    mtg = Meeting(
+        id=_uuid4(), room_id=_uuid4(), host_user_id=1, title="스탠드업",
+        scheduled_at=datetime(2026, 7, 13, 1, 0, tzinfo=timezone.utc),  # KST 10:00
+        status=MeetingStatus.COMPLETED,
+    )
+    db_session.add(mtg)
+    db_session.add(MeetingParticipant(
+        id=_uuid4(), meeting_id=mtg.id, user_id=1,
+        invited_at=datetime(2026, 7, 13, 1, 0, tzinfo=timezone.utc),
+        joined_at=datetime(2026, 7, 13, 1, 0, tzinfo=timezone.utc),
+        left_at=datetime(2026, 7, 13, 1, 45, tzinfo=timezone.utc),
+    ))
+    await db_session.flush()
+
+    r = await async_client.get(
+        "/api/work-logs/summary?period_type=daily&start_date=2026-07-13&end_date=2026-07-13",
+        headers=auth_headers,
+    )
+    assert r.status_code == 200, r.text
+    p = r.json()["periods"][0]
+    assert p["total_meeting_minutes"] == 45
+    assert p["categories_minutes"] == {"개발": 120, "문서": 30}
+    assert p["categories"] == {"개발": 1, "문서": 1}
+
+
+@pytest.mark.asyncio
+async def test_erp_sync_preserves_local_dev_accounts(db_session):
+    """전체 대사에서 password_hash 있는 로컬 dev 계정은 deactivate 대상에서 제외."""
+    db_session.add_all([
+        # mock ERP(리더)에 없는 로컬 dev 계정 — password_hash 있음 → 보존
+        ErpUser(id=9001, company_id=1, email="dev@local", name="Dev", erp_team_id=1,
+                role=ErpRole.EMPLOYEE, password_hash="x" * 60),
+        # mock ERP에 없는 일반 stale 계정 — 비활성화 대상
+        ErpUser(id=9002, company_id=1, email="gone@corp", name="Gone", erp_team_id=1,
+                role=ErpRole.EMPLOYEE),
+    ])
+    await db_session.flush()
+
+    reader = get_erp_reader()
+    try:
+        result = await ErpSyncService(db_session).sync_users(reader, 1)
+    finally:
+        await reader.aclose()
+
+    dev = await db_session.get(ErpUser, 9001)
+    gone = await db_session.get(ErpUser, 9002)
+    assert dev.is_active is True      # 보존
+    assert gone.is_active is False    # 정상 비활성화
+    assert result.deactivated == 1

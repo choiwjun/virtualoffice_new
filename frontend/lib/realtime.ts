@@ -8,6 +8,10 @@
  * players는 **in-place로 갱신되는 Map(mutable)**으로 노출하고 뷰포트 rAF 루프가 imperative하게 읽는다.
  * React state 갱신은 (a) 연결 상태, (b) 로스터(입장/퇴장 시 sessionId 집합 변경)에만 사용.
  *
+ * 재연결(06 §5.3): 비정상 끊김 시 지수 백오프(1s→2s→4s→…→최대 30s)로 자동 재접속.
+ * 60초 경과 시 포기 → 'disconnected'(호출측이 오프라인 로컬 모드 폴백) + reconnect()로 수동 재시도.
+ * 재접속은 새 세션(joinOrCreate)이므로 sessionId가 바뀐다 → onSelf로 통지.
+ *
  * 프로토콜 정본: realtime/README.md, docs/planning/15-realtime-server-spec.md.
  */
 
@@ -43,16 +47,22 @@ export interface OfficeConnectionHandlers {
   onRoster?: (sessionIds: string[]) => void;
   /** 회의 명시입장(D24) 서버 판정 결과 — enter_meeting 응답. */
   onMeetingEntry?: (r: MeetingEntryResult) => void;
+  /** (재)접속 성공 시 본인 sessionId 통지 — 재연결로 세션이 바뀔 수 있음(§5.3). */
+  onSelf?: (sessionId: string) => void;
 }
 
 export interface OfficeConnection {
+  /** 최초 접속 세션 — 재연결 시 in-place 갱신되며 onSelf로도 통지. */
   selfSessionId: string;
-  /** 서버 권위 플레이어 — in-place 갱신되는 live map. useFrame에서 직접 읽는다. */
+  /** 서버 권위 플레이어 — in-place 갱신되는 live map. useFrame에서 직접 읽는다.
+   *  재연결 후에도 동일 Map 인스턴스를 유지한다(ref 소비자 안전). */
   players: Map<string, NetPlayer>;
   requestMove: (x: number, y: number) => void;
   /** 회의 명시입장(D24) 요청 — 서버 판정은 onMeetingEntry로 통지. */
   enterMeeting: (roomId: string) => void;
   setStatus: (status: string, dnd?: boolean) => void;
+  /** 재연결 포기(오프라인 폴백) 후 수동 재시도 — "다시 연결" 버튼(§5.3). */
+  reconnect: () => void;
   leave: () => void;
 }
 
@@ -74,6 +84,11 @@ interface SchemaState {
   };
 }
 
+// 재연결 백오프(06 §5.3): 1s→2s→4s→…→최대 30s, 60초 경과 시 포기.
+const RECONNECT_BASE_MS = 1_000;
+const RECONNECT_MAX_MS = 30_000;
+const RECONNECT_GIVE_UP_MS = 60_000;
+
 /**
  * 서버에 접속하고 상태 구독을 배선한다. resolve = 접속 성공(첫 상태 수신 후).
  * reject = 접속 실패(서버 오프라인 등) → 호출측이 graceful degradation.
@@ -85,12 +100,15 @@ export async function createOfficeConnection(
 ): Promise<OfficeConnection> {
   handlers.onStatus?.('connecting');
   const client = new Client(url);
-  const room: Room<SchemaState> = await client.joinOrCreate<SchemaState>('office', join);
+  let room: Room<SchemaState> = await client.joinOrCreate<SchemaState>('office', join);
 
   const players = new Map<string, NetPlayer>();
   let seq = 0;
   let lastRoster = '';
   let left = false;
+  let connected = false;
+  let reconnecting = false;
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   const syncFromState = () => {
     const state = room.state;
@@ -117,24 +135,84 @@ export async function createOfficeConnection(
     }
   };
 
-  room.onStateChange(() => syncFromState());
-  // 초기 스냅샷(join 직후)도 상태로 반영됨. 명시적 snapshot 메시지는 로깅만.
-  room.onMessage('snapshot', () => syncFromState());
-  room.onMessage('move_rejected', () => { /* 서버 권위 위치가 state로 정정됨 → 별도 처리 불필요 */ });
-  // 회의 명시입장(D24) 서버 판정 — allowed면 클라가 프롬프트 후 명시 join.
-  room.onMessage('meeting_entry_allowed', (m: { roomId?: string }) =>
-    handlers.onMeetingEntry?.({ roomId: m?.roomId ?? '', ok: true }),
-  );
-  room.onMessage('meeting_entry_denied', (m: { roomId?: string; reason?: string }) =>
-    handlers.onMeetingEntry?.({ roomId: m?.roomId ?? '', ok: false, reason: m?.reason }),
-  );
+  /** 연결이 살아있을 때만 send(끊김/재연결 레이스 방어). */
+  const safeSend = (type: string, payload: unknown) => {
+    if (!connected) return;
+    try { room.send(type, payload); } catch { /* 종료 직전 레이스 — 다음 상태 동기화로 정정 */ }
+  };
 
-  room.onLeave((code) => {
-    if (left) return;
-    // 1000(정상) 외 코드는 비정상 종료 → disconnected
-    handlers.onStatus?.(code === 1000 ? 'disconnected' : 'reconnecting');
-  });
-  room.onError(() => handlers.onStatus?.('error'));
+  /** 방 인스턴스에 핸들러 배선 — 최초 접속과 재접속이 공유. */
+  const wireRoom = (r: Room<SchemaState>) => {
+    room = r;
+    r.onStateChange(() => syncFromState());
+    // 초기 스냅샷(join 직후)도 상태로 반영됨. 명시적 snapshot 메시지는 로깅만.
+    r.onMessage('snapshot', () => syncFromState());
+    r.onMessage('move_rejected', () => { /* 서버 권위 위치가 state로 정정됨 → 별도 처리 불필요 */ });
+    // 회의 명시입장(D24) 서버 판정 — allowed면 클라가 프롬프트 후 명시 join.
+    r.onMessage('meeting_entry_allowed', (m: { roomId?: string }) =>
+      handlers.onMeetingEntry?.({ roomId: m?.roomId ?? '', ok: true }),
+    );
+    r.onMessage('meeting_entry_denied', (m: { roomId?: string; reason?: string }) =>
+      handlers.onMeetingEntry?.({ roomId: m?.roomId ?? '', ok: false, reason: m?.reason }),
+    );
+    r.onLeave((code) => {
+      connected = false;
+      if (left) return;
+      if (code === 1000) {
+        // 정상 종료 → 재연결하지 않음(의도된 퇴장).
+        handlers.onStatus?.('disconnected');
+        return;
+      }
+      startReconnect(); // 비정상 끊김 → 지수 백오프 자동 재연결(§5.3)
+    });
+    r.onError(() => { /* 연결 오류는 onLeave로 이어짐 — 상태 전이는 거기서 일원화 */ });
+  };
+
+  /** 지수 백오프 재연결 루프. immediate=true면 즉시 1회 시도("다시 연결" 버튼). */
+  const startReconnect = (immediate = false) => {
+    if (left || reconnecting) return;
+    reconnecting = true;
+    handlers.onStatus?.('reconnecting');
+    const startedAt = Date.now();
+    let delay = RECONNECT_BASE_MS;
+
+    const attempt = () => {
+      if (left) { reconnecting = false; return; }
+      if (Date.now() - startedAt > RECONNECT_GIVE_UP_MS) {
+        // 포기 → 오프라인 로컬 모드 폴백(호출측 칩 + "다시 연결" 버튼).
+        reconnecting = false;
+        handlers.onStatus?.('disconnected');
+        return;
+      }
+      // 새 세션으로 재입장 — 서버는 동일 userId 기존 세션을 축출(#7)하므로 유령 세션 없음.
+      client.joinOrCreate<SchemaState>('office', join)
+        .then((r) => {
+          if (left) { try { r.leave(true); } catch { /* noop */ } reconnecting = false; return; }
+          reconnecting = false;
+          players.clear();
+          lastRoster = '';
+          wireRoom(r);
+          conn.selfSessionId = r.sessionId;
+          handlers.onSelf?.(r.sessionId);
+          connected = true;
+          syncFromState(); // 백오프 리셋은 루프 종료로 자연 달성(다음 끊김 시 1s부터)
+          handlers.onStatus?.('connected');
+        })
+        .catch(() => {
+          if (left) { reconnecting = false; return; }
+          reconnectTimer = setTimeout(attempt, delay);
+          delay = Math.min(delay * 2, RECONNECT_MAX_MS);
+        });
+    };
+
+    if (immediate) attempt();
+    else {
+      reconnectTimer = setTimeout(attempt, delay);
+      delay = Math.min(delay * 2, RECONNECT_MAX_MS);
+    }
+  };
+
+  wireRoom(room);
 
   // ── destination-walker ──────────────────────────────────────────────
   // 서버는 스트리밍 이동 모델: move_request 한 건은 speed 예산(≈MAX_SPEED·dt·tol,
@@ -149,7 +227,7 @@ export async function createOfficeConnection(
   let lastX = 0;
   let lastY = 0;
   const walkTimer: ReturnType<typeof setInterval> = setInterval(() => {
-    if (!dest) return;
+    if (!dest || !connected) return;
     const self = players.get(room.sessionId);
     if (!self) return;
     // 진행 정체 감지 — 서버가 스텝을 계속 거부하면(경로가 벽을 가로지름) 무한 재시도 방지.
@@ -167,14 +245,16 @@ export async function createOfficeConnection(
     const step = Math.min(d, STEP_DIST);
     const nx = self.x + (dx / d) * step;
     const ny = self.y + (dy / d) * step;
-    room.send('move_request', { target: { x: nx, y: ny }, seq: ++seq });
+    safeSend('move_request', { target: { x: nx, y: ny }, seq: ++seq });
   }, STEP_MS);
 
   // 첫 동기화 + 연결 성공 통지
+  connected = true;
+  handlers.onSelf?.(room.sessionId);
   syncFromState();
   handlers.onStatus?.('connected');
 
-  return {
+  const conn: OfficeConnection = {
     selfSessionId: room.sessionId,
     players,
     requestMove: (x: number, y: number) => {
@@ -182,15 +262,22 @@ export async function createOfficeConnection(
       dest = { x, y };
     },
     enterMeeting: (roomId: string) => {
-      room.send('enter_meeting', { roomId });
+      safeSend('enter_meeting', { roomId });
     },
     setStatus: (status: string, dnd?: boolean) => {
-      room.send('status_change', { status, dnd });
+      safeSend('status_change', { status, dnd });
+    },
+    reconnect: () => {
+      if (left || connected || reconnecting) return;
+      startReconnect(true);
     },
     leave: () => {
       left = true;
+      connected = false;
       clearInterval(walkTimer);
+      if (reconnectTimer) clearTimeout(reconnectTimer);
       try { room.leave(true); } catch { /* already gone */ }
     },
   };
+  return conn;
 }

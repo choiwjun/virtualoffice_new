@@ -12,7 +12,9 @@ interface SummaryPeriod {
   started_count: number;
   total_est_minutes: number;
   total_actual_minutes: number;
+  total_meeting_minutes?: number; // 회의 참석 분 (신규 필드 — 구버전 응답 대비 optional)
   categories: Record<string, number>;
+  categories_minutes?: Record<string, number>; // 카테고리→actual 분 합 (신규 필드)
 }
 
 interface SummaryResponse {
@@ -87,6 +89,12 @@ function formatMinutes(m: number | null): string {
   return h > 0 ? `${h}h ${min}m` : `${min}m`;
 }
 
+// RFC4180: 쉼표·따옴표·줄바꿈 포함 필드는 큰따옴표로 감싸고 내부 따옴표는 두 번
+function csvField(v: string | number): string {
+  const s = String(v);
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
 export default function WorkStatusPage() {
   const [user, setUser] = useState<User | null>(null);
   const [userReady, setUserReady] = useState(false);
@@ -97,6 +105,7 @@ export default function WorkStatusPage() {
   const [employeeNames, setEmployeeNames] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [catMode, setCatMode] = useState<'count' | 'time'>('count'); // 카테고리 분포: 건수/시간 토글
 
   useEffect(() => {
     setUser(getUser());
@@ -164,8 +173,9 @@ export default function WorkStatusPage() {
       total: acc.total + p.total_count,
       completed: acc.completed + p.completed_count,
       started: acc.started + p.started_count,
+      meeting: acc.meeting + (p.total_meeting_minutes ?? 0),
     }),
-    { total: 0, completed: 0, started: 0 },
+    { total: 0, completed: 0, started: 0, meeting: 0 },
   );
   const completionRate =
     totals.total > 0 ? Math.round((totals.completed / totals.total) * 100) : 0;
@@ -185,6 +195,54 @@ export default function WorkStatusPage() {
   const categoryEntries = Object.entries(categoryTotals).sort(([, a], [, b]) => b - a);
   const categorySum = categoryEntries.reduce((s, [, n]) => s + n, 0);
 
+  // 카테고리별 시간(actual 분) 합 — categories_minutes (신규 필드)
+  const categoryMinuteTotals: Record<string, number> = {};
+  for (const p of periods) {
+    for (const [cat, mins] of Object.entries(p.categories_minutes ?? {})) {
+      categoryMinuteTotals[cat] = (categoryMinuteTotals[cat] ?? 0) + mins;
+    }
+  }
+  const categoryMinuteEntries = Object.entries(categoryMinuteTotals).sort(([, a], [, b]) => b - a);
+  const categoryMinuteSum = categoryMinuteEntries.reduce((s, [, n]) => s + n, 0);
+
+  // CSV 내보내기 — 현재 스코프·기간의 periods (RFC4180)
+  function exportCsv() {
+    if (periods.length === 0) return;
+    const catCols = Array.from(
+      new Set(periods.flatMap((p) => Object.keys(p.categories_minutes ?? {}))),
+    ).sort();
+    const header = [
+      '기간',
+      '전체',
+      '완료',
+      '진행',
+      '예상(분)',
+      '실제(분)',
+      '회의(분)',
+      ...catCols.map((c) => `${c} 시간(분)`),
+    ];
+    const rows = periods.map((p) => [
+      p.period,
+      p.total_count,
+      p.completed_count,
+      p.started_count,
+      p.total_est_minutes,
+      p.total_actual_minutes,
+      p.total_meeting_minutes ?? 0,
+      ...catCols.map((c) => p.categories_minutes?.[c] ?? 0),
+    ]);
+    const csv = [header, ...rows].map((r) => r.map(csvField).join(',')).join('\r\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // BOM: Excel 한글 호환
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `work-status_${scope}_${rangeStart}_${rangeEnd}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   const recentCompleted = [...completedLogs]
     .sort((a, b) =>
       (b.completed_at ?? b.work_date ?? '').localeCompare(a.completed_at ?? a.work_date ?? ''),
@@ -198,13 +256,23 @@ export default function WorkStatusPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-800">업무현황</h1>
-        <button
-          onClick={fetchData}
-          disabled={loading}
-          className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 text-gray-600"
-        >
-          🔄 새로고침
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportCsv}
+            disabled={loading || periods.length === 0}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 text-gray-600"
+            title="현재 스코프·기간의 집계를 CSV로 다운로드"
+          >
+            ⬇ CSV 내보내기
+          </button>
+          <button
+            onClick={fetchData}
+            disabled={loading}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 text-gray-600"
+          >
+            🔄 새로고침
+          </button>
+        </div>
       </div>
 
       {/* Scope toggle (관리자 전용) + Period tabs */}
@@ -260,8 +328,8 @@ export default function WorkStatusPage() {
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto flex flex-col gap-4">
-          {/* 요약 카드 4개 */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 요약 카드 5개 */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="text-2xl font-bold text-gray-800">{totals.total}</div>
               <div className="text-xs text-gray-500 mt-1">전체 업무</div>
@@ -277,6 +345,12 @@ export default function WorkStatusPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="text-2xl font-bold text-indigo-600">{completionRate}%</div>
               <div className="text-xs text-gray-500 mt-1">완료율</div>
+            </div>
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="text-2xl font-bold text-purple-600">
+                {totals.meeting > 0 ? formatMinutes(totals.meeting) : '0m'}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">회의 시간</div>
             </div>
           </div>
 
@@ -318,26 +392,77 @@ export default function WorkStatusPage() {
             )}
           </div>
 
-          {/* 카테고리 분포 */}
+          {/* 카테고리 분포 — 건수/시간 이중 표시 (토글) */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">카테고리 분포</h2>
-            {categoryEntries.length === 0 ? (
-              <div className="py-6 text-center text-sm text-gray-400">기간 내 데이터 없음</div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-700">카테고리 분포</h2>
+              <div className="flex gap-1 bg-gray-100 rounded-md p-0.5">
+                {(
+                  [
+                    ['count', '건수'],
+                    ['time', '시간'],
+                  ] as const
+                ).map(([m, label]) => (
+                  <button
+                    key={m}
+                    onClick={() => setCatMode(m)}
+                    className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                      catMode === m
+                        ? 'bg-white text-indigo-600 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {catMode === 'count' ? (
+              categoryEntries.length === 0 ? (
+                <div className="py-6 text-center text-sm text-gray-400">기간 내 데이터 없음</div>
+              ) : (
+                <div className="space-y-3">
+                  {categoryEntries.map(([cat, count]) => {
+                    const pct = categorySum > 0 ? Math.round((count / categorySum) * 100) : 0;
+                    return (
+                      <div key={cat}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="font-medium text-gray-600">{cat}</span>
+                          <span className="text-gray-500">
+                            {count}건 · {pct}%
+                          </span>
+                        </div>
+                        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-indigo-500 transition-all"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            ) : categoryMinuteEntries.length === 0 ? (
+              <div className="py-6 text-center text-sm text-gray-400">
+                기간 내 시간 데이터 없음
+              </div>
             ) : (
               <div className="space-y-3">
-                {categoryEntries.map(([cat, count]) => {
-                  const pct = categorySum > 0 ? Math.round((count / categorySum) * 100) : 0;
+                {categoryMinuteEntries.map(([cat, mins]) => {
+                  const pct =
+                    categoryMinuteSum > 0 ? Math.round((mins / categoryMinuteSum) * 100) : 0;
                   return (
                     <div key={cat}>
                       <div className="flex items-center justify-between text-xs mb-1">
                         <span className="font-medium text-gray-600">{cat}</span>
                         <span className="text-gray-500">
-                          {count}건 · {pct}%
+                          {mins > 0 ? formatMinutes(mins) : '0m'} · {pct}%
                         </span>
                       </div>
                       <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-indigo-500 transition-all"
+                          className="h-full bg-emerald-500 transition-all"
                           style={{ width: `${pct}%` }}
                         />
                       </div>

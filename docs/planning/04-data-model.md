@@ -378,11 +378,11 @@ erDiagram
 | 필드 | 타입 | 제약 | 설명 |
 |-----|------|------|------|
 | user_id | BIGINT | PK, FK | erp_user.id |
-| office_id | UUID | FK, NN | 현재 오피스 |
-| floor_id | UUID | FK, NN | 현재 층 |
-| x | FLOAT | NN | 3D 위치(월드좌표) |
-| y | FLOAT | NN | |
-| z | FLOAT | NN | |
+| office_id | UUID | FK, NULL | 현재 오피스 (offline/미접속 시 NULL) |
+| floor_id | UUID | FK, NULL | 현재 층 (〃) |
+| x | FLOAT | NULL | 2D 위치(미터, D25). **D20-a 30일 파기 시 NULL 처리** → NN 불가 |
+| y | FLOAT | NULL | 〃 |
+| z | FLOAT | NULL | 〃 (2.5D 전환으로 미사용 예비) |
 | status | ENUM | NN | offline \| online \| working \| meeting \| focus \| away \| external (**7종 확정, D13**) |
 | last_activity_at | TIMESTAMP | | 마지막 활동 시각(UTC) |
 | updated_at | TIMESTAMP | NN | 상태 업데이트 시각(**UTC 저장**, 표시 시 KST 변환) |
@@ -1125,6 +1125,8 @@ SELECT COUNT(*) FROM presence; -- 0 (시스템 가동 전)?
 ## 2.7 공지사항 계층 (D27 신설)
 
 > **신설 배경**: D27 포토리얼 웹임베드 전환에 따라 통합 대시보드 시안의 우측 패널에 **공지사항(announcement)** 리소스가 확정됨 (16-render-spike-and-roadmap.md §B.2 "공지 리소스" 명시). 관리자가 시스템·운영 공지를 게시하고 전 직원이 대시보드 우측 패널에서 확인하는 기능.
+>
+> ⚠ **구현 정합 (2026-07-13, v1.4)**: 실제 테이블명은 **`notice`**(tables.py)이며 본 절과 다음이 다르다 — ① company_id 없음(단일 조직 전제, directory.py와 동일), ② body NULL 허용, ③ author_user_id 대신 표시명 `author`(문자열) + 실제 작성자 추적 `created_by`(FK SET NULL) 2필드 체계. API는 게시/수정/삭제 모두 구현되고 audit_log(announcement_published/updated/deleted) 기록됨. 멀티테넌트 전환 시 본 절 스키마로 마이그레이션 예정 — 그 전까지 구현 정본은 tables.py.
 
 #### **announcement** (공지사항)
 

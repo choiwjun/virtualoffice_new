@@ -504,3 +504,25 @@ async def test_patch_minute_other_user_forbidden(async_client, seeded, auth_head
         headers=other_headers,
     )
     assert resp2.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_delete_minute_draft_only(async_client, seeded, auth_headers, admin_headers):
+    """회의록 휴지통(06 §3.5.2): draft 삭제 204, 확정본 409."""
+    room_id = str(seeded["room"].id)
+    meeting_id = await _create_meeting(async_client, room_id, auth_headers, offset_hours=90)
+
+    # draft 삭제 가능
+    m1 = await _create_minute(async_client, meeting_id, auth_headers)
+    r1 = await async_client.delete(f"/api/meeting-minutes/{m1}", headers=auth_headers)
+    assert r1.status_code == 204
+    r2 = await async_client.get(f"/api/meeting-minutes/{m1}", headers=auth_headers)
+    assert r2.status_code == 404
+
+    # 확정본은 삭제 불가
+    m2 = await _create_minute(async_client, meeting_id, auth_headers)
+    fin = await async_client.post(f"/api/meeting-minutes/{m2}/finalize", headers=admin_headers)
+    assert fin.status_code == 200, fin.text
+    r3 = await async_client.delete(f"/api/meeting-minutes/{m2}", headers=admin_headers)
+    assert r3.status_code == 409
+    assert "cannot_delete_finalized_minute" in r3.text

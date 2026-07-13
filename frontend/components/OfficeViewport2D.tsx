@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getUser } from '@/lib/auth';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { useOfficeRoom } from '@/hooks/useOfficeRoom';
 import type { MeetingEntryResult } from '@/lib/realtime';
 import {
@@ -77,6 +77,33 @@ interface AvatarPref {
   show_nameplate: boolean;
 }
 
+/** 좌석(GET /api/seats, D10) — coords는 플레이트 top-left 기준 미터(뷰포트 좌표계 동일). */
+interface SeatInfo {
+  id: string;
+  floor_id: string;
+  type: 'fixed' | 'free' | 'temp' | 'partner';
+  status: 'available' | 'occupied' | 'disabled' | 'reserved';
+  assigned_user_id: number | null;
+  seat_number: string | null;
+  coords: { x: number; y: number; facing?: number };
+}
+
+const SEATS_POLL_MS = 60_000; // 좌석 목록 폴링 주기(§3.11)
+const SEAT_Z = 15000; // 방 라벨(21000)보다 아래, 아바타(≤10000)보다 위 — y-깊이 무관 고정
+
+/** 프레즌스 7종 표시 메타(D13). meeting/offline은 자동 전환 — 수동 메뉴 제외. */
+const PRESENCE_META: Record<string, { label: string; color: string }> = {
+  online: { label: '온라인', color: '#22C55E' },
+  working: { label: '업무 중', color: '#3B5BFE' },
+  meeting: { label: '회의 중', color: '#F43F5E' },
+  focus: { label: '집중', color: '#A855F7' },
+  away: { label: '자리비움', color: '#F59E0B' },
+  external: { label: '외근', color: '#14B8A6' },
+  offline: { label: '오프라인', color: '#64748B' },
+};
+/** 수동 전환 가능 상태(06 §1.2). 서버 allowlist 밖 값은 서버가 무시(칩은 서버 상태 추종). */
+const MANUAL_STATUSES = ['online', 'working', 'focus', 'external'] as const; // away는 자동 전이(D13) — 서버 allowlist 정합
+
 interface OfficeViewport2DProps {
   /** 회의 명시입장(D24) 확인 시 호출 — 페이지가 LiveKit join 흐름을 실행. */
   onJoinMeeting?: (roomId: string) => void;
@@ -93,10 +120,16 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
     const room = ROOMS.find((rm) => rm.id === r.roomId);
     setMeetingPrompt({ roomId: r.roomId, label: room?.label ?? r.roomId });
   }, []);
-  const { status, roster, playersRef, selfIdRef, requestMove, enterMeeting } = useOfficeRoom(
-    true,
-    handleMeetingEntry,
-  );
+  const {
+    status,
+    roster,
+    playersRef,
+    selfIdRef,
+    requestMove,
+    enterMeeting,
+    setStatus: setPresence,
+    reconnect,
+  } = useOfficeRoom(true, handleMeetingEntry);
 
   const me = useMemo(() => getUser(), []);
   const myName = me?.name ?? 'Guest';
@@ -114,6 +147,33 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
 
   // 방 라벨 클릭 글로우.
   const [glowRoom, setGlowRoom] = useState<string | null>(null);
+
+  // ── 자율좌석(§3.11) ────────────────────────────────────────────────────
+  const [seats, setSeats] = useState<SeatInfo[]>([]);
+  const [seatPrompt, setSeatPrompt] = useState<{ mode: 'sit' | 'release'; seat: SeatInfo } | null>(null);
+  const [seatBusy, setSeatBusy] = useState(false);
+
+  // 짧은 안내 토스트(사용 중 좌석, API 오류 등).
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 2600);
+  }, []);
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    },
+    [],
+  );
+
+  // 내 프레즌스 상태(서버 권위 — 300ms 스냅샷 인터벌에서 추종) + 수동 전환 메뉴(§1.2).
+  const [myStatus, setMyStatus] = useState<string | null>(null);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  useEffect(() => {
+    if (status !== 'connected') setStatusMenuOpen(false);
+  }, [status]);
 
   // ── 스테이지 크기(contain fit) ─────────────────────────────────────────
   useEffect(() => {
@@ -169,6 +229,91 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roster, me?.id]);
 
+  // ── 좌석 로드(§3.11) — 마운트 시 + 60초 폴링, 착석/반납 후 재조회 ────────────
+  const loadSeats = useCallback(() => {
+    api
+      .get<SeatInfo[]>('/api/seats')
+      .then((rows) => setSeats(rows))
+      .catch(() => {}); // 백엔드 미기동 등 — 좌석 레이어만 비표시(뷰포트는 계속 동작)
+  }, []);
+  useEffect(() => {
+    loadSeats();
+    const id = setInterval(loadSeats, SEATS_POLL_MS);
+    return () => clearInterval(id);
+  }, [loadSeats]);
+
+  const seatLabel = useCallback(
+    (seat: SeatInfo) => seat.seat_number ?? `좌석 ${seat.id.slice(0, 8)}`,
+    [],
+  );
+
+  /** 점유자 표시용 이름 — 접속 중인 플레이어에서 userId 매칭(없으면 null). */
+  const occupantName = useCallback(
+    (userId: number | null) => {
+      if (userId == null) return null;
+      let found: string | null = null;
+      playersRef.current.forEach((p) => {
+        if (found == null && p.userId === String(userId)) found = p.name;
+      });
+      return found;
+    },
+    // playersRef는 ref라 안정적.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const handleSeatClick = useCallback(
+    (seat: SeatInfo) => {
+      const isMine = seat.assigned_user_id != null && String(seat.assigned_user_id) === myId;
+      if (seat.status === 'occupied') {
+        if (isMine) setSeatPrompt({ mode: 'release', seat });
+        else {
+          const who = occupantName(seat.assigned_user_id);
+          showToast(`${seatLabel(seat)} — ${who ? `${who} ` : ''}사용 중인 좌석입니다`);
+        }
+        return;
+      }
+      if (seat.status !== 'available') {
+        showToast(`${seatLabel(seat)} — 사용할 수 없는 좌석입니다`);
+        return;
+      }
+      if (seat.type !== 'free') {
+        showToast(`${seatLabel(seat)} — 자율좌석이 아닙니다`);
+        return;
+      }
+      setSeatPrompt({ mode: 'sit', seat });
+    },
+    [myId, occupantName, seatLabel, showToast],
+  );
+
+  /** 착석/반납 확정 — REST(§3.11). sit_request(realtime)는 이번 스코프 미사용. */
+  const confirmSeatPrompt = useCallback(async () => {
+    if (!seatPrompt || seatBusy) return;
+    const { mode, seat } = seatPrompt;
+    setSeatBusy(true);
+    try {
+      if (mode === 'sit') {
+        await api.post('/api/seat-assignments', { seat_id: seat.id });
+        // 아바타를 좌석 인근 보행 가능 지점으로 이동(좌석이 가구 위일 수 있어 clamp).
+        const n = clampToWalkable(metersToNorm({ x: seat.coords.x, y: seat.coords.y }));
+        const m = normToMeters(n);
+        if (offlineRef.current) localRef.current.dest = m;
+        else requestMove(m.x, m.y);
+        showToast(`${seatLabel(seat)} 좌석을 점유했습니다`);
+      } else {
+        await api.post(`/api/seat-assignments/${seat.id}/release`, {});
+        showToast(`${seatLabel(seat)} 좌석을 반납했습니다`);
+      }
+    } catch (err) {
+      // 409 seat_already_occupied 등 — ApiError.message(한국어 매핑/코드) 표시.
+      showToast(err instanceof ApiError ? err.message : '좌석 요청에 실패했습니다');
+    } finally {
+      setSeatBusy(false);
+      setSeatPrompt(null);
+      loadSeats(); // 성공/실패 모두 서버 상태 재동기화
+    }
+  }, [seatPrompt, seatBusy, requestMove, seatLabel, showToast, loadSeats]);
+
   // ── 회의실 근접(2m) → enter_meeting(D24) — 방 진입 전환 시 서버에 요청 ─────────
   const currentRoomRef = useRef<string | null>(null);
   useEffect(() => {
@@ -208,6 +353,12 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
         next.push({ key: '__local__', nx: clamp01(n.x), ny: clamp01(n.y), isSelf: true });
       }
       setDots(next);
+      // 내 프레즌스 상태(서버 권위) 추종 — 상태 버튼 표시용(§1.2).
+      const selfPlayer = players.get(selfId);
+      setMyStatus((prev) => {
+        const s = selfPlayer?.status ?? null;
+        return s === prev ? prev : s;
+      });
     }, 300);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -410,9 +561,11 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
   const statusChip =
     status === 'connected'
       ? { text: '실시간 연결됨', color: '#22C55E' }
-      : status === 'connecting' || status === 'reconnecting'
-        ? { text: '이동서버 연결 중…', color: '#F59E0B' }
-        : { text: '오프라인 모드 (로컬 이동)', color: '#64748B' };
+      : status === 'reconnecting'
+        ? { text: '재연결 중…', color: '#F59E0B' }
+        : status === 'connecting'
+          ? { text: '이동서버 연결 중…', color: '#F59E0B' }
+          : { text: '오프라인 모드 (로컬 이동)', color: '#64748B' };
 
   const glowRect = useMemo(() => {
     const room = ROOMS.find((r) => r.id === glowRoom);
@@ -483,6 +636,59 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
             >
               {room.label}
             </button>
+          );
+        })}
+
+        {/* 자율좌석 마커(§3.11) — 미터→norm→% 배치. z 고정: 라벨(21000) 아래, 아바타(≤10000) 위 */}
+        {seats.map((seat) => {
+          if (typeof seat.coords?.x !== 'number' || typeof seat.coords?.y !== 'number') return null;
+          const n = metersToNorm({ x: seat.coords.x, y: seat.coords.y });
+          if (n.x < -0.02 || n.x > 1.02 || n.y < -0.02 || n.y > 1.02) return null; // 플레이트 밖 좌표 방어
+          const isMine = seat.assigned_user_id != null && String(seat.assigned_user_id) === myId;
+          const occupied = seat.status === 'occupied';
+          const unavailable = seat.status === 'disabled' || seat.status === 'reserved';
+          const border = isMine ? '#3B5BFE' : occupied ? '#64748B' : unavailable ? '#3A4763' : '#22C55E';
+          const fill = isMine
+            ? 'rgba(59,91,254,.9)'
+            : occupied
+              ? 'rgba(100,116,139,.85)'
+              : unavailable
+                ? 'rgba(30,41,59,.6)'
+                : 'rgba(7,16,29,.85)';
+          const who = occupied ? occupantName(seat.assigned_user_id) : null;
+          const title = isMine
+            ? `${seatLabel(seat)} — 내 좌석 (클릭: 자리 비우기)`
+            : occupied
+              ? `${seatLabel(seat)} — ${who ? `${who} ` : ''}사용 중`
+              : unavailable
+                ? `${seatLabel(seat)} — 사용 불가`
+                : `${seatLabel(seat)} — 클릭해서 앉기`;
+          return (
+            <button
+              key={seat.id}
+              type="button"
+              title={title}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSeatClick(seat);
+              }}
+              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-[3px]"
+              style={{
+                left: `${n.x * 100}%`,
+                top: `${n.y * 100}%`,
+                width: 10,
+                height: 10,
+                background: fill,
+                border: `2px solid ${border}`,
+                boxShadow: isMine
+                  ? '0 0 8px rgba(59,91,254,.9)'
+                  : occupied || unavailable
+                    ? 'none'
+                    : '0 0 6px rgba(34,197,94,.55)',
+                zIndex: SEAT_Z,
+                cursor: unavailable ? 'default' : 'pointer',
+              }}
+            />
           );
         })}
 
@@ -562,6 +768,52 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
             </button>
           </div>
         )}
+
+        {/* 착석/반납 확인 프롬프트(§3.11) — 회의 프롬프트와 동일 스타일 상단 카드 */}
+        {seatPrompt && (
+          <div
+            className={`absolute left-1/2 ${meetingPrompt ? 'top-16' : 'top-3'} -translate-x-1/2 flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-[13px] text-white shadow-lg`}
+            style={{ background: 'rgba(7,16,29,.96)', border: '1px solid #3B5BFE', zIndex: 23000 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span>
+              {seatPrompt.mode === 'sit' ? (
+                <>
+                  이 자리에 앉기 (<b>{seatLabel(seatPrompt.seat)}</b>)
+                </>
+              ) : (
+                <>
+                  자리 비우기 (<b>{seatLabel(seatPrompt.seat)}</b>)
+                </>
+              )}
+            </span>
+            <button
+              type="button"
+              disabled={seatBusy}
+              onClick={() => void confirmSeatPrompt()}
+              className="px-3 py-1 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-hover disabled:opacity-50"
+            >
+              {seatPrompt.mode === 'sit' ? '앉기' : '비우기'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSeatPrompt(null)}
+              className="px-2 py-1 rounded-md text-text-muted text-xs hover:text-white"
+            >
+              취소
+            </button>
+          </div>
+        )}
+
+        {/* 안내 토스트 — 사용 중 좌석/오류 메시지(§3.11) */}
+        {toast && (
+          <div
+            className="absolute left-1/2 bottom-6 -translate-x-1/2 px-3.5 py-2 rounded-lg text-[12px] text-white pointer-events-none whitespace-nowrap"
+            style={{ background: 'rgba(7,16,29,.94)', border: '1px solid rgba(255,255,255,.16)', zIndex: 23000 }}
+          >
+            {toast}
+          </div>
+        )}
         {/* 미니맵 (좌하단 오버레이, design-style §4) — 실시간 아바타 위치(#12) */}
         <div
           className="absolute left-3 bottom-3 rounded-lg overflow-hidden pointer-events-none"
@@ -597,14 +849,103 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
             ))}
           </svg>
         </div>
-        {/* 연결 상태 칩 */}
+        {/* 연결 상태 칩 + 다시 연결(§5.3) + 내 상태 버튼(§1.2) */}
         <div
-          className="absolute left-3 top-3 px-2.5 py-1 rounded-lg text-[10px] font-medium tracking-wide flex items-center gap-1.5 pointer-events-none"
-          style={{ background: 'rgba(13,27,54,.78)', backdropFilter: 'blur(6px)', zIndex: 22000 }}
+          className="absolute left-3 top-3 flex items-center gap-1.5"
+          style={{ zIndex: 22000 }}
+          onClick={(e) => e.stopPropagation()}
         >
-          <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: statusChip.color }} />
-          <span className="text-text-secondary">{statusChip.text}</span>
+          <div
+            className="px-2.5 py-1 rounded-lg text-[10px] font-medium tracking-wide flex items-center gap-1.5"
+            style={{ background: 'rgba(13,27,54,.78)', backdropFilter: 'blur(6px)' }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: statusChip.color }} />
+            <span className="text-text-secondary">{statusChip.text}</span>
+          </div>
+          {offline && (
+            <button
+              type="button"
+              onClick={reconnect}
+              className="px-2.5 py-1 rounded-lg text-[10px] font-semibold text-white hover:bg-primary/30"
+              style={{ background: 'rgba(13,27,54,.78)', backdropFilter: 'blur(6px)', border: '1px solid #3B5BFE' }}
+            >
+              다시 연결
+            </button>
+          )}
+          <div className="relative">
+            <button
+              type="button"
+              disabled={status !== 'connected'}
+              onClick={() => setStatusMenuOpen((o) => !o)}
+              title="내 상태 변경"
+              className="px-2.5 py-1 rounded-lg text-[10px] font-medium tracking-wide flex items-center gap-1.5 disabled:opacity-40"
+              style={{
+                background: 'rgba(13,27,54,.78)',
+                backdropFilter: 'blur(6px)',
+                border: '1px solid rgba(255,255,255,.12)',
+              }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full inline-block"
+                style={{ background: (PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).color }}
+              />
+              <span className="text-text-secondary">
+                {(PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).label}
+              </span>
+              <span className="text-text-muted text-[8px]">▾</span>
+            </button>
+            {statusMenuOpen && status === 'connected' && (
+              <div
+                className="absolute left-0 top-full mt-1 rounded-lg py-1"
+                style={{ background: 'rgba(7,16,29,.96)', border: '1px solid #273350', minWidth: 118 }}
+              >
+                {MANUAL_STATUSES.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => {
+                      setPresence(s); // room.send('status_change') — 칩은 서버 상태를 추종
+                      setStatusMenuOpen(false);
+                    }}
+                    className="w-full px-2.5 py-1.5 text-left text-[11px] text-white flex items-center gap-1.5 hover:bg-white/10"
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full inline-block"
+                      style={{ background: PRESENCE_META[s].color }}
+                    />
+                    {PRESENCE_META[s].label}
+                    {myStatus === s && (
+                      <span className="ml-auto text-[9px]" style={{ color: '#3B5BFE' }}>
+                        ●
+                      </span>
+                    )}
+                  </button>
+                ))}
+                <div className="px-2.5 pt-1 text-[9px] text-text-muted whitespace-nowrap">회의·오프라인은 자동 전환</div>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* WSS 재연결 오버레이(§5.3) — 반투명 + 클릭 통과 차단 */}
+        {status === 'reconnecting' && (
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ background: 'rgba(7,16,29,.55)', backdropFilter: 'blur(2px)', zIndex: 24000, cursor: 'default' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="flex items-center gap-3 px-5 py-3.5 rounded-xl text-[13px] font-medium text-white shadow-lg"
+              style={{ background: 'rgba(7,16,29,.96)', border: '1px solid #3B5BFE' }}
+            >
+              <span
+                className="w-4 h-4 rounded-full border-2 animate-spin inline-block"
+                style={{ borderColor: 'rgba(255,255,255,.25)', borderTopColor: '#3B5BFE' }}
+              />
+              연결 끊김 — 재연결 중…
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -337,7 +337,7 @@ export class OfficeRoom extends Room<OfficeState> {
     this.moveTargets.delete(client.sessionId);
 
     // TODO: client should confirm the claim with FastAPI (seat domain authority, D3).
-    client.send("sit_ok", { seatId: msg.seatId, confirmWith: "POST /api/seats/claim" });
+    client.send("sit_ok", { seatId: msg.seatId, confirmWith: "POST /api/seat-assignments" });
     this.broadcastPresenceEvent(player, "sit");
   }
 

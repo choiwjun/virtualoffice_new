@@ -3,7 +3,8 @@
 
 정본: 00-decisions.md D4 — JWT HS256 자체 시크릿, ERP와 미공유.
 평문 비밀번호는 절대 로깅 금지.
-엔드포인트: POST /api/auth/login, POST /api/auth/refresh, GET /api/auth/me.
+엔드포인트: POST /api/auth/login, GET /api/auth/me.
+(/auth/refresh는 2026-07-13 제거 — D4 단일 세션: 만료 시 재로그인. 발급 경로 없는 죽은 코드였고 access 토큰 무한 갱신 통로였음.)
 """
 
 from datetime import timedelta, datetime, timezone
@@ -73,10 +74,6 @@ class LoginRequest(BaseModel):
     password: str  # 절대 로깅 금지
 
 
-class RefreshRequest(BaseModel):
-    refresh_token: str
-
-
 class UserInfo(BaseModel):
     id: int
     email: str
@@ -90,12 +87,6 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int  # 초 단위
     user: UserInfo
-
-
-class RefreshResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    expires_in: int
 
 
 # ── 내부 헬퍼 ────────────────────────────────────────────────────────────────
@@ -176,44 +167,6 @@ async def login(
         token_type="bearer",
         expires_in=expires_in,
         user=_user_info(user),
-    )
-
-
-@router.post("/refresh", response_model=RefreshResponse, status_code=200)
-async def refresh(
-    payload: RefreshRequest,
-    db: AsyncSession = Depends(get_db),
-) -> RefreshResponse:
-    """
-    POST /api/auth/refresh — 유효한 토큰 → 새 토큰 재발급.
-
-    단일 HS256 토큰 스킴(D4). refresh_token도 동일 시크릿으로 서명된 JWT.
-    검증 실패 시 401.
-    """
-    try:
-        decoded = decode_access_token(payload.refresh_token)
-    except jwt.PyJWTError:
-        raise _credentials_exc()
-
-    sub = decoded.get("sub")
-    if sub is None:
-        raise _credentials_exc()
-
-    result = await db.execute(
-        select(ErpUser).where(
-            ErpUser.id == int(sub),
-            ErpUser.is_active == True,  # noqa: E712
-        )
-    )
-    user = result.scalar_one_or_none()
-    if user is None:
-        raise _credentials_exc()
-
-    token, expires_in = _build_token(user)
-    return RefreshResponse(
-        access_token=token,
-        token_type="bearer",
-        expires_in=expires_in,
     )
 
 

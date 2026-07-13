@@ -195,6 +195,13 @@ class MeetingMinuteStatus(str, Enum):
     FINALIZED = "finalized"     # 확정
 
 
+class InviteStatus(str, Enum):
+    """회의 초대 응답 상태 (06 §3.5.1 참석자 상태 아이콘: ?대기 ✓수락 X거절)"""
+    INVITED = "invited"         # 초대됨(응답 대기)
+    ACCEPTED = "accepted"       # 수락
+    DECLINED = "declined"       # 거절
+
+
 class MeetingParticipantRole(str, Enum):
     """회의 참석자 역할"""
     ORGANIZER = "organizer"     # 주최자
@@ -918,6 +925,12 @@ class MeetingParticipant(Base):
         nullable=False,
         default=MeetingParticipantRole.PARTICIPANT
     )
+    invite_status: Mapped[InviteStatus] = mapped_column(
+        SQLEnum(InviteStatus),
+        nullable=False,
+        default=InviteStatus.INVITED,
+    )
+    """초대 응답 상태 (06 §3.5.1). self-join/호스트는 accepted로 생성."""
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

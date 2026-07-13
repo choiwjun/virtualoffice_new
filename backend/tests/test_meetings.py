@@ -544,3 +544,88 @@ async def test_list_meetings_status_filter(async_client, seeded, auth_headers):
 
     r2 = await async_client.get("/api/meetings?status=bogus", headers=auth_headers)
     assert r2.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# 후속(goal 2026-07-13): 참석자 초대/응답 (06 §3.5.1)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_invite_and_respond(async_client, seeded, auth_headers, admin_headers):
+    """호스트 초대 → invited, 대상자 수락/거절 응답, 비호스트 초대 403."""
+    room_id = str(seeded["room"].id)
+    create = await async_client.post(
+        "/api/meetings",
+        json={"room_id": room_id, "title": "초대 테스트", "scheduled_at": _future_utc(30)},
+        headers=auth_headers,  # host=1001
+    )
+    mid = create.json()["id"]
+
+    # 호스트가 1002 초대
+    r = await async_client.post(
+        f"/api/meetings/{mid}/participants", json={"user_ids": [1002]}, headers=auth_headers
+    )
+    assert r.status_code == 201, r.text
+    invited = r.json()
+    assert len(invited) == 1
+    assert invited[0]["user_id"] == 1002
+    assert invited[0]["invite_status"] == "invited"
+    assert invited[0]["user_name"] == "Bob"
+
+    # 멱등: 재초대 시 중복 생성 없음
+    r2 = await async_client.post(
+        f"/api/meetings/{mid}/participants", json={"user_ids": [1002]}, headers=auth_headers
+    )
+    assert r2.status_code == 201
+    assert r2.json() == []
+
+    # 초대받은 1002가 거절
+    r3 = await async_client.patch(
+        f"/api/meetings/{mid}/participants/me", json={"status": "declined"}, headers=admin_headers
+    )
+    assert r3.status_code == 200
+    assert r3.json()["invite_status"] == "declined"
+
+    # join하면 accepted로 확정
+    r4 = await async_client.post(f"/api/meetings/{mid}/join", headers=admin_headers)
+    assert r4.status_code == 200
+    assert r4.json()["invite_status"] == "accepted"
+
+    # 참석자 목록에 이름·상태 포함, 호스트는 organizer+accepted
+    r5 = await async_client.get(f"/api/meetings/{mid}/participants", headers=auth_headers)
+    by_uid = {p["user_id"]: p for p in r5.json()}
+    assert by_uid[1001]["role"] == "organizer"
+    assert by_uid[1001]["invite_status"] == "accepted"
+    assert by_uid[1002]["invite_status"] == "accepted"
+
+    # 비호스트(1002, admin이지만 — employee 케이스) 초대 권한: employee 토큰으로 새 회의에 시도
+    other = await async_client.post(
+        "/api/meetings",
+        json={"room_id": room_id, "title": "권한 회의", "scheduled_at": _future_utc(40)},
+        headers=admin_headers,  # host=1002
+    )
+    emp_token = create_access_token({"sub": "1001", "email": "alice@test.local", "role": "employee"})
+    r6 = await async_client.post(
+        f"/api/meetings/{other.json()['id']}/participants",
+        json={"user_ids": [1001]},
+        headers={"Authorization": f"Bearer {emp_token}"},
+    )
+    assert r6.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_respond_not_invited_404(async_client, seeded, auth_headers, admin_headers):
+    """초대되지 않은 사용자의 응답 → 404."""
+    room_id = str(seeded["room"].id)
+    create = await async_client.post(
+        "/api/meetings",
+        json={"room_id": room_id, "title": "미초대 응답", "scheduled_at": _future_utc(50)},
+        headers=auth_headers,
+    )
+    r = await async_client.patch(
+        f"/api/meetings/{create.json()['id']}/participants/me",
+        json={"status": "accepted"},
+        headers=admin_headers,
+    )
+    assert r.status_code == 404

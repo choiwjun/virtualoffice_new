@@ -183,59 +183,14 @@ async def test_me_with_tampered_token_returns_401(async_client, seed_users):
     assert resp.status_code == 401
 
 
-# ── POST /api/auth/refresh ────────────────────────────────────────────────────
+# ── POST /api/auth/refresh — 제거됨 (D4 단일 세션: 만료 시 재로그인, QA 2026-07-13) ──
 
-async def test_refresh_with_valid_token(async_client, seed_users):
-    """유효 토큰 → 새 토큰 재발급."""
-    # 로그인 먼저
-    login_resp = await async_client.post(
-        "/api/auth/login",
-        json={"email": "alice@virtualoffice.local", "password": "password123"},
-    )
-    token = login_resp.json()["access_token"]
-
-    refresh_resp = await async_client.post(
-        "/api/auth/refresh",
-        json={"refresh_token": token},
-    )
-    assert refresh_resp.status_code == 200, refresh_resp.text
-    body = refresh_resp.json()
-    assert "access_token" in body
-    assert body["token_type"] == "bearer"
-    assert body["expires_in"] > 0
-    # 새 토큰이 유효한지 /me로 확인
-    me_resp = await async_client.get(
-        "/api/auth/me",
-        headers={"Authorization": f"Bearer {body['access_token']}"},
-    )
-    assert me_resp.status_code == 200
-
-
-async def test_refresh_with_invalid_token_returns_401(async_client, seed_users):
-    """잘못된 refresh 토큰 → 401."""
+async def test_refresh_endpoint_removed(async_client, seed_users):
+    """/auth/refresh는 제거됨 — access 토큰 무한 갱신 통로 차단 (404/405)."""
     resp = await async_client.post(
         "/api/auth/refresh",
-        json={"refresh_token": "bad.token.here"},
+        json={"refresh_token": "any.token.here"},
     )
-    assert resp.status_code == 401
+    assert resp.status_code in (404, 405)
 
 
-async def test_refresh_for_inactive_user_returns_401(async_client, db_session, seed_users):
-    """유효 토큰이지만 사용자 비활성화(soft-delete) → 401."""
-    # 토큰 먼저 발급
-    login_resp = await async_client.post(
-        "/api/auth/login",
-        json={"email": "alice@virtualoffice.local", "password": "password123"},
-    )
-    token = login_resp.json()["access_token"]
-
-    # 사용자 비활성화
-    alice = seed_users[0]
-    alice.is_active = False
-    await db_session.commit()
-
-    resp = await async_client.post(
-        "/api/auth/refresh",
-        json={"refresh_token": token},
-    )
-    assert resp.status_code == 401

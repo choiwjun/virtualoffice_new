@@ -19,7 +19,7 @@ DELETE /api/work-logs/{id}             — 삭제 (정책: STARTED만 허용)
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Optional
 from uuid import UUID
 
@@ -30,7 +30,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import CurrentUser, get_current_user
 from app.db import get_db
-from app.models.tables import WorkLog, WorkLogStatus
+from app.models.tables import Meeting, MeetingParticipant, WorkLog, WorkLogStatus
+
+KST = timezone(timedelta(hours=9))
 
 router = APIRouter(prefix="/api", tags=["work-logs"])
 
@@ -276,19 +278,24 @@ async def get_work_log_summary(
     logs = result.scalars().all()
 
     # 기간별 집계 (Python-level, SQLite/PostgreSQL 양쪽 호환)
+    def _new_period(pk: str) -> dict[str, Any]:
+        return {
+            "period": pk,
+            "total_count": 0,
+            "completed_count": 0,
+            "started_count": 0,
+            "total_est_minutes": 0,
+            "total_actual_minutes": 0,
+            "total_meeting_minutes": 0,          # 06 §3.6 주간/월간 리포트: 회의 시간 합산
+            "categories": defaultdict(int),
+            "categories_minutes": defaultdict(int),  # 06 §3.6: 카테고리별 시간(actual 분) 분포
+        }
+
     periods: dict[str, dict[str, Any]] = {}
     for wl in logs:
         pk = _period_key(wl.work_date, period_type)
         if pk not in periods:
-            periods[pk] = {
-                "period": pk,
-                "total_count": 0,
-                "completed_count": 0,
-                "started_count": 0,
-                "total_est_minutes": 0,
-                "total_actual_minutes": 0,
-                "categories": defaultdict(int),
-            }
+            periods[pk] = _new_period(pk)
         p = periods[pk]
         p["total_count"] += 1
         if wl.status == WorkLogStatus.COMPLETED:
@@ -299,12 +306,37 @@ async def get_work_log_summary(
         p["total_actual_minutes"] += wl.actual_minutes or 0
         cat = wl.category or "uncategorized"
         p["categories"][cat] += 1
+        p["categories_minutes"][cat] += wl.actual_minutes or 0
+
+    # 회의 참석 시간 합산 (joined_at~left_at, KST 날짜 기준 기간 귀속 — D19 표시 규약)
+    mq = (
+        select(MeetingParticipant)
+        .join(Meeting, MeetingParticipant.meeting_id == Meeting.id)
+        .where(MeetingParticipant.joined_at.isnot(None), MeetingParticipant.left_at.isnot(None))
+    )
+    if target_uid is not None:
+        mq = mq.where(MeetingParticipant.user_id == target_uid)
+    participations = (await db.execute(mq)).scalars().all()
+    for mp in participations:
+        joined = mp.joined_at if mp.joined_at.tzinfo else mp.joined_at.replace(tzinfo=timezone.utc)
+        left = mp.left_at if mp.left_at.tzinfo else mp.left_at.replace(tzinfo=timezone.utc)
+        kst_date = joined.astimezone(KST).date()
+        if start_date and kst_date < start_date:
+            continue
+        if end_date and kst_date > end_date:
+            continue
+        minutes = max(0, int((left - joined).total_seconds() // 60))
+        pk = _period_key(kst_date, period_type)
+        if pk not in periods:
+            periods[pk] = _new_period(pk)
+        periods[pk]["total_meeting_minutes"] += minutes
 
     # defaultdict → 일반 dict 직렬화
     result_periods = []
     for pk in sorted(periods.keys()):
         entry = dict(periods[pk])
         entry["categories"] = dict(entry["categories"])
+        entry["categories_minutes"] = dict(entry["categories_minutes"])
         result_periods.append(entry)
 
     return {

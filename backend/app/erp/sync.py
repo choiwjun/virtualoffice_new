@@ -136,9 +136,11 @@ class ErpSyncService:
                 result.updated += 1
 
         # ERP에서 사라진 활성 사용자 → soft-delete
+        # 예외: password_hash가 있는 로컬 dev/도그푸딩 계정(scripts/seed_dev.py)은 보존 —
+        # mock ERP 전체 대사가 시드 계정을 비활성화해 로그인이 끊기는 문제 방지 (QA 2026-07-13).
         stale_ids = [
             uid for uid, row in existing.items()
-            if uid not in fetched_ids and row.is_active
+            if uid not in fetched_ids and row.is_active and row.password_hash is None
         ]
         if stale_ids:
             await self.session.execute(

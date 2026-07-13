@@ -5,6 +5,7 @@
  *
  * 로그인 사용자로 realtime OfficeRoom에 접속. 서버 미기동/실패 시 status='error'로
  * graceful degradation(뷰포트는 로컬 이동 폴백). players는 ref(mutable)로 노출 → rAF 루프가 imperative 소비.
+ * 비정상 끊김은 연결 모듈이 지수 백오프로 자동 재연결(§5.3) — 세션 교체는 onSelf로 selfIdRef 갱신.
  */
 
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
@@ -27,20 +28,26 @@ export interface UseOfficeRoom {
   roster: string[];
   /** 서버 권위 플레이어(20Hz in-place 갱신). rAF 루프에서 .current로 읽는다. */
   playersRef: MutableRefObject<Map<string, NetPlayer>>;
-  /** 본인 sessionId. */
+  /** 본인 sessionId(재연결 시 교체될 수 있음). */
   selfIdRef: MutableRefObject<string>;
   /** 로컬 이동 의도 전송(서버 좌표 x,y 미터). */
   requestMove: (x: number, y: number) => void;
   /** 회의 명시입장(D24) 요청 — 서버가 2m 근접+정원 검증 후 onMeetingEntry로 응답. */
   enterMeeting: (roomId: string) => void;
+  /** 내 프레즌스 상태 수동 전환(06 §1.2) — room.send('status_change'). */
+  setStatus: (status: string, dnd?: boolean) => void;
+  /** 재연결 포기(오프라인 폴백) 후 수동 재시도 — "다시 연결" 버튼(§5.3). */
+  reconnect: () => void;
 }
 
 export function useOfficeRoom(
   enabled = true,
   onMeetingEntry?: (r: MeetingEntryResult) => void,
 ): UseOfficeRoom {
-  const [status, setStatus] = useState<ConnStatus>('connecting');
+  const [status, setConnStatus] = useState<ConnStatus>('connecting');
   const [roster, setRoster] = useState<string[]>([]);
+  // 초기 접속 자체가 실패(conn 없음)한 경우 "다시 연결"이 훅 전체를 재시도.
+  const [retry, setRetry] = useState(0);
   const connRef = useRef<OfficeConnection | null>(null);
   const playersRef = useRef<Map<string, NetPlayer>>(new Map());
   const selfIdRef = useRef<string>('');
@@ -61,9 +68,10 @@ export function useOfficeRoom(
     };
 
     createOfficeConnection(REALTIME_URL, join, {
-      onStatus: (s) => { if (!cancelled) setStatus(s); },
+      onStatus: (s) => { if (!cancelled) setConnStatus(s); },
       onRoster: (ids) => { if (!cancelled) setRoster(ids); },
       onMeetingEntry: (r) => { if (!cancelled) onMeetingEntryRef.current?.(r); },
+      onSelf: (id) => { if (!cancelled) selfIdRef.current = id; },
     })
       .then((conn) => {
         if (cancelled) { conn.leave(); return; }
@@ -71,7 +79,7 @@ export function useOfficeRoom(
         playersRef.current = conn.players;
         selfIdRef.current = conn.selfSessionId;
       })
-      .catch(() => { if (!cancelled) setStatus('error'); });
+      .catch(() => { if (!cancelled) setConnStatus('error'); });
 
     return () => {
       cancelled = true;
@@ -80,7 +88,7 @@ export function useOfficeRoom(
       playersRef.current = new Map();
       setRoster([]);
     };
-  }, [enabled]);
+  }, [enabled, retry]);
 
   const requestMove = useCallback((x: number, y: number) => {
     connRef.current?.requestMove(x, y);
@@ -90,5 +98,14 @@ export function useOfficeRoom(
     connRef.current?.enterMeeting(roomId);
   }, []);
 
-  return { status, roster, playersRef, selfIdRef, requestMove, enterMeeting };
+  const setStatus = useCallback((s: string, dnd?: boolean) => {
+    connRef.current?.setStatus(s, dnd);
+  }, []);
+
+  const reconnect = useCallback(() => {
+    if (connRef.current) connRef.current.reconnect();
+    else setRetry((n) => n + 1); // 최초 접속 실패(conn 미생성) → 훅 재실행으로 재시도
+  }, []);
+
+  return { status, roster, playersRef, selfIdRef, requestMove, enterMeeting, setStatus, reconnect };
 }

@@ -30,12 +30,26 @@ interface Room {
   floor_id: string;
 }
 
+type InviteStatus = 'invited' | 'accepted' | 'declined';
+type ParticipantRole = 'organizer' | 'participant' | 'presenter';
+
 interface Participant {
   id: string;
   meeting_id: string;
   user_id: number;
+  user_name: string | null;
+  invited_at: string;
   joined_at: string | null;
-  role: string;
+  left_at: string | null;
+  role: ParticipantRole;
+  invite_status: InviteStatus;
+}
+
+interface Employee {
+  id: number;
+  name: string;
+  position?: string | null;
+  is_active?: boolean;
 }
 
 interface ConsentRow {
@@ -92,6 +106,18 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+const INVITE_BADGE: Record<InviteStatus, { label: string; className: string }> = {
+  accepted: { label: '수락함', className: 'bg-green-100 text-green-700' },
+  declined: { label: '거절함', className: 'bg-red-100 text-red-600' },
+  invited: { label: '응답 대기', className: 'bg-amber-100 text-amber-700' },
+};
+
+function InviteStatusIcon({ status }: { status: InviteStatus }) {
+  if (status === 'accepted') return <span className="text-green-600 font-bold" title="수락함">✓</span>;
+  if (status === 'declined') return <span className="text-red-500 font-bold" title="거절함">✕</span>;
+  return <span className="text-amber-500 font-bold" title="응답 대기">?</span>;
+}
+
 type RangeTab = 'day' | 'week' | 'month';
 
 function rangeFor(tab: RangeTab): { from: string; to: string } {
@@ -115,9 +141,24 @@ function rangeFor(tab: RangeTab): { from: string; to: string } {
   return { from: start.toISOString(), to: end.toISOString() };
 }
 
+function monthRange(y: number, m: number): { from: string; to: string } {
+  const start = new Date(y, m, 1, 0, 0, 0, 0);
+  const end = new Date(y, m + 1, 0, 23, 59, 59, 0);
+  return { from: start.toISOString(), to: end.toISOString() };
+}
+
+function kstDateKey(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+}
+
 export default function MeetingsPage() {
   const me = getUser();
   const [tab, setTab] = useState<RangeTab>('week');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [calMonth, setCalMonth] = useState(() => {
+    const d = new Date();
+    return { y: d.getFullYear(), m: d.getMonth() };
+  });
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -128,6 +169,9 @@ export default function MeetingsPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showMinute, setShowMinute] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const [myInvites, setMyInvites] = useState<Record<string, InviteStatus>>({});
+  const [respondBusy, setRespondBusy] = useState('');
   const [toast, setToast] = useState('');
   const [showDash, setShowDash] = useState(false);
   const [dash, setDash] = useState<{ item: ActionItem; meeting: string }[]>([]);
@@ -162,7 +206,7 @@ export default function MeetingsPage() {
     setLoading(true);
     setError('');
     try {
-      const { from, to } = rangeFor(tab);
+      const { from, to } = viewMode === 'calendar' ? monthRange(calMonth.y, calMonth.m) : rangeFor(tab);
       const qs = new URLSearchParams({ scheduled_from: from, scheduled_to: to });
       const data = await api.get<Meeting[]>(`/api/meetings?${qs.toString()}`);
       setMeetings(data);
@@ -171,11 +215,55 @@ export default function MeetingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [tab]);
+  }, [tab, viewMode, calMonth]);
 
   useEffect(() => {
     fetchMeetings();
   }, [fetchMeetings]);
+
+  // 내 초대 상태 (meeting_id → invite_status) — 목록 행의 수락/거절 버튼·뱃지용
+  const myId = me?.id;
+  useEffect(() => {
+    if (!myId || meetings.length === 0) {
+      setMyInvites({});
+      return;
+    }
+    let alive = true;
+    (async () => {
+      const entries = await Promise.all(
+        meetings.map(async (m) => {
+          const ps = await api.get<Participant[]>(`/api/meetings/${m.id}/participants`).catch(() => [] as Participant[]);
+          const mine = ps.find((p) => p.user_id === myId);
+          return [m.id, mine?.invite_status] as const;
+        }),
+      );
+      if (!alive) return;
+      const map: Record<string, InviteStatus> = {};
+      for (const [id, st] of entries) if (st) map[id] = st;
+      setMyInvites(map);
+    })();
+    return () => { alive = false; };
+  }, [meetings, myId]);
+
+  const refreshParticipants = useCallback(async (meetingId: string) => {
+    const p = await api.get<Participant[]>(`/api/meetings/${meetingId}/participants`).catch(() => [] as Participant[]);
+    setParticipants(p);
+  }, []);
+
+  const respondInvite = useCallback(async (meetingId: string, status: 'accepted' | 'declined') => {
+    setRespondBusy(meetingId);
+    try {
+      const updated = await api.patch<Participant>(`/api/meetings/${meetingId}/participants/me`, { status });
+      setMyInvites((prev) => ({ ...prev, [meetingId]: updated.invite_status }));
+      setParticipants((prev) => prev.map((p) => (p.meeting_id === meetingId && p.user_id === myId ? updated : p)));
+      flash(status === 'accepted' ? '초대를 수락했습니다.' : '초대를 거절했습니다.');
+      if (status === 'accepted') fetchMeetings();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? err.message : '서버 연결 오류');
+    } finally {
+      setRespondBusy('');
+    }
+  }, [fetchMeetings, myId]);
 
   const openDetail = useCallback(async (m: Meeting) => {
     setSelected(m);
@@ -272,6 +360,18 @@ export default function MeetingsPage() {
     }
   }
 
+  async function deleteMinute(id: string) {
+    if (!window.confirm('이 회의록(초안)을 삭제하시겠습니까?')) return;
+    try {
+      await api.delete(`/api/meeting-minutes/${id}`);
+      setMinutes((prev) => prev.filter((x) => x.id !== id));
+      if (minutes.length > 0 && minutes[0].id === id) setActionItems([]);
+      flash('회의록이 삭제되었습니다.');
+    } catch (err) {
+      window.alert(err instanceof ApiError ? err.message : '서버 연결 오류');
+    }
+  }
+
   // group meetings by date (KST)
   const groups: Record<string, Meeting[]> = {};
   for (const m of [...meetings].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))) {
@@ -280,6 +380,7 @@ export default function MeetingsPage() {
   }
 
   const selectedConsent = selected ? consentState[selected.id] : undefined;
+  const myParticipant = selected ? participants.find((p) => p.user_id === me?.id) : undefined;
   const dashActive = dash.filter((d) => d.item.status !== 'cancelled');
 
   return (
@@ -301,16 +402,49 @@ export default function MeetingsPage() {
           </button>
         </div>
       </div>
-      <div className="flex gap-1 mt-3 mb-4">
-        {(['day', 'week', 'month'] as RangeTab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-3 py-1.5 text-sm rounded-md ${tab === t ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-          >
-            {t === 'day' ? '오늘' : t === 'week' ? '이번 주' : '이번 달'}
-          </button>
-        ))}
+      <div className="flex items-center justify-between mt-3 mb-4">
+        {viewMode === 'list' ? (
+          <div className="flex gap-1">
+            {(['day', 'week', 'month'] as RangeTab[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-3 py-1.5 text-sm rounded-md ${tab === t ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+              >
+                {t === 'day' ? '오늘' : t === 'week' ? '이번 주' : '이번 달'}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCalMonth(({ y, m }) => { const d = new Date(y, m - 1, 1); return { y: d.getFullYear(), m: d.getMonth() }; })}
+              aria-label="이전 달"
+              className="px-2.5 py-1.5 text-sm rounded-md bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+            >
+              ‹
+            </button>
+            <span className="px-2 text-sm font-semibold text-gray-700 min-w-[104px] text-center">{calMonth.y}년 {calMonth.m + 1}월</span>
+            <button
+              onClick={() => setCalMonth(({ y, m }) => { const d = new Date(y, m + 1, 1); return { y: d.getFullYear(), m: d.getMonth() }; })}
+              aria-label="다음 달"
+              className="px-2.5 py-1.5 text-sm rounded-md bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+            >
+              ›
+            </button>
+          </div>
+        )}
+        <div className="flex rounded-md border border-gray-200 overflow-hidden">
+          {(['list', 'calendar'] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setViewMode(v)}
+              className={`px-3 py-1.5 text-sm ${viewMode === v ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              {v === 'list' ? '목록' : '캘린더'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {showDash && (
@@ -353,6 +487,8 @@ export default function MeetingsPage() {
           <p className="text-red-600 text-sm mb-2">{error}</p>
           <button onClick={fetchMeetings} className="text-xs text-indigo-600 underline">재시도</button>
         </div>
+      ) : viewMode === 'calendar' ? (
+        <MonthCalendar year={calMonth.y} month={calMonth.m} meetings={meetings} onSelect={openDetail} />
       ) : meetings.length === 0 ? (
         <div className="text-center py-16 text-gray-400 text-sm">이 기간에 예약된 회의가 없습니다.</div>
       ) : (
@@ -373,6 +509,28 @@ export default function MeetingsPage() {
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-gray-800">{m.title}</span>
                       <div className="flex items-center gap-2">
+                        {myInvites[m.id] === 'invited' ? (
+                          <span className="flex items-center gap-1">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); respondInvite(m.id, 'accepted'); }}
+                              disabled={respondBusy === m.id}
+                              className="text-[10px] px-2 py-0.5 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                            >
+                              수락
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); respondInvite(m.id, 'declined'); }}
+                              disabled={respondBusy === m.id}
+                              className="text-[10px] px-2 py-0.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                            >
+                              거절
+                            </button>
+                          </span>
+                        ) : myInvites[m.id] ? (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${INVITE_BADGE[myInvites[m.id]].className}`}>
+                            {INVITE_BADGE[myInvites[m.id]].label}
+                          </span>
+                        ) : null}
                         {canManage(m) && m.status === 'scheduled' && (
                           <button
                             onClick={(e) => { e.stopPropagation(); transitionMeeting(m, 'start'); }}
@@ -436,6 +594,28 @@ export default function MeetingsPage() {
               </div>
               {selected.description && <p className="text-gray-700">{selected.description}</p>}
 
+              {myParticipant?.invite_status === 'invited' && (
+                <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-indigo-800">이 회의에 초대되었습니다. 참석하시겠습니까?</span>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      onClick={() => respondInvite(selected.id, 'accepted')}
+                      disabled={respondBusy === selected.id}
+                      className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                    >
+                      수락
+                    </button>
+                    <button
+                      onClick={() => respondInvite(selected.id, 'declined')}
+                      disabled={respondBusy === selected.id}
+                      className="rounded-md border border-indigo-300 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                    >
+                      거절
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className={`rounded-lg border px-3 py-3 ${selectedConsent === 'granted' ? 'border-green-200 bg-green-50' : selectedConsent === 'declined' ? 'border-gray-200 bg-gray-50' : 'border-amber-200 bg-amber-50'}`}>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -482,20 +662,42 @@ export default function MeetingsPage() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-medium text-gray-700">참석자 ({participants.length})</span>
-                  <button onClick={join} className="text-xs px-2 py-1 border border-indigo-300 text-indigo-600 rounded hover:bg-indigo-50">
-                    참석
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {canManage(selected) && (
+                      <button onClick={() => setShowInvite(true)} className="text-xs px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                        + 참석자 초대
+                      </button>
+                    )}
+                    <button onClick={join} className="text-xs px-2 py-1 border border-indigo-300 text-indigo-600 rounded hover:bg-indigo-50">
+                      참석
+                    </button>
+                  </div>
                 </div>
                 {detailLoading ? (
                   <p className="text-xs text-gray-400">불러오는 중...</p>
                 ) : participants.length === 0 ? (
                   <p className="text-xs text-gray-400">참석자 없음</p>
                 ) : (
-                  <div className="flex flex-wrap gap-1">
+                  <div className="space-y-1">
                     {participants.map((p) => (
-                      <span key={p.id} className="text-xs px-2 py-0.5 bg-gray-100 rounded text-gray-600">
-                        user {p.user_id}{p.user_id === me?.id ? ' (나)' : ''}
-                      </span>
+                      <div key={p.id} className="flex items-center gap-1.5 text-xs">
+                        <InviteStatusIcon status={p.invite_status} />
+                        <span className="text-gray-700">
+                          {p.user_name || `user ${p.user_id}`}{p.user_id === me?.id ? ' (나)' : ''}
+                        </span>
+                        {p.role === 'organizer' && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">👑 주최</span>
+                        )}
+                        {p.role === 'presenter' && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">발표</span>
+                        )}
+                        {p.joined_at && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-green-600">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                            입장함
+                          </span>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -518,7 +720,10 @@ export default function MeetingsPage() {
                         {mn.status === 'finalized' ? (
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">확정</span>
                         ) : (
-                          <button onClick={() => finalizeMinute(mn.id)} className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-600 text-white">확정</button>
+                          <span className="flex items-center gap-1">
+                            <button onClick={() => finalizeMinute(mn.id)} className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-600 text-white">확정</button>
+                            <button onClick={() => deleteMinute(mn.id)} className="text-[10px] px-1.5 py-0.5 rounded border border-red-300 text-red-600 hover:bg-red-50">삭제</button>
+                          </span>
                         )}
                       </div>
                       {mn.summary && <p className="text-xs text-gray-600 mt-1">{mn.summary}</p>}
@@ -559,6 +764,204 @@ export default function MeetingsPage() {
           onCreated={() => { setShowMinute(false); openDetail(selected); flash('회의록이 작성되었습니다.'); }}
         />
       )}
+      {showInvite && selected && (
+        <InviteParticipantsModal
+          meetingId={selected.id}
+          excludeUserIds={participants.map((p) => p.user_id)}
+          onClose={() => setShowInvite(false)}
+          onInvited={() => {
+            setShowInvite(false);
+            refreshParticipants(selected.id);
+            fetchMeetings();
+            flash('참석자를 초대했습니다.');
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+function MonthCalendar({
+  year,
+  month,
+  meetings,
+  onSelect,
+}: {
+  year: number;
+  month: number;
+  meetings: Meeting[];
+  onSelect: (m: Meeting) => void;
+}) {
+  const byDay: Record<string, Meeting[]> = {};
+  for (const m of [...meetings].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))) {
+    (byDay[kstDateKey(m.scheduled_at)] ||= []).push(m);
+  }
+
+  const first = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startOffset = first.getDay();
+  const cellCount = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+  const cells: { key: string; day: number; inMonth: boolean }[] = [];
+  for (let i = 0; i < cellCount; i++) {
+    const d = new Date(year, month, i - startOffset + 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    cells.push({ key, day: d.getDate(), inMonth: d.getMonth() === month });
+  }
+  const todayKey = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="grid grid-cols-7 border-b border-gray-100">
+        {WEEKDAYS.map((w, i) => (
+          <div key={w} className={`py-1.5 text-center text-xs font-semibold ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-gray-400'}`}>
+            {w}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7">
+        {cells.map((c, i) => {
+          const dayMeetings = byDay[c.key] ?? [];
+          const extra = dayMeetings.length - 2;
+          return (
+            <div
+              key={c.key}
+              className={`min-h-[84px] p-1 border-gray-100 ${i % 7 !== 0 ? 'border-l' : ''} ${i >= 7 ? 'border-t' : ''} ${c.inMonth ? 'bg-white' : 'bg-gray-50'}`}
+            >
+              <div className="flex justify-end">
+                <span
+                  className={`text-[11px] w-5 h-5 flex items-center justify-center rounded-full ${
+                    c.key === todayKey ? 'bg-indigo-600 text-white font-semibold' : c.inMonth ? 'text-gray-600' : 'text-gray-300'
+                  }`}
+                >
+                  {c.day}
+                </span>
+              </div>
+              <div className="mt-0.5 space-y-0.5">
+                {dayMeetings.slice(0, 2).map((m) => {
+                  const st = STATUS_LABEL[m.status] ?? { label: m.status, color: 'bg-gray-100 text-gray-500' };
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => onSelect(m)}
+                      title={m.title}
+                      className={`block w-full truncate text-left text-[10px] px-1 py-0.5 rounded hover:opacity-80 ${st.color}`}
+                    >
+                      {m.title}
+                    </button>
+                  );
+                })}
+                {extra > 0 && <div className="text-[10px] text-gray-400 px-1">+{extra}개 더보기</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function InviteParticipantsModal({
+  meetingId,
+  excludeUserIds,
+  onClose,
+  onInvited,
+}: {
+  meetingId: string;
+  excludeUserIds: number[];
+  onClose: () => void;
+  onInvited: () => void;
+}) {
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [checked, setChecked] = useState<number[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const data = await api.get<Employee[]>('/api/employees');
+        if (alive) setEmployees(data.filter((e) => e.is_active !== false && !excludeUserIds.includes(e.id)));
+      } catch (e) {
+        if (alive) setErr(e instanceof ApiError ? `직원 목록 조회 실패: ${e.message}` : '서버 오류');
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const filtered = employees.filter((e) => e.name.toLowerCase().includes(query.trim().toLowerCase()));
+
+  const toggle = (id: number) =>
+    setChecked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  async function invite() {
+    if (checked.length === 0) { setErr('초대할 직원을 선택하세요.'); return; }
+    setSaving(true);
+    setErr('');
+    try {
+      await api.post(`/api/meetings/${meetingId}/participants`, { user_ids: checked });
+      onInvited();
+    } catch (e) {
+      setErr(e instanceof ApiError ? `초대 실패: ${e.message}` : '서버 오류');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-800">참석자 초대</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+        </div>
+        <div className="px-6 py-4 space-y-3">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="이름 검색"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          {loading ? (
+            <p className="text-xs text-gray-400 py-4 text-center">직원 목록 불러오는 중...</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-xs text-gray-400 py-4 text-center">초대 가능한 직원이 없습니다.</p>
+          ) : (
+            <div className="max-h-64 overflow-y-auto border border-gray-100 rounded-md divide-y divide-gray-50">
+              {filtered.map((e) => (
+                <label key={e.id} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={checked.includes(e.id)}
+                    onChange={() => toggle(e.id)}
+                    className="accent-indigo-600"
+                  />
+                  <span className="flex-1">{e.name}</span>
+                  {e.position && <span className="text-xs text-gray-400">{e.position}</span>}
+                </label>
+              ))}
+            </div>
+          )}
+          {err && <p className="text-sm text-red-600">{err}</p>}
+          <div className="flex gap-2 pt-1">
+            <button onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">취소</button>
+            <button
+              onClick={invite}
+              disabled={saving || checked.length === 0}
+              className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {saving ? '초대 중...' : `초대 (${checked.length})`}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

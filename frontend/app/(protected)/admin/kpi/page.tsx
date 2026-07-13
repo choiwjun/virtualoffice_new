@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isLeaderOrAbove } from '@/lib/auth';
 import {
@@ -35,6 +35,22 @@ const KNOWN_ERRORS: Record<string, string> = {
   forbidden: '권한이 없습니다.',
   not_found: '대상을 찾을 수 없습니다.',
 };
+
+// 이전 분기 키 계산 (예: 2026-Q3 → 2026-Q2, 2026-Q1 → 2025-Q4)
+function prevQuarterKey(key: string): string | null {
+  const m = /^(\d{4})-Q([1-4])$/.exec(key);
+  if (!m) return null;
+  const y = Number(m[1]);
+  const q = Number(m[2]);
+  return q === 1 ? `${y - 1}-Q4` : `${y}-Q${q - 1}`;
+}
+
+// 조정 모달 보조 정보 (08 §3.2): 최근 4분기 추이 + 팀 평균 벤치마크 + ±30% 급변 경고
+interface AdjustInsight {
+  trend: { period: string; score: number }[]; // 오름차순, 최대 4분기
+  teamAvg: number | null; // 동일 metric·period 전 직원(최대 10명) 평균
+  deltaPct: number | null; // 이전 분기 대비 변화율(%)
+}
 
 // ApiError.message 노출 (QA #7)
 function errMsg(err: unknown, prefix: string): string {
@@ -90,6 +106,53 @@ function AiDraftView({ draft }: { draft: unknown }) {
   );
 }
 
+// 조정 모달 보조 뷰 — 데이터 없으면 조용히 생략 (CSS 인라인 바, 라이브러리 없음)
+function AdjustInsightView({ insight }: { insight: AdjustInsight | null }) {
+  if (!insight) return null;
+  const { trend, teamAvg, deltaPct } = insight;
+  if (trend.length === 0 && teamAvg == null && deltaPct == null) return null;
+  const maxScore = Math.max(0, ...trend.map((t) => t.score));
+  return (
+    <div className="space-y-2">
+      {deltaPct != null && Math.abs(deltaPct) >= 30 && (
+        <div className="px-3 py-2 bg-amber-50 border border-amber-300 rounded-md text-xs text-amber-800">
+          ⚠️ 이전 분기 대비 {deltaPct > 0 ? '+' : ''}
+          {deltaPct.toFixed(0)}% 급변 — 조정 전 원인 확인을 권장합니다.
+        </div>
+      )}
+      {trend.length > 0 && (
+        <div className="bg-gray-50 rounded-md px-3 py-2">
+          <div className="text-[11px] text-gray-500 mb-1">최근 분기 추이</div>
+          <div className="flex items-end gap-2">
+            {trend.map((t) => (
+              <div key={t.period} className="flex-1 flex flex-col items-center min-w-0">
+                <span className="text-[10px] text-gray-600 leading-none mb-0.5">
+                  {formatScore(t.score)}
+                </span>
+                <div className="w-full h-10 flex items-end">
+                  <div
+                    className="w-full bg-indigo-400 rounded-t"
+                    style={{
+                      height: `${maxScore > 0 ? Math.max(Math.round((t.score / maxScore) * 100), 4) : 4}%`,
+                    }}
+                  />
+                </div>
+                <span className="mt-0.5 text-[10px] text-gray-400">{t.period.slice(2)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {teamAvg != null && (
+        <div className="flex items-center justify-between bg-gray-50 rounded-md px-3 py-2 text-xs">
+          <span className="text-gray-500">팀 평균 (동일 지표·기간)</span>
+          <span className="font-semibold text-gray-700">{teamAvg.toFixed(1)}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // 조정/이의 처리 공용 모달 — 원점수 ±10% 클라이언트 검증 (08 §3.2)
 interface ScoreNoteModalProps {
   title: string;
@@ -110,6 +173,7 @@ interface ScoreNoteModalProps {
   savingLabel: string;
   onClose: () => void;
   onSubmit: () => void;
+  extra?: ReactNode; // 보조 정보 (분기 추이·팀 평균·급변 경고 등)
 }
 
 function ScoreNoteModal(p: ScoreNoteModalProps) {
@@ -131,12 +195,13 @@ function ScoreNoteModal(p: ScoreNoteModalProps) {
           <h2 className="font-semibold text-gray-800">{p.title}</h2>
           <button onClick={p.onClose} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
         </div>
-        <div className="px-6 py-4 space-y-4">
+        <div className="px-6 py-4 space-y-4 max-h-[80vh] overflow-y-auto">
           {p.description && <p className="text-xs text-gray-500">{p.description}</p>}
           <div className="flex items-center justify-between bg-gray-50 rounded-md px-3 py-2 text-sm">
             <span className="text-gray-500">원점수</span>
             <span className="font-semibold text-gray-800">{formatScore(p.origin)}</span>
           </div>
+          {p.extra}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{p.scoreLabel}</label>
             <input
@@ -219,6 +284,65 @@ export default function AdminKpiPage() {
   const [modalNote, setModalNote] = useState('');
   const [modalError, setModalError] = useState('');
   const [modalSaving, setModalSaving] = useState(false);
+  const [adjustInsight, setAdjustInsight] = useState<AdjustInsight | null>(null);
+
+  // 조정 모달 보조 정보 (08 §3.2) — 분기 결과만. 실패/데이터 없음이면 조용히 생략
+  useEffect(() => {
+    setAdjustInsight(null);
+    if (!adjustTarget || adjustTarget.period_type !== 'quarterly') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        // 1) 대상 사용자의 분기 전체 결과 → 동일 metric 최근 4분기 추이 + 직전 분기 대비 변화율
+        const mine = await api
+          .get<KpiResult[]>(`/api/kpi-results?user_id=${adjustTarget.user_id}&period_type=quarterly`)
+          .catch(() => [] as KpiResult[]);
+        const byPeriod = new Map<string, number>();
+        for (const r of mine) {
+          if (r.metric !== adjustTarget.metric || r.period_key > adjustTarget.period_key) continue;
+          const s = r.final_score ?? r.value;
+          if (s != null) byPeriod.set(r.period_key, s);
+        }
+        const trend = Array.from(byPeriod.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .slice(-4)
+          .map(([period, score]) => ({ period, score }));
+        const prevKey = prevQuarterKey(adjustTarget.period_key);
+        const prev = prevKey ? byPeriod.get(prevKey) : undefined;
+        const deltaPct =
+          prev != null && prev !== 0
+            ? ((adjustTarget.value - prev) / Math.abs(prev)) * 100
+            : null;
+
+        // 2) 팀(전체) 평균 벤치마크 — /api/employees 목록으로 개별 조회 (최대 10명, 실패 시 생략)
+        let teamAvg: number | null = null;
+        const sample = employees.slice(0, 10);
+        if (sample.length > 0) {
+          const qs = `period_type=quarterly&period_key=${encodeURIComponent(adjustTarget.period_key)}`;
+          const rows = await Promise.all(
+            sample.map((emp) =>
+              api
+                .get<KpiResult[]>(`/api/kpi-results?user_id=${emp.id}&${qs}`)
+                .catch(() => [] as KpiResult[]),
+            ),
+          );
+          const scores = rows
+            .flat()
+            .filter((r) => r.metric === adjustTarget.metric)
+            .map((r) => r.final_score ?? r.value)
+            .filter((s): s is number => s != null);
+          if (scores.length > 0) teamAvg = scores.reduce((a, b) => a + b, 0) / scores.length;
+        }
+
+        if (!cancelled) setAdjustInsight({ trend, teamAvg, deltaPct });
+      } catch {
+        if (!cancelled) setAdjustInsight(null); // 계산 불가 시 조용히 생략
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [adjustTarget, employees]);
 
   useEffect(() => {
     if (!allowed) return;
@@ -679,6 +803,7 @@ export default function AdminKpiPage() {
           savingLabel="저장 중..."
           onClose={() => setAdjustTarget(null)}
           onSubmit={submitAdjust}
+          extra={<AdjustInsightView insight={adjustInsight} />}
         />
       )}
 

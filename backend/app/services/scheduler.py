@@ -140,6 +140,77 @@ async def _eod_push_job() -> None:
             print(f"[Scheduler] EOD push failed: {exc}")
 
 
+async def _seat_auto_release_job() -> None:
+    """06 §3.11: 자율좌석(free) 자동 반납 — 퇴근(offline) 또는 장기 미활동 사용자의 점유 해제.
+
+    대상: type=free & occupied 좌석 중, 점유자의 presence가 offline이거나
+    updated_at이 12시간 초과. seat 반납 + 열린 history의 unassigned_at 기록.
+    """
+    print("[Scheduler] seat auto-release started")
+    from app.models.tables import (
+        Presence,
+        PresenceStatus,
+        Seat,
+        SeatAssignmentHistory,
+        SeatStatus,
+        SeatType,
+    )
+
+    now = datetime.now(timezone.utc)
+    stale_cutoff = now - timedelta(hours=12)
+
+    async with SessionLocal() as db:
+        try:
+            seats = (
+                await db.execute(
+                    select(Seat).where(
+                        Seat.type == SeatType.FREE,
+                        Seat.status == SeatStatus.OCCUPIED,
+                        Seat.assigned_user_id.isnot(None),
+                    )
+                )
+            ).scalars().all()
+
+            released = 0
+            for seat in seats:
+                presence = (
+                    await db.execute(select(Presence).where(Presence.user_id == seat.assigned_user_id))
+                ).scalar_one_or_none()
+                p_updated = presence.updated_at if presence else None
+                if p_updated is not None and p_updated.tzinfo is None:
+                    p_updated = p_updated.replace(tzinfo=timezone.utc)
+                should_release = (
+                    presence is None
+                    or presence.status == PresenceStatus.OFFLINE
+                    or (p_updated is not None and p_updated < stale_cutoff)
+                )
+                if not should_release:
+                    continue
+
+                seat.assigned_user_id = None
+                seat.status = SeatStatus.AVAILABLE
+                hist = (
+                    await db.execute(
+                        select(SeatAssignmentHistory)
+                        .where(
+                            SeatAssignmentHistory.seat_id == seat.id,
+                            SeatAssignmentHistory.unassigned_at.is_(None),
+                        )
+                        .order_by(SeatAssignmentHistory.assigned_at.desc())
+                        .limit(1)
+                    )
+                ).scalar_one_or_none()
+                if hist is not None:
+                    hist.unassigned_at = now
+                released += 1
+
+            await db.commit()
+            print(f"[Scheduler] seat auto-release completed: {released} seats released")
+        except Exception as exc:
+            await db.rollback()
+            print(f"[Scheduler] seat auto-release failed: {exc}")
+
+
 async def _kpi_auto_finalize_job() -> None:
     """08 §3.3: 공개 후 7일 경과 & 무이의 kpi_result 자동확정 + ERP push 적재."""
     print("[Scheduler] KPI auto-finalize started")
@@ -241,8 +312,17 @@ def start_scheduler() -> None:
         replace_existing=True,
     )
 
+    # 06 §3.11: 자율좌석 자동 반납 — 매시간 :30 KST (퇴근/장기 미활동)
+    _scheduler.add_job(
+        _seat_auto_release_job,
+        CronTrigger(minute=30, timezone="Asia/Seoul"),
+        id="seat_auto_release",
+        name="Free-seat auto release",
+        replace_existing=True,
+    )
+
     _scheduler.start()
-    print("[Scheduler] Started: KPI 18:00/21:00, ERP hourly:00, EOD push 18:05, presence purge 03:00, KPI auto-finalize 09:00")
+    print("[Scheduler] Started: KPI 18:00/21:00, ERP hourly:00, EOD push 18:05, presence purge 03:00, KPI auto-finalize 09:00, seat release :30")
 
 
 def stop_scheduler() -> None:
