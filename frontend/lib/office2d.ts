@@ -18,6 +18,19 @@ export const PLATE_URL = '/office2d/plates/horizon.png';
 export const PLATE_W = 1672;
 export const PLATE_H = 941;
 
+/** 레이어 합성 팩(v2.1 오클루전): 배경 + 가구 스프라이트(manifest) — 없으면 단일 플레이트 폴백. */
+export const LAYERS_BASE_URL = '/office2d/layers';
+
+/** manifest.json 스프라이트 항목 — 좌표는 플레이트 정규(0~1), z = 바닥 접점 y(아바타 zIndex와 동일 규칙). */
+export interface SceneLayerSprite {
+  src: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  z: number;
+}
+
 export const SCENE_W_M = 20;
 export const SCENE_H_M = (PLATE_H / PLATE_W) * SCENE_W_M; // ≈ 11.256
 

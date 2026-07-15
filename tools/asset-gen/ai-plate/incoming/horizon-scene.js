@@ -303,7 +303,11 @@
 
   // ================== scene ==================
   function drawScene(ctx, opts) {
-    ctx.save();
+    // 레이어 캡처 모드(opts.capture): ctx를 레이어별 캔버스로 스위칭하며 그린다.
+    // 아이템 클로저들이 이 함수 스코프의 ctx 바인딩을 캡처하므로 재할당이 곧 리타깃.
+    const cap = opts.capture || null;
+    if (cap) ctx = cap.background();
+    else ctx.save();
     ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
 
     // soft drop shadow under the whole slab
@@ -482,7 +486,10 @@
     glassWall(ctx, R[25]);           // booth left
 
     const items = [];
-    const add = (cu, cv, fn) => items.push({ d: cu + cv, fn });
+    let itemSeq = 0;
+    // flat=true 항목(러그 등 바닥 평면)은 레이어 캡처 시 배경에 흡수 — 아바타를 가리면 안 됨.
+    // 입체 가구의 깊이 키(baseline)는 캡처 후 픽셀(불투명 최저점=바닥 접점)에서 자동 산출.
+    const add = (cu, cv, fn, flat) => items.push({ d: cu + cv, fn, flat: !!flat, name: `item-${itemSeq++}` });
 
     // reception
     add(R[0].cu, R[0].cv, () => {
@@ -504,7 +511,7 @@
       const u1 = Math.max(R[1].u1, R[2].u1) + MU * 0.5, v1 = Math.max(R[1].v1, R[2].v1) + MV * 0.5;
       poly(ctx, [P(u0, v0), P(u1, v0), P(u1, v1), P(u0, v1)], 'rgba(222,210,186,0.85)');
       poly(ctx, [P(u0, v0), P(u1, v0), P(u1, v1), P(u0, v1)], null, 'rgba(150,132,100,0.35)', 1.5);
-    });
+    }, true);
     add(R[1].cu, R[1].cv, () => sofa(ctx, R[1], 'v-'));
     add(R[2].cu, R[2].cv, () => sofa(ctx, R[2], 'v+'));
     add(R[3].cu, R[3].cv, () => {
@@ -573,7 +580,7 @@
       const mu0 = r.cu - MU * 1.85, mv0 = r.cv - MV * 1.5, mu1 = r.cu + MU * 1.85, mv1 = r.cv + MV * 1.55;
       poly(ctx, [P(mu0, mv0), P(mu1, mv0), P(mu1, mv1), P(mu0, mv1)], 'rgba(148,160,178,0.55)');
       poly(ctx, [P(mu0 + MU * 0.12, mv0 + MV * 0.12), P(mu1 - MU * 0.12, mv0 + MV * 0.12), P(mu1 - MU * 0.12, mv1 - MV * 0.12), P(mu0 + MU * 0.12, mv1 - MV * 0.12)], null, 'rgba(255,255,255,0.35)', 1.2);
-    });
+    }, true);
     add(R[23].cu - 0.028, R[23].cv + 0.012, () => loungeChair(ctx, R[23].cu - MU * 1.15, R[23].cv + MV * 0.25, 'u-'));
     add(R[23].cu - 0.015, R[23].cv - 0.045, () => loungeChair(ctx, R[23].cu + MU * 0.1, R[23].cv - MV * 1.1, 'v-'));
     add(R[23].cu, R[23].cv, () => {
@@ -607,31 +614,22 @@
     // plants
     PLANTS.forEach(([x, y, s]) => { const q = uvOf(x, y); add(q.u, q.v, () => plant(ctx, x, y, s)); });
 
-    items.sort((a, b) => a.d - b.d).forEach(it => it.fn());
+    items.sort((a, b) => a.d - b.d).forEach(it => {
+      if (cap) ctx = it.flat ? cap.background() : cap.layer(it.name);
+      it.fn();
+    });
 
     // FRONT glass (after contents)
-    glassWall(ctx, R[6]); glassWall(ctx, R[7]);      // boardroom front-left, door gap preserved
-    glassWall(ctx, R[15]); glassWall(ctx, R[16]);    // meeting front-left, door gap preserved
-    glassWall(ctx, R[26]);                            // booth right
-
-    ctx.save(); ctx.globalCompositeOperation = 'soft-light';
-    ctx.fillStyle = grad(ctx, [0, 0], [W, H], 'rgba(255,238,208,0.34)', 'rgba(50,68,102,0.30)');
-    ctx.fillRect(0, 0, W, H); ctx.restore();
-    // ---- film grain + vignette ----
-    if (opts.grain) {
-      const nc = document.createElement('canvas'); nc.width = nc.height = 160;
-      const nx = nc.getContext('2d'); const id = nx.createImageData(160, 160);
-      for (let i = 0; i < id.data.length; i += 4) { const v = 118 + Math.random() * 20 | 0; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; }
-      nx.putImageData(id, 0, 0);
-      ctx.save(); ctx.globalAlpha = 0.05; ctx.globalCompositeOperation = 'overlay';
-      ctx.fillStyle = ctx.createPattern(nc, 'repeat'); ctx.fillRect(0, 0, W, H); ctx.restore();
+    const frontGlass = [['glass-board-a', R[6]], ['glass-board-b', R[7]], ['glass-meet-a', R[15]], ['glass-meet-b', R[16]], ['glass-booth', R[26]]];
+    for (const [gname, gr] of frontGlass) {
+      if (cap) ctx = cap.layer(gname);
+      glassWall(ctx, gr); // door gap preserved
     }
-    const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95);
-    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(80,68,50,0.08)');
-    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+
+    if (!cap) applyGrade(ctx.canvas, opts.grain);
 
     // ---- QA overlay ----
-    if (opts.overlay) {
+    if (!cap && opts.overlay) {
       ctx.lineWidth = 1.5;
       OB.forEach(p => {
         ctx.strokeStyle = '#2E7BFF'; ctx.fillStyle = 'rgba(46,123,255,0.10)';
@@ -644,8 +642,64 @@
       ctx.setLineDash([]);
       SEATS.forEach(([x, y]) => { ctx.fillStyle = '#B04A3E'; ctx.beginPath(); ctx.arc(x * W, y * H, 4, 0, 7); ctx.fill(); });
     }
-    ctx.restore();
+    if (!cap) ctx.restore();
   }
+
+  /** 톤 그레이드(소프트라이트) + 비네트 — 콘텐츠 알파 마스크 적용(투명 영역 오염 방지). */
+  function applyGrade(canvas, grain) {
+    const Wp = canvas.width, Hp = canvas.height;
+    const mk = () => { const c = document.createElement('canvas'); c.width = Wp; c.height = Hp; return c; };
+    const cx2 = canvas.getContext('2d');
+    // soft-light 톤
+    const gcan = mk(); const gx = gcan.getContext('2d');
+    const lg = gx.createLinearGradient(0, 0, Wp, Hp);
+    lg.addColorStop(0, 'rgba(255,238,208,0.34)'); lg.addColorStop(1, 'rgba(50,68,102,0.30)');
+    gx.fillStyle = lg; gx.fillRect(0, 0, Wp, Hp);
+    gx.globalCompositeOperation = 'destination-in'; gx.drawImage(canvas, 0, 0);
+    cx2.save(); cx2.setTransform(1, 0, 0, 1, 0, 0); cx2.globalCompositeOperation = 'soft-light'; cx2.drawImage(gcan, 0, 0); cx2.restore();
+    // 비네트
+    const vcan = mk(); const vx = vcan.getContext('2d');
+    const vg = vx.createRadialGradient(Wp / 2, Hp / 2, Hp * 0.35, Wp / 2, Hp / 2, Hp * 0.95);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(80,68,50,0.08)');
+    vx.fillStyle = vg; vx.fillRect(0, 0, Wp, Hp);
+    vx.globalCompositeOperation = 'destination-in'; vx.drawImage(canvas, 0, 0);
+    cx2.save(); cx2.setTransform(1, 0, 0, 1, 0, 0); cx2.drawImage(vcan, 0, 0); cx2.restore();
+    // 그레인(배경 전용 권장)
+    if (grain) {
+      const nc = mk(); nc.width = nc.height = 160;
+      const nx = nc.getContext('2d'); const id = nx.createImageData(160, 160);
+      for (let i = 0; i < id.data.length; i += 4) { const v = 118 + Math.random() * 20 | 0; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; }
+      nx.putImageData(id, 0, 0);
+      cx2.save(); cx2.setTransform(1, 0, 0, 1, 0, 0); cx2.globalAlpha = 0.05; cx2.globalCompositeOperation = 'overlay';
+      cx2.fillStyle = cx2.createPattern(nc, 'repeat'); cx2.fillRect(0, 0, Wp, Hp); cx2.restore();
+    }
+  }
+
+  /** 레이어 캡처: 배경 1장 + 입체 가구/전면유리 스프라이트 캔버스 목록 반환. */
+  window.renderHorizonLayers = function () {
+    const layers = [];
+    let bg = null;
+    const mkLayer = (name) => {
+      const c = document.createElement('canvas');
+      c.width = W * SS; c.height = H * SS;
+      const x = c.getContext('2d');
+      x.setTransform(SS, 0, 0, SS, 0, 0);
+      layers.push({ name, canvas: c });
+      return x;
+    };
+    const cap = {
+      background() {
+        if (!bg) bg = mkLayer('background');
+        return bg;
+      },
+      layer(name) {
+        return mkLayer(name);
+      },
+    };
+    drawScene(null, { capture: cap, grain: false, overlay: false });
+    for (const L of layers) applyGrade(L.canvas, false);
+    return layers;
+  };
 
   class HorizonScene extends HTMLElement {
     static get observedAttributes() { return ['overlay', 'grain']; }

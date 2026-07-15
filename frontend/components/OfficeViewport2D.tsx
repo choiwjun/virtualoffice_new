@@ -22,10 +22,12 @@ import {
   AVATAR_ANIM,
   AvatarState,
   CharacterId,
+  LAYERS_BASE_URL,
   OBSTACLES,
   PLATE_URL,
   PLATE_W,
   PLATE_H,
+  type SceneLayerSprite,
   ROOMS,
   SPAWNS,
   avatarHeightFrac,
@@ -181,6 +183,22 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
 
   // 방 라벨 클릭 글로우.
   const [glowRoom, setGlowRoom] = useState<string | null>(null);
+
+  // 레이어 합성 팩(v2.1): 가구를 개별 스프라이트로 얹어 아바타와 y-기준 상호 가림.
+  // manifest 없으면 null → 단일 플레이트 폴백.
+  const [layerSprites, setLayerSprites] = useState<SceneLayerSprite[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${LAYERS_BASE_URL}/manifest.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((m: { sprites?: SceneLayerSprite[] } | null) => {
+        if (!cancelled && m?.sprites?.length) setLayerSprites(m.sprites);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // ── 자율좌석(§3.11) ────────────────────────────────────────────────────
   const [seats, setSeats] = useState<SeatInfo[]>([]);
@@ -706,13 +724,33 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
         onClick={handleStageClick}
       >
         {ASSETS_READY ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={PLATE_URL}
-            alt="가상오피스 평면"
-            draggable={false}
-            className="absolute inset-0 w-full h-full"
-          />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={layerSprites ? `${LAYERS_BASE_URL}/background.webp` : PLATE_URL}
+              alt="가상오피스 평면"
+              draggable={false}
+              className="absolute inset-0 w-full h-full"
+            />
+            {/* 가구 스프라이트(v2.1 오클루전) — 아바타와 동일 y-기준 zIndex로 상호 가림 */}
+            {layerSprites?.map((sp) => (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                key={sp.src}
+                src={`${LAYERS_BASE_URL}/${sp.src}`}
+                alt=""
+                draggable={false}
+                className="absolute pointer-events-none"
+                style={{
+                  left: `${sp.x * 100}%`,
+                  top: `${sp.y * 100}%`,
+                  width: `${sp.w * 100}%`,
+                  height: `${sp.h * 100}%`,
+                  zIndex: Math.round(sp.z * 10000),
+                }}
+              />
+            ))}
+          </>
         ) : (
           /* D30 플레이스홀더 플레이트 — 좌표 계약(보행영역·방·장애물)만 시각화 */
           <div

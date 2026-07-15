@@ -7,6 +7,12 @@
 > 가구를 앵커링, `.dc.html`로 렌더/재수출). **지오메트리 정본은 여전히 `src/plate.js` →
 > `out/layout.json`** — 배치를 바꾸면 plate.js 수정 → 재생성 → horizon-scene.js의 OB/SEATS 블록도
 > 동일 값으로 갱신 → PNG 재수출(3344px) → `frontend/public/office2d/plates/horizon.png` 교체.
+> **v2.1 오클루전 레이어 (2026-07-15)**: horizon-scene.js의 캡처 모드(`renderHorizonLayers`)로
+> 배경 1장 + 가구 스프라이트 32장(WebP, 총 0.45MB)을 분리 추출(`node extract-layers.js` →
+> `frontend/public/office2d/layers/`). 뷰포트가 manifest의 z(바닥 접점 정규 y)로
+> 아바타와 동일 규칙(zIndex=z·10000) 합성 → 상호 가림. manifest 없으면 단일 플레이트 폴백.
+> 씬 수정 시 재추출 필수. 러그 등 평면 아이템은 add(..., true)로 배경에 흡수.
+>
 > **캐릭터도 v2 (2026-07-15)**: 그림 정본 = `ai-plate/incoming/horizon-characters.js`
 > (`window.drawCharFrame(ctx, charId, state, f)` — 220×460·발 (110,445)·idle6/walk8/sit6).
 > 재추출 = Playwright 헤드리스로 160프레임 자동 추출+QA(투명도·발 접지·bbox) — 세션 스크립트
