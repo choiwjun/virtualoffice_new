@@ -40,20 +40,21 @@
       arms.far = { upper: -0.05 - 0.045 * Math.sin(p), bend: 0.20 };
     } else if (state === 'walk') {
       // heel-strike gait, smooth C1 curves so 8 samples read evenly (no hitch)
-      // 접지 보상(통합 패치): 최대 보폭에서 다리 기하 단축(≈21px)만큼 골반 하강 — 없으면 두 발이 모두 뜬다(QA solidMaxY 424).
-      o.bob = 1.4 * (1 - Math.cos(2 * p)) - 1.2 + 19 * Math.sin(p) * Math.sin(p); o.lean = 0.075; o.tail = 6 * Math.sin(p);
-      o.shTwist = 2.2 * Math.sin(p);
-      const A = 0.56;
+      // 접지 보상(통합 패치): 최대 보폭에서 다리 기하 단축만큼 골반 하강 — 없으면 두 발이 뜬다.
+      // 보폭 A=0.40으로 낙차 자체를 축소(몸통 바운스 22px→13px, 정상 보행 근사) — 22px는 떨림으로 보임.
+      o.bob = 1.4 * (1 - Math.cos(2 * p)) - 1.2 + 10.5 * Math.sin(p) * Math.sin(p); o.lean = 0.075; o.tail = 5 * Math.sin(p);
+      o.shTwist = 1.8 * Math.sin(p);
+      const A = 0.40;
       const mk = ph => {
         const s = Math.sin(ph);
         const thigh = A * s;
         const swing = mx0(Math.sin(ph - 4.6));
         const bend = 0.07 + 1.05 * swing;
-        const pitch = -9 * Math.sin(ph);
+        const pitch = -7 * Math.sin(ph);
         return { thigh, bend, pitch };
       };
       legs.near = mk(p); legs.far = mk(p + Math.PI);
-      const S = 0.46;
+      const S = 0.36;
       arms.near = { upper: -S * Math.sin(p), bend: Math.max(0.16, 0.40 - 0.20 * Math.sin(p)) };
       arms.far = { upper: S * Math.sin(p), bend: Math.max(0.16, 0.40 + 0.20 * Math.sin(p)) };
     } else { // sit

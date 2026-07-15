@@ -17,6 +17,8 @@
   50%      { transform: translateY(-1.5px) scale(1.004); }
 }
 .vo-motion { transform-origin: 50% 100%; }
-.vo-anim-walk { animation: vo-walk-bob 0.8s linear infinite; }
-.vo-anim-idle { animation: vo-idle-breath 1.8s ease-in-out infinite; }
-.vo-anim-sit { animation: none; } /* 착석 — 호흡은 프레임에 구워져 있음 */
+/* v2 캐릭터: 바운스·기울임이 프레임에 구워져 있음 — CSS 모션을 겹치면
+   주기(0.8s vs 프레임 반주기 0.4s) 간섭으로 떨림처럼 보인다. */
+.vo-anim-walk { animation: none; }
+.vo-anim-idle { animation: none; }
+.vo-anim-sit { animation: none; }
