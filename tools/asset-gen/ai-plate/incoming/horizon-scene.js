@@ -206,7 +206,11 @@
     laptop(ctx, r.cu + MU * 0.32, r.cv + MV * 0.05);
     paper(ctx, r.u0 + MU * 0.22, r.cv + MV * 0.18);
     mug(ctx, r.u1 - MU * 0.16, r.v0 + MV * 0.22, (r.cu * 31 % 2) > 1 ? '#A8442F' : sh(NAVY, 1.1));
-    officeChair(ctx, seat.u, seat.v, chairSide === 'v+' ? 'v+' : chairSide === 'v-' ? 'v-' : chairSide);
+    // 의자는 별도 아이템으로 분리(레이어 오클루전: 책상+의자 그룹이면 baseline이
+    // 의자 앞모서리가 되어 착석/근접 아바타가 통째로 깔린다)
+  }
+  function deskChairSide(r, seat) {
+    return seat.v > r.v1 ? 'v+' : seat.v < r.v0 ? 'v-' : seat.u > r.u1 ? 'u+' : 'u-';
   }
   function sofa(ctx, r, backAt) {
     shadow(ctx, r.u0, r.v0, r.u1, r.v1, 0.75, 0.20);
@@ -522,40 +526,47 @@
       woodGrain(ctx, r.u0, r.v0, r.u1, r.v1, 0.42, 4);
       ell(ctx, r.cu, r.cv - MV * 0.1, 0.16, 0.435, '#2E3A54');
     });
-    // boardroom table + 8 chairs
-    add(R[4].cu, R[4].cv, () => {
+    // boardroom table + 8 chairs — 의자를 개별 아이템으로(오클루전 baseline 정밀화)
+    (function boardroom() {
       const r = R[4];
       for (let i = 0; i < 3; i++) {
         const uu = r.u0 + (r.du) * (i + 0.5) / 3;
-        officeChair(ctx, uu, r.v0 - MV * 0.42, 'v-');
+        add(uu, r.v0 - MV * 0.42, () => officeChair(ctx, uu, r.v0 - MV * 0.42, 'v-'));
       }
-      officeChair(ctx, r.u0 - MU * 0.42, r.cv, 'u-');
-      shadow(ctx, r.u0, r.v0, r.u1, r.v1, 0.76);
-      tableWood(ctx, r, 0.74);
-      paper(ctx, r.cu - MU * 0.3, r.cv); paper(ctx, r.cu + MU * 0.35, r.cv + MV * 0.1);
-      ell(ctx, r.cu, r.cv - MV * 0.12, 0.13, 0.745, '#39445C');
+      add(r.u0 - MU * 0.42, r.cv, () => officeChair(ctx, r.u0 - MU * 0.42, r.cv, 'u-'));
+      add(r.cu, r.cv, () => {
+        shadow(ctx, r.u0, r.v0, r.u1, r.v1, 0.76);
+        tableWood(ctx, r, 0.74);
+        paper(ctx, r.cu - MU * 0.3, r.cv); paper(ctx, r.cu + MU * 0.35, r.cv + MV * 0.1);
+        ell(ctx, r.cu, r.cv - MV * 0.12, 0.13, 0.745, '#39445C');
+      });
       for (let i = 0; i < 3; i++) {
         const uu = r.u0 + (r.du) * (i + 0.5) / 3;
-        officeChair(ctx, uu, r.v1 + MV * 0.42, 'v+');
+        add(uu, r.v1 + MV * 0.42, () => officeChair(ctx, uu, r.v1 + MV * 0.42, 'v+'));
       }
-      officeChair(ctx, r.u1 + MU * 0.42, r.cv, 'u+');
-    });
+      add(r.u1 + MU * 0.42, r.cv, () => officeChair(ctx, r.u1 + MU * 0.42, r.cv, 'u+'));
+    })();
     // workstations
     [[8, 0], [9, 1], [10, 2], [11, 3], [19, 4], [20, 5], [21, 6], [22, 7]].forEach(([oi, si]) => {
       const r = R[oi], s = uvOf(SEATS[si][0], SEATS[si][1]);
-      add(Math.max(r.cu, s.u), Math.max(r.cv, s.v) - 0.02, () => desk(ctx, r, s));
+      add(r.cu, r.cv, () => desk(ctx, r, s));
+      add(s.u, s.v, () => officeChair(ctx, s.u, s.v, deskChairSide(r, s)));
     });
-    // meeting table + 4 chairs
-    add(R[12].cu, R[12].cv, () => {
+    // meeting table + 4 chairs — 의자 개별 아이템
+    (function meeting() {
       const r = R[12];
-      officeChair(ctx, r.u0 + r.du * 0.28, r.v0 - MV * 0.4, 'v-');
-      officeChair(ctx, r.u0 + r.du * 0.72, r.v0 - MV * 0.4, 'v-');
-      shadow(ctx, r.u0, r.v0, r.u1, r.v1, 0.75);
-      tableWood(ctx, r, 0.74);
-      paper(ctx, r.cu, r.cv - MV * 0.05);
-      officeChair(ctx, r.u0 + r.du * 0.28, r.v1 + MV * 0.4, 'v+');
-      officeChair(ctx, r.u0 + r.du * 0.72, r.v1 + MV * 0.4, 'v+');
-    });
+      for (const t of [0.28, 0.72]) {
+        add(r.u0 + r.du * t, r.v0 - MV * 0.4, () => officeChair(ctx, r.u0 + r.du * t, r.v0 - MV * 0.4, 'v-'));
+      }
+      add(r.cu, r.cv, () => {
+        shadow(ctx, r.u0, r.v0, r.u1, r.v1, 0.75);
+        tableWood(ctx, r, 0.74);
+        paper(ctx, r.cu, r.cv - MV * 0.05);
+      });
+      for (const t of [0.28, 0.72]) {
+        add(r.u0 + r.du * t, r.v1 + MV * 0.4, () => officeChair(ctx, r.u0 + r.du * t, r.v1 + MV * 0.4, 'v+'));
+      }
+    })();
     // pantry island: bench + table + stools
     add(R[17].cu, R[17].cv, () => {
       const r = R[17];

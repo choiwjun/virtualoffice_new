@@ -141,8 +141,10 @@ export const AVATAR_ANIM: Record<AvatarState, { frames: number; fps: number; hei
  * 화면 위쪽(멀리) 발 y≈0.36에서 신장 ≈ 화면높이 0.14, 아래쪽(가까이) y≈0.80에서 ≈0.17.
  * 보행영역 상단(0.22)~하단(0.86)에 선형 매핑.
  */
-const HEIGHT_FRAC_BACK = 0.088;  // v1 아이소 팩: 원근 없음 — 가독용 미세 변화만
-const HEIGHT_FRAC_FRONT = 0.102;
+// v2 씬 미터 계약: 인물 1.7m × ZPX 48px/m ÷ 캔버스 신체비 353/460 → 0.113 (책상 0.72m 대비 42%).
+// 이전 0.088~0.102는 씬 대비 16% 작아 "사람이 책상보다 작은" 체감의 원인.
+const HEIGHT_FRAC_BACK = 0.108;
+const HEIGHT_FRAC_FRONT = 0.118;
 const WALK_TOP = 0.18;
 const WALK_BOTTOM = 0.95;
 

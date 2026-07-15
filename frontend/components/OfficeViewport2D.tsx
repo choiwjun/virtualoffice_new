@@ -661,7 +661,9 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           const py = n.y * sh;
           v.root.style.left = `${px}px`;
           v.root.style.top = `${py}px`;
-          v.root.style.zIndex = String(Math.round(n.y * 10000));
+          // 착석 시 +150 바이어스: 자기 의자 스프라이트(전면 모서리 baseline)가
+          // 앉은 아바타를 덮지 않게 — 의자 반깊이(~0.25m ≈ 64) 이상, 남측 옆 가구(≥0.9m) 미만.
+          v.root.style.zIndex = String(Math.round(n.y * 10000) + (v.state === 'sit' ? 150 : 0));
           v.img.style.height = `${avatarHeightFrac(n.y, v.state) * sh}px`;
           v.img.style.transform = `scaleX(${v.facing})`;
         });
