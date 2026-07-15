@@ -94,16 +94,27 @@ async function main(): Promise<void> {
   });
   assert(inside.ok, "개활지 내부 이동 허용");
 
-  // 5) 가구(중앙 회의 테이블) 가로지르기 → collision
-  //    테이블 좌측 개활지 → 테이블 중심으로 이동 시 폴리곤 변 교차.
-  const nearTable: Mover = { ...mover, x: 0.42 * SCENE_W_M, y: 0.5 * SCENE_H_M };
-  const intoTable = validateMove({
+  // 5) 가구(워크스테이션 A 북서 책상) 가로지르기 → collision
+  //    책상 단위 충돌(v1.1: 클러스터 bbox → 책상 4개 분해) — 책상 좌측 개활지에서
+  //    책상 중심 (0.4253,0.4432)로 이동 시 폴리곤 변 교차.
+  const nearDesk: Mover = { ...mover, x: 0.36 * SCENE_W_M, y: 0.44 * SCENE_H_M };
+  const intoDesk = validateMove({
     ...baseCtx,
-    mover: nearTable,
-    target: { x: 0.5 * SCENE_W_M, y: 0.58 * SCENE_H_M },
+    mover: nearDesk,
+    target: { x: 0.4253 * SCENE_W_M, y: 0.4432 * SCENE_H_M },
     dtSeconds: 2,
   });
-  assert(!intoTable.ok && intoTable.reason === "collision", "가구 폴리곤 가로지르기 거부(collision)");
+  assert(!intoDesk.ok && intoDesk.reason === "collision", "가구(책상) 폴리곤 가로지르기 거부(collision)");
+
+  // 6) 책상 사이 통로(의자 열)는 보행 가능 — v1.1 회귀 가드(클러스터 bbox로 되돌아가면 실패).
+  //    통로는 화면상 아이소 대각선 방향 — WS-A1 의자 앵커(0.3993,0.4662) → WS-A2(0.4542,0.515).
+  const inAisle = validateMove({
+    ...baseCtx,
+    mover: { ...mover, x: 0.3993 * SCENE_W_M, y: 0.4662 * SCENE_H_M },
+    target: { x: 0.4542 * SCENE_W_M, y: 0.515 * SCENE_H_M },
+    dtSeconds: 1,
+  });
+  assert(inAisle.ok, "워크스테이션 책상 사이 통로 이동 허용");
 
   console.log(`\nscene-floor: ${passed} passed, ${failed} failed`);
   if (failed > 0) process.exit(1);

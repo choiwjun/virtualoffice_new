@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   CHARACTER_IDS,
+  ROOMS,
   SPAWNS,
   SCENE_W_M,
   SCENE_H_M,
@@ -8,6 +9,7 @@ import {
   metersToNorm,
   characterFor,
   characterForAvatar,
+  findPath,
   isCharacterId,
   isWalkable,
   clampToWalkable,
@@ -78,10 +80,45 @@ describe('geometry helpers', () => {
   });
 
   it('avatarHeightFrac grows with depth (front bigger than back) and stays bounded', () => {
+    // v1 아이소 팩(D30): 무원근 — 가독용 미세 변화만(0.088~0.102).
     const back = avatarHeightFrac(0.22, 'idle'); // 화면 위(멀리)
     const front = avatarHeightFrac(0.86, 'idle'); // 화면 아래(가까이)
     expect(front).toBeGreaterThan(back);
-    expect(back).toBeGreaterThan(0.1);
-    expect(front).toBeLessThan(0.2);
+    expect(back).toBeGreaterThan(0.05);
+    expect(front).toBeLessThan(0.15);
+  });
+});
+
+describe('findPath (그리드 A*)', () => {
+  /** 방 폴리곤 안에서 보행 가능한 첫 지점(정규) 탐색 — 실제 클릭 가능한 실내 지점. */
+  function walkableInside(roomId: string): Vec2 {
+    const room = ROOMS.find((r) => r.id === roomId);
+    if (!room) throw new Error(`room ${roomId} not found`);
+    for (let y = 0.4; y < 0.95; y += 0.008) {
+      for (let x = 0.4; x < 0.95; x += 0.008) {
+        const p = { x, y };
+        if (pointInPolygon(p, room.polygon) && isWalkable(p)) return p;
+      }
+    }
+    throw new Error(`no walkable point inside ${roomId}`);
+  }
+
+  it('로비 스폰 → 보드룸 내부: 유리벽을 우회하는 다중 경유지 경로', () => {
+    const from = normToMeters(SPAWNS.lobby);
+    const to = normToMeters(walkableInside('boardroom'));
+    const path = findPath(from, to);
+    expect(path.length).toBeGreaterThan(1); // 직선 불가 → 문 개구부 경유
+    for (const wp of path) expect(isWalkable(metersToNorm(wp))).toBe(true);
+    const last = path[path.length - 1];
+    expect(Math.hypot(last.x - to.x, last.y - to.y)).toBeLessThan(0.2);
+  });
+
+  it('로비 스폰 → 글라스 미팅룸 내부: 경로 존재', () => {
+    const from = normToMeters(SPAWNS.lobby);
+    const to = normToMeters(walkableInside('meeting-a'));
+    const path = findPath(from, to);
+    expect(path.length).toBeGreaterThan(1);
+    const last = path[path.length - 1];
+    expect(Math.hypot(last.x - to.x, last.y - to.y)).toBeLessThan(0.2);
   });
 });

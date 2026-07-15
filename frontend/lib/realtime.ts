@@ -58,6 +58,8 @@ export interface OfficeConnection {
    *  재연결 후에도 동일 Map 인스턴스를 유지한다(ref 소비자 안전). */
   players: Map<string, NetPlayer>;
   requestMove: (x: number, y: number) => void;
+  /** 경유지 경로 이동(A* 결과) — walker가 각 경유지를 순서대로 스트리밍. */
+  requestPath: (points: Array<{ x: number; y: number }>) => void;
   /** 회의 명시입장(D24) 요청 — 서버 판정은 onMeetingEntry로 통지. */
   enterMeeting: (roomId: string) => void;
   setStatus: (status: string, dnd?: boolean) => void;
@@ -163,6 +165,12 @@ export async function createOfficeConnection(
         handlers.onStatus?.('disconnected');
         return;
       }
+      if (code === 4000) {
+        // 단일 세션 축출(#7: 같은 계정이 다른 곳에서 접속) → 자동 재접속 금지.
+        // 재접속하면 상대 세션을 다시 축출해 두 탭이 서로 밀어내는 핑퐁이 된다.
+        handlers.onStatus?.('disconnected');
+        return;
+      }
       startReconnect(); // 비정상 끊김 → 지수 백오프 자동 재연결(§5.3)
     });
     r.onError(() => { /* 연결 오류는 onLeave로 이어짐 — 상태 전이는 거기서 일원화 */ });
@@ -218,30 +226,44 @@ export async function createOfficeConnection(
   // 서버는 스트리밍 이동 모델: move_request 한 건은 speed 예산(≈MAX_SPEED·dt·tol,
   // 첫 요청 dt=0.05s → ~0.1m) 이내의 작은 스텝만 허용한다. 따라서 먼 목적지 클릭은
   // 서버 권위 위치에서 목적지로 매 스텝(STEP_MS)마다 작은 이동을 스트리밍한다.
+  // route = 경유지 큐(A* 경로) — 직선 스텝이 유리벽을 가로지르지 않게 문 개구부를 경유.
   // 거부되면 서버 위치가 안 바뀌므로 다음 스텝이 같은 위치에서 재계산 → 자연 정정.
-  const STEP_MS = 100;
-  const STEP_DIST = 0.09; // < 첫 요청 예산 0.105m (1.4·0.05·1.5). ≈0.9 m/s.
-  const STALL_TICKS = 15; // 벽(가구 충돌)에 막혀 1.5초간 전진 없으면 목적지 포기.
-  let dest: { x: number; y: number } | null = null;
+  // 서버 예산: 타깃 소화 후엔 dt=0.05 가정으로 리셋(cap 0.105m) — 요청당 보폭을 키울 수 없다.
+  // 매끄러움은 케이던스로: 50ms×0.07m = 1.4m/s를 서버가 쉼 없이 걷는다
+  // (100ms×0.09는 64ms 이동 + 36ms 정지의 톱니 스터터).
+  const STEP_MS = 50;
+  const STEP_DIST = 0.07;
+  const STALL_TICKS = 30; // 벽(가구 충돌)에 막혀 1.5초간 전진 없으면 목적지 포기.
+  const WAYPOINT_EPS = 0.12; // 중간 경유지 도달 판정(마지막 목적지는 0.05).
+  let route: Array<{ x: number; y: number }> = [];
   let stall = 0;
   let lastX = 0;
   let lastY = 0;
   const walkTimer: ReturnType<typeof setInterval> = setInterval(() => {
-    if (!dest || !connected) return;
+    if (route.length === 0 || !connected) return;
     const self = players.get(room.sessionId);
     if (!self) return;
     // 진행 정체 감지 — 서버가 스텝을 계속 거부하면(경로가 벽을 가로지름) 무한 재시도 방지.
     if (Math.hypot(self.x - lastX, self.y - lastY) < 0.01) {
-      if (++stall >= STALL_TICKS) { dest = null; stall = 0; return; }
+      if (++stall >= STALL_TICKS) { route = []; stall = 0; return; }
     } else {
       stall = 0;
     }
     lastX = self.x;
     lastY = self.y;
-    const dx = dest.x - self.x;
-    const dy = dest.y - self.y;
-    const d = Math.hypot(dx, dy);
-    if (d < 0.05) { dest = null; return; }
+    let wp = route[0];
+    let dx = wp.x - self.x;
+    let dy = wp.y - self.y;
+    let d = Math.hypot(dx, dy);
+    // 경유지 도달 → 다음 경유지로 전진.
+    while (d < (route.length > 1 ? WAYPOINT_EPS : 0.05)) {
+      route.shift();
+      if (route.length === 0) return;
+      wp = route[0];
+      dx = wp.x - self.x;
+      dy = wp.y - self.y;
+      d = Math.hypot(dx, dy);
+    }
     const step = Math.min(d, STEP_DIST);
     const nx = self.x + (dx / d) * step;
     const ny = self.y + (dy / d) * step;
@@ -258,8 +280,13 @@ export async function createOfficeConnection(
     selfSessionId: room.sessionId,
     players,
     requestMove: (x: number, y: number) => {
-      // 목적지 설정 → walker가 스텝을 스트리밍.
-      dest = { x, y };
+      // 단일 목적지 → walker가 스텝을 스트리밍.
+      route = [{ x, y }];
+      stall = 0;
+    },
+    requestPath: (points: Array<{ x: number; y: number }>) => {
+      route = points.map((p) => ({ x: p.x, y: p.y }));
+      stall = 0;
     },
     enterMeeting: (roomId: string) => {
       safeSend('enter_meeting', { roomId });

@@ -155,8 +155,16 @@ export class OfficeRoom extends Room<OfficeState> {
     // 단일 세션 강제(#7 / REQ-015): 같은 userId의 기존 세션이 있으면 축출.
     this.state.players.forEach((existing, sid) => {
       if (sid !== client.sessionId && existing.userId === player.userId) {
-        this.evicting.add(sid);
-        this.clients.find((c) => c.sessionId === sid)?.leave(4000); // 4000 = single-session eviction
+        const live = this.clients.find((c) => c.sessionId === sid);
+        if (live) {
+          this.evicting.add(sid);
+          live.leave(4000); // 4000 = single-session eviction
+        } else {
+          // 재접속 유예(allowReconnection) 중인 유령 세션 — this.clients에 없어
+          // leave()로는 축출 불가. 새 세션이 대체하므로 즉시 정리한다.
+          // (없으면 새로고침 때마다 이전 아바타가 30초간 '움직이지 않는 고스트'로 잔류)
+          this.releasePlayer(sid);
+        }
       }
     });
 

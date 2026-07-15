@@ -32,6 +32,8 @@ export interface UseOfficeRoom {
   selfIdRef: MutableRefObject<string>;
   /** 로컬 이동 의도 전송(서버 좌표 x,y 미터). */
   requestMove: (x: number, y: number) => void;
+  /** 경유지 경로 이동(A* 결과, 미터) — 유리벽 문 개구부 통과용. */
+  requestPath: (points: Array<{ x: number; y: number }>) => void;
   /** 회의 명시입장(D24) 요청 — 서버가 2m 근접+정원 검증 후 onMeetingEntry로 응답. */
   enterMeeting: (roomId: string) => void;
   /** 내 프레즌스 상태 수동 전환(06 §1.2) — room.send('status_change'). */
@@ -94,6 +96,10 @@ export function useOfficeRoom(
     connRef.current?.requestMove(x, y);
   }, []);
 
+  const requestPath = useCallback((points: Array<{ x: number; y: number }>) => {
+    connRef.current?.requestPath(points);
+  }, []);
+
   const enterMeeting = useCallback((roomId: string) => {
     connRef.current?.enterMeeting(roomId);
   }, []);
@@ -107,5 +113,5 @@ export function useOfficeRoom(
     else setRetry((n) => n + 1); // 최초 접속 실패(conn 미생성) → 훅 재실행으로 재시도
   }, []);
 
-  return { status, roster, playersRef, selfIdRef, requestMove, enterMeeting, setStatus, reconnect };
+  return { status, roster, playersRef, selfIdRef, requestMove, requestPath, enterMeeting, setStatus, reconnect };
 }

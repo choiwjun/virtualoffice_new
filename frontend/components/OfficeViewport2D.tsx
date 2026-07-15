@@ -31,7 +31,9 @@ import {
   avatarHeightFrac,
   characterForAvatar,
   clampToWalkable,
+  findPath,
   isWalkable,
+  nearestWalkableM,
   frameUrl,
   metersToNorm,
   normToMeters,
@@ -44,6 +46,9 @@ import {
 const MAX_SPEED_MPS = 1.4; // realtime config와 동일(로컬 폴백용)
 const LERP_RATE = 8; // 표시 위치가 서버 위치를 따라가는 속도(1/s)
 const WALK_EPS_MPS = 0.08; // 이 속도 이상이면 walk 애니
+// 착석 스냅 반경(m). 책상 단위 충돌 전환 후 의자는 보행 가능(도달 거리 ≈0) —
+// 서버 정지 위치의 잔차·격자 오차 여유만 필요하지만, 자기 책상 옆 정지 시 자연 착석 UX를 겸한다.
+const SEAT_SNAP_M = 1.0;
 
 interface AvatarVisual {
   root: HTMLDivElement;
@@ -55,11 +60,17 @@ interface AvatarVisual {
   disp: Vec2;
   /** 마지막 표시 위치(속도/방향 추정용). */
   prev: Vec2;
+  /** 마지막 서버 권위 위치 — 착석 스냅은 서버가 정지했을 때만(지나가다 자석처럼 끌리는 것 방지). */
+  prevSrv: Vec2;
+  /** 서버 위치 연속 정지 프레임 수(착석 발동 게이트 — 20Hz 패치 지터에 안정). */
+  stillFrames: number;
   state: AvatarState;
   frame: number;
   frameAcc: number;
   facing: 1 | -1;
   char: CharacterId;
+  /** 좌석 착석 판정용(점유 좌석 매칭). */
+  userId: string;
 }
 
 /** 로스터 항목(React 셸 렌더용 최소 정보). */
@@ -67,6 +78,7 @@ interface ShellInfo {
   key: string;
   char: CharacterId;
   name: string;
+  userId: string;
   isSelf: boolean;
   /** 이 아바타의 이름표 표시 여부(user_avatar.show_nameplate). */
   showNameplate: boolean;
@@ -129,7 +141,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
     roster,
     playersRef,
     selfIdRef,
-    requestMove,
+    requestPath,
     enterMeeting,
     setStatus: setPresence,
     reconnect,
@@ -142,18 +154,38 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
   // 아바타 외형(프리셋/색상/이름표) — 로스터 전원 반영(#6). 본인 포함 batch 조회.
   const [avatarPrefs, setAvatarPrefs] = useState<Record<string, AvatarPref>>({});
 
-  // 서버 오프라인 폴백(본인만 로컬 시뮬레이션).
+  // 서버 오프라인 폴백(본인만 로컬 시뮬레이션). route = A* 경유지 큐(미터).
   const offline = status === 'error' || status === 'disconnected';
-  const localRef = useRef<{ pos: Vec2; dest: Vec2 | null }>({
+  const localRef = useRef<{ pos: Vec2; route: Vec2[] }>({
     pos: normToMeters(SPAWNS.lobby),
-    dest: null,
+    route: [],
   });
+
+  /** 현 위치 → 목표(미터) A* 경로 이동 — 유리벽 회의실은 문 개구부를 경유. */
+  const moveTo = useCallback(
+    (targetM: Vec2) => {
+      const self = offlineRef.current
+        ? { ...localRef.current.pos }
+        : (() => {
+            const p = playersRef.current.get(selfIdRef.current);
+            return p ? { x: p.x, y: p.y } : null;
+          })();
+      const path = self ? findPath(self, targetM) : [targetM];
+      if (offlineRef.current) localRef.current.route = path;
+      else requestPath(path);
+    },
+    // playersRef/selfIdRef/offlineRef는 ref라 안정적.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [requestPath],
+  );
 
   // 방 라벨 클릭 글로우.
   const [glowRoom, setGlowRoom] = useState<string | null>(null);
 
   // ── 자율좌석(§3.11) ────────────────────────────────────────────────────
   const [seats, setSeats] = useState<SeatInfo[]>([]);
+  /** rAF 루프용 좌석 스냅샷(착석 렌더 판정) — setState와 함께 갱신. */
+  const seatsRef = useRef<SeatInfo[]>([]);
   const [seatPrompt, setSeatPrompt] = useState<{ mode: 'sit' | 'release'; seat: SeatInfo } | null>(null);
   const [seatBusy, setSeatBusy] = useState(false);
 
@@ -237,7 +269,10 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
   const loadSeats = useCallback(() => {
     api
       .get<SeatInfo[]>('/api/seats')
-      .then((rows) => setSeats(rows))
+      .then((rows) => {
+        setSeats(rows);
+        seatsRef.current = rows;
+      })
       .catch(() => {}); // 백엔드 미기동 등 — 좌석 레이어만 비표시(뷰포트는 계속 동작)
   }, []);
   useEffect(() => {
@@ -250,6 +285,23 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
     (seat: SeatInfo) => seat.seat_number ?? `좌석 ${seat.id.slice(0, 8)}`,
     [],
   );
+
+  /** 내 좌석(고정 배정 또는 내가 점유한 자율좌석). */
+  const mySeat = useMemo(
+    () => seats.find((s) => s.assigned_user_id != null && String(s.assigned_user_id) === myId) ?? null,
+    [seats, myId],
+  );
+
+  /** "내 자리로" — 내 좌석까지 A* 경로로 걸어가 착석(도착 시 sit 렌더). */
+  const goMySeat = useCallback(() => {
+    if (!mySeat) {
+      showToast('배정된 좌석이 없습니다 — 초록 좌석을 클릭해 앉으세요');
+      return;
+    }
+    // clampToWalkable은 씬 중심 쪽으로 밀어내 좌석에서 멀어진다(실측 1.9m) — 최근접 보행점 사용.
+    moveTo(nearestWalkableM({ x: mySeat.coords.x, y: mySeat.coords.y }));
+    setGlowRoom(null);
+  }, [mySeat, moveTo, showToast]);
 
   /** 점유자 표시용 이름 — 접속 중인 플레이어에서 userId 매칭(없으면 null). */
   const occupantName = useCallback(
@@ -298,11 +350,20 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
     try {
       if (mode === 'sit') {
         await api.post('/api/seat-assignments', { seat_id: seat.id });
-        // 아바타를 좌석 인근 보행 가능 지점으로 이동(좌석이 가구 위일 수 있어 clamp).
-        const n = clampToWalkable(metersToNorm({ x: seat.coords.x, y: seat.coords.y }));
-        const m = normToMeters(n);
-        if (offlineRef.current) localRef.current.dest = m;
-        else requestMove(m.x, m.y);
+        // 자율석 이동: 이전에 점유한 다른 자율석은 반납(한 사람이 복수 좌석 점유 방지).
+        const prevFree = seats.filter(
+          (s) =>
+            s.id !== seat.id &&
+            s.type === 'free' &&
+            s.status === 'occupied' &&
+            s.assigned_user_id != null &&
+            String(s.assigned_user_id) === myId,
+        );
+        for (const p of prevFree) {
+          await api.post(`/api/seat-assignments/${p.id}/release`, {}).catch(() => {});
+        }
+        // 아바타를 좌석의 최근접 보행 지점으로 이동 — 도착하면 착석 렌더(SEAT_SNAP_M).
+        moveTo(nearestWalkableM({ x: seat.coords.x, y: seat.coords.y }));
         showToast(`${seatLabel(seat)} 좌석을 점유했습니다`);
       } else {
         await api.post(`/api/seat-assignments/${seat.id}/release`, {});
@@ -316,7 +377,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
       setSeatPrompt(null);
       loadSeats(); // 성공/실패 모두 서버 상태 재동기화
     }
-  }, [seatPrompt, seatBusy, requestMove, seatLabel, showToast, loadSeats]);
+  }, [seatPrompt, seatBusy, seats, myId, moveTo, seatLabel, showToast, loadSeats]);
 
   // ── 회의실 근접(2m) → enter_meeting(D24) — 방 진입 전환 시 서버에 요청 ─────────
   const currentRoomRef = useRef<string | null>(null);
@@ -376,6 +437,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
         key,
         char: characterForAvatar(userId, pref?.preset_id),
         name,
+        userId,
         isSelf,
         showNameplate: pref?.show_nameplate ?? true,
         accent: pref?.top_color ?? (isSelf ? '#3B5BFE' : 'rgba(255,255,255,.32)'),
@@ -397,11 +459,31 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
   // 아바타 DOM 레지스트리(rAF 루프가 갱신).
   const visualsRef = useRef<Map<string, AvatarVisual>>(new Map());
 
+  /** key별 ref 콜백 캐시 — 렌더마다 새 콜백을 주면 React가 300ms 리렌더(미니맵 등)마다
+   *  ref를 detach/attach 하면서 비주얼 상태(disp·frame·facing·stillFrames)를 리셋한다
+   *  → 착석 스냅이 풀리며 스프링처럼 튕기고, 걷기 프레임이 0~2만 반복되는 원인. */
+  const refCbCache = useRef<Map<string, (el: HTMLDivElement | null) => void>>(new Map());
+
   const registerAvatar = useCallback(
-    (key: string, char: CharacterId) => (el: HTMLDivElement | null) => {
+    (key: string, char: CharacterId, userId: string) => {
+      const cacheKey = `${key}|${char}|${userId}`;
+      const cached = refCbCache.current.get(cacheKey);
+      if (cached) return cached;
+      const cb = makeAvatarRef(key, char, userId);
+      refCbCache.current.set(cacheKey, cb);
+      return cb;
+    },
+    // makeAvatarRef는 ref들만 캡처 — 안정적.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const makeAvatarRef = useCallback(
+    (key: string, char: CharacterId, userId: string) => (el: HTMLDivElement | null) => {
       const visuals = visualsRef.current;
       if (!el) {
         visuals.delete(key);
+        refCbCache.current.delete(`${key}|${char}|${userId}`);
         return;
       }
       const motion = el.querySelector<HTMLDivElement>('.vo-motion');
@@ -420,11 +502,14 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
         img,
         disp: { ...start },
         prev: { ...start },
+        prevSrv: { ...start },
+        stillFrames: 0,
         state: 'idle',
         frame: 0,
         frameAcc: 0,
         facing: 1,
         char,
+        userId,
       });
     },
     // playersRef는 ref라 안정적.
@@ -437,7 +522,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
     if (!ASSETS_READY) return;
     const chars = new Set(shells.map((s) => s.char));
     chars.forEach((c) => {
-      (['idle', 'walk'] as AvatarState[]).forEach((st) => {
+      (['idle', 'walk', 'sit'] as AvatarState[]).forEach((st) => {
         for (let f = 0; f < AVATAR_ANIM[st].frames; f++) {
           const im = new Image();
           im.src = frameUrl(c, st, f);
@@ -462,22 +547,23 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
       const { w: sw, h: sh } = stageRef.current;
       const visuals = visualsRef.current;
 
-      // 로컬 폴백 이동 통합(서버와 동일 속도 모델).
+      // 로컬 폴백 이동 통합(서버와 동일 속도 모델) — A* 경유지 큐를 순서대로 소비.
       if (offlineRef.current) {
         const L = localRef.current;
-        if (L.dest) {
-          const dx = L.dest.x - L.pos.x;
-          const dy = L.dest.y - L.pos.y;
+        const wp = L.route[0];
+        if (wp) {
+          const dx = wp.x - L.pos.x;
+          const dy = wp.y - L.pos.y;
           const d = Math.hypot(dx, dy);
-          if (d < 0.05) L.dest = null;
+          if (d < (L.route.length > 1 ? 0.12 : 0.05)) L.route.shift();
           else {
             const step = Math.min(d, MAX_SPEED_MPS * dt);
             const next = { x: L.pos.x + (dx / d) * step, y: L.pos.y + (dy / d) * step };
-            // 서버와 동일 규칙: 가구/경계에 막히면 정지(직선 이동만, 경로탐색 없음).
+            // 경로는 보행 가능 셀만 지나지만 안전망으로 서버와 동일 규칙 유지.
             if (isWalkable(metersToNorm(next))) {
               L.pos = next;
             } else {
-              L.dest = null;
+              L.route = [];
             }
           }
         }
@@ -495,17 +581,44 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           }
           if (!target) return;
 
+          // 착석 판정(v1.1): 내게 배정/점유된 좌석(복수 가능 — 고정석+자율석) 중
+          // **가장 가까운** 것에 스냅. 서버 위치가 ≈0.2s 연속 정지했을 때만 발동해
+          // 이동 중 자기 책상 옆을 지나갈 때 끌려붙지 않는다(20Hz 패치 지터 안정).
+          const srvMoved = Math.hypot(target.x - v.prevSrv.x, target.y - v.prevSrv.y) > 0.005;
+          v.prevSrv = { ...target };
+          v.stillFrames = srvMoved ? 0 : v.stillFrames + 1;
+          let seated = false;
+          if (v.stillFrames >= 12) {
+            let best = SEAT_SNAP_M;
+            let bestSeat: SeatInfo | null = null;
+            for (const s of seatsRef.current) {
+              if (s.assigned_user_id == null || String(s.assigned_user_id) !== v.userId) continue;
+              if (typeof s.coords?.x !== 'number' || typeof s.coords?.y !== 'number') continue;
+              const dd = Math.hypot(target.x - s.coords.x, target.y - s.coords.y);
+              if (dd < best) {
+                best = dd;
+                bestSeat = s;
+              }
+            }
+            if (bestSeat) {
+              target = { x: bestSeat.coords.x, y: bestSeat.coords.y };
+              seated = true;
+            }
+          }
+
           // 표시 위치 보간.
           const k = Math.min(1, LERP_RATE * dt);
           v.disp.x += (target.x - v.disp.x) * k;
           v.disp.y += (target.y - v.disp.y) * k;
 
-          // 속도로 idle/walk + 방향 판정.
+          // 속도로 idle/walk/sit + 방향 판정.
           const vx = (v.disp.x - v.prev.x) / Math.max(dt, 1e-4);
           const vy = (v.disp.y - v.prev.y) / Math.max(dt, 1e-4);
           const speed = Math.hypot(vx, vy);
-          const nextState: AvatarState = speed > WALK_EPS_MPS ? 'walk' : 'idle';
-          if (Math.abs(vx) > 0.05) v.facing = vx < 0 ? -1 : 1;
+          const nextState: AvatarState =
+            speed > WALK_EPS_MPS ? 'walk' : seated ? 'sit' : 'idle';
+          // 좌우 플립은 히스테리시스(0.25m/s) — 수직 이동 시 vx 노이즈로 파닥이지 않게.
+          if (Math.abs(vx) > 0.25) v.facing = vx < 0 ? -1 : 1;
           if (nextState !== v.state) {
             v.state = nextState;
             v.frame = 0;
@@ -552,14 +665,12 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
       const r = el.getBoundingClientRect();
       const n: Vec2 = { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
       const clamped = clampToWalkable(n);
-      const m = normToMeters(clamped);
-      if (offlineRef.current) localRef.current.dest = m;
-      else requestMove(m.x, m.y);
+      moveTo(normToMeters(clamped)); // A* 경로 — 유리벽 회의실도 문으로 진입
       // 방 폴리곤 안 클릭이면 글로우도.
       const room = ROOMS.find((rm) => pointInPolygon(n, rm.polygon));
       if (room) setGlowRoom(room.id);
     },
-    [requestMove],
+    [moveTo],
   );
 
   // ── 연결 상태 칩 ───────────────────────────────────────────────────────
@@ -742,7 +853,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
         {shells.map((s) => (
           <div
             key={s.key}
-            ref={registerAvatar(s.key, s.char)}
+            ref={registerAvatar(s.key, s.char, s.userId)}
             className="absolute pointer-events-none"
             style={{ transform: 'translate(-50%, -100%)', willChange: 'left, top' }}
           >
@@ -939,6 +1050,21 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
               다시 연결
             </button>
           )}
+          <button
+            type="button"
+            onClick={goMySeat}
+            title={mySeat ? `내 좌석(${seatLabel(mySeat)})으로 걸어가 앉기` : '배정된 좌석 없음 — 초록 좌석을 클릭해 앉기'}
+            className="px-2.5 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1.5"
+            style={{
+              background: 'rgba(13,27,54,.78)',
+              backdropFilter: 'blur(6px)',
+              border: `1px solid ${mySeat ? '#3B5BFE' : 'rgba(255,255,255,.12)'}`,
+              color: mySeat ? '#fff' : 'rgba(255,255,255,.55)',
+            }}
+          >
+            <span className="w-1.5 h-1.5 rounded-[2px] inline-block" style={{ background: mySeat ? '#3B5BFE' : '#64748B' }} />
+            내 자리로
+          </button>
           <div className="relative">
             <button
               type="button"
