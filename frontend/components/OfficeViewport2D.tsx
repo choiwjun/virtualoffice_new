@@ -353,7 +353,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
         return;
       }
       if (seat.type !== 'free') {
-        showToast(`${seatLabel(seat)} — 자율좌석이 아닙니다`);
+        showToast(`${seatLabel(seat)} — 고정석입니다(관리자 배정 전용)`);
         return;
       }
       setSeatPrompt({ mode: 'sit', seat });
@@ -837,20 +837,31 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           );
         })}
 
-        {/* 자율좌석 마커(§3.11) — 미터→norm→% 배치. z 고정: 라벨(21000) 아래, 아바타(≤10000) 위 */}
+        {/* 자율좌석 마커(§3.11) — 미터→norm→% 배치. z 고정: 라벨(21000) 아래, 아바타(≤10000) 위.
+            앵커는 바닥점이지만 마커는 방석 높이(0.45m)만큼 올려 그린다 — 바닥점은 이소메트릭에서
+            앞줄 책상 상판에 가려/겹쳐 보여 어느 의자의 마커인지 오독된다(뒤 의자 클릭했는데 앞 의자 착석 사고). */}
         {seats.map((seat) => {
           if (typeof seat.coords?.x !== 'number' || typeof seat.coords?.y !== 'number') return null;
           const n = metersToNorm({ x: seat.coords.x, y: seat.coords.y });
           if (n.x < -0.02 || n.x > 1.02 || n.y < -0.02 || n.y > 1.02) return null; // 플레이트 밖 좌표 방어
+          const cushionUpPx = 0.45 * 48 * (stage.w / PLATE_W); // 0.45m × ZPX(48px/m) × 플레이트→스테이지 배율
           const isMine = seat.assigned_user_id != null && String(seat.assigned_user_id) === myId;
           const occupied = seat.status === 'occupied';
           const unavailable = seat.status === 'disabled' || seat.status === 'reserved';
-          const border = isMine ? '#3B5BFE' : occupied ? '#64748B' : unavailable ? '#3A4763' : '#22C55E';
+          // 미배정 고정석: 클릭해도 앉을 수 없음(관리자 배정 전용) — 초록(착석 가능)으로 위장 금지.
+          const fixedUnassigned = !occupied && !unavailable && !isMine && seat.type !== 'free';
+          const border = isMine
+            ? '#3B5BFE'
+            : occupied
+              ? '#64748B'
+              : unavailable || fixedUnassigned
+                ? '#3A4763'
+                : '#22C55E';
           const fill = isMine
             ? 'rgba(59,91,254,.9)'
             : occupied
               ? 'rgba(100,116,139,.85)'
-              : unavailable
+              : unavailable || fixedUnassigned
                 ? 'rgba(30,41,59,.6)'
                 : 'rgba(7,16,29,.85)';
           const who = occupied ? occupantName(seat.assigned_user_id) : null;
@@ -860,7 +871,9 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
               ? `${seatLabel(seat)} — ${who ? `${who} ` : ''}사용 중`
               : unavailable
                 ? `${seatLabel(seat)} — 사용 불가`
-                : `${seatLabel(seat)} — 클릭해서 앉기`;
+                : fixedUnassigned
+                  ? `${seatLabel(seat)} — 고정석(관리자 배정)`
+                  : `${seatLabel(seat)} — 클릭해서 앉기`;
           return (
             <button
               key={seat.id}
@@ -873,18 +886,18 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
               className="absolute -translate-x-1/2 -translate-y-1/2 rounded-[3px]"
               style={{
                 left: `${n.x * 100}%`,
-                top: `${n.y * 100}%`,
+                top: `calc(${n.y * 100}% - ${cushionUpPx.toFixed(1)}px)`,
                 width: 10,
                 height: 10,
                 background: fill,
                 border: `2px solid ${border}`,
                 boxShadow: isMine
                   ? '0 0 8px rgba(59,91,254,.9)'
-                  : occupied || unavailable
+                  : occupied || unavailable || fixedUnassigned
                     ? 'none'
                     : '0 0 6px rgba(34,197,94,.55)',
                 zIndex: SEAT_Z,
-                cursor: unavailable ? 'default' : 'pointer',
+                cursor: unavailable || fixedUnassigned ? 'default' : 'pointer',
               }}
             />
           );
@@ -1002,15 +1015,35 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
                 </>
               ) : (
                 <>
-                  자리 비우기 (<b>{seatLabel(seatPrompt.seat)}</b>)
+                  내 좌석 (<b>{seatLabel(seatPrompt.seat)}</b>)
                 </>
               )}
             </span>
+            {seatPrompt.mode === 'release' && (
+              /* 내 좌석 클릭의 1차 의도는 착석 — 반납은 보조 액션(적색)으로 분리 */
+              <button
+                type="button"
+                onClick={() => {
+                  const s = seatPrompt.seat;
+                  if (typeof s.coords?.x === 'number' && typeof s.coords?.y === 'number') {
+                    moveTo(nearestWalkableM({ x: s.coords.x, y: s.coords.y }));
+                  }
+                  setSeatPrompt(null);
+                }}
+                className="px-3 py-1 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-hover"
+              >
+                여기 앉기
+              </button>
+            )}
             <button
               type="button"
               disabled={seatBusy}
               onClick={() => void confirmSeatPrompt()}
-              className="px-3 py-1 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-hover disabled:opacity-50"
+              className={`px-3 py-1 rounded-md text-white text-xs font-semibold disabled:opacity-50 ${
+                seatPrompt.mode === 'sit'
+                  ? 'bg-primary hover:bg-primary-hover'
+                  : 'bg-rose-600 hover:bg-rose-500' /* 반납은 적색 — 착석 확인과 오인 방지 */
+              }`}
             >
               {seatPrompt.mode === 'sit' ? '앉기' : '비우기'}
             </button>
