@@ -64,7 +64,9 @@ img{max-width:100%;border-radius:8px}
 <h3 id="실화면-육안-qa-첫-착수-권장-30분">① 실화면 육안 QA (첫 착수 권장, ~30분)</h3>
 <p>v1 팩을 실제 /office에서 아직 안 봤다. dev 스택 기동:</p>
 <pre class="code lang-bash"><code># 터미널 1 — backend (시드 계정: alice@virtualoffice.local / password123)
-cd backend &amp;&amp; ./.venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8000
+# ⚠ DATABASE_URL 필수 — 없으면 기본값 PostgreSQL:5432에 붙으려다 로그인 500 (정본: realtime-qa-runbook.md §1)
+cd backend &amp;&amp; DATABASE_URL=&quot;sqlite+aiosqlite:///./dev_qa.db&quot; ./.venv/Scripts/python.exe scripts/seed_dev.py   # 최초 1회 시드
+cd backend &amp;&amp; DATABASE_URL=&quot;sqlite+aiosqlite:///./dev_qa.db&quot; INTERNAL_API_TOKEN=&quot;dev-internal-token-CHANGE-IN-PRODUCTION&quot; ./.venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8000
 # 터미널 2 — realtime (HORIZON 씬층)
 cd realtime &amp;&amp; SCENE_FLOOR=horizon npm run dev
 # 터미널 3 — frontend
@@ -93,7 +95,7 @@ cd frontend &amp;&amp; npm run dev   # http://localhost:3000 → 로그인 → /
 <ul><li>전수조사·수리 이력: <code>spec-impl-gap-audit-2026-07-13.md</code> (조치현황 3차까지)</li><li>에셋: <code>17-asset-rework-spec.md</code> + <code>tools/asset-gen/README.md</code> / 결정: <code>00-decisions §J(D29)·§K(D30)</code></li><li>QA 계정·런북: <code>realtime-qa-runbook.md</code> / 부하: <code>realtime/scripts/load-sim-20.ts</code> (<code>npm run load-sim</code>)</li></ul>
 <hr>
 <p><em>작성 2026-07-13. 선행 핸드오프: handoff-session-2026-07-12.md.</em></p>
-<div class="meta-foot">원본: <code>handoff-session-2026-07-13.md</code> · 자동 생성 2026-07-13 · md-to-html</div>
+<div class="meta-foot">원본: <code>handoff-session-2026-07-13.md</code> · 자동 생성 2026-07-15 · md-to-html</div>
 </main>
 </div>
 

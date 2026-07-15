@@ -24,7 +24,9 @@
 v1 팩을 실제 /office에서 아직 안 봤다. dev 스택 기동:
 ```bash
 # 터미널 1 — backend (시드 계정: alice@virtualoffice.local / password123)
-cd backend && ./.venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8000
+# ⚠ DATABASE_URL 필수 — 없으면 기본값 PostgreSQL:5432에 붙으려다 로그인 500 (정본: realtime-qa-runbook.md §1)
+cd backend && DATABASE_URL="sqlite+aiosqlite:///./dev_qa.db" ./.venv/Scripts/python.exe scripts/seed_dev.py   # 최초 1회 시드
+cd backend && DATABASE_URL="sqlite+aiosqlite:///./dev_qa.db" INTERNAL_API_TOKEN="dev-internal-token-CHANGE-IN-PRODUCTION" ./.venv/Scripts/python.exe -m uvicorn app.main:app --reload --port 8000
 # 터미널 2 — realtime (HORIZON 씬층)
 cd realtime && SCENE_FLOOR=horizon npm run dev
 # 터미널 3 — frontend

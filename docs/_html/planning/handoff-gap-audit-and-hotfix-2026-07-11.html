@@ -100,7 +100,7 @@ cd frontend &amp;&amp; npx tsc --noEmit         # 기대: 0 errors
 <hr>
 <h2 id="5-함정-환경-주의">5. 함정 / 환경 주의</h2>
 <ol><li><strong>백엔드 python은 PATH가 아니라 <code>backend/.venv/Scripts/python.exe</code></strong> (PATH python엔 pytest 없음).</li><li><strong>포트</strong>: 백엔드 FastAPI 실제 = <strong>8000</strong>(docker-compose expose, uvicorn --port 8000). <strong>8090은 제거 대상 WA/Caddy 프록시</strong>. CORS는 <code>localhost:3000</code>만 허용(config.py).</li><li><strong>npm 전용</strong>(pnpm 금지). <code>/mnt/c</code> 빌드·pytest 수 분 — 긴 툴콜 인내.</li><li><strong>미커밋 혼재 트리</strong>: v10 에셋·<code>docs/_html/*</code>·<code>main.py</code>/<code>tables.py</code> 등 이전 세션 변경 보존됨 → 커밋은 항상 파일 선별.</li><li><strong>마이그레이션 규약</strong>: <code>0001_initial_schema.py</code>가 <code>Base.metadata.create_all</code>(pre-prod, 모델 자동 반영). <strong>첫 운영 배포 전까지</strong> 모델 추가는 마이그레이션 별도 작성 불필요(테스트는 <code>Base.metadata</code>에 자동 연동됨). 배포 후엔 autogenerate 신규 리비전 규약.</li><li>스크린샷/캔버스(3D) 육안 QA는 여전히 미수행(빌드만 통과) — 실브라우저 확인은 별도 필요.</li></ol>
-<div class="meta-foot">원본: <code>handoff-gap-audit-and-hotfix-2026-07-11.md</code> · 자동 생성 2026-07-13 · md-to-html</div>
+<div class="meta-foot">원본: <code>handoff-gap-audit-and-hotfix-2026-07-11.md</code> · 자동 생성 2026-07-15 · md-to-html</div>
 </main>
 </div>
 
