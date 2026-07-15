@@ -16,6 +16,7 @@
  */
 
 import { Client, Room } from 'colyseus.js';
+import { findPath } from './office2d';
 
 export type ConnStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'error';
 
@@ -149,7 +150,25 @@ export async function createOfficeConnection(
     r.onStateChange(() => syncFromState());
     // 초기 스냅샷(join 직후)도 상태로 반영됨. 명시적 snapshot 메시지는 로깅만.
     r.onMessage('snapshot', () => syncFromState());
-    r.onMessage('move_rejected', () => { /* 서버 권위 위치가 state로 정정됨 → 별도 처리 불필요 */ });
+    r.onMessage('move_rejected', (m: { reason?: string; detail?: string }) => {
+      // 서버 권위 위치는 state로 정정됨. 사유는 dev에서만 노출.
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[realtime] move_rejected:', m?.reason, m?.detail ?? '');
+      }
+      // 연속 거부 = 현 위치→경유지 선분이 서버 벽과 교차(경유지 조기 소화로 폴리라인 이탈 등).
+      // 같은 스텝의 무한 재시도(스톨 사망) 대신 현 위치에서 최종 목적지로 재경로.
+      if (route.length === 0 || ++rejectStreak < REJECT_REPATH_STREAK || repathBudget <= 0) return;
+      const self = players.get(room.sessionId);
+      if (!self) return;
+      const goal = route[route.length - 1];
+      repathBudget--;
+      rejectStreak = 0;
+      stall = 0;
+      route = findPath({ x: self.x, y: self.y }, goal);
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[realtime] re-path from (${self.x.toFixed(2)},${self.y.toFixed(2)}) waypoints=${route.length} budgetLeft=${repathBudget}`);
+      }
+    });
     // 회의 명시입장(D24) 서버 판정 — allowed면 클라가 프롬프트 후 명시 join.
     r.onMessage('meeting_entry_allowed', (m: { roomId?: string }) =>
       handlers.onMeetingEntry?.({ roomId: m?.roomId ?? '', ok: true }),
@@ -233,10 +252,17 @@ export async function createOfficeConnection(
   // (100ms×0.09는 64ms 이동 + 36ms 정지의 톱니 스터터).
   const STEP_MS = 50;
   const STEP_DIST = 0.07;
-  const STALL_TICKS = 30; // 벽(가구 충돌)에 막혀 1.5초간 전진 없으면 목적지 포기.
-  const WAYPOINT_EPS = 0.12; // 중간 경유지 도달 판정(마지막 목적지는 0.05).
+  const STALL_TICKS = 30; // 벽(가구 충돌)에 막혀 1.5초간 전진 없으면 목적지 포기(최후 안전망).
+  // 중간 경유지 도달 판정(마지막 목적지는 0.05). 반드시 A* 클리어런스(0.07m)보다 작아야 한다:
+  // 경유지를 eps만큼 못 미친 지점에서 다음 경유지로 방향을 틀면 폴리라인을 최대 eps만큼
+  // 안쪽으로 질러가는데, 0.12였을 때 책상 모서리를 ~3cm 클립해 서버가 전 스텝을 거부했다
+  // (스텝 0.07m의 반보폭 0.035보다는 커야 경유지 주위를 맴돌지 않는다).
+  const WAYPOINT_EPS = 0.06;
+  const REJECT_REPATH_STREAK = 3; // 서버 연속 거부 n회 → 현 위치에서 재경로(자가 회복).
   let route: Array<{ x: number; y: number }> = [];
   let stall = 0;
+  let rejectStreak = 0;
+  let repathBudget = 0;
   let lastX = 0;
   let lastY = 0;
   const walkTimer: ReturnType<typeof setInterval> = setInterval(() => {
@@ -245,9 +271,17 @@ export async function createOfficeConnection(
     if (!self) return;
     // 진행 정체 감지 — 서버가 스텝을 계속 거부하면(경로가 벽을 가로지름) 무한 재시도 방지.
     if (Math.hypot(self.x - lastX, self.y - lastY) < 0.01) {
-      if (++stall >= STALL_TICKS) { route = []; stall = 0; return; }
+      if (++stall >= STALL_TICKS) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn(
+            `[realtime] route abandoned (stall): at=(${self.x.toFixed(2)},${self.y.toFixed(2)}) next=(${route[0].x.toFixed(2)},${route[0].y.toFixed(2)}) remaining=${route.length}`,
+          );
+        }
+        route = []; stall = 0; return;
+      }
     } else {
       stall = 0;
+      rejectStreak = 0; // 전진 재개 → 거부 스트릭 해소
     }
     lastX = self.x;
     lastY = self.y;
@@ -283,10 +317,14 @@ export async function createOfficeConnection(
       // 단일 목적지 → walker가 스텝을 스트리밍.
       route = [{ x, y }];
       stall = 0;
+      rejectStreak = 0;
+      repathBudget = 3;
     },
     requestPath: (points: Array<{ x: number; y: number }>) => {
       route = points.map((p) => ({ x: p.x, y: p.y }));
       stall = 0;
+      rejectStreak = 0;
+      repathBudget = 3;
     },
     enterMeeting: (roomId: string) => {
       safeSend('enter_meeting', { roomId });

@@ -64,8 +64,9 @@ interface AvatarVisual {
   prev: Vec2;
   /** 마지막 서버 권위 위치 — 착석 스냅은 서버가 정지했을 때만(지나가다 자석처럼 끌리는 것 방지). */
   prevSrv: Vec2;
-  /** 서버 위치 연속 정지 프레임 수(착석 발동 게이트 — 20Hz 패치 지터에 안정). */
-  stillFrames: number;
+  /** 서버 위치 연속 정지 시간(초). 프레임 수 기반이면 고주사율(144/240Hz) 모니터에서
+   *  50ms 패치 간격과 경합해 착석 스냅이 20Hz로 토글(=진동)된다 — 반드시 시간 기반. */
+  stillSec: number;
   state: AvatarState;
   frame: number;
   frameAcc: number;
@@ -478,7 +479,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
   const visualsRef = useRef<Map<string, AvatarVisual>>(new Map());
 
   /** key별 ref 콜백 캐시 — 렌더마다 새 콜백을 주면 React가 300ms 리렌더(미니맵 등)마다
-   *  ref를 detach/attach 하면서 비주얼 상태(disp·frame·facing·stillFrames)를 리셋한다
+   *  ref를 detach/attach 하면서 비주얼 상태(disp·frame·facing·stillSec)를 리셋한다
    *  → 착석 스냅이 풀리며 스프링처럼 튕기고, 걷기 프레임이 0~2만 반복되는 원인. */
   const refCbCache = useRef<Map<string, (el: HTMLDivElement | null) => void>>(new Map());
 
@@ -521,7 +522,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
         disp: { ...start },
         prev: { ...start },
         prevSrv: { ...start },
-        stillFrames: 0,
+        stillSec: 0,
         state: 'idle',
         frame: 0,
         frameAcc: 0,
@@ -600,13 +601,13 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           if (!target) return;
 
           // 착석 판정(v1.1): 내게 배정/점유된 좌석(복수 가능 — 고정석+자율석) 중
-          // **가장 가까운** 것에 스냅. 서버 위치가 ≈0.2s 연속 정지했을 때만 발동해
-          // 이동 중 자기 책상 옆을 지나갈 때 끌려붙지 않는다(20Hz 패치 지터 안정).
+          // **가장 가까운** 것에 스냅. 서버 위치가 0.35초 연속 정지했을 때만 발동 —
+          // 시간 기반(프레임 수 기반은 고주사율 모니터에서 패치 간격과 경합해 진동).
           const srvMoved = Math.hypot(target.x - v.prevSrv.x, target.y - v.prevSrv.y) > 0.005;
           v.prevSrv = { ...target };
-          v.stillFrames = srvMoved ? 0 : v.stillFrames + 1;
+          v.stillSec = srvMoved ? 0 : v.stillSec + dt;
           let seated = false;
-          if (v.stillFrames >= 12) {
+          if (v.stillSec >= 0.35) {
             let best = SEAT_SNAP_M;
             let bestSeat: SeatInfo | null = null;
             for (const s of seatsRef.current) {
