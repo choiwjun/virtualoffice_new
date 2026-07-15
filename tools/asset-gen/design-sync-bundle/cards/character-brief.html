@@ -1,0 +1,58 @@
+<!-- @dsCard group="Brief" -->
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><title>캐릭터 2단계 생성 브리프 (렌더러 납품)</title>
+<style>body{margin:0;font-family:system-ui;background:#fff;color:#33302A;padding:20px;font-size:14px;line-height:1.7}h1{font-size:18px}h2{font-size:15px;margin-top:18px}code{background:#F2EFE8;padding:1px 5px;border-radius:4px}li{margin:4px 0}table{border-collapse:collapse;font-size:12px;width:100%}td,th{border:1px solid #DDD6C8;padding:4px 6px;text-align:left}.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;border:1px solid rgba(0,0,0,.15)}.warn{background:#FDF0EE;border-left:3px solid #B04A3E;padding:8px 12px;border-radius:4px}</style></head>
+<body>
+<h1>HORIZON 캐릭터 8직군 재작업 — 파라메트릭 렌더러 납품</h1>
+<p>목표: <code>assets/horizon-scene.js</code>(플레이트 렌더러)와 <b>같은 스타일 계열</b>(캔버스 2D,
+그라데이션 셰이딩, 소프트 섀도, 라운드 벡터)의 캐릭터 렌더러 1개.
+<b>개별 이미지가 아니라 JS 코드로 납품</b> — 프레임 간 동일 인물 일관성을 코드로 보장한다.</p>
+
+<h2>납품 형식 (필수)</h2>
+<ul>
+  <li><code>horizon-characters.js</code> — 전역 함수 <code>window.drawCharFrame(ctx, charId, state, frameIndex)</code>를 정의.
+      220×460 캔버스 좌표계에 1프레임을 그린다(배경은 그리지 않음 — 투명 유지).</li>
+  <li>데모 <code>.dc.html</code> — 8직군 × 상태 3종을 격자로 재생하는 미리보기(개발 측 육안 QA용).</li>
+  <li>이펙트 제약: <code>ctx.filter</code> blur는 접지 그림자에만 소량 사용 가능. 외부 이미지/폰트 로드 금지.</li>
+</ul>
+
+<h2>프레임 계약 (불변)</h2>
+<ul>
+  <li>캔버스 <code>220×460</code>, <b>발 기준점 (110, 445)</b> bottom-center — 모든 상태·프레임 공통</li>
+  <li>우향(→) 기준 1방향 — 좌향은 엔진이 scaleX(-1) 플립 (비대칭 소품은 플립 시 어색하지 않게)</li>
+  <li>상태: <code>idle</code> 6프레임 @6fps(호흡·미세 사웨이) · <code>walk</code> 8프레임 @10fps(2보 사이클,
+      무릎 굽힘·팔 카운터스윙·수직 바운스) · <code>sit</code> 6프레임 @4fps(의자 착석·책상 타이핑 손,
+      골반 낮춤 — 씬의 의자 위에 얹히므로 <b>의자·책상·모니터를 그리지 말 것</b>)</li>
+  <li>접지 그림자: 발밑 소프트 타원(rgba 60,55,45 / 0.2대) 포함</li>
+  <li>신장: 캔버스 기준 머리끝 ~y90, 서있는 실루엣 높이 ≈355px (씬 인물 스케일과 일치)</li>
+</ul>
+
+<h2>8직군 아이덴티티 (기존 계약 — 색상 유지, 디테일은 상향)</h2>
+<table>
+<tr><th>ID</th><th>성별</th><th>피부</th><th>헤어(스타일)</th><th>상의</th><th>하의</th><th>특징</th></tr>
+<tr><td>CEO</td><td>남</td><td><span class="sw" style="background:#E8B98F"></span>#E8B98F</td><td>#3C3835 (숏)</td><td><span class="sw" style="background:#33415E"></span>#33415E 네이비 수트</td><td>#2B3650</td><td>레드 타이 #B04A3E, 흰 셔츠</td></tr>
+<tr><td>MANAGER</td><td>여</td><td>#F0C49B</td><td>#6B4A32 (보브)</td><td><span class="sw" style="background:#4A4F58"></span>#4A4F58 자켓</td><td>#3A3E46</td><td>아이보리 이너</td></tr>
+<tr><td>DEVELOPER</td><td>남</td><td>#E3AE85</td><td>#2E2A26 (메시)</td><td><span class="sw" style="background:#5E8F5A"></span>#5E8F5A 후디</td><td>#4A5361</td><td>후드 디테일</td></tr>
+<tr><td>DESIGNER</td><td>여</td><td>#F2CBA4</td><td>#3A2E28 (롱)</td><td><span class="sw" style="background:#EFE9DC"></span>#EFE9DC 블라우스</td><td><span class="sw" style="background:#C9A24B"></span>#C9A24B 스커트</td><td>스커트 실루엣</td></tr>
+<tr><td>SALES</td><td>남</td><td>#E8B98F</td><td>#5A422F (사이드)</td><td><span class="sw" style="background:#7FA6C9"></span>#7FA6C9 셔츠자켓</td><td>#3E4A5C</td><td>네이비 타이 #33415E</td></tr>
+<tr><td>HR</td><td>여</td><td>#EEC29B</td><td>#2E2A26 (포니테일)</td><td><span class="sw" style="background:#D9CBB2"></span>#D9CBB2 가디건</td><td>#4A4F58</td><td>포니테일 스윙</td></tr>
+<tr><td>MARKETER</td><td>여</td><td>#F0C49B</td><td>#7A5238 (웨이비)</td><td><span class="sw" style="background:#D98A7A"></span>#D98A7A 코랄 탑</td><td>#3D4A66</td><td></td></tr>
+<tr><td>INTERN</td><td>남</td><td>#E3AE85</td><td>#4A3A2C (터슬드)</td><td><span class="sw" style="background:#5C7A99"></span>#5C7A99 셔츠</td><td>#5A5148</td><td>스니커즈 #8A8378</td></tr>
+</table>
+
+<h2>스타일 상향 포인트 (플레이트와 톤 통일)</h2>
+<ul>
+  <li>그라데이션 셰이딩(NW 방향광), 의상 주름/이음선 힌트, 헤어 하이라이트, 라운드 관절</li>
+  <li>플레이트 인테리어와 같은 채도·명도 대역 — 원색 금지, 웜 톤</li>
+  <li>얼굴: 단순하되 생기(눈·눈썹·입, 성별별 헤어 실루엣 명확)</li>
+</ul>
+
+<div class="warn"><b>금지</b>: 프레임에 가구·모니터·책상·의자 베이크(sit 포함 — 엔진이 씬의 의자 위에 겹쳐 그림),
+불투명 배경, 프레임별 인물 변형(체형·색상은 프레임 간 완전 동일), 외부 리소스 로드.</div>
+
+<h2>납품 위치</h2>
+<p><code>tools/asset-gen/ai-plate/incoming/</code>에 <code>horizon-characters.js</code> + 데모 html.
+개발 측이 Playwright 헤드리스로 8직군×20프레임(160장)을 자동 추출·납품하고 실화면 QA한다.</p>
+</body>
+</html>

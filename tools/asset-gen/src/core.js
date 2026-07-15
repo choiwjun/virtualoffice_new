@@ -67,15 +67,56 @@ const PAL = {
 class Svg {
   constructor() {
     this.parts = [];
+    this.defs = [];
+    this._gradCache = new Map();
+    this._gradSeq = 0;
   }
   add(s) {
     this.parts.push(s);
     return this;
   }
+  def(s) {
+    this.defs.push(s);
+    return this;
+  }
+  /**
+   * 선형 그라데이션 fill url — 색상쌍·방향별 캐시.
+   * dir: 'v'(위→아래) | 'h'(좌→우) | 'd'(좌상→우하, 방향광용).
+   */
+  gradient(c1, c2, dir = 'v') {
+    const key = `${c1}|${c2}|${dir}`;
+    if (this._gradCache.has(key)) return this._gradCache.get(key);
+    const id = `g${this._gradSeq++}`;
+    const [x1, y1, x2, y2] = dir === 'h' ? [0, 0, 1, 0] : dir === 'd' ? [0, 0, 1, 1] : [0, 0, 0, 1];
+    this.def(
+      `<linearGradient id="${id}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">` +
+        `<stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient>`,
+    );
+    const url = `url(#${id})`;
+    this._gradCache.set(key, url);
+    return url;
+  }
+  /** 소프트 섀도 라디얼(공유 1개) — ellipse fill로 사용. */
+  softShadowFill() {
+    if (!this._softShadow) {
+      this.def(
+        `<radialGradient id="softsh"><stop offset="0" stop-color="rgba(55,50,42,0.34)"/>` +
+          `<stop offset="0.7" stop-color="rgba(55,50,42,0.16)"/><stop offset="1" stop-color="rgba(55,50,42,0)"/></radialGradient>`,
+      );
+      this._softShadow = 'url(#softsh)';
+    }
+    return this._softShadow;
+  }
   poly(points, fill, opts = {}) {
     const o = opts.stroke ? ` stroke="${opts.stroke}" stroke-width="${opts.sw ?? 1}"` : '';
     const op = opts.opacity != null ? ` opacity="${opts.opacity}"` : '';
     this.add(`<polygon points="${pts(points)}" fill="${fill}"${o}${op}/>`);
+    return this;
+  }
+  /** 선분 스트로크(질감·디테일 라인용). */
+  line(a, b, stroke, sw = 1, opacity) {
+    const op = opacity != null ? ` opacity="${opacity}"` : '';
+    this.add(`<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" stroke="${stroke}" stroke-width="${sw}"${op} stroke-linecap="round"/>`);
     return this;
   }
   ellipse(cx, cy, rx, ry, fill, opacity) {
@@ -96,7 +137,8 @@ class Svg {
     return this.add(s);
   }
   toString(w = W, h = H) {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">${this.parts.join('\n')}</svg>`;
+    const defs = this.defs.length > 0 ? `<defs>${this.defs.join('\n')}</defs>` : '';
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">${defs}${this.parts.join('\n')}</svg>`;
   }
 }
 
@@ -107,29 +149,40 @@ function floorQuad(u0, v0, u1, v1) {
   return [iso(u0, v0), iso(u1, v0), iso(u1, v1), iso(u0, v1)];
 }
 
-/** 그림자 (바닥 타원). */
+/** 그림자 (바닥 타원) — 소프트 라디얼. */
 function dropShadow(g, u, v, w, d) {
   const c = iso(u + w / 2, v + d / 2);
-  g.ellipse(c.x, c.y + 3, (w + d) * TILE * 0.42, (w + d) * TILE * 0.17, PAL.shadow);
+  g.ellipse(c.x, c.y + 3, (w + d) * TILE * 0.46, (w + d) * TILE * 0.19, g.softShadowFill());
 }
 
 /**
- * 아이소 직육면체 — 상판/좌면(SW)/우면(SE) 3톤.
+ * 아이소 직육면체 — 상판/좌면(SW)/우면(SE) 3톤 + 방향광(NW광) 그라데이션.
  * colors: {top, left, right} 미지정 시 base에서 파생.
+ * opts.z0: 바닥 오프셋(m) — 책상 위 소품처럼 지면이 아닌 높이에서 시작할 때.
+ * opts.flat: true면 그라데이션 없이 단색(작은 소품용).
  */
 function prism(g, u, v, w, d, h, colors, opts = {}) {
   const { top, left, right } = colors;
-  const A = iso(u, v, h); // 북
-  const B = iso(u + w, v, h); // 동
-  const C = iso(u + w, v + d, h); // 남
-  const D = iso(u, v + d, h); // 서
-  const Cg = iso(u + w, v + d, 0);
-  const Dg = iso(u, v + d, 0);
-  const Bg = iso(u + w, v, 0);
-  if (!opts.noShadow) dropShadow(g, u, v, w, d);
-  g.poly([D, C, Cg, Dg], left, { stroke: PAL.outline, sw: 1 }); // SW면
-  g.poly([C, B, Bg, Cg], right, { stroke: PAL.outline, sw: 1 }); // SE면
-  g.poly([A, B, C, D], top, { stroke: PAL.outline, sw: 1 }); // 상판
+  const z0 = opts.z0 ?? 0;
+  const A = iso(u, v, z0 + h); // 북
+  const B = iso(u + w, v, z0 + h); // 동
+  const C = iso(u + w, v + d, z0 + h); // 남
+  const D = iso(u, v + d, z0 + h); // 서
+  const Cg = iso(u + w, v + d, z0);
+  const Dg = iso(u, v + d, z0);
+  const Bg = iso(u + w, v, z0);
+  if (!opts.noShadow && z0 === 0) dropShadow(g, u, v, w, d);
+  const fTop = opts.flat ? top : g.gradient(shade(top, 1.05), shade(top, 0.96), 'd');
+  const fLeft = opts.flat ? left : g.gradient(shade(left, 1.03), shade(left, 0.86), 'v');
+  const fRight = opts.flat ? right : g.gradient(shade(right, 0.97), shade(right, 0.8), 'v');
+  g.poly([D, C, Cg, Dg], fLeft, { stroke: PAL.outline, sw: 1 }); // SW면
+  g.poly([C, B, Bg, Cg], fRight, { stroke: PAL.outline, sw: 1 }); // SE면
+  g.poly([A, B, C, D], fTop, { stroke: PAL.outline, sw: 1 }); // 상판
+  // 상판 NW 모서리 하이라이트(광원 방향 엣지 캐치)
+  if (!opts.flat && h >= 0.3 && w >= 0.3 && d >= 0.3) {
+    g.line(A, B, 'rgba(255,255,255,0.35)', 1.2);
+    g.line(A, D, 'rgba(255,255,255,0.22)', 1.2);
+  }
   return { A, B, C, D };
 }
 
@@ -140,8 +193,20 @@ function shade(hex, f) {
   return `#${((ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).padStart(6, '0')}`;
 }
 
-function woodPrism(g, u, v, w, d, h) {
-  return prism(g, u, v, w, d, h, { top: PAL.woodTop, left: PAL.wood, right: PAL.woodDark });
+function woodPrism(g, u, v, w, d, h, opts = {}) {
+  const r = prism(g, u, v, w, d, h, { top: PAL.woodTop, left: PAL.wood, right: PAL.woodDark }, opts);
+  // 우드그레인: 상판에 u방향 결 라인(저대비) — 폭이 좁으면 생략.
+  if (d >= 0.4 && w >= 0.6) {
+    const z = (opts.z0 ?? 0) + h;
+    const lines = Math.max(2, Math.floor(d / 0.28));
+    for (let i = 1; i <= lines; i++) {
+      const t = (i / (lines + 1)) * d;
+      const a = iso(u + 0.06, v + t, z);
+      const b = iso(u + w - 0.06, v + t + (i % 2 === 0 ? 0.04 : -0.03), z);
+      g.line(a, b, 'rgba(120,90,55,0.14)', 1);
+    }
+  }
+  return r;
 }
 
 function colorPrism(g, u, v, w, d, h, base) {

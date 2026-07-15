@@ -1,0 +1,37 @@
+{
+  "note": "segmentation.png class colors",
+  "classes": {
+    "floor": "#8B8B60",
+    "wall": "#B0B0B0",
+    "window": "#87CEEB",
+    "brandwall": "#B8860B",
+    "tv": "#101010",
+    "glass": "#9FD8EF",
+    "table": "#C8843C",
+    "chair": "#2C4A8A",
+    "sofa": "#1F3A6E",
+    "plant": "#2E8B57",
+    "pot": "#9E9482",
+    "reception": "#D2A24C",
+    "stool": "#DEB887",
+    "partition": "#8A8A7A",
+    "rug": "#6E7B8B",
+    "booth": "#7A5230",
+    "counter": "#E8E4D8",
+    "monitor": "#14213D"
+  },
+  "occluders": [
+    "glass",
+    "table",
+    "chair",
+    "sofa",
+    "plant",
+    "pot",
+    "reception",
+    "stool",
+    "partition",
+    "booth",
+    "counter",
+    "monitor"
+  ]
+}

@@ -2,24 +2,35 @@
 
 에셋(PNG)과 지오메트리(layout.json)를 **한 소스에서** 생성한다. 정본 스펙 = `docs/planning/17-asset-rework-spec.md`, 결정 = `00-decisions §K(D30)`.
 
+> **v2 플레이트 (2026-07-15)**: 실납품 플레이트 그림의 정본은 Claude Design 산출
+> `ai-plate/incoming/horizon-scene.js`(캔버스 렌더러 — layout.json obstacles/seats를 그대로 읽어
+> 가구를 앵커링, `.dc.html`로 렌더/재수출). **지오메트리 정본은 여전히 `src/plate.js` →
+> `out/layout.json`** — 배치를 바꾸면 plate.js 수정 → 재생성 → horizon-scene.js의 OB/SEATS 블록도
+> 동일 값으로 갱신 → PNG 재수출(3344px) → `frontend/public/office2d/plates/horizon.png` 교체.
+> **캐릭터도 v2 (2026-07-15)**: 그림 정본 = `ai-plate/incoming/horizon-characters.js`
+> (`window.drawCharFrame(ctx, charId, state, f)` — 220×460·발 (110,445)·idle6/walk8/sit6).
+> 재추출 = Playwright 헤드리스로 160프레임 자동 추출+QA(투명도·발 접지·bbox) — 세션 스크립트
+> extract-chars.js 참조. 주의: 보행 접지 보상 패치(o.bob의 `+19·sin²p` 항)가 통합 시 추가됨 —
+> 렌더러 재납품 받으면 이 항 유지 확인. `src/characters.js`는 v1 폴백으로 보존.
+
 ## 파일 맵
 
 | 파일 | 역할 |
 |---|---|
 | `src/core.js` | 아이소 투영(TILE=51, ORIGIN)·팔레트(PAL)·프리미티브(prism/plant/…) — **톤·시점 정합의 정본** |
 | `src/plate.js` | 씬 조립(모듈 6종) + 지오메트리 산출(`buildPlate()` → {svg, geometry}) |
-| `src/characters.js` | 8직군 리그 + idle6/walk8 프레임(`buildFrame`), 콘택트시트 |
+| `src/characters.js` | 8직군 리그 + idle6/walk8/sit6 프레임(`buildFrame`), 콘택트시트 |
 | `generate.js` | CLI — 아래 사용법 |
 | `compose-qa.js` | 플레이트+캐릭터 합성 QA샷 (`out/composite-qa.png`) |
-| `out/layout.json` | **지오메트리 정본** (walkArea/rooms/obstacles/spawns/meetingZones, 정규 0~1) |
+| `out/layout.json` | **지오메트리 정본** (walkArea/rooms/obstacles/spawns/meetingZones/**seats**, 정규 0~1) |
 
 ## 사용법
 
 ```bash
 cd tools/asset-gen
 node generate.js plate            # out/plate-preview.png(836px QA) + out/layout.json
-node generate.js chars            # out/chars-sheet.png (8직군 × 5포즈 QA)
-node generate.js all --final      # frontend/public/office2d/ 에 실납품 (플레이트 @2x + 112프레임)
+node generate.js chars            # out/chars-sheet.png (8직군 × 6포즈 QA)
+node generate.js all --final      # frontend/public/office2d/ 에 실납품 (플레이트 @2x + 160프레임: idle6+walk8+sit6)
 node compose-qa.js                # 합성 비율 검증샷
 ```
 
@@ -36,6 +47,8 @@ node compose-qa.js                # 합성 비율 검증샷
 ## 주의(함정 기록)
 
 - **루트 `.gitignore`의 `out/` 규칙이 layout.json을 삼킨다** → `git add -f tools/asset-gen/out/layout.json`
+- **OneDrive 동기화가 납품 PNG를 잠깐 잠근다**(EUNKNOWN -4094) → generate.js `writeFileRetry`가 파일별 재시도로 흡수. 실패 시 잠시 후 재실행.
+- **좌석 DB 시드**: layout.json `seats`(워크스테이션 의자 앵커 8개)가 소스 — `backend/scripts/seed_seats.py`가 미터 환산(×[20, 11.256]) 후 seat 테이블에 upsert(WS-A1=alice 고정, WS-B1=bob 고정). 의자 배치를 바꾸면 재실행.
 - 캔버스 계약: 플레이트 1672×941 비율 고정(좌표계 20×11.256m), 캐릭터 220×460·발 기준 (110,445)·우향
 - 캐릭터 표시 높이는 `office2d.ts avatarHeightFrac`(현재 0.088~0.102 — 아이소 무원근)
 - 이동서버 속도검증: 첫 move는 dt=0.05s 가정 → 허용 ≈0.105m. 봇/스크립트는 소보폭 연속 전송 패턴 사용(`realtime/scripts/load-sim-20.ts` 참조)

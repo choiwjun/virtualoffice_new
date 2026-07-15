@@ -1,0 +1,35 @@
+<!-- @dsCard group="Brief" -->
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><title>씬 생성 브리프 (수용 기준)</title>
+<style>body{margin:0;font-family:system-ui;background:#fff;color:#33302A;padding:20px;font-size:14px;line-height:1.7}h1{font-size:18px}h2{font-size:15px;margin-top:18px}code{background:#F2EFE8;padding:1px 5px;border-radius:4px}li{margin:4px 0}.warn{background:#FDF0EE;border-left:3px solid #B04A3E;padding:8px 12px;border-radius:4px}</style></head>
+<body>
+<h1>HORIZON 오피스 씬 재작업 브리프</h1>
+<p>목표: "Scene" 카드의 배치 도면과 <b>동일한 배치</b>로, "Brand" 카드 시안의
+<b>포토리얼 아이소메트릭 렌더 질감</b>을 가진 오피스 씬 1장.</p>
+
+<h2>불변 계약 (지오메트리)</h2>
+<ul>
+  <li>캔버스 비율 <code>1672 : 941</code> (좌표계 가로 20m) — 크롭·레터박스 금지</li>
+  <li>카메라: 2:1 다이메트릭 아이소, 원근 왜곡 없음</li>
+  <li>모든 가구는 배치 도면과 같은 위치·같은 footprint (충돌 폴리곤이 여기서 파생됨)</li>
+  <li>보드룸 전면 유리 <b>문 개구부(우하단 변)</b>, 미팅룸 전면 유리 <b>문 개구부(좌하단 변)</b> — 막지 말 것</li>
+</ul>
+
+<h2>스타일</h2>
+<ul>
+  <li>라이트 오크 우드 + 네이비 + 웜그레이, 소프트 데이라이트(좌상), AO, PBR 재질</li>
+  <li>브랜드월: 우드 슬랫 + "HORIZON" 레터링(판독 가능)</li>
+  <li>바닥: 베이지 대형 타일, 창: 소프트 스카이</li>
+</ul>
+
+<div class="warn"><b>금지(과거 사고 재발 방지)</b>: 인물·캐릭터, 이름표, 텍스트 라벨(브랜드월 제외),
+UI 요소, 미니맵, 화살표. 씬은 완전 무인 상태의 클린 플레이트여야 함.</div>
+
+<h2>납품</h2>
+<ul>
+  <li>PNG, 가로 3344px(최소 1672), 배경은 웜 페이퍼 톤 <code>#EDEAE3</code> 단색</li>
+  <li>검수: 개발 측이 layout.json 폴리곤 오버레이 대조(허용 오차 ±2%) 후 교체</li>
+</ul>
+</body>
+</html>

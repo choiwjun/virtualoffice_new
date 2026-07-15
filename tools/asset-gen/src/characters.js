@@ -48,22 +48,26 @@ function limb(px, py, deg, inner) {
 }
 
 /**
- * 프레임 1장. state: 'idle'|'walk', f: 프레임 인덱스.
+ * 프레임 1장. state: 'idle'|'walk'|'sit', f: 프레임 인덱스.
  * 리그(우향 3/4): 다리→뒷팔→몸통→머리→앞팔 순서로 페인팅.
+ * sit: 씬에 구워진 의자 위에 얹는 착석 포즈(허벅지 수평·종아리 수직) — 발 기준점 유지.
  */
 function buildFrame(ch, state, f) {
   const parts = [];
   const isWalk = state === 'walk';
+  const isSit = state === 'sit';
   const phase = isWalk ? (f / 8) * Math.PI * 2 : (f / 6) * Math.PI * 2;
 
   // 애니 파라미터
-  const legAmp = isWalk ? 26 : 0;
-  const armAmp = isWalk ? 22 : 3;
-  const bob = isWalk ? 5 * Math.abs(Math.sin(phase)) : 2 * Math.sin(phase);
+  const legAmp = isWalk ? 22 : 0;
+  const kneeAmp = isWalk ? 34 : 0;
+  const armAmp = isWalk ? 20 : 3;
+  // 보행 바운스: 다리 수직(미드스윙, φ=0·π)에서 몸이 가장 높고 최대 보폭에서 낮다 → |cos|.
+  const bob = isWalk ? 5 * Math.abs(Math.cos(phase)) : isSit ? 0 : 2 * Math.sin(phase);
   const breath = isWalk ? 0 : 1.5 * Math.sin(phase);
 
-  // 신체 치수
-  const hipY = FOOT_Y - 150 - bob; // 골반
+  // 신체 치수 — 착석 시 골반이 의자 좌면 높이로 내려간다.
+  const hipY = FOOT_Y - (isSit ? 90 : 150) - bob; // 골반
   const legLen = 148;
   const torsoH = ch.gender === 'f' ? 128 : 136;
   const torsoW = ch.gender === 'f' ? 62 : 72;
@@ -76,34 +80,58 @@ function buildFrame(ch, state, f) {
   parts.push(`<ellipse cx="${FOOT_X}" cy="${FOOT_Y + 6}" rx="52" ry="12" fill="rgba(60,55,45,0.22)"/>`);
 
   const legW = 24;
-  const legSwing = legAmp * Math.sin(phase);
+  const thighLen = 80;
   const shoe = (fill) => `<ellipse cx="0" cy="0" rx="17" ry="9" fill="${fill}" stroke="${OUTLINE}" stroke-width="1.5"/>`;
 
-  function leg(offsetX, deg, dark) {
+  /**
+   * 2관절 다리: 고관절 회전(hipDeg) + 무릎 회전(kneeDeg, >0 = 뒤로 접힘).
+   * 스윙 중 무릎이 접히며 발이 들려 진자(일자 막대) 느낌을 없앤다.
+   */
+  function leg(offsetX, hipDeg, kneeDeg, dark) {
     const px = FOOT_X + offsetX;
     const col = dark ? shade(ch.bottom, 0.78) : ch.bottom;
     const shoeCol = dark ? shade(ch.shoe, 0.8) : ch.shoe;
-    const inner =
-      rrect(px - legW / 2, hipY, legW, legLen, 11, col) +
+    const kneeY = hipY + thighLen;
+    const lower =
+      rrect(px - legW / 2 + 1.5, kneeY - 8, legW - 3, legLen - thighLen + 14, 10, col) +
       `<g transform="translate(${px + 4} ${hipY + legLen + 2})">${shoe(shoeCol)}</g>`;
-    return limb(px, hipY + 6, deg, inner);
+    const inner =
+      rrect(px - legW / 2, hipY, legW, thighLen + 8, 11, col) +
+      limb(px, kneeY, kneeDeg, lower);
+    return limb(px, hipY + 6, hipDeg, inner);
   }
+  // 게이트: 고관절 = ±sin(φ). 무릎은 전진 스윙 중간(φ=π)에서 최대 굽힘 = max(0, -cos φ).
+  // 착석: 허벅지 전방 수평(-) + 무릎 직각(+) 고정 — 부호는 leg() 규약(+ = 발 뒤로).
+  const hipF = isSit ? -82 : legAmp * Math.sin(phase);
+  const hipB = isSit ? -74 : legAmp * Math.sin(phase + Math.PI);
+  const kneeF = isSit ? 84 : kneeAmp * Math.max(0, -Math.cos(phase));
+  const kneeB = isSit ? 78 : kneeAmp * Math.max(0, -Math.cos(phase + Math.PI));
   // 뒷다리(어두움) → 앞다리
-  parts.push(leg(-9, -legSwing, true));
+  parts.push(leg(-9, hipB, kneeB, true));
 
   // 뒷팔
   const armW = 19;
   const armLen = 118;
+  // 전완 굽힘: 보행=살짝, 착석=책상 위로 깊게(타이핑 자세).
+  const elbowDeg = isSit ? -52 : isWalk ? -16 : -5;
   function arm(offsetX, deg, dark) {
     const px = FOOT_X + offsetX;
     const col = dark ? shade(ch.top, 0.78) : ch.top;
     const handCol = dark ? shade(ch.skin, 0.85) : ch.skin;
-    const inner =
-      rrect(px - armW / 2, shoulderY + 12, armW, armLen, 9, col) +
+    const upperLen = armLen * 0.52;
+    const elbowY = shoulderY + 12 + upperLen;
+    const lower =
+      rrect(px - armW / 2 + 1, elbowY - 6, armW - 2, armLen - upperLen + 8, 9, col) +
       ellipse(px, shoulderY + 12 + armLen + 4, 10, 10, handCol);
+    const inner =
+      rrect(px - armW / 2, shoulderY + 12, armW, upperLen + 6, 9, col) +
+      limb(px, elbowY, elbowDeg, lower);
     return limb(px, shoulderY + 18, deg, inner);
   }
-  parts.push(arm(-torsoW / 2 + 4, armAmp * Math.sin(phase), true));
+  // 팔 어깨각: 착석=전방 고정(+호흡 미동), 그 외=스윙.
+  const armB = isSit ? -20 + 1.5 * Math.sin(phase) : armAmp * Math.sin(phase);
+  const armF = isSit ? -26 + 1.5 * Math.sin(phase) : -armAmp * Math.sin(phase);
+  parts.push(arm(-torsoW / 2 + 4, armB, true));
 
   // 몸통 (스커트 변형 포함)
   const tx = FOOT_X - torsoW / 2;
@@ -114,8 +142,9 @@ function buildFrame(ch, state, f) {
     );
   }
   parts.push(rrect(tx, shoulderY, torsoW, torsoH + (ch.skirt ? -2 : 6), 20, ch.top));
-  // 상의 셰이딩(우측면)
+  // 상의 셰이딩(우측면 어둡게 + 좌측 라이트 림 — NW 방향광)
   parts.push(`<rect x="${(tx + torsoW * 0.62).toFixed(1)}" y="${shoulderY + 4}" width="${(torsoW * 0.34).toFixed(1)}" height="${torsoH - 10}" rx="14" fill="${ch.topDark}" opacity="0.55"/>`);
+  parts.push(`<rect x="${(tx + 2).toFixed(1)}" y="${shoulderY + 8}" width="${(torsoW * 0.16).toFixed(1)}" height="${torsoH - 22}" rx="9" fill="rgba(255,255,255,0.12)"/>`);
   // 셔츠 브이넥/후드
   if (ch.hood) {
     parts.push(`<path d="M ${FOOT_X - 20} ${shoulderY + 2} Q ${FOOT_X + 6} ${shoulderY + 26} ${FOOT_X + 30} ${shoulderY + 2} L ${FOOT_X + 22} ${shoulderY - 8} Q ${FOOT_X + 5} ${shoulderY + 8} ${FOOT_X - 12} ${shoulderY - 8} Z" fill="${shade(ch.top, 0.85)}" stroke="${OUTLINE}" stroke-width="1.5"/>`);
@@ -124,10 +153,15 @@ function buildFrame(ch, state, f) {
   }
   if (ch.tie) {
     parts.push(`<path d="M ${FOOT_X + 6} ${shoulderY + 14} l 7 -5 l 5 34 l -9 10 l -6 -12 Z" fill="${ch.tie}"/>`);
+    // 재킷 버튼
+    parts.push(`<circle cx="${FOOT_X + 4}" cy="${shoulderY + 66}" r="2.2" fill="${shade(ch.top, 0.6)}"/>`);
+    parts.push(`<circle cx="${FOOT_X + 4}" cy="${shoulderY + 84}" r="2.2" fill="${shade(ch.top, 0.6)}"/>`);
   }
 
   // 머리 + 헤어
   parts.push(ellipse(headCx, headCy, headR, headR + 2, ch.skin));
+  // 얼굴 우측 음영(방향광) — 스트로크 없는 순수 오버레이
+  parts.push(`<ellipse cx="${(headCx + headR * 0.45).toFixed(1)}" cy="${(headCy + 4).toFixed(1)}" rx="${(headR * 0.55).toFixed(1)}" ry="${(headR * 0.8).toFixed(1)}" fill="rgba(150,95,55,0.10)"/>`);
   // 귀
   parts.push(ellipse(headCx - headR + 4, headCy + 4, 7, 9, ch.skin));
   const H = ch.hair;
@@ -164,16 +198,16 @@ function buildFrame(ch, state, f) {
   parts.push(`<path d="M ${headCx + 2} ${headCy + 16} q 6 5 12 0" stroke="#8A6A55" stroke-width="2" fill="none" stroke-linecap="round"/>`);
 
   // 앞다리·앞팔 (몸 앞)
-  parts.push(leg(11, legSwing, false));
-  parts.push(arm(torsoW / 2 - 2, -armAmp * Math.sin(phase), false));
+  parts.push(leg(11, hipF, kneeF, false));
+  parts.push(arm(torsoW / 2 - 2, armF, false));
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${FRAME_W} ${FRAME_H}">${parts.join('\n')}</svg>`;
 }
 
-/** QA 콘택트시트: 8캐릭터 × [idle0, walk0, walk2, walk4, walk6]. */
+/** QA 콘택트시트: 8캐릭터 × [idle0, walk0, walk2, walk4, walk6, sit0]. */
 function buildContactSheet() {
   const cols = CHARACTERS.length;
-  const cells = [['idle', 0], ['walk', 0], ['walk', 2], ['walk', 4], ['walk', 6]];
+  const cells = [['idle', 0], ['walk', 0], ['walk', 2], ['walk', 4], ['walk', 6], ['sit', 0]];
   const cw = FRAME_W;
   const chh = FRAME_H;
   const parts = [`<rect width="${cols * cw}" height="${cells.length * chh}" fill="#EDEAE3"/>`];

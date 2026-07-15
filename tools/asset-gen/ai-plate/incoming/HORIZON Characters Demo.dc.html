@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    html, body { margin: 0; background: #EDEAE3; }
+    a { color: #33415E; } a:hover { color: #2E7BFF; }
+  </style>
+</helmet>
+<div style="min-height: 100vh; background: #EDEAE3; padding: 32px 36px; box-sizing: border-box;" data-screen-label="Characters QA Grid">
+  <div style="display: flex; align-items: baseline; gap: 14px; margin-bottom: 24px;">
+    <div style="font: 700 20px system-ui; color: #33302A; letter-spacing: 0.5px;">HORIZON 캐릭터 8직군 — QA 그리드</div>
+    <div style="font: 400 13px system-ui; color: #8A8071;">220×460 · 발 기준점 (110,445) · 우향 · 투명 배경(체커)</div>
+  </div>
+  <x-import component-from-global-scope="char-grid" from="./char-grid.js" hint-size="100%,900px"></x-import>
+</div>
+</x-dc>
+</body>
+</html>
