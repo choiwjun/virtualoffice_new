@@ -146,5 +146,81 @@
       "frontend/components/OfficeViewport.tsx"
     ],
     "severity": "block"
+  },
+  {
+    "id": "fix-1784099187962",
+    "timestamp": "2026-07-15T07:06:27.963Z",
+    "commit": "fix(assets): 보행 떨림 수리 — 몸통 바운스 22→13px + CSS 모션 간섭 제거",
+    "patterns": [
+      {
+        "file_pattern": "frontend/app/globals.css",
+        "bad_code": ".vo-anim-walk { animation: vo-walk-bob 0.8s linear infinite; }",
+        "description": "fix: 커밋에서 제거된 패턴"
+      },
+      {
+        "file_pattern": "frontend/app/globals.css",
+        "bad_code": ".vo-anim-idle { animation: vo-idle-breath 1.8s ease-in-out infinite; }",
+        "description": "fix: 커밋에서 제거된 패턴"
+      },
+      {
+        "file_pattern": "frontend/app/globals.css",
+        "bad_code": ".vo-anim-sit { animation: none; } /* 착석 — 호흡은 프레임에 구워져 있음 */",
+        "description": "fix: 커밋에서 제거된 패턴"
+      },
+      {
+        "file_pattern": "tools/asset-gen/ai-plate/incoming/horizon-characters.js",
+        "bad_code": "// 접지 보상(통합 패치): 최대 보폭에서 다리 기하 단축(≈21px)만큼 골반 하강 — 없으면 두 발이 모두 뜬다(QA solidMaxY 424).",
+        "description": "fix: 커밋에서 제거된 패턴"
+      },
+      {
+        "file_pattern": "tools/asset-gen/ai-plate/incoming/horizon-characters.js",
+        "bad_code": "o.bob = 1.4 * (1 - Math.cos(2 * p)) - 1.2 + 19 * Math.sin(p) * Math.sin(p); o.lean = 0.075; o.tail = 6 * Math.sin(p);",
+        "description": "fix: 커밋에서 제거된 패턴"
+      }
+    ],
+    "files": [
+      "frontend/app/globals.css",
+      "tools/asset-gen/ai-plate/incoming/horizon-characters.js"
+    ],
+    "severity": "block"
+  },
+  {
+    "id": "fix-1784099917098",
+    "timestamp": "2026-07-15T07:18:37.098Z",
+    "commit": "fix(office): 아바타 스케일·착석 깔림 수리 — 의자 스프라이트 분리 + 미터 계약 크기",
+    "patterns": [
+      {
+        "file_pattern": "frontend/components/OfficeViewport2D.tsx",
+        "bad_code": "v.root.style.zIndex = String(Math.round(n.y * 10000));",
+        "description": "fix: 커밋에서 제거된 패턴"
+      },
+      {
+        "file_pattern": "office2d.ts b/frontend/lib/office2d.ts",
+        "bad_code": "const HEIGHT_FRAC_BACK = 0.088;  // v1 아이소 팩: 원근 없음 — 가독용 미세 변화만",
+        "description": "fix: 커밋에서 제거된 패턴"
+      },
+      {
+        "file_pattern": "office2d.ts b/frontend/lib/office2d.ts",
+        "bad_code": "const HEIGHT_FRAC_FRONT = 0.102;",
+        "description": "fix: 커밋에서 제거된 패턴"
+      },
+      {
+        "file_pattern": "frontend/public/office2d/layers/manifest.json",
+        "bad_code": "\"src\": \"sprites/item-22.webp\",",
+        "description": "fix: 커밋에서 제거된 패턴"
+      },
+      {
+        "file_pattern": "frontend/public/office2d/layers/manifest.json",
+        "bad_code": "\"src\": \"sprites/item-23.webp\",",
+        "description": "fix: 커밋에서 제거된 패턴"
+      }
+    ],
+    "files": [
+      "frontend/components/OfficeViewport2D.tsx",
+      "office2d.ts b/frontend/lib/office2d.ts",
+      "frontend/public/office2d/layers/manifest.json",
+      "tools/asset-gen/ai-plate/incoming/horizon-scene.js"
+    ],
+    "severity": "block"
   }
 ]
