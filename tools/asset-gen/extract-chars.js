@@ -1,4 +1,4 @@
-/* horizon-characters.js → 160프레임 추출 + 자동 QA + 콘택트시트 (Playwright headless) */
+/* horizon-characters.js → 208프레임(idle6+walk8+sit6+typing6 × 8직군) 추출 + 자동 QA + 콘택트시트 (Playwright headless) */
 const path = require('path');
 const fs = require('fs');
 const { chromium } = require('C:/Users/wj941/AppData/Roaming/npm/node_modules/playwright');
@@ -7,7 +7,7 @@ const ROOT = 'C:/Users/wj941/OneDrive/바탕 화면/jproject/vituraloffice_new/t
 const SRC = path.join(ROOT, 'ai-plate/incoming/horizon-characters.js');
 const OUT = path.join(ROOT, 'out/chars-v2');
 const CHARS = ['CEO', 'MANAGER', 'DEVELOPER', 'DESIGNER', 'SALES', 'HR', 'MARKETER', 'INTERN'];
-const STATES = { idle: 6, walk: 8, sit: 6 };
+const STATES = { idle: 6, walk: 8, sit: 6, typing: 6 };
 
 function sleep(ms) { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); }
 function writeRetry(file, buf) {
@@ -59,9 +59,9 @@ function writeRetry(file, buf) {
     console.log('extracted', id);
   }
 
-  // 콘택트시트: 8직군 × [idle0, walk0, walk2, walk4, walk6, sit0]
+  // 콘택트시트: 8직군 × [idle0, walk0, walk2, walk4, walk6, sit0, typing0, typing3]
   const sheet = await page.evaluate((CHARS) => {
-    const cells = [['idle', 0], ['walk', 0], ['walk', 2], ['walk', 4], ['walk', 6], ['sit', 0]];
+    const cells = [['idle', 0], ['walk', 0], ['walk', 2], ['walk', 4], ['walk', 6], ['sit', 0], ['typing', 0], ['typing', 3]];
     const c = document.createElement('canvas');
     c.width = 220 * CHARS.length; c.height = 460 * cells.length;
     const ctx = c.getContext('2d');

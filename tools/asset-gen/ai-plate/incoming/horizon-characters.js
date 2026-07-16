@@ -1,7 +1,8 @@
-/* HORIZON parametric character renderer v2
+/* HORIZON parametric character renderer v2.2
  * window.drawCharFrame(ctx, charId, state, frameIndex)
  * 220x460, transparent bg, feet anchor (110,445), facing right.
- * idle 6f @6fps | walk 8f @10fps (heel-strike gait) | sit 6f @4fps (typing, no furniture)
+ * idle 6f @6fps | walk 8f @10fps (heel-strike gait) | sit 6f @4fps (착석 호흡)
+ * | typing 6f @10fps (착석 타건 — 손목 교대 + 타건 리듬 잔바운스, no furniture)
  */
 (function () {
   const CHARS = {
@@ -15,7 +16,7 @@
     INTERN:    { gender: 'm', skin: '#E3AE85', hair: '#4A3A2C', style: 'fluff',    top: '#5C7A99', bottom: '#5A5148', shoes: '#8A8378', sneaker: true, sole: '#EFE9DC' }
   };
   CHARS.DEVELOPER.style = 'curly';
-  const STATES = { idle: { frames: 6, fps: 6 }, walk: { frames: 8, fps: 10 }, sit: { frames: 6, fps: 4 } };
+  const STATES = { idle: { frames: 6, fps: 6 }, walk: { frames: 8, fps: 10 }, sit: { frames: 6, fps: 4 }, typing: { frames: 6, fps: 10 } };
 
   function hx3(c) {
     if (c[0] === '#') { const n = parseInt(c.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
@@ -57,9 +58,16 @@
       const S = 0.36;
       arms.near = { upper: -S * Math.sin(p), bend: Math.max(0.16, 0.40 - 0.20 * Math.sin(p)) };
       arms.far = { upper: S * Math.sin(p), bend: Math.max(0.16, 0.40 + 0.20 * Math.sin(p)) };
-    } else { // sit
+    } else { // sit / typing — 동일 착석 기하, typing은 손목 타건·미세 리듬만 추가
       o.sit = true; o.breath = Math.sin(p); o.bob = 0.9 * Math.sin(p);
       o.hipY = 356; o.hipX = 96; o.lean = 0.11; o.tail = 1.6 * Math.sin(p);
+      if (state === 'typing') {
+        // 손목 진폭·주파수는 정수 사이클(freq=2)로 6프레임 루프가 이음새 없이 닫힌다.
+        o.key = { amp: 3.4, freq: 2 };
+        o.bob = 0.5 * Math.sin(2 * p); // 잔바운스 — 타건 리듬(freq 2)과 동기
+        o.lean = 0.13;                 // 모니터 쪽으로 살짝 더 숙임
+        o.tail = 0.8 * Math.sin(2 * p);
+      }
     }
     return { o, legs, arms };
   }
@@ -147,11 +155,12 @@
     }
     shoe(ctx, ankle, C, far, pitch);
   }
-  function drawArm(ctx, C, shoulder, A, far, sit, typing, skin) {
+  function drawArm(ctx, C, shoulder, A, far, sit, phase, skin, key) {
     let elbow, wrist;
     if (sit) {
       elbow = FK(shoulder, 0.52, 56);
-      wrist = { x: elbow.x + 42, y: elbow.y - 13 + 1.8 * Math.sin(typing * 2.5 + (far ? Math.PI : 0)) };
+      const k = key || { amp: 1.8, freq: 2.5 }; // sit 기본 = 미세 손목 흔들림(v2 유지)
+      wrist = { x: elbow.x + 42, y: elbow.y - 13 + k.amp * Math.sin(phase * k.freq + (far ? Math.PI : 0)) };
     } else {
       elbow = FK(shoulder, A.upper, 58);
       wrist = FK(elbow, A.upper + A.bend, 52);
@@ -501,13 +510,13 @@
     ctx.restore();
 
     hairBack(ctx, C, hxx, hy, o.tail);
-    drawArm(ctx, C, { x: shX - 15 - o.shTwist, y: shY + 8 }, arms.far, true, o.sit, o.p, C.skin);
+    drawArm(ctx, C, { x: shX - 15 - o.shTwist, y: shY + 8 }, arms.far, true, o.sit, o.p, C.skin, o.key);
     drawLeg(ctx, C, { x: pelvisX - 6, y: pelvisY }, legs.far, true, o.sit);
     if (!C.skirt) drawPelvis(ctx, C, pelvisX, pelvisY, o.sit);
     drawTorso(ctx, C, o, shX, shY, pelvisX, pelvisY);
     drawLeg(ctx, C, { x: pelvisX + 6, y: pelvisY }, legs.near, false, o.sit);
     if (C.skirt) drawSkirt(ctx, C, o, pelvisX, pelvisY - 2);
-    drawArm(ctx, C, { x: shX + 15 + o.shTwist, y: shY + 6 }, arms.near, false, o.sit, o.p + 0.9, C.skin);
+    drawArm(ctx, C, { x: shX + 15 + o.shTwist, y: shY + 6 }, arms.near, false, o.sit, o.p + 0.9, C.skin, o.key);
     // neck
     ctx.strokeStyle = C.skin; ctx.lineWidth = 8;
     ctx.beginPath(); ctx.moveTo(shX + 2, shY - 2); ctx.lineTo(hxx - 1, hy + 22); ctx.stroke();
