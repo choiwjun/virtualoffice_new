@@ -127,14 +127,30 @@ export const CHARACTER_IDS = [
 ] as const;
 export type CharacterId = (typeof CHARACTER_IDS)[number];
 
-export type AvatarState = 'idle' | 'walk' | 'sit';
+export type AvatarState = 'idle' | 'walk' | 'sit' | 'typing';
 
 /** 상태별 프레임 애니 스펙(v1.1 frames). 표시 높이는 avatarHeightFrac()이 깊이 기반으로 계산. */
 export const AVATAR_ANIM: Record<AvatarState, { frames: number; fps: number; heightScale: number }> = {
   idle: { frames: 6, fps: 6, heightScale: 1 },
   walk: { frames: 8, fps: 10, heightScale: 1 }, // v1 팩: 상태 공통 220×460 캔버스
   sit: { frames: 6, fps: 4, heightScale: 1 }, // v1.1: 착석(호흡) — 좌석 점유 시 좌석 앵커에 표시
+  typing: { frames: 6, fps: 10, heightScale: 1 }, // v2.2: 착석 타건 — 착석 중 버스트로 전환(뷰포트 판정)
 };
+
+/**
+ * 착석 중 타이핑 버스트 사이클 — 벽시계(Date.now) 기반 결정적 위상이라
+ * 모든 클라이언트가 같은 아바타의 같은 타이밍을 본다. userId 해시로 위상을 분산해
+ * 여러 착석자가 동시에 일제히 타건하지 않게 한다.
+ */
+const TYPING_CYCLE_S = 9.5;
+const TYPING_ON_S = 4.0;
+
+export function typingBurstAt(userId: string, nowMs: number): boolean {
+  let h = 0;
+  for (let i = 0; i < userId.length; i++) h = (h * 31 + userId.charCodeAt(i)) | 0;
+  const offset = ((Math.abs(h) % 97) / 97) * TYPING_CYCLE_S;
+  return (nowMs / 1000 + offset) % TYPING_CYCLE_S < TYPING_ON_S;
+}
 
 /**
  * 깊이(원근) 기반 아바타 표시 높이 — 씬에 구워져 있던 인물 실측 캘리브레이션:
@@ -183,6 +199,62 @@ export function isCharacterId(v: string | null | undefined): v is CharacterId {
  */
 export function characterForAvatar(userId: string, presetId?: string | null): CharacterId {
   return isCharacterId(presetId) ? presetId : characterFor(userId);
+}
+
+// ---------------------------------------------------------------------------
+// 씬 시간대 테마(17-spec §2 "시간대 변형은 후속" 이행) — 에셋 재굽기 없이
+// 스테이지 필터로 배경·가구·아바타를 일괄 톤 변환(톤 정합 유지, D29 교훈)
+// + 아바타 위(마커 아래)에 앰비언트 오버레이.
+// ---------------------------------------------------------------------------
+
+export type SceneThemeId = 'day' | 'dusk' | 'night';
+
+export interface SceneTheme {
+  id: SceneThemeId;
+  label: string;
+  /** 씬(플레이트+가구+아바타) 래퍼에 걸리는 CSS filter. */
+  filter: string;
+  /** 씬 위에 얹는 앰비언트 라이트 오버레이(CSS background). */
+  overlay: string;
+  overlayOpacity: number;
+  /** 테마 토글 칩의 인디케이터 색. */
+  chip: string;
+}
+
+export const SCENE_THEMES: Record<SceneThemeId, SceneTheme> = {
+  day: {
+    id: 'day',
+    label: '주간',
+    filter: 'none',
+    overlay: 'none',
+    overlayOpacity: 0,
+    chip: '#F5C64B',
+  },
+  dusk: {
+    id: 'dusk',
+    label: '석양',
+    filter: 'brightness(0.97) saturate(1.06) sepia(0.16) hue-rotate(-9deg)',
+    overlay:
+      'linear-gradient(205deg, rgba(255,146,82,0.15) 0%, rgba(255,120,90,0.07) 45%, rgba(72,60,110,0.16) 100%)',
+    overlayOpacity: 1,
+    chip: '#F08A4B',
+  },
+  night: {
+    id: 'night',
+    label: '야간',
+    filter: 'brightness(0.84) saturate(0.84) contrast(1.04) hue-rotate(8deg)',
+    overlay:
+      'linear-gradient(195deg, rgba(24,38,82,0.26) 0%, rgba(12,20,48,0.30) 55%, rgba(8,14,34,0.36) 100%)',
+    overlayOpacity: 1,
+    chip: '#3E4E8E',
+  },
+};
+
+/** 로컬 시각 → 자동 테마(주간 07–17, 석양 17–20, 야간 20–07). */
+export function themeForHour(hour: number): SceneThemeId {
+  if (hour >= 7 && hour < 17) return 'day';
+  if (hour >= 17 && hour < 20) return 'dusk';
+  return 'night';
 }
 
 // ---------------------------------------------------------------------------

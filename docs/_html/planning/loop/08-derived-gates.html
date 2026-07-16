@@ -96,7 +96,7 @@ img{max-width:100%;border-radius:8px}
 <div class="table-wrap"><table><thead><tr><th>게이트</th><th>기준</th><th>증거</th></tr></thead><tbody><tr><td><strong>HG-SEC 외부 공개 하드닝</strong></td><td>onprem-docker §3.3 체크리스트 전항목 — <strong>도그푸딩 시작 전 완료 필수</strong> (12-tasks P7-T5)</td><td>포트 스캔 결과, rate-limit 동작 테스트</td></tr><tr><td>HG-AUTH 인증</td><td>로그인+JWT 24h+role 가드, 실패 5회 백오프 잠금</td><td>401/403/잠금 테스트</td></tr><tr><td>HG-TEST 테스트</td><td>각 Phase pytest green + 계약 스텁 해제분 통과</td><td>pytest 출력</td></tr><tr><td>HG-DATA 마이그레이션</td><td>pre-prod 0001 규약 / 운영 후 autogenerate 리비전</td><td>alembic 이력</td></tr><tr><td>HG-BACKUP</td><td>pg_dump 일일 백업 + 복원 리허설 1회 (도그푸딩 전)</td><td>복원 성공 로그</td></tr></tbody></table></div>
 <h2 id="게이트-자가검증">게이트 자가검증</h2>
 <ul><li class="task"><input type="checkbox" disabled checked> 모든 MUST REQ에 Hard+Evidence 존재</li><li class="task"><input type="checkbox" disabled checked> 각 게이트 문서 추적 링크 보유 (D27 정본 기준 — 14/15/16, design-style-analysis, photoreal-web-strategy)</li><li class="task"><input type="checkbox" disabled checked> 이분법 판정 가능 (모호 표현 없음 — 측정치/파일경로/테스트 명시)</li><li class="task"><input type="checkbox" disabled checked> 선행 결정 의존 명시 (OQ13→REQ-005, D27 깊이합성 스파이크 PASS(2026-07-08)→REQ-012)</li><li class="task"><input type="checkbox" disabled checked> D27 재파생 완료 (REQ-001/004/005/006 Godot 게이트 제거, 신규 REQ-012~016 추가, 도메인 게이트 보존)</li></ul>
-<div class="meta-foot">원본: <code>08-derived-gates.md</code> · 자동 생성 2026-07-15 · md-to-html</div>
+<div class="meta-foot">원본: <code>08-derived-gates.md</code> · 자동 생성 2026-07-16 · md-to-html</div>
 </main>
 </div>
 

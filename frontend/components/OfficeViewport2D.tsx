@@ -29,7 +29,10 @@ import {
   PLATE_H,
   type SceneLayerSprite,
   ROOMS,
+  SCENE_THEMES,
+  type SceneThemeId,
   SPAWNS,
+  themeForHour,
   avatarHeightFrac,
   characterForAvatar,
   clampToWalkable,
@@ -41,6 +44,7 @@ import {
   normToMeters,
   pointInPolygon,
   polygonCentroid,
+  typingBurstAt,
   WALK_AREA,
   type Vec2,
 } from '@/lib/office2d';
@@ -184,6 +188,21 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
 
   // 방 라벨 클릭 글로우.
   const [glowRoom, setGlowRoom] = useState<string | null>(null);
+
+  // ── 씬 시간대 테마 — 자동(로컬 시각) 기본 + 수동 전환(자동→주간→석양→야간 순환) ──
+  // autoTheme 초기값은 'day' 고정: SSR/hydration 시각차 방지 — 마운트 후 실제 시각으로 평가.
+  const [themeMode, setThemeMode] = useState<'auto' | SceneThemeId>('auto');
+  const [autoTheme, setAutoTheme] = useState<SceneThemeId>('day');
+  useEffect(() => {
+    const evalNow = () => setAutoTheme(themeForHour(new Date().getHours()));
+    evalNow();
+    const id = setInterval(evalNow, 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const sceneTheme = SCENE_THEMES[themeMode === 'auto' ? autoTheme : themeMode];
+  const cycleTheme = useCallback(() => {
+    setThemeMode((m) => (m === 'auto' ? 'day' : m === 'day' ? 'dusk' : m === 'dusk' ? 'night' : 'auto'));
+  }, []);
 
   // 레이어 합성 팩(v2.1): 가구를 개별 스프라이트로 얹어 아바타와 y-기준 상호 가림.
   // manifest 없으면 null → 단일 플레이트 폴백.
@@ -541,7 +560,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
     if (!ASSETS_READY) return;
     const chars = new Set(shells.map((s) => s.char));
     chars.forEach((c) => {
-      (['idle', 'walk', 'sit'] as AvatarState[]).forEach((st) => {
+      (['idle', 'walk', 'sit', 'typing'] as AvatarState[]).forEach((st) => {
         for (let f = 0; f < AVATAR_ANIM[st].frames; f++) {
           const im = new Image();
           im.src = frameUrl(c, st, f);
@@ -634,8 +653,15 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           const vx = (v.disp.x - v.prev.x) / Math.max(dt, 1e-4);
           const vy = (v.disp.y - v.prev.y) / Math.max(dt, 1e-4);
           const speed = Math.hypot(vx, vy);
+          // 착석 중엔 타이핑 버스트(벽시계 위상 — 클라이언트 간 동일)로 sit ↔ typing 교대.
           const nextState: AvatarState =
-            speed > WALK_EPS_MPS ? 'walk' : seated ? 'sit' : 'idle';
+            speed > WALK_EPS_MPS
+              ? 'walk'
+              : seated
+                ? typingBurstAt(v.userId, Date.now())
+                  ? 'typing'
+                  : 'sit'
+                : 'idle';
           // 좌우 플립은 히스테리시스(0.25m/s) — 수직 이동 시 vx 노이즈로 파닥이지 않게.
           if (Math.abs(vx) > 0.25) v.facing = vx < 0 ? -1 : 1;
           if (nextState !== v.state) {
@@ -664,7 +690,8 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           v.root.style.top = `${py}px`;
           // 착석 시 +150 바이어스: 자기 의자 스프라이트(전면 모서리 baseline)가
           // 앉은 아바타를 덮지 않게 — 의자 반깊이(~0.25m ≈ 64) 이상, 남측 옆 가구(≥0.9m) 미만.
-          v.root.style.zIndex = String(Math.round(n.y * 10000) + (v.state === 'sit' ? 150 : 0));
+          const isSeatedState = v.state === 'sit' || v.state === 'typing';
+          v.root.style.zIndex = String(Math.round(n.y * 10000) + (isSeatedState ? 150 : 0));
           v.img.style.height = `${avatarHeightFrac(n.y, v.state) * sh}px`;
           v.img.style.transform = `scaleX(${v.facing})`;
         });
@@ -726,6 +753,15 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
         style={{ width: stage.w, height: stage.h, cursor: 'pointer' }}
         onClick={handleStageClick}
       >
+        {/* 씬 톤 래퍼 — 시간대 테마 필터를 씬·아바타·씬내 오버레이에 일괄 적용(톤 정합, D29 교훈).
+            프롬프트·미니맵·칩(z 22000+)은 래퍼 밖 형제라 테마와 무관하게 선명 유지. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            filter: sceneTheme.filter === 'none' ? undefined : sceneTheme.filter,
+            transition: 'filter 1000ms ease',
+          }}
+        >
         {ASSETS_READY ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -971,6 +1007,22 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           </div>
         ))}
 
+        {/* 앰비언트 라이트 오버레이 — 가구·아바타(≤10150) 위, 좌석 마커(15000) 아래.
+            테마별 개별 레이어의 opacity 크로스페이드로 석양↔야간 전환도 부드럽게. */}
+        {(['dusk', 'night'] as SceneThemeId[]).map((t) => (
+          <div
+            key={t}
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: SCENE_THEMES[t].overlay,
+              opacity: sceneTheme.id === t ? SCENE_THEMES[t].overlayOpacity : 0,
+              transition: 'opacity 1000ms ease',
+              zIndex: 12000,
+            }}
+          />
+        ))}
+        </div>
+
         {/* 회의 명시입장 프롬프트(D24) — 서버 2m 근접+정원 통과 시 표시 */}
         {meetingPrompt && (
           <div
@@ -1138,6 +1190,22 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           >
             <span className="w-1.5 h-1.5 rounded-[2px] inline-block" style={{ background: mySeat ? '#3B5BFE' : '#64748B' }} />
             내 자리로
+          </button>
+          <button
+            type="button"
+            onClick={cycleTheme}
+            title="씬 조명 테마 — 클릭해서 전환(자동→주간→석양→야간)"
+            className="px-2.5 py-1 rounded-lg text-[10px] font-medium tracking-wide flex items-center gap-1.5"
+            style={{
+              background: 'rgba(13,27,54,.78)',
+              backdropFilter: 'blur(6px)',
+              border: '1px solid rgba(255,255,255,.12)',
+            }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: sceneTheme.chip }} />
+            <span className="text-text-secondary">
+              {themeMode === 'auto' ? `자동 · ${sceneTheme.label}` : sceneTheme.label}
+            </span>
           </button>
           <div className="relative">
             <button

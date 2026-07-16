@@ -155,7 +155,7 @@ ERP가 분기별 인사평가 자료 수집</code></pre>
 <ol><li><strong>ERP 브랜치 전환 지연</strong>: ERP kpi<em>results 테이블 추가가 지연되면, 우리의 KPI push 쓰기가 블로킹됨 → <strong>완화</strong>: 초기 kpi</em>results를 우리 DB에만 쌓고(feature flag OFF), ERP 준비 후 backfill (D17)</li><li><strong>이동서버 성능 (설계 100명)</strong>: Colyseus 권위 서버 동기화 성능 미검증 → <strong>완화</strong>: P3 이동서버 구현 후 + P7 부하 테스트, tick 20Hz, 100명 초과 시 AOI 필터링 (D22/D27)</li><li><strong>AI 평가 정확도</strong>: 서술 초안 품질이 예상 수준 미만 → <strong>완화</strong>: 정량은 결정론적 코드로 고정(D14), AI 서술은 사용자 피드백으로 프롬프트 반복 개선</li><li><strong>사용자 피드백 곡선</strong>: 사내 도그푸딩 중 UX 이슈 발견 시 개발 일정 슬립 → <strong>완화</strong>: Phase 4부터 <strong>주 1회 이상 피드백 수집 체계</strong></li><li><strong>깊이합성 정합 (신규, D27)</strong>: Blender 렌더 배경과 R3F 실시간 아바타의 깊이·조명 정합 실패 위험 → <strong>완화</strong>: P0 스파이크에서 오클루전 검증(<strong>PASS 2026-07-08</strong>), IBL 정합·Z깊이패스 기준 확립. 정합 붕괴 시 카메라 앵글/씬 단순화로 폴백</li><li><strong>STT 정확도 / 한국어 화자분리</strong> (신규, D5/F): 회의록 자동 초안 품질·화자분리 정확도 미달 위험 → <strong>완화</strong>: P6 STT PoC, 누락률 &lt;5% 미달 시 수동 회의록 + AI 요약으로 격하(기준 하향 재협의)</li><li><strong>개인정보 / 노동법 컴플라이언스</strong> (신규, D20): 평가 목적 행동 데이터 수집 동의, 회의 녹음·STT 동의, 외부 LLM 전송 → <strong>완화</strong>: D20 컴플라이언스 원칙(고지·동의 절차, 사번 가명화, 보존기한, 최소수집 VIEW) 도입 전 이행</li></ol>
 <hr>
 <p><strong>다음 문서</strong>: <a href="02-trd-architecture.md">02-trd-architecture.md</a> (기술 아키텍처)</p>
-<div class="meta-foot">원본: <code>01-prd.md</code> · 자동 생성 2026-07-15 · md-to-html</div>
+<div class="meta-foot">원본: <code>01-prd.md</code> · 자동 생성 2026-07-16 · md-to-html</div>
 </main>
 </div>
 
