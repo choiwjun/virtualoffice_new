@@ -567,24 +567,32 @@
         add(r.u0 + r.du * t, r.v1 + MV * 0.4, () => officeChair(ctx, r.u0 + r.du * t, r.v1 + MV * 0.4, 'v+'));
       }
     })();
-    // pantry island: bench + table + stools
-    add(R[17].cu, R[17].cv, () => {
+    // pantry island — 벤치/테이블/스툴 개별 아이템(그룹이면 baseline이 전면 스툴 접점으로
+    // 내려가, 북측 근접 아바타를 뒤 벤치가 잘못 덮는다 — 보드룸 의자 분리와 동일 원리)
+    (function pantry() {
       const r = R[17];
-      shadow(ctx, r.u0, r.v0, r.u1, r.v1, 0.9, 0.14);
-      // white bench along back
-      box(ctx, r.u0, r.v0, r.u1, r.v0 + r.dv * 0.30, 0, 0.48, '#F0EDE4', { r: 1.5 });
-      box(ctx, r.u0 + r.du * 0.08, r.v0 + r.dv * 0.05, r.u0 + r.du * 0.22, r.v0 + r.dv * 0.24, 0.48, 0.92, '#2E3440', { r: 1.5 });
-      ell(ctx, r.u0 + r.du * 0.15, r.v0 + r.dv * 0.14, 0.06, 0.925, 'rgba(255,255,255,0.25)');
-      box(ctx, r.u0 + r.du * 0.30, r.v0 + r.dv * 0.08, r.u0 + r.du * 0.38, r.v0 + r.dv * 0.20, 0.48, 0.74, '#C7C2B5', { r: 1.5 });
+      add(r.cu, r.v0 + r.dv * 0.15, () => {
+        shadow(ctx, r.u0, r.v0, r.u1, r.v1, 0.9, 0.14);
+        // white bench along back
+        box(ctx, r.u0, r.v0, r.u1, r.v0 + r.dv * 0.30, 0, 0.48, '#F0EDE4', { r: 1.5 });
+        box(ctx, r.u0 + r.du * 0.08, r.v0 + r.dv * 0.05, r.u0 + r.du * 0.22, r.v0 + r.dv * 0.24, 0.48, 0.92, '#2E3440', { r: 1.5 });
+        ell(ctx, r.u0 + r.du * 0.15, r.v0 + r.dv * 0.14, 0.06, 0.925, 'rgba(255,255,255,0.25)');
+        box(ctx, r.u0 + r.du * 0.30, r.v0 + r.dv * 0.08, r.u0 + r.du * 0.38, r.v0 + r.dv * 0.20, 0.48, 0.74, '#C7C2B5', { r: 1.5 });
+      });
       // long wood table
-      const tv0 = r.v0 + r.dv * 0.36, tv1 = r.v0 + r.dv * 0.66;
-      legs(ctx, { u0: r.u0 + MU * 0.1, v0: tv0, u1: r.u1 - MU * 0.1, v1: tv1 }, 0.68, sh(WOOD, 0.62));
-      box(ctx, r.u0 + MU * 0.1, tv0, r.u1 - MU * 0.1, tv1, 0.68, 0.75, WOOD, { r: 1.5 });
-      woodGrain(ctx, r.u0 + MU * 0.1, tv0, r.u1 - MU * 0.1, tv1, 0.75, 6);
-      ell(ctx, r.cu + MU * 0.5, (tv0 + tv1) / 2, 0.12, 0.755, '#A8442F');
-      // stools in front
-      for (let i = 0; i < 3; i++) cubeStool(ctx, r.u0 + r.du * (0.2 + 0.3 * i), r.v0 + r.dv * 0.86, 0.5);
-    });
+      add(r.cu, r.v0 + r.dv * 0.51, () => {
+        const tv0 = r.v0 + r.dv * 0.36, tv1 = r.v0 + r.dv * 0.66;
+        legs(ctx, { u0: r.u0 + MU * 0.1, v0: tv0, u1: r.u1 - MU * 0.1, v1: tv1 }, 0.68, sh(WOOD, 0.62));
+        box(ctx, r.u0 + MU * 0.1, tv0, r.u1 - MU * 0.1, tv1, 0.68, 0.75, WOOD, { r: 1.5 });
+        woodGrain(ctx, r.u0 + MU * 0.1, tv0, r.u1 - MU * 0.1, tv1, 0.75, 6);
+        ell(ctx, r.cu + MU * 0.5, (tv0 + tv1) / 2, 0.12, 0.755, '#A8442F');
+      });
+      // stools in front — 개별 아이템
+      for (let i = 0; i < 3; i++) {
+        const su = r.u0 + r.du * (0.2 + 0.3 * i), sv = r.v0 + r.dv * 0.86;
+        add(su, sv, () => cubeStool(ctx, su, sv, 0.5));
+      }
+    })();
     // cafe: rug + round table + lounge chairs
     add(R[23].cu - 0.03, R[23].cv - 0.03, () => {
       const r = R[23];
@@ -612,13 +620,15 @@
       mug(ctx, r.cu - MU * 0.12, r.cv, '#A8442F');
     });
     add(R[23].cu + 0.028, R[23].cv + 0.04, () => loungeChair(ctx, R[23].cu + MU * 1.0, R[23].cv + MV * 0.9, 'u+'));
-    // phone booth interior
-    add(R[24].cu + 0.01, R[24].cv + 0.04, () => {
-      const bc = { u: (R[24].u0 + R[26].u1) / 2, v: (R[24].v1 + 0.06 + R[24].v1) / 2 };
+    // phone booth interior — 바닥광은 배경 흡수(flat), 스툴/패널 개별 아이템
+    // (부스 내부는 보행 가능 — 아바타가 스툴과 패널 사이에 설 수 있다)
+    add(R[24].cu + 0.005, R[24].cv + 0.02, () => {
       ctx.save(); ctx.filter = 'blur(7px)';
       ell(ctx, R[24].cu, R[24].v1 + MV * 0.6, 0.75, 0.003, 'rgba(255,238,205,0.22)');
       ctx.restore();
-      cubeStool(ctx, R[24].cu, R[24].v1 + MV * 0.55, 0.48);
+    }, true);
+    add(R[24].cu, R[24].v1 + MV * 0.55, () => cubeStool(ctx, R[24].cu, R[24].v1 + MV * 0.55, 0.48));
+    add(R[24].u1 - MU * 0.3, R[24].v1 + MV * 0.33, () => {
       // acoustic panel
       box(ctx, R[24].u1 - MU * 0.5, R[24].v1 + MV * 0.15, R[24].u1 - MU * 0.1, R[24].v1 + MV * 0.5, 0, 0.92, '#3D4C6D', { r: 1.5 });
     });

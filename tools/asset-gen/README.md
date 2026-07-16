@@ -8,16 +8,23 @@
 > `out/layout.json`** — 배치를 바꾸면 plate.js 수정 → 재생성 → horizon-scene.js의 OB/SEATS 블록도
 > 동일 값으로 갱신 → PNG 재수출(3344px) → `frontend/public/office2d/plates/horizon.png` 교체.
 > **v2.1 오클루전 레이어 (2026-07-15)**: horizon-scene.js의 캡처 모드(`renderHorizonLayers`)로
-> 배경 1장 + 가구 스프라이트 32장(WebP, 총 0.45MB)을 분리 추출(`node extract-layers.js` →
+> 배경 1장 + 가구 스프라이트를 분리 추출(`node extract-layers.js` →
 > `frontend/public/office2d/layers/`). 뷰포트가 manifest의 z(바닥 접점 정규 y)로
 > 아바타와 동일 규칙(zIndex=z·10000) 합성 → 상호 가림. manifest 없으면 단일 플레이트 폴백.
-> 씬 수정 시 재추출 필수. 러그 등 평면 아이템은 add(..., true)로 배경에 흡수.
+> 씬 수정 시 재추출 필수(재추출 전 sprites/ 비우기 — 아이템 번호가 밀리면 고아 webp가 남는다).
+> 러그 등 평면 아이템은 add(..., true)로 배경에 흡수.
+> **그룹 분리 이력**: 의자류(ad83361 — 보드룸·미팅·워크스테이션) + 팬트리 아일랜드
+> 벤치/테이블/스툴·폰부스 스툴/패널(2026-07-16) → 현재 57장(WebP 총 0.50MB).
+> 원리: 그룹이면 baseline이 최전방 부재로 내려가 뒤 부재가 근접 아바타를 잘못 덮는다.
 >
 > **캐릭터도 v2 (2026-07-15)**: 그림 정본 = `ai-plate/incoming/horizon-characters.js`
-> (`window.drawCharFrame(ctx, charId, state, f)` — 220×460·발 (110,445)·idle6/walk8/sit6).
-> 재추출 = Playwright 헤드리스로 160프레임 자동 추출+QA(투명도·발 접지·bbox) — 세션 스크립트
-> extract-chars.js 참조. 주의: 보행 접지 보상 패치(o.bob의 `+19·sin²p` 항)가 통합 시 추가됨 —
+> (`window.drawCharFrame(ctx, charId, state, f)` — 220×460·발 (110,445)·
+> idle6/walk8/sit6/**typing6**(2026-07-16 추가, 총 208프레임)).
+> 재추출 = `node extract-chars.js`(Playwright 헤드리스, 자동 QA: 투명도·발 접지·bbox)
+> → `out/chars-v2/` → typing 등 신규 상태만 frontend/public/office2d/characters/ 복사.
+> 주의: 보행 접지 보상 패치(o.bob의 `+19·sin²p` 항)가 통합 시 추가됨 —
 > 렌더러 재납품 받으면 이 항 유지 확인. `src/characters.js`는 v1 폴백으로 보존.
+> typing 재생은 뷰포트가 착석 중 벽시계 위상 버스트(office2d.ts `typingBurstAt`)로 전환.
 
 ## 파일 맵
 
