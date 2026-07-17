@@ -46,6 +46,18 @@ def _metrics_summary(metrics: dict[str, float]) -> str:
     return ", ".join(parts)
 
 
+def _readable_summary(metrics: dict[str, float]) -> str:
+    """사람이 읽는 정량 요약 문장 — 화면 노출용(원시 metric=value 덤프 금지, 2026-07-17 사용자 지적)."""
+    def g(name: str) -> float:
+        return float(metrics.get(name, 0) or 0)
+
+    return (
+        f"완료 업무 {g('work_completed_count'):.0f}건 · 회의록 {g('minutes_authored_count'):.0f}건 · "
+        f"액션 이행 {g('action_items_completed'):.0f}건(정시율 {g('action_items_ontime_rate'):.0f}%) · "
+        f"협업 종합 {g('collaboration_score'):.1f}점"
+    )
+
+
 def _overall_band(collab: float) -> tuple[str, str]:
     """서술적 종합 판단(상/중상/중/중하/하) — 근거는 정량 인용(D14-e: 점수 재계산 아님)."""
     if collab >= 85:
@@ -96,26 +108,26 @@ def _mock_draft(
     if g("collaboration_score") >= 70:
         strengths.append({
             "strength": "협업 지표 양호",
-            "example": f"collaboration_score {g('collaboration_score'):.1f}",
+            "example": f"협업 종합점수 {g('collaboration_score'):.1f}점",
         })
     else:
         improvements.append({
             "area": "협업 참여",
-            "rationale": f"collaboration_score {g('collaboration_score'):.1f} — 기준(70) 미만",
+            "rationale": f"협업 종합점수 {g('collaboration_score'):.1f}점 — 기준(70점) 미만",
             "actions": ["회의록 작성 참여 확대", "결정사항(decisions) 기록 습관화"],
         })
 
     if 0 < g("report_fidelity_score") < 60:
         improvements.append({
             "area": "업무기록 충실도",
-            "rationale": f"report_fidelity_score {g('report_fidelity_score'):.1f}",
+            "rationale": f"기록 충실도 {g('report_fidelity_score'):.1f}점 — 기준(60점) 미만",
             "actions": ["목표·결과 URL·다음 액션 4항목 채우기"],
         })
 
     if not strengths:
         strengths.append({
             "strength": "전 지표가 기준 범위 내에서 무난히 유지됨",
-            "example": _metrics_summary(metrics),
+            "example": _readable_summary(metrics),
         })
     if not improvements:
         improvements.append({"area": "현 수준 유지", "rationale": "특이 리스크 없음", "actions": []})
@@ -125,7 +137,7 @@ def _mock_draft(
         "strengths": strengths,
         "improvement_areas": improvements,
         "overall_assessment": assessment,
-        "overall_rationale": f"{rationale_head}. 대상 {subject}의 집계 지표: {_metrics_summary(metrics)}",
+        "overall_rationale": f"{rationale_head}. 기간 집계: {_readable_summary(metrics)}",
         "team_percentile": team_percentile,
         "_source": "mock",
     }

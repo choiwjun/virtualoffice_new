@@ -90,13 +90,16 @@ def test_mock_draft_structure_deterministic():
 
 
 async def test_generate_draft_no_pii_leak():
-    """AI 초안에 실명/이메일이 포함되지 않아야 함 (D20)."""
+    """AI 초안에 실명/이메일이 포함되지 않아야 함 (D20).
+    2026-07-17: 화면 노출 문구에서 가명 라벨·원시 metric=value 덤프도 제거(사용자 지적) —
+    가명(subject)은 LLM 프롬프트 전달용으로만 쓰고 mock 서술문에는 넣지 않는다."""
     metrics = {"work_completed_count": 6, "collaboration_score": 80}
     draft = await generate_draft(metrics, user_id=100)
     blob = str(draft)
     assert "김앨리스" not in blob
     assert "@" not in draft["overall_rationale"]
-    assert pseudonymize_user(100) in draft["overall_rationale"]  # 가명 라벨은 포함
+    assert pseudonymize_user(100) not in draft["overall_rationale"]  # 가명 라벨도 화면 미노출
+    assert "work_completed_count=" not in blob  # 원시 지표 덤프 금지
 
 
 # ── kpi_engine 통합 ───────────────────────────────────────────
