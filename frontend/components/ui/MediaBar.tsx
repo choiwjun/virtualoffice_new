@@ -3,8 +3,8 @@
 // design-style-analysis §4 — 미디어 컨트롤 바
 // C3: 연결된 LiveKit 룸이 있으면 마이크·카메라·화면공유를 실제 제어, 없으면 비활성(대기).
 
-import { useCallback, useEffect, useState } from 'react';
-import type { Room } from 'livekit-client';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { RoomEvent, type Room } from 'livekit-client';
 
 interface MediaBarProps {
   /** 연결된 LiveKit 룸. 없으면 컨트롤 비활성(회의 미입장). */
@@ -59,6 +59,15 @@ export function MediaBar({ room, onLeave, className = '' }: MediaBarProps) {
   const [micOn, setMicOn] = useState(false);
   const [camOn, setCamOn] = useState(false);
   const [shareOn, setShareOn] = useState(false);
+  // WebRTC 안정화: 장치 획득 실패(카메라/마이크 없음·권한 거부) 인라인 표시
+  const [devError, setDevError] = useState<string | null>(null);
+  const devErrTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showDevError = useCallback((msg: string) => {
+    setDevError(msg);
+    if (devErrTimer.current) clearTimeout(devErrTimer.current);
+    devErrTimer.current = setTimeout(() => setDevError(null), 5000);
+  }, []);
+  useEffect(() => () => { if (devErrTimer.current) clearTimeout(devErrTimer.current); }, []);
 
   // 룸 연결/해제·로컬트랙 발행 이벤트 시 권위 상태(localParticipant.is*Enabled)로 동기화.
   // 토글 promise가 시그널 재접속과 겹쳐 거부돼도(발행은 재개 후 완료될 수 있음) UI가 실상태를 따른다(2026-07-17 실측).
@@ -76,51 +85,79 @@ export function MediaBar({ room, onLeave, className = '' }: MediaBarProps) {
       setShareOn(lp.isScreenShareEnabled);
     };
     sync();
-    room.on('localTrackPublished', sync);
-    room.on('localTrackUnpublished', sync);
+    // WebRTC 안정화: 마이크 off는 unpublish가 아니라 mute라 TrackMuted/Unmuted 없이는
+    // 상태가 어긋난다. 재연결 후 트랙 재발행(Reconnected)·장치 오류도 동기화 대상.
+    const onDevError = (e: Error) =>
+      showDevError(`장치 오류: ${e.message || '카메라/마이크를 사용할 수 없습니다'}`);
+    room.on(RoomEvent.LocalTrackPublished, sync);
+    room.on(RoomEvent.LocalTrackUnpublished, sync);
+    room.on(RoomEvent.TrackMuted, sync);
+    room.on(RoomEvent.TrackUnmuted, sync);
+    room.on(RoomEvent.Reconnected, sync);
+    room.on(RoomEvent.MediaDevicesError, onDevError);
     return () => {
-      room.off('localTrackPublished', sync);
-      room.off('localTrackUnpublished', sync);
+      room.off(RoomEvent.LocalTrackPublished, sync);
+      room.off(RoomEvent.LocalTrackUnpublished, sync);
+      room.off(RoomEvent.TrackMuted, sync);
+      room.off(RoomEvent.TrackUnmuted, sync);
+      room.off(RoomEvent.Reconnected, sync);
+      room.off(RoomEvent.MediaDevicesError, onDevError);
     };
-  }, [room]);
+  }, [room, showDevError]);
+
+  // WebRTC 안정화: 장치 계열 오류(권한 거부·장치 없음·점유)만 사용자에게 알린다.
+  // 재접속 경합 거부는 기존대로 무음 — 발행이 재개되면 이벤트가 상태를 맞춘다.
+  const isDeviceError = (e: unknown): e is Error =>
+    e instanceof Error && /NotAllowed|NotFound|NotReadable|Permission|Device/i.test(`${e.name} ${e.message}`);
 
   const toggleMic = useCallback(async () => {
     if (!room) return;
     const lp = room.localParticipant;
     try {
       await lp.setMicrophoneEnabled(!lp.isMicrophoneEnabled);
-    } catch {
-      // 재접속 경합 등 — 발행이 재개 후 완료되면 localTrackPublished 이벤트가 상태를 맞춘다
+    } catch (e) {
+      if (isDeviceError(e)) showDevError('마이크를 사용할 수 없습니다 (권한/장치 확인)');
     } finally {
       setMicOn(lp.isMicrophoneEnabled);
     }
-  }, [room]);
+  }, [room, showDevError]);
 
   const toggleCam = useCallback(async () => {
     if (!room) return;
     const lp = room.localParticipant;
     try {
       await lp.setCameraEnabled(!lp.isCameraEnabled);
-    } catch {
-      // 상동
+    } catch (e) {
+      if (isDeviceError(e)) showDevError('카메라를 사용할 수 없습니다 (권한/장치 확인)');
     } finally {
       setCamOn(lp.isCameraEnabled);
     }
-  }, [room]);
+  }, [room, showDevError]);
 
   const toggleShare = useCallback(async () => {
     if (!room) return;
     const lp = room.localParticipant;
     try {
       await lp.setScreenShareEnabled(!lp.isScreenShareEnabled);
-    } catch {
-      // 상동
+    } catch (e) {
+      if (isDeviceError(e)) showDevError('화면 공유를 시작할 수 없습니다');
     } finally {
       setShareOn(lp.isScreenShareEnabled);
     }
-  }, [room]);
+  }, [room, showDevError]);
 
   return (
+    <div className="relative inline-flex flex-col items-center">
+      {/* 장치 오류 인라인 알림 (5초 후 자동 소멸) */}
+      {devError && (
+        <div
+          role="alert"
+          className="absolute -top-9 whitespace-nowrap rounded-lg px-3 py-1.5 text-[10px] text-danger border border-border-subtle shadow-lg"
+          style={{ background: 'rgba(13,27,54,0.92)', backdropFilter: 'blur(6px)' }}
+        >
+          {devError}
+        </div>
+      )}
     <div
       className={[
         'inline-flex items-center gap-2 px-4 py-2 rounded-full',
@@ -157,6 +194,7 @@ export function MediaBar({ room, onLeave, className = '' }: MediaBarProps) {
           <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
         </svg>
       } />
+    </div>
     </div>
   );
 }

@@ -18,7 +18,7 @@ import { ProgressMetric } from '@/components/ui/ProgressMetric';
 import { MediaBar } from '@/components/ui/MediaBar';
 import { MeetingStage } from '@/components/ui/MeetingStage';
 import { connectToMeeting, disconnectRoom } from '@/lib/livekit';
-import type { Room } from 'livekit-client';
+import { DisconnectReason, RoomEvent, type Room } from 'livekit-client';
 import { ListItem } from '@/components/ui/ListItem';
 import { ROOMS as VIEWPORT_ROOMS } from '@/lib/office2d';
 import dynamic from 'next/dynamic';
@@ -314,8 +314,11 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
   const [activeRoom, setActiveRoom] = useState<Room | null>(null);
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
+  // WebRTC 안정화: 시그널/미디어 재연결 진행 여부 (연결 배지 표시용)
+  const [mediaReconnecting, setMediaReconnecting] = useState(false);
 
   const handleJoinMeeting = useCallback(async (meetingId: string) => {
+    if (joining || activeRoom) return; // 이중 클릭 시 룸 중복 연결·누수 방지
     setJoining(true);
     setJoinError(null);
     try {
@@ -332,11 +335,43 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
     } finally {
       setJoining(false);
     }
-  }, []);
+  }, [joining, activeRoom]);
 
   const handleLeaveMeeting = useCallback(async () => {
     await disconnectRoom(activeRoom);
     setActiveRoom(null);
+  }, [activeRoom]);
+
+  // WebRTC 안정화: 룸 수명주기 추적 — 서버측 회의 종료·토큰 만료·재연결 한도 초과로
+  // 룸이 끊기면 activeRoom을 정리한다(미정리 시 "연결됨" 고착 + 재입장 차단).
+  useEffect(() => {
+    if (!activeRoom) {
+      setMediaReconnecting(false);
+      return;
+    }
+    const onReconnecting = () => setMediaReconnecting(true);
+    const onReconnected = () => setMediaReconnecting(false);
+    const onDisconnected = (reason?: DisconnectReason) => {
+      setActiveRoom(null);
+      setMediaReconnecting(false);
+      if (reason === DisconnectReason.DUPLICATE_IDENTITY) {
+        setJoinError('다른 곳에서 같은 계정으로 입장하여 회의 연결이 종료되었습니다');
+      } else if (reason === DisconnectReason.ROOM_DELETED) {
+        setJoinError('회의가 종료되었습니다');
+      } else if (reason !== undefined && reason !== DisconnectReason.CLIENT_INITIATED) {
+        setJoinError('회의 연결이 끊어졌습니다. 다시 입장해주세요');
+      }
+    };
+    activeRoom.on(RoomEvent.Reconnecting, onReconnecting);
+    activeRoom.on(RoomEvent.SignalReconnecting, onReconnecting);
+    activeRoom.on(RoomEvent.Reconnected, onReconnected);
+    activeRoom.on(RoomEvent.Disconnected, onDisconnected);
+    return () => {
+      activeRoom.off(RoomEvent.Reconnecting, onReconnecting);
+      activeRoom.off(RoomEvent.SignalReconnecting, onReconnecting);
+      activeRoom.off(RoomEvent.Reconnected, onReconnected);
+      activeRoom.off(RoomEvent.Disconnected, onDisconnected);
+    };
   }, [activeRoom]);
 
   // D24: 뷰포트 회의실 근접 프롬프트 확인 → 해당 방의 회의에 명시 입장(LiveKit).
@@ -826,7 +861,11 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                           : '진행중'}
                     </span>
                     {activeRoom ? (
-                      <span className="text-[10px] text-status-online font-medium flex-shrink-0">● 연결됨</span>
+                      mediaReconnecting ? (
+                        <span className="text-[10px] text-status-external font-medium flex-shrink-0">● 재연결 중…</span>
+                      ) : (
+                        <span className="text-[10px] text-status-online font-medium flex-shrink-0">● 연결됨</span>
+                      )
                     ) : (
                       <button
                         type="button"

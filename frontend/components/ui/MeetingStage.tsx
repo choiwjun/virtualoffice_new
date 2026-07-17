@@ -26,6 +26,11 @@ function useRoomRevision(room: Room | null): number {
       RoomEvent.TrackUnmuted,
       RoomEvent.LocalTrackPublished,
       RoomEvent.LocalTrackUnpublished,
+      // WebRTC 안정화: 재연결 후 트랙 재발행·발화 표시·스트림 일시정지도 갱신 대상
+      RoomEvent.Reconnected,
+      RoomEvent.ConnectionStateChanged,
+      RoomEvent.ActiveSpeakersChanged,
+      RoomEvent.TrackStreamStateChanged,
     ];
     events.forEach((e) => room.on(e, bump));
     return () => { events.forEach((e) => room.off(e, bump)); };
@@ -42,6 +47,18 @@ function ParticipantTile({ participant, isLocal, rev }: { participant: Participa
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const attachedVideo = useRef<Track | null>(null);
   const attachedAudio = useRef<Track | null>(null);
+
+  // WebRTC 안정화: 언마운트 시 트랙에서 엘리먼트를 detach — 미해제 시 트랙이
+  // 제거된 <video>/<audio> 참조를 계속 보유해 입장/퇴장 반복마다 누적된다.
+  useEffect(
+    () => () => {
+      if (attachedVideo.current && videoRef.current) attachedVideo.current.detach(videoRef.current);
+      if (attachedAudio.current && audioRef.current) attachedAudio.current.detach(audioRef.current);
+      attachedVideo.current = null;
+      attachedAudio.current = null;
+    },
+    [],
+  );
 
   // 카메라(없으면 화면공유) 비디오 트랙 attach — 트랙이 실제로 바뀔 때만 재부착(rev 잦은 변화에도 안정).
   useEffect(() => {
