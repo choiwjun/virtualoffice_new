@@ -96,6 +96,11 @@ export class OfficeRoom extends Room<OfficeState> {
 
     this.setState(new OfficeState());
     this.layout = await this.layoutProvider.getLayout(this.officeId, this.floorId);
+    // 어떤 층 지오메트리로 이동/충돌을 검증하는지(배포 레이아웃 vs 씬 폴백) 운영 진단 로그.
+    // eslint-disable-next-line no-console
+    console.log(
+      `[realtime] room ${this.officeId}/${this.floorId} layout: bounds ${this.layout.bounds.w.toFixed(1)}x${this.layout.bounds.h.toFixed(1)}m, walls=${this.layout.walls.length}, seats=${this.layout.seats.length}, zones=${this.layout.meetingZones.length}`,
+    );
 
     // Seed meeting occupancy counters.
     for (const z of this.layout.meetingZones) this.meetingOccupancy.set(z.roomId, 0);

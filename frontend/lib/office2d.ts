@@ -118,6 +118,15 @@ export const OBSTACLES: Vec2[][] = [
   [{ x: 0.6449, y: 0.9093 }, { x: 0.6525, y: 0.916 }, { x: 0.6037, y: 0.9594 }, { x: 0.5961, y: 0.9526 }],
 ];
 
+/**
+ * 활성 플로어 지오메트리(이동 판정용) — 기본 = HORIZON 씬 상수.
+ * 배포된 편집기 레이아웃이 있으면 뷰포트가 setActiveFloorGeometry로 교체해
+ * 이동/충돌/경로가 배포 배치(경계·벽)를 따르게 한다(realtime 검증과 정합).
+ * null로 되돌리면 참조가 다시 HORIZON 상수 = 미배포 시 이동 동작 바이트 동일(회귀 0).
+ */
+let _activeWalkArea: Vec2[] = WALK_AREA;
+let _activeObstacles: Vec2[][] = OBSTACLES;
+
 // ---------------------------------------------------------------------------
 // 캐릭터
 // ---------------------------------------------------------------------------
@@ -287,8 +296,8 @@ export function polygonCentroid(poly: Vec2[]): Vec2 {
 
 /** 보행 가능 판정 = 보행 폴리곤 안 + 모든 가구 폴리곤 밖. */
 export function isWalkable(p: Vec2): boolean {
-  if (!pointInPolygon(p, WALK_AREA)) return false;
-  return !OBSTACLES.some((ob) => pointInPolygon(p, ob));
+  if (!pointInPolygon(p, _activeWalkArea)) return false;
+  return !_activeObstacles.some((ob) => pointInPolygon(p, ob));
 }
 
 /**
@@ -297,7 +306,7 @@ export function isWalkable(p: Vec2): boolean {
  */
 export function clampToWalkable(p: Vec2): Vec2 {
   if (isWalkable(p)) return p;
-  const c = polygonCentroid(WALK_AREA);
+  const c = polygonCentroid(_activeWalkArea);
   const STEPS = 120;
   for (let i = 1; i <= STEPS; i++) {
     const t = 1 - i / STEPS;
@@ -350,7 +359,7 @@ function pathGrid(): Uint8Array {
     const y = Math.floor(my / PATH_CELL_M);
     if (x >= 0 && y >= 0 && x < GRID_COLS && y < GRID_ROWS) g[y * GRID_COLS + x] = 0;
   };
-  for (const ob of OBSTACLES) {
+  for (const ob of _activeObstacles) {
     for (let i = 0; i < ob.length; i++) {
       const a = normToMeters(ob[i]);
       const b = normToMeters(ob[(i + 1) % ob.length]);
@@ -370,13 +379,25 @@ let obstacleEdgesM: Array<[Vec2, Vec2]> | null = null;
 function edgesM(): Array<[Vec2, Vec2]> {
   if (obstacleEdgesM) return obstacleEdgesM;
   const out: Array<[Vec2, Vec2]> = [];
-  for (const ob of OBSTACLES) {
+  for (const ob of _activeObstacles) {
     for (let i = 0; i < ob.length; i++) {
       out.push([normToMeters(ob[i]), normToMeters(ob[(i + 1) % ob.length])]);
     }
   }
   obstacleEdgesM = out;
   return out;
+}
+
+/**
+ * 활성 플로어 지오메트리 교체 — 배포 레이아웃 반영/해제 시 뷰포트가 호출.
+ * walkArea/obstacles는 정규(0~1) 좌표. null이면 HORIZON 기본으로 복원.
+ * 메모된 A* 그리드/장애물 에지 캐시를 무효화해 다음 이동 계산부터 새 지오메트리를 쓴다.
+ */
+export function setActiveFloorGeometry(g: { walkArea: Vec2[]; obstacles: Vec2[][] } | null): void {
+  _activeWalkArea = g?.walkArea ?? WALK_AREA;
+  _activeObstacles = g?.obstacles ?? OBSTACLES;
+  walkGrid = null;
+  obstacleEdgesM = null;
 }
 
 function orient(a: Vec2, b: Vec2, c: Vec2): number {

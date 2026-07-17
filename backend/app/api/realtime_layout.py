@@ -79,7 +79,21 @@ def map_floor_layout(layout_json: dict, office_id: str, floor_id: str) -> dict:
             st, en = gw.get("start") or {}, gw.get("end") or {}
             walls.append({"x1": _f(st.get("x")), "y1": _f(st.get("y")), "x2": _f(en.get("x")), "y2": _f(en.get("y")), "glass": True})
 
-    return {"officeId": office_id, "floorId": floor_id, "bounds": bounds, "walls": walls, "seats": seats, "meetingZones": zones}
+    spawn = None
+    sd = layout_json.get("spawn_default") or {}
+    want = sd.get("spawn_id")
+    for sp in layout_json.get("spawn_points") or []:
+        if want is None or sp.get("spawn_id") == want:
+            c = sp.get("coords") or {}
+            spawn = {"x": _f(c.get("x")), "y": _f(c.get("y"))}
+            break
+    if spawn is None and seats:
+        spawn = {"x": seats[0]["x"], "y": seats[0]["y"]}
+
+    out = {"officeId": office_id, "floorId": floor_id, "bounds": bounds, "walls": walls, "seats": seats, "meetingZones": zones}
+    if spawn is not None:
+        out["spawn"] = spawn
+    return out
 
 
 @router.get("/floor-layout")
@@ -89,22 +103,37 @@ async def realtime_floor_layout(
     _: None = Depends(require_internal),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """deployed 레이아웃을 FloorLayout 형태로 반환. 없거나 id가 UUID 아니면 404."""
+    """deployed 레이아웃을 FloorLayout 형태로 반환.
+
+    office/floor id가 UUID면 해당 층의 deployed 버전을 우선 사용한다. 매칭 배포본이 없거나
+    id가 비-UUID(데모 'office-demo'/'floor-1' 등)면 **최신 deployed 배포본으로 폴백**한다 —
+    이동서버(realtime)가 데모 id로도 배포된 배치의 충돌/경계를 쓰게 해 프론트 벡터 렌더와
+    지오메트리를 일치시킨다(단일 오피스 dev 기준). 배포본이 하나도 없으면 404(→씬 폴백)."""
+    row = None
     try:
         oid, fid = UUID(office_id), UUID(floor_id)
-    except (ValueError, TypeError):
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "no deployed layout (non-UUID ids)")
-    row = (
-        await db.execute(
-            select(OfficeLayout)
-            .where(
-                OfficeLayout.office_id == oid,
-                OfficeLayout.floor_id == fid,
-                OfficeLayout.status == OfficeLayoutStatus.DEPLOYED,
+        row = (
+            await db.execute(
+                select(OfficeLayout)
+                .where(
+                    OfficeLayout.office_id == oid,
+                    OfficeLayout.floor_id == fid,
+                    OfficeLayout.status == OfficeLayoutStatus.DEPLOYED,
+                )
+                .order_by(OfficeLayout.version.desc())
             )
-            .order_by(OfficeLayout.version.desc())
-        )
-    ).scalars().first()
+        ).scalars().first()
+    except (ValueError, TypeError):
+        row = None
+    if row is None:
+        # 비-UUID id이거나 해당 층 배포본 없음 → 최신 deployed 폴백(단일테넌트 dev).
+        row = (
+            await db.execute(
+                select(OfficeLayout)
+                .where(OfficeLayout.status == OfficeLayoutStatus.DEPLOYED)
+                .order_by(OfficeLayout.version.desc())
+            )
+        ).scalars().first()
     if row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "no deployed layout")
     return map_floor_layout(row.json, office_id, floor_id)

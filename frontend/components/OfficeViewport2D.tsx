@@ -45,6 +45,7 @@ import {
   normToMeters,
   pointInPolygon,
   polygonCentroid,
+  setActiveFloorGeometry,
   typingBurstAt,
   WALK_AREA,
   type Vec2,
@@ -267,6 +268,20 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
   // rAF/interval 콜백에서 최신 방 목록 참조(의존성 없이).
   const roomsRef = useRef<SceneRoom[]>(ROOMS);
   roomsRef.current = activeRooms;
+
+  // 배포 레이아웃 반영 시 이동 지오메트리도 교체 — 클릭-경로·충돌이 배포 경계(bounds 사각형)와
+  // 벽을 따르게 해 realtime 서버 검증과 정합(아바타가 배포 벽을 통과하지 않음). 미배포면 HORIZON 복원.
+  useEffect(() => {
+    if (structure?.dimensions) {
+      setActiveFloorGeometry({
+        walkArea: rectToNormPoly(0, 0, structure.dimensions.width_m, structure.dimensions.height_m),
+        obstacles: dynObstacles,
+      });
+    } else {
+      setActiveFloorGeometry(null);
+    }
+    return () => setActiveFloorGeometry(null);
+  }, [structure, dynObstacles]);
 
   // 짧은 안내 토스트(사용 중 좌석, API 오류 등).
   const [toast, setToast] = useState<string | null>(null);

@@ -77,3 +77,17 @@ class TestRealtimeFloorLayout:
         # box collider(4변) + glass wall(1) = 5
         assert len(data["walls"]) == 5
         assert any(w.get("glass") is True for w in data["walls"])
+        # spawn: spawn_points 없으면 첫 좌석으로 폴백(이동서버 스폰이 벽/경계 밖으로 나가지 않게).
+        assert data["spawn"] == {"x": 3.5, "y": 2.0}
+
+    async def test_non_uuid_ids_fallback_to_latest_deployed(self, async_client: AsyncClient, db_session: AsyncSession):
+        # realtime는 데모 id('office-demo'/'floor-1')로 조회 → UUID 아님 → 최신 배포본 폴백.
+        db_session.add(
+            OfficeLayout(office_id=uuid4(), floor_id=uuid4(), version=1, status=OfficeLayoutStatus.DEPLOYED, json=_JSON)
+        )
+        await db_session.commit()
+        r = await async_client.get(
+            "/api/realtime/floor-layout?office_id=office-demo&floor_id=floor-1", headers=_HDR
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["bounds"] == {"x": 0.0, "y": 0.0, "w": 30.0, "h": 20.0}

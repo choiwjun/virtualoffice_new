@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import {
   CHARACTER_IDS,
   ROOMS,
@@ -13,6 +13,7 @@ import {
   isCharacterId,
   isWalkable,
   clampToWalkable,
+  setActiveFloorGeometry,
   pointInPolygon,
   avatarHeightFrac,
   type Vec2,
@@ -120,5 +121,48 @@ describe('findPath (그리드 A*)', () => {
     expect(path.length).toBeGreaterThan(1);
     const last = path[path.length - 1];
     expect(Math.hypot(last.x - to.x, last.y - to.y)).toBeLessThan(0.2);
+  });
+});
+
+describe('setActiveFloorGeometry (배포 레이아웃 이동 지오메트리)', () => {
+  // 배포 bounds 사각형(정규 0~0.6 × 0~0.9) + 세로 벽(x≈0.30~0.34, y0.10~0.80).
+  const bounds: Vec2[] = [
+    { x: 0, y: 0 },
+    { x: 0.6, y: 0 },
+    { x: 0.6, y: 0.9 },
+    { x: 0, y: 0.9 },
+  ];
+  const wall: Vec2[] = [
+    { x: 0.30, y: 0.10 },
+    { x: 0.34, y: 0.10 },
+    { x: 0.34, y: 0.80 },
+    { x: 0.30, y: 0.80 },
+  ];
+
+  afterEach(() => setActiveFloorGeometry(null)); // 다른 테스트에 새지 않게 HORIZON 복원
+
+  it('교체하면 isWalkable이 배포 경계·벽을 따른다', () => {
+    setActiveFloorGeometry({ walkArea: bounds, obstacles: [wall] });
+    expect(isWalkable({ x: 0.5, y: 0.5 })).toBe(true); // bounds 안, 벽 밖
+    expect(isWalkable({ x: 0.32, y: 0.5 })).toBe(false); // 벽 내부 → 차단
+    expect(isWalkable({ x: 0.8, y: 0.5 })).toBe(false); // bounds 밖
+  });
+
+  it('null 복원 시 HORIZON 기본으로 돌아온다', () => {
+    setActiveFloorGeometry({ walkArea: bounds, obstacles: [wall] });
+    setActiveFloorGeometry(null);
+    expect(isWalkable(SPAWNS.lobby)).toBe(true); // 씬 스폰 다시 보행 가능
+    expect(isWalkable({ x: 0.8, y: 0.5 })).toBe(false); // HORIZON에서도 이 점은 벽/경계 밖
+  });
+
+  it('findPath가 배포 벽을 우회한다(경로가 벽을 통과하지 않음)', () => {
+    setActiveFloorGeometry({ walkArea: bounds, obstacles: [wall] });
+    const from = normToMeters({ x: 0.15, y: 0.5 }); // 벽 왼쪽
+    const to = normToMeters({ x: 0.5, y: 0.5 }); // 벽 오른쪽
+    const path = findPath(from, to);
+    expect(path.length).toBeGreaterThan(1); // 직선 불가 → 상/하단 개구부 우회
+    for (const wp of path) expect(isWalkable(metersToNorm(wp))).toBe(true);
+    const last = path[path.length - 1];
+    expect(Math.hypot(last.x - to.x, last.y - to.y)).toBeLessThan(0.3);
   });
 });
