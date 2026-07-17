@@ -75,6 +75,28 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.environment == "production"
 
+    def assert_production_safe(self) -> None:
+        """production 기동 가드(spec-gap-audit 2026-07-17 P1-3) — dev 기본 시크릿으로는 기동 거부.
+
+        인터넷 공개(D21-r) 전제: 기본값 JWT/내부토큰/LiveKit 시크릿을 그대로 쓰면
+        토큰 위조·내부 API 접근이 가능하므로 fail-fast 한다. main.py lifespan에서 호출.
+        """
+        if not self.is_production:
+            return
+        insecure = []
+        if "CHANGE-IN-PRODUCTION" in self.jwt_secret_key:
+            insecure.append("JWT_SECRET_KEY")
+        if "CHANGE-IN-PRODUCTION" in self.internal_api_token:
+            insecure.append("INTERNAL_API_TOKEN")
+        if self.livekit_api_key == "devkey" or self.livekit_api_secret.startswith("devsecret"):
+            insecure.append("LIVEKIT_API_KEY/SECRET")
+        if insecure:
+            raise RuntimeError(
+                "production 환경에서 dev 기본 시크릿으로 기동할 수 없습니다: "
+                + ", ".join(insecure)
+                + " — .env에 강한 랜덤값을 주입하세요."
+            )
+
 
 @lru_cache
 def get_settings() -> Settings:

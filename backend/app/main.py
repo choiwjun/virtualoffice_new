@@ -17,6 +17,8 @@ from app.config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # 운영 기동 가드(P1-3, 2026-07-17): production + dev 기본 시크릿 조합은 fail-fast.
+    settings.assert_production_safe()
     # dev/도그푸딩: 테이블 자동 생성 (운영은 Alembic). Docker 최초 기동 편의.
     if settings.auto_create_tables:
         from app.db import engine

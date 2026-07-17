@@ -122,3 +122,28 @@ async def test_protected_route_requires_auth(async_client):
             r for r in app.router.routes
             if getattr(r, "path", "") not in ("/_test/me", "/_test/admin-only")
         ]
+
+
+# ── 운영 기동 가드 (P1-3, spec-gap-audit 2026-07-17) ─────────
+def test_production_guard_rejects_default_secrets():
+    """production + dev 기본 시크릿 → 기동 거부(fail-fast). dev에서는 통과."""
+    from app.config import Settings
+
+    dev = Settings(environment="development")
+    dev.assert_production_safe()  # dev는 기본값 허용
+
+    prod = Settings(environment="production")
+    import pytest as _pytest
+    with _pytest.raises(RuntimeError) as e:
+        prod.assert_production_safe()
+    assert "JWT_SECRET_KEY" in str(e.value)
+    assert "INTERNAL_API_TOKEN" in str(e.value)
+
+    safe = Settings(
+        environment="production",
+        jwt_secret_key="x" * 64,
+        internal_api_token="y" * 64,
+        livekit_api_key="realkey",
+        livekit_api_secret="z" * 40,
+    )
+    safe.assert_production_safe()  # 강한 시크릿이면 통과
