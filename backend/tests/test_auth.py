@@ -194,3 +194,26 @@ async def test_refresh_endpoint_removed(async_client, seed_users):
     assert resp.status_code in (404, 405)
 
 
+
+
+# ── 로그인 IP rate-limit (P1-2, 2026-07-17) ──────────────────────────────────
+
+async def test_login_ip_rate_limit_returns_429(async_client, seed_users):
+    """동일 IP에서 임계값 초과 로그인 시 429 — email 잠금과 독립(존재하지 않는 이메일도 카운트)."""
+    from app.config import settings
+
+    prev = settings.login_rate_limit_per_min
+    settings.login_rate_limit_per_min = 3  # 테스트용 낮은 임계값
+    try:
+        # 서로 다른 이메일로 4회 — email 잠금(5회)엔 안 걸리지만 IP 제한(3회)엔 걸려야 함
+        codes = []
+        for i in range(4):
+            r = await async_client.post(
+                "/api/auth/login",
+                json={"email": f"probe{i}@x.com", "password": "whatever"},
+            )
+            codes.append(r.status_code)
+        assert codes[:3] == [401, 401, 401], codes  # 처음 3회는 통과(자격 실패 401)
+        assert codes[3] == 429, codes               # 4번째는 IP 제한 429
+    finally:
+        settings.login_rate_limit_per_min = prev

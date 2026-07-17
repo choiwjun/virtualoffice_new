@@ -85,3 +85,24 @@ export const JWT_SECRET = process.env.JWT_SECRET ?? "dev-only-secret-CHANGE-IN-P
 export const JWT_ALGORITHM = "HS256" as const;
 /** true면 유효 JWT 없는 join 거부(운영). 기본 false: 로컬/테스트는 토큰 없이도 허용. */
 export const JWT_REQUIRED = (process.env.JWT_REQUIRED ?? "false").toLowerCase() === "true";
+
+/** 배포 환경(NODE_ENV). production이면 무인증 join·dev 기본 시크릿을 금지한다(P1-4). */
+export const NODE_ENV = process.env.NODE_ENV ?? "development";
+export const IS_PRODUCTION = NODE_ENV === "production";
+
+/**
+ * 운영 기동 가드(P1-4, 2026-07-17) — index.ts 부트스트랩에서 호출.
+ * production인데 (a) JWT_REQUIRED가 꺼져 있거나 (b) JWT_SECRET이 dev 기본값이면
+ * 무인증 join·토큰 위조가 가능하므로 fail-fast 한다.
+ */
+export function assertProductionSafe(): void {
+  if (!IS_PRODUCTION) return;
+  const problems: string[] = [];
+  if (!JWT_REQUIRED) problems.push("JWT_REQUIRED must be true");
+  if (JWT_SECRET.includes("CHANGE-IN-PRODUCTION")) problems.push("JWT_SECRET is a dev default");
+  if (problems.length) {
+    throw new Error(
+      `[realtime] production 기동 거부(P1-4): ${problems.join(", ")} — 환경변수를 설정하세요.`,
+    );
+  }
+}

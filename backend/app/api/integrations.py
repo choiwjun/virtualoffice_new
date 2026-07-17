@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import secretbox
 from app.core.deps import CurrentUser, get_current_user
 from app.db import get_db
 from app.models.tables import IntegrationProvider, UserIntegration
@@ -82,13 +83,15 @@ async def _get_row(
 
 
 async def _sync_activity(row: UserIntegration) -> None:
-    """공급자별 활동 수집 → row.activity/last_synced_at 갱신. 실패는 IntegrationError로 전파."""
+    """공급자별 활동 수집 → row.activity/last_synced_at 갱신. 실패는 IntegrationError로 전파.
+    저장된 토큰은 암호문(enc:v1:)이므로 사용 직전 복호(P1-5)."""
+    token = secretbox.decrypt(row.access_token)
     if row.provider == IntegrationProvider.GITHUB:
-        row.activity = await svc.fetch_github_activity(row.account, row.access_token)
+        row.activity = await svc.fetch_github_activity(row.account, token)
     else:  # FIGMA — 토큰 없으면 수집 불가(연동 상태만 유지)
-        if not row.access_token:
+        if not token:
             return
-        row.activity = await svc.fetch_figma_activity(row.access_token)
+        row.activity = await svc.fetch_figma_activity(token)
     row.last_synced_at = datetime.now(timezone.utc)
 
 
@@ -135,7 +138,8 @@ async def upsert_integration(
         db.add(row)
     row.account = (profile or {}).get("login") or (profile or {}).get("handle") or body.account
     if body.token is not None:
-        row.access_token = body.token or None
+        # D31 토큰은 at-rest 암호화 저장(P1-5) — 응답 미노출·해제 즉시 삭제 계약 유지.
+        row.access_token = secretbox.encrypt(body.token or None)
     row.verified = verified
 
     if verified:

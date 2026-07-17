@@ -2,23 +2,27 @@
 #
 # 배포 대상: 사내 온프렘 로컬 서버 PC (단일 조직 도그푸딩, K8s 미사용)
 # 기준: D21-r (서버 PC 1대, Caddy + Let's Encrypt, VPN 없음)
-#        D26 (WorkAdventure self-host 본체 채택, AGPL-3.0 + Commons Clause)
+#        D29/D30 (2.5D 웹임베드 — WorkAdventure/D26 스택 전면 폐기, 2026-07-17 재작성)
 #
-# 서비스 구성:
-#   기존: db(PostgreSQL) + backend(FastAPI — ERP·presence·KPI 도메인)
-#   WorkAdventure 스택(D26): wa-play / wa-back / wa-map-storage /
-#                             wa-uploader / wa-icon / wa-redis
-#   인프라: caddy(TLS 종단·라우팅) + livekit(SFU) + coturn(TURN)
+# 서비스 구성(단일 통합 스택):
+#   db(PostgreSQL) + backend(FastAPI 도메인 API) + realtime(Colyseus 이동서버)
+#   + frontend(Next.js 웹콘솔·2.5D 뷰포트) + livekit(회의 SFU) + coturn(TURN 폴백)
+#   + caddy(TLS 종단·라우팅)
+#
+# ⚠️ 오픈 전 필수(spec-gap-audit P0/P1): .env에 강한 시크릿 주입 —
+#   JWT_SECRET_KEY / INTERNAL_API_TOKEN / LIVEKIT_API_KEY / LIVEKIT_API_SECRET /
+#   INTEGRATION_ENCRYPTION_KEY (Fernet 32B) / COTURN_STATIC_SECRET.
+#   ENVIRONMENT=production 이면 backend/realtime가 dev 기본 시크릿 기동을 거부(fail-fast).
 #
 # 사용:
 #   cp .env.example .env   # 시크릿·도메인·키 설정
 #   $EDITOR config/coturn.conf     # REPLACE_WITH_COTURN_STATIC_SECRET 교체
-#   docker-compose up -d --build
-#   curl https://${WA_DOMAIN}/  # Caddy TLS 후
+#   docker compose up -d --build
+#   curl https://${APP_DOMAIN}/login
 
 services:
 
-  # ── 기존: PostgreSQL 데이터베이스 ──────────────────────────────────
+  # ── PostgreSQL 데이터베이스 ────────────────────────────────────────
   db:
     image: postgres:17
     container_name: vo_db
@@ -38,8 +42,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── 기존: FastAPI 백엔드 (ERP 동기화·presence·KPI, OIDC Provider for WA) ──
-  # D26: integrations/workadventure/oidc.py 가 OIDC Provider 브리지 제공
+  # ── FastAPI 백엔드 (ERP 동기화·presence·KPI·회의·레이아웃 도메인 API) ──
   backend:
     build: ./backend
     container_name: vo_backend
@@ -49,234 +52,114 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-virtualoffice}
-      # ERP dailylog read-only — 접속정보 확보 시 .env에 채우면 실 DB 자동 전환
       ERP_DATABASE_URL: ${ERP_DATABASE_URL:-}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-only-secret-CHANGE-IN-PRODUCTION}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       AUTO_CREATE_TABLES: ${AUTO_CREATE_TABLES:-true}
       CORS_ORIGINS: ${CORS_ORIGINS:-["https://office.example.com"]}
-      # WorkAdventure OIDC 브리지 설정 (D26 Lane C — oidc.py)
-      WA_OIDC_BASE_URL: ${WA_OIDC_BASE_URL:-}
-      WA_OIDC_CLIENT_ID: ${WA_OIDC_CLIENT_ID:-}
-      WA_OIDC_CLIENT_SECRET: ${WA_OIDC_CLIENT_SECRET:-}
-    # Caddy가 역방향 프록시 담당 → 외부 포트 비노출(Caddy 컨테이너 네트워크에서만 접근)
+      # 보안 시크릿(P1) — production은 강한 값 필수(미주입 시 fail-fast)
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-only-secret-CHANGE-IN-PRODUCTION}
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-dev-internal-token-CHANGE-IN-PRODUCTION}
+      INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY:-}
+      # 로그인 rate-limit: Caddy가 1차 차단하므로 앱은 프록시 IP 헤더 신뢰(P1-2)
+      TRUST_PROXY_IP_HEADER: ${TRUST_PROXY_IP_HEADER:-true}
+      LOGIN_RATE_LIMIT_PER_MIN: ${LOGIN_RATE_LIMIT_PER_MIN:-10}
+      # LiveKit 자격증명 (회의 토큰 발급 — /api/meetings/{id}/livekit-token)
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-devkey}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-devsecret01234567890123456789012345}
+      LIVEKIT_URL: ${LIVEKIT_PUBLIC_URL:-http://livekit:7880}
     expose:
       - "8000"
 
-  # ── WorkAdventure: Redis (스크립팅 API 변수·채팅 세션 저장) ───────
-  wa-redis:
-    image: redis:6
-    container_name: vo_wa_redis
-    restart: unless-stopped
-    volumes:
-      - wa_redis_data:/data
-
-  # ── WorkAdventure 이미지 태그 정책 ──────────────────────────────────
-  # WA는 semver 이미지 태그를 제공하지 않음 (v1.x.x 태그는 DockerHub에 존재하지 않음).
-  # master-<sha> 핀 정책: master 브랜치의 특정 커밋 SHA를 이미지 태그로 사용.
-  # 현재 핀: master-e69f61a09a7ac2c502301c6649c1f3cb0aa78103 (2026-07 검증 완료)
-  # 업그레이드: github.com/workadventure/workadventure Actions 에서 최신 sha 확인 후 교체.
-  #
-  # ── WorkAdventure: map-storage (TMJ 맵 파일 저장·편집) ───────────
-  # 의존성 순서: map-storage → (wa-back 의존). back은 map-storage 주소 필요.
-  wa-map-storage:
-    image: thecodingmachine/workadventure-map-storage:${WA_VERSION:-master-e69f61a09a7ac2c502301c6649c1f3cb0aa78103}
-    container_name: vo_wa_map_storage
-    restart: unless-stopped
-    environment:
-      # wa-back gRPC API (룸 정보 동기화)
-      API_URL: wa-back:50051
-      SECRET_KEY: ${WA_SECRET_KEY}
-      # Basic 인증 (맵 업로드 클라이언트용)
-      ENABLE_BASIC_AUTHENTICATION: "true"
-      AUTHENTICATION_USER: ${WA_MAP_STORAGE_USER:-admin}
-      AUTHENTICATION_PASSWORD: ${WA_MAP_STORAGE_PASSWORD}
-      MAP_STORAGE_API_TOKEN: ${WA_SECRET_KEY}
-      PUSHER_URL: https://${WA_DOMAIN}/
-      PATH_PREFIX: /map-storage
-    volumes:
-      - wa_maps:/maps
-
-  # ── WorkAdventure: back 서버 (룸 상태 관리·gRPC API) ─────────────
-  wa-back:
-    image: thecodingmachine/workadventure-back:${WA_VERSION:-master-e69f61a09a7ac2c502301c6649c1f3cb0aa78103}
-    container_name: vo_wa_back
+  # ── Colyseus 실시간 이동서버 (20Hz tick, presence write, D3/D29) ──
+  realtime:
+    build: ./realtime
+    container_name: vo_realtime
     restart: unless-stopped
     depends_on:
-      - wa-redis
-      - wa-map-storage
+      - backend
     environment:
-      SECRET_KEY: ${WA_SECRET_KEY}
-      PLAY_URL: https://${WA_DOMAIN}
-      MAP_STORAGE_URL: wa-map-storage:50053
-      INTERNAL_MAP_STORAGE_URL: http://wa-map-storage:3000
-      PUBLIC_MAP_STORAGE_URL: https://${WA_DOMAIN}/map-storage
-      REDIS_HOST: wa-redis
-      # TURN — 정적 시크릿 방식 (브라우저에 자격증명 노출 방지)
-      TURN_SERVER: ${WA_TURN_SERVER:-turn:${WA_DOMAIN}:5349}
-      STUN_SERVER: ${WA_STUN_SERVER:-stun:stun.l.google.com:19302}
-      MAX_PER_GROUP: ${WA_MAX_PER_GROUP:-4}
-      # LiveKit — back→livekit 서버-투-서버 내부 통신
-      LIVEKIT_HOST: http://livekit:7880
-      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
-      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
-      ENABLE_MAP_EDITOR: ${WA_ENABLE_MAP_EDITOR:-true}
-      ENABLE_CHAT: ${WA_ENABLE_CHAT:-true}
-      ENABLE_CHAT_UPLOAD: ${WA_ENABLE_CHAT_UPLOAD:-true}
-      STORE_VARIABLES_FOR_LOCAL_MAPS: "true"
+      NODE_ENV: ${ENVIRONMENT:-development}
+      PORT: "2567"
+      SCENE_FLOOR: ${SCENE_FLOOR:-horizon}
+      # 무인증 join 금지(P1-4) — production에서 false면 기동 거부
+      JWT_REQUIRED: ${JWT_REQUIRED:-true}
+      JWT_SECRET: ${JWT_SECRET_KEY:-dev-only-secret-CHANGE-IN-PRODUCTION}
+      # presence write / floor-layout 조회 — backend 내부 API(내부 토큰 일치 필수)
+      PRESENCE_SINK_URL: http://backend:8000
+      LAYOUT_SOURCE_URL: http://backend:8000
+      PRESENCE_SINK_TOKEN: ${INTERNAL_API_TOKEN:-dev-internal-token-CHANGE-IN-PRODUCTION}
     expose:
-      - "8080"    # HTTP REST API
-      - "50051"   # gRPC (play·map-storage 에서 접근)
+      - "2567"
 
-  # ── WorkAdventure: play 서버 (정적 에셋·WebSocket pusher) ─────────
-  wa-play:
-    image: thecodingmachine/workadventure-play:${WA_VERSION:-master-e69f61a09a7ac2c502301c6649c1f3cb0aa78103}
-    container_name: vo_wa_play
+  # ── Next.js 웹콘솔 (통합 대시보드 + 2.5D 뷰포트, D29) ──────────────
+  # NEXT_PUBLIC_* 는 빌드타임 각인 → build.args로 공개 URL 주입.
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE: ${APP_PUBLIC_URL:-https://office.example.com}
+        NEXT_PUBLIC_REALTIME_URL: ${REALTIME_PUBLIC_URL:-wss://realtime.office.example.com}
+    container_name: vo_frontend
     restart: unless-stopped
     depends_on:
-      - wa-back
-      - wa-map-storage
-      - wa-redis
-    environment:
-      SECRET_KEY: ${WA_SECRET_KEY}
-      API_URL: wa-back:50051
-      PUSHER_URL: https://${WA_DOMAIN}/
-      FRONT_URL: /
-      INTERNAL_MAP_STORAGE_URL: http://wa-map-storage:3000
-      PUBLIC_MAP_STORAGE_URL: https://${WA_DOMAIN}/map-storage
-      REDIS_HOST: wa-redis
-      ICON_URL: /icon
-      UPLOADER_URL: /uploader
-      MAP_STORAGE_API_TOKEN: ${WA_SECRET_KEY}
-      # TURN/STUN — 정적 시크릿 (브라우저에 전달; TURN REST API 방식)
-      TURN_SERVER: ${WA_TURN_SERVER:-turn:${WA_DOMAIN}:5349}
-      TURN_STATIC_AUTH_SECRET: ${COTURN_STATIC_SECRET}
-      STUN_SERVER: ${WA_STUN_SERVER:-stun:stun.l.google.com:19302}
-      # LiveKit (브라우저가 연결할 공개 URL은 Caddy를 통한 ${LIVEKIT_DOMAIN})
-      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
-      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
-      # OIDC — FastAPI 백엔드(backend)를 OIDC Provider로 사용 (D26 Lane C)
-      OPENID_CLIENT_ID: ${WA_OIDC_CLIENT_ID}
-      OPENID_CLIENT_SECRET: ${WA_OIDC_CLIENT_SECRET}
-      # WA_OIDC_ISSUER = https://${WA_API_DOMAIN} (FastAPI OIDC provider base URL)
-      OPENID_CLIENT_ISSUER: ${WA_OIDC_ISSUER}
-      OPENID_SCOPE: openid profile email
-      OPENID_USERNAME_CLAIM: preferred_username
-      OPENID_LOCALE_CLAIM: locale
-      OPENID_PROMPT: login
-      OPENID_LOGOUT_REDIRECT_URL: https://${WA_DOMAIN}/
-      # 익명 접근 비활성화 — ERP 사용자만 입장 (D26)
-      DISABLE_ANONYMOUS: ${WA_DISABLE_ANONYMOUS:-true}
-      MAX_PER_GROUP: ${WA_MAX_PER_GROUP:-4}
-      MAX_USERNAME_LENGTH: ${WA_MAX_USERNAME_LENGTH:-20}
-      ENABLE_MAP_EDITOR: ${WA_ENABLE_MAP_EDITOR:-true}
-      MAP_EDITOR_ALLOW_ALL_USERS: "false"
-      MAP_EDITOR_ALLOWED_USERS: ${WA_MAP_EDITOR_USERS:-}
-      START_ROOM_URL: ${WA_START_ROOM_URL:-/_/global/workadventure.github.io/map-starter-kit/office.tmj}
-      ENABLE_CHAT: ${WA_ENABLE_CHAT:-true}
-      ENABLE_CHAT_UPLOAD: ${WA_ENABLE_CHAT_UPLOAD:-true}
-      ENABLE_CHAT_ONLINE_LIST: "true"
-      ENABLE_CHAT_DISCONNECTED_LIST: "true"
-      DISABLE_NOTIFICATIONS: "false"
+      - backend
+      - realtime
     expose:
-      - "3000"    # HTTP (정적 에셋·REST)
-      - "3001"    # WebSocket pusher
+      - "3000"
 
-  # ── WorkAdventure: uploader (채팅 파일 업로드) ────────────────────
-  wa-uploader:
-    image: thecodingmachine/workadventure-uploader:${WA_VERSION:-master-e69f61a09a7ac2c502301c6649c1f3cb0aa78103}
-    container_name: vo_wa_uploader
-    restart: unless-stopped
-    depends_on:
-      - wa-redis
-    environment:
-      UPLOADER_URL: https://${WA_DOMAIN}/uploader
-      REDIS_HOST: wa-redis
-      ENABLE_CHAT_UPLOAD: ${WA_ENABLE_CHAT_UPLOAD:-true}
-      UPLOAD_MAX_FILESIZE: ${WA_UPLOAD_MAX_FILESIZE:-10485760}
-    expose:
-      - "8080"
-
-  # ── WorkAdventure: iconserver (iframe 파비콘 프록시) ─────────────
-  wa-icon:
-    image: matthiasluedtke/iconserver:v3.21.0
-    container_name: vo_wa_icon
-    restart: unless-stopped
-    expose:
-      - "8080"
-
-  # ── LiveKit SFU — 화상/음성 그룹 통화 (4인 이상 버블, D26) ──────
-  # API 키/시크릿은 LIVEKIT_KEYS 환경변수로 주입 (config 파일에 기재 금지)
-  # 형식: LIVEKIT_KEYS="<api_key>: <api_secret>"
+  # ── LiveKit SFU — 회의 화상/음성 (D24) ──────────────────────────
   livekit:
     image: livekit/livekit-server:v1.7.2
     container_name: vo_livekit
     restart: unless-stopped
     command: --config /etc/livekit.yaml
     environment:
-      # LIVEKIT_KEYS: API 키:시크릿 쌍 (공백 포함 문자열)
-      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-devsecret01234567890123456789012345}"
     ports:
-      # HTTP API — Caddy가 ${LIVEKIT_DOMAIN}으로 역방향 프록시
-      - "127.0.0.1:7880:7880"
-      # RTC over TCP (UDP 차단 클라이언트 폴백)
-      - "7881:7881/tcp"
-      # RTC over UDP — 방화벽에서 50000-50200/UDP 개방 필요 (D21-r §3.2)
-      # 200포트: 동시 20명 × 최대 8포트/세션 기준 충분; 확장 시 livekit.yaml port_range_end 함께 변경
-      - "50000-50200:50000-50200/udp"
+      - "127.0.0.1:7880:7880"     # HTTP/WS — Caddy가 ${LIVEKIT_DOMAIN}으로 프록시
+      - "7881:7881/tcp"           # RTC TCP 폴백
+      - "50000-50200:50000-50200/udp"  # RTC UDP (방화벽 개방 필요, D21-r §3.2)
     volumes:
       - ./config/livekit.yaml:/etc/livekit.yaml:ro
 
-  # ── coturn TURN 서버 — P2P WebRTC 릴레이 (D21-r TURN-TLS 폴백) ──
+  # ── coturn TURN 서버 — WebRTC 릴레이 (D21-r TURN-TLS 폴백) ────────
   # ⚠️ 배포 전 config/coturn.conf의 REPLACE_WITH_COTURN_STATIC_SECRET 교체 필수
-  # D21-r "TURN-TLS 443 폴백":
-  #   - 기본: 5349/TCP (TLS TURN 표준 포트)
-  #   - 443 폴백: 보조 IP 보유 시 coturn.conf에서 alt-tls-listening-port=443 활성화
-  #     또는 sslh(TCP multiplexer)로 443 트래픽을 Caddy/coturn 에 분기
   coturn:
     image: coturn/coturn:4.6.2
     container_name: vo_coturn
     restart: unless-stopped
     ports:
-      - "3478:3478/udp"   # 표준 TURN/STUN UDP
-      - "3478:3478/tcp"   # 표준 TURN TCP
-      - "5349:5349/tcp"   # TURN-TLS (D21-r TURN-TLS 폴백 기본 포트)
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "5349:5349/tcp"
     volumes:
       - ./config/coturn.conf:/etc/coturn/turnserver.conf:ro
-      # Caddy TLS 인증서 공유 (TURN-TLS 5349 활성화 시 coturn.conf에서 경로 지정)
       - caddy_data:/caddy_data:ro
 
-  # ── Caddy 역방향 프록시 — TLS 종단·WorkAdventure+FastAPI 라우팅 ──
-  # config/Caddyfile 에서 라우팅 규칙 정의
+  # ── Caddy 역방향 프록시 — TLS 종단 + frontend/backend/realtime/livekit 라우팅 ──
   caddy:
     image: caddy:2-alpine
     container_name: vo_caddy
     restart: unless-stopped
     ports:
-      - "80:80"     # HTTP (Let's Encrypt ACME challenge + HTTPS 리다이렉트)
-      - "443:443"   # HTTPS + WSS (WorkAdventure·FastAPI·LiveKit)
+      - "80:80"     # HTTP (ACME challenge + HTTPS 리다이렉트)
+      - "443:443"   # HTTPS + WSS
     volumes:
       - ./config/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     environment:
-      # WorkAdventure 메인 도메인
-      WA_DOMAIN: ${WA_DOMAIN}
-      # FastAPI 백엔드 도메인 (OIDC provider, management API)
-      WA_API_DOMAIN: ${WA_API_DOMAIN}
-      # LiveKit 공개 도메인 (브라우저 ↔ SFU 시그널링)
-      LIVEKIT_DOMAIN: ${LIVEKIT_DOMAIN}
-      # Let's Encrypt 인증서 발급용 이메일
+      APP_DOMAIN: ${APP_DOMAIN}            # 웹콘솔 + /api/* (backend)
+      REALTIME_DOMAIN: ${REALTIME_DOMAIN}  # Colyseus WS
+      LIVEKIT_DOMAIN: ${LIVEKIT_DOMAIN}    # LiveKit SFU
       ACME_EMAIL: ${ACME_EMAIL}
     depends_on:
-      - wa-play
-      - wa-back
+      - frontend
       - backend
+      - realtime
       - livekit
 
 volumes:
   pgdata:
-  wa_redis_data:
-  wa_maps:
   caddy_data:
   caddy_config:

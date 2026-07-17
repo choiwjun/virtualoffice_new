@@ -10,7 +10,10 @@ import { createServer } from "http";
 import { Server } from "@colyseus/core";
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import { OfficeRoom } from "./rooms/OfficeRoom";
-import { PORT } from "./config";
+import { PORT, assertProductionSafe } from "./config";
+
+// 운영 기동 가드(P1-4): production + 무인증 join/dev 시크릿 조합은 fail-fast.
+assertProductionSafe();
 
 const gameServer = new Server({
   transport: new WebSocketTransport({

@@ -1,70 +1,49 @@
-# Caddyfile — 가상오피스 역방향 프록시 (D26 WorkAdventure 전환 후)
+# Caddyfile — 가상오피스 역방향 프록시 (D29/D30 단일 통합 스택, 2026-07-17 재작성)
 # D21-r: Caddy + Let's Encrypt, 단일 서버 PC, VPN 없음
 #
 # 도메인 구성 예시:
-#   WA_DOMAIN=office.example.com        → WorkAdventure (play/back/map-storage/uploader/icon)
-#   WA_API_DOMAIN=api.office.example.com → FastAPI 백엔드 (OIDC provider + management API)
-#   LIVEKIT_DOMAIN=livekit.office.example.com → LiveKit SFU 공개 엔드포인트
+#   APP_DOMAIN=office.example.com            → Next.js 웹콘솔(root) + /api/*(FastAPI backend)
+#   REALTIME_DOMAIN=realtime.office.example.com → Colyseus 이동서버 WS (2567)
+#   LIVEKIT_DOMAIN=livekit.office.example.com   → LiveKit SFU 공개 엔드포인트 (7880)
 #
-# 환경변수는 .env에서 Caddy 서비스의 environment 섹션을 통해 주입됨.
+# 환경변수는 .env → docker-compose caddy 서비스 environment로 주입.
 # 개발(도메인 없음) 시 TLS 지시어를 제거하고 http:// 로 사용.
 
-# ── WorkAdventure 메인 도메인 ─────────────────────────────────────────
-{$WA_DOMAIN} {
+# ── 웹콘솔 메인 도메인 (frontend + backend /api) ──────────────────────
+{$APP_DOMAIN} {
 	tls {$ACME_EMAIL}
 
-	# WebSocket 연결 (play 서버 WS pusher — sticky 불필요, 단일 인스턴스)
-	@ws {
-		path /ws/*
-		header Connection *Upgrade*
-		header Upgrade websocket
-	}
-	handle @ws {
-		reverse_proxy wa-play:3001
-	}
+	# 로그인 브루트포스 1차 차단(P1-2) — IP당 분당 제한. 앱단(미들웨어)이 2차 방어.
+	# (Caddy 기본 빌드에 rate_limit 미포함 시 이 블록은 무시되고 앱단 제한만 적용됨.
+	#  운영은 caddy-ratelimit 플러그인 포함 이미지를 쓰거나 이 블록을 활성화한다.)
+	# rate_limit {
+	# 	zone login {
+	# 		match { path /api/auth/login }
+	# 		key {remote_host}
+	# 		events 10
+	# 		window 1m
+	# 	}
+	# }
 
-	# WorkAdventure back HTTP API (REST)
+	# FastAPI 백엔드 — /api/* (라우터가 /api prefix 포함하므로 strip 금지)
 	handle /api/* {
-		uri strip_prefix /api
-		reverse_proxy wa-back:8080
+		reverse_proxy backend:8000
 	}
 
-	# map-storage (TMJ 맵 파일 업로드·조회)
-	handle /map-storage/* {
-		uri strip_prefix /map-storage
-		reverse_proxy wa-map-storage:3000
-	}
-
-	# uploader (채팅 파일 업로드)
-	handle /uploader/* {
-		uri strip_prefix /uploader
-		reverse_proxy wa-uploader:8080
-	}
-
-	# iconserver (iframe favicon 프록시)
-	handle /icon/* {
-		uri strip_prefix /icon
-		reverse_proxy wa-icon:8080
-	}
-	handle /lettericons/* {
-		reverse_proxy wa-icon:8080
-	}
-
-	# 기본 → play (정적 에셋 + 게임 진입점)
+	# 나머지 → Next.js 웹콘솔 (SSR/정적/HMR 없음, standalone server.js)
 	handle {
-		reverse_proxy wa-play:3000
+		reverse_proxy frontend:3000
 	}
 }
 
-# ── FastAPI 백엔드 도메인 (OIDC Provider + Management API) ───────────
-# D26: FastAPI가 WorkAdventure의 OIDC 제공자 역할 수행 (Lane C oidc.py)
-{$WA_API_DOMAIN} {
+# ── Colyseus 실시간 이동서버 (브라우저 ↔ WS, 20Hz) ────────────────────
+# colyseus.js 는 /matchmake/* (HTTP) + WebSocket upgrade를 사용 — Caddy가 둘 다 프록시.
+{$REALTIME_DOMAIN} {
 	tls {$ACME_EMAIL}
-	reverse_proxy backend:8000
+	reverse_proxy realtime:2567
 }
 
 # ── LiveKit SFU 공개 엔드포인트 (브라우저 ↔ LiveKit 시그널링) ─────────
-# 브라우저가 직접 LiveKit에 WebSocket 연결 (SFU 방식, 4인 이상 버블)
 {$LIVEKIT_DOMAIN} {
 	tls {$ACME_EMAIL}
 	reverse_proxy livekit:7880

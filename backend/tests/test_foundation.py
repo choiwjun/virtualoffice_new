@@ -145,5 +145,6 @@ def test_production_guard_rejects_default_secrets():
         internal_api_token="y" * 64,
         livekit_api_key="realkey",
         livekit_api_secret="z" * 40,
+        integration_encryption_key="k" * 44,
     )
     safe.assert_production_safe()  # 강한 시크릿이면 통과

@@ -52,6 +52,19 @@ def _force_mock_ai():
     finally:
         settings.ai_draft_enabled = prev
 
+@pytest.fixture(autouse=True)
+def _disable_login_ratelimit():
+    """테스트는 로그인 IP rate-limit 비활성 — 스위트가 동일 IP로 다수 로그인하므로 429 오탐 방지.
+    (rate-limit 자체 검증은 test_auth의 전용 케이스가 임계값을 직접 세팅해 확인.)"""
+    from app.config import settings
+
+    prev = settings.login_rate_limit_per_min
+    settings.login_rate_limit_per_min = 0
+    try:
+        yield
+    finally:
+        settings.login_rate_limit_per_min = prev
+
 # ============================================================================
 # DB: 테스트별 격리 인메모리 엔진
 # ============================================================================

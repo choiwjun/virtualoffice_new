@@ -51,6 +51,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 로그인 IP rate-limit (P1-2) — email 잠금(auth.py)에 더한 IP 기준 2차 방어.
+from app.core.ratelimit import LoginRateLimitMiddleware  # noqa: E402
+
+app.add_middleware(LoginRateLimitMiddleware)
+
 
 @app.get("/health", tags=["system"])
 async def health() -> dict:

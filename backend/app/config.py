@@ -42,6 +42,18 @@ class Settings(BaseSettings):
     # 외부 공휴일 캘린더 API 연동 전까지 운영자가 연 단위로 유지한다.
     eod_holidays: str = ""
 
+    # ── 로그인 IP rate-limit (P1-2, 2026-07-17 — PRD §7 보안 수용기준 'IP당 10 req/min') ──
+    # 리버스프록시(Caddy)에서 1차 차단하되, 앱단에서도 방어(인메모리 슬라이딩 윈도우).
+    # 멀티워커 배포 시 워커별 독립 카운터 — 정밀 제한은 Caddy가 담당. 0이면 앱단 비활성.
+    login_rate_limit_per_min: int = 10
+    # 프록시 뒤 실 클라이언트 IP 헤더(Caddy가 설정). 신뢰 프록시 경유일 때만 사용.
+    trust_proxy_ip_header: bool = False
+
+    # ── D31 외부 계정 토큰 암호화(at-rest, P1-5) ──
+    # Fernet 대칭키(urlsafe base64 32B). 비어 있으면 environment!=production 한정 개발 고정키 사용.
+    # 운영은 반드시 강한 키 주입(없으면 assert_production_safe가 기동 거부).
+    integration_encryption_key: str = ""
+
     # ── AI 서술 초안/회의록 요약 (REQ-007, D14-e, D20 가명화) ──
     # NVIDIA Integrate API(OpenAI 호환). nvidia_api_key 비었거나 ai_draft_enabled=False면
     # 결정론적 mock 사용(네트워크·비용 없음). 실패 시에도 항상 mock 폴백.
@@ -90,6 +102,8 @@ class Settings(BaseSettings):
             insecure.append("INTERNAL_API_TOKEN")
         if self.livekit_api_key == "devkey" or self.livekit_api_secret.startswith("devsecret"):
             insecure.append("LIVEKIT_API_KEY/SECRET")
+        if not self.integration_encryption_key:
+            insecure.append("INTEGRATION_ENCRYPTION_KEY(D31 토큰 암호화)")
         if insecure:
             raise RuntimeError(
                 "production 환경에서 dev 기본 시크릿으로 기동할 수 없습니다: "

@@ -154,3 +154,42 @@ async def test_isolation_between_users(async_client, auth_headers, admin_auth_he
     r = await async_client.get("/api/integrations", headers=admin_auth_headers)
     assert r.status_code == 200
     assert r.json() == []
+
+
+# ── D31 토큰 at-rest 암호화 (P1-5, 2026-07-17) ──────────────────────────────
+
+async def test_figma_token_stored_encrypted_at_rest(async_client, auth_headers, db_session):
+    """Figma 토큰 연동 시 DB의 access_token은 암호문(enc:v1:)이어야 하고 평문이 아니어야 한다."""
+    from sqlalchemy import select
+    from app.models.tables import UserIntegration, IntegrationProvider
+    from app.core import secretbox
+
+    r = await async_client.put(
+        "/api/integrations/figma",
+        json={"account": "x", "token": "figd_valid"},
+        headers=auth_headers,
+    )
+    assert r.status_code == 200
+    assert r.json()["has_token"] is True
+    assert "figd_valid" not in str(r.json())  # 응답 미노출
+
+    row = (
+        await db_session.execute(
+            select(UserIntegration).where(UserIntegration.provider == IntegrationProvider.FIGMA)
+        )
+    ).scalar_one()
+    assert row.access_token.startswith("enc:v1:")       # at-rest 암호문
+    assert "figd_valid" not in row.access_token          # 평문 아님
+    assert secretbox.decrypt(row.access_token) == "figd_valid"  # 복호 가능
+
+
+def test_secretbox_roundtrip_and_plaintext_fallback():
+    from app.core import secretbox
+
+    enc = secretbox.encrypt("ghp_secret_abc")
+    assert enc.startswith("enc:v1:") and "ghp_secret_abc" not in enc
+    assert secretbox.decrypt(enc) == "ghp_secret_abc"
+    # 평문 하위호환(프리픽스 없음)
+    assert secretbox.decrypt("legacy_plain") == "legacy_plain"
+    assert secretbox.encrypt(None) is None
+    assert secretbox.encrypt("") == ""
