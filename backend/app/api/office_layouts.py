@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import CurrentUser, require_role
+from app.core.deps import CurrentUser, get_current_user, require_role
 from app.db import get_db
 from app.models.tables import OfficeLayout, OfficeLayoutStatus
 from app.services.audit import record_audit
@@ -121,6 +121,71 @@ async def list_layouts(
         q = q.where(OfficeLayout.floor_id == UUID(floor_id))
     rows = (await db.execute(q.order_by(OfficeLayout.version.desc()))).scalars().all()
     return [_out(r) for r in rows]
+
+
+def _sf(v: Any, default: float = 0.0) -> float:
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return default
+
+
+def map_structure(j: dict) -> dict:
+    """office_layout JSON → 뷰포트용 구조(방/구역/벽, 미터). 좌표는 top_left 미터 원본 그대로 —
+    정규화(÷scene)는 프론트가 좌석과 동일 metersToNorm으로 수행해 정렬을 보장한다."""
+    dims = j.get("dimensions") or {}
+    rooms = []
+    for r in j.get("rooms") or []:
+        c = r.get("coords") or {}
+        rooms.append({
+            "id": r.get("room_id", ""),
+            "label": r.get("name") or r.get("room_id", ""),
+            "type": r.get("type", "meeting"),
+            "x": _sf(c.get("x")), "y": _sf(c.get("y")),
+            "w": _sf(c.get("width")), "h": _sf(c.get("height")),
+        })
+    zones = []
+    for z in j.get("zones") or []:
+        poly = [{"x": _sf(p.get("x")), "y": _sf(p.get("y"))} for p in (z.get("polygon") or [])]
+        zones.append({
+            "id": z.get("zone_id", ""),
+            "label": z.get("label") or "",
+            "color": z.get("color") or "#3498db",
+            "polygon": poly,
+        })
+    walls = []
+    for c in j.get("colliders") or []:
+        if c.get("shape") == "box":
+            b = c.get("box") or {}
+            walls.append({"x": _sf(b.get("x")), "y": _sf(b.get("y")), "w": _sf(b.get("width")), "h": _sf(b.get("height"))})
+    return {
+        "deployed": True,
+        "dimensions": {"width_m": _sf(dims.get("width_m"), 20.0), "height_m": _sf(dims.get("height_m"), 11.256)},
+        "rooms": rooms,
+        "zones": zones,
+        "walls": walls,
+    }
+
+
+@router.get("/deployed/structure")
+async def deployed_structure(
+    floor_id: Optional[str] = Query(None, description="층 UUID — 미지정 시 최신 배포본"),
+    _: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """GET /api/office-layouts/deployed/structure — 현재 배포(DEPLOYED)된 레이아웃의 구조를
+    미터 좌표로 반환. 뷰포트가 '좌석배치대로 가상사무실'을 렌더하는 데 사용(방/벽/구역 반영).
+    인증된 모든 사용자 접근(사내 오피스 표시). 배포본 없으면 deployed=false."""
+    q = select(OfficeLayout).where(OfficeLayout.status == OfficeLayoutStatus.DEPLOYED)
+    if floor_id:
+        try:
+            q = q.where(OfficeLayout.floor_id == UUID(floor_id))
+        except (ValueError, TypeError):
+            return {"deployed": False, "rooms": [], "zones": [], "walls": []}
+    row = (await db.execute(q.order_by(OfficeLayout.version.desc()))).scalars().first()
+    if row is None:
+        return {"deployed": False, "rooms": [], "zones": [], "walls": []}
+    return map_structure(row.json)
 
 
 @router.get("/{layout_id}", response_model=LayoutOut)

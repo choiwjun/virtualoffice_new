@@ -105,3 +105,51 @@ async def test_erp_sync_failures(async_client: AsyncClient, admin_auth_headers, 
 async def test_erp_sync_status_rbac(async_client: AsyncClient, auth_headers):
     r = await async_client.get("/api/erp-sync/status", headers=auth_headers)
     assert r.status_code == 403, r.text
+
+# ── 배포 레이아웃 구조(뷰포트 반영) ───────────────────────
+_STRUCT_LAYOUT = {
+    "dimensions": {"width_m": 16.0, "height_m": 10.0},
+    "rooms": [
+        {"room_id": "R_001", "name": "회의실 A", "type": "meeting",
+         "coords": {"x": 2.0, "y": 3.0, "width": 4.0, "height": 3.0}},
+    ],
+    "zones": [
+        {"zone_id": "Z_001", "label": "개발팀", "color": "#3498db",
+         "polygon": [{"x": 1.0, "y": 1.0}, {"x": 5.0, "y": 1.0}, {"x": 5.0, "y": 4.0}, {"x": 1.0, "y": 4.0}]},
+    ],
+    "colliders": [
+        {"collider_id": "C_001", "shape": "box", "box": {"x": 0.0, "y": 0.0, "width": 0.3, "height": 8.0}},
+    ],
+}
+
+
+@pytest.mark.asyncio
+async def test_deployed_structure_maps_rooms_zones_walls(async_client: AsyncClient, auth_headers, db_session: AsyncSession):
+    fl = uuid4()
+    row = OfficeLayout(office_id=uuid4(), floor_id=fl, version=1, status=OfficeLayoutStatus.DEPLOYED, json=_STRUCT_LAYOUT)
+    db_session.add(row)
+    await db_session.flush()
+    # 일반 사용자(auth_headers)도 접근 가능(사내 오피스 표시)
+    r = await async_client.get("/api/office-layouts/deployed/structure", headers=auth_headers)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["deployed"] is True
+    assert body["dimensions"] == {"width_m": 16.0, "height_m": 10.0}
+    assert len(body["rooms"]) == 1 and body["rooms"][0]["label"] == "회의실 A"
+    assert body["rooms"][0] == {"id": "R_001", "label": "회의실 A", "type": "meeting", "x": 2.0, "y": 3.0, "w": 4.0, "h": 3.0}
+    assert len(body["zones"]) == 1 and body["zones"][0]["label"] == "개발팀" and len(body["zones"][0]["polygon"]) == 4
+    assert len(body["walls"]) == 1 and body["walls"][0] == {"x": 0.0, "y": 0.0, "w": 0.3, "h": 8.0}
+
+
+@pytest.mark.asyncio
+async def test_deployed_structure_false_when_none(async_client: AsyncClient, auth_headers):
+    # 존재하지 않는 floor로 조회 → deployed=false, 빈 구조
+    r = await async_client.get(f"/api/office-layouts/deployed/structure?floor_id={uuid4()}", headers=auth_headers)
+    assert r.status_code == 200, r.text
+    assert r.json() == {"deployed": False, "rooms": [], "zones": [], "walls": []}
+
+
+@pytest.mark.asyncio
+async def test_deployed_structure_requires_auth(async_client: AsyncClient):
+    r = await async_client.get("/api/office-layouts/deployed/structure")
+    assert r.status_code == 401, r.text

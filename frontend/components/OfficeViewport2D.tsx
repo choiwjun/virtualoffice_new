@@ -29,6 +29,7 @@ import {
   PLATE_H,
   type SceneLayerSprite,
   ROOMS,
+  type SceneRoom,
   SCENE_THEMES,
   type SceneThemeId,
   SPAWNS,
@@ -111,6 +112,26 @@ interface SeatInfo {
   coords: { x: number; y: number; facing?: number };
 }
 
+/** 배포된 오피스 레이아웃 구조(GET /api/office-layouts/deployed/structure) — 좌표는 미터(top_left).
+ *  deployed=true면 편집기 배치를 씬 대신 벡터로 렌더한다(좌석배치대로 반영). */
+interface FloorStructure {
+  deployed: boolean;
+  dimensions?: { width_m: number; height_m: number };
+  rooms: { id: string; label: string; type?: string; x: number; y: number; w: number; h: number }[];
+  zones: { id: string; label: string; color: string; polygon: { x: number; y: number }[] }[];
+  walls: { x: number; y: number; w: number; h: number }[];
+}
+
+/** 미터 사각형(x,y,w,h) → 정규(0~1) 4꼭짓점 폴리곤 — 좌석과 동일 metersToNorm으로 정렬. */
+function rectToNormPoly(x: number, y: number, w: number, h: number): Vec2[] {
+  return [
+    metersToNorm({ x, y }),
+    metersToNorm({ x: x + w, y }),
+    metersToNorm({ x: x + w, y: y + h }),
+    metersToNorm({ x, y: y + h }),
+  ];
+}
+
 const SEATS_POLL_MS = 60_000; // 좌석 목록 폴링 주기(§3.11)
 const SEAT_Z = 15000; // 방 라벨(21000)보다 아래, 아바타(≤10000)보다 위 — y-깊이 무관 고정
 
@@ -140,7 +161,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
   const [meetingPrompt, setMeetingPrompt] = useState<{ roomId: string; label: string } | null>(null);
   const handleMeetingEntry = useCallback((r: MeetingEntryResult) => {
     if (!r.ok) return; // denied(too_far/full/unknown_room) → 무시
-    const room = ROOMS.find((rm) => rm.id === r.roomId);
+    const room = roomsRef.current.find((rm) => rm.id === r.roomId);
     setMeetingPrompt({ roomId: r.roomId, label: room?.label ?? r.roomId });
   }, []);
   const {
@@ -226,6 +247,26 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
   const seatsRef = useRef<SeatInfo[]>([]);
   const [seatPrompt, setSeatPrompt] = useState<{ mode: 'sit' | 'release'; seat: SeatInfo } | null>(null);
   const [seatBusy, setSeatBusy] = useState(false);
+
+  // ── 배포 레이아웃 구조(방/벽/구역) — 있으면 편집기 배치를 벡터로 반영, 없으면 데모 씬 ──────
+  const [structure, setStructure] = useState<FloorStructure | null>(null);
+  const dynRooms = useMemo<SceneRoom[]>(
+    () => (structure ? structure.rooms.map((r) => ({ id: r.id, label: r.label, polygon: rectToNormPoly(r.x, r.y, r.w, r.h) })) : []),
+    [structure],
+  );
+  const dynObstacles = useMemo<Vec2[][]>(
+    () => (structure ? structure.walls.map((w) => rectToNormPoly(w.x, w.y, w.w, w.h)) : []),
+    [structure],
+  );
+  const dynZones = useMemo(
+    () => (structure ? structure.zones.map((z) => ({ id: z.id, label: z.label, color: z.color, poly: z.polygon.map((p) => metersToNorm(p)) })) : []),
+    [structure],
+  );
+  const useDeployed = structure != null;
+  const activeRooms = useDeployed ? dynRooms : ROOMS;
+  // rAF/interval 콜백에서 최신 방 목록 참조(의존성 없이).
+  const roomsRef = useRef<SceneRoom[]>(ROOMS);
+  roomsRef.current = activeRooms;
 
   // 짧은 안내 토스트(사용 중 좌석, API 오류 등).
   const [toast, setToast] = useState<string | null>(null);
@@ -318,6 +359,19 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
     const id = setInterval(loadSeats, SEATS_POLL_MS);
     return () => clearInterval(id);
   }, [loadSeats]);
+
+  // ── 배포 레이아웃 구조 로드 — 마운트 + 60초 폴링(관리자 배포/롤백 반영). 미배포/에러 → 데모 씬 유지 ──
+  const loadStructure = useCallback(() => {
+    api
+      .get<FloorStructure>('/api/office-layouts/deployed/structure')
+      .then((s) => setStructure(s && s.deployed ? s : null))
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    loadStructure();
+    const id = setInterval(loadStructure, SEATS_POLL_MS);
+    return () => clearInterval(id);
+  }, [loadStructure]);
 
   const seatLabel = useCallback(
     (seat: SeatInfo) => seat.seat_number ?? `좌석 ${seat.id.slice(0, 8)}`,
@@ -427,7 +481,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
         return;
       }
       const n = metersToNorm({ x: self.x, y: self.y });
-      const room = ROOMS.find((rm) => pointInPolygon(n, rm.polygon));
+      const room = roomsRef.current.find((rm) => pointInPolygon(n, rm.polygon));
       const rid = room?.id ?? null;
       if (rid !== currentRoomRef.current) {
         currentRoomRef.current = rid;
@@ -715,7 +769,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
       const clamped = clampToWalkable(n);
       moveTo(normToMeters(clamped)); // A* 경로 — 유리벽 회의실도 문으로 진입
       // 방 폴리곤 안 클릭이면 글로우도.
-      const room = ROOMS.find((rm) => pointInPolygon(n, rm.polygon));
+      const room = roomsRef.current.find((rm) => pointInPolygon(n, rm.polygon));
       if (room) setGlowRoom(room.id);
     },
     [moveTo],
@@ -732,7 +786,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           : { text: '오프라인 모드 (로컬 이동)', color: '#64748B' };
 
   const glowRect = useMemo(() => {
-    const room = ROOMS.find((r) => r.id === glowRoom);
+    const room = activeRooms.find((r) => r.id === glowRoom);
     if (!room) return null;
     const xs = room.polygon.map((p) => p.x);
     const ys = room.polygon.map((p) => p.y);
@@ -742,7 +796,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
       w: Math.max(...xs) - Math.min(...xs),
       h: Math.max(...ys) - Math.min(...ys),
     };
-  }, [glowRoom]);
+  }, [glowRoom, activeRooms]);
 
   // isolate: 내부의 큰 z-index(아바타·라벨 ≤23000)를 이 컴포넌트 안에 가둬 셸 오버레이(z-20)를 뚫지 않게 함
   return (
@@ -762,7 +816,50 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
             transition: 'filter 1000ms ease',
           }}
         >
-        {ASSETS_READY ? (
+        {useDeployed ? (
+          /* 배포된 편집기 레이아웃을 벡터로 렌더 — 좌석배치대로 반영(방/벽/구역). 좌표=좌석과 동일 metersToNorm(0~1). */
+          <div
+            className="absolute inset-0 w-full h-full"
+            style={{ background: 'linear-gradient(160deg,#1c2941 0%,#141f33 55%,#0f1828 100%)' }}
+          >
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1 1" preserveAspectRatio="none">
+              {dynZones.map((z) => (
+                <polygon
+                  key={z.id}
+                  points={z.poly.map((v) => `${v.x},${v.y}`).join(' ')}
+                  fill={`${z.color}22`}
+                  stroke={z.color}
+                  strokeWidth={0.0022}
+                  strokeDasharray="0.012 0.008"
+                />
+              ))}
+              {activeRooms.map((r) => (
+                <polygon
+                  key={r.id}
+                  points={r.polygon.map((v) => `${v.x},${v.y}`).join(' ')}
+                  fill="rgba(124,58,237,.10)"
+                  stroke="rgba(168,150,240,.6)"
+                  strokeWidth={0.0028}
+                />
+              ))}
+              {dynObstacles.map((o, i) => (
+                <polygon
+                  key={i}
+                  points={o.map((v) => `${v.x},${v.y}`).join(' ')}
+                  fill="rgba(120,53,15,.6)"
+                  stroke="rgba(140,70,25,.85)"
+                  strokeWidth={0.0015}
+                />
+              ))}
+            </svg>
+            <div
+              className="absolute left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[11px] font-semibold"
+              style={{ top: 10, background: 'rgba(7,16,29,.85)', color: '#9fd0a8', border: '1px solid rgba(120,200,150,.35)', zIndex: 5 }}
+            >
+              배포된 좌석배치 반영 (편집기 레이아웃)
+            </div>
+          </div>
+        ) : ASSETS_READY ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -849,7 +946,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
         )}
 
         {/* 방 라벨 (overlay-tokens.roomLabel) */}
-        {ROOMS.map((room) => {
+        {activeRooms.map((room) => {
           const c = polygonCentroid(room.polygon);
           return (
             <button
@@ -870,6 +967,27 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
             >
               {room.label}
             </button>
+          );
+        })}
+
+        {/* 구역(zone) 라벨 — 배포 레이아웃에만 존재(팀 구역 배치 반영). */}
+        {dynZones.map((z) => {
+          const c = polygonCentroid(z.poly);
+          return (
+            <div
+              key={z.id}
+              className="absolute -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-[10px] text-[10px] font-semibold pointer-events-none"
+              style={{
+                left: `${c.x * 100}%`,
+                top: `${c.y * 100}%`,
+                background: 'rgba(7,14,27,.7)',
+                color: z.color,
+                border: `1px solid ${z.color}`,
+                zIndex: 20500,
+              }}
+            >
+              {z.label}
+            </div>
           );
         })}
 
@@ -1130,7 +1248,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           }}
         >
           <svg viewBox="0 0 100 56.3" className="w-full h-full" preserveAspectRatio="none">
-            {ROOMS.map((r) => (
+            {activeRooms.map((r) => (
               <polygon
                 key={r.id}
                 points={r.polygon.map((p) => `${p.x * 100},${p.y * 56.3}`).join(' ')}
