@@ -36,13 +36,14 @@ async def test_health_endpoint(async_client):
 
 # ── DB 스키마 ─────────────────────────────────────────────
 def test_all_tables_registered():
-    assert len(Base.metadata.tables) == 27  # +business_trip/report/chat_message (06-screens 메뉴 4종, 2026-07-13)
+    assert len(Base.metadata.tables) == 28  # +user_integration (D31 외부 계정 연동, 2026-07-17)
     assert "erp_user" in Base.metadata.tables
     assert "kpi_result" in Base.metadata.tables
     assert "user_avatar" in Base.metadata.tables
     assert "business_trip" in Base.metadata.tables
     assert "report" in Base.metadata.tables
     assert "chat_message" in Base.metadata.tables
+    assert "user_integration" in Base.metadata.tables
 
 
 async def test_db_session_usable(db_session):

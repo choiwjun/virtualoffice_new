@@ -99,3 +99,5 @@ from app.api import reports  # noqa: E402  업무 보고서 (06-screens '보고�
 app.include_router(reports.router)            # /api/reports — 일일/주간/월간 draft→submitted
 from app.api import chat  # noqa: E402  커뮤니케이션 채널 메시지 (06-screens '커뮤니케이션')
 app.include_router(chat.router)               # /api/chat/* — general/team 채널, 폴링 조회
+from app.api import integrations  # noqa: E402  본인 외부 계정 연동 (D31 opt-in, KPI 화면)
+app.include_router(integrations.router)       # /api/integrations — github/figma 연동·활동 동기화

@@ -1596,6 +1596,48 @@ class UserAvatar(Base, TimestampMixin):
     """머리 위 이름표(이름/직급) 표시 여부"""
 
 
+class IntegrationProvider(str, Enum):
+    """본인 opt-in 외부 계정 연동 공급자 (D31)"""
+    GITHUB = "github"
+    FIGMA = "figma"
+
+
+class UserIntegration(Base, TimestampMixin):
+    # @SPEC 00-decisions D31 — 본인 opt-in 외부 계정 연동 (KPI 화면 §개인 연동)
+    """
+    본인 외부 계정 연동 (user_id × provider 당 1개).
+
+    D31: 사용자가 자기 계정을 자발 등록하는 opt-in — ERP 무단 미러링 금지(D20-f)와 구분된다.
+    - access_token: 선택(없으면 공개 활동만 수집). API 응답에 절대 미노출(has_token만).
+    - activity: 표시용 활동 요약. KPI 정량식(08 §1.2)에는 미반영(가중치 개편 별도 결정 필요).
+    """
+    __tablename__ = "user_integration"
+
+    user_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("erp_user.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    """ERP user.id (본인)"""
+    provider: Mapped[IntegrationProvider] = mapped_column(
+        SQLEnum(IntegrationProvider),
+        primary_key=True,
+    )
+    """github | figma"""
+    account: Mapped[str] = mapped_column(String(255), nullable=False)
+    """계정 식별자 (github username / figma 계정 표시명)"""
+    access_token: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    """개인 액세스 토큰(선택) — 응답 미노출. 운영 전 암호화 저장 전환 필요"""
+    verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    """공급자 API로 계정/토큰 실검증 여부"""
+    last_synced_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    """최근 활동 동기화 시각 (UTC)"""
+    activity: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    """최근 활동 요약 (표시용 — 예: {push_events, pull_request_events, recent_repos, last_event_at})"""
+
+
 # ============================================================================
 # R. 출장·보고서·커뮤니케이션 (06-screens 좌내비 메뉴: 출장관리/보고서/커뮤니케이션)
 # ============================================================================

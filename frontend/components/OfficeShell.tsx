@@ -43,10 +43,12 @@ interface WorkLog {
   logged_at: string;
 }
 
+// GET /api/kpi-results 실계약(14-spec §2.8.1): 정량은 value, 확정 시 final_score. score/max_score 필드는 없다.
 interface KpiResult {
   metric: string;
-  score: number;
-  max_score: number;
+  value: number | null;
+  final_score: number | null;
+  unit: string | null;
   period_type: string;
   period_key: string;
 }
@@ -487,10 +489,15 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
     fetchRooms();
   }, [me, fetchWorkLogs, fetchKpi, fetchMeetings, fetchEmployees, fetchNotices, fetchRooms]);
 
-  // KPI 집계
-  const avgScore = kpiResults.length
-    ? Math.round(kpiResults.reduce((s, r) => s + r.score, 0) / kpiResults.length)
-    : 0;
+  // KPI 집계 — 헤드라인 = collaboration_score(14-spec §2.8.1), 없으면 score형 지표 평균. NaN 방지(구 r.score 참조 버그 수리).
+  const _kpiVal = (r: KpiResult): number => r.final_score ?? r.value ?? 0;
+  const _collab = kpiResults.find((r) => r.metric === 'collaboration_score');
+  const _scoreRows = kpiResults.filter((r) => (r.unit ?? 'score') === 'score' && (r.final_score ?? r.value) != null);
+  const avgScore = _collab
+    ? Math.round(_kpiVal(_collab))
+    : _scoreRows.length
+      ? Math.round(_scoreRows.reduce((s, r) => s + _kpiVal(r), 0) / _scoreRows.length)
+      : 0;
 
   // 사용자 필터 — offline은 '전체'에서만 노출. 헤더 검색어(이름/팀)와 AND 결합(06 §1.2)
   const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -908,8 +915,8 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                         <ProgressMetric
                           key={r.metric}
                           label={r.metric}
-                          value={Math.round(r.score)}
-                          max={Math.round(r.max_score) || 10}
+                          value={Math.round(_kpiVal(r))}
+                          max={r.unit === 'count' ? Math.max(10, Math.round(_kpiVal(r))) : 100}
                         />
                       ))}
                     </div>

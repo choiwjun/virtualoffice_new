@@ -16,6 +16,207 @@ import AiDraftView from '@/components/AiDraftView';
 
 type PeriodType = 'quarterly' | 'daily';
 
+// ── 외부 계정 연동 (D31 opt-in — /api/integrations) ─────────────────────────
+interface Integration {
+  provider: string;
+  account: string;
+  verified: boolean;
+  has_token: boolean;
+  last_synced_at: string | null;
+  activity: Record<string, unknown> | null;
+  connected_at: string | null;
+}
+
+const PROVIDERS: {
+  id: 'github' | 'figma';
+  label: string;
+  accountPlaceholder: string;
+  tokenHint: string;
+}[] = [
+  {
+    id: 'github',
+    label: 'GitHub',
+    accountPlaceholder: 'GitHub 사용자명 (예: octocat)',
+    tokenHint: '토큰(선택) — 없으면 공개 활동만 수집',
+  },
+  {
+    id: 'figma',
+    label: 'Figma',
+    accountPlaceholder: '계정 표시명',
+    tokenHint: '개인 액세스 토큰 — 검증·수집에 필요',
+  },
+];
+
+function ActivitySummary({ provider, activity }: { provider: string; activity: Record<string, unknown> }) {
+  if (provider === 'github') {
+    const repos = Array.isArray(activity.recent_repos) ? (activity.recent_repos as string[]) : [];
+    return (
+      <div className="text-[11px] text-gray-500 space-y-0.5">
+        <div>
+          최근 공개 이벤트 {String(activity.sample_size ?? 0)}건 — push {String(activity.push_events ?? 0)} ·
+          PR {String(activity.pull_request_events ?? 0)} · 리뷰 {String(activity.review_events ?? 0)}
+        </div>
+        {repos.length > 0 && <div className="truncate">저장소: {repos.join(', ')}</div>}
+      </div>
+    );
+  }
+  return (
+    <div className="text-[11px] text-gray-500">
+      {String(activity.handle ?? '')} {activity.email ? `(${String(activity.email)})` : ''}
+    </div>
+  );
+}
+
+function IntegrationCard({
+  meta,
+  row,
+  onChanged,
+}: {
+  meta: (typeof PROVIDERS)[number];
+  row: Integration | undefined;
+  onChanged: () => void;
+}) {
+  const [account, setAccount] = useState('');
+  const [token, setToken] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  const run = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    setMsg('');
+    try {
+      await fn();
+      setAccount('');
+      setToken('');
+      onChanged();
+    } catch (err) {
+      setMsg(errMsg(err, '실패'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-4">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold text-gray-700">{meta.label}</span>
+        {row ? (
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded ${row.verified ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}
+          >
+            {row.verified ? '연동됨 · 검증완료' : '연동됨 · 미검증'}
+          </span>
+        ) : (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">미연동</span>
+        )}
+      </div>
+
+      {row ? (
+        <div className="mt-2 space-y-2">
+          <div className="text-sm text-gray-800 font-medium">
+            {row.account}
+            {row.has_token && <span className="ml-1.5 text-[10px] text-gray-400">토큰 등록됨</span>}
+          </div>
+          {row.activity && <ActivitySummary provider={row.provider} activity={row.activity} />}
+          <div className="text-[11px] text-gray-400">
+            {row.last_synced_at ? `동기화 ${formatKst(row.last_synced_at)}` : '동기화 이력 없음'}
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={() => run(() => api.post(`/api/integrations/${meta.id}/sync`, {}))}
+              disabled={busy}
+              className="px-2.5 py-1 text-xs bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+            >
+              동기화
+            </button>
+            <button
+              onClick={() => run(() => api.delete(`/api/integrations/${meta.id}`))}
+              disabled={busy}
+              className="px-2.5 py-1 text-xs border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50 disabled:opacity-50"
+            >
+              연동 해제
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-2 space-y-2">
+          <input
+            value={account}
+            onChange={(e) => setAccount(e.target.value)}
+            placeholder={meta.accountPlaceholder}
+            className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <input
+            type="password"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder={meta.tokenHint}
+            autoComplete="off"
+            className="w-full border border-gray-300 rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <button
+            onClick={() =>
+              run(() =>
+                api.put(`/api/integrations/${meta.id}`, {
+                  account: account.trim(),
+                  token: token.trim() || null,
+                }),
+              )
+            }
+            disabled={busy || !account.trim()}
+            className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {busy ? '검증 중...' : '연동'}
+          </button>
+        </div>
+      )}
+      {msg && <p className="mt-2 text-[11px] text-red-600">{msg}</p>}
+    </div>
+  );
+}
+
+function IntegrationsPanel() {
+  const [rows, setRows] = useState<Integration[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const refresh = useCallback(async () => {
+    try {
+      setRows(await api.get<Integration[]>('/api/integrations'));
+    } catch {
+      // 목록 실패는 카드에서 개별 표기 — 섹션 자체는 유지
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return (
+    <section className="mt-10">
+      <h2 className="text-base font-bold text-gray-800">외부 계정 연동</h2>
+      <p className="text-xs text-gray-400 mb-3">
+        본인 계정 자발 등록(opt-in, D31) · 활동 요약은 참고 표시용 — KPI 점수에는 반영되지 않습니다
+      </p>
+      {!loaded ? (
+        <div className="text-sm text-gray-400 py-6">불러오는 중...</div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {PROVIDERS.map((meta) => (
+            <IntegrationCard
+              key={meta.id}
+              meta={meta}
+              row={rows.find((r) => r.provider === meta.id)}
+              onChanged={refresh}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 // ApiError.message 노출 (QA #7)
 function errMsg(err: unknown, prefix: string): string {
   if (err instanceof ApiError) return `${prefix} (${err.status}): ${err.message}`;
@@ -147,6 +348,9 @@ export default function MyKpiPage() {
           })}
         </div>
       )}
+
+      {/* 외부 계정 연동 (D31) — 조회 실패/데이터 없음과 무관하게 항상 노출 */}
+      <IntegrationsPanel />
     </div>
   );
 }

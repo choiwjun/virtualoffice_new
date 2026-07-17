@@ -208,6 +208,17 @@
 - **복원 절차(신규 팩 납품 시)**: `frontend/public/office2d/plates/`·`characters/` 배치 → `lib/office2d.ts ASSETS_READY=true` → (지오메트리 변경 시) WALK_AREA/ROOMS/OBSTACLES + realtime HORIZON 폴리곤 동기 갱신.
 - ✅ **v1 팩 납품 완료 (2026-07-13, 당일)**: `tools/asset-gen` 프로시저럴 생성기(아이소 SVG→PNG, 시안 정합 팔레트) — 플레이트+캐릭터 8직군×14프레임+layout.json 단일 소스. ASSETS_READY=true 복원, realtime HORIZON v1 지오메트리 동기(scene-floor 12 PASS). 상세 = 17-asset-rework-spec.md.
 
+## L. 본인 외부 계정 연동 (D31, 2026-07-17)
+
+> 사용자 확정: KPI 화면에서 본인의 GitHub·Figma 계정을 연동하는 메뉴를 제공한다.
+> D20-f(ERP 무단 미러링 금지)·D14(반감시)와의 관계: **본인이 자기 계정을 자발 등록(opt-in)**하는
+> 것은 무단 수집이 아니며, 활동 요약은 **참고 표시용으로만** 쓰고 KPI 정량식(08 §1.2)에는
+> 반영하지 않는다(반영하려면 가중치 개편 별도 결정 필요).
+
+| ID | 결정 | 내용 | 폐기·대체 |
+|----|------|------|-------------|
+| **D31** | 본인 외부 계정 연동 = **opt-in 등록 + 실검증 + 활동 요약 표시** | ① `user_integration` 테이블(user_id×provider PK, github/figma). ② `/api/integrations` — 본인 전용 CRUD·sync(타인 조회 API 없음). ③ 검증: GitHub 계정 실존(GET /users/{u}) + 공개 이벤트 요약, Figma 토큰(GET /v1/me). 토큰은 응답 미노출(has_token만), 해제 시 즉시 삭제, **운영 전 암호화 저장 전환 필요**. ④ UI = KPI평가 화면 §외부 계정 연동. ⑤ KPI 점수 미반영 — 표시 전용 | (신규 — D20-f는 ERP 미러링에 한해 유지) |
+
 ---
 
 ## 문서별 반영 체크리스트
