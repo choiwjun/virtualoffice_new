@@ -13,7 +13,10 @@ rtc:
   tcp_port: 7881
   # 로컬 개발: 외부 IP 불필요 — 루프백으로 충분
   use_external_ip: false
-  # UDP 포트 범위: coturn(50100-50200)과 겹치지 않는 범위 사용
+  # ICE 후보를 호스트 루프백으로 광고 — 미설정 시 컨테이너 내부 IP(172.x)가 광고되어
+  # 브라우저가 UDP/TCP 후보에 도달 불가 → 연결 플래핑 (2026-07-17 실측)
+  node_ip: 127.0.0.1
+  # UDP 포트 범위: coturn(50100-50200)과 겹치지 않는 범위 사용 (compose 매핑과 정합 필수)
   port_range_start: 50000
   port_range_end: 50050
 

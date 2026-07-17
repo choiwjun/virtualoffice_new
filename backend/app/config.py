@@ -66,7 +66,9 @@ class Settings(BaseSettings):
     # 운영: .env에서 실제 api_key / api_secret 주입 (이 기본값은 로컬 개발 전용)
     livekit_api_key: str = "devkey"
     livekit_api_secret: str = "devsecret01234567890123456789012345"  # ≥32자
-    livekit_url: str = "http://localhost:7880"
+    # localhost는 브라우저가 ::1(IPv6)로 해석할 수 있는데 도커 포트 매핑은 127.0.0.1(IPv4)뿐이라
+    # LiveKit 시그널 웹소켓이 주기적으로 끊긴다(2026-07-17 실측) — 127.0.0.1로 고정.
+    livekit_url: str = "http://127.0.0.1:7880"
     livekit_token_expiry_seconds: int = 3600  # 1시간
 
     @property

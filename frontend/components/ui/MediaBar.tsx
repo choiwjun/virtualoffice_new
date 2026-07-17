@@ -60,7 +60,8 @@ export function MediaBar({ room, onLeave, className = '' }: MediaBarProps) {
   const [camOn, setCamOn] = useState(false);
   const [shareOn, setShareOn] = useState(false);
 
-  // 룸 연결/해제 시 로컬 트랙 상태 반영.
+  // 룸 연결/해제·로컬트랙 발행 이벤트 시 권위 상태(localParticipant.is*Enabled)로 동기화.
+  // 토글 promise가 시그널 재접속과 겹쳐 거부돼도(발행은 재개 후 완료될 수 있음) UI가 실상태를 따른다(2026-07-17 실측).
   useEffect(() => {
     if (!room) {
       setMicOn(false);
@@ -69,30 +70,54 @@ export function MediaBar({ room, onLeave, className = '' }: MediaBarProps) {
       return;
     }
     const lp = room.localParticipant;
-    setMicOn(lp.isMicrophoneEnabled);
-    setCamOn(lp.isCameraEnabled);
-    setShareOn(lp.isScreenShareEnabled);
+    const sync = () => {
+      setMicOn(lp.isMicrophoneEnabled);
+      setCamOn(lp.isCameraEnabled);
+      setShareOn(lp.isScreenShareEnabled);
+    };
+    sync();
+    room.on('localTrackPublished', sync);
+    room.on('localTrackUnpublished', sync);
+    return () => {
+      room.off('localTrackPublished', sync);
+      room.off('localTrackUnpublished', sync);
+    };
   }, [room]);
 
   const toggleMic = useCallback(async () => {
     if (!room) return;
-    const next = !room.localParticipant.isMicrophoneEnabled;
-    await room.localParticipant.setMicrophoneEnabled(next);
-    setMicOn(next);
+    const lp = room.localParticipant;
+    try {
+      await lp.setMicrophoneEnabled(!lp.isMicrophoneEnabled);
+    } catch {
+      // 재접속 경합 등 — 발행이 재개 후 완료되면 localTrackPublished 이벤트가 상태를 맞춘다
+    } finally {
+      setMicOn(lp.isMicrophoneEnabled);
+    }
   }, [room]);
 
   const toggleCam = useCallback(async () => {
     if (!room) return;
-    const next = !room.localParticipant.isCameraEnabled;
-    await room.localParticipant.setCameraEnabled(next);
-    setCamOn(next);
+    const lp = room.localParticipant;
+    try {
+      await lp.setCameraEnabled(!lp.isCameraEnabled);
+    } catch {
+      // 상동
+    } finally {
+      setCamOn(lp.isCameraEnabled);
+    }
   }, [room]);
 
   const toggleShare = useCallback(async () => {
     if (!room) return;
-    const next = !room.localParticipant.isScreenShareEnabled;
-    await room.localParticipant.setScreenShareEnabled(next);
-    setShareOn(next);
+    const lp = room.localParticipant;
+    try {
+      await lp.setScreenShareEnabled(!lp.isScreenShareEnabled);
+    } catch {
+      // 상동
+    } finally {
+      setShareOn(lp.isScreenShareEnabled);
+    }
   }, [room]);
 
   return (

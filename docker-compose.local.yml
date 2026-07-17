@@ -47,6 +47,9 @@ services:
     ports:
       - "127.0.0.1:7880:7880"
       - "127.0.0.1:7881:7881"
+      # RTC UDP (livekit.local.yaml port_range 50000-50050와 정합 — 미매핑 시 ICE가
+      # TCP 7881 폴백에만 의존해 연결 플래핑, 2026-07-17 실측)
+      - "127.0.0.1:50000-50050:50000-50050/udp"
     environment:
       # LIVEKIT_KEYS 형식: "<api_key>: <api_secret>"
       LIVEKIT_KEYS: "devkey: devsecret01234567890123456789012345"
