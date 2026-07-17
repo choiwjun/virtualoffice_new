@@ -5,7 +5,15 @@ import dynamic from 'next/dynamic';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isAdmin } from '@/lib/auth';
 import type { SeatBox, ShapeBox, Selection } from '@/components/office/SeatCanvas';
-import { buildOfficeLayout } from '@/lib/officeLayout';
+import { buildOfficeLayout, DEFAULT_PX_PER_METER } from '@/lib/officeLayout';
+
+// 좌석 테이블 coords 정본 = 미터(top_left, D25) — seed_seats·뷰포트·buildOfficeLayout 공통.
+// 편집기 내부(SeatBox/pending)는 캔버스 픽셀이므로 seat 테이블 경계에서 픽셀↔미터 변환한다.
+// (변환 누락 시: 드래그한 좌석이 픽셀 좌표로 저장돼 뷰포트 metersToNorm에서 플레이트 밖으로
+//  컬링되어 가상사무실에 안 나타남 — 2026-07-17 수리.)
+const PX_PER_M = DEFAULT_PX_PER_METER;
+const mToPx = (m: number) => m * PX_PER_M;
+const pxToM = (px: number) => Math.round((px / PX_PER_M) * 1000) / 1000;
 
 const SeatCanvas = dynamic(() => import('@/components/office/SeatCanvas'), {
   ssr: false,
@@ -36,8 +44,9 @@ interface LayoutRow {
 
 function toBox(s: ApiSeat, i: number): SeatBox {
   const c = s.coords || {};
-  const x = typeof c.x === 'number' ? c.x : 40 + (i % 6) * 130;
-  const y = typeof c.y === 'number' ? c.y : 40 + Math.floor(i / 6) * 90;
+  // seat 테이블은 미터 → 편집기 캔버스 픽셀로 변환. 좌표 없으면 격자 폴백(픽셀).
+  const x = typeof c.x === 'number' ? mToPx(c.x) : 40 + (i % 6) * 130;
+  const y = typeof c.y === 'number' ? mToPx(c.y) : 40 + Math.floor(i / 6) * 90;
   return { id: s.id, label: s.seat_number || `좌석 ${i + 1}`, x, y, status: s.status, type: s.type };
 }
 
@@ -224,7 +233,8 @@ export default function OfficeLayoutPage() {
         setPendingDeletes((prev) => prev.filter((x) => x !== id));
       }
       for (const [id, coords] of Object.entries(pendingMoves)) {
-        await api.put(`/api/seats/${id}`, { coords });
+        // 편집기 픽셀 → seat 테이블 미터(D25)
+        await api.put(`/api/seats/${id}`, { coords: { x: pxToM(coords.x), y: pxToM(coords.y) } });
         setPendingMoves((prev) => {
           const next = { ...prev };
           delete next[id];
@@ -235,7 +245,7 @@ export default function OfficeLayoutPage() {
         const created = await api.post<ApiSeat>('/api/seats', {
           floor_id: floorId,
           type: 'free',
-          coords: c.coords,
+          coords: { x: pxToM(c.coords.x), y: pxToM(c.coords.y) },
           seat_number: c.seat_number,
         });
         setSeats((prev) => prev.map((s, i) => (s.id === c.tempId ? toBox(created, i) : s)));
