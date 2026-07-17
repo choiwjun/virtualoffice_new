@@ -9,6 +9,11 @@
 > **지오메트리 정본 = `tools/asset-gen/out/layout.json`** (그림과 같은 소스에서 산출 — §5 수작업 캘리브레이션 불필요).
 > 수정 절차: `src/plate.js`·`src/characters.js` 편집 → `node generate.js all --final` → `sync_geometry`(프론트·realtime 주입) → 테스트.
 > 시안의 sit/typing 상태·모듈 개별 스프라이트(런타임 합성 A안)는 2차 범위.
+> ✅ **소품 폴리시 (2026-07-17, v2.3)**: 캐릭터 직군 소품(MANAGER·DESIGNER 안경 / DEVELOPER 헤드폰 /
+> INTERN 사원증 랜야드 — horizon-characters.js v2.3, 208f 재추출 QA 0건), 플레이트 소품(NE 벽시계·아트월
+> 갤러리 — 배경 레이어 흡수, 스프라이트 57장 불변), 브랜드 월 파라미터(HORIZON/ACME/NOVA —
+> horizon-scene.js `drawScene(opts.brand)`·`renderHorizonLayers(brand)`·`<horizon-scene brand>` +
+> plate.js `buildPlate({brand})`, 지오메트리 불변).
 
 ---
 
@@ -47,7 +52,7 @@ frontend/public/office2d/
 | 크기 | 세로 380~560px 원본 (엔진이 깊이 기반 축소 표시: 화면높이의 13~17.5%) | avatarHeightFrac 캘리브레이션 |
 | 인원 | 8종 (엔진 계약 `CHARACTER_IDS` — ID·이름 변경 가능, 개수 변경 시 상수 동기) | userId 해시 배정 + 아바타 설정 프리셋 |
 | 톤 | 플레이트와 동일 라이팅·채도 기준 | D29 실패 교훈 — 배경·인물 톤 불일치가 품질 저하 주범 |
-| 추가 상태(후속) | sit / typing (착석 연출) — ✅ sit(2026-07-15)·typing(2026-07-16) 납품 완료 | 06 §3.11 |
+| 추가 상태(후속) | sit / typing (착석 연출) — ✅ sit(2026-07-15)·typing(2026-07-16) 납품 완료. 직군 소품(안경·헤드폰·사원증) ✅ v2.3(2026-07-17) | 06 §3.11 |
 
 ## 4. 품질 게이트 (수용 기준 — 01-prd v4.1 §7 연동)
 
