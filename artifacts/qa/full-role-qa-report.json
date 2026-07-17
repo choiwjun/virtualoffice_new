@@ -1,0 +1,117 @@
+[
+ {
+  "status": "PASS",
+  "name": "C1 charlie 로그인",
+  "detail": "http://localhost:3000/office"
+ },
+ {
+  "status": "PASS",
+  "name": "C2 RBAC 사이드바",
+  "detail": "KPI관리/공지관리/감사로그 미노출"
+ },
+ {
+  "status": "PASS",
+  "name": "C3 업무 추가",
+  "detail": "제목·목표·PR링크·완료 상태로 등록 → 목록 표시"
+ },
+ {
+  "status": "PASS",
+  "name": "C4 일일 리포트 제출",
+  "detail": "daily_status_push 적재 요청 발사"
+ },
+ {
+  "status": "PASS",
+  "name": "C5 보고서",
+  "detail": "작성→제출(수정 불가 확정) → 목록 표시"
+ },
+ {
+  "status": "PASS",
+  "name": "C6 출장 신청",
+  "detail": "신청 상태로 목록 표시"
+ },
+ {
+  "status": "PASS",
+  "name": "C7 채팅 전송",
+  "detail": "general 채널 메시지 표시"
+ },
+ {
+  "status": "PASS",
+  "name": "C8 아바타 변경",
+  "detail": "CEO → MARKETER 저장"
+ },
+ {
+  "status": "PASS",
+  "name": "C9 오피스 스폰",
+  "detail": "charlie 아바타+실시간 연결"
+ },
+ {
+  "status": "PASS",
+  "name": "C10 RBAC 공지관리 차단",
+  "detail": "작성 UI 미노출/거부"
+ },
+ {
+  "status": "PASS",
+  "name": "B1 bob 로그인",
+  "detail": "http://localhost:3000/office"
+ },
+ {
+  "status": "PASS",
+  "name": "B2 출장 승인",
+  "detail": "requested → approved 전이"
+ },
+ {
+  "status": "PASS",
+  "name": "B3 채팅 왕복",
+  "detail": "charlie 메시지 수신 + bob 답장 표시"
+ },
+ {
+  "status": "PASS",
+  "name": "B4 leader compute 거부",
+  "detail": "compute 403(admin 전용 계약)"
+ },
+ {
+  "status": "PASS",
+  "name": "A1 alice 로그인",
+  "detail": "http://localhost:3000/office"
+ },
+ {
+  "status": "FAIL",
+  "name": "A2 KPI 계산(charlie·daily) — 실데이터 반영 검증",
+  "detail": "TimeoutError: page.waitForSelector: Timeout 20000ms exceeded."
+ },
+ {
+  "status": "PASS",
+  "name": "A3 공지 등록",
+  "detail": "목록 반영"
+ },
+ {
+  "status": "PASS",
+  "name": "A4a 공지 전파",
+  "detail": "직원 알림 드롭다운에 새 공지 표시"
+ },
+ {
+  "status": "FAIL",
+  "name": "A4 charlie 화면에서 공지·KPI 반영 확인",
+  "detail": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded."
+ },
+ {
+  "status": "FAIL",
+  "name": "A5 이의신청 왕복(charlie 접수 → alice 검토 시작)",
+  "detail": "TimeoutError: locator.waitFor: Timeout 15000ms exceeded."
+ },
+ {
+  "status": "WARN",
+  "name": "A6 회의 예약",
+  "detail": "등록된 회의실 없음(시드 미포함) — 예약 폼 자체는 정상 노출"
+ },
+ {
+  "status": "PASS",
+  "name": "A7 admin 화면 5종",
+  "detail": "employees(실명 표시)/audit/sync/org-chart/office-layout"
+ },
+ {
+  "status": "PASS",
+  "name": "A8 동시 스폰",
+  "detail": "alice 화면 아바타 3개"
+ }
+]

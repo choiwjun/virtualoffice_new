@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-개발용 좌석 시드 — layout.json(에셋 지오메트리 정본)의 좌석 앵커로 워크스테이션 좌석 8개 생성.
+개발용 좌석·회의실 시드 — layout.json 좌석 앵커로 워크스테이션 8석 + HORIZON 회의존 2실(room) 생성.
 
 사용:
     cd backend
@@ -27,7 +27,9 @@ os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./dev.db")
 from sqlalchemy import select  # noqa: E402
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine  # noqa: E402
 
-from app.models.tables import Base, Floor, Office, Seat, SeatStatus, SeatType  # noqa: E402
+from app.models.tables import (  # noqa: E402
+    Base, Floor, Office, Room, RoomStatus, RoomType, Seat, SeatStatus, SeatType,
+)
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 LAYOUT_PATH = _ROOT.parent / "tools" / "asset-gen" / "out" / "layout.json"
@@ -38,6 +40,14 @@ SCENE_H_M = (941 / 1672) * 20.0
 
 # 고정 배정: 좌석번호 → erp_user.id (seed_dev.py 계정)
 FIXED_ASSIGN = {"WS-A1": 1001, "WS-B1": 1002}  # alice, bob
+
+# HORIZON 회의존(realtime FloorLayoutProvider meetingZones와 동일 bbox 미터·roomId)
+MEETING_ROOMS = [
+    {"name": "Board Room", "livekit_room": "boardroom", "capacity": 8,
+     "coords": {"x": 12.87, "y": 5.52, "width": 5.79, "height": 2.90}},
+    {"name": "Meeting Room", "livekit_room": "meeting-a", "capacity": 4,
+     "coords": {"x": 10.61, "y": 7.69, "width": 4.03, "height": 2.01}},
+]
 
 
 async def main() -> None:
@@ -111,6 +121,34 @@ async def main() -> None:
                     row.status = SeatStatus.OCCUPIED
                 updated += 1
                 print(f"  [UPD] {num} {coords}" + (f" → user {uid}" if uid else ""))
+
+        # 회의실(room) — 회의실예약 화면·D24 명시입장이 참조. (floor, name) 멱등 upsert.
+        for spec in MEETING_ROOMS:
+            room = (
+                await db.execute(
+                    select(Room).where(Room.floor_id == floor.id, Room.name == spec["name"])
+                )
+            ).scalar_one_or_none()
+            if room is None:
+                db.add(
+                    Room(
+                        floor_id=floor.id,
+                        type=RoomType.MEETING,
+                        name=spec["name"],
+                        capacity=spec["capacity"],
+                        coords=spec["coords"],
+                        livekit_room=spec["livekit_room"],
+                        status=RoomStatus.ACTIVE,
+                    )
+                )
+                created += 1
+                print(f"  [NEW] room {spec['name']} (정원 {spec['capacity']})")
+            else:
+                room.capacity = spec["capacity"]
+                room.coords = spec["coords"]
+                room.livekit_room = spec["livekit_room"]
+                updated += 1
+                print(f"  [UPD] room {spec['name']}")
 
         await db.commit()
 
