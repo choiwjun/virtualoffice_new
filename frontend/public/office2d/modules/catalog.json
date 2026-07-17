@@ -1,0 +1,1183 @@
+{
+ "version": 1,
+ "plate": {
+  "w": 3344,
+  "h": 1882,
+  "scene_m": [
+   20,
+   11.256
+  ]
+ },
+ "background": "/office2d/layers/background.webp",
+ "modules": {
+  "plant": {
+   "variants": {
+    "p0-s55": {
+     "src": "sprites/plant__p0-s55.webp",
+     "w": 116,
+     "h": 164,
+     "offset": [
+      -59,
+      -136
+     ],
+     "baselineDy": 0.01351
+    },
+    "p1-s55": {
+     "src": "sprites/plant__p1-s55.webp",
+     "w": 116,
+     "h": 164,
+     "offset": [
+      -59,
+      -136
+     ],
+     "baselineDy": 0.01346
+    },
+    "p2-s46": {
+     "src": "sprites/plant__p2-s46.webp",
+     "w": 99,
+     "h": 138,
+     "offset": [
+      -50,
+      -114
+     ],
+     "baselineDy": 0.01134
+    },
+    "p3-s46": {
+     "src": "sprites/plant__p3-s46.webp",
+     "w": 99,
+     "h": 138,
+     "offset": [
+      -50,
+      -114
+     ],
+     "baselineDy": 0.01127
+    },
+    "p4-s50": {
+     "src": "sprites/plant__p4-s50.webp",
+     "w": 107,
+     "h": 149,
+     "offset": [
+      -54,
+      -123
+     ],
+     "baselineDy": 0.01199
+    },
+    "p5-s44": {
+     "src": "sprites/plant__p5-s44.webp",
+     "w": 95,
+     "h": 133,
+     "offset": [
+      -48,
+      -109
+     ],
+     "baselineDy": 0.01054
+    },
+    "p6-s46": {
+     "src": "sprites/plant__p6-s46.webp",
+     "w": 99,
+     "h": 138,
+     "offset": [
+      -50,
+      -114
+     ],
+     "baselineDy": 0.01131
+    }
+   },
+   "footprint_m": null
+  },
+  "reception-desk": {
+   "variants": {
+    "default": {
+     "src": "sprites/reception-desk.webp",
+     "w": 433,
+     "h": 332,
+     "offset": [
+      -210,
+      -215
+     ],
+     "baselineDy": 0.05245
+    }
+   },
+   "footprint_m": [
+    [
+     -0.535,
+     -0.587
+    ],
+    [
+     1.175,
+     0.267
+    ],
+    [
+     0.533,
+     0.587
+    ],
+    [
+     -1.175,
+     -0.267
+    ]
+   ]
+  },
+  "sofa": {
+   "variants": {
+    "v-": {
+     "src": "sprites/sofa__v-.webp",
+     "w": 419,
+     "h": 312,
+     "offset": [
+      -201,
+      -197
+     ],
+     "baselineDy": 0.04762
+    },
+    "v+": {
+     "src": "sprites/sofa__v+.webp",
+     "w": 408,
+     "h": 282,
+     "offset": [
+      -195,
+      -170
+     ],
+     "baselineDy": 0.04592
+    }
+   },
+   "footprint_m": [
+    [
+     -0.427,
+     -0.58
+    ],
+    [
+     1.159,
+     0.214
+    ],
+    [
+     0.427,
+     0.58
+    ],
+    [
+     -1.159,
+     -0.214
+    ]
+   ]
+  },
+  "pantry-bench": {
+   "variants": {
+    "default": {
+     "src": "sprites/pantry-bench.webp",
+     "w": 452,
+     "h": 311,
+     "offset": [
+      -278,
+      -154
+     ],
+     "baselineDy": 0.04041
+    }
+   },
+   "footprint_m": [
+    [
+     -0.567,
+     -0.448
+    ],
+    [
+     0.897,
+     0.284
+    ],
+    [
+     -0.201,
+     0.833
+    ],
+    [
+     -1.665,
+     0.1
+    ]
+   ]
+  },
+  "pantry-table": {
+   "variants": {
+    "default": {
+     "src": "sprites/pantry-table.webp",
+     "w": 291,
+     "h": 209,
+     "offset": [
+      -146,
+      -147
+     ],
+     "baselineDy": 0.03135
+    }
+   },
+   "footprint_m": null
+  },
+  "cube-stool": {
+   "variants": {
+    "s50": {
+     "src": "sprites/cube-stool__s50.webp",
+     "w": 113,
+     "h": 109,
+     "offset": [
+      -49,
+      -71
+     ],
+     "baselineDy": 0.01201
+    },
+    "s48": {
+     "src": "sprites/cube-stool__s48.webp",
+     "w": 109,
+     "h": 107,
+     "offset": [
+      -47,
+      -70
+     ],
+     "baselineDy": 0.01155
+    }
+   },
+   "footprint_m": null
+  },
+  "workstation-desk": {
+   "variants": {
+    "v+-a": {
+     "src": "sprites/workstation-desk__v+-a.webp",
+     "w": 304,
+     "h": 253,
+     "offset": [
+      -143,
+      -167
+     ],
+     "baselineDy": 0.03076
+    },
+    "v+-b": {
+     "src": "sprites/workstation-desk__v+-b.webp",
+     "w": 303,
+     "h": 253,
+     "offset": [
+      -143,
+      -167
+     ],
+     "baselineDy": 0.03038
+    }
+   },
+   "footprint_m": [
+    [
+     -0.275,
+     -0.412
+    ],
+    [
+     0.823,
+     0.137
+    ],
+    [
+     0.275,
+     0.412
+    ],
+    [
+     -0.823,
+     -0.137
+    ]
+   ]
+  },
+  "coffee-table": {
+   "variants": {
+    "default": {
+     "src": "sprites/coffee-table.webp",
+     "w": 249,
+     "h": 173,
+     "offset": [
+      -118,
+      -101
+     ],
+     "baselineDy": 0.02379
+    }
+   },
+   "footprint_m": [
+    [
+     -0.061,
+     -0.335
+    ],
+    [
+     0.671,
+     0.03
+    ],
+    [
+     0.061,
+     0.335
+    ],
+    [
+     -0.671,
+     -0.03
+    ]
+   ]
+  },
+  "office-chair": {
+   "variants": {
+    "v+": {
+     "src": "sprites/office-chair__v+.webp",
+     "w": 103,
+     "h": 136,
+     "offset": [
+      -52,
+      -118
+     ],
+     "baselineDy": 0.00511
+    },
+    "v-": {
+     "src": "sprites/office-chair__v-.webp",
+     "w": 103,
+     "h": 146,
+     "offset": [
+      -52,
+      -129
+     ],
+     "baselineDy": 0.00519
+    },
+    "u-": {
+     "src": "sprites/office-chair__u-.webp",
+     "w": 103,
+     "h": 147,
+     "offset": [
+      -52,
+      -130
+     ],
+     "baselineDy": 0.00535
+    },
+    "u+": {
+     "src": "sprites/office-chair__u+.webp",
+     "w": 103,
+     "h": 136,
+     "offset": [
+      -52,
+      -119
+     ],
+     "baselineDy": 0.00497
+    }
+   },
+   "footprint_m": null
+  },
+  "lounge-chair": {
+   "variants": {
+    "v-": {
+     "src": "sprites/lounge-chair__v-.webp",
+     "w": 132,
+     "h": 145,
+     "offset": [
+      14,
+      -120
+     ],
+     "baselineDy": 0.01151
+    },
+    "u-": {
+     "src": "sprites/lounge-chair__u-.webp",
+     "w": 133,
+     "h": 145,
+     "offset": [
+      -127,
+      -137
+     ],
+     "baselineDy": 0.00227
+    },
+    "u+": {
+     "src": "sprites/lounge-chair__u+.webp",
+     "w": 132,
+     "h": 125,
+     "offset": [
+      -61,
+      -59
+     ],
+     "baselineDy": 0.03332
+    }
+   },
+   "footprint_m": null
+  },
+  "boardroom-table": {
+   "variants": {
+    "default": {
+     "src": "sprites/boardroom-table.webp",
+     "w": 549,
+     "h": 354,
+     "offset": [
+      -265,
+      -206
+     ],
+     "baselineDy": 0.06308
+    }
+   },
+   "footprint_m": [
+    [
+     -0.64,
+     -0.777
+    ],
+    [
+     1.556,
+     0.32
+    ],
+    [
+     0.64,
+     0.778
+    ],
+    [
+     -1.556,
+     -0.32
+    ]
+   ]
+  },
+  "cafe-table": {
+   "variants": {
+    "default": {
+     "src": "sprites/cafe-table.webp",
+     "w": 130,
+     "h": 135,
+     "offset": [
+      -66,
+      -102
+     ],
+     "baselineDy": 0.00291
+    }
+   },
+   "footprint_m": [
+    [
+     -0.03,
+     -0.382
+    ],
+    [
+     0.762,
+     0.016
+    ],
+    [
+     0.03,
+     0.382
+    ],
+    [
+     -0.762,
+     -0.015
+    ]
+   ]
+  },
+  "meeting-table": {
+   "variants": {
+    "default": {
+     "src": "sprites/meeting-table.webp",
+     "w": 364,
+     "h": 262,
+     "offset": [
+      -173,
+      -160
+     ],
+     "baselineDy": 0.0387
+    }
+   },
+   "footprint_m": [
+    [
+     -0.092,
+     -0.503
+    ],
+    [
+     1.006,
+     0.045
+    ],
+    [
+     0.092,
+     0.503
+    ],
+    [
+     -1.006,
+     -0.046
+    ]
+   ]
+  },
+  "booth-panel": {
+   "variants": {
+    "default": {
+     "src": "sprites/booth-panel.webp",
+     "w": 75,
+     "h": 130,
+     "offset": [
+      -38,
+      -110
+     ],
+     "baselineDy": 0.00903
+    }
+   },
+   "footprint_m": null
+  },
+  "glass-front": {
+   "variants": {
+    "glass-board-a": {
+     "src": "sprites/glass-front__glass-board-a.webp",
+     "w": 339,
+     "h": 439,
+     "offset": [
+      -165,
+      -329
+     ],
+     "baselineDy": 0.04256
+    },
+    "glass-board-b": {
+     "src": "sprites/glass-front__glass-board-b.webp",
+     "w": 156,
+     "h": 347,
+     "offset": [
+      -74,
+      -283
+     ],
+     "baselineDy": 0.01798
+    },
+    "glass-meet-a": {
+     "src": "sprites/glass-front__glass-meet-a.webp",
+     "w": 156,
+     "h": 347,
+     "offset": [
+      -74,
+      -283
+     ],
+     "baselineDy": 0.0179
+    },
+    "glass-meet-b": {
+     "src": "sprites/glass-front__glass-meet-b.webp",
+     "w": 156,
+     "h": 347,
+     "offset": [
+      -73,
+      -284
+     ],
+     "baselineDy": 0.01826
+    },
+    "glass-booth": {
+     "src": "sprites/glass-front__glass-booth.webp",
+     "w": 198,
+     "h": 369,
+     "offset": [
+      -94,
+      -293
+     ],
+     "baselineDy": 0.0237
+    }
+   },
+   "footprint_m": null
+  }
+ },
+ "instances": [
+  {
+   "id": "item-48",
+   "module": "plant",
+   "variant": "p0-s55",
+   "anchor": [
+    0.432,
+    0.224
+   ],
+   "z": 0.23751
+  },
+  {
+   "id": "item-49",
+   "module": "plant",
+   "variant": "p1-s55",
+   "anchor": [
+    0.556,
+    0.291
+   ],
+   "z": 0.30446
+  },
+  {
+   "id": "item-0",
+   "module": "reception-desk",
+   "variant": "default",
+   "anchor": [
+    0.46875,
+    0.29345
+   ],
+   "z": 0.34591,
+   "ob": [
+    0
+   ]
+  },
+  {
+   "id": "item-2",
+   "module": "sofa",
+   "variant": "v-",
+   "anchor": [
+    0.61595,
+    0.412
+   ],
+   "z": 0.45962,
+   "ob": [
+    1
+   ]
+  },
+  {
+   "id": "item-50",
+   "module": "plant",
+   "variant": "p2-s46",
+   "anchor": [
+    0.729,
+    0.452
+   ],
+   "z": 0.46334
+  },
+  {
+   "id": "item-35",
+   "module": "pantry-bench",
+   "variant": "default",
+   "anchor": [
+    0.29046,
+    0.38679
+   ],
+   "z": 0.42721,
+   "ob": [
+    17
+   ]
+  },
+  {
+   "id": "item-3",
+   "module": "sofa",
+   "variant": "v+",
+   "anchor": [
+    0.56562,
+    0.45673
+   ],
+   "z": 0.50266,
+   "ob": [
+    2
+   ]
+  },
+  {
+   "id": "item-36",
+   "module": "pantry-table",
+   "variant": "default",
+   "anchor": [
+    0.27069,
+    0.40436
+   ],
+   "z": 0.43571
+  },
+  {
+   "id": "item-37",
+   "module": "cube-stool",
+   "variant": "s50",
+   "anchor": [
+    0.2295,
+    0.40191
+   ],
+   "z": 0.41392
+  },
+  {
+   "id": "item-14",
+   "module": "workstation-desk",
+   "variant": "v+-a",
+   "anchor": [
+    0.42525,
+    0.4432
+   ],
+   "z": 0.47396,
+   "ob": [
+    8
+   ]
+  },
+  {
+   "id": "item-4",
+   "module": "coffee-table",
+   "variant": "default",
+   "anchor": [
+    0.65865,
+    0.4879
+   ],
+   "z": 0.51169,
+   "ob": [
+    3
+   ]
+  },
+  {
+   "id": "item-38",
+   "module": "cube-stool",
+   "variant": "s50",
+   "anchor": [
+    0.25147,
+    0.42143
+   ],
+   "z": 0.43358
+  },
+  {
+   "id": "item-39",
+   "module": "cube-stool",
+   "variant": "s50",
+   "anchor": [
+    0.27344,
+    0.44095
+   ],
+   "z": 0.45324
+  },
+  {
+   "id": "item-15",
+   "module": "office-chair",
+   "variant": "v+",
+   "anchor": [
+    0.3993,
+    0.4662
+   ],
+   "z": 0.47131,
+   "seat": 0
+  },
+  {
+   "id": "item-16",
+   "module": "workstation-desk",
+   "variant": "v+-b",
+   "anchor": [
+    0.48019,
+    0.49194
+   ],
+   "z": 0.52232,
+   "ob": [
+    9
+   ]
+  },
+  {
+   "id": "item-5",
+   "module": "office-chair",
+   "variant": "v-",
+   "anchor": [
+    0.79477,
+    0.55114
+   ],
+   "z": 0.55632
+  },
+  {
+   "id": "item-8",
+   "module": "office-chair",
+   "variant": "u-",
+   "anchor": [
+    0.7314,
+    0.55522
+   ],
+   "z": 0.56057
+  },
+  {
+   "id": "item-18",
+   "module": "workstation-desk",
+   "variant": "v+-a",
+   "anchor": [
+    0.3719,
+    0.4906
+   ],
+   "z": 0.52125,
+   "ob": [
+    10
+   ]
+  },
+  {
+   "id": "item-6",
+   "module": "office-chair",
+   "variant": "v-",
+   "anchor": [
+    0.83137,
+    0.58366
+   ],
+   "z": 0.58874
+  },
+  {
+   "id": "item-17",
+   "module": "office-chair",
+   "variant": "v+",
+   "anchor": [
+    0.4542,
+    0.515
+   ],
+   "z": 0.52019,
+   "seat": 1
+  },
+  {
+   "id": "item-19",
+   "module": "office-chair",
+   "variant": "v+",
+   "anchor": [
+    0.3429,
+    0.5163
+   ],
+   "z": 0.52125,
+   "seat": 2
+  },
+  {
+   "id": "item-7",
+   "module": "office-chair",
+   "variant": "v-",
+   "anchor": [
+    0.86798,
+    0.61619
+   ],
+   "z": 0.62115
+  },
+  {
+   "id": "item-42",
+   "module": "lounge-chair",
+   "variant": "v-",
+   "anchor": [
+    0.1797,
+    0.49009
+   ],
+   "z": 0.50159
+  },
+  {
+   "id": "item-20",
+   "module": "workstation-desk",
+   "variant": "v+-b",
+   "anchor": [
+    0.4268,
+    0.5394
+   ],
+   "z": 0.57014,
+   "ob": [
+    11
+   ]
+  },
+  {
+   "id": "item-9",
+   "module": "boardroom-table",
+   "variant": "default",
+   "anchor": [
+    0.79739,
+    0.61386
+   ],
+   "z": 0.67694,
+   "ob": [
+    4
+   ]
+  },
+  {
+   "id": "item-41",
+   "module": "lounge-chair",
+   "variant": "u-",
+   "anchor": [
+    0.15319,
+    0.50145
+   ],
+   "z": 0.50372
+  },
+  {
+   "id": "item-10",
+   "module": "office-chair",
+   "variant": "v+",
+   "anchor": [
+    0.7268,
+    0.61153
+   ],
+   "z": 0.6169
+  },
+  {
+   "id": "item-43",
+   "module": "cafe-table",
+   "variant": "default",
+   "anchor": [
+    0.17211,
+    0.51091
+   ],
+   "z": 0.51382,
+   "ob": [
+    23
+   ]
+  },
+  {
+   "id": "item-51",
+   "module": "plant",
+   "variant": "p3-s46",
+   "anchor": [
+    0.617,
+    0.595
+   ],
+   "z": 0.60627
+  },
+  {
+   "id": "item-21",
+   "module": "office-chair",
+   "variant": "v+",
+   "anchor": [
+    0.3978,
+    0.5651
+   ],
+   "z": 0.57014,
+   "seat": 3
+  },
+  {
+   "id": "item-11",
+   "module": "office-chair",
+   "variant": "v+",
+   "anchor": [
+    0.76341,
+    0.64406
+   ],
+   "z": 0.64931
+  },
+  {
+   "id": "item-44",
+   "module": "lounge-chair",
+   "variant": "u+",
+   "anchor": [
+    0.17309,
+    0.53629
+   ],
+   "z": 0.56961
+  },
+  {
+   "id": "item-13",
+   "module": "office-chair",
+   "variant": "u+",
+   "anchor": [
+    0.86338,
+    0.6725
+   ],
+   "z": 0.67747
+  },
+  {
+   "id": "item-12",
+   "module": "office-chair",
+   "variant": "v+",
+   "anchor": [
+    0.80002,
+    0.67658
+   ],
+   "z": 0.68172
+  },
+  {
+   "id": "item-22",
+   "module": "workstation-desk",
+   "variant": "v+-a",
+   "anchor": [
+    0.48019,
+    0.63289
+   ],
+   "z": 0.66366,
+   "ob": [
+    19
+   ]
+  },
+  {
+   "id": "item-52",
+   "module": "plant",
+   "variant": "p4-s50",
+   "anchor": [
+    0.248,
+    0.615
+   ],
+   "z": 0.62699
+  },
+  {
+   "id": "item-23",
+   "module": "office-chair",
+   "variant": "v+",
+   "anchor": [
+    0.4542,
+    0.6559
+   ],
+   "z": 0.661,
+   "seat": 4
+  },
+  {
+   "id": "item-24",
+   "module": "workstation-desk",
+   "variant": "v+-b",
+   "anchor": [
+    0.5351,
+    0.6816
+   ],
+   "z": 0.71201,
+   "ob": [
+    20
+   ]
+  },
+  {
+   "id": "item-26",
+   "module": "workstation-desk",
+   "variant": "v+-a",
+   "anchor": [
+    0.4268,
+    0.6803
+   ],
+   "z": 0.71095,
+   "ob": [
+    21
+   ]
+  },
+  {
+   "id": "item-30",
+   "module": "office-chair",
+   "variant": "v-",
+   "anchor": [
+    0.65407,
+    0.73064
+   ],
+   "z": 0.73592
+  },
+  {
+   "id": "item-25",
+   "module": "office-chair",
+   "variant": "v+",
+   "anchor": [
+    0.5092,
+    0.7047
+   ],
+   "z": 0.70988,
+   "seat": 5
+  },
+  {
+   "id": "item-31",
+   "module": "office-chair",
+   "variant": "v-",
+   "anchor": [
+    0.67823,
+    0.75211
+   ],
+   "z": 0.75717
+  },
+  {
+   "id": "item-27",
+   "module": "office-chair",
+   "variant": "v+",
+   "anchor": [
+    0.3978,
+    0.706
+   ],
+   "z": 0.71095,
+   "seat": 6
+  },
+  {
+   "id": "item-28",
+   "module": "workstation-desk",
+   "variant": "v+-b",
+   "anchor": [
+    0.4817,
+    0.7291
+   ],
+   "z": 0.75983,
+   "ob": [
+    22
+   ]
+  },
+  {
+   "id": "item-53",
+   "module": "plant",
+   "variant": "p5-s44",
+   "anchor": [
+    0.325,
+    0.702
+   ],
+   "z": 0.71254
+  },
+  {
+   "id": "item-32",
+   "module": "meeting-table",
+   "variant": "default",
+   "anchor": [
+    0.63272,
+    0.77108
+   ],
+   "z": 0.80978,
+   "ob": [
+    12
+   ]
+  },
+  {
+   "id": "item-29",
+   "module": "office-chair",
+   "variant": "v+",
+   "anchor": [
+    0.4527,
+    0.7548
+   ],
+   "z": 0.75983,
+   "seat": 7
+  },
+  {
+   "id": "item-33",
+   "module": "office-chair",
+   "variant": "v+",
+   "anchor": [
+    0.58721,
+    0.79005
+   ],
+   "z": 0.79543
+  },
+  {
+   "id": "item-54",
+   "module": "plant",
+   "variant": "p6-s46",
+   "anchor": [
+    0.76,
+    0.833
+   ],
+   "z": 0.84431
+  },
+  {
+   "id": "item-34",
+   "module": "office-chair",
+   "variant": "v+",
+   "anchor": [
+    0.61137,
+    0.81152
+   ],
+   "z": 0.81668
+  },
+  {
+   "id": "item-46",
+   "module": "cube-stool",
+   "variant": "s48",
+   "anchor": [
+    0.60593,
+    0.91406
+   ],
+   "z": 0.92561
+  },
+  {
+   "id": "item-47",
+   "module": "booth-panel",
+   "variant": "default",
+   "anchor": [
+    0.62516,
+    0.92083
+   ],
+   "z": 0.92986
+  },
+  {
+   "id": "glass-board-a",
+   "module": "glass-front",
+   "variant": "glass-board-a",
+   "anchor": [
+    0.6861,
+    0.64235
+   ],
+   "z": 0.68491
+  },
+  {
+   "id": "glass-board-b",
+   "module": "glass-front",
+   "variant": "glass-board-b",
+   "anchor": [
+    0.78675,
+    0.73175
+   ],
+   "z": 0.74973
+  },
+  {
+   "id": "glass-meet-a",
+   "module": "glass-front",
+   "variant": "glass-meet-a",
+   "anchor": [
+    0.54805,
+    0.78125
+   ],
+   "z": 0.79915
+  },
+  {
+   "id": "glass-meet-b",
+   "module": "glass-front",
+   "variant": "glass-meet-b",
+   "anchor": [
+    0.62125,
+    0.84625
+   ],
+   "z": 0.86451
+  },
+  {
+   "id": "glass-booth",
+   "module": "glass-front",
+   "variant": "glass-booth",
+   "anchor": [
+    0.6243,
+    0.93432
+   ],
+   "z": 0.95802
+  }
+ ]
+}

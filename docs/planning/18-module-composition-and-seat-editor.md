@@ -1,7 +1,7 @@
 # 18. 런타임 모듈 합성 + 좌석 편집기 layout-JSON 재설계 (설계 정본)
 
 **작성일**: 2026-07-17
-**상태**: 설계 초안 (구현 착수 전 승인 필요 — handoff 07-13 §③ / 07-16 §2-C "착수 전 설계 문서부터")
+**상태**: 설계 승인 → **M0 완료(2026-07-17, 게이트 PASS)** · M1 대기
 **범위**: 시안 A안(모듈 개별 스프라이트 런타임 합성) + #14 좌석 편집기 layout-JSON 재설계(P7-T3의 D30 재해석). **반드시 한 묶음**으로 구현한다.
 **정본 참조**: 17-asset-rework-spec(D30) · 05-office-layout-schema(D12/D25) · 00-decisions §K · tools/asset-gen/README.md(v2.1~2.3 레이어 합성 실증) · 15-realtime-server-spec
 
@@ -117,7 +117,7 @@ loadSceneLayout() ──존재─→ 모듈 합성 렌더(카탈로그 스프라
 
 | 단계 | 산출물 | 검증 게이트 |
 |---|---|---|
-| **M0** | extract-modules.js + catalog.json (현 57장 → 모듈 타입 ~14종 × 변형) | 카탈로그 재합성샷 ↔ 현 배경+manifest 합성샷 픽셀 diff < 1% |
+| **M0 ✅(2026-07-17)** | extract-modules.js + catalog.json — **실측: 15타입 × 33변형**(대표 0.25MB = 기존 57장 0.50MB 대비 -50%), 인스턴스 57, 산출 `frontend/public/office2d/modules/` | 재합성 픽셀 diff **0.296%** < 1% **PASS** + 기존 extract-layers 산출물 바이트 불변(무회귀) |
 | **M1** | scene-layout v2 생성기(plate.js geometry → v2 변환) + 뷰포트 v2 렌더 경로(플래그) | 실화면 QA: 현행과 동일 프레임(z-순서 회귀 0) — v2.2 QA 절차 재사용 |
 | **M2** | gen-geometry.js 코드젠 + office2d/FloorLayoutProvider 리터럴 대체 | `realtime npm test`(scene-floor) + frontend build + seat-reach-qa 그린 |
 | **M3** | 편집기 팔레트·배치 UI + validator v2 규칙 + 배포·동기 루프 | E2E: 모듈 이동 → 배포 → 뷰포트/이동서버 반영, 잘못된 배치 reject |

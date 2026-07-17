@@ -33,6 +33,10 @@
 > 브랜드 월 파라미터 = horizon-scene.js `BRANDS`(HORIZON/ACME/NOVA): `drawScene(opts.brand)` /
 > `renderHorizonLayers(brand)` / `<horizon-scene brand="ACME">`, v1 폴백은 `buildPlate({brand})`.
 > 브랜드 QA 렌더: `node brand-qa.js` → `out/brand-{acme,nova}-qa.webp`.
+> **M0 모듈 카탈로그 (2026-07-17, 18-설계)**: `node extract-modules.js` →
+> `frontend/public/office2d/modules/{catalog.json, sprites/}` — 아이템 meta(type/variant/ob/seat,
+> horizon-scene.js add() 5번째 인자)로 15타입×33변형 대표 스프라이트 + 인스턴스 57 배치를 산출.
+> QA 게이트 = 재합성 diff < 1%(실측 0.296%). 씬 아이템을 추가하면 **meta 태깅 필수**(미태깅 시 추출 실패).
 
 ## 파일 맵
 

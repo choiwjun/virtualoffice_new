@@ -556,7 +556,8 @@
     let itemSeq = 0;
     // flat=true 항목(러그 등 바닥 평면)은 레이어 캡처 시 배경에 흡수 — 아바타를 가리면 안 됨.
     // 입체 가구의 깊이 키(baseline)는 캡처 후 픽셀(불투명 최저점=바닥 접점)에서 자동 산출.
-    const add = (cu, cv, fn, flat) => items.push({ d: cu + cv, fn, flat: !!flat, name: `item-${itemSeq++}` });
+    // meta(18-설계 M0): { type, variant?, ob?: OB 인덱스[], seat?: SEATS 인덱스 } — 모듈 카탈로그 추출용.
+    const add = (cu, cv, fn, flat, meta) => items.push({ d: cu + cv, fn, flat: !!flat, name: `item-${itemSeq++}`, cu, cv, meta: meta || null });
 
     // reception
     add(R[0].cu, R[0].cv, () => {
@@ -571,7 +572,7 @@
       ctx.strokeStyle = 'rgba(255,240,215,0.35)'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(...P(r.u0, r.v1, 0.55)); ctx.lineTo(...P(r.u1, r.v1, 0.55)); ctx.stroke();
       box(ctx, r.u0 - MU * 0.05, r.v0 - MV * 0.05, r.u1 + MU * 0.05, r.v1 + MV * 0.05, 1.02, 1.12, '#F2EFE8', { r: 1.5 });
-    });
+    }, false, { type: 'reception-desk', ob: [0] });
     // lounge rug + sofas + coffee table
     add(R[1].cu - 0.02, R[1].cv - 0.02, () => {
       const u0 = Math.min(R[1].u0, R[2].u0) - MU * 0.5, v0 = Math.min(R[1].v0, R[2].v0) - MV * 0.4;
@@ -579,8 +580,8 @@
       poly(ctx, [P(u0, v0), P(u1, v0), P(u1, v1), P(u0, v1)], 'rgba(222,210,186,0.85)');
       poly(ctx, [P(u0, v0), P(u1, v0), P(u1, v1), P(u0, v1)], null, 'rgba(150,132,100,0.35)', 1.5);
     }, true);
-    add(R[1].cu, R[1].cv, () => sofa(ctx, R[1], 'v-'));
-    add(R[2].cu, R[2].cv, () => sofa(ctx, R[2], 'v+'));
+    add(R[1].cu, R[1].cv, () => sofa(ctx, R[1], 'v-'), false, { type: 'sofa', variant: 'v-', ob: [1] });
+    add(R[2].cu, R[2].cv, () => sofa(ctx, R[2], 'v+'), false, { type: 'sofa', variant: 'v+', ob: [2] });
     add(R[3].cu, R[3].cv, () => {
       const r = R[3];
       shadow(ctx, r.u0, r.v0, r.u1, r.v1, 0.42, 0.15);
@@ -588,46 +589,48 @@
       box(ctx, r.u0, r.v0, r.u1, r.v1, 0.36, 0.42, WOOD, { r: 1.5 });
       woodGrain(ctx, r.u0, r.v0, r.u1, r.v1, 0.42, 4);
       ell(ctx, r.cu, r.cv - MV * 0.1, 0.16, 0.435, '#2E3A54');
-    });
+    }, false, { type: 'coffee-table', ob: [3] });
     // boardroom table + 8 chairs — 의자를 개별 아이템으로(오클루전 baseline 정밀화)
     (function boardroom() {
       const r = R[4];
       for (let i = 0; i < 3; i++) {
         const uu = r.u0 + (r.du) * (i + 0.5) / 3;
-        add(uu, r.v0 - MV * 0.42, () => officeChair(ctx, uu, r.v0 - MV * 0.42, 'v-'));
+        add(uu, r.v0 - MV * 0.42, () => officeChair(ctx, uu, r.v0 - MV * 0.42, 'v-'), false, { type: 'office-chair', variant: 'v-' });
       }
-      add(r.u0 - MU * 0.42, r.cv, () => officeChair(ctx, r.u0 - MU * 0.42, r.cv, 'u-'));
+      add(r.u0 - MU * 0.42, r.cv, () => officeChair(ctx, r.u0 - MU * 0.42, r.cv, 'u-'), false, { type: 'office-chair', variant: 'u-' });
       add(r.cu, r.cv, () => {
         shadow(ctx, r.u0, r.v0, r.u1, r.v1, 0.76);
         tableWood(ctx, r, 0.74);
         paper(ctx, r.cu - MU * 0.3, r.cv); paper(ctx, r.cu + MU * 0.35, r.cv + MV * 0.1);
         ell(ctx, r.cu, r.cv - MV * 0.12, 0.13, 0.745, '#39445C');
-      });
+      }, false, { type: 'boardroom-table', ob: [4] });
       for (let i = 0; i < 3; i++) {
         const uu = r.u0 + (r.du) * (i + 0.5) / 3;
-        add(uu, r.v1 + MV * 0.42, () => officeChair(ctx, uu, r.v1 + MV * 0.42, 'v+'));
+        add(uu, r.v1 + MV * 0.42, () => officeChair(ctx, uu, r.v1 + MV * 0.42, 'v+'), false, { type: 'office-chair', variant: 'v+' });
       }
-      add(r.u1 + MU * 0.42, r.cv, () => officeChair(ctx, r.u1 + MU * 0.42, r.cv, 'u+'));
+      add(r.u1 + MU * 0.42, r.cv, () => officeChair(ctx, r.u1 + MU * 0.42, r.cv, 'u+'), false, { type: 'office-chair', variant: 'u+' });
     })();
     // workstations
     [[8, 0], [9, 1], [10, 2], [11, 3], [19, 4], [20, 5], [21, 6], [22, 7]].forEach(([oi, si]) => {
       const r = R[oi], s = uvOf(SEATS[si][0], SEATS[si][1]);
-      add(r.cu, r.cv, () => desk(ctx, r, s));
-      add(s.u, s.v, () => officeChair(ctx, s.u, s.v, deskChairSide(r, s)));
+      const side = deskChairSide(r, s);
+      const mugV = (r.cu * 31 % 2) > 1 ? 'a' : 'b'; // desk() 머그색 분기와 동일식 — 변형 분리
+      add(r.cu, r.cv, () => desk(ctx, r, s), false, { type: 'workstation-desk', variant: `${side}-${mugV}`, ob: [oi] });
+      add(s.u, s.v, () => officeChair(ctx, s.u, s.v, side), false, { type: 'office-chair', variant: side, seat: si });
     });
     // meeting table + 4 chairs — 의자 개별 아이템
     (function meeting() {
       const r = R[12];
       for (const t of [0.28, 0.72]) {
-        add(r.u0 + r.du * t, r.v0 - MV * 0.4, () => officeChair(ctx, r.u0 + r.du * t, r.v0 - MV * 0.4, 'v-'));
+        add(r.u0 + r.du * t, r.v0 - MV * 0.4, () => officeChair(ctx, r.u0 + r.du * t, r.v0 - MV * 0.4, 'v-'), false, { type: 'office-chair', variant: 'v-' });
       }
       add(r.cu, r.cv, () => {
         shadow(ctx, r.u0, r.v0, r.u1, r.v1, 0.75);
         tableWood(ctx, r, 0.74);
         paper(ctx, r.cu, r.cv - MV * 0.05);
-      });
+      }, false, { type: 'meeting-table', ob: [12] });
       for (const t of [0.28, 0.72]) {
-        add(r.u0 + r.du * t, r.v1 + MV * 0.4, () => officeChair(ctx, r.u0 + r.du * t, r.v1 + MV * 0.4, 'v+'));
+        add(r.u0 + r.du * t, r.v1 + MV * 0.4, () => officeChair(ctx, r.u0 + r.du * t, r.v1 + MV * 0.4, 'v+'), false, { type: 'office-chair', variant: 'v+' });
       }
     })();
     // pantry island — 벤치/테이블/스툴 개별 아이템(그룹이면 baseline이 전면 스툴 접점으로
@@ -641,7 +644,7 @@
         box(ctx, r.u0 + r.du * 0.08, r.v0 + r.dv * 0.05, r.u0 + r.du * 0.22, r.v0 + r.dv * 0.24, 0.48, 0.92, '#2E3440', { r: 1.5 });
         ell(ctx, r.u0 + r.du * 0.15, r.v0 + r.dv * 0.14, 0.06, 0.925, 'rgba(255,255,255,0.25)');
         box(ctx, r.u0 + r.du * 0.30, r.v0 + r.dv * 0.08, r.u0 + r.du * 0.38, r.v0 + r.dv * 0.20, 0.48, 0.74, '#C7C2B5', { r: 1.5 });
-      });
+      }, false, { type: 'pantry-bench', ob: [17] });
       // long wood table
       add(r.cu, r.v0 + r.dv * 0.51, () => {
         const tv0 = r.v0 + r.dv * 0.36, tv1 = r.v0 + r.dv * 0.66;
@@ -649,11 +652,11 @@
         box(ctx, r.u0 + MU * 0.1, tv0, r.u1 - MU * 0.1, tv1, 0.68, 0.75, WOOD, { r: 1.5 });
         woodGrain(ctx, r.u0 + MU * 0.1, tv0, r.u1 - MU * 0.1, tv1, 0.75, 6);
         ell(ctx, r.cu + MU * 0.5, (tv0 + tv1) / 2, 0.12, 0.755, '#A8442F');
-      });
+      }, false, { type: 'pantry-table' });
       // stools in front — 개별 아이템
       for (let i = 0; i < 3; i++) {
         const su = r.u0 + r.du * (0.2 + 0.3 * i), sv = r.v0 + r.dv * 0.86;
-        add(su, sv, () => cubeStool(ctx, su, sv, 0.5));
+        add(su, sv, () => cubeStool(ctx, su, sv, 0.5), false, { type: 'cube-stool', variant: 's50' });
       }
     })();
     // cafe: rug + round table + lounge chairs
@@ -663,8 +666,8 @@
       poly(ctx, [P(mu0, mv0), P(mu1, mv0), P(mu1, mv1), P(mu0, mv1)], 'rgba(148,160,178,0.55)');
       poly(ctx, [P(mu0 + MU * 0.12, mv0 + MV * 0.12), P(mu1 - MU * 0.12, mv0 + MV * 0.12), P(mu1 - MU * 0.12, mv1 - MV * 0.12), P(mu0 + MU * 0.12, mv1 - MV * 0.12)], null, 'rgba(255,255,255,0.35)', 1.2);
     }, true);
-    add(R[23].cu - 0.028, R[23].cv + 0.012, () => loungeChair(ctx, R[23].cu - MU * 1.15, R[23].cv + MV * 0.25, 'u-'));
-    add(R[23].cu - 0.015, R[23].cv - 0.045, () => loungeChair(ctx, R[23].cu + MU * 0.1, R[23].cv - MV * 1.1, 'v-'));
+    add(R[23].cu - 0.028, R[23].cv + 0.012, () => loungeChair(ctx, R[23].cu - MU * 1.15, R[23].cv + MV * 0.25, 'u-'), false, { type: 'lounge-chair', variant: 'u-' });
+    add(R[23].cu - 0.015, R[23].cv - 0.045, () => loungeChair(ctx, R[23].cu + MU * 0.1, R[23].cv - MV * 1.1, 'v-'), false, { type: 'lounge-chair', variant: 'v-' });
     add(R[23].cu, R[23].cv, () => {
       const r = R[23];
       const rad = Math.min(r.du / MU, r.dv / MV) * 0.44;
@@ -681,8 +684,8 @@
       ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(c1[0], c1[1], rx, rx / 2, 0, 0, 7); ctx.fill();
       ctx.fillStyle = 'rgba(255,250,235,0.25)'; ctx.beginPath(); ctx.ellipse(c1[0] - rx * 0.3, c1[1] - rx * 0.12, rx * 0.4, rx * 0.16, -0.3, 0, 7); ctx.fill();
       mug(ctx, r.cu - MU * 0.12, r.cv, '#A8442F');
-    });
-    add(R[23].cu + 0.028, R[23].cv + 0.04, () => loungeChair(ctx, R[23].cu + MU * 1.0, R[23].cv + MV * 0.9, 'u+'));
+    }, false, { type: 'cafe-table', ob: [23] });
+    add(R[23].cu + 0.028, R[23].cv + 0.04, () => loungeChair(ctx, R[23].cu + MU * 1.0, R[23].cv + MV * 0.9, 'u+'), false, { type: 'lounge-chair', variant: 'u+' });
     // phone booth interior — 바닥광은 배경 흡수(flat), 스툴/패널 개별 아이템
     // (부스 내부는 보행 가능 — 아바타가 스툴과 패널 사이에 설 수 있다)
     add(R[24].cu + 0.005, R[24].cv + 0.02, () => {
@@ -690,23 +693,23 @@
       ell(ctx, R[24].cu, R[24].v1 + MV * 0.6, 0.75, 0.003, 'rgba(255,238,205,0.22)');
       ctx.restore();
     }, true);
-    add(R[24].cu, R[24].v1 + MV * 0.55, () => cubeStool(ctx, R[24].cu, R[24].v1 + MV * 0.55, 0.48));
+    add(R[24].cu, R[24].v1 + MV * 0.55, () => cubeStool(ctx, R[24].cu, R[24].v1 + MV * 0.55, 0.48), false, { type: 'cube-stool', variant: 's48' });
     add(R[24].u1 - MU * 0.3, R[24].v1 + MV * 0.33, () => {
       // acoustic panel
       box(ctx, R[24].u1 - MU * 0.5, R[24].v1 + MV * 0.15, R[24].u1 - MU * 0.1, R[24].v1 + MV * 0.5, 0, 0.92, '#3D4C6D', { r: 1.5 });
-    });
+    }, false, { type: 'booth-panel' });
     // plants
-    PLANTS.forEach(([x, y, s]) => { const q = uvOf(x, y); add(q.u, q.v, () => plant(ctx, x, y, s)); });
+    PLANTS.forEach(([x, y, s], pi) => { const q = uvOf(x, y); add(q.u, q.v, () => plant(ctx, x, y, s), false, { type: 'plant', variant: `p${pi}-s${Math.round(s * 100)}` }); });
 
     items.sort((a, b) => a.d - b.d).forEach(it => {
-      if (cap) ctx = it.flat ? cap.background() : cap.layer(it.name);
+      if (cap) ctx = it.flat ? cap.background() : cap.layer(it.name, { ...(it.meta || { type: 'misc' }), cu: it.cu, cv: it.cv, anchor: [P(it.cu, it.cv, 0)[0] / W, P(it.cu, it.cv, 0)[1] / H] });
       it.fn();
     });
 
     // FRONT glass (after contents)
     const frontGlass = [['glass-board-a', R[6]], ['glass-board-b', R[7]], ['glass-meet-a', R[15]], ['glass-meet-b', R[16]], ['glass-booth', R[26]]];
     for (const [gname, gr] of frontGlass) {
-      if (cap) ctx = cap.layer(gname);
+      if (cap) ctx = cap.layer(gname, { type: 'glass-front', variant: gname, cu: gr.cu, cv: gr.cv, anchor: [P(gr.cu, gr.cv, 0)[0] / W, P(gr.cu, gr.cv, 0)[1] / H] });
       glassWall(ctx, gr); // door gap preserved
     }
 
@@ -759,16 +762,17 @@
     }
   }
 
-  /** 레이어 캡처: 배경 1장 + 입체 가구/전면유리 스프라이트 캔버스 목록 반환. */
+  /** 레이어 캡처: 배경 1장 + 입체 가구/전면유리 스프라이트 캔버스 목록 반환.
+   *  각 레이어에 meta({type, variant?, ob?, seat?, cu, cv, anchor}) 동봉 — 모듈 카탈로그(M0) 소스. */
   window.renderHorizonLayers = function (brand) {
     const layers = [];
     let bg = null;
-    const mkLayer = (name) => {
+    const mkLayer = (name, meta) => {
       const c = document.createElement('canvas');
       c.width = W * SS; c.height = H * SS;
       const x = c.getContext('2d');
       x.setTransform(SS, 0, 0, SS, 0, 0);
-      layers.push({ name, canvas: c });
+      layers.push({ name, canvas: c, meta: meta || null });
       return x;
     };
     const cap = {
@@ -776,14 +780,17 @@
         if (!bg) bg = mkLayer('background');
         return bg;
       },
-      layer(name) {
-        return mkLayer(name);
+      layer(name, meta) {
+        return mkLayer(name, meta);
       },
     };
     drawScene(null, { capture: cap, grain: false, overlay: false, brand });
     for (const L of layers) applyGrade(L.canvas, false);
     return layers;
   };
+
+  // 지오메트리 원본 노출(도구용 — extract-modules.js가 footprint/seat 앵커 산출에 사용)
+  window.HORIZON_GEO = { OB, SEATS, PLANTS, W, H, SS };
 
   class HorizonScene extends HTMLElement {
     static get observedAttributes() { return ['overlay', 'grain', 'brand']; }
