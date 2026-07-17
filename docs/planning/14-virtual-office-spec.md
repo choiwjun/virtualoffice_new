@@ -43,14 +43,16 @@
 
 > 상태 범례: ✅ 백엔드 구현됨(실측) · 🟡 부분/신규프론트 필요 · 🔴 미구현/외부의존 · 🆕 신규 인프라
 
+> 🟩 **상태표 실측 갱신(2026-07-17, spec-gap-audit P2-6)**: 아래 표기는 코드 실측으로 재판정됨. 종전 🟡/🆕/🔴 다수가 구현 완료(✅)로 앞섬. §2.6 "레이아웃→Blender 렌더 파이프라인"은 D29/D30로 폐기·대체(2.5D tools/asset-gen + 18-문서 모듈 합성). "WASD/마우스 이동"은 실제 클릭 이동 전용(키보드 핸들러 미구현 — 09 §1과 함께 문서 정정, P2-7).
+
 ### 2.1 아바타 / 이동
 | 기능 | 정본 | 상태 |
 |---|---|---|
-| 아바타 커스터마이징(5~10 템플릿, 이름/직급 HUD) | 06 §1.2 | 🟡 프론트 신규 |
-| WASD/마우스 이동 + 로컬 예측 | 09 §1 | 🆕 이동서버 |
-| 좌표 동기화 20Hz 서버 tick | 09 §5, D3/D22 | 🆕 SkyOffice 이식 |
-| 서버 이동 검증 8항목(충돌·층·속도·권한·점유·정원) | 09 §5 | 🆕 |
-| 상태 불일치 보정(>0.5m Lerp), 재접속 스냅샷 복구 | 09 §5 | 🆕 |
+| 아바타 커스터마이징(5~10 템플릿, 이름/직급 HUD) | 06 §1.2 | ✅ settings/page.tsx + api/avatar (프리셋 8직군·색상·이름표) |
+| **클릭 이동**(목적지 A* 경로) + 로컬 예측 | 09 §1 | ✅ OfficeViewport2D. ⚠ 정본 'WASD/마우스'는 클릭 이동 전용으로 정정(키보드 핸들러 미구현, P2-7) |
+| 좌표 동기화 20Hz 서버 tick | 09 §5, D3/D22 | ✅ realtime config TICK_HZ=20 |
+| 서버 이동 검증(회사·오피스·층·바운즈·충돌·속도·권한·좌석·회의 = 9체크) | 09 §5 | ✅ movement.ts MOVEMENT_CHECKS (정본 '8항목'은 회사/오피스 분리로 9체크 — 09 정정, P2-7) |
+| 상태 불일치 보정(>0.5m Lerp), 재접속 스냅샷 복구 | 09 §5 | ✅ OfficeRoom onLeave/allowReconnection + snapshot |
 | presence 1~5초 DB 배치 push | 09 §5 | ✅ presence_store/stream 존재 |
 
 ### 2.2 프레즌스 (D13 · 7종)
@@ -63,15 +65,15 @@
 |---|---|---|
 | 좌석 타입 fixed/free/temp/partner | 05 §1.2.6, D10 | ✅ 스키마·CRUD |
 | 배정 분리(layout JSON ↔ DB assigned_user_id + history) | D10 | ✅ seats/seat-assignments/history |
-| 자율좌석 클릭 점유 / 자동 반납(퇴근·장기 away) | 06 §3.11 | ✅ 백엔드 · 🟡 3D 클릭 UX |
-| 고정좌석 제약, 착석 방향(facing), 이름표 | 05/06 | ✅ 데이터 · 🟡 시각화 |
+| 자율좌석 클릭 점유 / 자동 반납(퇴근·장기 away) | 06 §3.11 | ✅ 백엔드 + 클릭 착석/반납 UX(OfficeViewport2D) |
+| 고정좌석 제약, 착석 방향(facing), 이름표 | 05/06 | ✅ 데이터 + 좌석 렌더·이름표 시각화 |
 
 ### 2.4 회의실 / 화상 (LiveKit)
 | 기능 | 정본 | 상태 |
 |---|---|---|
-| D24 명시적 입장(2m 근접→프롬프트→클릭) | D24 | ✅ meetings/join · 🟡 근접 트리거 UX |
+| D24 명시적 입장(2m 근접→프롬프트→클릭) | D24 | ✅ meetings/join + 근접 트리거 프롬프트(OfficeViewport2D, QA 31/31) |
 | LiveKit 토큰 발급·연결 | D24 | ✅ livekit-token · 🔴 실 미디어릴레이(인프라) |
-| 녹음·STT 동의 배너(D20-b) | D20-b | ✅ **consent API 구현(2026-07-08)** · 🟡 배너 UI |
+| 녹음·STT 동의 배너(D20-b) | D20-b | ✅ consent API + 동의/거부 배너(meetings/page.tsx) |
 | 회의실 타입 meeting/lounge/focus/phonebooth, 정원 | 05/09 | ✅ room 스키마 |
 | 화면공유·녹화(Egress) | 09 §4 | 🔴 외부/인프라 |
 | 회의 생명주기(scheduled→in_progress→completed) + 예약충돌검증 | D23 | ✅ meetings(409 충돌검증) |
@@ -88,19 +90,19 @@
 |---|---|---|
 | floor/zones/rooms/seats/furniture/colliders/spawn/exit | 05 전체 | ✅ 스키마·office-layouts CRUD |
 | 문 개구부(D9), 유리벽, 마커 | D9 | ✅ 스키마 · 🟡 3D 렌더 |
-| 레이아웃 검증(정밀 A* 도달성·충돌) | D12 | ✅ validator(AABB) · 🟡 A* 도달성 보강 |
-| 층별 버전 관리·배포·롤백·라이브 동기화 | D12 | ✅ deploy/rollback/validate |
-| 미니맵 | 06 §3.3 | 🟡 프론트 |
-| **레이아웃→Blender 씬 렌더 파이프라인** | 신규 | 🔴 **신규(render-pipeline 재구축)** |
+| 레이아웃 검증(정밀 A* 도달성·충돌) | D12 | ✅ validator(AABB + grid BFS A* 도달성) |
+| 층별 버전 관리·배포·롤백·라이브 동기화 | D12 | ✅ deploy/rollback/validate (실구동 QA 통과) |
+| 미니맵 | 06 §3.3 | ✅ 실시간 아바타 도트 미니맵(OfficeViewport2D) |
+| ~~레이아웃→Blender 씬 렌더 파이프라인~~ | ~~신규~~ | ⛔ **D29/D30 폐기·대체** — 2.5D 프로시저럴(tools/asset-gen) + 런타임 모듈 합성(18-문서). 정본 = 17/18 |
 
 ### 2.7 실시간 인프라
 | 기능 | 정본 | 상태 |
 |---|---|---|
-| WSS 프로토콜(TCP, TLS, 순서보장) | D1 | 🆕 SkyOffice/Colyseus 기반 |
-| 20Hz tick, move_request/world_update | 09 §5 | 🆕 |
-| 근접 상호작용 검증 8항목(LOS 광선 등) | 09 §5 | 🆕 |
-| JWT 인증(D4, 콘솔 세션 재사용) | D4 | ✅ JWT · 🟡 3D 핸드셰이크 연결 |
-| 성능 SLA: p95<500ms, 동시 20(도그푸딩)/100(설계) | D22 | 🔴 부하검증 필요 |
+| WSS 프로토콜(TCP, TLS, 순서보장) | D1 | ✅ Colyseus(ws) + Caddy TLS 종단(docker-compose D29/D30) |
+| 20Hz tick, move_request/world_update | 09 §5 | ✅ OfficeRoom 20Hz |
+| 근접 상호작용 검증 8항목(LOS 광선 등) | 09 §5 | ✅ proximity.ts (거리·LOS·쿨다운·DND 등) |
+| JWT 인증(D4, 콘솔 세션 재사용) | D4 | ✅ onAuth JWT 검증 + production JWT_REQUIRED 강제(P1-4) |
+| 성능 SLA: p95<500ms, 동시 20(도그푸딩)/100(설계) | D22 | 🟡 인프로세스 20인 p95≈131ms PASS · 🔴 실배포망 실측 잔존 |
 
 ### 2.8 대시보드 통합 패널 (같은 화면)
 | 패널 | 데이터 | 상태 |

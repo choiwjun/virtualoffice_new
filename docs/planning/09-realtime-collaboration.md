@@ -55,6 +55,8 @@
 └─────────────────────────────────────────────────────────┘
 ```
 
+> 🟩 **입력 모델 정정(2026-07-17, spec-gap-audit P2-7)**: 아래 시퀀스/설명의 "이동 명령(WASD)"은 **실구현에서 클릭 이동(목적지 클릭 → A* 경로 → move_request 스트리밍)** 전용이다. 프론트(OfficeViewport2D)에 키보드(WASD/Arrow) 핸들러는 없다 — 2.5D 고정 아이소 시점에서 클릭 이동이 자연스러워 채택. 서버는 목적지 무관 동일 검증이라 보안 영향 없음. "WASD"는 입력 은유로만 읽는다.
+
 ### 1.2 검증 항목
 
 서버는 모든 **이동 명령(move request)**에 대해 다음을 검증한다:
@@ -69,6 +71,8 @@
 | 6 | **상태 필터링** | 현재 presence.status가 이동 가능한가? (예: offline→불가) | 이동 거절 |
 | 7 | **점유 확인** | 고정 좌석(seat.type=fixed)이면 assigned_user_id 일치? | 거절 |
 | 8 | **회의실 상태** | 회의실 입장 시 capacity 초과? | 입장 거절 |
+
+> 🟩 **구현 정합 주석(2026-07-17, spec-gap-audit P2-7)**: 실구현(`realtime/src/validation/movement.ts` `MOVEMENT_CHECKS`)은 **9체크** — 위 8항목에 더해 **테넌트 격리(company)와 office 일치를 별도 체크**로 분리한다(company·office·floor·bounds·collision·speed·permission·seat·meeting). 위 표의 #6 "상태 필터링"은 코드상 독립 체크가 아니라 **비접속=세션 없음=이동 불가**로 실질 대체된다(offline 플레이어는 room 세션이 없어 move_request 자체가 성립하지 않음). 15-realtime-server-spec은 9체크 기준으로 이미 정합.
 
 ### 1.3 권위 모델 원칙
 
