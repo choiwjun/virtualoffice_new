@@ -12,7 +12,7 @@
  * 정본: lib/office2d.ts (씬), realtime/README.md (프로토콜).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getUser } from '@/lib/auth';
 import { api, ApiError } from '@/lib/api';
 import { useOfficeRoom } from '@/hooks/useOfficeRoom';
@@ -1048,32 +1048,64 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
                 : fixedUnassigned
                   ? `${seatLabel(seat)} — 고정석(관리자 배정)`
                   : `${seatLabel(seat)} — 클릭해서 앉기`;
+          const seatTop = `calc(${n.y * 100}% - ${cushionUpPx.toFixed(1)}px)`;
           return (
-            <button
-              key={seat.id}
-              type="button"
-              title={title}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSeatClick(seat);
-              }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-[3px]"
-              style={{
-                left: `${n.x * 100}%`,
-                top: `calc(${n.y * 100}% - ${cushionUpPx.toFixed(1)}px)`,
-                width: 10,
-                height: 10,
-                background: fill,
-                border: `2px solid ${border}`,
-                boxShadow: isMine
-                  ? '0 0 8px rgba(59,91,254,.9)'
-                  : occupied || unavailable || fixedUnassigned
-                    ? 'none'
-                    : '0 0 6px rgba(34,197,94,.55)',
-                zIndex: SEAT_Z,
-                cursor: unavailable || fixedUnassigned ? 'default' : 'pointer',
-              }}
-            />
+            <Fragment key={seat.id}>
+              {isMine && (
+                <>
+                  {/* 내 자리 펄스 링 — 확실한 위치 강조 */}
+                  <span
+                    aria-hidden
+                    className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full animate-ping pointer-events-none"
+                    style={{
+                      left: `${n.x * 100}%`,
+                      top: seatTop,
+                      width: 22,
+                      height: 22,
+                      border: '2px solid rgba(59,91,254,.85)',
+                      zIndex: SEAT_Z,
+                    }}
+                  />
+                  {/* 내 자리 라벨 필 */}
+                  <span
+                    className="absolute -translate-x-1/2 whitespace-nowrap px-1.5 py-0.5 rounded-md text-[9px] font-bold text-white pointer-events-none"
+                    style={{
+                      left: `${n.x * 100}%`,
+                      top: `calc(${n.y * 100}% - ${(cushionUpPx + 20).toFixed(1)}px)`,
+                      background: '#3B5BFE',
+                      boxShadow: '0 0 8px rgba(59,91,254,.7)',
+                      zIndex: SEAT_Z + 1,
+                    }}
+                  >
+                    ★ 내 자리
+                  </span>
+                </>
+              )}
+              <button
+                type="button"
+                title={title}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSeatClick(seat);
+                }}
+                className="absolute -translate-x-1/2 -translate-y-1/2 rounded-[3px]"
+                style={{
+                  left: `${n.x * 100}%`,
+                  top: seatTop,
+                  width: isMine ? 13 : 10,
+                  height: isMine ? 13 : 10,
+                  background: fill,
+                  border: `2px solid ${border}`,
+                  boxShadow: isMine
+                    ? '0 0 10px rgba(59,91,254,.95)'
+                    : occupied || unavailable || fixedUnassigned
+                      ? 'none'
+                      : '0 0 6px rgba(34,197,94,.55)',
+                  zIndex: SEAT_Z,
+                  cursor: unavailable || fixedUnassigned ? 'default' : 'pointer',
+                }}
+              />
+            </Fragment>
           );
         })}
 
@@ -1133,13 +1165,30 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
                 style={{
                   top: -20,
                   background: 'rgba(7,16,29,.92)',
-                  border: `1px solid ${s.accent}`,
-                  boxShadow: s.isSelf ? `0 0 0 1px ${s.accent}` : undefined,
+                  border: `1px solid ${s.isSelf ? '#3B5BFE' : s.accent}`,
+                  boxShadow: s.isSelf ? '0 0 0 1px #3B5BFE' : undefined,
                 }}
               >
-                <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: s.accent }} />
+                {/* 본인은 이름표 점을 '프레즌스 상태색'으로 — 내가 업무중인지 즉시 식별 */}
+                <span
+                  className="w-1.5 h-1.5 rounded-full inline-block"
+                  style={{ background: s.isSelf ? (PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).color : s.accent }}
+                />
                 {s.name}
                 {s.isSelf ? ' (나)' : ''}
+                {s.isSelf && (
+                  <span
+                    className="ml-0.5 px-1 rounded-[4px] font-bold"
+                    style={{
+                      fontSize: 8,
+                      lineHeight: '12px',
+                      background: `${(PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).color}2e`,
+                      color: (PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).color,
+                    }}
+                  >
+                    {(PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).label}
+                  </span>
+                )}
               </div>
             )}
           </div>
