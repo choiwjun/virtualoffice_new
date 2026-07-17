@@ -2,7 +2,7 @@
  * layout-smoke.ts — HttpFloorLayoutProvider 검증 (mock 백엔드).
  *   1) fetch 성공 → 반환 레이아웃 사용 + 내부 토큰 헤더 전송
  *   2) 404(미배포) → 데모 층 폴백(이동서버 계속 동작)
- *   3) 팩토리: URL 없으면 데모
+ *   3) 팩토리: URL 없으면 데모 / URL+SCENE_FLOOR=horizon → 404 폴백도 HORIZON(지오메트리 불일치 방지)
  * (백엔드 매핑 정확성은 test_realtime_layout.py. 여기선 provider의 fetch/fallback 계약.)
  *
  * 실행:  cd realtime && npx tsx scripts/layout-smoke.ts
@@ -48,6 +48,11 @@ async function main(): Promise<void> {
   const demo = createFloorLayoutProvider('', '');
   const l3 = await demo.getLayout('o', 'f');
   assert(l3.bounds.w === 20, 'factory: empty url → demo provider');
+
+  const withScene = createFloorLayoutProvider('http://localhost:2604', 'tok', 'horizon');
+  mode = '404';
+  const l4 = await withScene.getLayout('o', 'f');
+  assert(l4.meetingZones.some((z) => z.roomId === 'boardroom'), `factory: url+horizon → 404 폴백 = HORIZON scene (zones=${l4.meetingZones.map((z) => z.roomId).join(',')})`);
 
   await new Promise<void>((r) => server.close(() => r()));
   console.log(`\n=== layout-smoke: ${passed} passed, ${failed} failed ===`);

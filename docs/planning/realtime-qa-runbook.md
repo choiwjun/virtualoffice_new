@@ -18,10 +18,13 @@ INTERNAL_API_TOKEN="dev-internal-token-CHANGE-IN-PRODUCTION" \
 ./.venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 # (2) 실시간 이동서버 :2567  (JWT_SECRET 기본값이 백엔드 jwt_secret_key 기본과 일치)
+# ⚠ HORIZON 씬 QA는 SCENE_FLOOR=horizon 필수. LAYOUT_SOURCE_URL을 함께 주면 배포 레이아웃이
+#   우선하며, 미배포(404) 시 폴백도 SCENE_FLOOR를 따른다(2026-07-17 수리 — 이전엔 Demo로 떨어져
+#   클라 HORIZON 렌더와 지오메트리 불일치 → 전 이동 collision 거부).
 cd realtime && npm run build
 PORT=2567 \
+SCENE_FLOOR=horizon \
 PRESENCE_SINK_URL="http://127.0.0.1:8000" \
-LAYOUT_SOURCE_URL="http://127.0.0.1:8000" \
 PRESENCE_SINK_TOKEN="dev-internal-token-CHANGE-IN-PRODUCTION" \
 node dist/index.js
 

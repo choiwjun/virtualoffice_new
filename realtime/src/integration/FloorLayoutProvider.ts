@@ -112,9 +112,9 @@ export class HttpFloorLayoutProvider implements FloorLayoutProvider {
       }
       return data;
     } catch (err) {
-      // 미배포/네트워크 실패 → 데모 층 폴백(이동서버는 계속 동작).
+      // 미배포/네트워크 실패 → 폴백 층(SCENE_FLOOR 지정 시 씬, 아니면 데모)으로 이동서버는 계속 동작.
       // eslint-disable-next-line no-console
-      console.warn(`[layout] fetch failed for ${officeId}/${floorId}, using demo floor:`, (err as Error).message);
+      console.warn(`[layout] fetch failed for ${officeId}/${floorId}, using fallback floor:`, (err as Error).message);
       return this.fallback.getLayout(officeId, floorId);
     }
   }
@@ -222,9 +222,12 @@ export class SceneFloorLayoutProvider implements FloorLayoutProvider {
   }
 }
 
-/** Factory: LAYOUT_SOURCE_URL 설정 시 Http(폴백=Demo) → SCENE_FLOOR 설정 시 Scene → 기본 Demo. */
+/** Factory: LAYOUT_SOURCE_URL 설정 시 Http(폴백 = SCENE_FLOOR 프로바이더) → SCENE_FLOOR 설정 시 Scene → 기본 Demo.
+ *  ⚠ Http 404(미배포) 폴백이 Demo로 떨어지면 클라(HORIZON 렌더)와 지오메트리 불일치로
+ *  모든 이동이 collision 거부된다(2026-07-17 QA 실측) — 폴백도 SCENE_FLOOR를 따른다. */
 export function createFloorLayoutProvider(url: string, token = "", sceneFloor = ""): FloorLayoutProvider {
-  if (url) return new HttpFloorLayoutProvider(url, token);
-  if (sceneFloor === "horizon") return new SceneFloorLayoutProvider();
-  return new DemoFloorLayoutProvider();
+  const base: FloorLayoutProvider =
+    sceneFloor === "horizon" ? new SceneFloorLayoutProvider() : new DemoFloorLayoutProvider();
+  if (url) return new HttpFloorLayoutProvider(url, token, base);
+  return base;
 }

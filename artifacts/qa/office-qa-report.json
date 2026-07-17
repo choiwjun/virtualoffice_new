@@ -1,0 +1,160 @@
+{
+ "results": [
+  {
+   "status": "PASS",
+   "name": "A1 로그인(alice/admin)",
+   "detail": "http://localhost:3000/office"
+  },
+  {
+   "status": "PASS",
+   "name": "B1 뷰포트 로딩",
+   "detail": "아바타 스폰까지 2.1s (dev 첫 컴파일 포함)"
+  },
+  {
+   "status": "PASS",
+   "name": "B2 레이어 합성",
+   "detail": "배경 1 + 가구 스프라이트 57장"
+  },
+  {
+   "status": "PASS",
+   "name": "B3 실시간 연결 배지",
+   "detail": "실시간 연결됨(초록)"
+  },
+  {
+   "status": "PASS",
+   "name": "B4 우패널",
+   "detail": "구성원/오늘의 일정/공지사항 표시"
+  },
+  {
+   "status": "PASS",
+   "name": "C1 클릭 이동",
+   "detail": "관측 상태: idle,walk"
+  },
+  {
+   "status": "PASS",
+   "name": "C2 장애물 클릭",
+   "detail": "예외 없음(보정 경로) — 스크린샷 육안"
+  },
+  {
+   "status": "PASS",
+   "name": "D1 내 자리로 착석",
+   "detail": "sit 프레임 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "D2 typing 버스트",
+   "detail": "13s 타임라인: TTTTTTTsssssssssssTTTTTTTT"
+  },
+  {
+   "status": "PASS",
+   "name": "E1 테마 순환",
+   "detail": "상태: 주간 → 석양 → 야간"
+  },
+  {
+   "status": "PASS",
+   "name": "F1 미니맵",
+   "detail": "좌하단 오버레이 표시"
+  },
+  {
+   "status": "PASS",
+   "name": "G1 회의 입장 프롬프트",
+   "detail": "D24 2단계 프롬프트 표시(입장하기/거절)"
+  },
+  {
+   "status": "PASS",
+   "name": "H1 상호 표시",
+   "detail": "alice 화면 아바타 2개"
+  },
+  {
+   "status": "PASS",
+   "name": "H2 실시간 이동 반영",
+   "detail": "alice 화면에서 bob 이동 관측"
+  },
+  {
+   "status": "PASS",
+   "name": "I1 아바타 프리셋",
+   "detail": "DEVELOPER → DESIGNER 설정 저장 → 뷰포트 반영(v2.3 소품 포함)"
+  },
+  {
+   "status": "PASS",
+   "name": "J /work-status",
+   "detail": "키워드 '업무현황' 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "J /work-log",
+   "detail": "키워드 '업무' 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "J /reports",
+   "detail": "키워드 '보고서' 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "J /trip",
+   "detail": "키워드 '출장' 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "J /kpi",
+   "detail": "키워드 'KPI' 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "J /kpi/objection",
+   "detail": "키워드 '이의' 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "J /meetings",
+   "detail": "키워드 '회의' 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "J /chat",
+   "detail": "키워드 '커뮤니케이션' 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "J /admin/employees",
+   "detail": "키워드 '직원' 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "J /admin/kpi",
+   "detail": "키워드 'KPI' 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "J /admin/kpi/objections",
+   "detail": "키워드 '이의' 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "J /admin/notices",
+   "detail": "키워드 '공지' 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "J /admin/office-layout",
+   "detail": "키워드 '레이아웃' 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "J /admin/audit",
+   "detail": "키워드 '감사' 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "J /admin/org-chart",
+   "detail": "키워드 '조직' 확인"
+  },
+  {
+   "status": "PASS",
+   "name": "J /admin/sync",
+   "detail": "키워드 '동기화' 확인"
+  }
+ ],
+ "consoleErrors": []
+}
