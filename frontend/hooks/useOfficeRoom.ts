@@ -45,6 +45,7 @@ export interface UseOfficeRoom {
 export function useOfficeRoom(
   enabled = true,
   onMeetingEntry?: (r: MeetingEntryResult) => void,
+  onLayoutUpdated?: () => void,
 ): UseOfficeRoom {
   const [status, setConnStatus] = useState<ConnStatus>('connecting');
   const [roster, setRoster] = useState<string[]>([]);
@@ -55,6 +56,8 @@ export function useOfficeRoom(
   const selfIdRef = useRef<string>('');
   const onMeetingEntryRef = useRef(onMeetingEntry);
   onMeetingEntryRef.current = onMeetingEntry;
+  const onLayoutUpdatedRef = useRef(onLayoutUpdated);
+  onLayoutUpdatedRef.current = onLayoutUpdated;
 
   useEffect(() => {
     if (!enabled) return;
@@ -74,6 +77,7 @@ export function useOfficeRoom(
       onRoster: (ids) => { if (!cancelled) setRoster(ids); },
       onMeetingEntry: (r) => { if (!cancelled) onMeetingEntryRef.current?.(r); },
       onSelf: (id) => { if (!cancelled) selfIdRef.current = id; },
+      onLayoutUpdated: () => { if (!cancelled) onLayoutUpdatedRef.current?.(); },
     })
       .then((conn) => {
         if (cancelled) { conn.leave(); return; }

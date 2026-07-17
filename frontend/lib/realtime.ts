@@ -50,6 +50,8 @@ export interface OfficeConnectionHandlers {
   onMeetingEntry?: (r: MeetingEntryResult) => void;
   /** (재)접속 성공 시 본인 sessionId 통지 — 재연결로 세션이 바뀔 수 있음(§5.3). */
   onSelf?: (sessionId: string) => void;
+  /** 배포 레이아웃 재배포/롤백(D12 layout_updated) — 구조·이동 지오메트리 즉시 재조회 트리거. */
+  onLayoutUpdated?: () => void;
 }
 
 export interface OfficeConnection {
@@ -176,6 +178,7 @@ export async function createOfficeConnection(
     r.onMessage('meeting_entry_denied', (m: { roomId?: string; reason?: string }) =>
       handlers.onMeetingEntry?.({ roomId: m?.roomId ?? '', ok: false, reason: m?.reason }),
     );
+    r.onMessage('layout_updated', () => handlers.onLayoutUpdated?.());
     r.onLeave((code) => {
       connected = false;
       if (left) return;

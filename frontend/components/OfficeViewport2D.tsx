@@ -160,6 +160,10 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
 
   // 회의 명시입장(D24) 프롬프트 — 서버 allowed 응답 시 표시.
   const [meetingPrompt, setMeetingPrompt] = useState<{ roomId: string; label: string } | null>(null);
+  // 배포 레이아웃 재배포(D12 layout_updated) 수신 시 구조를 즉시 재조회 — loadStructure는
+  // 아래에서 정의되므로 ref로 우회 연결(안정 콜백, 재연결 유발 없음).
+  const loadStructureRef = useRef<() => void>(() => {});
+  const onLayoutUpdated = useCallback(() => loadStructureRef.current(), []);
   const handleMeetingEntry = useCallback((r: MeetingEntryResult) => {
     if (!r.ok) return; // denied(too_far/full/unknown_room) → 무시
     const room = roomsRef.current.find((rm) => rm.id === r.roomId);
@@ -174,7 +178,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
     enterMeeting,
     setStatus: setPresence,
     reconnect,
-  } = useOfficeRoom(true, handleMeetingEntry);
+  } = useOfficeRoom(true, handleMeetingEntry, onLayoutUpdated);
 
   const me = useMemo(() => getUser(), []);
   const myName = me?.name ?? 'Guest';
@@ -382,6 +386,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
       .then((s) => setStructure(s && s.deployed ? s : null))
       .catch(() => {});
   }, []);
+  loadStructureRef.current = loadStructure; // layout_updated 수신 시 즉시 재조회에 연결
   useEffect(() => {
     loadStructure();
     const id = setInterval(loadStructure, SEATS_POLL_MS);

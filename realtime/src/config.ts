@@ -36,6 +36,13 @@ export const AUTO_AWAY_MS = 5 * 60 * 1000;
 /** Presence batch push cadence to FastAPI. Spec §6 / D3: 1–5s. */
 export const PRESENCE_FLUSH_MS = 3000;
 
+/**
+ * 배포 레이아웃 라이브 재조회 주기(ms). 관리자가 layout을 재배포/롤백하면 룸이 재생성되지
+ * 않아도 이 주기로 지오메트리를 hot-swap해 이동/충돌을 갱신한다(D12 layout_updated).
+ * 0/음수면 비활성(룸 생성 시 1회 로드만). LAYOUT_SOURCE_URL 설정 시에만 유의미.
+ */
+export const LAYOUT_REFRESH_MS = Number(process.env.LAYOUT_REFRESH_MS ?? 20000);
+
 /** Reconnection window (seconds) for allowReconnection on transient WSS drops. */
 export const RECONNECT_WINDOW_SEC = 30;
 

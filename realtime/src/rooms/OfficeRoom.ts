@@ -11,6 +11,7 @@ import {
   PRESENCE_SINK_URL,
   PRESENCE_SINK_TOKEN,
   LAYOUT_SOURCE_URL,
+  LAYOUT_REFRESH_MS,
   SCENE_FLOOR,
   JWT_SECRET,
   JWT_ALGORITHM,
@@ -78,6 +79,9 @@ export class OfficeRoom extends Room<OfficeState> {
   private evicting = new Set<string>();
 
   private presenceFlushHandle?: ReturnType<typeof setInterval>;
+  private layoutRefreshHandle?: ReturnType<typeof setInterval>;
+  /** 현재 로드된 지오메트리 서명 — 라이브 재조회 시 변경 감지용. */
+  private layoutSig = "";
 
   constructor() {
     super();
@@ -104,6 +108,7 @@ export class OfficeRoom extends Room<OfficeState> {
 
     // Seed meeting occupancy counters.
     for (const z of this.layout.meetingZones) this.meetingOccupancy.set(z.roomId, 0);
+    this.layoutSig = this.layoutSignature(this.layout);
 
     this.registerMessageHandlers();
 
@@ -112,6 +117,11 @@ export class OfficeRoom extends Room<OfficeState> {
 
     // Presence batch push to FastAPI (§6 / D3), 1–5s cadence.
     this.presenceFlushHandle = setInterval(() => void this.flushPresence(), PRESENCE_FLUSH_MS);
+
+    // 배포 레이아웃 라이브 재조회(D12 layout_updated) — 재배포/롤백을 룸 재생성 없이 반영.
+    if (LAYOUT_REFRESH_MS > 0) {
+      this.layoutRefreshHandle = setInterval(() => void this.refreshLayout(), LAYOUT_REFRESH_MS);
+    }
   }
 
   /**
@@ -215,7 +225,52 @@ export class OfficeRoom extends Room<OfficeState> {
 
   onDispose(): void {
     if (this.presenceFlushHandle) clearInterval(this.presenceFlushHandle);
+    if (this.layoutRefreshHandle) clearInterval(this.layoutRefreshHandle);
     void this.flushPresence();
+  }
+
+  /** 지오메트리 변경 감지용 서명 — bounds/walls/seats/zones/spawn을 결정적으로 직렬화. */
+  private layoutSignature(l: FloorLayout): string {
+    return JSON.stringify({
+      b: l.bounds,
+      w: l.walls,
+      s: l.seats.map((s) => [s.seatId, s.x, s.y, s.type, s.assignedUserId ?? ""]),
+      z: l.meetingZones.map((z) => [z.roomId, z.bounds, z.capacity]),
+      sp: l.spawn ?? null,
+    });
+  }
+
+  /**
+   * 배포 레이아웃 라이브 재조회 — 관리자가 재배포/롤백하면 룸 재생성 없이 지오메트리를 hot-swap.
+   * 변경 없으면 no-op. 변경 시 this.layout 교체 + 회의존 카운터 보존 재시드 + 클라에 layout_updated
+   * 브로드캐스트(프론트가 즉시 구조 재조회·이동 지오메트리 교체). 이동/충돌은 this.layout을 직접 읽어
+   * 다음 tick부터 새 벽/경계를 적용한다.
+   */
+  private async refreshLayout(): Promise<void> {
+    let next: FloorLayout;
+    try {
+      next = await this.layoutProvider.getLayout(this.officeId, this.floorId);
+    } catch {
+      return; // 조회 실패 → 기존 지오메트리 유지
+    }
+    const sig = this.layoutSignature(next);
+    if (sig === this.layoutSig) return; // 변경 없음
+
+    this.layout = next;
+    this.layoutSig = sig;
+    // 회의존 카운터: 살아있는 zone은 카운트 보존, 신규는 0, 사라진 zone은 제거.
+    const live = new Set(next.meetingZones.map((z) => z.roomId));
+    for (const id of [...this.meetingOccupancy.keys()]) {
+      if (!live.has(id)) this.meetingOccupancy.delete(id);
+    }
+    for (const z of next.meetingZones) {
+      if (!this.meetingOccupancy.has(z.roomId)) this.meetingOccupancy.set(z.roomId, 0);
+    }
+    // eslint-disable-next-line no-console
+    console.log(
+      `[realtime] room ${this.officeId}/${this.floorId} layout hot-swapped: bounds ${next.bounds.w.toFixed(1)}x${next.bounds.h.toFixed(1)}m, walls=${next.walls.length}, seats=${next.seats.length}, zones=${next.meetingZones.length}`,
+    );
+    this.broadcast("layout_updated", { bounds: next.bounds });
   }
 
   // -------------------------------------------------------------------------
