@@ -60,7 +60,8 @@ class Settings(BaseSettings):
     internal_api_token: str = "dev-internal-token-CHANGE-IN-PRODUCTION"
 
     # ── CORS (Next.js 웹 관리콘솔) ──
-    cors_origins: list[str] = ["http://localhost:3000"]
+    # localhost와 127.0.0.1은 브라우저 Origin이 다르다 — 둘 다 허용(2026-07-17: 127.0.0.1 접속 시 preflight 400 실측)
+    cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     # ── LiveKit SFU (D24: 명시적 입장, G004) ──
     # 운영: .env에서 실제 api_key / api_secret 주입 (이 기본값은 로컬 개발 전용)
     livekit_api_key: str = "devkey"
