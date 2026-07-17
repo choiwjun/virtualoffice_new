@@ -25,6 +25,14 @@
 > 주의: 보행 접지 보상 패치(o.bob의 `+19·sin²p` 항)가 통합 시 추가됨 —
 > 렌더러 재납품 받으면 이 항 유지 확인. `src/characters.js`는 v1 폴백으로 보존.
 > typing 재생은 뷰포트가 착석 중 벽시계 위상 버스트(office2d.ts `typingBurstAt`)로 전환.
+> **v2.3 직군 소품 (2026-07-17)**: MANAGER 사각 안경·DESIGNER 라운드 안경(CHARS `glasses`),
+> DEVELOPER 오버이어 헤드폰(`headphones`), INTERN 사원증 랜야드(`badge`) — `faceProps()`가
+> hairFront 뒤에, badge는 drawTorso 끝에 그린다. 소품 변경 시 해당 직군 26프레임만 재납품.
+> **v2.3 씬 소품·브랜드 (2026-07-17)**: NE 벽시계(창 사이 u 0.55~0.60)·아트월 갤러리(u 0.33~0.412,
+> 브랜드 월~창1 사이) — 벽면 데코라 배경 레이어에 흡수(스프라이트 57장·manifest 불변).
+> 브랜드 월 파라미터 = horizon-scene.js `BRANDS`(HORIZON/ACME/NOVA): `drawScene(opts.brand)` /
+> `renderHorizonLayers(brand)` / `<horizon-scene brand="ACME">`, v1 폴백은 `buildPlate({brand})`.
+> 브랜드 QA 렌더: `node brand-qa.js` → `out/brand-{acme,nova}-qa.webp`.
 
 ## 파일 맵
 

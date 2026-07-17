@@ -1,21 +1,24 @@
-/* HORIZON parametric character renderer v2.2
+/* HORIZON parametric character renderer v2.3
  * window.drawCharFrame(ctx, charId, state, frameIndex)
  * 220x460, transparent bg, feet anchor (110,445), facing right.
  * idle 6f @6fps | walk 8f @10fps (heel-strike gait) | sit 6f @4fps (착석 호흡)
  * | typing 6f @10fps (착석 타건 — 손목 교대 + 타건 리듬 잔바운스, no furniture)
+ * v2.3: 직군 소품 — glasses(MANAGER rect / DESIGNER round), headphones(DEVELOPER),
+ *       badge 랜야드(INTERN). 기하·앵커 불변(발 (110,445) 유지).
  */
 (function () {
   const CHARS = {
     CEO:       { gender: 'm', skin: '#E8B98F', hair: '#3C3835', style: 'crop',     top: '#33415E', bottom: '#2B3650', shirt: '#F4F1E9', tie: '#B04A3E', suit: true, pocketSq: true },
-    MANAGER:   { gender: 'f', skin: '#F0C49B', hair: '#6B4A32', style: 'sleekbob', top: '#4A4F58', bottom: '#3A3E46', inner: '#EFE9DC', suit: true },
+    MANAGER:   { gender: 'f', skin: '#F0C49B', hair: '#6B4A32', style: 'sleekbob', top: '#4A4F58', bottom: '#3A3E46', inner: '#EFE9DC', suit: true, glasses: 'rect' },
     DEVELOPER: { gender: 'm', skin: '#E3AE85', hair: '#curly'.replace('#curly','curly'), top: '#5E8F5A', bottom: '#4A5361', hoodie: true, sneaker: true, sole: '#E8E4DA', shoes: '#33302A', hair: '#2E2A26' },
-    DESIGNER:  { gender: 'f', skin: '#F2CBA4', hair: '#3A2E28', style: 'curtain',  top: '#EFE9DC', bottom: '#C9A24B', skirt: true, earring: '#C9A24B' },
+    DESIGNER:  { gender: 'f', skin: '#F2CBA4', hair: '#3A2E28', style: 'curtain',  top: '#EFE9DC', bottom: '#C9A24B', skirt: true, earring: '#C9A24B', glasses: 'round' },
     SALES:     { gender: 'm', skin: '#E8B98F', hair: '#5A422F', style: 'sidepart', top: '#7FA6C9', bottom: '#3E4A5C', shirt: '#F4F1E9', tie: '#33415E', shacket: true },
     HR:        { gender: 'f', skin: '#EEC29B', hair: '#2E2A26', style: 'lowpony',  top: '#D9CBB2', bottom: '#4A4F58', inner: '#F2EDE2', cardigan: true },
     MARKETER:  { gender: 'f', skin: '#F0C49B', hair: '#7A5238', style: 'lob',      top: '#D98A7A', bottom: '#3D4A66', earring: '#EFE9DC' },
-    INTERN:    { gender: 'm', skin: '#E3AE85', hair: '#4A3A2C', style: 'fluff',    top: '#5C7A99', bottom: '#5A5148', shoes: '#8A8378', sneaker: true, sole: '#EFE9DC' }
+    INTERN:    { gender: 'm', skin: '#E3AE85', hair: '#4A3A2C', style: 'fluff',    top: '#5C7A99', bottom: '#5A5148', shoes: '#8A8378', sneaker: true, sole: '#EFE9DC', badge: true }
   };
   CHARS.DEVELOPER.style = 'curly';
+  CHARS.DEVELOPER.headphones = '#2E3440';
   const STATES = { idle: { frames: 6, fps: 6 }, walk: { frames: 8, fps: 10 }, sit: { frames: 6, fps: 4 }, typing: { frames: 6, fps: 10 } };
 
   function hx3(c) {
@@ -258,6 +261,18 @@
     }
     ctx.fillStyle = 'rgba(255,250,238,0.08)';
     ctx.beginPath(); ctx.ellipse(shX - shw / 2, shY + 18, 8, 20, 0.25, 0, 7); ctx.fill();
+    if (C.badge) {
+      // 사원증 랜야드(인턴) — 스트랩 2줄 + ID 카드
+      ctx.strokeStyle = '#B04A3E'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(shX - 5, shY - 2); ctx.quadraticCurveTo(shX - 2, shY + 14, shX + 1.5, shY + 26); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(shX + 9, shY - 2); ctx.quadraticCurveTo(shX + 6, shY + 14, shX + 3, shY + 26); ctx.stroke();
+      ctx.save(); ctx.translate(shX + 2.5, shY + 31); ctx.rotate(0.06);
+      ctx.fillStyle = '#F4F1E9'; ctx.fillRect(-5.5, -5, 11, 14);
+      ctx.strokeStyle = 'rgba(90,85,70,0.5)'; ctx.lineWidth = 0.8; ctx.strokeRect(-5.5, -5, 11, 14);
+      ctx.fillStyle = '#7FA6C9'; ctx.fillRect(-3.5, -2.5, 7, 6);
+      ctx.fillStyle = 'rgba(51,48,42,0.55)'; ctx.fillRect(-3.5, 5.5, 7, 1.6);
+      ctx.restore();
+    }
   }
 
   function drawPelvis(ctx, C, hipX, hipY, sit) {
@@ -482,6 +497,50 @@
     if (st === 'curtain') { ctx.strokeStyle = sh(h, 0.72); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(hx + 1, hy - 23); ctx.lineTo(hx + 1, hy - 31); ctx.stroke(); }
   }
 
+  // ---------------- props (v2.3 직군 소품 — hairFront 뒤에 그린다) ----------------
+  function faceProps(ctx, C, hx, hy, sit) {
+    const gx = sit ? 1.4 : 0, gy = sit ? 1.6 : 0;
+    const ex1 = hx + 5 + gx, ex2 = hx + 18.5 + gx, ey = hy + 3 + gy;
+    if (C.glasses) {
+      const round = C.glasses === 'round';
+      const col = round ? '#6B4A32' : '#3A3E46';
+      const rw = round ? 5.6 : 5.2;
+      ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.fillStyle = 'rgba(235,244,250,0.20)';
+      for (const ex of [ex1, ex2]) {
+        ctx.beginPath();
+        if (round) ctx.arc(ex, ey, 5.6, 0, 7);
+        else ctx.roundRect(ex - 5.2, ey - 4.0, 10.4, 8.2, 2.5);
+        ctx.fill(); ctx.stroke();
+      }
+      // bridge + temple arm(귀 방향)
+      ctx.beginPath(); ctx.moveTo(ex1 + rw, ey - 1.5);
+      ctx.quadraticCurveTo((ex1 + ex2) / 2, ey - 3.5, ex2 - rw, ey - 1.5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ex1 - rw, ey - 1);
+      ctx.lineTo(hx - 15.5, hy + 4 + gy * 0.5); ctx.stroke();
+      // lens glint
+      ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(ex2 - 3, ey + 2.4); ctx.lineTo(ex2 + 1.5, ey - 2.2); ctx.stroke();
+    }
+    if (C.headphones) {
+      const col = C.headphones;
+      // band over hair(측면뷰 — 보이는 좌측 컵에서 정수리 너머로)
+      ctx.strokeStyle = col; ctx.lineWidth = 5.5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(hx - 21, hy - 3);
+      ctx.quadraticCurveTo(hx - 6, hy - 46, hx + 19, hy - 22); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,250,238,0.16)'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(hx - 18, hy - 14);
+      ctx.quadraticCurveTo(hx - 6, hy - 43, hx + 10, hy - 30); ctx.stroke();
+      // ear cup(좌측 귀)
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.ellipse(hx - 19, hy + 6, 6.2, 8.2, -0.10, 0, 7); ctx.fill();
+      ctx.fillStyle = sh(col, 1.55);
+      ctx.beginPath(); ctx.ellipse(hx - 20.5, hy + 6, 3.4, 5.2, -0.10, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,250,238,0.18)';
+      ctx.beginPath(); ctx.ellipse(hx - 21, hy + 3.4, 1.6, 2.2, -0.2, 0, 7); ctx.fill();
+    }
+  }
+
   // ---------------- main ----------------
   function drawCharFrame(ctx, charId, state, frameIndex) {
     const key = String(charId).toUpperCase();
@@ -522,6 +581,7 @@
     ctx.beginPath(); ctx.moveTo(shX + 2, shY - 2); ctx.lineTo(hxx - 1, hy + 22); ctx.stroke();
     head(ctx, C, hxx, hy, o.sit);
     hairFront(ctx, C, hxx, hy);
+    faceProps(ctx, C, hxx, hy, o.sit);
     ctx.restore();
   }
 

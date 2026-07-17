@@ -219,7 +219,15 @@ function glassPanel(g, u0, v0, u1, v1, h = 2.2) {
 
 // ── 씬 조립 ──────────────────────────────────────────────────────────────────
 
-function buildPlate() {
+// 브랜드 월 프리셋(A-3, 시안 §5) — v2 그림 정본(horizon-scene.js BRANDS)과 동일 팔레트
+const PLATE_BRANDS = {
+  HORIZON: { word: 'HORIZON', panel: null,      ink: null      }, // null → PAL.wood/PAL.white
+  ACME:    { word: 'ACME',    panel: '#5F6E8C', ink: '#F2F4F8' },
+  NOVA:    { word: 'NOVA',    panel: '#33383F', ink: '#E8C97F' },
+};
+
+function buildPlate(opts) {
+  const BR = PLATE_BRANDS[String((opts && opts.brand) || 'HORIZON').toUpperCase()] || PLATE_BRANDS.HORIZON;
   const g = new Svg();
   const geom = { walkArea: [], rooms: [], obstacles: [], spawns: {}, meetingZones: [], seats: [] };
 
@@ -296,11 +304,11 @@ function buildPlate() {
     // 리셉션 브랜드 월(우드 패널 + 로고)
     const p0 = 1.4, p1 = 5.6;
     const ba = iso(p0, 0, 2.3), bb = iso(p1, 0, 2.3), bc = iso(p1, 0, 0), bd = iso(p0, 0, 0);
-    g.poly([ba, bb, bc, bd], PAL.wood, { stroke: PAL.outline, sw: 1 });
+    g.poly([ba, bb, bc, bd], BR.panel || PAL.wood, { stroke: PAL.outline, sw: 1 });
     // 벽면(NE, v=0)은 화면에서 x+1 당 y+0.5 기울기 — translate 후 skewY로 벽에 밀착
     const mid = iso(3.5, 0, 1.5);
     g.raw(`<g transform="translate(${mid.x.toFixed(1)},${mid.y.toFixed(1)}) skewY(26.57)">` +
-      `<text x="0" y="0" font-family="Arial, sans-serif" font-size="34" font-weight="800" fill="${PAL.white}" text-anchor="middle" letter-spacing="7">HORIZON</text></g>`);
+      `<text x="0" y="0" font-family="Arial, sans-serif" font-size="34" font-weight="800" fill="${BR.ink || PAL.white}" text-anchor="middle" letter-spacing="7">${BR.word}</text></g>`);
     // 보드룸 TV
     const t0 = 13.4, t1 = 15.9;
     const ta = iso(t0, 0, 2.05), tb = iso(t1, 0, 2.05), tc = iso(t1, 0, 1.0), td = iso(t0, 0, 1.0);

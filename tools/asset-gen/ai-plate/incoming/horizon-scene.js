@@ -56,6 +56,12 @@
     [0.432,0.224,0.55],[0.556,0.291,0.55],[0.729,0.452,0.46],[0.617,0.595,0.46],
     [0.248,0.615,0.5],[0.325,0.702,0.44],[0.760,0.833,0.46]
   ];
+  // ---- brand wall presets (A-3, 시안 §5) — drawScene(opts.brand) / <horizon-scene brand="ACME"> ----
+  const BRANDS = {
+    HORIZON: { word: 'HORIZON', panel: ['#C79A67', '#A87C4A'], edge: '#8E683C', ink: '#F5EFE3', shade: 'rgba(60,38,12,0.45)', slatDark: 'rgba(70,45,18,0.28)', slatLight: 'rgba(255,230,190,0.14)' },
+    ACME:    { word: 'ACME',    panel: ['#8FA0B8', '#5F6E8C'], edge: '#49566E', ink: '#F2F4F8', shade: 'rgba(18,26,42,0.45)', slatDark: 'rgba(24,34,54,0.28)', slatLight: 'rgba(214,226,244,0.14)' },
+    NOVA:    { word: 'NOVA',    panel: ['#4E545E', '#33383F'], edge: '#23272E', ink: '#E8C97F', shade: 'rgba(8,10,14,0.50)',  slatDark: 'rgba(12,14,18,0.30)',  slatLight: 'rgba(230,236,244,0.10)' },
+  };
   function rectOf(poly) {
     let u0 = 9, v0 = 9, u1 = -9, v1 = -9;
     for (const p of poly) { const q = uvOf(p[0], p[1]); u0 = Math.min(u0, q.u); v0 = Math.min(v0, q.v); u1 = Math.max(u1, q.u); v1 = Math.max(v1, q.v); }
@@ -310,6 +316,7 @@
     // 레이어 캡처 모드(opts.capture): ctx를 레이어별 캔버스로 스위칭하며 그린다.
     // 아이템 클로저들이 이 함수 스코프의 ctx 바인딩을 캡처하므로 재할당이 곧 리타깃.
     const cap = opts.capture || null;
+    const BR = BRANDS[String(opts.brand || 'HORIZON').toUpperCase()] || BRANDS.HORIZON;
     if (cap) ctx = cap.background();
     else ctx.save();
     ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
@@ -414,28 +421,84 @@
     }
     frame(0.255, 0.29, '#A65043'); frame(0.52, 0.555, '#3E4E6E');
 
-    // ---- brand wall (NE, behind reception) ----
+    // ---- wall clock (NE, 창 사이 u 0.55~0.60) — v2.3 소품 ----
+    (function wallClock() {
+      const exn = { x: U.x / Math.hypot(U.x, U.y), y: U.y / Math.hypot(U.x, U.y) };
+      const c = P(0.575, 0, 2.02);
+      ctx.setTransform(SS * exn.x, SS * exn.y, 0, SS, SS * c[0], SS * c[1]);
+      const r = 13;
+      ctx.fillStyle = 'rgba(70,55,35,0.22)';
+      ctx.beginPath(); ctx.arc(1.4, 1.4, r + 2, 0, 7); ctx.fill();
+      ctx.fillStyle = '#3A3E46'; ctx.beginPath(); ctx.arc(0, 0, r + 2, 0, 7); ctx.fill();
+      ctx.fillStyle = '#F7F4EC'; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(58,62,70,0.75)'; ctx.lineWidth = 1;
+      for (let i = 0; i < 12; i++) {
+        const a = i * Math.PI / 6, l = i % 3 ? 1.6 : 2.8;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * (r - 1.5), Math.sin(a) * (r - 1.5));
+        ctx.lineTo(Math.cos(a) * (r - 1.5 - l), Math.sin(a) * (r - 1.5 - l));
+        ctx.stroke();
+      }
+      const ha = ((10 + 9 / 60) / 12) * Math.PI * 2 - Math.PI / 2;
+      const ma = (9 / 60) * Math.PI * 2 - Math.PI / 2;
+      ctx.strokeStyle = '#33302A'; ctx.lineCap = 'round';
+      ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(ha) * r * 0.48, Math.sin(ha) * r * 0.48); ctx.stroke();
+      ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(ma) * r * 0.72, Math.sin(ma) * r * 0.72); ctx.stroke();
+      ctx.fillStyle = '#33415E'; ctx.beginPath(); ctx.arc(0, 0, 1.6, 0, 7); ctx.fill();
+      ctx.setTransform(SS, 0, 0, SS, 0, 0);
+    })();
+
+    // ---- art wall (NE, 브랜드 월~창1 사이 갤러리 u 0.33~0.412) — v2.3 소품 ----
+    (function artWall() {
+      const u0 = 0.330, u1 = 0.412, z0 = 1.0, z1 = 2.45;
+      const q = [P(u0, 0, z0), P(u1, 0, z0), P(u1, 0, z1), P(u0, 0, z1)];
+      poly(ctx, q, grad(ctx, q[3], q[1], '#DCD1BC', '#C7B99F'));
+      ctx.strokeStyle = 'rgba(110,90,60,0.16)'; ctx.lineWidth = 1;
+      for (let i = 1; i < 6; i++) {
+        const uu = u0 + (u1 - u0) * i / 6;
+        ctx.beginPath(); ctx.moveTo(...P(uu, 0, z0)); ctx.lineTo(...P(uu, 0, z1)); ctx.stroke();
+      }
+      // 패널 하단 AO + 우측 모서리
+      poly(ctx, [P(u0, 0, z0), P(u1, 0, z0), P(u1, 0, z0 + 0.1), P(u0, 0, z0 + 0.1)], 'rgba(80,68,48,0.16)');
+      poly(ctx, [P(u1, 0, z0), [P(u1, 0, z0)[0] + 2, P(u1, 0, z0)[1] + 1], [P(u1, 0, z1)[0] + 2, P(u1, 0, z1)[1] + 1], P(u1, 0, z1)], '#A99A7E');
+      const art = (a0, a1, b0, b1, paint) => {
+        poly(ctx, [P(a0, 0, b0), P(a1, 0, b0), P(a1, 0, b1), P(a0, 0, b1)], '#FAF7F0');
+        poly(ctx, [P(a0 + 0.004, 0, b0 + 0.07), P(a1 - 0.004, 0, b0 + 0.07), P(a1 - 0.004, 0, b1 - 0.07), P(a0 + 0.004, 0, b1 - 0.07)], paint);
+        poly(ctx, [P(a0, 0, b0), P(a1, 0, b0), [P(a1, 0, b0)[0] + 2, P(a1, 0, b0)[1] + 3], [P(a0, 0, b0)[0] + 2, P(a0, 0, b0)[1] + 3]], 'rgba(80,70,52,0.20)');
+      };
+      // 대형 추상화(크림 베이스 + 네이비/러스트 사선 밴드)
+      art(0.336, 0.372, 1.38, 2.16, '#EFE9DC');
+      poly(ctx, [P(0.340, 0, 1.45), P(0.368, 0, 1.45), P(0.368, 0, 1.74), P(0.340, 0, 1.92)], '#3E4E6E');
+      poly(ctx, [P(0.340, 0, 1.97), P(0.368, 0, 1.79), P(0.368, 0, 1.88), P(0.340, 0, 2.06)], '#A65043');
+      // 중형(네이비 + 우드 악센트) / 소형(러스트 + 크림 스트라이프)
+      art(0.380, 0.406, 1.72, 2.12, '#3E4E6E');
+      poly(ctx, [P(0.386, 0, 1.84), P(0.400, 0, 1.84), P(0.400, 0, 1.98), P(0.386, 0, 1.98)], '#C9A24B');
+      art(0.380, 0.406, 1.22, 1.58, '#A65043');
+      poly(ctx, [P(0.384, 0, 1.34), P(0.402, 0, 1.34), P(0.402, 0, 1.40), P(0.384, 0, 1.40)], '#EFE9DC');
+    })();
+
+    // ---- brand wall (NE, behind reception) — A-3: opts.brand(HORIZON/ACME/NOVA) ----
     (function brand() {
       const u0 = 0.105, u1 = 0.318, z0 = 0.25, z1 = 2.92;
       const q = [P(u0, 0, z0), P(u1, 0, z0), P(u1, 0, z1), P(u0, 0, z1)];
-      poly(ctx, q, grad(ctx, q[3], q[1], '#C79A67', '#A87C4A'));
+      poly(ctx, q, grad(ctx, q[3], q[1], BR.panel[0], BR.panel[1]));
       // vertical slats
       ctx.save(); ctx.beginPath(); ctx.moveTo(q[0][0], q[0][1]); q.slice(1).forEach(p => ctx.lineTo(p[0], p[1])); ctx.closePath(); ctx.clip();
       for (let i = 0; i <= 30; i++) {
         const uu = u0 + (u1 - u0) * i / 30;
-        ctx.strokeStyle = i % 2 ? 'rgba(70,45,18,0.28)' : 'rgba(255,230,190,0.14)'; ctx.lineWidth = i % 2 ? 1.6 : 0.8;
+        ctx.strokeStyle = i % 2 ? BR.slatDark : BR.slatLight; ctx.lineWidth = i % 2 ? 1.6 : 0.8;
         ctx.beginPath(); ctx.moveTo(...P(uu, 0, z0)); ctx.lineTo(...P(uu, 0, z1)); ctx.stroke();
       }
       poly(ctx, q, grad(ctx, q[3], q[2], 'rgba(255,244,222,0.18)', 'rgba(60,40,15,0.16)'));
       poly(ctx, [P(u0, 0, z0), P(u1, 0, z0), P(u1, 0, z0 + 0.55), P(u0, 0, z0 + 0.55)], grad(ctx, P(u0, 0, z0), P(u0, 0, z0 + 0.55), 'rgba(255,232,190,0.30)', 'rgba(255,232,190,0)'));
       ctx.restore();
       // side + top edge
-      poly(ctx, [P(u1, 0, z0), [P(u1, 0, z0)[0] + 3, P(u1, 0, z0)[1] + 1.5], [P(u1, 0, z1)[0] + 3, P(u1, 0, z1)[1] + 1.5], P(u1, 0, z1)], '#8E683C');
-      // HORIZON lettering on wall plane
+      poly(ctx, [P(u1, 0, z0), [P(u1, 0, z0)[0] + 3, P(u1, 0, z0)[1] + 1.5], [P(u1, 0, z1)[0] + 3, P(u1, 0, z1)[1] + 1.5], P(u1, 0, z1)], BR.edge);
+      // 브랜드 레터링 on wall plane
       const ex = { x: U.x / Math.hypot(U.x, U.y), y: U.y / Math.hypot(U.x, U.y) };
       const base = P(u0 + 0.018, 0, 2.05);
       ctx.setTransform(SS * ex.x, SS * ex.y, 0, SS, SS * base[0], SS * base[1]);
-      const word = 'HORIZON';
+      const word = BR.word;
       ctx.font = '700 34px "Avenir Next","Trebuchet MS",system-ui,sans-serif';
       let x = 0; const adv = [];
       for (const ch of word) { adv.push(x); x += ctx.measureText(ch).width + 14; }
@@ -444,8 +507,8 @@
       for (let i = 0; i < word.length; i++) {
         const cx = adv[i] * sc;
         ctx.save(); ctx.translate(cx, 0); ctx.scale(sc, sc);
-        ctx.fillStyle = 'rgba(60,38,12,0.45)'; ctx.fillText(word[i], 1.6, 2);
-        ctx.fillStyle = '#F5EFE3'; ctx.fillText(word[i], 0, 0);
+        ctx.fillStyle = BR.shade; ctx.fillText(word[i], 1.6, 2);
+        ctx.fillStyle = BR.ink; ctx.fillText(word[i], 0, 0);
         ctx.restore();
       }
       ctx.setTransform(SS, 0, 0, SS, 0, 0);
@@ -697,7 +760,7 @@
   }
 
   /** 레이어 캡처: 배경 1장 + 입체 가구/전면유리 스프라이트 캔버스 목록 반환. */
-  window.renderHorizonLayers = function () {
+  window.renderHorizonLayers = function (brand) {
     const layers = [];
     let bg = null;
     const mkLayer = (name) => {
@@ -717,13 +780,13 @@
         return mkLayer(name);
       },
     };
-    drawScene(null, { capture: cap, grain: false, overlay: false });
+    drawScene(null, { capture: cap, grain: false, overlay: false, brand });
     for (const L of layers) applyGrade(L.canvas, false);
     return layers;
   };
 
   class HorizonScene extends HTMLElement {
-    static get observedAttributes() { return ['overlay', 'grain']; }
+    static get observedAttributes() { return ['overlay', 'grain', 'brand']; }
     connectedCallback() {
       if (!this.canvas) {
         this.style.display = 'block';
@@ -740,7 +803,8 @@
       ctx.setTransform(SS, 0, 0, SS, 0, 0);
       drawScene(ctx, {
         overlay: this.getAttribute('overlay') === 'true',
-        grain: this.getAttribute('grain') !== 'false'
+        grain: this.getAttribute('grain') !== 'false',
+        brand: this.getAttribute('brand') || 'HORIZON'
       });
     }
   }
