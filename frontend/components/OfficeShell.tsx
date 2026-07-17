@@ -16,6 +16,7 @@ import { StatusBadge, type EmployeePresenceStatus } from '@/components/ui/Status
 import { KpiGauge } from '@/components/ui/KpiGauge';
 import { ProgressMetric } from '@/components/ui/ProgressMetric';
 import { MediaBar } from '@/components/ui/MediaBar';
+import { MeetingStage } from '@/components/ui/MeetingStage';
 import { connectToMeeting, disconnectRoom } from '@/lib/livekit';
 import type { Room } from 'livekit-client';
 import { ListItem } from '@/components/ui/ListItem';
@@ -776,6 +777,13 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
           <div className="absolute inset-0 overflow-hidden" style={{ background: '#0d1b36' }}>
             <OfficeViewport2D onJoinMeeting={handleViewportJoin} />
           </div>
+
+          {/* 회의 화상 그리드 (상단 중앙) — 연결 시 참가자 비디오/오디오 표시(C3) */}
+          {activeRoom && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
+              <MeetingStage room={activeRoom} />
+            </div>
+          )}
 
           {/* 미디어 바 (하단 중앙) — 회의 연결 시 실제 마이크/카메라 제어(C3) */}
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10">
