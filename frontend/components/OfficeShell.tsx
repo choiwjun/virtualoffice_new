@@ -815,9 +815,13 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
       label: r.label,
       sub: '오피스에서 보기',
       action: () => {
-        // 방 카메라/포커스는 후속 — 일단 /office 이동 + 검색어로 방 이름 유지(스펙 지침).
-        setSearchQuery(r.label);
-        if (pathname !== '/office') router.push('/office');
+        // 씬 카메라 포커스 등가물(스펙 §3) — 전체 플레이트 뷰(팬/줌 없음)라 방 글로우+라벨로 포커스.
+        // /office면 이벤트로 즉시, 타 라우트면 ?focus= 쿼리로 이동 후 뷰포트가 마운트 시 반영.
+        if (pathname === '/office') {
+          window.dispatchEvent(new CustomEvent('office:focus-room', { detail: { roomId: r.id } }));
+        } else {
+          router.push(`/office?focus=${encodeURIComponent(r.id)}`);
+        }
       },
     }));
     const fnEntries: PaletteEntry[] = [...NAV_ITEMS, ...adminItems]

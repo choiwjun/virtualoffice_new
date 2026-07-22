@@ -3,7 +3,7 @@
 /**
  * OfficeViewport2D — 2.5D 고정 카메라 가상오피스 뷰포트.
  *
- * 렌더 = DOM 합성: 클린 플레이트(배경) + 방 라벨/글로우 + 아바타 스프라이트 레이어.
+ * 렌더 = DOM 합성: V3 탑다운 캔버스(배경, D35) + 방 라벨/글로우 + 아바타 배지 레이어.
  * 아바타 위치는 realtime(Colyseus) 서버 권위 상태를 rAF 루프가 imperative하게 소비
  * (20Hz setState 재렌더 회피 — playersRef 패턴은 useOfficeRoom 참조).
  * 서버 미기동 시 로컬 이동 폴백(본인 아바타만, 동일 속도 모델 1.4m/s).
@@ -20,36 +20,26 @@ import { api, ApiError } from '@/lib/api';
 import { useOfficeRoom } from '@/hooks/useOfficeRoom';
 import type { MeetingEntryResult } from '@/lib/realtime';
 import {
-  ASSETS_READY,
-  AVATAR_ANIM,
   AvatarState,
   CharacterId,
-  LAYERS_BASE_URL,
-  OBSTACLES,
-  PLATE_URL,
   PLATE_W,
   PLATE_H,
-  type SceneLayerSprite,
-  ROOMS,
   type SceneRoom,
   SCENE_THEMES,
   type SceneThemeId,
   SPAWNS,
   themeForHour,
-  avatarHeightFrac,
   characterForAvatar,
   clampToWalkable,
   findPath,
   isWalkable,
   nearestWalkableM,
-  frameUrl,
   metersToNorm,
   normToMeters,
   pointInPolygon,
   polygonCentroid,
   setActiveFloorGeometry,
   typingBurstAt,
-  WALK_AREA,
   type Vec2,
 } from '@/lib/office2d';
 import { V3_WALK_AREA, V3_OBSTACLES, V3_SEAT_BY_NUMBER, V3_ROOMS, V3_HOTSPOTS_NORM } from '@/lib/officeV3';
@@ -163,17 +153,6 @@ interface OfficeViewport2DProps {
 /** 층 선택(19-spec P0-3) — 미니맵 헤더로 흡수. 현재 콘텐츠는 2F뿐(타 층 시각 전환만). */
 const FLOORS = ['4F', '3F', '2F', '1F', 'B1F'];
 
-/** 존 바닥 색면(19-spec P0-5) — 방 유형별 반투명 틴트(회의=그린·휴게=앰버·부스=퍼플·리셉션=시안). */
-const ROOM_TINTS: Record<string, string> = {
-  boardroom: '#22C55E',
-  'meeting-a': '#22C55E',
-  lounge: '#F59E0B',
-  cafe: '#F59E0B',
-  pantry: '#F59E0B',
-  booth: '#A855F7',
-  reception: '#38BDF8',
-};
-
 // ── D34 공간 진입점(20-spec): 씬 클릭 대상 → SpotCard 미니 카드. 폼/상세는 오버레이 창(D27). ──
 type SpotKind = 'profile' | 'myseat' | 'room' | 'board' | 'cabinet' | 'zone';
 interface SpotState {
@@ -202,26 +181,9 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [stage, setStage] = useState({ w: 0, h: 0 });
 
-  // ── D35 씬 V3 — 기본 ON(D35 채택, 2026-07-22). 롤백 탈출구: ?scene=legacy 또는
-  //    NEXT_PUBLIC_SCENE_V3=0. (?scene=v3는 명시 ON으로 계속 유효) ──
-  const [sceneV3, setSceneV3] = useState(false);
-  useEffect(() => {
-    const envOff = process.env.NEXT_PUBLIC_SCENE_V3 === '0';
-    let queryScene: string | null = null;
-    try {
-      queryScene = new URLSearchParams(window.location.search).get('scene');
-    } catch {
-      // window/URL 접근 불가 — env만 적용
-    }
-    if (queryScene === 'legacy' || queryScene === 'v2') setSceneV3(false);
-    else if (queryScene === 'v3') setSceneV3(true);
-    else setSceneV3(!envOff);
-  }, []);
-  // rAF 루프·안정 콜백(loadSeats 등)이 최신 sceneV3를 의존성 없이 참조 — 매 렌더 동기화.
-  const sceneV3Ref = useRef(sceneV3);
-  sceneV3Ref.current = sceneV3;
-  // D33: 존 라벨은 호버/클릭 시에만(P0-5) · 미니맵 접기 + 층 전환 흡수(P0-3).
-  const [hoverRoom, setHoverRoom] = useState<string | null>(null);
+  // D35 씬 V3 상시 — HORIZON legacy 스프라이트 레이어는 2026-07-22 제거(?scene=·NEXT_PUBLIC_SCENE_V3
+  // 탈출구 폐기). 씬 모드 = 배포 레이아웃 없으면 항상 V3 탑다운 캔버스.
+  // D33: 미니맵 접기 + 층 전환 흡수(P0-3).
   const [minimapOpen, setMinimapOpen] = useState(true);
   const [activeFloor, setActiveFloor] = useState('2F');
   // D34 SpotCard — 공간 진입점 미니 카드(20-spec). rows=null이면 로딩.
@@ -287,6 +249,27 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
   // 방 라벨 클릭 글로우.
   const [glowRoom, setGlowRoom] = useState<string | null>(null);
 
+  // 커맨드 팔레트 방 포커스(셸 ⌘K, 1b §3) — 전체 플레이트 뷰(팬/줌 없음)라 "씬 카메라 이동"의
+  // 등가물 = 방 글로우 + 라벨 표시(방 라벨 클릭과 동일 상태). 같은 라우트면 CustomEvent,
+  // 타 라우트 진입이면 /office?focus=<roomId> 쿼리를 마운트 시 1회 반영.
+  useEffect(() => {
+    const focusRoom = (roomId: string) => {
+      if (roomsRef.current.some((r) => r.id === roomId)) setGlowRoom(roomId);
+    };
+    try {
+      const q = new URLSearchParams(window.location.search).get('focus');
+      if (q) focusRoom(q);
+    } catch {
+      // URL 접근 불가 — 이벤트 경로만 사용
+    }
+    const onFocus = (e: Event) => {
+      const roomId = (e as CustomEvent<{ roomId?: string }>).detail?.roomId;
+      if (roomId) focusRoom(roomId);
+    };
+    window.addEventListener('office:focus-room', onFocus);
+    return () => window.removeEventListener('office:focus-room', onFocus);
+  }, []);
+
   // ── 씬 시간대 테마 — 자동(로컬 시각) 기본 + 수동 전환(자동→주간→석양→야간 순환) ──
   // autoTheme 초기값은 'day' 고정: SSR/hydration 시각차 방지 — 마운트 후 실제 시각으로 평가.
   const [themeMode, setThemeMode] = useState<'auto' | SceneThemeId>('auto');
@@ -302,22 +285,6 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
     setThemeMode((m) => (m === 'auto' ? 'day' : m === 'day' ? 'dusk' : m === 'dusk' ? 'night' : 'auto'));
   }, []);
 
-  // 레이어 합성 팩(v2.1): 가구를 개별 스프라이트로 얹어 아바타와 y-기준 상호 가림.
-  // manifest 없으면 null → 단일 플레이트 폴백.
-  const [layerSprites, setLayerSprites] = useState<SceneLayerSprite[] | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`${LAYERS_BASE_URL}/manifest.json`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((m: { sprites?: SceneLayerSprite[] } | null) => {
-        if (!cancelled && m?.sprites?.length) setLayerSprites(m.sprites);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   // ── 자율좌석(§3.11) ────────────────────────────────────────────────────
   const [seats, setSeats] = useState<SeatInfo[]>([]);
   /** rAF 루프용 좌석 스냅샷(착석 렌더 판정) — setState와 함께 갱신. */
@@ -326,11 +293,10 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
   const [seatBusy, setSeatBusy] = useState(false);
   /** /api/seats 원본(서버 응답) — V3 override의 소스. */
   const rawSeatsRef = useRef<SeatInfo[]>([]);
-  /** V3 모드면 좌석 좌표를 officeV3 정본(seat_number 매칭)으로 재정렬 — 백엔드 시드가 아직
-   *  구 좌표여도 마커·착석 스냅이 v3 벤치 위에 정확히 얹힌다. legacy/배포 모드는 서버 좌표 그대로.
+  /** 좌석 좌표를 officeV3 정본(seat_number 매칭)으로 재정렬 — 백엔드 시드가 아직
+   *  구 좌표여도 마커·착석 스냅이 v3 벤치 위에 정확히 얹힌다.
    *  (백엔드도 seed_seats.py로 같은 V3 좌표를 시드하지만, 프론트 override로 시드 시점과 무관하게 정합.) */
-  const applySeatCoords = useCallback((rows: SeatInfo[], v3: boolean): SeatInfo[] => {
-    if (!v3) return rows;
+  const applySeatCoords = useCallback((rows: SeatInfo[]): SeatInfo[] => {
     return rows.map((s) => {
       const v = s.seat_number ? V3_SEAT_BY_NUMBER[s.seat_number] : undefined;
       return v ? { ...s, coords: { ...s.coords, x: v.x, y: v.y } } : s;
@@ -352,33 +318,31 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
     [structure],
   );
   const useDeployed = structure != null;
-  // V3 방(축정렬 미터 사각) → 좌석과 동일 metersToNorm 폴리곤. 배포>V3>legacy 우선순위.
+  // V3 방(축정렬 미터 사각) → 좌석과 동일 metersToNorm 폴리곤. 배포>V3 우선순위.
   const v3Rooms = useMemo<SceneRoom[]>(
     () => V3_ROOMS.map((r) => ({ id: r.id, label: r.label, polygon: rectToNormPoly(r.x, r.y, r.w, r.h) })),
     [],
   );
-  const activeRooms = useDeployed ? dynRooms : sceneV3 ? v3Rooms : ROOMS;
+  const activeRooms = useDeployed ? dynRooms : v3Rooms;
   // rAF/interval 콜백에서 최신 방 목록 참조(의존성 없이).
-  const roomsRef = useRef<SceneRoom[]>(ROOMS);
+  const roomsRef = useRef<SceneRoom[]>([]);
   roomsRef.current = activeRooms;
 
-  // 이동 지오메트리 교체 — 우선순위: 배포 레이아웃 > V3 탑다운(축정렬) > HORIZON 다이아(legacy).
+  // 이동 지오메트리 교체 — 우선순위: 배포 레이아웃 > V3 탑다운(축정렬).
   //  · 배포: 클릭-경로·충돌이 배포 경계(bounds 사각)와 벽을 따름(realtime 배포 floor와 정합).
-  //  · V3(scene=v3): 축정렬 room 사각 − v3 가구 장애물(officeV3). realtime SCENE_FLOOR=v3와 정합.
-  //  · 그 외: null → office2d HORIZON 상수(legacy 다이아, 무회귀). 이동 불변식 상수는 불변.
+  //  · V3: 축정렬 room 사각 − v3 가구 장애물(officeV3). realtime SCENE_FLOOR=v3와 정합.
+  //    이동 불변식 상수는 불변.
   useEffect(() => {
     if (structure?.dimensions) {
       setActiveFloorGeometry({
         walkArea: rectToNormPoly(0, 0, structure.dimensions.width_m, structure.dimensions.height_m),
         obstacles: dynObstacles,
       });
-    } else if (sceneV3) {
-      setActiveFloorGeometry({ walkArea: V3_WALK_AREA, obstacles: V3_OBSTACLES });
     } else {
-      setActiveFloorGeometry(null);
+      setActiveFloorGeometry({ walkArea: V3_WALK_AREA, obstacles: V3_OBSTACLES });
     }
     return () => setActiveFloorGeometry(null);
-  }, [structure, dynObstacles, sceneV3]);
+  }, [structure, dynObstacles]);
 
   // 짧은 안내 토스트(사용 중 좌석, API 오류 등).
   const [toast, setToast] = useState<string | null>(null);
@@ -462,7 +426,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
       .get<SeatInfo[]>('/api/seats')
       .then((rows) => {
         rawSeatsRef.current = rows;
-        const mapped = applySeatCoords(rows, sceneV3Ref.current);
+        const mapped = applySeatCoords(rows);
         setSeats(mapped);
         seatsRef.current = mapped;
       })
@@ -473,14 +437,6 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
     const id = setInterval(loadSeats, SEATS_POLL_MS);
     return () => clearInterval(id);
   }, [loadSeats]);
-  // sceneV3는 마운트 후 비동기로 확정(쿼리/env) — 확정/토글 시 마지막 서버 응답에 좌표 override를
-  // 다시 적용해 마커·착석 스냅이 즉시 v3 벤치에 정렬된다(재요청 없이 로컬 재매핑).
-  useEffect(() => {
-    if (rawSeatsRef.current.length === 0) return;
-    const mapped = applySeatCoords(rawSeatsRef.current, sceneV3);
-    setSeats(mapped);
-    seatsRef.current = mapped;
-  }, [sceneV3, applySeatCoords]);
 
   // ── 배포 레이아웃 구조 로드 — 마운트 + 60초 폴링(관리자 배포/롤백 반영). 미배포/에러 → 데모 씬 유지 ──
   const loadStructure = useCallback(() => {
@@ -854,27 +810,11 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
     [],
   );
 
-  // 프레임 프리로드(등장한 캐릭터만). 플레이스홀더 모드(D30)엔 로드할 에셋 없음.
-  useEffect(() => {
-    if (!ASSETS_READY) return;
-    const chars = new Set(shells.map((s) => s.char));
-    chars.forEach((c) => {
-      (['idle', 'walk', 'sit', 'typing'] as AvatarState[]).forEach((st) => {
-        for (let f = 0; f < AVATAR_ANIM[st].frames; f++) {
-          const im = new Image();
-          im.src = frameUrl(c, st, f);
-        }
-      });
-    });
-  }, [shells]);
-
   // ── rAF 시뮬레이션/렌더 루프 ───────────────────────────────────────────
   const stageRef = useRef(stage);
   stageRef.current = stage;
   const offlineRef = useRef(offline);
   offlineRef.current = offline;
-  // (sceneV3Ref는 상단에서 선언·동기화 — rAF 루프는 마운트당 1회라 ref로 참조하며,
-  //  V3 배지 모드에서는 스프라이트 프레임 src 갱신·좌우 플립을 건너뛴다(배지는 <div>·글라이드만).)
 
   useEffect(() => {
     let raf = 0;
@@ -973,18 +913,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
           }
           v.prev = { ...v.disp };
 
-          // 프레임 애니.
-          const anim = AVATAR_ANIM[v.state];
-          v.frameAcc += dt;
-          const frameDur = 1 / anim.fps;
-          if (v.frameAcc >= frameDur) {
-            v.frameAcc %= frameDur;
-            v.frame = (v.frame + 1) % anim.frames;
-            // V3 배지 모드는 <div>라 프레임 스프라이트 없음 — src 갱신 건너뜀.
-            if (ASSETS_READY && !sceneV3Ref.current) (v.img as HTMLImageElement).src = frameUrl(v.char, v.state, v.frame);
-          }
-
-          // 화면 배치. 높이는 깊이(원근) 기반 — 뒤쪽일수록 작게.
+          // 화면 배치.
           const n = metersToNorm(v.disp);
           const px = n.x * sw;
           const py = n.y * sh;
@@ -994,10 +923,8 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
           // 앉은 아바타를 덮지 않게 — 의자 반깊이(~0.25m ≈ 64) 이상, 남측 옆 가구(≥0.9m) 미만.
           const isSeatedState = v.state === 'sit' || v.state === 'typing';
           v.root.style.zIndex = String(Math.round(n.y * 10000) + (isSeatedState ? 150 : 0));
-          // V3 배지는 사진 T=0.58m 스케일(≈5.2% 스테이지 높이)로 작게, 스프라이트는 깊이 신장.
-          v.img.style.height = `${(sceneV3Ref.current ? 0.052 : avatarHeightFrac(n.y, v.state)) * sh}px`;
-          // V3 배지 flip 금지(이니셜 좌우 반전 방지) — 스프라이트만 좌우 방향 반영.
-          v.img.style.transform = sceneV3Ref.current ? 'none' : `scaleX(${v.facing})`;
+          // 배지 = 사진 T=0.58m 스케일(≈5.2% 스테이지 높이). flip 없음(이니셜 좌우 반전 방지).
+          v.img.style.height = `${0.052 * sh}px`;
         });
       }
 
@@ -1067,13 +994,13 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
             transition: 'filter 1000ms ease',
           }}
         >
-        {sceneV3 && !useDeployed ? (
-          /* D35 씬 V3(flag ON) — 텍스처드 탑다운 캔버스를 배경으로. 존 색면·핫스팟·좌석 마커·
+        {!useDeployed ? (
+          /* D35 씬 V3 — 텍스처드 탑다운 캔버스를 배경으로. 존 색면·핫스팟·좌석 마커·
              아바타는 아래 형제 레이어가 좌표(metersToNorm) 기반으로 그대로 얹힌다. */
           <div className="absolute inset-0 w-full h-full" style={{ background: '#EBE7E0' }}>
             <SceneV3Layer theme={sceneTheme.id} />
           </div>
-        ) : useDeployed ? (
+        ) : (
           /* 배포된 편집기 레이아웃을 벡터로 렌더 — 좌석배치대로 반영(방/벽/구역). 좌표=좌석과 동일 metersToNorm(0~1). */
           <div
             className="absolute inset-0 w-full h-full"
@@ -1116,105 +1043,9 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
               배포된 좌석배치 반영 (편집기 레이아웃)
             </div>
           </div>
-        ) : ASSETS_READY ? (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={layerSprites ? `${LAYERS_BASE_URL}/background.webp` : PLATE_URL}
-              alt="가상오피스 평면"
-              draggable={false}
-              className="absolute inset-0 w-full h-full"
-            />
-            {/* 가구 스프라이트(v2.1 오클루전) — 아바타와 동일 y-기준 zIndex로 상호 가림 */}
-            {layerSprites?.map((sp) => (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                key={sp.src}
-                src={`${LAYERS_BASE_URL}/${sp.src}`}
-                alt=""
-                draggable={false}
-                className="absolute pointer-events-none"
-                style={{
-                  left: `${sp.x * 100}%`,
-                  top: `${sp.y * 100}%`,
-                  width: `${sp.w * 100}%`,
-                  height: `${sp.h * 100}%`,
-                  zIndex: Math.round(sp.z * 10000),
-                }}
-              />
-            ))}
-          </>
-        ) : (
-          /* D30 플레이스홀더 플레이트 — 좌표 계약(보행영역·방·장애물)만 시각화 */
-          <div
-            className="absolute inset-0 w-full h-full"
-            style={{ background: 'linear-gradient(160deg,#1c2941 0%,#141f33 55%,#0f1828 100%)' }}
-          >
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1 1" preserveAspectRatio="none">
-              <polygon
-                points={WALK_AREA.map((v) => `${v.x},${v.y}`).join(' ')}
-                fill="rgba(46,123,255,.07)"
-                stroke="rgba(120,150,200,.35)"
-                strokeWidth={0.003}
-              />
-              {ROOMS.map((r) => (
-                <polygon
-                  key={r.id}
-                  points={r.polygon.map((v) => `${v.x},${v.y}`).join(' ')}
-                  fill="rgba(255,255,255,.03)"
-                  stroke="rgba(160,180,220,.28)"
-                  strokeWidth={0.002}
-                />
-              ))}
-              {OBSTACLES.map((o, i) => (
-                <polygon
-                  key={i}
-                  points={o.map((v) => `${v.x},${v.y}`).join(' ')}
-                  fill="rgba(90,110,150,.18)"
-                  stroke="rgba(90,110,150,.3)"
-                  strokeWidth={0.0015}
-                />
-              ))}
-            </svg>
-            <div
-              className="absolute left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[11px] font-semibold"
-              style={{ top: 10, background: 'rgba(7,16,29,.85)', color: '#8fa8cf', border: '1px solid rgba(120,150,200,.3)', zIndex: 5 }}
-            >
-              새 에셋 제작 중 — 플레이스홀더 플레이트 (D30)
-            </div>
-          </div>
         )}
 
-        {/* 존 바닥 색면(P0-5) — 씬 모드 한정(배포 모드는 자체 존 렌더). 바닥(배경) 위·가구/아바타(z≥2000) 아래.
-            polygon이 호버 감지도 담당(라벨 호버 표시) — 클릭은 스테이지로 버블(클릭 이동 유지).
-            V3(flag ON)는 캔버스가 자체 존 바닥(카펫/타일/유리)을 그리므로 다이아몬드 색면을 억제. */}
-        {!useDeployed && !sceneV3 && ASSETS_READY && (
-          <svg
-            className="absolute inset-0 w-full h-full"
-            viewBox="0 0 1 1"
-            preserveAspectRatio="none"
-            style={{ zIndex: 30, pointerEvents: 'none' }}
-          >
-            {ROOMS.map((r) => {
-              const tint = ROOM_TINTS[r.id];
-              if (!tint) return null;
-              return (
-                <polygon
-                  key={r.id}
-                  points={r.polygon.map((v) => `${v.x},${v.y}`).join(' ')}
-                  fill={`${tint}${hoverRoom === r.id || glowRoom === r.id ? '2e' : '1a'}`}
-                  stroke={`${tint}55`}
-                  strokeWidth={0.0018}
-                  style={{ pointerEvents: 'visiblePainted', transition: 'fill 200ms ease' }}
-                  onMouseEnter={() => setHoverRoom(r.id)}
-                  onMouseLeave={() => setHoverRoom((cur) => (cur === r.id ? null : cur))}
-                />
-              );
-            })}
-          </svg>
-        )}
-
-        {/* 방 클릭 글로우 (overlay-tokens.activeGlow) */}
+        {/* 방 클릭 글로우 (overlay-tokens.activeGlow) — 존 바닥 색면은 V3 캔버스가 자체 렌더(카펫/타일/유리) */}
         {glowRect && (
           <div
             className="absolute pointer-events-none transition-opacity duration-300"
@@ -1231,11 +1062,11 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
           />
         )}
 
-        {/* 방 라벨 (overlay-tokens.roomLabel) — D33(P0-5): 씬 모드에선 호버/선택 시에만 표시.
+        {/* 방 라벨 (overlay-tokens.roomLabel) — D33(P0-5): 씬 모드에선 선택(글로우) 시에만 표시.
             배포 모드는 색면 존이 자체 렌더라 라벨 상시 유지. */}
         {activeRooms.map((room) => {
           const c = polygonCentroid(room.polygon);
-          const visible = useDeployed || hoverRoom === room.id || glowRoom === room.id;
+          const visible = useDeployed || glowRoom === room.id;
           return (
             <button
               key={room.id}
@@ -1402,11 +1233,10 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
         })}
 
         {/* D34 핫스팟(씬 모드 한정) — 게시판(공지)/서류함(보고서) 아이콘 칩, 좌석 마커와 동일 z 패턴.
-            V3 모드는 V3_HOTSPOTS_NORM(축정렬 리셉션/팬트리 벽) 위치로 재배치. */}
+            위치 = V3_HOTSPOTS_NORM(축정렬 리셉션/팬트리 벽). */}
         {!useDeployed &&
-          ASSETS_READY &&
           HOTSPOTS.map((h) => {
-            const pos = sceneV3 ? V3_HOTSPOTS_NORM[h.id] ?? h.n : h.n;
+            const pos = V3_HOTSPOTS_NORM[h.id] ?? h.n;
             return (
             <button
               key={h.id}
@@ -1467,69 +1297,40 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
                 }}
               />
             )}
-            {/* 코드 모션 래퍼(바운스) 안에 프레임 이미지 — flip(scaleX)은 img, 바운스는 래퍼로 분리 */}
+            {/* 코드 모션 래퍼(바운스) — 상태별 CSS 모션만, 프레임 스프라이트 없음 */}
             <div className="vo-motion vo-anim-idle">
-              {sceneV3 ? (
-                /* D35 씬 V3 — 사진 배지 아바타(라운드 사각). 사진 필드 부재 시 이니셜+정체성 색.
-                   높이는 rAF가 깊이 기반으로 설정(.vo-body). 걷기 프레임 애니 없음(글라이드만). */
-                <div
-                  className="vo-body flex items-center justify-center relative"
+              {/* D35 — 사진 배지 아바타(라운드 사각). 사진 필드 부재 시 이니셜+정체성 색.
+                  높이는 rAF가 설정(.vo-body). 걷기 프레임 애니 없음(글라이드만). */}
+              <div
+                className="vo-body flex items-center justify-center relative"
+                style={{
+                  aspectRatio: '1',
+                  transformOrigin: '50% 100%',
+                  borderRadius: '22%',
+                  background: `linear-gradient(150deg, ${s.accent} 0%, rgba(20,32,52,.96) 95%)`,
+                  border: `2px solid ${s.isSelf ? 'rgba(59,91,254,.95)' : 'rgba(255,255,255,.55)'}`,
+                  boxShadow: '0 3px 10px rgba(0,0,0,.35)',
+                  color: '#fff',
+                  fontWeight: 800,
+                  fontSize: '42%',
+                  letterSpacing: '.02em',
+                }}
+              >
+                {s.name.length >= 3 ? s.name.slice(1) : s.name.slice(0, 2)}
+                {/* 상태점 — 본인=프레즌스 색, 타인=정체성 색(nameplate와 동일 규칙) */}
+                <span
+                  aria-hidden
+                  className="absolute rounded-full"
                   style={{
-                    aspectRatio: '1',
-                    transformOrigin: '50% 100%',
-                    borderRadius: '22%',
-                    background: `linear-gradient(150deg, ${s.accent} 0%, rgba(20,32,52,.96) 95%)`,
-                    border: `2px solid ${s.isSelf ? 'rgba(59,91,254,.95)' : 'rgba(255,255,255,.55)'}`,
-                    boxShadow: '0 3px 10px rgba(0,0,0,.35)',
-                    color: '#fff',
-                    fontWeight: 800,
-                    fontSize: '42%',
-                    letterSpacing: '.02em',
+                    right: '-6%',
+                    bottom: '-6%',
+                    width: '26%',
+                    height: '26%',
+                    background: s.isSelf ? (PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).color : s.accent,
+                    border: '2px solid #fff',
                   }}
-                >
-                  {s.name.length >= 3 ? s.name.slice(1) : s.name.slice(0, 2)}
-                  {/* 상태점 — 본인=프레즌스 색, 타인=정체성 색(nameplate와 동일 규칙) */}
-                  <span
-                    aria-hidden
-                    className="absolute rounded-full"
-                    style={{
-                      right: '-6%',
-                      bottom: '-6%',
-                      width: '26%',
-                      height: '26%',
-                      background: s.isSelf ? (PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).color : s.accent,
-                      border: '2px solid #fff',
-                    }}
-                  />
-                </div>
-              ) : ASSETS_READY ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  className="vo-body"
-                  src={frameUrl(s.char, 'idle', 0)}
-                  alt={s.name}
-                  draggable={false}
-                  style={{ display: 'block', transformOrigin: '50% 100%' }}
                 />
-              ) : (
-                /* D30 도트 아바타 — 높이는 rAF가 깊이 기반으로 설정 */
-                <div
-                  className="vo-body flex items-end justify-center"
-                  style={{
-                    aspectRatio: '0.46',
-                    transformOrigin: '50% 100%',
-                    borderRadius: '999px',
-                    background: `linear-gradient(180deg, ${s.accent} 0%, rgba(20,32,52,.95) 90%)`,
-                    border: '1px solid rgba(255,255,255,.25)',
-                    color: '#fff',
-                    fontWeight: 700,
-                    fontSize: 12,
-                    paddingBottom: 6,
-                  }}
-                >
-                  {s.name.charAt(0)}
-                </div>
-              )}
+              </div>
             </div>
             {/* 이름표 (show_nameplate=false면 숨김, #6) — D33 P0-4 다이어트:
                 이름+상태점만(상태 텍스트·"(나)" 제거), 본인=파란 테두리+발밑 링으로 식별.

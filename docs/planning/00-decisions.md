@@ -258,6 +258,7 @@
 | ID | 결정 | 내용 | 폐기·대체 |
 |----|------|------|-------------|
 | **D35** | /office 씬 = **텍스처드 탑다운 캔버스 렌더**(Kumospace 동형) 승인 — 3차 패스(v3.2) 게이트 통과(2026-07-22 "넘어가") | ① 씬 = `horizon-scene-v3.js` **renderScene(layout,{theme,layers})** 캔버스 데이터 렌더 — 절차적 텍스처 100%·외부 에셋 0(라이선스 클린)·좌석 레지스트리 반환·레이어 분리(floor/furniture/people/foreground/grade). ② **아바타 = 프로필 사진 배지**(캐릭터 일러스트 전면 금지 — 3연속 실패 지점 제거, Kumospace 실증과 동형). 이동=글라이드, 착석=좌석 스냅. ③ 레이아웃 = 미터 단위 데이터(`horizon-layouts-v3.js` 스키마) — 신규 고객 온보딩 아트 작업 0(재현성 게이트 24석/12석 실증). ④ 테마 day/dusk/night. ⑤ 성능 계약: 플레이트 콜드 ≤~350ms/웜 ≤~300ms(스프라이트·플로어 캐시), **ctx.filter blur 금지**(shadowBlur만). ⑥ 품질 유지보수 = 패스 방법론(시그니처 동결·벤치마크 나란히 게이트·자체 QA 라운드·품목 국소 재작업) + `renderAssetSheet` 갤러리로 품목 검수. | HORIZON v2.x 플레이트·스프라이트 씬 계층(asset-reset-d30 산출), 17-asset-rework-spec의 스프라이트 재추출 노선, D33 표의 "P2 씬 라이팅" 게이트(D35가 흡수) |
+| **D35-b** | **HORIZON legacy 씬 계층 제거**(2026-07-22, 셸 1b 완료 후) | OfficeViewport2D의 구 플레이트/가구 스프라이트/캐릭터 프레임 애니/존 틴트/D30 플레이스홀더 렌더 경로와 `?scene=legacy`·`NEXT_PUBLIC_SCENE_V3` 탈출구 삭제 — 씬 = 배포 레이아웃 또는 V3 캔버스 2모드. `public/office2d/{plates,layers}` 에셋 삭제(재생성=tools/asset-gen, 복원=git 히스토리). `characters/`는 설정 페이지 아바타 프리셋 미리보기가 아직 참조해 유지 — 프리셋 UI의 배지 규격 개편은 후속. lib/office2d.ts 계약(이동 폴백·테스트)은 불변. 같은 커밋에 ⌘K 방 포커스(글로우+라벨, `office:focus-room`/`?focus=`) 구현 | /office 씬 legacy 폴백·`?scene=` 롤백 탈출구 |
 
 ---
 
