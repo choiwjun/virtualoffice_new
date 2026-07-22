@@ -201,18 +201,20 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [stage, setStage] = useState({ w: 0, h: 0 });
 
-  // ── D35 씬 V3 feature flag(기본 OFF) — ON이면 텍스처드 탑다운 V3 씬을 배경으로.
-  //    ?scene=v3 쿼리 우선, 없으면 NEXT_PUBLIC_SCENE_V3=1. OFF면 기존 동작 100% 불변. ──
+  // ── D35 씬 V3 — 기본 ON(D35 채택, 2026-07-22). 롤백 탈출구: ?scene=legacy 또는
+  //    NEXT_PUBLIC_SCENE_V3=0. (?scene=v3는 명시 ON으로 계속 유효) ──
   const [sceneV3, setSceneV3] = useState(false);
   useEffect(() => {
-    const envOn = process.env.NEXT_PUBLIC_SCENE_V3 === '1';
-    let queryOn = false;
+    const envOff = process.env.NEXT_PUBLIC_SCENE_V3 === '0';
+    let queryScene: string | null = null;
     try {
-      queryOn = new URLSearchParams(window.location.search).get('scene') === 'v3';
+      queryScene = new URLSearchParams(window.location.search).get('scene');
     } catch {
       // window/URL 접근 불가 — env만 적용
     }
-    setSceneV3(envOn || queryOn);
+    if (queryScene === 'legacy' || queryScene === 'v2') setSceneV3(false);
+    else if (queryScene === 'v3') setSceneV3(true);
+    else setSceneV3(!envOff);
   }, []);
   // D33: 존 라벨은 호버/클릭 시에만(P0-5) · 미니맵 접기 + 층 전환 흡수(P0-3).
   const [hoverRoom, setHoverRoom] = useState<string | null>(null);
