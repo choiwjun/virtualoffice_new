@@ -30,12 +30,12 @@ async function main(): Promise<void> {
   const layout = await new V3FloorLayoutProvider().getLayout("office-demo", "floor-1");
 
   assert(SCENE_W_M === 20 && Math.abs(SCENE_H_M - (941 / 1672) * SCENE_W_M) < 1e-9, "좌표계: 가로 20m, 세로 = 941/1672 × 20m");
-  // room 4변 + 가구 7개 × 4변 = 4 + 28 = 32.
-  assert(layout.walls.length === 4 + 7 * 4, `room 4변 + 가구 사각 7개 벽 등록 (${layout.walls.length})`);
-  assert(layout.seats.length === 8, "좌석 8석(벤치 파생 WS-A1~B4)");
+  // room 4변 + 가구 9개 × 4변 = 4 + 36 = 40 (10인 재설계: 벤치 3 + 회의테이블 2 + 팬트리/라운지/다이닝/부스).
+  assert(layout.walls.length === 4 + 9 * 4, `room 4변 + 가구 사각 9개 벽 등록 (${layout.walls.length})`);
+  assert(layout.seats.length === 12, "좌석점 12(벤치 3 파생 — DB 활성은 10석, C3·C4는 게스트)");
   assert(
-    ["WS-A1", "WS-A4", "WS-B1", "WS-B4"].every((id) => layout.seats.some((s) => s.seatId === id)),
-    "좌석 id = WS-A1~A4·WS-B1~B4 유지",
+    ["WS-A1", "WS-A4", "WS-B1", "WS-B4", "WS-C1", "WS-C2"].every((id) => layout.seats.some((s) => s.seatId === id)),
+    "좌석 id = WS-A·B 유지 + WS-C 신설",
   );
   assert(layout.meetingZones.length === 2, "회의존 2개(boardroom + meeting-a)");
   assert(!!layout.spawn && layout.spawn.x === 6 && layout.spawn.y === 3, "스폰 = (6,3) 로비 개활지");
@@ -67,30 +67,30 @@ async function main(): Promise<void> {
   const oob = validateMove({ ...baseCtx, target: { x: 0.1, y: 0.1 } });
   assert(!oob.ok && oob.reason === "out_of_bounds", "room 사각 밖 목표 거부(out_of_bounds)");
 
-  // 3) 두 벤치 사이 통로(y≈6.9) 순수 이동 → 허용
+  // 3) 세로 통로(x≈8.1, A/B열↔C열 사이) 순수 이동 → 허용
   const aisle = validateMove({
     ...baseCtx,
-    mover: { ...mover, x: 7.0, y: 6.9 },
-    target: { x: 9.5, y: 6.9 },
-    dtSeconds: 2,
+    mover: { ...mover, x: 8.1, y: 4.6 },
+    target: { x: 8.1, y: 9.8 },
+    dtSeconds: 4,
   });
-  assert(aisle.ok, "두 벤치 사이 통로(y≈6.9) 이동 허용");
+  assert(aisle.ok, "세로 통로(x≈8.1) 이동 허용");
 
-  // 4) 벤치 A 데스크(상판 6.95~9.85 × 4.55~6.05) 가로지르기 → collision.
-  //    통로(y6.9)에서 데스크 중심(8.4,5.3)으로 향하면 하단 변(y6.05) 교차.
+  // 4) 벤치 A 데스크(상판 4.95~7.85 × 4.95~6.45) 가로지르기 → collision.
+  //    아래 통로에서 데스크 중심(6.4,5.7)으로 향하면 하단 변(y6.45) 교차.
   const intoDesk = validateMove({
     ...baseCtx,
-    mover: { ...mover, x: 8.4, y: 6.9 },
-    target: { x: 8.4, y: 5.3 },
+    mover: { ...mover, x: 6.4, y: 6.9 },
+    target: { x: 6.4, y: 5.7 },
     dtSeconds: 2,
   });
   assert(!intoDesk.ok && intoDesk.reason === "collision", "벤치 데스크 상판 가로지르기 거부(collision)");
 
-  // 5) 좌석점(WS-A3 = 7.675,6.47)은 데스크 밖이라 통로에서 도달 가능(collision 아님).
+  // 5) 좌석점(WS-A3 = 5.675,6.87)은 데스크 밖이라 통로에서 도달 가능(collision 아님).
   const toSeat = validateMove({
     ...baseCtx,
-    mover: { ...mover, x: 7.675, y: 6.9 },
-    target: { x: 7.675, y: 6.47 },
+    mover: { ...mover, x: 5.675, y: 7.3 },
+    target: { x: 5.675, y: 6.87 },
     dtSeconds: 1,
   });
   assert(toSeat.ok, "좌석점(WS-A3, 데스크 밖)으로 이동 허용");

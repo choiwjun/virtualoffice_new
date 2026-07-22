@@ -41,15 +41,20 @@ SCENE_H_M = (941 / 1672) * 20.0
 # 벤치 중심 → 좌석 4점 = (bx ± 0.725, by ± 1.17). 순서 1=좌상,2=우상,3=좌하,4=우하.
 _SEAT_DX = 0.725
 _SEAT_DY = 1.5 / 2 + 0.42  # 1.17
-_BENCHES = [("WS-A", 8.4, 5.7), ("WS-B", 8.4, 8.9)]
+_BENCHES = [("WS-A", 6.4, 5.7), ("WS-B", 6.4, 8.9), ("WS-C", 9.9, 7.3)]
 _ORDER = [(-_SEAT_DX, -_SEAT_DY), (_SEAT_DX, -_SEAT_DY), (-_SEAT_DX, _SEAT_DY), (_SEAT_DX, _SEAT_DY)]
+# 10인 오피스: 벤치 3개 파생 12점 중 WS-C 하단 2석은 게스트 의자(시드 제외)
+_EXCLUDE = {"WS-C3", "WS-C4"}
 
 
 def _v3_seats():
     out = []
     for cluster, bx, by in _BENCHES:
         for i, (dx, dy) in enumerate(_ORDER, start=1):
-            out.append({"seatNumber": f"{cluster}{i}", "x": round(bx + dx, 3), "y": round(by + dy, 3)})
+            num = f"{cluster}{i}"
+            if num in _EXCLUDE:
+                continue
+            out.append({"seatNumber": num, "x": round(bx + dx, 3), "y": round(by + dy, 3)})
     return out
 
 
@@ -63,7 +68,7 @@ MEETING_ROOMS = [
     {"name": "Board Room", "livekit_room": "boardroom", "capacity": 8,
      "coords": {"x": 13.4, "y": 5.4, "width": 5.0, "height": 3.2}},
     {"name": "Meeting Room", "livekit_room": "meeting-a", "capacity": 4,
-     "coords": {"x": 13.2, "y": 8.0, "width": 3.6, "height": 2.2}},
+     "coords": {"x": 15.3, "y": 0.9, "width": 4.1, "height": 3.2}},
 ]
 
 

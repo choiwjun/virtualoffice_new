@@ -237,21 +237,24 @@ export class SceneFloorLayoutProvider implements FloorLayoutProvider {
 const V3_ROOM_INSET = 0.5;
 /** top-left 미터 사각형(가구 충돌). officeV3.V3_OBSTACLE_RECTS와 바이트 정합. */
 const V3_OBSTACLE_RECTS_M: Rect[] = [
-  // 워크벤치 데스크 상판 2개(중심 8.4,5.7 / 8.4,8.9; w2.9×d1.5) — ⚠ SYNC frontend/lib/officeV3.ts
-  { x: 8.4 - 2.9 / 2, y: 5.7 - 1.5 / 2, w: 2.9, h: 1.5 },
-  { x: 8.4 - 2.9 / 2, y: 8.9 - 1.5 / 2, w: 2.9, h: 1.5 },
-  { x: 14.0, y: 5.9, w: 3.6, h: 2.1 }, // 보드룸 테이블
+  // 워크벤치 데스크 상판 3개(중심 6.4,5.7 / 6.4,8.9 / 9.9,7.3; w2.9×d1.5) — ⚠ SYNC frontend/lib/officeV3.ts
+  { x: 6.4 - 2.9 / 2, y: 5.7 - 1.5 / 2, w: 2.9, h: 1.5 },
+  { x: 6.4 - 2.9 / 2, y: 8.9 - 1.5 / 2, w: 2.9, h: 1.5 },
+  { x: 9.9 - 2.9 / 2, y: 7.3 - 1.5 / 2, w: 2.9, h: 1.5 },
+  { x: 14.0, y: 5.9, w: 3.6, h: 2.1 }, // 회의실 1(보드룸) 테이블
+  { x: 16.05, y: 1.55, w: 2.6, h: 1.7 }, // 회의실 2(미팅룸·북동) 테이블
   { x: 0.7, y: 3.2, w: 1.1, h: 3.0 }, // 팬트리 카운터
   { x: 10.9, y: 4.0, w: 3.0, h: 2.0 }, // 라운지
   { x: 8.0, y: 1.9, w: 2.8, h: 2.0 }, // 리셉션 다이닝(의자 포함) — ⚠ SYNC frontend/lib/officeV3.ts
-  { x: 11.1, y: 9.1, w: 1.7, h: 1.5 }, // 폰부스
+  { x: 13.55, y: 8.9, w: 1.5, h: 1.6 }, // 폰부스(남동)
 ];
-/** 좌석(미터) — 벤치 파생. officeV3.V3_SEATS와 정합. */
+/** 좌석(미터) — 벤치 파생 12점(WS-C3·C4는 DB 미시드 = 게스트 의자). officeV3.V3_SEATS와 정합. */
 const V3_SEATS_M: Seat[] = (() => {
   const DX = 0.725, DY = 1.5 / 2 + 0.42; // 1.17
-  const benches: Array<{ c: "WS-A" | "WS-B"; x: number; y: number }> = [
-    { c: "WS-A", x: 8.4, y: 5.7 },
-    { c: "WS-B", x: 8.4, y: 8.9 },
+  const benches: Array<{ c: "WS-A" | "WS-B" | "WS-C"; x: number; y: number }> = [
+    { c: "WS-A", x: 6.4, y: 5.7 },
+    { c: "WS-B", x: 6.4, y: 8.9 },
+    { c: "WS-C", x: 9.9, y: 7.3 },
   ];
   const order: Array<[number, number]> = [[-DX, -DY], [DX, -DY], [-DX, DY], [DX, DY]];
   const out: Seat[] = [];
@@ -297,7 +300,7 @@ export class V3FloorLayoutProvider implements FloorLayoutProvider {
       meetingZones: [
         // V3 방(officeV3.V3_ROOMS boardroom/meeting-a bbox 미터). 이동은 막지 않고 정원만 검사.
         { roomId: "boardroom", bounds: { x: 13.4, y: 5.4, w: 5.0, h: 3.2 }, capacity: 8 },
-        { roomId: "meeting-a", bounds: { x: 13.2, y: 8.0, w: 3.6, h: 2.2 }, capacity: 4 },
+        { roomId: "meeting-a", bounds: { x: 15.3, y: 0.9, w: 4.1, h: 3.2 }, capacity: 4 },
       ],
       spawn: { x: 6.0, y: 3.0 }, // officeV3.V3_SPAWN_M
     };

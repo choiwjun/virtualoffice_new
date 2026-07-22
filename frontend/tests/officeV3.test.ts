@@ -43,10 +43,13 @@ describe('officeV3 탑다운 지오메트리(축정렬 정본)', () => {
     }
   });
 
-  it('두 벤치 사이 통로(y≈6.9)가 열려 있다', () => {
+  it('주요 통로가 열려 있다 — 세로 통로 x≈8.1(A/B열↔C열) + 동측 통로 x≈12.6', () => {
     setActiveFloorGeometry({ walkArea: V3_WALK_AREA, obstacles: V3_OBSTACLES });
-    for (const x of [7, 7.5, 8, 8.5, 9, 9.8]) {
-      expect(isWalkable(metersToNorm({ x, y: 6.9 }))).toBe(true);
+    for (const y of [4.6, 6.0, 7.3, 8.6, 9.8]) {
+      expect(isWalkable(metersToNorm({ x: 8.1, y })), `세로 통로 (8.1,${y})`).toBe(true);
+    }
+    for (const y of [7.0, 8.2, 9.6]) {
+      expect(isWalkable(metersToNorm({ x: 12.6, y })), `동측 통로 (12.6,${y})`).toBe(true);
     }
   });
 

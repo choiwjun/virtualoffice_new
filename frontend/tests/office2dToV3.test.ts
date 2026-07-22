@@ -22,9 +22,9 @@ describe('buildV3Layout (office2d → v3 어댑터, Phase 1b 탑다운)', () => 
     expect(L.people).toEqual([]);
   });
 
-  it('워크벤치 2개가 officeV3.BENCHES(축정렬 상하 2열) 위치에 놓임', () => {
+  it('워크벤치 3개(10인 재설계)가 officeV3.BENCHES 위치에 놓임', () => {
     const benches = L.furniture.filter((f) => f.t === 'bench4');
-    expect(benches).toHaveLength(2);
+    expect(benches).toHaveLength(BENCHES.length);
     for (const b of BENCHES) {
       expect(
         benches.some((f) => Math.hypot((f.x as number) - b.x, (f.y as number) - b.y) < 1e-6),
@@ -32,10 +32,16 @@ describe('buildV3Layout (office2d → v3 어댑터, Phase 1b 탑다운)', () => 
     }
   });
 
-  it('두 벤치는 겹치지 않는다(데스크 footprint 2.9×1.5 분리)', () => {
-    const [a, b] = BENCHES;
-    // 상하 2열이므로 y 간격이 데스크 깊이(1.5)보다 커야 겹치지 않음.
-    expect(Math.abs(a.y - b.y)).toBeGreaterThan(1.5);
+  it('벤치들끼리 데스크 footprint(2.9×1.5)가 겹치지 않는다', () => {
+    for (let i = 0; i < BENCHES.length; i++) {
+      for (let j = i + 1; j < BENCHES.length; j++) {
+        const a = BENCHES[i];
+        const b = BENCHES[j];
+        const apart =
+          Math.abs(a.x - b.x) >= 2.9 || Math.abs(a.y - b.y) >= 1.5;
+        expect(apart, `${a.cluster}↔${b.cluster}`).toBe(true);
+      }
+    }
   });
 
   it('벤치가 좌석 4점을 파생하고 정규 좌표가 벤치 데스크 위에 정렬(metersToNorm)', () => {
@@ -53,10 +59,12 @@ describe('buildV3Layout (office2d → v3 어댑터, Phase 1b 탑다운)', () => 
     }
   });
 
-  it('전 좌석 8개, id는 WS-A1~A4·WS-B1~B4 유지', () => {
-    expect(V3_SEATS.map((s) => s.seatNumber).sort()).toEqual(
-      ['WS-A1', 'WS-A2', 'WS-A3', 'WS-A4', 'WS-B1', 'WS-B2', 'WS-B3', 'WS-B4'],
-    );
+  it('좌석점 12개(벤치 3 파생) — WS-A·B 유지 + WS-C 신설(활성 10석은 시드에서 결정)', () => {
+    expect(V3_SEATS.map((s) => s.seatNumber).sort()).toEqual([
+      'WS-A1', 'WS-A2', 'WS-A3', 'WS-A4',
+      'WS-B1', 'WS-B2', 'WS-B3', 'WS-B4',
+      'WS-C1', 'WS-C2', 'WS-C3', 'WS-C4',
+    ]);
   });
 
   it('회의 존은 유리·카펫, 팬트리 존은 타일 바닥', () => {

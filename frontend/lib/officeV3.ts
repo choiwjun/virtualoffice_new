@@ -33,19 +33,20 @@ export const BENCH_SEAT_DY = 1.5 / 2 + 0.42; // 1.17
 export const BENCH_DESK_W = 2.9;
 export const BENCH_DESK_D = 1.5;
 
-/** 워크벤치 배치(미터, 탑다운 축정렬) — 상하 2열로 분리해 겹침 해소.
- *  두 벤치 사이 통로 확보(A 하단석 y≈6.87, B 상단석 y≈7.73 → 0.86m).
- *  y+0.4 남하(2026-07-22): 리셉션 다이닝 의자(렌더러가 테이블 주위에 그림, 하단 ≈3.9)와
- *  A 상단석 의자 시각 겹침 + 리셉션 방 히트영역(y≤4.0)이 좌석 클릭을 삼키는 문제 해소. */
+/** 워크벤치 배치(미터, 탑다운 축정렬) — 10인 오피스(2026-07-22 재설계).
+ *  서측 2열(A 5.7 / B 8.9, x6.4) + 동측 1열(C 7.3, x9.9) = 좌석 12점 파생 중 10석 활성
+ *  (WS-C3·C4는 시드 제외 = 게스트 의자). 세로 통로 x≈8.1(A/B 우측 의자 7.48 ↔ C 데스크 8.45).
+ *  리셉션 다이닝 의자(하단 ≈3.9)와 A 상단석(4.53) 이격 유지. */
 export interface BenchSpec {
   /** 클러스터 prefix(좌석 id 앞부분). */
-  cluster: 'WS-A' | 'WS-B';
+  cluster: 'WS-A' | 'WS-B' | 'WS-C';
   x: number;
   y: number;
 }
 export const BENCHES: BenchSpec[] = [
-  { cluster: 'WS-A', x: 8.4, y: 5.7 },
-  { cluster: 'WS-B', x: 8.4, y: 8.9 },
+  { cluster: 'WS-A', x: 6.4, y: 5.7 },
+  { cluster: 'WS-B', x: 6.4, y: 8.9 },
+  { cluster: 'WS-C', x: 9.9, y: 7.3 },
 ];
 
 /** 좌석 id 파생 순서 — 렌더러 seatDefs 인덱스와 동일: 0=좌상,1=우상,2=좌하,3=우하.
@@ -133,16 +134,18 @@ export const V3_OBSTACLE_RECTS: ObstacleSpec[] = [
     w: BENCH_DESK_W,
     h: BENCH_DESK_D,
   })),
-  // 회의실(보드룸) 테이블 — office2dToV3 meetingTable x≈15.77 y≈6.97 w3.3 h1.15 + 의자 여유.
+  // 회의실 1(보드룸, 8석) 테이블 — office2dToV3 meetingTable + 의자 여유.
   { x: 14.0, y: 5.9, w: 3.6, h: 2.1 },
+  // 회의실 2(미팅룸, 4석 — 북동 신설) 테이블+의자.
+  { x: 16.05, y: 1.55, w: 2.6, h: 1.7 },
   // 팬트리 카운터(서측 벽) — counter x1.05 len2.6.
   { x: 0.7, y: 3.2, w: 1.1, h: 3.0 },
   // 라운지 소파/커피테이블 클러스터.
   { x: 10.9, y: 4.0, w: 3.0, h: 2.0 },
-  // 리셉션 다이닝 테이블(의자 포함 footprint) — 벤치 A 상단 좌석(y4.13)과 이격 유지.
+  // 리셉션 다이닝 테이블(의자 포함 footprint) — 벤치 A 상단 좌석과 이격 유지.
   { x: 8.0, y: 1.9, w: 2.8, h: 2.0 },
-  // 폰부스.
-  { x: 11.1, y: 9.1, w: 1.7, h: 1.5 },
+  // 폰부스(남동).
+  { x: 13.55, y: 8.9, w: 1.5, h: 1.6 },
 ];
 
 export const V3_OBSTACLES: Vec2[][] = V3_OBSTACLE_RECTS.map((o) =>
@@ -165,12 +168,12 @@ export interface V3Room {
 }
 export const V3_ROOMS: V3Room[] = [
   { id: 'reception', label: 'Reception', x: 7.4, y: 1.6, w: 4.4, h: 2.4 },
-  { id: 'lounge', label: 'Lounge', x: 10.6, y: 3.6, w: 4.2, h: 2.8 },
+  { id: 'lounge', label: 'Lounge', x: 10.7, y: 3.6, w: 4.0, h: 2.8 },
   { id: 'boardroom', label: 'Board Room', x: 13.4, y: 5.4, w: 5.0, h: 3.2 },
-  { id: 'meeting-a', label: 'Meeting Room', x: 13.2, y: 8.0, w: 3.6, h: 2.2 },
+  { id: 'meeting-a', label: 'Meeting Room', x: 15.3, y: 0.9, w: 4.1, h: 3.2 },
   { id: 'pantry', label: 'Pantry', x: 1.0, y: 3.2, w: 4.2, h: 3.2 },
   { id: 'cafe', label: 'Cafe', x: 1.4, y: 6.6, w: 3.6, h: 2.6 },
-  { id: 'booth', label: 'Phone Booth', x: 11.0, y: 9.0, w: 2.0, h: 1.7 },
+  { id: 'booth', label: 'Phone Booth', x: 13.5, y: 9.0, w: 2.0, h: 1.7 },
 ];
 
 /** V3 핫스팟(D34, 정규 0~1) — 게시판(리셉션 벽)·서류함(팬트리 벽). legacy HOTSPOTS와 동일 kind/id. */
