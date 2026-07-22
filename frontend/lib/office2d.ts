@@ -11,25 +11,10 @@
  * 보행영역·방·장애물 폴리곤은 이동서버 검증 계약이므로 에셋과 독립적으로 유지.
  */
 
-/** 에셋 존재 여부 — 신규 팩 납품 후 true로 전환 (D30). */
-export const ASSETS_READY = true; // v1 신규 팩 납품(2026-07-13, tools/asset-gen 생성)
-
-export const PLATE_URL = '/office2d/plates/horizon.png';
+// 플레이트 좌표 계약(1672×941) — 씬 픽셀 비율의 정본. D35-b로 플레이트 이미지 자체는 삭제됐지만
+// 정규↔미터 변환·스테이지 비율이 이 비율을 계속 따른다(변경 시 realtime SCENE_W/H_M 동기 필수).
 export const PLATE_W = 1672;
 export const PLATE_H = 941;
-
-/** 레이어 합성 팩(v2.1 오클루전): 배경 + 가구 스프라이트(manifest) — 없으면 단일 플레이트 폴백. */
-export const LAYERS_BASE_URL = '/office2d/layers';
-
-/** manifest.json 스프라이트 항목 — 좌표는 플레이트 정규(0~1), z = 바닥 접점 y(아바타 zIndex와 동일 규칙). */
-export interface SceneLayerSprite {
-  src: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  z: number;
-}
 
 export const SCENE_W_M = 20;
 export const SCENE_H_M = (PLATE_H / PLATE_W) * SCENE_W_M; // ≈ 11.256
@@ -128,23 +113,10 @@ let _activeWalkArea: Vec2[] = WALK_AREA;
 let _activeObstacles: Vec2[][] = OBSTACLES;
 
 // ---------------------------------------------------------------------------
-// 캐릭터
+// 아바타 상태(D35 배지) — 프레임 스프라이트 없이 CSS 모션 클래스(vo-anim-*)만 구동.
 // ---------------------------------------------------------------------------
 
-export const CHARACTER_IDS = [
-  'CEO', 'MANAGER', 'DEVELOPER', 'DESIGNER', 'SALES', 'HR', 'MARKETER', 'INTERN',
-] as const;
-export type CharacterId = (typeof CHARACTER_IDS)[number];
-
 export type AvatarState = 'idle' | 'walk' | 'sit' | 'typing';
-
-/** 상태별 프레임 애니 스펙(v1.1 frames). 표시 높이는 avatarHeightFrac()이 깊이 기반으로 계산. */
-export const AVATAR_ANIM: Record<AvatarState, { frames: number; fps: number; heightScale: number }> = {
-  idle: { frames: 6, fps: 6, heightScale: 1 },
-  walk: { frames: 8, fps: 10, heightScale: 1 }, // v1 팩: 상태 공통 220×460 캔버스
-  sit: { frames: 6, fps: 4, heightScale: 1 }, // v1.1: 착석(호흡) — 좌석 점유 시 좌석 앵커에 표시
-  typing: { frames: 6, fps: 10, heightScale: 1 }, // v2.2: 착석 타건 — 착석 중 버스트로 전환(뷰포트 판정)
-};
 
 /**
  * 착석 중 타이핑 버스트 사이클 — 벽시계(Date.now) 기반 결정적 위상이라
@@ -159,55 +131,6 @@ export function typingBurstAt(userId: string, nowMs: number): boolean {
   for (let i = 0; i < userId.length; i++) h = (h * 31 + userId.charCodeAt(i)) | 0;
   const offset = ((Math.abs(h) % 97) / 97) * TYPING_CYCLE_S;
   return (nowMs / 1000 + offset) % TYPING_CYCLE_S < TYPING_ON_S;
-}
-
-/**
- * 깊이(원근) 기반 아바타 표시 높이 — 씬에 구워져 있던 인물 실측 캘리브레이션:
- * 화면 위쪽(멀리) 발 y≈0.36에서 신장 ≈ 화면높이 0.14, 아래쪽(가까이) y≈0.80에서 ≈0.17.
- * 보행영역 상단(0.22)~하단(0.86)에 선형 매핑.
- */
-// v2 씬 미터 계약: 인물 1.7m × ZPX 48px/m ÷ 캔버스 신체비 353/460 → 0.113 (책상 0.72m 대비 42%).
-// 이전 0.088~0.102는 씬 대비 16% 작아 "사람이 책상보다 작은" 체감의 원인.
-const HEIGHT_FRAC_BACK = 0.108;
-const HEIGHT_FRAC_FRONT = 0.118;
-const WALK_TOP = 0.18;
-const WALK_BOTTOM = 0.95;
-
-export function avatarHeightFrac(ny: number, state: AvatarState): number {
-  const t = Math.min(1, Math.max(0, (ny - WALK_TOP) / (WALK_BOTTOM - WALK_TOP)));
-  return (HEIGHT_FRAC_BACK + (HEIGHT_FRAC_FRONT - HEIGHT_FRAC_BACK) * t) * AVATAR_ANIM[state].heightScale;
-}
-
-export function frameUrl(id: CharacterId, state: AvatarState, frame: number): string {
-  return `/office2d/characters/${id}/${state}_${String(frame).padStart(2, '0')}.png`;
-}
-
-/** userId → 캐릭터 결정(안정 해시). 같은 사용자는 항상 같은 캐릭터. */
-export function characterFor(userId: string): CharacterId {
-  let h = 0;
-  for (let i = 0; i < userId.length; i++) h = (h * 31 + userId.charCodeAt(i)) | 0;
-  return CHARACTER_IDS[Math.abs(h) % CHARACTER_IDS.length];
-}
-
-/** 2.5D 스프라이트 캐릭터 표시 라벨(아바타 설정 프리셋용). */
-export const CHARACTER_LABELS: Record<CharacterId, string> = {
-  CEO: 'CEO', MANAGER: '매니저', DEVELOPER: '개발자', DESIGNER: '디자이너',
-  SALES: '영업', HR: '인사', MARKETER: '마케터', INTERN: '인턴',
-};
-
-const _CHAR_SET: ReadonlySet<string> = new Set(CHARACTER_IDS);
-
-/** 문자열이 유효한 2.5D 스프라이트 캐릭터 id인지. */
-export function isCharacterId(v: string | null | undefined): v is CharacterId {
-  return !!v && _CHAR_SET.has(v);
-}
-
-/**
- * 아바타 프리셋(preset_id)이 2.5D 스프라이트 캐릭터면 그걸 사용, 아니면 userId 해시 폴백.
- * (구 preset humanoid_a/b 등 스프라이트 아닌 값은 해시로 안정 배정 — 하위호환.)
- */
-export function characterForAvatar(userId: string, presetId?: string | null): CharacterId {
-  return isCharacterId(presetId) ? presetId : characterFor(userId);
 }
 
 // ---------------------------------------------------------------------------

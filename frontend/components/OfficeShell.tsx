@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { api, ApiError } from '@/lib/api';
+import { api, ApiError, mediaUrl } from '@/lib/api';
 import { getUser, logout, type User, type UserRole } from '@/lib/auth';
 import { Card } from '@/components/ui/Card';
 import { Avatar } from '@/components/ui/Avatar';
@@ -214,6 +214,8 @@ interface PaletteEntry {
   label: string;
   sub?: string;
   status?: EmployeePresenceStatus;
+  /** 구성원 프로필 사진(D35 배지) — 없으면 이니셜. */
+  photoUrl?: string | null;
   action: () => void;
 }
 
@@ -315,7 +317,7 @@ function CommandPalette({
                       style={{ background: isActive ? T1B.hover : 'transparent' }}
                     >
                       {e.group === '구성원' && e.status ? (
-                        <SceneBadge name={e.label} status={e.status} size={22} />
+                        <SceneBadge name={e.label} status={e.status} size={22} photoUrl={e.photoUrl} />
                       ) : (
                         <span style={{ color: T1B.icon }}>
                           <StrokeIcon d={e.group === '방' ? RAIL_ICON.cal : RAIL_ICON.grid4} size={16} />
@@ -468,14 +470,20 @@ const PRESENCE_META_LABEL: Record<EmployeePresenceStatus, string> = {
   away: '자리비움', external: '외근·출장', offline: '오프라인',
 };
 
-// 씬 배지 규격 아바타(우측 패널) — r8 타일 + 이니셜 + 상태 도트(스펙 시트 §2·IA §3).
-function SceneBadge({ name, status, size = 30 }: { name: string; status: EmployeePresenceStatus; size?: number }) {
+// 씬 배지 규격 아바타(우측 패널) — r8 타일 + 사진(D35, 없으면 이니셜) + 상태 도트(스펙 시트 §2·IA §3).
+function SceneBadge({ name, status, size = 30, photoUrl }: { name: string; status: EmployeePresenceStatus; size?: number; photoUrl?: string | null }) {
   const b = badgeStyle(name);
   const dot = STATUS_DOT_1B[status] ?? STATUS_DOT_1B.offline;
+  const src = mediaUrl(photoUrl);
   return (
     <div style={{ position: 'relative', width: size, height: size, flex: 'none' }}>
-      <div style={{ position: 'absolute', inset: 0, borderRadius: 8, background: b.grad, boxShadow: `0 0 0 2px ${b.ring}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontSize: 11, fontWeight: 700 }}>
-        {b.ini}
+      <div style={{ position: 'absolute', inset: 0, borderRadius: 8, background: b.grad, boxShadow: `0 0 0 2px ${b.ring}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontSize: 11, fontWeight: 700, overflow: 'hidden' }}>
+        {src ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={src} alt="" draggable={false} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          b.ini
+        )}
       </div>
       <div style={{ position: 'absolute', right: -2, bottom: -2, width: 9, height: 9, borderRadius: '50%', background: dot, boxShadow: `0 0 0 2px ${T1B.dotRing}` }} />
     </div>
@@ -693,6 +701,30 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
     }
   }, []);
 
+  // 구성원 프로필 사진(D35 배지) — employees 확정 시 공개 아바타 외형 일괄 조회.
+  const [memberPhotos, setMemberPhotos] = useState<Record<number, string | null>>({});
+  useEffect(() => {
+    const ids = employees.map((e) => e.id).filter((n) => Number.isFinite(n));
+    if (ids.length === 0) return;
+    let cancelled = false;
+    api
+      .get<Array<{ user_id: number; photo_url: string | null }>>(
+        `/api/avatars?user_ids=${ids.join(',')}`,
+      )
+      .then((rows) => {
+        if (cancelled) return;
+        setMemberPhotos((prev) => {
+          const next = { ...prev };
+          for (const r of rows) next[r.user_id] = r.photo_url ?? null;
+          return next;
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [employees]);
+
   // 사용자 목록 (GET /api/employees — 응답 presence_status 사용, 없으면 offline 폴백)
   const fetchEmployees = useCallback(async () => {
     setLoadingEmp(true);
@@ -801,6 +833,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
       label: e.name,
       sub: e.team_name,
       status: e.status,
+      photoUrl: memberPhotos[e.id] ?? null,
       action: () => {
         // 기존 헤더 검색과 동일: 우측 패널 필터에 이름 반영 + 패널 열기(/office 몰입 시 접혀있을 수 있음).
         setSearchQuery(e.name);
@@ -834,7 +867,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
         action: () => router.push(i.href),
       }));
     return [...memberEntries, ...roomEntries, ...fnEntries];
-  }, [employees, adminItems, pathname, router]);
+  }, [employees, memberPhotos, adminItems, pathname, router]);
 
   // 알림 드롭다운 토글 — 열 때 확인 시각 갱신(localStorage 'notices_seen_at') → 배지 해소
   const handleNoticeToggle = () => {
@@ -1703,7 +1736,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                           className="w-full flex items-center gap-2.5 h-[42px] px-2.5 mx-1.5 rounded-xl text-left transition-colors hover:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B23C]/60"
                           style={{ width: 'calc(100% - 12px)' }}
                         >
-                          <SceneBadge name={emp.name} status={emp.status} size={30} />
+                          <SceneBadge name={emp.name} status={emp.status} size={30} photoUrl={memberPhotos[emp.id]} />
                           <div className="min-w-0 flex-1">
                             <div className="text-[12.5px] font-semibold truncate" style={{ color: T1B.text1 }}>{emp.name}</div>
                             <div className="text-[10.5px] truncate" style={{ color: T1B.text2 }}>{emp.team_name ?? PRESENCE_META_LABEL[emp.status] ?? ''}</div>

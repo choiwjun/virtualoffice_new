@@ -708,8 +708,14 @@ D20-f(ERP 무단 미러링 금지)·D14(반감시)와의 관계: **본인이 자
 <tr>
 <td><strong>D35-b</strong></td>
 <td><strong>HORIZON legacy 씬 계층 제거</strong>(2026-07-22, 셸 1b 완료 후)</td>
-<td>OfficeViewport2D의 구 플레이트/가구 스프라이트/캐릭터 프레임 애니/존 틴트/D30 플레이스홀더 렌더 경로와 <code>?scene=legacy</code>·<code>NEXT_PUBLIC_SCENE_V3</code> 탈출구 삭제 — 씬 = 배포 레이아웃 또는 V3 캔버스 2모드. <code>public/office2d/{plates,layers}</code> 에셋 삭제(재생성=tools/asset-gen, 복원=git 히스토리). <code>characters/</code>는 설정 페이지 아바타 프리셋 미리보기가 아직 참조해 유지 — 프리셋 UI의 배지 규격 개편은 후속. lib/office2d.ts 계약(이동 폴백·테스트)은 불변. 같은 커밋에 ⌘K 방 포커스(글로우+라벨, <code>office:focus-room</code>/<code>?focus=</code>) 구현</td>
+<td>OfficeViewport2D의 구 플레이트/가구 스프라이트/캐릭터 프레임 애니/존 틴트/D30 플레이스홀더 렌더 경로와 <code>?scene=legacy</code>·<code>NEXT_PUBLIC_SCENE_V3</code> 탈출구 삭제 — 씬 = 배포 레이아웃 또는 V3 캔버스 2모드. <code>public/office2d/{plates,layers}</code> 에셋 삭제(재생성=tools/asset-gen, 복원=git 히스토리). 같은 커밋에 ⌘K 방 포커스(글로우+라벨, <code>office:focus-room</code>/<code>?focus=</code>) 구현</td>
 <td>/office 씬 legacy 폴백·<code>?scene=</code> 롤백 탈출구</td>
+</tr>
+<tr>
+<td><strong>D35-c</strong></td>
+<td><strong>프로필 사진 배지 완성 + 캐릭터 계층 전소거</strong>(2026-07-22)</td>
+<td>① <code>user_avatar.photo_url</code> 신설 + <code>POST/DELETE /api/avatar/photo</code>(png/jpeg/webp ≤2MB, <code>media_root</code>/avatars 저장·<code>/media</code> 정적 서빙, 파일명 <code>{user_id}_{ts}</code> 캐시버스팅) — 클라는 256px cover 다운스케일 후 업로드. ② 설정 페이지 = D35 배지 규격(배지 미리보기·사진 업로드/삭제·정체성 색·이름표) — 캐릭터 프리셋·보조색 UI 폐기(서버 필드는 레거시 보존). ③ 씬 배지·프레즌스 패널·⌘K 팔레트 구성원 행에 사진 표시(없으면 이니셜). ④ <code>public/office2d/characters</code> 6.4MB 삭제 + lib/office2d 캐릭터 계열 심볼(CHARACTER_*·frameUrl·AVATAR_ANIM·avatarHeightFrac·ASSETS_READY 등) 제거 — 이동·좌표 계약은 불변</td>
+<td>설정 캐릭터 프리셋 UI, 캐릭터 프레임 에셋 전부</td>
 </tr>
 </tbody></table></div>
 <hr>

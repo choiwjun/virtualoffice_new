@@ -1,3 +1,6 @@
+# ===== 사용자 업로드 미디어 (프로필 사진 등 — 런타임 산출물) =====
+backend/media/
+
 # ===== Python (backend / spikes) =====
 __pycache__/
 *.py[cod]

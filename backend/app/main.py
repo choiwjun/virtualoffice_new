@@ -56,6 +56,15 @@ from app.core.ratelimit import LoginRateLimitMiddleware  # noqa: E402
 
 app.add_middleware(LoginRateLimitMiddleware)
 
+# 미디어 정적 서빙(프로필 사진, D35 배지 아바타) — media_root/avatars/* → /media/avatars/*
+from pathlib import Path  # noqa: E402
+
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+
+_media_dir = Path(settings.media_root)
+_media_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/media", StaticFiles(directory=str(_media_dir)), name="media")
+
 
 @app.get("/health", tags=["system"])
 async def health() -> dict:

@@ -1575,8 +1575,7 @@ class UserAvatar(Base, TimestampMixin):
     """
     직원 아바타 커스터마이징 (user_id당 1개).
 
-    경량: 프리셋 식별자 + 상/하의 색상(#RRGGBB) + 이름표 표시 여부.
-    리깅/에셋은 07-3d-visual-asset-pipeline 참조. 고도화 시 확장.
+    경량: 프리셋 식별자 + 상/하의 색상(#RRGGBB) + 이름표 표시 여부 + 프로필 사진(D35 배지).
     """
     __tablename__ = "user_avatar"
 
@@ -1594,6 +1593,8 @@ class UserAvatar(Base, TimestampMixin):
     """하의 색상 (#RRGGBB)"""
     show_nameplate: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     """머리 위 이름표(이름/직급) 표시 여부"""
+    photo_url: Mapped[Optional[str]] = mapped_column(String(300), nullable=True)
+    """프로필 사진 경로(D35 배지 아바타) — /media/avatars/{user_id}_{ts}.{ext}. NULL이면 이니셜 폴백."""
 
 
 class IntegrationProvider(str, Enum):

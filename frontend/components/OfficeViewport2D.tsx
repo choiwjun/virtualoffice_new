@@ -16,12 +16,11 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { useRouter } from 'next/navigation';
 import SceneV3Layer from '@/components/SceneV3Layer';
 import { getUser } from '@/lib/auth';
-import { api, ApiError } from '@/lib/api';
+import { api, ApiError, mediaUrl } from '@/lib/api';
 import { useOfficeRoom } from '@/hooks/useOfficeRoom';
 import type { MeetingEntryResult } from '@/lib/realtime';
 import {
   AvatarState,
-  CharacterId,
   PLATE_W,
   PLATE_H,
   type SceneRoom,
@@ -29,7 +28,6 @@ import {
   type SceneThemeId,
   SPAWNS,
   themeForHour,
-  characterForAvatar,
   clampToWalkable,
   findPath,
   isWalkable,
@@ -55,7 +53,7 @@ interface AvatarVisual {
   root: HTMLDivElement;
   /** 코드 모션(바운스/기울임) 래퍼 — 상태 전환 시 클래스만 교체. */
   motion: HTMLDivElement;
-  /** 본체 — 에셋 모드=<img>(프레임), 플레이스홀더 모드=<div>(도트). */
+  /** 본체 — D35 배지 타일(<div>, 사진 or 이니셜). */
   img: HTMLElement;
   /** 표시 위치(미터) — 서버 위치로 보간. */
   disp: Vec2;
@@ -67,10 +65,7 @@ interface AvatarVisual {
    *  50ms 패치 간격과 경합해 착석 스냅이 20Hz로 토글(=진동)된다 — 반드시 시간 기반. */
   stillSec: number;
   state: AvatarState;
-  frame: number;
-  frameAcc: number;
   facing: 1 | -1;
-  char: CharacterId;
   /** 좌석 착석 판정용(점유 좌석 매칭). */
   userId: string;
 }
@@ -78,21 +73,22 @@ interface AvatarVisual {
 /** 로스터 항목(React 셸 렌더용 최소 정보). */
 interface ShellInfo {
   key: string;
-  char: CharacterId;
   name: string;
   userId: string;
   isSelf: boolean;
   /** 이 아바타의 이름표 표시 여부(user_avatar.show_nameplate). */
   showNameplate: boolean;
-  /** 이름표 강조색(user_avatar.top_color) — 2.5D 래스터 스프라이트 재염색 불가라 정체성 색으로 사용. */
+  /** 정체성 색(user_avatar.top_color) — 배지 그라디언트·이름표 테두리·상태점(타인). */
   accent: string;
+  /** 프로필 사진(/media 상대경로, D35) — null이면 이니셜 폴백. */
+  photoUrl: string | null;
 }
 
-/** 아바타 외형 프리셋(공개 표시용, GET /api/avatars). */
+/** 아바타 외형(공개 표시용, GET /api/avatars). */
 interface AvatarPref {
-  preset_id: string;
   top_color: string;
   show_nameplate: boolean;
+  photo_url: string | null;
 }
 
 /** 좌석(GET /api/seats, D10) — coords는 플레이트 top-left 기준 미터(뷰포트 좌표계 동일). */
@@ -395,7 +391,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
     if (list.length === 0) return;
     let cancelled = false;
     api
-      .get<Array<{ user_id: number; preset_id: string; top_color: string; show_nameplate: boolean }>>(
+      .get<Array<{ user_id: number; top_color: string; show_nameplate: boolean; photo_url: string | null }>>(
         `/api/avatars?user_ids=${list.join(',')}`,
       )
       .then((rows) => {
@@ -404,9 +400,9 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
           const next = { ...prev };
           for (const r of rows) {
             next[String(r.user_id)] = {
-              preset_id: r.preset_id,
               top_color: r.top_color,
               show_nameplate: r.show_nameplate,
+              photo_url: r.photo_url ?? null,
             };
           }
           return next;
@@ -728,12 +724,12 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
       const pref = avatarPrefs[userId];
       return {
         key,
-        char: characterForAvatar(userId, pref?.preset_id),
         name,
         userId,
         isSelf,
         showNameplate: pref?.show_nameplate ?? true,
         accent: pref?.top_color ?? (isSelf ? '#3B5BFE' : 'rgba(255,255,255,.32)'),
+        photoUrl: pref?.photo_url ?? null,
       };
     };
     if (offline || roster.length === 0) {
@@ -758,11 +754,11 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
   const refCbCache = useRef<Map<string, (el: HTMLDivElement | null) => void>>(new Map());
 
   const registerAvatar = useCallback(
-    (key: string, char: CharacterId, userId: string) => {
-      const cacheKey = `${key}|${char}|${userId}`;
+    (key: string, userId: string) => {
+      const cacheKey = `${key}|${userId}`;
       const cached = refCbCache.current.get(cacheKey);
       if (cached) return cached;
-      const cb = makeAvatarRef(key, char, userId);
+      const cb = makeAvatarRef(key, userId);
       refCbCache.current.set(cacheKey, cb);
       return cb;
     },
@@ -772,11 +768,11 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
   );
 
   const makeAvatarRef = useCallback(
-    (key: string, char: CharacterId, userId: string) => (el: HTMLDivElement | null) => {
+    (key: string, userId: string) => (el: HTMLDivElement | null) => {
       const visuals = visualsRef.current;
       if (!el) {
         visuals.delete(key);
-        refCbCache.current.delete(`${key}|${char}|${userId}`);
+        refCbCache.current.delete(`${key}|${userId}`);
         return;
       }
       const motion = el.querySelector<HTMLDivElement>('.vo-motion');
@@ -798,10 +794,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
         prevSrv: { ...start },
         stillSec: 0,
         state: 'idle',
-        frame: 0,
-        frameAcc: 0,
         facing: 1,
-        char,
         userId,
       });
     },
@@ -907,8 +900,6 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
           if (Math.abs(vx) > 0.25) v.facing = vx < 0 ? -1 : 1;
           if (nextState !== v.state) {
             v.state = nextState;
-            v.frame = 0;
-            v.frameAcc = 0;
             v.motion.className = `vo-motion vo-anim-${nextState}`;
           }
           v.prev = { ...v.disp };
@@ -1269,7 +1260,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
         {shells.map((s) => (
           <div
             key={s.key}
-            ref={registerAvatar(s.key, s.char, s.userId)}
+            ref={registerAvatar(s.key, s.userId)}
             className="absolute pointer-events-none"
             style={{ transform: 'translate(-50%, -100%)', willChange: 'left, top' }}
           >
@@ -1299,7 +1290,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
             )}
             {/* 코드 모션 래퍼(바운스) — 상태별 CSS 모션만, 프레임 스프라이트 없음 */}
             <div className="vo-motion vo-anim-idle">
-              {/* D35 — 사진 배지 아바타(라운드 사각). 사진 필드 부재 시 이니셜+정체성 색.
+              {/* D35 — 사진 배지 아바타(라운드 사각). photo_url 있으면 사진, 없으면 이니셜+정체성 색.
                   높이는 rAF가 설정(.vo-body). 걷기 프레임 애니 없음(글라이드만). */}
               <div
                 className="vo-body flex items-center justify-center relative"
@@ -1316,7 +1307,19 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
                   letterSpacing: '.02em',
                 }}
               >
-                {s.name.length >= 3 ? s.name.slice(1) : s.name.slice(0, 2)}
+                {s.photoUrl ? (
+                  /* 사진 자체를 라운드(22%) — 래퍼 overflow:hidden은 상태점(-6% 돌출)을 잘라먹는다 */
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={mediaUrl(s.photoUrl) ?? undefined}
+                    alt=""
+                    draggable={false}
+                    className="absolute inset-0 w-full h-full"
+                    style={{ objectFit: 'cover', borderRadius: '22%' }}
+                  />
+                ) : (
+                  s.name.length >= 3 ? s.name.slice(1) : s.name.slice(0, 2)
+                )}
                 {/* 상태점 — 본인=프레즌스 색, 타인=정체성 색(nameplate와 동일 규칙) */}
                 <span
                   aria-hidden

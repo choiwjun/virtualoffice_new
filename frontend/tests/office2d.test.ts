@@ -1,21 +1,17 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import {
-  CHARACTER_IDS,
   ROOMS,
   SPAWNS,
   SCENE_W_M,
   SCENE_H_M,
   normToMeters,
   metersToNorm,
-  characterFor,
-  characterForAvatar,
   findPath,
-  isCharacterId,
   isWalkable,
   clampToWalkable,
   setActiveFloorGeometry,
   pointInPolygon,
-  avatarHeightFrac,
+  typingBurstAt,
   type Vec2,
 } from '../lib/office2d';
 
@@ -34,26 +30,19 @@ describe('coordinate transforms', () => {
   });
 });
 
-describe('character assignment (#6)', () => {
-  it('characterFor is deterministic and within the sprite set', () => {
-    const a = characterFor('1001');
-    const b = characterFor('1001');
-    expect(a).toBe(b);
-    expect(CHARACTER_IDS).toContain(a);
+describe('typingBurstAt (착석 타건 버스트 — D35 배지 모션 게이트)', () => {
+  it('같은 userId·같은 시각이면 결정적(모든 클라이언트 동일 위상)', () => {
+    const t = 1_700_000_000_000;
+    expect(typingBurstAt('1001', t)).toBe(typingBurstAt('1001', t));
   });
 
-  it('isCharacterId distinguishes valid sprite ids', () => {
-    expect(isCharacterId(CHARACTER_IDS[0])).toBe(true);
-    expect(isCharacterId('humanoid_a')).toBe(false); // 구 프리셋
-    expect(isCharacterId(null)).toBe(false);
-    expect(isCharacterId(undefined)).toBe(false);
-  });
-
-  it('characterForAvatar uses preset when it is a sprite id, else hash fallback', () => {
-    const preset = CHARACTER_IDS[3];
-    expect(characterForAvatar('999', preset)).toBe(preset); // 프리셋 우선
-    expect(characterForAvatar('999', 'humanoid_b')).toBe(characterFor('999')); // 폴백
-    expect(characterForAvatar('999', undefined)).toBe(characterFor('999'));
+  it('사이클(9.5s) 안에 on/off 구간이 모두 존재한다', () => {
+    const base = 1_700_000_000_000;
+    const seen = new Set<boolean>();
+    for (let s = 0; s < 10; s++) seen.add(typingBurstAt('1001', base + s * 1000));
+    // 사이클 9.5s에 on 4s — 1초 간격 10샘플이면 on·off 둘 다 관측된다.
+    expect(seen.has(true)).toBe(true);
+    expect(seen.has(false)).toBe(true);
   });
 });
 
@@ -78,15 +67,6 @@ describe('geometry helpers', () => {
   it('clampToWalkable returns a walkable point', () => {
     const clamped = clampToWalkable({ x: 1.5, y: 1.5 }); // 씬 밖 클릭
     expect(isWalkable(clamped)).toBe(true);
-  });
-
-  it('avatarHeightFrac grows with depth (front bigger than back) and stays bounded', () => {
-    // v1 아이소 팩(D30): 무원근 — 가독용 미세 변화만(0.088~0.102).
-    const back = avatarHeightFrac(0.22, 'idle'); // 화면 위(멀리)
-    const front = avatarHeightFrac(0.86, 'idle'); // 화면 아래(가까이)
-    expect(front).toBeGreaterThan(back);
-    expect(back).toBeGreaterThan(0.05);
-    expect(front).toBeLessThan(0.15);
   });
 });
 

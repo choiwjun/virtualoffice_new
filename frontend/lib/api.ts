@@ -2,6 +2,11 @@ import { mapApiError } from './apiErrors';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:8000';
 
+/** 백엔드가 서빙하는 정적 미디어(/media/*, 프로필 사진 등)의 절대 URL. null-경로면 null. */
+export function mediaUrl(path: string | null | undefined): string | null {
+  return path ? `${BASE_URL}${path}` : null;
+}
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -22,7 +27,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    // FormData(파일 업로드)는 브라우저가 boundary 포함 Content-Type을 스스로 설정해야 한다.
+    ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string>),
   };
 
@@ -74,6 +80,9 @@ export const api = {
     request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
   put: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
+  /** multipart 업로드(파일) — body를 직렬화하지 않고 FormData 그대로 전송. */
+  upload: <T>(path: string, form: FormData) =>
+    request<T>(path, { method: 'POST', body: form }),
   patch: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),

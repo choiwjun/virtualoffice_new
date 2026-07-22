@@ -1,12 +1,13 @@
 'use client';
 
-// @TASK C4 - 아바타 커스터마이징
-// @SPEC docs/planning/06-screens.md §3.9 (프리셋 + 색상 팔레트 + 이름표)
-// @API GET/PUT /api/avatar (user_avatar: user_id, preset_id, top_color, bottom_color, show_nameplate)
+// @TASK C4 - 아바타 커스터마이징 (D35 배지 규격 개편, 2026-07-22)
+// @SPEC docs/planning/00-decisions.md §P(D35: 아바타 = 프로필 사진 배지) + 06-screens.md §3.9
+// @API GET/PUT /api/avatar · POST/DELETE /api/avatar/photo
+//      (user_avatar: preset_id·bottom_color는 레거시 보존 필드 — UI 미노출, 저장 시 기존 값 유지)
 
-import { useCallback, useEffect, useState } from 'react';
-import { api, ApiError } from '@/lib/api';
-import { ASSETS_READY, CHARACTER_IDS, CHARACTER_LABELS, frameUrl, isCharacterId } from '@/lib/office2d';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { api, ApiError, mediaUrl } from '@/lib/api';
+import { getUser } from '@/lib/auth';
 
 interface Avatar {
   user_id: number;
@@ -14,67 +15,75 @@ interface Avatar {
   top_color: string;
   bottom_color: string;
   show_nameplate: boolean;
+  photo_url: string | null;
 }
 
-// 2.5D 뷰포트 스프라이트 8종을 프리셋으로 정합(래스터라 preset_id=캐릭터 선택).
-const PRESETS: { id: string; label: string }[] = CHARACTER_IDS.map((id) => ({
-  id,
-  label: CHARACTER_LABELS[id],
-}));
+// 정체성 색 팔레트 — 배지 그라디언트·이름표 테두리·상태점(타인 시점)에 쓰인다.
+const IDENTITY_COLORS = ['#3B5BFE', '#EF4444', '#22C55E', '#F59E0B', '#8B5CF6'];
 
-const TOP_COLORS = ['#3B5BFE', '#EF4444', '#22C55E', '#F59E0B', '#8B5CF6'];
-const BOTTOM_COLORS = ['#1E293B', '#64748B', '#0F766E', '#7C2D12', '#334155'];
-
-const DEFAULT_AVATAR: Omit<Avatar, 'user_id'> = {
-  preset_id: CHARACTER_IDS[0],
-  top_color: TOP_COLORS[0],
-  bottom_color: BOTTOM_COLORS[0],
+const DEFAULT_DRAFT = {
+  preset_id: 'badge', // D35: 캐릭터 프리셋 폐기 — 서버 필드 호환용 고정값
+  top_color: IDENTITY_COLORS[0],
+  bottom_color: '#1E293B',
   show_nameplate: true,
 };
 
-// 2.5D 스프라이트 미리보기 + 이름표 강조색(top_color). 래스터 스프라이트라 의류 색은 미적용.
-function AvatarPreview({
-  preset,
-  top,
+/** 업로드 전 클라이언트 다운스케일(256px, cover 크롭) — 서버 2MB 제한 방어 + 배지 표시 크기 최적화. */
+async function downscaleImage(file: File, size = 256): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const s = Math.min(bitmap.width, bitmap.height);
+  const sx = (bitmap.width - s) / 2;
+  const sy = (bitmap.height - s) / 2;
+  ctx.drawImage(bitmap, sx, sy, s, s, 0, 0, size, size);
+  bitmap.close();
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error('toBlob failed'))),
+      'image/webp',
+      0.9,
+    );
+  });
+}
+
+/** D35 배지 미리보기 — /office 씬·프레즌스 패널과 동일 규격(라운드 22% 타일, 사진 or 이니셜). */
+function BadgePreview({
+  name,
+  accent,
+  photoSrc,
+  size = 112,
 }: {
-  preset: string;
-  top: string;
+  name: string;
+  accent: string;
+  photoSrc: string | null;
+  size?: number;
 }) {
-  const char = isCharacterId(preset) ? preset : CHARACTER_IDS[0];
+  const initials = name.length >= 3 ? name.slice(1) : name.slice(0, 2);
   return (
-    <div className="flex flex-col items-center gap-2">
-      {ASSETS_READY ? (
+    <div
+      className="flex items-center justify-center relative overflow-hidden"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: '22%',
+        background: `linear-gradient(150deg, ${accent} 0%, rgba(20,32,52,.96) 95%)`,
+        border: '2px solid rgba(255,255,255,.55)',
+        boxShadow: '0 3px 10px rgba(0,0,0,.35)',
+        color: '#fff',
+        fontWeight: 800,
+        fontSize: size * 0.34,
+        letterSpacing: '.02em',
+      }}
+    >
+      {photoSrc ? (
         /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={frameUrl(char, 'idle', 0)}
-          alt="아바타 미리보기"
-          className="h-44 w-auto object-contain"
-          draggable={false}
-        />
+        <img src={photoSrc} alt="프로필 사진" className="absolute inset-0 w-full h-full object-cover" draggable={false} />
       ) : (
-        /* D30: 에셋 재작업 중 — 도트 미리보기 */
-        <div
-          className="h-44 flex items-end justify-center"
-          style={{
-            aspectRatio: '0.46',
-            borderRadius: '999px',
-            background: `linear-gradient(180deg, ${top} 0%, rgba(20,32,52,.95) 90%)`,
-            border: '1px solid rgba(255,255,255,.25)',
-            color: '#fff',
-            fontWeight: 700,
-            fontSize: 20,
-            paddingBottom: 12,
-          }}
-        >
-          {CHARACTER_LABELS[char].charAt(0)}
-        </div>
+        initials
       )}
-      <span
-        className="px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
-        style={{ background: 'rgba(7,16,29,.92)', border: `1px solid ${top}` }}
-      >
-        이름표
-      </span>
     </div>
   );
 }
@@ -103,36 +112,46 @@ function Swatch({
 }
 
 export default function SettingsPage() {
+  const me = getUser();
+  const myName = me?.name ?? '나';
+
   const [avatar, setAvatar] = useState<Avatar | null>(null);
-  const [draft, setDraft] = useState<Omit<Avatar, 'user_id'>>(DEFAULT_AVATAR);
+  const [draft, setDraft] = useState(DEFAULT_DRAFT);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const applyServer = useCallback((data: Avatar) => {
+    setAvatar(data);
+    setDraft({
+      preset_id: data.preset_id,
+      top_color: data.top_color,
+      bottom_color: data.bottom_color,
+      show_nameplate: data.show_nameplate,
+    });
+    setPhotoUrl(data.photo_url);
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.get<Avatar>('/api/avatar');
-      setAvatar(data);
-      setDraft({
-        preset_id: data.preset_id,
-        top_color: data.top_color,
-        bottom_color: data.bottom_color,
-        show_nameplate: data.show_nameplate,
-      });
+      applyServer(await api.get<Avatar>('/api/avatar'));
     } catch (err) {
       // 아바타 미설정(404)이면 기본값으로 시작
       if (err instanceof ApiError && err.status === 404) {
-        setDraft(DEFAULT_AVATAR);
+        setDraft(DEFAULT_DRAFT);
       } else {
         setError('아바타 정보를 불러오지 못했습니다.');
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyServer]);
 
   useEffect(() => {
     load();
@@ -140,9 +159,7 @@ export default function SettingsPage() {
 
   const dirty =
     !avatar ||
-    avatar.preset_id !== draft.preset_id ||
     avatar.top_color !== draft.top_color ||
-    avatar.bottom_color !== draft.bottom_color ||
     avatar.show_nameplate !== draft.show_nameplate;
 
   const save = async () => {
@@ -150,7 +167,7 @@ export default function SettingsPage() {
     setError(null);
     try {
       const updated = await api.put<Avatar>('/api/avatar', draft);
-      setAvatar(updated);
+      applyServer(updated);
       setSavedAt(Date.now());
     } catch {
       setError('저장에 실패했습니다. 다시 시도해 주세요.');
@@ -159,12 +176,40 @@ export default function SettingsPage() {
     }
   };
 
+  const uploadPhoto = async (file: File) => {
+    setPhotoBusy(true);
+    setError(null);
+    try {
+      const blob = await downscaleImage(file);
+      const form = new FormData();
+      form.append('file', blob, 'avatar.webp');
+      applyServer(await api.upload<Avatar>('/api/avatar/photo', form));
+    } catch {
+      setError('사진 업로드에 실패했습니다. (png/jpeg/webp, 2MB 이하)');
+    } finally {
+      setPhotoBusy(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const removePhoto = async () => {
+    setPhotoBusy(true);
+    setError(null);
+    try {
+      applyServer(await api.delete<Avatar>('/api/avatar/photo'));
+    } catch {
+      setError('사진 삭제에 실패했습니다.');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gray-800">아바타 설정</h1>
         <p className="text-sm text-gray-500 mt-1">
-          가상 오피스에서 표시될 내 캐릭터와 이름표 색상을 설정합니다. (06-screens §3.9)
+          가상 오피스에서 표시될 내 배지(프로필 사진·정체성 색)와 이름표를 설정합니다. (D35)
         </p>
       </div>
 
@@ -172,54 +217,68 @@ export default function SettingsPage() {
         <div className="text-gray-400 text-sm">로딩 중...</div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 p-6 flex flex-col md:flex-row gap-8">
-          {/* 미리보기 */}
-          <div className="flex flex-col items-center gap-2 flex-shrink-0">
-            <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
-              <AvatarPreview preset={draft.preset_id} top={draft.top_color} />
+          {/* 배지 미리보기 — /office 씬과 동일 규격 */}
+          <div className="flex flex-col items-center gap-3 flex-shrink-0">
+            <div className="rounded-lg bg-gray-50 border border-gray-200 p-5">
+              <BadgePreview name={myName} accent={draft.top_color} photoSrc={mediaUrl(photoUrl)} />
             </div>
             {draft.show_nameplate && (
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-800 text-white">이름표 표시</span>
+              <span
+                className="text-[11px] px-2 py-0.5 rounded-full bg-gray-800 text-white"
+                style={{ border: `1px solid ${draft.top_color}` }}
+              >
+                {myName}
+              </span>
             )}
           </div>
 
           {/* 컨트롤 */}
           <div className="flex-1 flex flex-col gap-5">
-            {/* 프리셋 */}
-            <fieldset>
-              <legend className="text-sm font-semibold text-gray-700 mb-2">캐릭터</legend>
-              <div className="flex flex-col gap-2">
-                {PRESETS.map((p) => (
-                  <label key={p.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="preset"
-                      value={p.id}
-                      checked={draft.preset_id === p.id}
-                      onChange={() => setDraft((d) => ({ ...d, preset_id: p.id }))}
-                      className="accent-indigo-600"
-                    />
-                    {p.label}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            {/* 상의 색상 */}
+            {/* 프로필 사진 */}
             <div>
-              <div className="text-sm font-semibold text-gray-700 mb-2">이름표 색상</div>
-              <div className="flex gap-2">
-                {TOP_COLORS.map((c) => (
-                  <Swatch key={c} color={c} selected={draft.top_color === c} onClick={() => setDraft((d) => ({ ...d, top_color: c }))} />
-                ))}
+              <div className="text-sm font-semibold text-gray-700 mb-2">프로필 사진</div>
+              <p className="text-xs text-gray-500 mb-2">
+                씬 아바타·구성원 목록 배지에 표시됩니다. 없으면 이름 이니셜로 표시됩니다.
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) uploadPhoto(f);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={photoBusy}
+                  className="px-3 py-1.5 rounded-md bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 disabled:opacity-40 transition-colors"
+                >
+                  {photoBusy ? '처리 중...' : photoUrl ? '사진 변경' : '사진 업로드'}
+                </button>
+                {photoUrl && (
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    disabled={photoBusy}
+                    className="px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 text-xs font-medium hover:bg-gray-50 disabled:opacity-40 transition-colors"
+                  >
+                    사진 삭제
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* 하의 색상 */}
+            {/* 정체성 색 */}
             <div>
-              <div className="text-sm font-semibold text-gray-700 mb-2">보조 색상 (예비)</div>
+              <div className="text-sm font-semibold text-gray-700 mb-2">정체성 색상</div>
+              <p className="text-xs text-gray-500 mb-2">배지 배경·이름표 테두리에 쓰이는 내 고유 색입니다.</p>
               <div className="flex gap-2">
-                {BOTTOM_COLORS.map((c) => (
-                  <Swatch key={c} color={c} selected={draft.bottom_color === c} onClick={() => setDraft((d) => ({ ...d, bottom_color: c }))} />
+                {IDENTITY_COLORS.map((c) => (
+                  <Swatch key={c} color={c} selected={draft.top_color === c} onClick={() => setDraft((d) => ({ ...d, top_color: c }))} />
                 ))}
               </div>
             </div>
@@ -235,7 +294,7 @@ export default function SettingsPage() {
               이름표(이름/직급) 표시
             </label>
 
-            {/* 저장 */}
+            {/* 저장 — 사진은 업로드/삭제 즉시 반영, 색·이름표만 저장 버튼 대상 */}
             <div className="flex items-center gap-3 pt-2">
               <button
                 type="button"

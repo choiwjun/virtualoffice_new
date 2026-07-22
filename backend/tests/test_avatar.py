@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+import pytest
 from httpx import AsyncClient
 
 _VALID = {
@@ -103,4 +104,117 @@ class TestAvatar:
     async def test_list_avatars_requires_auth(self, async_client: AsyncClient):
         assert (
             await async_client.get("/api/avatars?user_ids=1")
+        ).status_code in (401, 403)
+
+
+# 1×1 PNG(유효 시그니처) — 사진 업로드 검증용 최소 페이로드.
+_PNG_1PX = bytes.fromhex(
+    "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489"
+    "0000000d4944415478da63fccff0bf1e00079f027e9b4e2d1e0000000049454e44ae426082"
+)
+
+
+class TestAvatarPhoto:
+    """D35 배지 프로필 사진 업로드/삭제 (POST·DELETE /api/avatar/photo)."""
+
+    @pytest.fixture(autouse=True)
+    def _tmp_media_root(self, tmp_path, monkeypatch):
+        # 테스트 산출 파일이 레포(backend/media)에 남지 않게 media_root를 tmp로.
+        from app.config import settings as app_settings
+
+        monkeypatch.setattr(app_settings, "media_root", str(tmp_path))
+
+    async def test_upload_sets_photo_url_and_writes_file(
+        self, async_client: AsyncClient, auth_headers: dict, tmp_path
+    ):
+        resp = await async_client.post(
+            "/api/avatar/photo",
+            headers=auth_headers,
+            files={"file": ("me.png", _PNG_1PX, "image/png")},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["user_id"] == 1
+        assert data["photo_url"] and data["photo_url"].startswith("/media/avatars/1_")
+        assert data["photo_url"].endswith(".png")
+        stored = list((tmp_path / "avatars").glob("1_*"))
+        assert len(stored) == 1
+        assert stored[0].read_bytes() == _PNG_1PX
+
+        # GET /api/avatar·/api/avatars 응답에도 photo_url 포함
+        g = await async_client.get("/api/avatar", headers=auth_headers)
+        assert g.json()["photo_url"] == data["photo_url"]
+        lst = await async_client.get("/api/avatars?user_ids=1", headers=auth_headers)
+        assert lst.json()[0]["photo_url"] == data["photo_url"]
+
+    async def test_reupload_replaces_old_file(
+        self, async_client: AsyncClient, auth_headers: dict, tmp_path
+    ):
+        await async_client.post(
+            "/api/avatar/photo",
+            headers=auth_headers,
+            files={"file": ("a.png", _PNG_1PX, "image/png")},
+        )
+        resp = await async_client.post(
+            "/api/avatar/photo",
+            headers=auth_headers,
+            files={"file": ("b.webp", _PNG_1PX, "image/webp")},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["photo_url"].endswith(".webp")
+        # 이전 파일은 삭제되어 사용자당 1개만 유지
+        assert len(list((tmp_path / "avatars").glob("1_*"))) == 1
+
+    async def test_upload_rejects_bad_type_and_empty(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
+        bad_type = await async_client.post(
+            "/api/avatar/photo",
+            headers=auth_headers,
+            files={"file": ("x.gif", _PNG_1PX, "image/gif")},
+        )
+        assert bad_type.status_code == 415
+        empty = await async_client.post(
+            "/api/avatar/photo",
+            headers=auth_headers,
+            files={"file": ("x.png", b"", "image/png")},
+        )
+        assert empty.status_code == 422
+
+    async def test_upload_rejects_oversize(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
+        big = b"\x00" * (2 * 1024 * 1024 + 1)
+        resp = await async_client.post(
+            "/api/avatar/photo",
+            headers=auth_headers,
+            files={"file": ("big.png", big, "image/png")},
+        )
+        assert resp.status_code == 413
+
+    async def test_delete_clears_photo(
+        self, async_client: AsyncClient, auth_headers: dict, tmp_path
+    ):
+        await async_client.post(
+            "/api/avatar/photo",
+            headers=auth_headers,
+            files={"file": ("me.png", _PNG_1PX, "image/png")},
+        )
+        resp = await async_client.delete("/api/avatar/photo", headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["photo_url"] is None
+        assert list((tmp_path / "avatars").glob("1_*")) == []
+        # 미설정 상태에서 재삭제 → 404
+        again = await async_client.delete("/api/avatar/photo", headers=auth_headers)
+        assert again.status_code == 404
+
+    async def test_photo_requires_auth(self, async_client: AsyncClient):
+        assert (
+            await async_client.post(
+                "/api/avatar/photo",
+                files={"file": ("me.png", _PNG_1PX, "image/png")},
+            )
+        ).status_code in (401, 403)
+        assert (
+            await async_client.delete("/api/avatar/photo")
         ).status_code in (401, 403)
