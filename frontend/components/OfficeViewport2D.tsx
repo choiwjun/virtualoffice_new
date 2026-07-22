@@ -14,6 +14,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import SceneV3Layer from '@/components/SceneV3Layer';
 import { getUser } from '@/lib/auth';
 import { api, ApiError } from '@/lib/api';
 import { useOfficeRoom } from '@/hooks/useOfficeRoom';
@@ -199,6 +200,20 @@ const HOTSPOTS: { id: string; kind: SpotKind; title: string; label: string; icon
 export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeViewport2DProps = {}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [stage, setStage] = useState({ w: 0, h: 0 });
+
+  // ── D35 씬 V3 feature flag(기본 OFF) — ON이면 텍스처드 탑다운 V3 씬을 배경으로.
+  //    ?scene=v3 쿼리 우선, 없으면 NEXT_PUBLIC_SCENE_V3=1. OFF면 기존 동작 100% 불변. ──
+  const [sceneV3, setSceneV3] = useState(false);
+  useEffect(() => {
+    const envOn = process.env.NEXT_PUBLIC_SCENE_V3 === '1';
+    let queryOn = false;
+    try {
+      queryOn = new URLSearchParams(window.location.search).get('scene') === 'v3';
+    } catch {
+      // window/URL 접근 불가 — env만 적용
+    }
+    setSceneV3(envOn || queryOn);
+  }, []);
   // D33: 존 라벨은 호버/클릭 시에만(P0-5) · 미니맵 접기 + 층 전환 흡수(P0-3).
   const [hoverRoom, setHoverRoom] = useState<string | null>(null);
   const [minimapOpen, setMinimapOpen] = useState(true);
@@ -821,6 +836,10 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
   stageRef.current = stage;
   const offlineRef = useRef(offline);
   offlineRef.current = offline;
+  // 루프는 마운트당 1회(빈 deps)라 sceneV3를 ref로 참조 — V3 배지 모드에서는
+  // 스프라이트 프레임 src 갱신·좌우 플립을 건너뛴다(배지는 <div>·글라이드만).
+  const sceneV3Ref = useRef(sceneV3);
+  sceneV3Ref.current = sceneV3;
 
   useEffect(() => {
     let raf = 0;
@@ -926,7 +945,8 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
           if (v.frameAcc >= frameDur) {
             v.frameAcc %= frameDur;
             v.frame = (v.frame + 1) % anim.frames;
-            if (ASSETS_READY) (v.img as HTMLImageElement).src = frameUrl(v.char, v.state, v.frame);
+            // V3 배지 모드는 <div>라 프레임 스프라이트 없음 — src 갱신 건너뜀.
+            if (ASSETS_READY && !sceneV3Ref.current) (v.img as HTMLImageElement).src = frameUrl(v.char, v.state, v.frame);
           }
 
           // 화면 배치. 높이는 깊이(원근) 기반 — 뒤쪽일수록 작게.
@@ -939,8 +959,10 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
           // 앉은 아바타를 덮지 않게 — 의자 반깊이(~0.25m ≈ 64) 이상, 남측 옆 가구(≥0.9m) 미만.
           const isSeatedState = v.state === 'sit' || v.state === 'typing';
           v.root.style.zIndex = String(Math.round(n.y * 10000) + (isSeatedState ? 150 : 0));
-          v.img.style.height = `${avatarHeightFrac(n.y, v.state) * sh}px`;
-          v.img.style.transform = `scaleX(${v.facing})`;
+          // V3 배지는 사진 T=0.58m 스케일(≈5.2% 스테이지 높이)로 작게, 스프라이트는 깊이 신장.
+          v.img.style.height = `${(sceneV3Ref.current ? 0.052 : avatarHeightFrac(n.y, v.state)) * sh}px`;
+          // V3 배지 flip 금지(이니셜 좌우 반전 방지) — 스프라이트만 좌우 방향 반영.
+          v.img.style.transform = sceneV3Ref.current ? 'none' : `scaleX(${v.facing})`;
         });
       }
 
@@ -1010,7 +1032,13 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
             transition: 'filter 1000ms ease',
           }}
         >
-        {useDeployed ? (
+        {sceneV3 && !useDeployed ? (
+          /* D35 씬 V3(flag ON) — 텍스처드 탑다운 캔버스를 배경으로. 존 색면·핫스팟·좌석 마커·
+             아바타는 아래 형제 레이어가 좌표(metersToNorm) 기반으로 그대로 얹힌다. */
+          <div className="absolute inset-0 w-full h-full" style={{ background: '#EBE7E0' }}>
+            <SceneV3Layer theme={sceneTheme.id} />
+          </div>
+        ) : useDeployed ? (
           /* 배포된 편집기 레이아웃을 벡터로 렌더 — 좌석배치대로 반영(방/벽/구역). 좌표=좌석과 동일 metersToNorm(0~1). */
           <div
             className="absolute inset-0 w-full h-full"
@@ -1123,8 +1151,9 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
         )}
 
         {/* 존 바닥 색면(P0-5) — 씬 모드 한정(배포 모드는 자체 존 렌더). 바닥(배경) 위·가구/아바타(z≥2000) 아래.
-            polygon이 호버 감지도 담당(라벨 호버 표시) — 클릭은 스테이지로 버블(클릭 이동 유지). */}
-        {!useDeployed && ASSETS_READY && (
+            polygon이 호버 감지도 담당(라벨 호버 표시) — 클릭은 스테이지로 버블(클릭 이동 유지).
+            V3(flag ON)는 캔버스가 자체 존 바닥(카펫/타일/유리)을 그리므로 다이아몬드 색면을 억제. */}
+        {!useDeployed && !sceneV3 && ASSETS_READY && (
           <svg
             className="absolute inset-0 w-full h-full"
             viewBox="0 0 1 1"
@@ -1389,7 +1418,40 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
             )}
             {/* 코드 모션 래퍼(바운스) 안에 프레임 이미지 — flip(scaleX)은 img, 바운스는 래퍼로 분리 */}
             <div className="vo-motion vo-anim-idle">
-              {ASSETS_READY ? (
+              {sceneV3 ? (
+                /* D35 씬 V3 — 사진 배지 아바타(라운드 사각). 사진 필드 부재 시 이니셜+정체성 색.
+                   높이는 rAF가 깊이 기반으로 설정(.vo-body). 걷기 프레임 애니 없음(글라이드만). */
+                <div
+                  className="vo-body flex items-center justify-center relative"
+                  style={{
+                    aspectRatio: '1',
+                    transformOrigin: '50% 100%',
+                    borderRadius: '22%',
+                    background: `linear-gradient(150deg, ${s.accent} 0%, rgba(20,32,52,.96) 95%)`,
+                    border: `2px solid ${s.isSelf ? 'rgba(59,91,254,.95)' : 'rgba(255,255,255,.55)'}`,
+                    boxShadow: '0 3px 10px rgba(0,0,0,.35)',
+                    color: '#fff',
+                    fontWeight: 800,
+                    fontSize: '42%',
+                    letterSpacing: '.02em',
+                  }}
+                >
+                  {s.name.length >= 3 ? s.name.slice(1) : s.name.slice(0, 2)}
+                  {/* 상태점 — 본인=프레즌스 색, 타인=정체성 색(nameplate와 동일 규칙) */}
+                  <span
+                    aria-hidden
+                    className="absolute rounded-full"
+                    style={{
+                      right: '-6%',
+                      bottom: '-6%',
+                      width: '26%',
+                      height: '26%',
+                      background: s.isSelf ? (PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).color : s.accent,
+                      border: '2px solid #fff',
+                    }}
+                  />
+                </div>
+              ) : ASSETS_READY ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   className="vo-body"
