@@ -1,0 +1,64 @@
+<!-- @dsCard group="Brief" -->
+<!doctype html>
+<meta charset="utf-8">
+<title>상용화 리셋 생성 브리프 v3 — 2026-07-22</title>
+<style>
+  body{font-family:'Segoe UI','Malgun Gothic',system-ui,sans-serif;background:#14171f;color:#dfe5f0;margin:0;padding:36px;line-height:1.65}
+  .wrap{max-width:880px;margin:0 auto}
+  h1{font-size:24px;color:#fff} h2{font-size:17px;color:#8fb0ff;margin-top:34px;border-bottom:1px solid #2a3040;padding-bottom:8px}
+  .tag{display:inline-block;background:#3b5bfe;color:#fff;border-radius:6px;padding:2px 10px;font-size:12px;margin-right:6px}
+  .fail{background:#5b2330}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  td,th{border:1px solid #2a3040;padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#1c2130;color:#aebcd8}
+  .imgbox{background:#1c2130;border:1px solid #2a3040;border-radius:10px;padding:14px;margin:14px 0}
+  .imgbox img{max-width:100%;border-radius:6px}
+  code{background:#1c2130;border-radius:4px;padding:1px 6px;font-size:12.5px;color:#9fd0ff}
+  .rule{background:#1c2130;border-left:3px solid #3b5bfe;padding:10px 16px;margin:10px 0;border-radius:0 8px 8px 0}
+  .warn{border-left-color:#e0a458}
+</style>
+<div class="wrap">
+  <h1>상용화 리셋 생성 브리프 v3</h1>
+  <p><span class="tag">2026-07-22</span><span class="tag">D35 후보</span> 정본: 레포 <code>docs/planning/21-visual-reset-strategy.md</code>. 목표 — <b>B2B SaaS 플랫폼으로 판매 가능한 상용 수준의 가상오피스 씬</b>. 이 프로젝트의 기존 산출(plate-current.png)을 대체한다.</p>
+
+  <h2>1. 반려 이력 — 이 3개보다 명확히 위여야 한다</h2>
+  <table>
+    <tr><th>시도</th><th>사용자 판정</th><th>사인(死因)</th></tr>
+    <tr><td>HORIZON v2 (현 plate-current.png)</td><td class="fail">"복잡함·시각퀄리티 낮음" (D33, vs oVice)</td><td>독자 스타일·벤치마크 루프 부재</td></tr>
+    <tr><td>Poly Haven+Mixamo 포토리얼 합성</td><td class="fail">"조화 없음, 사무실로 안 보임"</td><td>스타일 3계열 혼재·렌더 이원화</td></tr>
+    <tr><td>코드 벡터 렌더러 (spike-vector)</td><td class="fail">"이런 퀄리티는 말도 안 된다"</td><td>코드 아트 상한 = 다이어그램</td></tr>
+  </table>
+
+  <h2>2. 벤치마크 — 이것이 "상용화 수준"의 조작적 정의</h2>
+  <div class="imgbox">
+    <img src="../assets/benchmark-kumospace.png" alt="Kumospace 실제 제품 화면">
+    <p style="font-size:13px;color:#aebcd8;margin:10px 0 0">Kumospace 실제 제품. 분석 — 프리미엄 감의 출처: ①<b>재질 텍스처</b>(우드 바닥 결, 패턴 러그, 석재) ②<b>식물·소품 밀도</b>(빈 바닥 없음) ③<b>소프트 드롭 섀도</b>(전 가구 일관 방향) ④<b>채도 액센트</b>(옐로 소파·레드 러그·블루 체어) ⑤<b>아바타 = 프로필 사진 배지</b>(일러스트 캐릭터가 아님!). 시점은 텍스처드 탑다운(순수 평면도에 가까움).</p>
+  </div>
+  <div class="rule">게이트: 생성 시안을 이 스크린샷 <b>옆에 나란히 놓고 밀리지 않아야</b> 통과. "예쁘다" 자체 판정 금지.</div>
+
+  <h2>3. 스타일 후보 — 시안 2방향 생성 후 사용자 선택</h2>
+  <table>
+    <tr><th>A. 텍스처드 탑다운 (Kumospace 동형)</th><th>B. 소프트 아이소 2.5D 상향</th></tr>
+    <tr><td>순수 평면도 + 리치 재질. 벤치마크와 직접 비교 가능, 왜곡 없음, 좌표계 단순. <b>권장 우선</b></td><td>현 HORIZON 시점 유지 + 재질·밀도·섀도를 벤치마크급으로. 공간감 우위, 난이도 높음</td></tr>
+  </table>
+
+  <h2>4. 아바타 — 사진 배지 (캐릭터 일러스트 전면 금지)</h2>
+  <div class="rule">사람은 <b>프로필 사진 라운드 타일 + 네임필 + 상태점</b>으로만 표현한다(벤치마크와 동일, 레포 P1 계획과 일치). 이동 = 글라이드. 착석 = 좌석 위 배지 스냅. 캐릭터 휴먼 일러스트는 3연속 실패 지점이므로 그리지 않는다.</div>
+
+  <h2>5. 기술 계약 — "찍어낼 수 있는가"가 절반의 게이트</h2>
+  <table>
+    <tr><td>API</td><td><code>renderScene(layout, {theme})</code> — horizon-scene.js 계승. <b>고정 그림 1장 금지</b>, 반드시 layout.json 데이터로 렌더</td></tr>
+    <tr><td>월드</td><td>20 × 11.25 m (레포 <code>lib/office2d.ts</code> 정합). layout.json 스키마 유지·확장</td></tr>
+    <tr><td>재현성 증명</td><td><b>같은 코드로 12인·24인 두 레이아웃 렌더</b> — 둘 다 벤치마크급이어야 통과</td></tr>
+    <tr><td>레이어</td><td>floor / furniture / foreground 분리 캡처 가능(오클루전 z합성용 — 기존 파이프라인 계승)</td></tr>
+    <tr><td>테마</td><td>day / dusk / night 3종(전역 그레이딩 방식 권장)</td></tr>
+    <tr><td>존</td><td>워크존·글라스 회의실·라운지·팬트리·폰부스 + 존 라벨</td></tr>
+  </table>
+
+  <h2>6. 품질 규율 6원칙 (21-strategy §5-0)</h2>
+  <div class="rule">①전 요소 동일 조명 방향(좌상)·동일 팔레트 ②전 가구 소프트 섀도 내장(떠 있는 가구 금지) ③글로벌 그레이딩(비네트·테마) ④바닥은 연속 재질(타일 반복 티 금지) ⑤반복 기계감 제거 — 가구 변형·러그·식물·소품 밀도(벤치마크의 빈 바닥 없음 참조) ⑥벤치마크 나란히 비교로만 판정</div>
+  <div class="rule warn">주의: 재질 텍스처는 절차적 생성(그라디언트·패턴·노이즈)으로 — 외부 이미지 에셋 의존 금지(라이선스 0 유지).</div>
+
+  <h2>7. 산출물</h2>
+  <p><code>assets/horizon-scene-v3.js</code>(renderScene 구현) + <code>assets/plate-v3-12.png</code> / <code>plate-v3-24.png</code> 시안. 통과 시 레포 통합은 CLI 세션이 수행(캡처 파이프라인 보유).</p>
+</div>

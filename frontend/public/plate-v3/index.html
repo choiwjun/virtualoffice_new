@@ -1,0 +1,39 @@
+<!doctype html>
+<!-- plate-v3 로컬 뷰어 — claude.ai/design 산출물(horizon-scene-v3.js) 레포 검증용.
+     접근: http://localhost:3000/plate-v3/ 또는 파일 직접 열기 -->
+<meta charset="utf-8">
+<title>HORIZON Plate V3 — 로컬 검증</title>
+<style>
+  body{margin:0;background:#10141F;font-family:'Segoe UI','Malgun Gothic',sans-serif;color:#DFE5F0;padding:28px 36px}
+  h2{font-size:15px;color:#8FB0FF;margin:26px 0 10px}
+  #bar{display:flex;gap:8px;margin-bottom:6px}
+  #bar button{background:#161f32;color:#fff;border:1px solid #3b5bfe;border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer}
+  #bar button.on{background:#3b5bfe}
+  canvas{width:100%;display:block;border-radius:10px}
+  #c12{width:74%;margin:0 auto}
+</style>
+<div id="bar">
+  <button data-t="day" class="on">주간</button>
+  <button data-t="dusk">황혼</button>
+  <button data-t="night">야간</button>
+</div>
+<h2>ASSET GALLERY — 카탈로그 전 품목 개별 히어로 렌더 (renderAssetSheet)</h2>
+<canvas id="sheet"></canvas>
+<h2>PLATE-V3-24 · HQ 24석 — renderScene(LAYOUT_24)</h2>
+<canvas id="c24"></canvas>
+<h2>PLATE-V3-12 · 스튜디오 12석 — 동일 코드, 데이터만 교체</h2>
+<canvas id="c12"></canvas>
+<script src="horizon-layouts-v3.js"></script>
+<script src="horizon-scene-v3.js"></script>
+<script>
+  let theme = 'day';
+  function paint() {
+    const NS = window.HorizonSceneV3, LTS = window.HORIZON_LAYOUTS_V3;
+    NS.renderScene(LTS.twentyFour, { canvas: document.getElementById('c24'), theme });
+    NS.renderScene(LTS.twelve, { canvas: document.getElementById('c12'), theme });
+    if (NS.renderAssetSheet) NS.renderAssetSheet(document.getElementById('sheet'), { theme });
+    document.querySelectorAll('#bar button').forEach(b => b.className = b.dataset.t === theme ? 'on' : '');
+  }
+  document.querySelectorAll('#bar button').forEach(b => b.onclick = () => { theme = b.dataset.t; paint(); });
+  paint();
+</script>
