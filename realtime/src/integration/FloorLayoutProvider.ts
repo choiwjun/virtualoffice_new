@@ -222,12 +222,99 @@ export class SceneFloorLayoutProvider implements FloorLayoutProvider {
   }
 }
 
-/** Factory: LAYOUT_SOURCE_URL 설정 시 Http(폴백 = SCENE_FLOOR 프로바이더) → SCENE_FLOOR 설정 시 Scene → 기본 Demo.
- *  ⚠ Http 404(미배포) 폴백이 Demo로 떨어지면 클라(HORIZON 렌더)와 지오메트리 불일치로
- *  모든 이동이 collision 거부된다(2026-07-17 QA 실측) — 폴백도 SCENE_FLOOR를 따른다. */
+// ---------------------------------------------------------------------------
+// V3 탑다운(축정렬) 플로어 — D35 Phase 1b
+// ---------------------------------------------------------------------------
+
+/**
+ * ⚠ SYNC: 아래 상수는 frontend/lib/officeV3.ts의 정본을 **복제**한 것이다(서버는 프론트 lib을
+ * import할 수 없으므로 값 복제 + 동기화 주석). officeV3.ts를 바꾸면 여기도 같이 바꿔야 한다.
+ *   - V3_ROOM_INSET  = officeV3.V3_WALL_INSET
+ *   - V3_OBSTACLE_RECTS_M = officeV3.V3_OBSTACLE_RECTS (top-left 미터)
+ *   - V3_SEATS_M     = officeV3.V3_SEATS (좌석번호 → 미터; 벤치 파생 오프셋 ±0.725/±1.17)
+ * 좌표계는 프론트와 동일(SCENE_W_M=20, SCENE_H_M=941/1672·20).
+ */
+const V3_ROOM_INSET = 0.5;
+/** top-left 미터 사각형(가구 충돌). officeV3.V3_OBSTACLE_RECTS와 바이트 정합. */
+const V3_OBSTACLE_RECTS_M: Rect[] = [
+  // 워크벤치 데스크 상판 2개(중심 8.4,5.3 / 8.4,8.5; w2.9×d1.5).
+  { x: 8.4 - 2.9 / 2, y: 5.3 - 1.5 / 2, w: 2.9, h: 1.5 },
+  { x: 8.4 - 2.9 / 2, y: 8.5 - 1.5 / 2, w: 2.9, h: 1.5 },
+  { x: 14.0, y: 5.9, w: 3.6, h: 2.1 }, // 보드룸 테이블
+  { x: 0.7, y: 3.2, w: 1.1, h: 3.0 }, // 팬트리 카운터
+  { x: 10.9, y: 4.0, w: 3.0, h: 2.0 }, // 라운지
+  { x: 8.0, y: 1.9, w: 2.8, h: 2.0 }, // 리셉션 다이닝(의자 포함) — ⚠ SYNC frontend/lib/officeV3.ts
+  { x: 11.1, y: 9.1, w: 1.7, h: 1.5 }, // 폰부스
+];
+/** 좌석(미터) — 벤치 파생. officeV3.V3_SEATS와 정합. */
+const V3_SEATS_M: Seat[] = (() => {
+  const DX = 0.725, DY = 1.5 / 2 + 0.42; // 1.17
+  const benches: Array<{ c: "WS-A" | "WS-B"; x: number; y: number }> = [
+    { c: "WS-A", x: 8.4, y: 5.3 },
+    { c: "WS-B", x: 8.4, y: 8.5 },
+  ];
+  const order: Array<[number, number]> = [[-DX, -DY], [DX, -DY], [-DX, DY], [DX, DY]];
+  const out: Seat[] = [];
+  for (const b of benches) {
+    order.forEach(([dx, dy], i) => {
+      out.push({ seatId: `${b.c}${i + 1}`, x: b.x + dx, y: b.y + dy, type: "flex" });
+    });
+  }
+  return out;
+})();
+
+/**
+ * V3FloorLayoutProvider — 탑다운 축정렬 플로어. bounds = room 사각(벽 여유 inset), walls =
+ * room 경계 4변 + 가구 사각 4변씩(가구 위 보행 차단). 클라(officeV3 V3_WALK_AREA/V3_OBSTACLES)와
+ * 동일 지오메트리라 서버 이동 검증이 클라 A* 경로를 거부하지 않는다. 좌석은 벤치 파생 8석.
+ */
+export class V3FloorLayoutProvider implements FloorLayoutProvider {
+  async getLayout(officeId: string, floorId: string): Promise<FloorLayout> {
+    const rectWalls = (r: Rect): WallSegment[] => {
+      const x2 = r.x + r.w, y2 = r.y + r.h;
+      const c: Array<[number, number]> = [[r.x, r.y], [x2, r.y], [x2, y2], [r.x, y2]];
+      return c.map((p, i) => {
+        const q = c[(i + 1) % 4];
+        return { x1: p[0], y1: p[1], x2: q[0], y2: q[1], glass: false };
+      });
+    };
+    const room: Rect = {
+      x: V3_ROOM_INSET,
+      y: V3_ROOM_INSET,
+      w: SCENE_W_M - 2 * V3_ROOM_INSET,
+      h: SCENE_H_M - 2 * V3_ROOM_INSET,
+    };
+    const walls: WallSegment[] = [
+      ...rectWalls(room),
+      ...V3_OBSTACLE_RECTS_M.flatMap(rectWalls),
+    ];
+    return {
+      officeId,
+      floorId,
+      bounds: room,
+      walls,
+      seats: V3_SEATS_M,
+      meetingZones: [
+        // V3 방(officeV3.V3_ROOMS boardroom/meeting-a bbox 미터). 이동은 막지 않고 정원만 검사.
+        { roomId: "boardroom", bounds: { x: 13.4, y: 5.4, w: 5.0, h: 3.2 }, capacity: 8 },
+        { roomId: "meeting-a", bounds: { x: 13.2, y: 8.0, w: 3.6, h: 2.2 }, capacity: 4 },
+      ],
+      spawn: { x: 6.0, y: 3.0 }, // officeV3.V3_SPAWN_M
+    };
+  }
+}
+
+/** Factory: LAYOUT_SOURCE_URL 설정 시 Http(폴백 = SCENE_FLOOR 프로바이더) → SCENE_FLOOR 설정 시 Scene/V3 → 기본 Demo.
+ *  ⚠ Http 404(미배포) 폴백이 Demo로 떨어지면 클라(씬 렌더)와 지오메트리 불일치로
+ *  모든 이동이 collision 거부된다(2026-07-17 QA 실측) — 폴백도 SCENE_FLOOR를 따른다.
+ *  SCENE_FLOOR: "v3"=탑다운 축정렬(D35 1b·기본 씬), "horizon"=구 다이아(legacy), 그 외=Demo. */
 export function createFloorLayoutProvider(url: string, token = "", sceneFloor = ""): FloorLayoutProvider {
   const base: FloorLayoutProvider =
-    sceneFloor === "horizon" ? new SceneFloorLayoutProvider() : new DemoFloorLayoutProvider();
+    sceneFloor === "v3"
+      ? new V3FloorLayoutProvider()
+      : sceneFloor === "horizon"
+        ? new SceneFloorLayoutProvider()
+        : new DemoFloorLayoutProvider();
   if (url) return new HttpFloorLayoutProvider(url, token, base);
   return base;
 }

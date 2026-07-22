@@ -52,6 +52,7 @@ import {
   WALK_AREA,
   type Vec2,
 } from '@/lib/office2d';
+import { V3_WALK_AREA, V3_OBSTACLES, V3_SEAT_BY_NUMBER, V3_ROOMS, V3_HOTSPOTS_NORM } from '@/lib/officeV3';
 
 const MAX_SPEED_MPS = 1.4; // realtime config와 동일(로컬 폴백용)
 const LERP_RATE = 8; // 표시 위치가 서버 위치를 따라가는 속도(1/s)
@@ -216,6 +217,9 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
     else if (queryScene === 'v3') setSceneV3(true);
     else setSceneV3(!envOff);
   }, []);
+  // rAF 루프·안정 콜백(loadSeats 등)이 최신 sceneV3를 의존성 없이 참조 — 매 렌더 동기화.
+  const sceneV3Ref = useRef(sceneV3);
+  sceneV3Ref.current = sceneV3;
   // D33: 존 라벨은 호버/클릭 시에만(P0-5) · 미니맵 접기 + 층 전환 흡수(P0-3).
   const [hoverRoom, setHoverRoom] = useState<string | null>(null);
   const [minimapOpen, setMinimapOpen] = useState(true);
@@ -320,6 +324,18 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
   const seatsRef = useRef<SeatInfo[]>([]);
   const [seatPrompt, setSeatPrompt] = useState<{ mode: 'sit' | 'release'; seat: SeatInfo } | null>(null);
   const [seatBusy, setSeatBusy] = useState(false);
+  /** /api/seats 원본(서버 응답) — V3 override의 소스. */
+  const rawSeatsRef = useRef<SeatInfo[]>([]);
+  /** V3 모드면 좌석 좌표를 officeV3 정본(seat_number 매칭)으로 재정렬 — 백엔드 시드가 아직
+   *  구 좌표여도 마커·착석 스냅이 v3 벤치 위에 정확히 얹힌다. legacy/배포 모드는 서버 좌표 그대로.
+   *  (백엔드도 seed_seats.py로 같은 V3 좌표를 시드하지만, 프론트 override로 시드 시점과 무관하게 정합.) */
+  const applySeatCoords = useCallback((rows: SeatInfo[], v3: boolean): SeatInfo[] => {
+    if (!v3) return rows;
+    return rows.map((s) => {
+      const v = s.seat_number ? V3_SEAT_BY_NUMBER[s.seat_number] : undefined;
+      return v ? { ...s, coords: { ...s.coords, x: v.x, y: v.y } } : s;
+    });
+  }, []);
 
   // ── 배포 레이아웃 구조(방/벽/구역) — 있으면 편집기 배치를 벡터로 반영, 없으면 데모 씬 ──────
   const [structure, setStructure] = useState<FloorStructure | null>(null);
@@ -336,24 +352,33 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
     [structure],
   );
   const useDeployed = structure != null;
-  const activeRooms = useDeployed ? dynRooms : ROOMS;
+  // V3 방(축정렬 미터 사각) → 좌석과 동일 metersToNorm 폴리곤. 배포>V3>legacy 우선순위.
+  const v3Rooms = useMemo<SceneRoom[]>(
+    () => V3_ROOMS.map((r) => ({ id: r.id, label: r.label, polygon: rectToNormPoly(r.x, r.y, r.w, r.h) })),
+    [],
+  );
+  const activeRooms = useDeployed ? dynRooms : sceneV3 ? v3Rooms : ROOMS;
   // rAF/interval 콜백에서 최신 방 목록 참조(의존성 없이).
   const roomsRef = useRef<SceneRoom[]>(ROOMS);
   roomsRef.current = activeRooms;
 
-  // 배포 레이아웃 반영 시 이동 지오메트리도 교체 — 클릭-경로·충돌이 배포 경계(bounds 사각형)와
-  // 벽을 따르게 해 realtime 서버 검증과 정합(아바타가 배포 벽을 통과하지 않음). 미배포면 HORIZON 복원.
+  // 이동 지오메트리 교체 — 우선순위: 배포 레이아웃 > V3 탑다운(축정렬) > HORIZON 다이아(legacy).
+  //  · 배포: 클릭-경로·충돌이 배포 경계(bounds 사각)와 벽을 따름(realtime 배포 floor와 정합).
+  //  · V3(scene=v3): 축정렬 room 사각 − v3 가구 장애물(officeV3). realtime SCENE_FLOOR=v3와 정합.
+  //  · 그 외: null → office2d HORIZON 상수(legacy 다이아, 무회귀). 이동 불변식 상수는 불변.
   useEffect(() => {
     if (structure?.dimensions) {
       setActiveFloorGeometry({
         walkArea: rectToNormPoly(0, 0, structure.dimensions.width_m, structure.dimensions.height_m),
         obstacles: dynObstacles,
       });
+    } else if (sceneV3) {
+      setActiveFloorGeometry({ walkArea: V3_WALK_AREA, obstacles: V3_OBSTACLES });
     } else {
       setActiveFloorGeometry(null);
     }
     return () => setActiveFloorGeometry(null);
-  }, [structure, dynObstacles]);
+  }, [structure, dynObstacles, sceneV3]);
 
   // 짧은 안내 토스트(사용 중 좌석, API 오류 등).
   const [toast, setToast] = useState<string | null>(null);
@@ -436,16 +461,26 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
     api
       .get<SeatInfo[]>('/api/seats')
       .then((rows) => {
-        setSeats(rows);
-        seatsRef.current = rows;
+        rawSeatsRef.current = rows;
+        const mapped = applySeatCoords(rows, sceneV3Ref.current);
+        setSeats(mapped);
+        seatsRef.current = mapped;
       })
       .catch(() => {}); // 백엔드 미기동 등 — 좌석 레이어만 비표시(뷰포트는 계속 동작)
-  }, []);
+  }, [applySeatCoords]);
   useEffect(() => {
     loadSeats();
     const id = setInterval(loadSeats, SEATS_POLL_MS);
     return () => clearInterval(id);
   }, [loadSeats]);
+  // sceneV3는 마운트 후 비동기로 확정(쿼리/env) — 확정/토글 시 마지막 서버 응답에 좌표 override를
+  // 다시 적용해 마커·착석 스냅이 즉시 v3 벤치에 정렬된다(재요청 없이 로컬 재매핑).
+  useEffect(() => {
+    if (rawSeatsRef.current.length === 0) return;
+    const mapped = applySeatCoords(rawSeatsRef.current, sceneV3);
+    setSeats(mapped);
+    seatsRef.current = mapped;
+  }, [sceneV3, applySeatCoords]);
 
   // ── 배포 레이아웃 구조 로드 — 마운트 + 60초 폴링(관리자 배포/롤백 반영). 미배포/에러 → 데모 씬 유지 ──
   const loadStructure = useCallback(() => {
@@ -838,10 +873,8 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
   stageRef.current = stage;
   const offlineRef = useRef(offline);
   offlineRef.current = offline;
-  // 루프는 마운트당 1회(빈 deps)라 sceneV3를 ref로 참조 — V3 배지 모드에서는
-  // 스프라이트 프레임 src 갱신·좌우 플립을 건너뛴다(배지는 <div>·글라이드만).
-  const sceneV3Ref = useRef(sceneV3);
-  sceneV3Ref.current = sceneV3;
+  // (sceneV3Ref는 상단에서 선언·동기화 — rAF 루프는 마운트당 1회라 ref로 참조하며,
+  //  V3 배지 모드에서는 스프라이트 프레임 src 갱신·좌우 플립을 건너뛴다(배지는 <div>·글라이드만).)
 
   useEffect(() => {
     let raf = 0;
@@ -1356,10 +1389,13 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
           );
         })}
 
-        {/* D34 핫스팟(씬 모드 한정) — 게시판(공지)/서류함(보고서) 아이콘 칩, 좌석 마커와 동일 z 패턴 */}
+        {/* D34 핫스팟(씬 모드 한정) — 게시판(공지)/서류함(보고서) 아이콘 칩, 좌석 마커와 동일 z 패턴.
+            V3 모드는 V3_HOTSPOTS_NORM(축정렬 리셉션/팬트리 벽) 위치로 재배치. */}
         {!useDeployed &&
           ASSETS_READY &&
-          HOTSPOTS.map((h) => (
+          HOTSPOTS.map((h) => {
+            const pos = sceneV3 ? V3_HOTSPOTS_NORM[h.id] ?? h.n : h.n;
+            return (
             <button
               key={h.id}
               type="button"
@@ -1371,8 +1407,8 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
               }}
               className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center transition-transform hover:scale-125 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
               style={{
-                left: `${h.n.x * 100}%`,
-                top: `${h.n.y * 100}%`,
+                left: `${pos.x * 100}%`,
+                top: `${pos.y * 100}%`,
                 width: 24,
                 height: 24,
                 fontSize: 12,
@@ -1384,7 +1420,8 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
             >
               {h.icon}
             </button>
-          ))}
+            );
+          })}
 
         {/* 아바타 레이어 */}
         {shells.map((s) => (

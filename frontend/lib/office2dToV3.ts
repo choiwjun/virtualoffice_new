@@ -11,15 +11,18 @@
  * 20:11.256 비율)에서 한 점의 정규 좌표는 metersToNorm과 일치한다 → 아바타/좌석 마커의
  * 기존 배치 수학(metersToNorm)이 v3 캔버스 위에서도 그대로 정렬된다.
  *
- * 좌석 정합: 실제 좌석(office2d SEAT 앵커, 두 워크스테이션 클러스터 WS-A/WS-B)의 미터 중심에
- * v3 워크벤치(bench4)를 배치해, /api/seats 마커와 Colyseus 아바타가 데스크 위에 앉게 한다.
- * ⚠️ v3 renderScene이 반환하는 seats(렌더러 내부 좌석)는 이 배치와 별개다 — Phase 1에선
- * 사용하지 않는다(좌석 정본 = /api/seats). 렌더러 내부 좌석 레지스트리 연동은 Phase 1b.
+ * 좌석 정합(Phase 1b, 탑다운 축정렬): 좌석 정본 = lib/officeV3.ts BENCHES(축정렬 워크벤치 2개,
+ * 상하 2열로 겹침 해소). 벤치가 좌석 4점을 픽스드 오프셋으로 파생(가구가 좌석을 낳는다) →
+ * /api/seats 마커·Colyseus 아바타가 v3 데스크 위에 정확히 앉는다. 좌석 미터 좌표 = officeV3.V3_SEATS,
+ * seed_seats.py·마커·seat-reach QA·realtime floor가 같은 정본을 참조한다.
+ * 데코 가구 앵커도 officeV3.V3_OBSTACLE_RECTS(충돌)와 정합하게 배치해 "가구 위 보행 거부"가
+ * 실제 그려진 가구와 일치한다.
  *
  * 이 파일은 순수 데이터 변환만 한다(DOM/canvas 접근 없음) — 유닛 테스트 가능.
  */
 
-import { SCENE_W_M, SCENE_H_M, ROOMS, polygonCentroid, type Vec2 } from './office2d';
+import { SCENE_W_M, SCENE_H_M } from './office2d';
+import { BENCHES } from './officeV3';
 
 // ── v3 레이아웃 스키마(horizon-layouts-v3.js와 동형, 소비 측 필드만) ──
 export interface V3Window {
@@ -57,46 +60,20 @@ export interface V3Layout {
   people: never[];
 }
 
-/** office2d SEAT 앵커(seed_seats.py와 동일 — layout.json 정규 × [SCENE_W_M, SCENE_H_M]).
- *  두 워크스테이션 클러스터의 실제 좌석 미터 좌표. v3 데스크를 이 위에 얹는다. */
-const SEAT_ANCHORS_NORM: Record<string, Vec2> = {
-  'WS-A1': { x: 0.3993, y: 0.4662 },
-  'WS-A2': { x: 0.4542, y: 0.515 },
-  'WS-A3': { x: 0.3429, y: 0.5163 },
-  'WS-A4': { x: 0.3978, y: 0.5651 },
-  'WS-B1': { x: 0.4542, y: 0.6559 },
-  'WS-B2': { x: 0.5092, y: 0.7047 },
-  'WS-B3': { x: 0.3978, y: 0.706 },
-  'WS-B4': { x: 0.4527, y: 0.7548 },
-};
-
-function anchorsM(prefix: string): Vec2[] {
-  return Object.entries(SEAT_ANCHORS_NORM)
-    .filter(([k]) => k.startsWith(prefix))
-    .map(([, n]) => ({ x: n.x * SCENE_W_M, y: n.y * SCENE_H_M }));
-}
-function centroidM(pts: Vec2[]): Vec2 {
-  const c = pts.reduce((a, p) => ({ x: a.x + p.x, y: a.y + p.y }), { x: 0, y: 0 });
-  return { x: c.x / pts.length, y: c.y / pts.length };
-}
-/** office2d ROOMS 폴리곤(정규) 중심 → 미터. 데코 가구 앵커로 사용. */
-function roomCenterM(id: string): Vec2 | null {
-  const r = ROOMS.find((rm) => rm.id === id);
-  if (!r) return null;
-  const c = polygonCentroid(r.polygon);
-  return { x: c.x * SCENE_W_M, y: c.y * SCENE_H_M };
-}
+// (구 SEAT_ANCHORS_NORM 다이아 좌표·ROOMS 중심 파생 제거 — Phase 1b: 좌석 정본 = officeV3.BENCHES,
+//  데코 앵커는 아래 V3 축정렬 고정 좌표(V3_OBSTACLE_RECTS 중심과 정합).)
 
 /**
- * 현행 office2d 씬 → v3 레이아웃.
+ * 현행 office2d 씬 → v3 레이아웃(탑다운 축정렬, Phase 1b).
  *
  * 존/가구 매핑(개요):
- *   워크스테이션 A·B(장애물 데스크 클러스터) → work 존 + bench4 2개(좌석 클러스터 중심)
+ *   워크스테이션 A·B → work 존 + bench4 2개(officeV3.BENCHES, 상하 2열·비겹침) → 좌석 8점 파생
  *   boardroom(회의 8인)                       → meeting 존(유리·카펫) + meetingTable(8석) + TV
  *   pantry/cafe                               → pantry 존(타일) + counter + fridge + cafeTable + waterCooler
  *   lounge                                    → lounge 존 + sofa + tubChair + coffeeTable + 러그
  *   booth(폰부스)                             → booth 존 + booth 가구
  *   reception(리셉션)                         → communal 존 + 다이닝/러그 + 화분
+ * 데코 가구 앵커는 officeV3.V3_OBSTACLE_RECTS(충돌 사각)와 정합하게 고정 배치.
  * 화분·러그·트로프 등 데코는 톤(§5-0 3원칙)을 위해 존별로 살포한다.
  */
 export function buildV3Layout(): V3Layout {
@@ -104,18 +81,19 @@ export function buildV3Layout(): V3Layout {
   const H = SCENE_H_M; // ≈11.256
   const wallInset = 0.5;
 
-  const clusterA = centroidM(anchorsM('WS-A')); // ≈(7.97, 5.80)
-  const clusterB = centroidM(anchorsM('WS-B')); // ≈(9.07, 7.94)
+  // 워크벤치(축정렬 정본) — officeV3.BENCHES. 상하 2열이라 겹치지 않는다.
+  const clusterA = { x: BENCHES[0].x, y: BENCHES[0].y }; // WS-A (8.4, 5.3)
+  const clusterB = { x: BENCHES[1].x, y: BENCHES[1].y }; // WS-B (8.4, 8.5)
 
-  // 데코 앵커(없으면 폴백 좌표). 실제 상호작용(방 라벨/핫스팟) 좌표는 DOM 오버레이가
+  // 데코 앵커(V3 축정렬 고정 — V3_OBSTACLE_RECTS 중심과 정합). 방 라벨/핫스팟은 DOM 오버레이가
   // office2d ROOMS/HOTSPOTS로 별도 배치하므로, 여기 가구는 시각 배경 전용이다.
-  const cReception = roomCenterM('reception') ?? { x: 9.27, y: 3.36 };
-  const cLounge = roomCenterM('lounge') ?? { x: 12.35, y: 5.02 };
-  const cBoard = roomCenterM('boardroom') ?? { x: 15.77, y: 6.97 };
-  const cMeeting = roomCenterM('meeting-a') ?? { x: 12.62, y: 8.69 };
-  const cPantry = roomCenterM('pantry') ?? { x: 5.21, y: 4.59 };
-  const cCafe = roomCenterM('cafe') ?? { x: 3.44, y: 5.69 };
-  const cBooth = roomCenterM('booth') ?? { x: 12.07, y: 10.31 };
+  const cReception = { x: 9.4, y: 2.55 }; // 다이닝 테이블 obstacle(8.0,1.9,2.8,2.0) 중심 — 벤치 A 상단 좌석(y4.13)과 0.5m 이격
+  const cLounge = { x: 12.4, y: 5.0 }; // 라운지 obstacle(10.9,4.0,3.0,2.0) 중심
+  const cBoard = { x: 15.8, y: 6.95 }; // 보드룸 테이블 obstacle(14.0,5.9,3.6,2.1) 중심
+  const cMeeting = { x: 13.0, y: 8.7 };
+  const cPantry = { x: 3.2, y: 4.7 };
+  const cCafe = { x: 3.4, y: 7.4 };
+  const cBooth = { x: 11.95, y: 9.85 }; // 폰부스 obstacle(11.1,9.1,1.7,1.5) 중심
 
   // ── zones: 탑다운 존(존 라벨은 v3 foreground가 아니라 DOM이 담당 — label은 빈 값으로
   //    두어 캔버스 중복 라벨을 피하고, floor/glass 텍스처만 사용) ──
@@ -136,31 +114,31 @@ export function buildV3Layout(): V3Layout {
     { id: 'pantry', label: '', kind: 'pantry', x: 1.2, y: 3.6, w: 4.8, h: 3.4, floor: 'tile' },
     { id: 'lounge', label: '', kind: 'lounge', x: 11.0, y: 3.6, w: 4.4, h: 2.6 },
     { id: 'reception', label: '', kind: 'communal', x: 7.6, y: 1.5, w: 4.4, h: 2.4 },
-    { id: 'booth', label: '', kind: 'booth', x: 11.1, y: 9.3, w: 2.2, h: 1.7 },
+    { id: 'booth', label: '', kind: 'booth', x: 11.0, y: 9.0, w: 2.0, h: 1.7 },
   ];
 
   // ── furniture: 좌석 정합 벤치 + 존별 데코(러그는 renderer가 floor 레이어에서 먼저 그림) ──
   const furniture: V3Furniture[] = [
     // 러그(바닥층) — 리셉션/라운지 접지
-    { t: 'rug', style: 'oriental', x: cReception.x, y: cReception.y + 0.2, w: 3.6, h: 2.4 },
+    { t: 'rug', style: 'oriental', x: cReception.x, y: cReception.y + 0.15, w: 3.4, h: 1.9 },
     { t: 'rug', style: 'abstract', x: cLounge.x, y: cLounge.y, w: 3.4, h: 2.2 },
 
-    // 워크스테이션 — 실제 좌석 클러스터 중심에 벤치(좌석 마커가 데스크 위에 앉음)
+    // 워크스테이션 — officeV3.BENCHES(축정렬 상하 2열). bench4가 좌석 4점을 파생.
+    //  통로(두 벤치 사이 y≈6.9)는 비워 둔다 — 디바이더/화분은 벤치 좌우 바깥으로.
     { t: 'bench4', x: clusterA.x, y: clusterA.y },
     { t: 'bench4', x: clusterB.x, y: clusterB.y },
-    { t: 'trough', x: (clusterA.x + clusterB.x) / 2 - 1.9, y: (clusterA.y + clusterB.y) / 2, len: 3.0, rot: 90 },
-    { t: 'plant', x: clusterA.x - 1.7, y: clusterA.y - 1.5, s: 0.85, kind: 'fern' },
-    { t: 'plant', x: clusterB.x + 1.7, y: clusterB.y + 0.9, s: 0.9, kind: 'monstera' },
+    { t: 'plant', x: clusterA.x - 2.4, y: clusterA.y - 1.0, s: 0.85, kind: 'fern' },
+    { t: 'plant', x: clusterB.x + 2.4, y: clusterB.y + 1.0, s: 0.9, kind: 'monstera' },
 
     // 회의실(보드룸) — 8석 테이블 + TV(동측 벽)
     { t: 'meetingTable', x: cBoard.x, y: cBoard.y, w: 3.3, h: 1.15, seats: 8 },
     { t: 'tv', x: 18.9, y: cBoard.y, len: 1.7, rot: 90 },
-    { t: 'plant', x: 13.5, y: 5.6, s: 0.8, kind: 'fern' },
+    { t: 'plant', x: 13.7, y: 5.4, s: 0.8, kind: 'fern' },
 
-    // 팬트리/카페 — 카운터·냉장고·워터쿨러·카페 테이블
+    // 팬트리/카페 — 카운터(서측 벽, obstacle 0.7~1.8과 정합)·냉장고·워터쿨러·카페 테이블
     { t: 'counter', x: 1.05, y: cPantry.y, len: 2.6, side: 'W' },
     { t: 'fridge', x: 1.1, y: cPantry.y + 1.9, rot: 90 },
-    { t: 'waterCooler', x: 4.9, y: cPantry.y - 1.1 },
+    { t: 'waterCooler', x: 4.6, y: cPantry.y - 1.1 },
     { t: 'rug', style: 'round', x: cCafe.x, y: cCafe.y, r: 0.95, base: '#C4553B' },
     { t: 'cafeTable', x: cCafe.x, y: cCafe.y, chairs: [70, 240] },
     { t: 'plant', x: 1.6, y: cCafe.y + 1.0, s: 0.7, kind: 'fern' },
@@ -173,13 +151,13 @@ export function buildV3Layout(): V3Layout {
     { t: 'lamp', x: cLounge.x + 1.9, y: cLounge.y - 1.0 },
 
     // 리셉션(커뮤널) — 다이닝 테이블 + 화분
-    { t: 'diningTable', x: cReception.x, y: cReception.y + 0.2, w: 2.6, h: 1.0 },
-    { t: 'plant', x: cReception.x - 2.2, y: cReception.y - 1.0, s: 1.0, kind: 'monstera' },
+    { t: 'diningTable', x: cReception.x, y: cReception.y + 0.15, w: 2.6, h: 1.0 },
+    { t: 'plant', x: cReception.x - 2.2, y: cReception.y - 0.7, s: 1.0, kind: 'monstera' },
 
-    // 폰부스 + 회의실 앞 소품
+    // 폰부스(obstacle 11.1,9.1,1.7,1.5과 정합) + 회의실 앞 소품
     { t: 'booth', x: cBooth.x, y: cBooth.y - 0.15, w: 1.5, h: 1.6, door: 'N' },
-    { t: 'plant', x: cMeeting.x - 2.0, y: cMeeting.y, s: 0.85, kind: 'fern' },
-    { t: 'pouf', x: cMeeting.x + 0.6, y: cMeeting.y - 0.4, color: '#3E6FB0' },
+    { t: 'plant', x: cMeeting.x - 2.4, y: cMeeting.y, s: 0.85, kind: 'fern' },
+    { t: 'pouf', x: cMeeting.x + 1.0, y: cMeeting.y - 0.4, color: '#3E6FB0' },
 
     // 입구 매트
     { t: 'doormat', x: 10.0, y: H - wallInset - 0.2, w: 1.5, h: 0.45 },

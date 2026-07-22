@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-개발용 좌석·회의실 시드 — layout.json 좌석 앵커로 워크스테이션 8석 + HORIZON 회의존 2실(room) 생성.
+개발용 좌석·회의실 시드 — V3 탑다운(축정렬) 벤치 파생 좌석 8석 + V3 회의존 2실(room) 생성.
 
 사용:
     cd backend
@@ -8,12 +8,12 @@
 
 - Office(본사)/Floor(1층) get-or-create
 - WS-A1 → alice(1001) 고정 배정, WS-B1 → bob(1002) 고정 배정, 나머지 자율석(free)
-- coords = layout.json 정규 좌표 × [20, 11.256] 미터 (lib/office2d.ts 좌표계약과 동일)
+- coords(미터) = D35 Phase 1b V3 좌석 정본. ⚠ SYNC: frontend/lib/officeV3.ts V3_SEATS와 동일해야 함
+  (벤치 중심 ± [0.725, 1.17] 오프셋 = 렌더러 bench4 정합). 좌표계 = lib/office2d.ts SCENE_W_M/SCENE_H_M.
 - 멱등: (floor, seat_number) upsert. 운영 DB에 실행 금지.
 """
 
 import asyncio
-import json
 import os
 import sys
 from pathlib import Path
@@ -32,32 +32,46 @@ from app.models.tables import (  # noqa: E402
 )
 
 DATABASE_URL = os.environ["DATABASE_URL"]
-LAYOUT_PATH = _ROOT.parent / "tools" / "asset-gen" / "out" / "layout.json"
 
 # 좌표계약(lib/office2d.ts SCENE_W_M/SCENE_H_M과 동일해야 함)
 SCENE_W_M = 20.0
 SCENE_H_M = (941 / 1672) * 20.0
 
+# ── V3 좌석 정본(⚠ SYNC frontend/lib/officeV3.ts BENCHES + seatsForBench) ──
+# 벤치 중심 → 좌석 4점 = (bx ± 0.725, by ± 1.17). 순서 1=좌상,2=우상,3=좌하,4=우하.
+_SEAT_DX = 0.725
+_SEAT_DY = 1.5 / 2 + 0.42  # 1.17
+_BENCHES = [("WS-A", 8.4, 5.3), ("WS-B", 8.4, 8.5)]
+_ORDER = [(-_SEAT_DX, -_SEAT_DY), (_SEAT_DX, -_SEAT_DY), (-_SEAT_DX, _SEAT_DY), (_SEAT_DX, _SEAT_DY)]
+
+
+def _v3_seats():
+    out = []
+    for cluster, bx, by in _BENCHES:
+        for i, (dx, dy) in enumerate(_ORDER, start=1):
+            out.append({"seatNumber": f"{cluster}{i}", "x": round(bx + dx, 3), "y": round(by + dy, 3)})
+    return out
+
+
+V3_SEATS = _v3_seats()
+
 # 고정 배정: 좌석번호 → erp_user.id (seed_dev.py 계정)
 FIXED_ASSIGN = {"WS-A1": 1001, "WS-B1": 1002}  # alice, bob
 
-# HORIZON 회의존(realtime FloorLayoutProvider meetingZones와 동일 bbox 미터·roomId)
+# V3 회의존(⚠ SYNC realtime V3FloorLayoutProvider meetingZones / officeV3.V3_ROOMS bbox 미터·roomId)
 MEETING_ROOMS = [
     {"name": "Board Room", "livekit_room": "boardroom", "capacity": 8,
-     "coords": {"x": 12.87, "y": 5.52, "width": 5.79, "height": 2.90}},
+     "coords": {"x": 13.4, "y": 5.4, "width": 5.0, "height": 3.2}},
     {"name": "Meeting Room", "livekit_room": "meeting-a", "capacity": 4,
-     "coords": {"x": 10.61, "y": 7.69, "width": 4.03, "height": 2.01}},
+     "coords": {"x": 13.2, "y": 8.0, "width": 3.6, "height": 2.2}},
 ]
 
 
 async def main() -> None:
-    layout = json.loads(LAYOUT_PATH.read_text(encoding="utf-8"))
-    anchors = layout.get("seats", [])
-    if not anchors:
-        raise SystemExit(f"layout.json에 seats가 없습니다 — tools/asset-gen에서 `node generate.js plate` 재생성 필요 ({LAYOUT_PATH})")
+    anchors = V3_SEATS  # V3 벤치 파생 좌석(officeV3.V3_SEATS 정본)
 
     print(f"DB: {DATABASE_URL}")
-    print(f"layout: {LAYOUT_PATH} (seats {len(anchors)})")
+    print(f"seats: V3 탑다운 벤치 파생 (count {len(anchors)})")
 
     engine = create_async_engine(DATABASE_URL)
     async with engine.begin() as conn:
@@ -89,9 +103,9 @@ async def main() -> None:
         updated = 0
         for a in anchors:
             num = a["seatNumber"]
-            coords = {
-                "x": round(a["x"] * SCENE_W_M, 3),
-                "y": round(a["y"] * SCENE_H_M, 3),
+            coords = {  # V3_SEATS는 이미 미터 좌표(정규화 아님)
+                "x": a["x"],
+                "y": a["y"],
                 "facing": 0,
             }
             uid = FIXED_ASSIGN.get(num)
