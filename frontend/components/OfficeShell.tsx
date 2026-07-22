@@ -205,56 +205,8 @@ const ADMIN_ITEMS: (NavItem & { roles: UserRole[] })[] = [
 ];
 
 // ─────────────────────────────────────────────
-// 층 선택기 (정적 UI)
+// (D33) 층 도면 카드 삭제 — 층 전환은 뷰포트 미니맵에 흡수(19-spec P0-3)
 // ─────────────────────────────────────────────
-const FLOORS = ['4F', '3F', '2F', '1F', 'B1F'];
-
-// 사이드바 하단 층 도면 카드 (레퍼런스: Floor 2 map + People Online)
-// 실시간 아바타 위치 점은 이동서버 미니맵 배선 후 — 현재 도면만(가짜 점 없음).
-function FloorMapCard({
-  active,
-  onChange,
-  online,
-}: {
-  active: string;
-  onChange: (f: string) => void;
-  online: number;
-}) {
-  return (
-    <div className="mx-3 mb-2 rounded-lg bg-bg-base border border-border-subtle p-2.5 flex flex-col gap-2 flex-shrink-0">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-text-secondary">{active} 도면</span>
-        <span className="text-[9px] text-text-muted px-1 py-0.5 rounded bg-bg-surface-raised leading-none">위치 준비중</span>
-      </div>
-      <svg viewBox="0 0 80 46" className="w-full rounded" style={{ background: '#0E1626' }}>
-        <rect x="2" y="2" width="35" height="18" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
-        <rect x="42" y="2" width="36" height="18" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
-        <rect x="2" y="24" width="24" height="20" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
-        <rect x="30" y="24" width="48" height="20" rx="2" fill="#1E2940" stroke="#273350" strokeWidth="0.5" />
-      </svg>
-      <div className="flex gap-1">
-        {FLOORS.map((f) => (
-          <button
-            key={f}
-            onClick={() => onChange(f)}
-            aria-pressed={active === f}
-            className={[
-              'flex-1 py-1 rounded text-[10px] font-semibold transition-colors',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan',
-              active === f ? 'bg-primary text-white' : 'bg-bg-surface-raised text-text-muted hover:text-text-secondary',
-            ].join(' ')}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
-      <div className="flex items-center gap-1.5 text-[10px] text-text-muted">
-        <span className="w-1.5 h-1.5 rounded-full bg-status-online inline-block" />
-        {online}명 온라인
-      </div>
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────
 // 사용자 상태 필터 탭
@@ -282,8 +234,10 @@ const PRESENCE_GROUPS: { key: string; label: string; color: string; statuses: Em
 export default function OfficeShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [me, setMe] = useState<User | null>(null);
-  const [activeFloor, setActiveFloor] = useState('2F');
   const [presenceFilter, setPresenceFilter] = useState<PresenceFilter>('all');
+  // D33 몰입 모드(19-spec P0-1): /office에서 사이드바=아이콘 레일·우측 패널=접힘이 기본.
+  const [navExpanded, setNavExpanded] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   // 헤더 검색(06 §1.2) — 우측 패널 직원 목록 이름/팀 필터. 셸에서 공유.
   const [searchQuery, setSearchQuery] = useState('');
@@ -295,6 +249,9 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
   const role = (me?.role ?? 'employee') as UserRole;
   const adminItems = ADMIN_ITEMS.filter((i) => i.roles.includes(role));
   const isOffice = pathname === '/office';
+  // D33: 몰입 모드 파생 — 타 라우트는 항상 펼침(오버레이 탐색 유지).
+  const railMode = isOffice && !navExpanded;
+  const showPanel = !isOffice || panelOpen;
   const overlayItem = isOffice
     ? undefined
     : [...NAV_ITEMS, ...ADMIN_ITEMS]
@@ -586,9 +543,41 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
   const meetingEndsAt = (m: Meeting) =>
     new Date(new Date(m.scheduled_at).getTime() + (m.duration_minutes ?? 0) * 60_000);
 
-  // 내비 링크 렌더러 — 기본/관리 섹션 공용
+  // 내비 링크 렌더러 — 기본/관리 섹션 공용. railMode(D33)면 아이콘만 + title 툴팁.
   const renderNav = (item: NavItem) => {
     const isActive = !item.disabled && (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)));
+    if (railMode) {
+      if (item.disabled) {
+        return (
+          <span
+            key={item.href}
+            title={`${item.label} — 준비중`}
+            aria-disabled="true"
+            className="flex items-center justify-center w-10 h-10 mx-auto rounded-lg cursor-not-allowed opacity-40 text-text-muted select-none"
+          >
+            {item.icon}
+          </span>
+        );
+      }
+      return (
+        <Link
+          key={item.href}
+          href={item.href}
+          title={item.label}
+          aria-label={item.label}
+          className={[
+            'flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-colors',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan',
+            isActive
+              ? 'bg-[rgba(59,91,254,0.15)] text-primary'
+              : 'text-text-muted hover:bg-bg-surface-raised hover:text-text-primary',
+          ].join(' ')}
+          aria-current={isActive ? 'page' : undefined}
+        >
+          {item.icon}
+        </Link>
+      );
+    }
     if (item.disabled) {
       return (
         <span
@@ -625,6 +614,52 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
   // ──────────────────────────────────────────
   // 렌더
   // ──────────────────────────────────────────
+
+  // D33 하단 통합 독(19-spec P0-2)의 셸 세그먼트 — 뷰포트 dockSlot으로 주입.
+  // 미디어바는 회의 연결 시에만(몰입 원칙), LIVE 칩은 미연결+진행중 회의 존재 시.
+  const meetingDock = (
+    <>
+      {joinError && (
+        <div
+          role="alert"
+          title={joinError}
+          className="max-w-[240px] rounded-full border border-border-subtle px-3 py-1.5 text-[10px] text-danger leading-snug truncate"
+          style={{ background: 'rgba(13,27,54,0.92)', backdropFilter: 'blur(6px)' }}
+        >
+          {joinError}
+        </div>
+      )}
+      {meetings.length > 0 && !activeRoom && (
+        <div
+          className="flex items-center gap-2 rounded-full border border-border-subtle pl-3 pr-1.5 py-1"
+          style={{ background: 'rgba(13,27,54,0.92)', backdropFilter: 'blur(6px)' }}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-danger flex-shrink-0 animate-pulse" />
+          <span className="text-[11px] font-semibold text-text-primary max-w-[140px] truncate">{meetings[0].title}</span>
+          <span className="text-[10px] text-text-secondary flex-shrink-0">
+            {meetings[0].participant_count != null ? `${meetings[0].participant_count}명` : 'LIVE'}
+          </span>
+          <button
+            type="button"
+            onClick={() => handleJoinMeeting(meetings[0].id)}
+            disabled={joining}
+            className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-primary text-white hover:bg-primary-hover disabled:opacity-50 flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+          >
+            {joining ? '연결 중…' : '입장하기'}
+          </button>
+        </div>
+      )}
+      {activeRoom && (
+        <div className="flex items-center gap-2">
+          {mediaReconnecting && (
+            <span className="text-[10px] text-status-external font-medium whitespace-nowrap">● 재연결 중…</span>
+          )}
+          <MediaBar room={activeRoom} onLeave={handleLeaveMeeting} />
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div
       className="flex flex-col h-screen overflow-hidden font-sans"
@@ -750,57 +785,106 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
 
       {/* ── 본문 3열 ── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-      {/* ── 좌 내비 240px ── */}
+      {/* ── 좌 내비 — D33: /office 기본=아이콘 레일(56px), 그 외/펼침=240px ── */}
       <aside
-        className="w-60 flex-shrink-0 flex flex-col border-r border-border-subtle"
+        className={[
+          railMode ? 'w-14' : 'w-60',
+          'flex-shrink-0 flex flex-col border-r border-border-subtle transition-[width] duration-200',
+        ].join(' ')}
         style={{ background: '#161F32' }}
       >
-        {/* 로고 */}
-        <div className="px-5 py-4 border-b border-border-subtle flex-shrink-0">
-          <div className="text-[10px] text-text-muted uppercase tracking-widest mb-0.5">VirtualOffice</div>
-          <div className="text-base font-bold text-text-primary">가상 오피스</div>
-        </div>
+        {/* 로고 + 레일 토글(/office 한정) */}
+        {railMode ? (
+          <div className="py-3 border-b border-border-subtle flex-shrink-0 flex flex-col items-center gap-1.5">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-sm">V</div>
+            <button
+              type="button"
+              onClick={() => setNavExpanded(true)}
+              title="메뉴 펼치기"
+              aria-label="메뉴 펼치기"
+              aria-expanded={false}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-surface-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" /></svg>
+            </button>
+          </div>
+        ) : (
+          <div className="px-5 py-4 border-b border-border-subtle flex-shrink-0 flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-[10px] text-text-muted uppercase tracking-widest mb-0.5">VirtualOffice</div>
+              <div className="text-base font-bold text-text-primary">가상 오피스</div>
+            </div>
+            {isOffice && (
+              <button
+                type="button"
+                onClick={() => setNavExpanded(false)}
+                title="메뉴 접기"
+                aria-label="메뉴 접기"
+                aria-expanded={true}
+                className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-surface-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* 내비 메뉴 */}
-        <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-0.5" aria-label="주 메뉴">
+        <nav
+          className={['flex-1 py-3 overflow-y-auto', railMode ? 'px-2 space-y-1' : 'px-3 space-y-0.5'].join(' ')}
+          aria-label="주 메뉴"
+        >
           {NAV_ITEMS.map(renderNav)}
           {adminItems.length > 0 && (
             <>
-              <div className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted">관리</div>
+              {railMode ? (
+                <div className="mx-2 my-2 border-t border-border-subtle" role="separator" aria-label="관리" />
+              ) : (
+                <div className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted">관리</div>
+              )}
               {adminItems.map(renderNav)}
             </>
           )}
         </nav>
 
-        {/* 층 도면 카드 (레퍼런스: 사이드바 하단 Floor map) */}
-        <FloorMapCard
-          active={activeFloor}
-          onChange={setActiveFloor}
-          online={employees.filter((e) => e.status !== 'offline').length}
-        />
-
-        {/* 내 프로필 카드 */}
-        <div className="px-3 py-3 border-t border-border-subtle flex-shrink-0">
+        {/* 내 프로필 카드 — 레일에선 아바타+로그아웃만 */}
+        <div className={[railMode ? 'px-2' : 'px-3', 'py-3 border-t border-border-subtle flex-shrink-0'].join(' ')}>
           {me ? (
-            <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-bg-surface-raised">
-              <Avatar name={me.name} status="online" size="md" />
-              <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-semibold text-text-primary truncate">{me.name}</div>
-                <StatusBadge status="online" />
+            railMode ? (
+              <div className="flex flex-col items-center gap-1.5" title={me.name}>
+                <Avatar name={me.name} status="online" size="sm" />
+                <button
+                  onClick={logout}
+                  className="text-text-muted hover:text-danger transition-colors p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                  title="로그아웃"
+                  aria-label="로그아웃"
+                >
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                    <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm9.293 2.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                  </svg>
+                </button>
               </div>
-              <button
-                onClick={logout}
-                className="text-text-muted hover:text-danger transition-colors p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
-                title="로그아웃"
-                aria-label="로그아웃"
-              >
-                <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                  <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm9.293 2.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-bg-surface-raised">
+                <Avatar name={me.name} status="online" size="md" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-semibold text-text-primary truncate">{me.name}</div>
+                  <StatusBadge status="online" />
+                </div>
+                <button
+                  onClick={logout}
+                  className="text-text-muted hover:text-danger transition-colors p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                  title="로그아웃"
+                  aria-label="로그아웃"
+                >
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                    <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm9.293 2.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            )
           ) : (
-            <div className="h-12 rounded-lg bg-bg-surface-raised animate-pulse" />
+            <div className={railMode ? 'h-8 rounded-lg bg-bg-surface-raised animate-pulse' : 'h-12 rounded-lg bg-bg-surface-raised animate-pulse'} />
           )}
         </div>
       </aside>
@@ -810,7 +894,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
         {/* 가상오피스 씬 = 2.5D 클린 플레이트 + 실시간 아바타 (v2.2 팩 + realtime Colyseus) */}
         <div className="relative flex-1 min-h-0">
           <div className="absolute inset-0 overflow-hidden" style={{ background: '#0d1b36' }}>
-            <OfficeViewport2D onJoinMeeting={handleViewportJoin} />
+            <OfficeViewport2D onJoinMeeting={handleViewportJoin} dockSlot={meetingDock} />
           </div>
 
           {/* 회의 화상 그리드 (상단 중앙) — 연결 시 참가자 비디오/오디오 표시(C3) */}
@@ -820,66 +904,22 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
             </div>
           )}
 
-          {/* 미디어 바 (하단 중앙) — 회의 연결 시 실제 마이크/카메라 제어(C3) */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10">
-            <MediaBar room={activeRoom} onLeave={handleLeaveMeeting} />
-          </div>
-
-          {/* 진행중 화상회의 오버레이 + 입장 실패/회의 없음 인라인 배너 — 세로 스택으로
-              배너가 진행중 회의 유무와 무관하게 노출되도록 구성 */}
-          {(meetings.length > 0 || joinError) && (
-            <div className="absolute right-3 bottom-3 z-10 flex flex-col items-end gap-2">
-              {/* 회의 입장 실패/해당 방 회의 없음 사유 인라인 배너 */}
-              {joinError && (
-                <div
-                  role="alert"
-                  className="w-56 rounded-xl border border-border-subtle px-3 py-2 text-[10px] text-danger leading-snug"
-                  style={{ background: 'rgba(13,27,54,0.92)', backdropFilter: 'blur(6px)' }}
-                >
-                  {joinError}
-                </div>
-              )}
-              {/* 진행중 화상회의 — 실 데이터(GET /api/meetings?status=in_progress). C3: 입장 시 LiveKit 연결 */}
-              {meetings.length > 0 && (
-                <div
-                  className="w-56 rounded-xl border border-border-subtle overflow-hidden"
-                  style={{ background: 'rgba(13,27,54,0.92)', backdropFilter: 'blur(6px)' }}
-                >
-                  <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-danger flex-shrink-0 animate-pulse" />
-                      <span className="text-[11px] font-semibold text-text-primary truncate">{meetings[0].title}</span>
-                    </div>
-                    <span className="text-[9px] font-bold text-danger tracking-wider flex-shrink-0">● LIVE</span>
-                  </div>
-                  <div className="px-3 py-2 flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-text-secondary truncate">
-                      {activeRoom
-                        ? '회의 연결됨'
-                        : meetings[0].participant_count != null
-                          ? `${meetings[0].participant_count}명 참여중`
-                          : '진행중'}
-                    </span>
-                    {activeRoom ? (
-                      mediaReconnecting ? (
-                        <span className="text-[10px] text-status-external font-medium flex-shrink-0">● 재연결 중…</span>
-                      ) : (
-                        <span className="text-[10px] text-status-online font-medium flex-shrink-0">● 연결됨</span>
-                      )
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleJoinMeeting(meetings[0].id)}
-                        disabled={joining}
-                        className="text-[10px] font-medium px-2 py-1 rounded bg-primary text-white hover:bg-primary-hover disabled:opacity-50 flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
-                      >
-                        {joining ? '연결 중…' : '입장하기'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+          {/* D33: 우측 패널 접힘 시 가장자리 핸들 — 구성원 패널 열기 */}
+          {isOffice && !showPanel && (
+            <button
+              type="button"
+              onClick={() => setPanelOpen(true)}
+              title="구성원 패널 열기"
+              aria-label="구성원 패널 열기"
+              aria-expanded={false}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-1.5 py-3 px-1 rounded-l-lg border border-r-0 border-border-subtle text-text-secondary hover:text-text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+              style={{ background: 'rgba(22,31,50,0.92)', backdropFilter: 'blur(6px)' }}
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3"><path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+              <span className="text-[10px] font-semibold" style={{ writingMode: 'vertical-rl' }}>
+                구성원 {employees.filter((e) => e.status !== 'offline').length}
+              </span>
+            </button>
           )}
 
           {/* ── 메뉴 페이지 오버레이 창 (D29 셸 단일화) ──
@@ -1015,7 +1055,8 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
         </div>
       </main>
 
-      {/* ── 우 패널 320px ── */}
+      {/* ── 우 패널 320px — D33: /office에선 접이식(기본 접힘, 가장자리 핸들로 열기) ── */}
+      {showPanel && (
       <aside
         className="w-80 flex-shrink-0 flex flex-col border-l border-border-subtle overflow-y-auto"
         style={{ background: '#161F32' }}
@@ -1024,7 +1065,20 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
         <section className="flex-shrink-0 border-b border-border-subtle">
           <div className="px-4 py-3 flex items-center justify-between">
             <span className="text-[13px] font-semibold text-text-primary">구성원 ({employees.length})</span>
-            <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded bg-bg-surface-raised">실시간</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded bg-bg-surface-raised">실시간</span>
+              {isOffice && (
+                <button
+                  type="button"
+                  onClick={() => setPanelOpen(false)}
+                  title="패널 접기"
+                  aria-label="패널 접기"
+                  className="w-6 h-6 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-surface-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                >
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" /></svg>
+                </button>
+              )}
+            </div>
           </div>
           {/* 헤더 검색어 활성 표시(06 §1.2) — 필터 결과 수 + 지우기 */}
           {normalizedQuery && (
@@ -1161,6 +1215,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
           </div>
         </section>
       </aside>
+      )}
       </div>
     </div>
   );

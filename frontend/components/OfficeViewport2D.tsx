@@ -13,6 +13,7 @@
  */
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getUser } from '@/lib/auth';
 import { api, ApiError } from '@/lib/api';
 import { useOfficeRoom } from '@/hooks/useOfficeRoom';
@@ -152,11 +153,61 @@ const MANUAL_STATUSES = ['online', 'working', 'focus', 'external'] as const; // 
 interface OfficeViewport2DProps {
   /** 회의 명시입장(D24) 확인 시 호출 — 페이지가 LiveKit join 흐름을 실행. */
   onJoinMeeting?: (roomId: string) => void;
+  /** D33 하단 통합 독(19-spec P0-2)의 셸 세그먼트(회의 LIVE 칩·MediaBar·입장 오류) —
+   *  뷰포트 컨트롤 필 오른쪽에 나란히 렌더된다. */
+  dockSlot?: React.ReactNode;
 }
 
-export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProps = {}) {
+/** 층 선택(19-spec P0-3) — 미니맵 헤더로 흡수. 현재 콘텐츠는 2F뿐(타 층 시각 전환만). */
+const FLOORS = ['4F', '3F', '2F', '1F', 'B1F'];
+
+/** 존 바닥 색면(19-spec P0-5) — 방 유형별 반투명 틴트(회의=그린·휴게=앰버·부스=퍼플·리셉션=시안). */
+const ROOM_TINTS: Record<string, string> = {
+  boardroom: '#22C55E',
+  'meeting-a': '#22C55E',
+  lounge: '#F59E0B',
+  cafe: '#F59E0B',
+  pantry: '#F59E0B',
+  booth: '#A855F7',
+  reception: '#38BDF8',
+};
+
+// ── D34 공간 진입점(20-spec): 씬 클릭 대상 → SpotCard 미니 카드. 폼/상세는 오버레이 창(D27). ──
+type SpotKind = 'profile' | 'myseat' | 'room' | 'board' | 'cabinet' | 'zone';
+interface SpotState {
+  kind: SpotKind;
+  title: string;
+  /** profile: 대상 userId */
+  userId?: string;
+  /** room: SceneRoom.id + label */
+  roomId?: string;
+  roomLabel?: string;
+}
+interface SpotRow {
+  key: string;
+  primary: string;
+  secondary?: string;
+  color?: string;
+}
+
+/** 씬 모드 핫스팟(D34 W1-4·W2-1) — 기존 가구 위 아이콘 칩(좌석 마커와 동일 z 패턴). */
+const HOTSPOTS: { id: string; kind: SpotKind; title: string; label: string; icon: string; n: Vec2 }[] = [
+  { id: 'board', kind: 'board', title: '게시판 — 공지사항', label: '공지', icon: '📌', n: { x: 0.615, y: 0.27 } },
+  { id: 'cabinet', kind: 'cabinet', title: '서류함 — 보고서', label: '보고서', icon: '🗂️', n: { x: 0.263, y: 0.35 } },
+];
+
+export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeViewport2DProps = {}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [stage, setStage] = useState({ w: 0, h: 0 });
+  // D33: 존 라벨은 호버/클릭 시에만(P0-5) · 미니맵 접기 + 층 전환 흡수(P0-3).
+  const [hoverRoom, setHoverRoom] = useState<string | null>(null);
+  const [minimapOpen, setMinimapOpen] = useState(true);
+  const [activeFloor, setActiveFloor] = useState('2F');
+  // D34 SpotCard — 공간 진입점 미니 카드(20-spec). rows=null이면 로딩.
+  const router = useRouter();
+  const [spot, setSpot] = useState<SpotState | null>(null);
+  const [spotRows, setSpotRows] = useState<SpotRow[] | null>(null);
+  const [spotLive, setSpotLive] = useState<{ meetingId?: string; sub?: string } | null>(null);
 
   // 회의 명시입장(D24) 프롬프트 — 서버 allowed 응답 시 표시.
   const [meetingPrompt, setMeetingPrompt] = useState<{ roomId: string; label: string } | null>(null);
@@ -415,6 +466,131 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
     setGlowRoom(null);
   }, [mySeat, moveTo, showToast]);
 
+  // ── D34 SpotCard 데이터 로더(20-spec §2) — 카드 열릴 때 on-demand 조회, 신규 API 없음 ──
+  useEffect(() => {
+    if (!spot) return;
+    let cancelled = false;
+    setSpotRows(null);
+    setSpotLive(null);
+    const fmtT = (iso: string) =>
+      new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Seoul' });
+    (async () => {
+      const rows: SpotRow[] = [];
+      let live: { meetingId?: string; sub?: string } | null = null;
+      try {
+        if (spot.kind === 'profile') {
+          const emp = (
+            await api.get<Array<{ id: number; name: string; team_name?: string; presence_status?: string | null }>>(
+              '/api/employees?limit=100',
+            )
+          ).find((e) => String(e.id) === spot.userId);
+          let liveStatus: string | null = null;
+          playersRef.current.forEach((p) => {
+            if (p.userId === spot.userId) liveStatus = p.status;
+          });
+          const meta = PRESENCE_META[liveStatus ?? emp?.presence_status ?? 'offline'] ?? PRESENCE_META.offline;
+          rows.push({ key: 'team', primary: emp?.team_name ?? '팀 미지정', secondary: '소속' });
+          rows.push({ key: 'status', primary: meta.label, secondary: '상태', color: meta.color });
+        } else if (spot.kind === 'myseat') {
+          const today = new Date().toISOString().slice(0, 10);
+          const logs = await api.get<Array<{ id: number; title: string; status: string; logged_at: string }>>(
+            `/api/work-logs?user_id=${myId}&date=${today}&limit=4`,
+          );
+          if (!Array.isArray(logs) || logs.length === 0) rows.push({ key: 'nolog', primary: '오늘 등록된 업무가 없습니다' });
+          else for (const l of logs) rows.push({ key: `log-${l.id}`, primary: l.title, secondary: fmtT(l.logged_at), color: l.status === 'done' ? '#22C55E' : '#3B5BFE' });
+          try {
+            const kpi = await api.get<Array<{ metric: string; value: number | null; final_score: number | null }>>(
+              `/api/kpi-results?user_id=${myId}&period_type=quarterly`,
+            );
+            const collab = Array.isArray(kpi) ? kpi.find((r) => r.metric === 'collaboration_score') : undefined;
+            if (collab) live = { sub: `나의 KPI(협업) ${Math.round(collab.final_score ?? collab.value ?? 0)}점` };
+          } catch {
+            // KPI 미집계 — 부제 생략
+          }
+        } else if (spot.kind === 'room') {
+          const roomsApi = await api.get<Array<{ id: string; name: string }>>('/api/rooms');
+          const room = (Array.isArray(roomsApi) ? roomsApi : []).find(
+            (r) => r.name?.toLowerCase() === (spot.roomLabel ?? '').toLowerCase(),
+          );
+          if (room) {
+            const kstDay = new Date(Date.now() + 9 * 3600_000);
+            kstDay.setUTCHours(0, 0, 0, 0);
+            const from = new Date(kstDay.getTime() - 9 * 3600_000);
+            const to = new Date(from.getTime() + 24 * 3600_000);
+            const meetings = await api.get<Array<{ id: string; room_id?: string; title: string; scheduled_at: string; status: string }>>(
+              `/api/meetings?scheduled_from=${encodeURIComponent(from.toISOString())}&scheduled_to=${encodeURIComponent(to.toISOString())}&limit=20`,
+            );
+            const mine = (Array.isArray(meetings) ? meetings : []).filter((m) => m.room_id === room.id && m.status !== 'cancelled');
+            if (mine.length === 0) rows.push({ key: 'nomeet', primary: '오늘 이 방 일정이 없습니다' });
+            for (const m of mine.slice(0, 4)) {
+              rows.push({ key: `m-${m.id}`, primary: m.title, secondary: fmtT(m.scheduled_at), color: m.status === 'in_progress' ? '#EF4444' : undefined });
+              if (m.status === 'in_progress' && !live?.meetingId) live = { ...(live ?? {}), meetingId: m.id };
+            }
+          } else {
+            rows.push({ key: 'noroom', primary: '이 방의 회의실 정보가 없습니다' });
+          }
+          if (spot.roomId === 'lounge') {
+            try {
+              const msgs = await api.get<Array<{ id: string; user_name: string; content: string }>>(
+                '/api/chat/messages?channel=general&limit=3',
+              );
+              for (const m of Array.isArray(msgs) ? msgs : []) rows.push({ key: `c-${m.id}`, primary: m.content.slice(0, 40), secondary: m.user_name, color: '#38BDF8' });
+            } catch {
+              // 채널 미가용 — 생략
+            }
+          }
+        } else if (spot.kind === 'board') {
+          const res = await api.get<{ items: Array<{ id: string; title: string; created_at: string; pinned?: boolean }> }>(
+            '/api/notices?limit=5',
+          );
+          const items = Array.isArray(res?.items) ? res.items : [];
+          if (items.length === 0) rows.push({ key: 'no', primary: '공지사항이 없습니다' });
+          for (const n of items) rows.push({ key: `n-${n.id}`, primary: n.title, secondary: n.created_at?.slice(0, 10), color: n.pinned ? '#3B5BFE' : undefined });
+        } else if (spot.kind === 'cabinet') {
+          const reps = await api.get<Array<{ id: string; title: string; report_type: string; report_date: string; status: string }>>(
+            '/api/reports?limit=5',
+          );
+          const list = Array.isArray(reps) ? reps.slice(0, 5) : [];
+          if (list.length === 0) rows.push({ key: 'no', primary: '보고서가 없습니다' });
+          for (const r of list) rows.push({ key: `r-${r.id}`, primary: r.title, secondary: `${r.report_date} · ${r.status}` });
+        } else if (spot.kind === 'zone') {
+          rows.push({ key: 'z', primary: spot.title, secondary: '팀 구역' });
+        }
+      } catch {
+        rows.length = 0;
+        rows.push({ key: 'err', primary: '불러오지 못했습니다' });
+      }
+      if (!cancelled) {
+        setSpotRows(rows);
+        setSpotLive(live);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // playersRef는 ref — spot 변경 시에만 조회.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spot, myId]);
+
+  /** D34: 내 자율석 반납 — 구 seatPrompt release 모드를 myseat 카드 액션으로 흡수(20-spec §3). */
+  const releaseSeat = useCallback(
+    async (seat: SeatInfo) => {
+      if (seatBusy) return;
+      setSeatBusy(true);
+      try {
+        await api.post(`/api/seat-assignments/${seat.id}/release`, {});
+        showToast(`${seatLabel(seat)} 좌석을 반납했습니다`);
+        setSpot(null);
+      } catch (err) {
+        showToast(err instanceof ApiError ? err.message : '좌석 요청에 실패했습니다');
+      } finally {
+        setSeatBusy(false);
+        loadSeats();
+      }
+    },
+    [seatBusy, seatLabel, showToast, loadSeats],
+  );
+
   /** 점유자 표시용 이름 — 접속 중인 플레이어에서 userId 매칭(없으면 null). */
   const occupantName = useCallback(
     (userId: number | null) => {
@@ -434,7 +610,8 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
     (seat: SeatInfo) => {
       const isMine = seat.assigned_user_id != null && String(seat.assigned_user_id) === myId;
       if (seat.status === 'occupied') {
-        if (isMine) setSeatPrompt({ mode: 'release', seat });
+        // D34: 내 좌석 클릭 = myseat 카드(오늘 업무·KPI·비우기 통합) — 구 release 프롬프트 흡수.
+        if (isMine) setSpot({ kind: 'myseat', title: `${myName} — 내 자리` });
         else {
           const who = occupantName(seat.assigned_user_id);
           showToast(`${seatLabel(seat)} — ${who ? `${who} ` : ''}사용 중인 좌석입니다`);
@@ -454,33 +631,29 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
     [myId, occupantName, seatLabel, showToast],
   );
 
-  /** 착석/반납 확정 — REST(§3.11). sit_request(realtime)는 이번 스코프 미사용. */
+  /** 착석 확정 — REST(§3.11). sit_request(realtime)는 이번 스코프 미사용.
+   *  반납은 D34로 myseat 카드의 releaseSeat로 이동(프롬프트는 sit 전용). */
   const confirmSeatPrompt = useCallback(async () => {
     if (!seatPrompt || seatBusy) return;
-    const { mode, seat } = seatPrompt;
+    const { seat } = seatPrompt;
     setSeatBusy(true);
     try {
-      if (mode === 'sit') {
-        await api.post('/api/seat-assignments', { seat_id: seat.id });
-        // 자율석 이동: 이전에 점유한 다른 자율석은 반납(한 사람이 복수 좌석 점유 방지).
-        const prevFree = seats.filter(
-          (s) =>
-            s.id !== seat.id &&
-            s.type === 'free' &&
-            s.status === 'occupied' &&
-            s.assigned_user_id != null &&
-            String(s.assigned_user_id) === myId,
-        );
-        for (const p of prevFree) {
-          await api.post(`/api/seat-assignments/${p.id}/release`, {}).catch(() => {});
-        }
-        // 아바타를 좌석의 최근접 보행 지점으로 이동 — 도착하면 착석 렌더(SEAT_SNAP_M).
-        moveTo(nearestWalkableM({ x: seat.coords.x, y: seat.coords.y }));
-        showToast(`${seatLabel(seat)} 좌석을 점유했습니다`);
-      } else {
-        await api.post(`/api/seat-assignments/${seat.id}/release`, {});
-        showToast(`${seatLabel(seat)} 좌석을 반납했습니다`);
+      await api.post('/api/seat-assignments', { seat_id: seat.id });
+      // 자율석 이동: 이전에 점유한 다른 자율석은 반납(한 사람이 복수 좌석 점유 방지).
+      const prevFree = seats.filter(
+        (s) =>
+          s.id !== seat.id &&
+          s.type === 'free' &&
+          s.status === 'occupied' &&
+          s.assigned_user_id != null &&
+          String(s.assigned_user_id) === myId,
+      );
+      for (const p of prevFree) {
+        await api.post(`/api/seat-assignments/${p.id}/release`, {}).catch(() => {});
       }
+      // 아바타를 좌석의 최근접 보행 지점으로 이동 — 도착하면 착석 렌더(SEAT_SNAP_M).
+      moveTo(nearestWalkableM({ x: seat.coords.x, y: seat.coords.y }));
+      showToast(`${seatLabel(seat)} 좌석을 점유했습니다`);
     } catch (err) {
       // 409 seat_already_occupied 등 — ApiError.message(한국어 매핑/코드) 표시.
       showToast(err instanceof ApiError ? err.message : '좌석 요청에 실패했습니다');
@@ -788,6 +961,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
       const n: Vec2 = { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
       const clamped = clampToWalkable(n);
       moveTo(normToMeters(clamped)); // A* 경로 — 유리벽 회의실도 문으로 진입
+      setSpot(null); // D34: 빈 곳 클릭(이동) 시 스팟 카드 닫기
       // 방 폴리곤 안 클릭이면 글로우도.
       const room = roomsRef.current.find((rm) => pointInPolygon(n, rm.polygon));
       if (room) setGlowRoom(room.id);
@@ -948,6 +1122,34 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           </div>
         )}
 
+        {/* 존 바닥 색면(P0-5) — 씬 모드 한정(배포 모드는 자체 존 렌더). 바닥(배경) 위·가구/아바타(z≥2000) 아래.
+            polygon이 호버 감지도 담당(라벨 호버 표시) — 클릭은 스테이지로 버블(클릭 이동 유지). */}
+        {!useDeployed && ASSETS_READY && (
+          <svg
+            className="absolute inset-0 w-full h-full"
+            viewBox="0 0 1 1"
+            preserveAspectRatio="none"
+            style={{ zIndex: 30, pointerEvents: 'none' }}
+          >
+            {ROOMS.map((r) => {
+              const tint = ROOM_TINTS[r.id];
+              if (!tint) return null;
+              return (
+                <polygon
+                  key={r.id}
+                  points={r.polygon.map((v) => `${v.x},${v.y}`).join(' ')}
+                  fill={`${tint}${hoverRoom === r.id || glowRoom === r.id ? '2e' : '1a'}`}
+                  stroke={`${tint}55`}
+                  strokeWidth={0.0018}
+                  style={{ pointerEvents: 'visiblePainted', transition: 'fill 200ms ease' }}
+                  onMouseEnter={() => setHoverRoom(r.id)}
+                  onMouseLeave={() => setHoverRoom((cur) => (cur === r.id ? null : cur))}
+                />
+              );
+            })}
+          </svg>
+        )}
+
         {/* 방 클릭 글로우 (overlay-tokens.activeGlow) */}
         {glowRect && (
           <div
@@ -965,24 +1167,32 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           />
         )}
 
-        {/* 방 라벨 (overlay-tokens.roomLabel) */}
+        {/* 방 라벨 (overlay-tokens.roomLabel) — D33(P0-5): 씬 모드에선 호버/선택 시에만 표시.
+            배포 모드는 색면 존이 자체 렌더라 라벨 상시 유지. */}
         {activeRooms.map((room) => {
           const c = polygonCentroid(room.polygon);
+          const visible = useDeployed || hoverRoom === room.id || glowRoom === room.id;
           return (
             <button
               key={room.id}
               type="button"
+              tabIndex={visible ? 0 : -1}
+              aria-hidden={!visible}
               onClick={(e) => {
                 e.stopPropagation();
-                setGlowRoom((cur) => (cur === room.id ? null : room.id));
+                // D34 W1-3: 방 라벨 클릭 = 오늘 일정 카드(예약/입장 진입점)
+                setGlowRoom(room.id);
+                setSpot({ kind: 'room', title: room.label, roomId: room.id, roomLabel: room.label });
               }}
-              className="absolute -translate-x-1/2 -translate-y-1/2 px-3 py-1.5 rounded-[14px] text-[12px] font-bold text-white"
+              className="absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-[12px] text-[11px] font-bold text-white transition-opacity duration-200"
               style={{
                 left: `${c.x * 100}%`,
                 top: `${c.y * 100}%`,
                 background: 'rgba(7,14,27,.88)',
                 border: '1px solid rgba(255,255,255,.14)',
                 zIndex: 21000,
+                opacity: visible ? 1 : 0,
+                pointerEvents: visible ? 'auto' : 'none',
               }}
             >
               {room.label}
@@ -990,13 +1200,18 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           );
         })}
 
-        {/* 구역(zone) 라벨 — 배포 레이아웃에만 존재(팀 구역 배치 반영). */}
+        {/* 구역(zone) 라벨 — 배포 레이아웃에만 존재(팀 구역 배치 반영). D34 W2-3: 클릭=팀 존 카드. */}
         {dynZones.map((z) => {
           const c = polygonCentroid(z.poly);
           return (
-            <div
+            <button
               key={z.id}
-              className="absolute -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-[10px] text-[10px] font-semibold pointer-events-none"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSpot({ kind: 'zone', title: z.label });
+              }}
+              className="absolute -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-[10px] text-[10px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
               style={{
                 left: `${c.x * 100}%`,
                 top: `${c.y * 100}%`,
@@ -1004,10 +1219,11 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
                 color: z.color,
                 border: `1px solid ${z.color}`,
                 zIndex: 20500,
+                cursor: 'pointer',
               }}
             >
               {z.label}
-            </div>
+            </button>
           );
         })}
 
@@ -1109,6 +1325,36 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           );
         })}
 
+        {/* D34 핫스팟(씬 모드 한정) — 게시판(공지)/서류함(보고서) 아이콘 칩, 좌석 마커와 동일 z 패턴 */}
+        {!useDeployed &&
+          ASSETS_READY &&
+          HOTSPOTS.map((h) => (
+            <button
+              key={h.id}
+              type="button"
+              title={h.title}
+              aria-label={h.title}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSpot({ kind: h.kind, title: h.title });
+              }}
+              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center transition-transform hover:scale-125 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+              style={{
+                left: `${h.n.x * 100}%`,
+                top: `${h.n.y * 100}%`,
+                width: 24,
+                height: 24,
+                fontSize: 12,
+                background: 'rgba(7,16,29,.85)',
+                border: '1px solid rgba(255,255,255,.28)',
+                zIndex: SEAT_Z,
+                cursor: 'pointer',
+              }}
+            >
+              {h.icon}
+            </button>
+          ))}
+
         {/* 아바타 레이어 */}
         {shells.map((s) => (
           <div
@@ -1127,6 +1373,20 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
                 background: 'radial-gradient(ellipse, rgba(0,0,0,.4) 0%, rgba(0,0,0,0) 70%)',
               }}
             />
+            {/* 본인 발밑 링(D33 P0-4) — "(나)" 텍스트 대신 링으로 본인 식별 */}
+            {s.isSelf && (
+              <div
+                aria-hidden
+                className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 pointer-events-none"
+                style={{
+                  width: '86%',
+                  height: 15,
+                  borderRadius: '50%',
+                  border: '2px solid rgba(59,91,254,.8)',
+                  boxShadow: '0 0 10px rgba(59,91,254,.55), inset 0 0 6px rgba(59,91,254,.35)',
+                }}
+              />
+            )}
             {/* 코드 모션 래퍼(바운스) 안에 프레임 이미지 — flip(scaleX)은 img, 바운스는 래퍼로 분리 */}
             <div className="vo-motion vo-anim-idle">
               {ASSETS_READY ? (
@@ -1158,39 +1418,41 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
                 </div>
               )}
             </div>
-            {/* 이름표 (show_nameplate=false면 숨김, #6) */}
+            {/* 이름표 (show_nameplate=false면 숨김, #6) — D33 P0-4 다이어트:
+                이름+상태점만(상태 텍스트·"(나)" 제거), 본인=파란 테두리+발밑 링으로 식별.
+                본인 점=프레즌스 상태색(업무중 즉시 식별), 타인 점=정체성 색(accent). */}
             {s.showNameplate && (
               <div
-                className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-semibold text-white flex items-center gap-1"
+                className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap px-1.5 py-[1px] rounded-full text-[10px] font-medium text-white flex items-center gap-1"
                 style={{
-                  top: -20,
-                  background: 'rgba(7,16,29,.92)',
-                  border: `1px solid ${s.isSelf ? '#3B5BFE' : s.accent}`,
-                  boxShadow: s.isSelf ? '0 0 0 1px #3B5BFE' : undefined,
+                  top: -14,
+                  background: 'rgba(7,16,29,.78)',
+                  border: `1px solid ${s.isSelf ? 'rgba(59,91,254,.9)' : 'rgba(255,255,255,.16)'}`,
                 }}
               >
-                {/* 본인은 이름표 점을 '프레즌스 상태색'으로 — 내가 업무중인지 즉시 식별 */}
                 <span
-                  className="w-1.5 h-1.5 rounded-full inline-block"
+                  className="w-1.5 h-1.5 rounded-full inline-block flex-shrink-0"
                   style={{ background: s.isSelf ? (PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).color : s.accent }}
                 />
                 {s.name}
-                {s.isSelf ? ' (나)' : ''}
-                {s.isSelf && (
-                  <span
-                    className="ml-0.5 px-1 rounded-[4px] font-bold"
-                    style={{
-                      fontSize: 8,
-                      lineHeight: '12px',
-                      background: `${(PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).color}2e`,
-                      color: (PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).color,
-                    }}
-                  >
-                    {(PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).label}
-                  </span>
-                )}
               </div>
             )}
+            {/* D34 W1-1/W1-2: 아바타 클릭 = 프로필(타인)/내 업무(본인) 카드 진입점 */}
+            <button
+              type="button"
+              aria-label={s.isSelf ? '내 업무·자리 카드' : `${s.name} 프로필`}
+              title={s.isSelf ? '내 업무·자리' : `${s.name} 프로필`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSpot(
+                  s.isSelf
+                    ? { kind: 'myseat', title: `${s.name} — 내 자리` }
+                    : { kind: 'profile', title: s.name, userId: s.userId },
+                );
+              }}
+              className="absolute inset-0 pointer-events-auto"
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+            />
           </div>
         ))}
 
@@ -1240,7 +1502,7 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           </div>
         )}
 
-        {/* 착석/반납 확인 프롬프트(§3.11) — 회의 프롬프트와 동일 스타일 상단 카드 */}
+        {/* 착석 확인 프롬프트(§3.11, D34로 sit 전용) — 회의 프롬프트와 동일 스타일 상단 카드 */}
         {seatPrompt && (
           <div
             className={`absolute left-1/2 ${meetingPrompt ? 'top-16' : 'top-3'} -translate-x-1/2 flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-[13px] text-white shadow-lg`}
@@ -1248,43 +1510,15 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
             onClick={(e) => e.stopPropagation()}
           >
             <span>
-              {seatPrompt.mode === 'sit' ? (
-                <>
-                  이 자리에 앉기 (<b>{seatLabel(seatPrompt.seat)}</b>)
-                </>
-              ) : (
-                <>
-                  내 좌석 (<b>{seatLabel(seatPrompt.seat)}</b>)
-                </>
-              )}
+              이 자리에 앉기 (<b>{seatLabel(seatPrompt.seat)}</b>)
             </span>
-            {seatPrompt.mode === 'release' && (
-              /* 내 좌석 클릭의 1차 의도는 착석 — 반납은 보조 액션(적색)으로 분리 */
-              <button
-                type="button"
-                onClick={() => {
-                  const s = seatPrompt.seat;
-                  if (typeof s.coords?.x === 'number' && typeof s.coords?.y === 'number') {
-                    moveTo(nearestWalkableM({ x: s.coords.x, y: s.coords.y }));
-                  }
-                  setSeatPrompt(null);
-                }}
-                className="px-3 py-1 rounded-md bg-primary text-white text-xs font-semibold hover:bg-primary-hover"
-              >
-                여기 앉기
-              </button>
-            )}
             <button
               type="button"
               disabled={seatBusy}
               onClick={() => void confirmSeatPrompt()}
-              className={`px-3 py-1 rounded-md text-white text-xs font-semibold disabled:opacity-50 ${
-                seatPrompt.mode === 'sit'
-                  ? 'bg-primary hover:bg-primary-hover'
-                  : 'bg-rose-600 hover:bg-rose-500' /* 반납은 적색 — 착석 확인과 오인 방지 */
-              }`}
+              className="px-3 py-1 rounded-md text-white text-xs font-semibold disabled:opacity-50 bg-primary hover:bg-primary-hover"
             >
-              {seatPrompt.mode === 'sit' ? '앉기' : '비우기'}
+              앉기
             </button>
             <button
               type="button"
@@ -1296,157 +1530,321 @@ export default function OfficeViewport2D({ onJoinMeeting }: OfficeViewport2DProp
           </div>
         )}
 
-        {/* 안내 토스트 — 사용 중 좌석/오류 메시지(§3.11) */}
+        {/* D34 SpotCard(20-spec) — 공간 진입점 미니 카드. 폼/상세는 오버레이 창 라우트로. */}
+        {spot && (
+          <div
+            className={`absolute left-1/2 ${meetingPrompt || seatPrompt ? 'top-20' : 'top-3'} -translate-x-1/2 w-72 rounded-xl text-white shadow-2xl overflow-hidden`}
+            style={{ background: 'rgba(7,16,29,.96)', border: '1px solid #273350', zIndex: 23000 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pl-3 pr-2 py-2 border-b border-border-subtle">
+              <span className="text-[12px] font-semibold truncate">{spot.title}</span>
+              <button
+                type="button"
+                onClick={() => setSpot(null)}
+                aria-label="닫기"
+                className="w-6 h-6 rounded-lg flex items-center justify-center text-text-muted hover:text-white hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+              </button>
+            </div>
+            {spotLive?.sub && (
+              <div className="px-3 pt-2 text-[10px] font-medium" style={{ color: '#38BDF8' }}>
+                {spotLive.sub}
+              </div>
+            )}
+            <div className="py-1 max-h-44 overflow-y-auto">
+              {spotRows === null ? (
+                <div className="px-3 py-3 text-[11px] text-text-muted">불러오는 중…</div>
+              ) : (
+                spotRows.map((r) => (
+                  <div key={r.key} className="px-3 py-1.5 flex items-start gap-2">
+                    <span className="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: r.color ?? 'rgba(255,255,255,.25)' }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] text-white truncate">{r.primary}</div>
+                      {r.secondary && <div className="text-[9px] text-text-muted">{r.secondary}</div>}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 px-2 py-2 border-t border-border-subtle flex-wrap">
+              {spot.kind === 'profile' && (
+                <button type="button" onClick={() => router.push('/chat')} className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-primary text-white hover:bg-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan">
+                  채팅 열기
+                </button>
+              )}
+              {spot.kind === 'myseat' && (
+                <>
+                  <button type="button" onClick={() => router.push('/work-log')} className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-primary text-white hover:bg-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan">
+                    기록 추가
+                  </button>
+                  <button type="button" onClick={() => router.push('/kpi')} className="px-2.5 py-1 rounded-lg text-[10px] font-medium border border-border-subtle text-text-secondary hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan">
+                    KPI 상세
+                  </button>
+                  {mySeat && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        goMySeat();
+                        setSpot(null);
+                      }}
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-medium border border-border-subtle text-text-secondary hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                    >
+                      내 자리로 걷기
+                    </button>
+                  )}
+                  {mySeat && mySeat.status === 'occupied' && (
+                    <button
+                      type="button"
+                      disabled={seatBusy}
+                      onClick={() => void releaseSeat(mySeat)}
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-rose-600 hover:bg-rose-500 text-white disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                    >
+                      자리 비우기
+                    </button>
+                  )}
+                </>
+              )}
+              {spot.kind === 'room' && (
+                <>
+                  <button type="button" onClick={() => router.push('/meetings')} className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-primary text-white hover:bg-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan">
+                    예약
+                  </button>
+                  {spotLive?.meetingId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (spot.roomId) onJoinMeeting?.(spot.roomId);
+                        setSpot(null);
+                      }}
+                      className="px-2.5 py-1 rounded-lg text-[10px] font-semibold text-white bg-rose-600 hover:bg-rose-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                    >
+                      ● 입장하기
+                    </button>
+                  )}
+                  {spot.roomId === 'lounge' && (
+                    <button type="button" onClick={() => router.push('/chat')} className="px-2.5 py-1 rounded-lg text-[10px] font-medium border border-border-subtle text-text-secondary hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan">
+                      채팅 열기
+                    </button>
+                  )}
+                </>
+              )}
+              {spot.kind === 'cabinet' && (
+                <button type="button" onClick={() => router.push('/reports')} className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-primary text-white hover:bg-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan">
+                  보고서 열기
+                </button>
+              )}
+              {spot.kind === 'zone' && (
+                <>
+                  <button type="button" onClick={() => router.push('/work-status')} className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-primary text-white hover:bg-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan">
+                    업무현황
+                  </button>
+                  <button type="button" onClick={() => router.push('/chat')} className="px-2.5 py-1 rounded-lg text-[10px] font-medium border border-border-subtle text-text-secondary hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan">
+                    팀 채팅
+                  </button>
+                </>
+              )}
+              {spot.kind === 'board' && (
+                <span className="px-1 text-[9px] text-text-muted">최근 공지 5건 — 전체는 상단 알림에서</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 안내 토스트 — 사용 중 좌석/오류 메시지(§3.11). bottom-16: 하단 독(D33)과 겹침 방지 */}
         {toast && (
           <div
-            className="absolute left-1/2 bottom-6 -translate-x-1/2 px-3.5 py-2 rounded-lg text-[12px] text-white pointer-events-none whitespace-nowrap"
+            className="absolute left-1/2 bottom-16 -translate-x-1/2 px-3.5 py-2 rounded-lg text-[12px] text-white pointer-events-none whitespace-nowrap"
             style={{ background: 'rgba(7,16,29,.94)', border: '1px solid rgba(255,255,255,.16)', zIndex: 23000 }}
           >
             {toast}
           </div>
         )}
-        {/* 미니맵 (좌하단 오버레이, design-style §4) — 실시간 아바타 위치(#12) */}
+        {/* 미니맵 (좌하단 오버레이, design-style §4) — 실시간 아바타 위치(#12).
+            D33 P0-3: 층 전환을 헤더로 흡수(구 사이드바 도면 위젯 대체) + 접기 지원. */}
+        {minimapOpen ? (
+          <div
+            className="absolute left-3 bottom-3 rounded-lg overflow-hidden"
+            style={{
+              width: 152,
+              background: 'rgba(7,16,29,.9)',
+              border: '1px solid #273350',
+              zIndex: 22000,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-0.5 px-1 pt-1 pb-0.5">
+              {FLOORS.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setActiveFloor(f)}
+                  aria-pressed={activeFloor === f}
+                  title={f === '2F' ? '2F' : `${f} — 준비중`}
+                  className={[
+                    'flex-1 py-0.5 rounded text-[9px] font-semibold transition-colors leading-none',
+                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan',
+                    activeFloor === f ? 'bg-primary text-white' : 'text-text-muted hover:text-text-secondary',
+                  ].join(' ')}
+                >
+                  {f}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setMinimapOpen(false)}
+                title="미니맵 접기"
+                aria-label="미니맵 접기"
+                className="flex-shrink-0 w-4 h-4 rounded flex items-center justify-center text-text-muted hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" className="w-2.5 h-2.5"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+              </button>
+            </div>
+            <div style={{ height: Math.round((152 * PLATE_H) / PLATE_W) }} className="pointer-events-none">
+              <svg viewBox="0 0 100 56.3" className="w-full h-full" preserveAspectRatio="none">
+                {activeRooms.map((r) => (
+                  <polygon
+                    key={r.id}
+                    points={r.polygon.map((p) => `${p.x * 100},${p.y * 56.3}`).join(' ')}
+                    fill="#1E2940"
+                    stroke="#38BDF8"
+                    strokeWidth={0.4}
+                    opacity={0.5}
+                  />
+                ))}
+                {dots.map((d) => (
+                  <circle
+                    key={d.key}
+                    cx={d.nx * 100}
+                    cy={d.ny * 56.3}
+                    r={d.isSelf ? 2 : 1.5}
+                    fill={d.isSelf ? '#3B5BFE' : '#22C55E'}
+                    stroke={d.isSelf ? '#ffffff' : 'none'}
+                    strokeWidth={0.5}
+                  />
+                ))}
+              </svg>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMinimapOpen(true);
+            }}
+            title="미니맵 열기"
+            aria-label="미니맵 열기"
+            className="absolute left-3 bottom-3 w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+            style={{ background: 'rgba(7,16,29,.9)', border: '1px solid #273350', zIndex: 22000 }}
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM17.707 5.293L14 1.586v12.828l2.293 2.293A1 1 0 0018 16V6a1 1 0 00-.293-.707z" clipRule="evenodd" /></svg>
+          </button>
+        )}
+        {/* D33 하단 통합 독(19-spec P0-2) — 컨트롤 필(연결 점·내자리로·테마·상태) + 셸 세그먼트(dockSlot).
+            연결 상태는 점+툴팁만, 오프라인/재연결 시에만 문구·다시연결 노출. 상태 메뉴는 위로 열림. */}
         <div
-          className="absolute left-3 bottom-3 rounded-lg overflow-hidden pointer-events-none"
-          style={{
-            width: 152,
-            height: Math.round((152 * PLATE_H) / PLATE_W),
-            background: 'rgba(7,16,29,.9)',
-            border: '1px solid #273350',
-            zIndex: 22000,
-          }}
-        >
-          <svg viewBox="0 0 100 56.3" className="w-full h-full" preserveAspectRatio="none">
-            {activeRooms.map((r) => (
-              <polygon
-                key={r.id}
-                points={r.polygon.map((p) => `${p.x * 100},${p.y * 56.3}`).join(' ')}
-                fill="#1E2940"
-                stroke="#38BDF8"
-                strokeWidth={0.4}
-                opacity={0.5}
-              />
-            ))}
-            {dots.map((d) => (
-              <circle
-                key={d.key}
-                cx={d.nx * 100}
-                cy={d.ny * 56.3}
-                r={d.isSelf ? 2 : 1.5}
-                fill={d.isSelf ? '#3B5BFE' : '#22C55E'}
-                stroke={d.isSelf ? '#ffffff' : 'none'}
-                strokeWidth={0.5}
-              />
-            ))}
-          </svg>
-        </div>
-        {/* 연결 상태 칩 + 다시 연결(§5.3) + 내 상태 버튼(§1.2) */}
-        <div
-          className="absolute left-3 top-3 flex items-center gap-1.5"
+          className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2"
           style={{ zIndex: 22000 }}
           onClick={(e) => e.stopPropagation()}
         >
           <div
-            className="px-2.5 py-1 rounded-lg text-[10px] font-medium tracking-wide flex items-center gap-1.5"
-            style={{ background: 'rgba(13,27,54,.78)', backdropFilter: 'blur(6px)' }}
+            className="flex items-center gap-0.5 pl-2.5 pr-1 py-1 rounded-full border border-border-subtle"
+            style={{ background: 'rgba(13,27,54,.88)', backdropFilter: 'blur(6px)' }}
           >
-            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: statusChip.color }} />
-            <span className="text-text-secondary">{statusChip.text}</span>
-          </div>
-          {offline && (
-            <button
-              type="button"
-              onClick={reconnect}
-              className="px-2.5 py-1 rounded-lg text-[10px] font-semibold text-white hover:bg-primary/30"
-              style={{ background: 'rgba(13,27,54,.78)', backdropFilter: 'blur(6px)', border: '1px solid #3B5BFE' }}
+            <span
+              title={statusChip.text}
+              aria-label={`실시간 연결 상태: ${statusChip.text}`}
+              className="flex items-center gap-1.5 pr-1.5"
             >
-              다시 연결
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={goMySeat}
-            title={mySeat ? `내 좌석(${seatLabel(mySeat)})으로 걸어가 앉기` : '배정된 좌석 없음 — 초록 좌석을 클릭해 앉기'}
-            className="px-2.5 py-1 rounded-lg text-[10px] font-semibold flex items-center gap-1.5"
-            style={{
-              background: 'rgba(13,27,54,.78)',
-              backdropFilter: 'blur(6px)',
-              border: `1px solid ${mySeat ? '#3B5BFE' : 'rgba(255,255,255,.12)'}`,
-              color: mySeat ? '#fff' : 'rgba(255,255,255,.55)',
-            }}
-          >
-            <span className="w-1.5 h-1.5 rounded-[2px] inline-block" style={{ background: mySeat ? '#3B5BFE' : '#64748B' }} />
-            내 자리로
-          </button>
-          <button
-            type="button"
-            onClick={cycleTheme}
-            title="씬 조명 테마 — 클릭해서 전환(자동→주간→석양→야간)"
-            className="px-2.5 py-1 rounded-lg text-[10px] font-medium tracking-wide flex items-center gap-1.5"
-            style={{
-              background: 'rgba(13,27,54,.78)',
-              backdropFilter: 'blur(6px)',
-              border: '1px solid rgba(255,255,255,.12)',
-            }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: sceneTheme.chip }} />
-            <span className="text-text-secondary">
-              {themeMode === 'auto' ? `자동 · ${sceneTheme.label}` : sceneTheme.label}
+              <span className="w-2 h-2 rounded-full inline-block flex-shrink-0" style={{ background: statusChip.color }} />
+              {status !== 'connected' && (
+                <span className="text-[10px] text-text-secondary whitespace-nowrap">{statusChip.text}</span>
+              )}
             </span>
-          </button>
-          <div className="relative">
+            {offline && (
+              <button
+                type="button"
+                onClick={reconnect}
+                className="px-2 py-1 rounded-full text-[10px] font-semibold text-white hover:bg-primary/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                style={{ border: '1px solid #3B5BFE' }}
+              >
+                다시 연결
+              </button>
+            )}
+            <span className="w-px h-4 bg-border-subtle mx-1" aria-hidden />
             <button
               type="button"
-              disabled={status !== 'connected'}
-              onClick={() => setStatusMenuOpen((o) => !o)}
-              title="내 상태 변경"
-              className="px-2.5 py-1 rounded-lg text-[10px] font-medium tracking-wide flex items-center gap-1.5 disabled:opacity-40"
-              style={{
-                background: 'rgba(13,27,54,.78)',
-                backdropFilter: 'blur(6px)',
-                border: '1px solid rgba(255,255,255,.12)',
-              }}
+              onClick={goMySeat}
+              title={mySeat ? `내 좌석(${seatLabel(mySeat)})으로 걸어가 앉기` : '배정된 좌석 없음 — 초록 좌석을 클릭해 앉기'}
+              className="px-2 py-1 rounded-full text-[10px] font-semibold flex items-center gap-1.5 hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+              style={{ color: mySeat ? '#fff' : 'rgba(255,255,255,.55)' }}
             >
-              <span
-                className="w-1.5 h-1.5 rounded-full inline-block"
-                style={{ background: (PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).color }}
-              />
-              <span className="text-text-secondary">
-                {(PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).label}
-              </span>
-              <span className="text-text-muted text-[8px]">▾</span>
+              <span className="w-1.5 h-1.5 rounded-[2px] inline-block" style={{ background: mySeat ? '#3B5BFE' : '#64748B' }} />
+              내 자리로
             </button>
-            {statusMenuOpen && status === 'connected' && (
-              <div
-                className="absolute left-0 top-full mt-1 rounded-lg py-1"
-                style={{ background: 'rgba(7,16,29,.96)', border: '1px solid #273350', minWidth: 118 }}
+            <button
+              type="button"
+              onClick={cycleTheme}
+              title="씬 조명 테마 — 클릭해서 전환(자동→주간→석양→야간)"
+              className="px-2 py-1 rounded-full text-[10px] font-medium flex items-center gap-1.5 hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+            >
+              <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: sceneTheme.chip }} />
+              <span className="text-text-secondary">
+                {themeMode === 'auto' ? `자동 · ${sceneTheme.label}` : sceneTheme.label}
+              </span>
+            </button>
+            <div className="relative">
+              <button
+                type="button"
+                disabled={status !== 'connected'}
+                onClick={() => setStatusMenuOpen((o) => !o)}
+                title="내 상태 변경"
+                className="px-2 py-1 rounded-full text-[10px] font-medium flex items-center gap-1.5 disabled:opacity-40 hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
               >
-                {MANUAL_STATUSES.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => {
-                      setPresence(s); // room.send('status_change') — 칩은 서버 상태를 추종
-                      setStatusMenuOpen(false);
-                    }}
-                    className="w-full px-2.5 py-1.5 text-left text-[11px] text-white flex items-center gap-1.5 hover:bg-white/10"
-                  >
-                    <span
-                      className="w-1.5 h-1.5 rounded-full inline-block"
-                      style={{ background: PRESENCE_META[s].color }}
-                    />
-                    {PRESENCE_META[s].label}
-                    {myStatus === s && (
-                      <span className="ml-auto text-[9px]" style={{ color: '#3B5BFE' }}>
-                        ●
-                      </span>
-                    )}
-                  </button>
-                ))}
-                <div className="px-2.5 pt-1 text-[9px] text-text-muted whitespace-nowrap">회의·오프라인은 자동 전환</div>
-              </div>
-            )}
+                <span
+                  className="w-1.5 h-1.5 rounded-full inline-block"
+                  style={{ background: (PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).color }}
+                />
+                <span className="text-text-secondary">
+                  {(PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).label}
+                </span>
+                <span className="text-text-muted text-[8px]">▴</span>
+              </button>
+              {statusMenuOpen && status === 'connected' && (
+                <div
+                  className="absolute left-0 bottom-full mb-1 rounded-lg py-1"
+                  style={{ background: 'rgba(7,16,29,.96)', border: '1px solid #273350', minWidth: 118 }}
+                >
+                  {MANUAL_STATUSES.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => {
+                        setPresence(s); // room.send('status_change') — 칩은 서버 상태를 추종
+                        setStatusMenuOpen(false);
+                      }}
+                      className="w-full px-2.5 py-1.5 text-left text-[11px] text-white flex items-center gap-1.5 hover:bg-white/10"
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full inline-block"
+                        style={{ background: PRESENCE_META[s].color }}
+                      />
+                      {PRESENCE_META[s].label}
+                      {myStatus === s && (
+                        <span className="ml-auto text-[9px]" style={{ color: '#3B5BFE' }}>
+                          ●
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                  <div className="px-2.5 pt-1 text-[9px] text-text-muted whitespace-nowrap">회의·오프라인은 자동 전환</div>
+                </div>
+              )}
+            </div>
           </div>
+          {dockSlot}
         </div>
 
         {/* WSS 재연결 오버레이(§5.3) — 반투명 + 클릭 통과 차단 */}
