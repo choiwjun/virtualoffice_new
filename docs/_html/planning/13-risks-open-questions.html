@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>13. 리스크 &amp; 오픈 이슈</title>
+<title>13. 리스크  오픈 이슈</title>
 <style>
 :root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
 @media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
@@ -52,68 +52,676 @@ img{max-width:100%;border-radius:8px}
 </style>
 </head><body>
 <div class="layout">
-<nav class="toc"><div class="brand">13. 리스크 &amp;amp; 오픈 이슈</div><div class="sub">13-risks-open-questions.md</div><a class="lvl1" href="#13-리스크-오픈-이슈">13. 리스크 &amp; 오픈 이슈</a><a class="lvl2" href="#개요">개요</a><a class="lvl2" href="#1-리스크-표">1. 리스크 표</a><a class="lvl3" href="#주요-리스크-상세">주요 리스크 상세</a><a class="lvl2" href="#2-open-questions">2. Open Questions</a><a class="lvl2" href="#3-assumptions-명시적-가정">3. Assumptions (명시적 가정)</a><a class="lvl2" href="#4-검증-계획">4. 검증 계획</a><a class="lvl3" href="#41-phase별-검증-gate">4.1 Phase별 검증 Gate</a><a class="lvl3" href="#42-검증-체크리스트">4.2 검증 체크리스트</a><a class="lvl3" href="#43-의존성-관리">4.3 의존성 관리</a><a class="lvl2" href="#5-우선순위-대응-전략">5. 우선순위 &amp; 대응 전략</a><a class="lvl3" href="#51-즉시-대응-p0">5.1 즉시 대응 (P0)</a><a class="lvl3" href="#52-초기-단계-p1p2">5.2 초기 단계 (P1~P2)</a><a class="lvl3" href="#53-중기-p3p4">5.3 중기 (P3~P4)</a><a class="lvl3" href="#54-후기-p5p7">5.4 후기 (P5~P7)</a><a class="lvl2" href="#6-risk-owner-escalation">6. Risk Owner &amp; Escalation</a><a class="lvl2" href="#7-회고-갱신-주기">7. 회고 &amp; 갱신 주기</a><a class="lvl2" href="#loop-metadata">Loop Metadata</a><a class="lvl3" href="#upstream-문서">Upstream 문서</a><a class="lvl3" href="#downstream-문서">Downstream 문서</a><a class="lvl3" href="#open-questions">Open Questions</a><a class="lvl3" href="#assumptions-재검증-포인트">Assumptions 재검증 포인트</a><a class="lvl3" href="#validation-criteria">Validation Criteria</a><a class="lvl3" href="#risks">Risks</a></nav>
-<main><h1 id="13-리스크-오픈-이슈">13. 리스크 &amp; 오픈 이슈</h1>
+<nav class="toc"><div class="brand">13. 리스크  오픈 이슈</div><div class="sub">13-risks-open-questions.md</div><a class="lvl1" href="#13-리스크--오픈-이슈">13. 리스크  오픈 이슈</a><a class="lvl2" href="#개요">개요</a><a class="lvl2" href="#1-리스크-표">1. 리스크 표</a><a class="lvl3" href="#주요-리스크-상세">주요 리스크 상세</a><a class="lvl2" href="#2-open-questions">2. Open Questions</a><a class="lvl2" href="#3-assumptions-명시적-가정">3. Assumptions (명시적 가정)</a><a class="lvl2" href="#4-검증-계획">4. 검증 계획</a><a class="lvl3" href="#41-phase별-검증-gate">4.1 Phase별 검증 Gate</a><a class="lvl3" href="#42-검증-체크리스트">4.2 검증 체크리스트</a><a class="lvl3" href="#43-의존성-관리">4.3 의존성 관리</a><a class="lvl2" href="#5-우선순위--대응-전략">5. 우선순위  대응 전략</a><a class="lvl3" href="#51-즉시-대응-p0">5.1 즉시 대응 (P0)</a><a class="lvl3" href="#52-초기-단계-p1p2">5.2 초기 단계 (P1~P2)</a><a class="lvl3" href="#53-중기-p3p4">5.3 중기 (P3~P4)</a><a class="lvl3" href="#54-후기-p5p7">5.4 후기 (P5~P7)</a><a class="lvl2" href="#6-risk-owner--escalation">6. Risk Owner  Escalation</a><a class="lvl2" href="#7-회고--갱신-주기">7. 회고  갱신 주기</a><a class="lvl2" href="#loop-metadata">Loop Metadata</a><a class="lvl3" href="#upstream-문서">Upstream 문서</a><a class="lvl3" href="#downstream-문서">Downstream 문서</a><a class="lvl3" href="#open-questions">Open Questions</a><a class="lvl3" href="#assumptions-재검증-포인트">Assumptions 재검증 포인트</a><a class="lvl3" href="#validation-criteria">Validation Criteria</a><a class="lvl3" href="#risks">Risks</a></nav>
+<main><h1 id="13-리스크--오픈-이슈">13. 리스크 &amp; 오픈 이슈</h1>
 <blockquote>🟢 <strong>D27 반영(2026-07-09) — 포토리얼 웹임베드(R3F + Blender 깊이합성 + Colyseus + 단일세션)로 재작성됨.</strong> 현행 정본 = 00-decisions §H(D27) · 10-roadmap §D27 · 16-render-spike-and-roadmap(§Part A/B) · 14-virtual-office-spec · 15-realtime-server-spec · 3d-design/{design-style-analysis, photoreal-web-strategy}. Godot 네이티브 배포·WorkAdventure(WA)·OIDC 이중로그인 전제는 <strong>폐기</strong>되었으며, 관련 리스크(R11 Godot↔LiveKit, A8/A12 Godot 헤드리스·네이티브)는 폐기 표기로 남긴다. Phase 편성 정본 = 16 §Part B(P0~P7). <strong>주 단위 기간은 P0 깊이합성 스파이크 이후 확정하며 억지 숫자를 기재하지 않는다.</strong></blockquote>
-<p><strong>문서 버전</strong>: v4.0 <strong>작성일</strong>: 2026-07-09 <strong>대상 독자</strong>: 개발/기획 리더십, 이해관계자 <strong>정본 기준</strong>: <code>00-decisions.md</code> (D1~D27, F·H절) — 충돌 시 정본이 우선</p>
-<blockquote><strong>변경 요약 (v4.0, 2026-07-09 — D27 반영)</strong>: D26(WA)+Godot 노선 폐기 → D27 포토리얼 웹임베드로 재작성. ① 구 58주 간트·Godot 네이티브 배포 전제를 D27 Phase(P0~P7, 16 §Part B) 기반으로 교체(주 단위 미확정 — 스파이크 후 확정). ② Godot 리스크 <strong>R11(Godot↔LiveKit GDExtension) 폐기</strong>, 가정 <strong>A8(Godot 헤드리스 권위)·A12(Godot 네이티브 빌드 안정성) 폐기</strong>. ③ 깊이합성 스파이크 <strong>PASS(2026-07-08, commit b4736b1)</strong> 반영 — 초기 리스크 해소, 잔존(다층·실사·조명정합)은 유지. ④ D27 신규 리스크 5종 등재: R15 깊이합성 실패 폴백(다층·복잡 씬), R16 SkyOffice/Colyseus 이식량(자체 20Hz 서버), R17 아바타↔배경 조명정합(IBL), R18 100명 부하검증(P7), R19 Blender 렌더 파이프라인 배치화·재렌더 지연. STT(R12)·개인정보/노동법(R13)·ERP 등 비아키텍처 리스크는 보존.  <strong>변경 요약 (v3.3, 2026-07-02)</strong>: OQ4(프로토콜)→WebSocket(WSS) 확정 종결(D1), OQ11(회의실 예약)→예약+FCFS 병행 확정(D23)·A7 가정 폐기, 이미 확정된 OQ3/OQ5 등 스테일 정리. 신규 리스크 4건 추가(R11 Godot-LiveKit 통합, R12 STT 정확도/한국어 화자분리, R13 개인정보/노동법, R14 클라-서버 프로토콜 버전 호환). 검증 간트를 10-roadmap 58주 재산정의 기준선(D6)으로 정합.</blockquote>
+<p><strong>문서 버전</strong>: v4.0<br><strong>작성일</strong>: 2026-07-09<br><strong>대상 독자</strong>: 개발/기획 리더십, 이해관계자<br><strong>정본 기준</strong>: <code>00-decisions.md</code> (D1~D27, F·H절) — 충돌 시 정본이 우선</p>
+<blockquote><p><strong>변경 요약 (v4.0, 2026-07-09 — D27 반영)</strong>: D26(WA)+Godot 노선 폐기 → D27 포토리얼 웹임베드로 재작성. ① 구 58주 간트·Godot 네이티브 배포 전제를 D27 Phase(P0~P7, 16 §Part B) 기반으로 교체(주 단위 미확정 — 스파이크 후 확정). ② Godot 리스크 <strong>R11(Godot↔LiveKit GDExtension) 폐기</strong>, 가정 <strong>A8(Godot 헤드리스 권위)·A12(Godot 네이티브 빌드 안정성) 폐기</strong>. ③ 깊이합성 스파이크 <strong>PASS(2026-07-08, commit b4736b1)</strong> 반영 — 초기 리스크 해소, 잔존(다층·실사·조명정합)은 유지. ④ D27 신규 리스크 5종 등재: R15 깊이합성 실패 폴백(다층·복잡 씬), R16 SkyOffice/Colyseus 이식량(자체 20Hz 서버), R17 아바타↔배경 조명정합(IBL), R18 100명 부하검증(P7), R19 Blender 렌더 파이프라인 배치화·재렌더 지연. STT(R12)·개인정보/노동법(R13)·ERP 등 비아키텍처 리스크는 보존.</p>
+<p><strong>변경 요약 (v3.3, 2026-07-02)</strong>: OQ4(프로토콜)→WebSocket(WSS) 확정 종결(D1), OQ11(회의실 예약)→예약+FCFS 병행 확정(D23)·A7 가정 폐기, 이미 확정된 OQ3/OQ5 등 스테일 정리. 신규 리스크 4건 추가(R11 Godot-LiveKit 통합, R12 STT 정확도/한국어 화자분리, R13 개인정보/노동법, R14 클라-서버 프로토콜 버전 호환). 검증 간트를 10-roadmap 58주 재산정의 기준선(D6)으로 정합.</p>
+</blockquote>
 <hr>
 <h2 id="개요">개요</h2>
 <p>본 문서는 가상오피스 운영 플랫폼 개발 과정에서 식별된 주요 리스크, 미해결 설계 결정(Open Questions), 명시적 가정(Assumptions), 그리고 검증 계획을 정리합니다.</p>
 <p>프로젝트 특성상 1인 개발 + AI 협업, ERP 기존 시스템 의존도 높음, <strong>포토리얼 웹임베드(R3F + Blender 깊이합성 + Colyseus 실시간 서버, 단일 통합 웹앱 배포)</strong>, 사내 자체 호스팅 등 여러 기술·조직 리스크가 존재합니다. 이를 조기에 식별하고 완화 전략을 수립하여 Phase별 차질을 최소화하는 것이 목표입니다. (D27 이전의 Godot 3D 네이티브 배포 전제는 폐기되었으며, 배포 단위는 웹앱으로 전환되어 자동 업데이트/크로스플랫폼 빌드 리스크의 성격이 달라졌습니다.)</p>
 <hr>
 <h2 id="1-리스크-표">1. 리스크 표</h2>
-<div class="table-wrap"><table><thead><tr><th>#</th><th>리스크명</th><th>영향도</th><th>확률</th><th>시간(주)</th><th>완화 전략</th><th>담당</th><th>상태</th></tr></thead><tbody><tr><td><del>R1</del></td><td><del><strong>Godot 크로스플랫폼 빌드 복잡성</strong></del> <strong>폐기(D27)</strong> — 웹앱 단일 배포로 전환, 네이티브 크로스플랫폼 빌드 불필요. 잔여 관심사는 R19(Blender 렌더 파이프라인)로 이관</td><td>—</td><td>—</td><td>—</td><td>브라우저(WebGL2/R3F) 호환성만 검증</td><td>3d-engine-specialist</td><td>폐기</td></tr><tr><td><del>R2</del></td><td><del><strong>자동 업데이트(OTA) 메커니즘 미정</strong></del> <strong>폐기(D27)</strong> — 웹앱은 서버 배포=즉시 반영, OTA·서명 바이너리 배포 불필요. 클라-서버 버전 정합은 R14로 유지</td><td>—</td><td>—</td><td>—</td><td>웹 표준 배포(정적 자산 캐시 무효화)</td><td>3d-engine-specialist + backend-specialist</td><td>폐기</td></tr><tr><td>R3</td><td><strong>ERP DB 접근 프로비저닝 지연</strong></td><td>중</td><td>중</td><td>0.5</td><td>Phase 1 전 read-only 계정 생성; DBA 조율 필요</td><td>인프라 담당자</td><td>BLOCKED</td></tr><tr><td>R4</td><td><strong>ERP 근태 벌크 조회 API 부재</strong></td><td>중</td><td>확정</td><td>2</td><td>초기 동기화는 DB 직접 접근; 실시간은 trigger/CDC 고려 또는 정기 배치</td><td>backend-specialist</td><td>MITIGATED</td></tr><tr><td>R5</td><td><strong>3D 출근 ↔ ERP 출퇴근 연결 규칙 미결</strong></td><td>중</td><td>높음</td><td>2</td><td>OQ3 결정으로 분리 확정: 3D 프레즌스(로그인·좌석·회의실)는 우리 소유, ERP 출퇴근은 read-only</td><td>기획 + backend-specialist</td><td>MITIGATED</td></tr><tr><td>R6</td><td><strong>LiveKit self-host 운영 부담</strong></td><td>중</td><td>중</td><td>4~8</td><td>OQ5 확정(self-host): Phase 4 중 성능 테스트(10명 동시), 모니터링(Prometheus+Grafana), 단일 SFU로 오토스케일 불필요</td><td>DevOps/인프라담당자</td><td>MITIGATED</td></tr><tr><td>R7</td><td><strong>1인 개발 순서 병목</strong></td><td>높음</td><td>높음</td><td>연중</td><td>AI 협업 강화; Phase 병렬화 불가; 외주/계약인력 고려; 스코프 재검토 포인트 설정</td><td>PM/기획</td><td>ONGOING</td></tr><tr><td>R8</td><td><strong>ERP 스키마 드리프트</strong></td><td>중</td><td>중</td><td>연중</td><td>ERP main 브랜치 변경 모니터; Feature branch (feature/virtual-office-integration)는 독립 유지; 정기 동기화 체크</td><td>backend-specialist</td><td>MITIGATED</td></tr><tr><td>R9</td><td><strong>사번(社番) 부재로 인한 식별 footgun</strong></td><td>중</td><td>높음</td><td>1</td><td>ERP users.id를 PK로 사용; email은 (company_id, email) 복합 유니크만 신뢰</td><td>backend-specialist</td><td>MITIGATED</td></tr><tr><td>R10</td><td><strong>Email 재사용 시 신원 충돌</strong></td><td>낮음</td><td>중</td><td>1</td><td>퇴사자 처리 정책 수립; soft-delete 또는 archive 전략; 다중테넌트 확장 시 재검토</td><td>HR + backend-specialist</td><td>OPEN</td></tr><tr><td><del>R11</del></td><td><del><strong>Godot ↔ LiveKit 통합(WebRTC GDExtension)</strong></del> <strong>폐기(D27)</strong> — Godot 클라이언트 폐기. 화상은 웹 LiveKit SDK(R3F 웹앱 내)로 네이티브 지원 → GDExtension 자체 개발 불요</td><td>—</td><td>—</td><td>—</td><td>웹 LiveKit JS SDK 사용(P5)</td><td>3d-engine-specialist</td><td>폐기</td></tr><tr><td>R12</td><td><strong>STT 정확도 / 한국어 화자분리</strong></td><td>높음</td><td>중</td><td>2~3</td><td>회의록 자동 초안 품질·화자분리 미달 → <strong>완화</strong>: P6 STT 파이프라인 PoC, 누락률 &lt;5% 미달 시 수동 회의록 + AI 요약으로 격하</td><td>backend-specialist</td><td>OPEN</td></tr><tr><td>R13</td><td><strong>개인정보 / 노동법 (모니터링·녹음·외부 LLM)</strong></td><td>높음</td><td>높음</td><td>연중</td><td>평가 목적 행동 데이터·회의 녹음·외부 LLM 전송 → <strong>완화</strong>: D20 컴플라이언스 원칙(고지·동의 절차, 사번 가명화, 보존기한, 최소수집 VIEW) 도입 전 이행</td><td>PM/기획 + backend-specialist</td><td>OPEN</td></tr><tr><td>R14</td><td><strong>클라-서버 프로토콜 버전 호환</strong></td><td>중</td><td>낮</td><td>1</td><td>웹앱 서버 배포와 Colyseus/API 스키마 시점 불일치 → <strong>완화</strong>: WSS 핸드셰이크 <code>protocol_version</code> 협상(D4). 웹 전환으로 강제 새로고침 가능해 확률 하향</td><td>3d-engine-specialist + backend-specialist</td><td>MITIGATED</td></tr><tr><td><strong>R15</strong></td><td><strong>깊이합성 실패 폴백 (다층·복잡 씬 확장)</strong></td><td>높음</td><td>중</td><td>스파이크 후 확정</td><td>단층 깊이합성은 <strong>PASS(2026-07-08, b4736b1)</strong>. 다층·복잡 씬으로 확장 시 오클루전 정합 붕괴 위험 → <strong>폴백(§16 A.4)</strong>: 빌보드 스프라이트 아바타 또는 부분 실시간 3D</td><td>3d-engine-specialist</td><td>OPEN</td></tr><tr><td><strong>R16</strong></td><td><strong>SkyOffice/Colyseus 이식량 (자체 20Hz 권위 서버)</strong></td><td>높음</td><td>높음</td><td>스파이크 후 확정</td><td>공식 드롭인 부재 → SkyOffice 참조 이식 + 20Hz tick·이동검증·좌표동기화 자체 구현(15-realtime-server-spec) → <strong>완화</strong>: P3에서 최소 이동서버 우선, 스코프 단계화</td><td>backend-specialist + 3d-engine-specialist</td><td>OPEN</td></tr><tr><td><strong>R17</strong></td><td><strong>아바타 ↔ 배경 조명정합 (IBL)</strong></td><td>높음</td><td>높음</td><td>연중</td><td>오프라인 Blender 배경과 실시간 R3F 아바타의 조명·그림자 불일치 → <strong>완화</strong>: 씬별 IBL(HDRI/라이트프로브) 추출·주입, 목표 정합도 80~90%(최난제). 미달 시 톤·앰비언트 근사로 타협</td><td>3d-engine-specialist</td><td>OPEN</td></tr><tr><td><strong>R18</strong></td><td><strong>100명 부하검증 (P7)</strong></td><td>높음</td><td>중</td><td>스파이크 후 확정</td><td>Colyseus 단일 룸 100명 동시(설계 목표) 시 tick·대역폭·클라 렌더 병목 → <strong>완화</strong>: P7 부하검증(우선 20명 실측→100명 목표), 관심영역(AOI)·업데이트 스로틀링. 미달 시 룸 분할</td><td>backend-specialist</td><td>OPEN</td></tr><tr><td><strong>R19</strong></td><td><strong>Blender 렌더 파이프라인 배치화·재렌더 지연</strong></td><td>중</td><td>높음</td><td>연중</td><td>layout JSON→Blender 파라메트릭 씬→Cycles 오프라인 렌더는 배치·수 분 단위 지연 → 편집기 즉시 반영 불가 → <strong>완화</strong>: 렌더 큐·캐시·증분 재렌더, 편집은 draft(경량) 모드 후 확정 시 배치 재렌더</td><td>3d-engine-specialist + backend-specialist</td><td>OPEN</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>리스크명</th>
+<th>영향도</th>
+<th>확률</th>
+<th>시간(주)</th>
+<th>완화 전략</th>
+<th>담당</th>
+<th>상태</th>
+</tr>
+</thead><tbody><tr>
+<td><del>R1</del></td>
+<td><del><strong>Godot 크로스플랫폼 빌드 복잡성</strong></del> <strong>폐기(D27)</strong> — 웹앱 단일 배포로 전환, 네이티브 크로스플랫폼 빌드 불필요. 잔여 관심사는 R19(Blender 렌더 파이프라인)로 이관</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>브라우저(WebGL2/R3F) 호환성만 검증</td>
+<td>3d-engine-specialist</td>
+<td>폐기</td>
+</tr>
+<tr>
+<td><del>R2</del></td>
+<td><del><strong>자동 업데이트(OTA) 메커니즘 미정</strong></del> <strong>폐기(D27)</strong> — 웹앱은 서버 배포=즉시 반영, OTA·서명 바이너리 배포 불필요. 클라-서버 버전 정합은 R14로 유지</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>웹 표준 배포(정적 자산 캐시 무효화)</td>
+<td>3d-engine-specialist + backend-specialist</td>
+<td>폐기</td>
+</tr>
+<tr>
+<td>R3</td>
+<td><strong>ERP DB 접근 프로비저닝 지연</strong></td>
+<td>중</td>
+<td>중</td>
+<td>0.5</td>
+<td>Phase 1 전 read-only 계정 생성; DBA 조율 필요</td>
+<td>인프라 담당자</td>
+<td>BLOCKED</td>
+</tr>
+<tr>
+<td>R4</td>
+<td><strong>ERP 근태 벌크 조회 API 부재</strong></td>
+<td>중</td>
+<td>확정</td>
+<td>2</td>
+<td>초기 동기화는 DB 직접 접근; 실시간은 trigger/CDC 고려 또는 정기 배치</td>
+<td>backend-specialist</td>
+<td>MITIGATED</td>
+</tr>
+<tr>
+<td>R5</td>
+<td><strong>3D 출근 ↔ ERP 출퇴근 연결 규칙 미결</strong></td>
+<td>중</td>
+<td>높음</td>
+<td>2</td>
+<td>OQ3 결정으로 분리 확정: 3D 프레즌스(로그인·좌석·회의실)는 우리 소유, ERP 출퇴근은 read-only</td>
+<td>기획 + backend-specialist</td>
+<td>MITIGATED</td>
+</tr>
+<tr>
+<td>R6</td>
+<td><strong>LiveKit self-host 운영 부담</strong></td>
+<td>중</td>
+<td>중</td>
+<td>4~8</td>
+<td>OQ5 확정(self-host): Phase 4 중 성능 테스트(10명 동시), 모니터링(Prometheus+Grafana), 단일 SFU로 오토스케일 불필요</td>
+<td>DevOps/인프라담당자</td>
+<td>MITIGATED</td>
+</tr>
+<tr>
+<td>R7</td>
+<td><strong>1인 개발 순서 병목</strong></td>
+<td>높음</td>
+<td>높음</td>
+<td>연중</td>
+<td>AI 협업 강화; Phase 병렬화 불가; 외주/계약인력 고려; 스코프 재검토 포인트 설정</td>
+<td>PM/기획</td>
+<td>ONGOING</td>
+</tr>
+<tr>
+<td>R8</td>
+<td><strong>ERP 스키마 드리프트</strong></td>
+<td>중</td>
+<td>중</td>
+<td>연중</td>
+<td>ERP main 브랜치 변경 모니터; Feature branch (feature/virtual-office-integration)는 독립 유지; 정기 동기화 체크</td>
+<td>backend-specialist</td>
+<td>MITIGATED</td>
+</tr>
+<tr>
+<td>R9</td>
+<td><strong>사번(社番) 부재로 인한 식별 footgun</strong></td>
+<td>중</td>
+<td>높음</td>
+<td>1</td>
+<td>ERP users.id를 PK로 사용; email은 (company_id, email) 복합 유니크만 신뢰</td>
+<td>backend-specialist</td>
+<td>MITIGATED</td>
+</tr>
+<tr>
+<td>R10</td>
+<td><strong>Email 재사용 시 신원 충돌</strong></td>
+<td>낮음</td>
+<td>중</td>
+<td>1</td>
+<td>퇴사자 처리 정책 수립; soft-delete 또는 archive 전략; 다중테넌트 확장 시 재검토</td>
+<td>HR + backend-specialist</td>
+<td>OPEN</td>
+</tr>
+<tr>
+<td><del>R11</del></td>
+<td><del><strong>Godot ↔ LiveKit 통합(WebRTC GDExtension)</strong></del> <strong>폐기(D27)</strong> — Godot 클라이언트 폐기. 화상은 웹 LiveKit SDK(R3F 웹앱 내)로 네이티브 지원 → GDExtension 자체 개발 불요</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>웹 LiveKit JS SDK 사용(P5)</td>
+<td>3d-engine-specialist</td>
+<td>폐기</td>
+</tr>
+<tr>
+<td>R12</td>
+<td><strong>STT 정확도 / 한국어 화자분리</strong></td>
+<td>높음</td>
+<td>중</td>
+<td>2~3</td>
+<td>회의록 자동 초안 품질·화자분리 미달 → <strong>완화</strong>: P6 STT 파이프라인 PoC, 누락률 &lt;5% 미달 시 수동 회의록 + AI 요약으로 격하</td>
+<td>backend-specialist</td>
+<td>OPEN</td>
+</tr>
+<tr>
+<td>R13</td>
+<td><strong>개인정보 / 노동법 (모니터링·녹음·외부 LLM)</strong></td>
+<td>높음</td>
+<td>높음</td>
+<td>연중</td>
+<td>평가 목적 행동 데이터·회의 녹음·외부 LLM 전송 → <strong>완화</strong>: D20 컴플라이언스 원칙(고지·동의 절차, 사번 가명화, 보존기한, 최소수집 VIEW) 도입 전 이행</td>
+<td>PM/기획 + backend-specialist</td>
+<td>OPEN</td>
+</tr>
+<tr>
+<td>R14</td>
+<td><strong>클라-서버 프로토콜 버전 호환</strong></td>
+<td>중</td>
+<td>낮</td>
+<td>1</td>
+<td>웹앱 서버 배포와 Colyseus/API 스키마 시점 불일치 → <strong>완화</strong>: WSS 핸드셰이크 <code>protocol_version</code> 협상(D4). 웹 전환으로 강제 새로고침 가능해 확률 하향</td>
+<td>3d-engine-specialist + backend-specialist</td>
+<td>MITIGATED</td>
+</tr>
+<tr>
+<td><strong>R15</strong></td>
+<td><strong>깊이합성 실패 폴백 (다층·복잡 씬 확장)</strong></td>
+<td>높음</td>
+<td>중</td>
+<td>스파이크 후 확정</td>
+<td>단층 깊이합성은 <strong>PASS(2026-07-08, b4736b1)</strong>. 다층·복잡 씬으로 확장 시 오클루전 정합 붕괴 위험 → <strong>폴백(§16 A.4)</strong>: 빌보드 스프라이트 아바타 또는 부분 실시간 3D</td>
+<td>3d-engine-specialist</td>
+<td>OPEN</td>
+</tr>
+<tr>
+<td><strong>R16</strong></td>
+<td><strong>SkyOffice/Colyseus 이식량 (자체 20Hz 권위 서버)</strong></td>
+<td>높음</td>
+<td>높음</td>
+<td>스파이크 후 확정</td>
+<td>공식 드롭인 부재 → SkyOffice 참조 이식 + 20Hz tick·이동검증·좌표동기화 자체 구현(15-realtime-server-spec) → <strong>완화</strong>: P3에서 최소 이동서버 우선, 스코프 단계화</td>
+<td>backend-specialist + 3d-engine-specialist</td>
+<td>OPEN</td>
+</tr>
+<tr>
+<td><strong>R17</strong></td>
+<td><strong>아바타 ↔ 배경 조명정합 (IBL)</strong></td>
+<td>높음</td>
+<td>높음</td>
+<td>연중</td>
+<td>오프라인 Blender 배경과 실시간 R3F 아바타의 조명·그림자 불일치 → <strong>완화</strong>: 씬별 IBL(HDRI/라이트프로브) 추출·주입, 목표 정합도 80~90%(최난제). 미달 시 톤·앰비언트 근사로 타협</td>
+<td>3d-engine-specialist</td>
+<td>OPEN</td>
+</tr>
+<tr>
+<td><strong>R18</strong></td>
+<td><strong>100명 부하검증 (P7)</strong></td>
+<td>높음</td>
+<td>중</td>
+<td>스파이크 후 확정</td>
+<td>Colyseus 단일 룸 100명 동시(설계 목표) 시 tick·대역폭·클라 렌더 병목 → <strong>완화</strong>: P7 부하검증(우선 20명 실측→100명 목표), 관심영역(AOI)·업데이트 스로틀링. 미달 시 룸 분할</td>
+<td>backend-specialist</td>
+<td>OPEN</td>
+</tr>
+<tr>
+<td><strong>R19</strong></td>
+<td><strong>Blender 렌더 파이프라인 배치화·재렌더 지연</strong></td>
+<td>중</td>
+<td>높음</td>
+<td>연중</td>
+<td>layout JSON→Blender 파라메트릭 씬→Cycles 오프라인 렌더는 배치·수 분 단위 지연 → 편집기 즉시 반영 불가 → <strong>완화</strong>: 렌더 큐·캐시·증분 재렌더, 편집은 draft(경량) 모드 후 확정 시 배치 재렌더</td>
+<td>3d-engine-specialist + backend-specialist</td>
+<td>OPEN</td>
+</tr>
+</tbody></table></div>
 <h3 id="주요-리스크-상세">주요 리스크 상세</h3>
-<h4 id="r1-godot-크로스플랫폼-빌드-복잡성-폐기d27-2026-07-09"><del>R1: Godot 크로스플랫폼 빌드 복잡성</del> — <strong>폐기(D27, 2026-07-09)</strong></h4>
-<ul><li><strong>폐기 사유</strong>: D27로 Godot 네이티브 데스크톱 배포가 폐기되고 <strong>단일 통합 웹앱(R3F)</strong>으로 전환. 브라우저에서 실행되므로 OS별 네이티브 빌드/CI 자체가 불요.</li><li><strong>잔여 관심사</strong>: 브라우저 WebGL2/R3F 호환성, GPU별 성능 편차 → 렌더 파이프라인 리스크(R19) 및 P7 성능검증으로 흡수.</li></ul>
-<h4 id="r2-자동-업데이트-메커니즘-미정-폐기d27-2026-07-09"><del>R2: 자동 업데이트 메커니즘 미정</del> — <strong>폐기(D27, 2026-07-09)</strong></h4>
-<ul><li><strong>폐기 사유</strong>: 웹앱은 <strong>서버 배포 = 즉시 반영</strong>이며 OTA·서명 바이너리·롤백 채널이 불요. 구 D8(에셋/클라 전달)은 D27에서 &quot;런타임 렌더 이미지 + 경량 GLTF&quot; 전달로 성격이 바뀜.</li><li><strong>잔여 관심사</strong>: 서버 배포 시점과 클라 세션 스키마 불일치 → <strong>R14(protocol_version 협상)</strong>로 유지·처리(웹은 강제 새로고침 가능해 완화 용이).</li></ul>
+<h4 id="r1-godot-크로스플랫폼-빌드-복잡성--폐기d27-2026-07-09"><del>R1: Godot 크로스플랫폼 빌드 복잡성</del> — <strong>폐기(D27, 2026-07-09)</strong></h4>
+<ul>
+<li><strong>폐기 사유</strong>: D27로 Godot 네이티브 데스크톱 배포가 폐기되고 **단일 통합 웹앱(R3F)**으로 전환. 브라우저에서 실행되므로 OS별 네이티브 빌드/CI 자체가 불요.</li>
+<li><strong>잔여 관심사</strong>: 브라우저 WebGL2/R3F 호환성, GPU별 성능 편차 → 렌더 파이프라인 리스크(R19) 및 P7 성능검증으로 흡수.</li>
+</ul>
+<h4 id="r2-자동-업데이트-메커니즘-미정--폐기d27-2026-07-09"><del>R2: 자동 업데이트 메커니즘 미정</del> — <strong>폐기(D27, 2026-07-09)</strong></h4>
+<ul>
+<li><strong>폐기 사유</strong>: 웹앱은 <strong>서버 배포 = 즉시 반영</strong>이며 OTA·서명 바이너리·롤백 채널이 불요. 구 D8(에셋/클라 전달)은 D27에서 &quot;런타임 렌더 이미지 + 경량 GLTF&quot; 전달로 성격이 바뀜.</li>
+<li><strong>잔여 관심사</strong>: 서버 배포 시점과 클라 세션 스키마 불일치 → **R14(protocol_version 협상)**로 유지·처리(웹은 강제 새로고침 가능해 완화 용이).</li>
+</ul>
 <h4 id="r3-erp-db-접근-프로비저닝-지연">R3: ERP DB 접근 프로비저닝 지연</h4>
-<ul><li><strong>선택</strong>: 근태 벌크 동기화를 위해 ERP PostgreSQL (dailylog DB)에 read-only 계정 필요.</li><li><strong>리스크</strong>: DBA/인프라 담당자 스케줄 밀림 → Phase 1 착수 지연.</li><li><strong>완화</strong>:<ol><li>즉시 인프라 담당자와 조율; 사전 준비 (계정 생성, 네트워크 규칙).</li><li>Fallback: 초기는 ERP API (GET /api/users, /api/teams, /api/positions)로만 동기화하고, 근태는 당일 ERP 관리자 수동 입력 대기.</li></ol></li></ul>
+<ul>
+<li><strong>선택</strong>: 근태 벌크 동기화를 위해 ERP PostgreSQL (dailylog DB)에 read-only 계정 필요.</li>
+<li><strong>리스크</strong>: DBA/인프라 담당자 스케줄 밀림 → Phase 1 착수 지연.</li>
+<li><strong>완화</strong>:<ol>
+<li>즉시 인프라 담당자와 조율; 사전 준비 (계정 생성, 네트워크 규칙).</li>
+<li>Fallback: 초기는 ERP API (GET /api/users, /api/teams, /api/positions)로만 동기화하고, 근태는 당일 ERP 관리자 수동 입력 대기.</li>
+</ol>
+</li>
+</ul>
 <h4 id="r4-erp-근태-벌크-조회-api-부재">R4: ERP 근태 벌크 조회 API 부재</h4>
-<ul><li><strong>사실</strong>: ERP GET /api/attendance/admin/record?user_id=&amp;date= 는 <strong>단건 조회만 지원</strong> (벌크 없음).</li><li><strong>선택</strong>: 근태 벌크는 <strong>read-only DB 직접 접근</strong> (attendances 테이블).</li><li><strong>완화</strong>:<ol><li>Phase 2에 동기화 스크립트 작성 (SELECT user<em>id, attendance</em>date, check<em>in</em>at, check<em>out</em>at, work<em>type FROM attendances WHERE attendance</em>date &gt;= ? AND attendance<em>date &lt;= ? AND company</em>id = ?). (컬럼명 라이브 검증 2026-07-02)</li><li>실시간 vs 배치: <strong>매시간 증분 + 매일 00:00 전체 대사(D18)</strong>. 18:00은 daily_reports push(D17)로 별개 프로세스(2026-07-02 정정). 향후 PostgreSQL trigger 또는 변경데이터캡처(CDC) 고려.</li><li>시간대: ERP 시간대(KST)와 우리 시간대 일치 확인.</li></ol></li></ul>
-<h4 id="r5-3d-출근-erp-출퇴근-연결-규칙-미결">R5: 3D 출근 ↔ ERP 출퇴근 연결 규칙 미결</h4>
-<ul><li><strong>결정(2026-07-01)</strong>: OQ3 확정으로 분리 규칙 확정됨.</li><li><strong>규칙</strong>:<ul><li><strong>공식 출퇴근(ERP attendances)</strong>: ERP 원본, 우리는 read-only 읽기만 (check<em>in/check</em>out 기록 쓰지 않음)</li><li><strong>3D 프레즌스(우리 소유 트리거)</strong>:<ul><li>3D 클라 로그인 → online</li><li>지정 좌석/팀 구역 도착 → working</li><li>회의실 입장 → meeting</li><li>N분 무입력 → away</li><li>집중모드 토글 → focus</li><li>종료/로그아웃 → offline</li></ul></li><li><strong>3D 화면</strong>: ERP 오늘 check_in된 직원을 read로 병기 반영</li></ul></li><li><strong>근거</strong>: 스펙 장애 격리 원칙(가상오피스 장애가 근태/업무 데이터 영향 없음), 근태=읽기 원칙, 원본 명확화</li><li><strong>완화</strong>: OQ3 결정으로 분리 확정 완료. Phase 2부터 분리된 로직 구현 시작.</li></ul>
+<ul>
+<li><strong>사실</strong>: ERP GET /api/attendance/admin/record?user_id=&amp;date= 는 <strong>단건 조회만 지원</strong> (벌크 없음).</li>
+<li><strong>선택</strong>: 근태 벌크는 <strong>read-only DB 직접 접근</strong> (attendances 테이블).</li>
+<li><strong>완화</strong>:<ol>
+<li>Phase 2에 동기화 스크립트 작성 (SELECT user_id, attendance_date, check_in_at, check_out_at, work_type FROM attendances WHERE attendance_date &gt;= ? AND attendance_date &lt;= ? AND company_id = ?). (컬럼명 라이브 검증 2026-07-02)</li>
+<li>실시간 vs 배치: <strong>매시간 증분 + 매일 00:00 전체 대사(D18)</strong>. 18:00은 daily_reports push(D17)로 별개 프로세스(2026-07-02 정정). 향후 PostgreSQL trigger 또는 변경데이터캡처(CDC) 고려.</li>
+<li>시간대: ERP 시간대(KST)와 우리 시간대 일치 확인.</li>
+</ol>
+</li>
+</ul>
+<h4 id="r5-3d-출근-↔-erp-출퇴근-연결-규칙-미결">R5: 3D 출근 ↔ ERP 출퇴근 연결 규칙 미결</h4>
+<ul>
+<li><strong>결정(2026-07-01)</strong>: OQ3 확정으로 분리 규칙 확정됨.</li>
+<li><strong>규칙</strong>:<ul>
+<li><strong>공식 출퇴근(ERP attendances)</strong>: ERP 원본, 우리는 read-only 읽기만 (check_in/check_out 기록 쓰지 않음)</li>
+<li><strong>3D 프레즌스(우리 소유 트리거)</strong>:<ul>
+<li>3D 클라 로그인 → online</li>
+<li>지정 좌석/팀 구역 도착 → working</li>
+<li>회의실 입장 → meeting</li>
+<li>N분 무입력 → away</li>
+<li>집중모드 토글 → focus</li>
+<li>종료/로그아웃 → offline</li>
+</ul>
+</li>
+<li><strong>3D 화면</strong>: ERP 오늘 check_in된 직원을 read로 병기 반영</li>
+</ul>
+</li>
+<li><strong>근거</strong>: 스펙 장애 격리 원칙(가상오피스 장애가 근태/업무 데이터 영향 없음), 근태=읽기 원칙, 원본 명확화</li>
+<li><strong>완화</strong>: OQ3 결정으로 분리 확정 완료. Phase 2부터 분리된 로직 구현 시작.</li>
+</ul>
 <h4 id="r6-livekit-self-host-운영-부담">R6: LiveKit self-host 운영 부담</h4>
-<ul><li><strong>결정(2026-07-01)</strong>: OQ5 확정으로 호스팅 환경 확정됨.</li><li><strong>선택</strong>: LiveKit + coturn self-host (Docker Compose), 사내 통제 인프라(온프렘 VM 또는 사내 클라우드 계정).</li><li><strong>네트워크</strong>:<ul><li>재택/하이브리드/외근: 공개 엔드포인트 직결(UDP) + TURN-TLS 443 폴백 (VPN 없음 확정 2026-07-02).</li></ul></li><li><strong>배제</strong>:<ul><li>LiveKit Cloud (SaaS, 민감 미디어 외부 경유, 구독비, B2B 이후).</li><li>순수 신규 AWS (데이터 주권, 사내 우선 고려 시 후순위).</li></ul></li><li><strong>근거</strong>: 미디어 데이터 주권(회의가 인사평가 근거 연결), ERP/백엔드와 동일 사내망 지연 이점, 규모상 단일 SFU 노드로 충분(오토스케일 불필요→1인 운영 부담 낮음).</li><li><strong>완화</strong>:<ol><li>Phase 4 중반에 성능 테스트 (10명 동시 회의).</li><li>모니터링: Prometheus + Grafana 기본 구성.</li><li>초기(Phase 1~5)는 Docker Compose로 테스트; Phase 6 이후 프로덕션 안정화.</li><li>종결(2026-07-02): VPN 없음 → 공개 엔드포인트.</li></ol></li></ul>
+<ul>
+<li><strong>결정(2026-07-01)</strong>: OQ5 확정으로 호스팅 환경 확정됨.</li>
+<li><strong>선택</strong>: LiveKit + coturn self-host (Docker Compose), 사내 통제 인프라(온프렘 VM 또는 사내 클라우드 계정).</li>
+<li><strong>네트워크</strong>:<ul>
+<li>재택/하이브리드/외근: 공개 엔드포인트 직결(UDP) + TURN-TLS 443 폴백 (VPN 없음 확정 2026-07-02).</li>
+</ul>
+</li>
+<li><strong>배제</strong>:<ul>
+<li>LiveKit Cloud (SaaS, 민감 미디어 외부 경유, 구독비, B2B 이후).</li>
+<li>순수 신규 AWS (데이터 주권, 사내 우선 고려 시 후순위).</li>
+</ul>
+</li>
+<li><strong>근거</strong>: 미디어 데이터 주권(회의가 인사평가 근거 연결), ERP/백엔드와 동일 사내망 지연 이점, 규모상 단일 SFU 노드로 충분(오토스케일 불필요→1인 운영 부담 낮음).</li>
+<li><strong>완화</strong>:<ol>
+<li>Phase 4 중반에 성능 테스트 (10명 동시 회의).</li>
+<li>모니터링: Prometheus + Grafana 기본 구성.</li>
+<li>초기(Phase 1~5)는 Docker Compose로 테스트; Phase 6 이후 프로덕션 안정화.</li>
+<li>종결(2026-07-02): VPN 없음 → 공개 엔드포인트.</li>
+</ol>
+</li>
+</ul>
 <h4 id="r7-1인-개발-순서-병목">R7: 1인 개발 순서 병목</h4>
-<ul><li><strong>핵심 리스크</strong>: 가장 높은 우선순위.</li><li><strong>현황</strong>: 1인 개발 + AI 협업, D27 P0~P7 순차 로드맵(16 §Part B).</li><li><strong>병목 시나리오</strong>:<ul><li><strong>주 단위 절대 일정은 P0~P2 실측 후 확정</strong>(억지 숫자 금지). P0 깊이합성 스파이크는 PASS(2026-07-08). P2 렌더 파이프라인·P3 이동서버 속도가 전체를 지배.</li><li>R3F/Blender + Colyseus + FastAPI + Next.js 다중 스택 동시 개발 불가 → <strong>Phase 순차 원칙</strong>(병렬화 없음).</li><li>ERP 연동 의존도 높음 (P1 데이터 연결·P6 KPI 필수).</li></ul></li><li><strong>완화</strong>:<ol><li><strong>재계획 포인트</strong>: P2 완료 후 실제 속도 측정 → P3~P7 scope 재조정 (feature cut).</li><li><strong>병렬화</strong>: P0/P1 (테스트 계약, API 설계, 셸)은 렌더 파이프라인과 부분 독립; 일부 동시 진행 가능.</li><li><strong>AI 협업 강화</strong>: 반복적 작업(CRUD API, 테스트, 문서)은 AI 자동화, 1인은 아키텍처·의사결정 집중.</li><li><strong>외주 고려</strong>: P2(렌더 파이프라인)·P3(Colyseus 이식) 등 명확한 컴포넌트는 계약인력 투입 검토.</li><li><strong>스코프 명확화</strong>: P7 하드닝에서 모바일·멀티테넌트는 제외 선언.</li></ol></li></ul>
+<ul>
+<li><strong>핵심 리스크</strong>: 가장 높은 우선순위.</li>
+<li><strong>현황</strong>: 1인 개발 + AI 협업, D27 P0~P7 순차 로드맵(16 §Part B).</li>
+<li><strong>병목 시나리오</strong>:<ul>
+<li><strong>주 단위 절대 일정은 P0~P2 실측 후 확정</strong>(억지 숫자 금지). P0 깊이합성 스파이크는 PASS(2026-07-08). P2 렌더 파이프라인·P3 이동서버 속도가 전체를 지배.</li>
+<li>R3F/Blender + Colyseus + FastAPI + Next.js 다중 스택 동시 개발 불가 → <strong>Phase 순차 원칙</strong>(병렬화 없음).</li>
+<li>ERP 연동 의존도 높음 (P1 데이터 연결·P6 KPI 필수).</li>
+</ul>
+</li>
+<li><strong>완화</strong>:<ol>
+<li><strong>재계획 포인트</strong>: P2 완료 후 실제 속도 측정 → P3~P7 scope 재조정 (feature cut).</li>
+<li><strong>병렬화</strong>: P0/P1 (테스트 계약, API 설계, 셸)은 렌더 파이프라인과 부분 독립; 일부 동시 진행 가능.</li>
+<li><strong>AI 협업 강화</strong>: 반복적 작업(CRUD API, 테스트, 문서)은 AI 자동화, 1인은 아키텍처·의사결정 집중.</li>
+<li><strong>외주 고려</strong>: P2(렌더 파이프라인)·P3(Colyseus 이식) 등 명확한 컴포넌트는 계약인력 투입 검토.</li>
+<li><strong>스코프 명확화</strong>: P7 하드닝에서 모바일·멀티테넌트는 제외 선언.</li>
+</ol>
+</li>
+</ul>
 <h4 id="r8-erp-스키마-드리프트">R8: ERP 스키마 드리프트</h4>
-<ul><li><strong>상황</strong>: ERP는 별도 private repo (github.com/project-space-daily/space-daily), DailyLog라 불림.</li><li><strong>리스크</strong>: ERP 메인 브랜치 업데이트 시 users, teams, attendances 등 스키마 변경 → 우리 동기화 로직 깨짐.</li><li><strong>예시</strong>: ERP에서 teams.parent<em>team</em>id 추가 (계층 지원) → 우리는 영향 없으나 모니터링 필요.</li><li><strong>완화</strong>:<ol><li><strong>Feature branch 독립</strong>: 우리 ERP 작업(kpi_results 테이블 + 수신 엔드포인트)은 <strong>feature/virtual-office-integration</strong> 브랜치에만. main 무관.</li><li><strong>정기 동기화</strong>: 주 1회 ERP main 변경사항 모니터; 우리 erp_user 스키마와 비교.</li><li><strong>마이그레이션 계획</strong>: users/teams/attendances 스키마 변경 발생 시 Alembic 마이그레이션 자동 준비.</li><li><strong>커뮤니케이션</strong>: ERP 담당팀과 변경 사전 공지 채널 구성.</li></ol></li></ul>
-<h4 id="r9-사번-부재로-인한-식별-footgun">R9: 사번(社番) 부재로 인한 식별 footgun</h4>
-<ul><li><strong>사실</strong>: ERP users 테이블에 사번 필드가 없음. 신원 식별은 email만 가능.</li><li><strong>문제</strong>:<ul><li>다중테넌트 환경에서 (company_id, email) 조합만 유니크 보장.</li><li>단일 조직이라도 데이터 마이그레이션·통합 시 email 충돌 가능성.</li><li>우리 erp_user.id (ERP users.id FK)에 의존하는데, 사용자 이전·데이터 리셋 시 ID 변경 가능성.</li></ul></li><li><strong>완화</strong>:<ol><li><strong>PK 전략</strong>: 우리는 erp_user.id를 PK로 삼고, email은 유니크 제약 없음 (동기화 시마다 검증).</li><li><strong>soft-delete</strong>: erp<em>user.is</em>active 플래그로 비활성 사용자 구분 (하드 삭제 금지).</li><li><strong>감시</strong>: audit<em>log에 user</em>id 매핑 변경 기록.</li><li><strong>다중테넌트 확장 시 재검토</strong>: v3.3 이후 멀티테넌트 설계에서 사번·unique ID 추가 필수.</li></ol></li></ul>
+<ul>
+<li><strong>상황</strong>: ERP는 별도 private repo (github.com/project-space-daily/space-daily), DailyLog라 불림.</li>
+<li><strong>리스크</strong>: ERP 메인 브랜치 업데이트 시 users, teams, attendances 등 스키마 변경 → 우리 동기화 로직 깨짐.</li>
+<li><strong>예시</strong>: ERP에서 teams.parent_team_id 추가 (계층 지원) → 우리는 영향 없으나 모니터링 필요.</li>
+<li><strong>완화</strong>:<ol>
+<li><strong>Feature branch 독립</strong>: 우리 ERP 작업(kpi_results 테이블 + 수신 엔드포인트)은 <strong>feature/virtual-office-integration</strong> 브랜치에만. main 무관.</li>
+<li><strong>정기 동기화</strong>: 주 1회 ERP main 변경사항 모니터; 우리 erp_user 스키마와 비교.</li>
+<li><strong>마이그레이션 계획</strong>: users/teams/attendances 스키마 변경 발생 시 Alembic 마이그레이션 자동 준비.</li>
+<li><strong>커뮤니케이션</strong>: ERP 담당팀과 변경 사전 공지 채널 구성.</li>
+</ol>
+</li>
+</ul>
+<h4 id="r9-사번社番-부재로-인한-식별-footgun">R9: 사번(社番) 부재로 인한 식별 footgun</h4>
+<ul>
+<li><strong>사실</strong>: ERP users 테이블에 사번 필드가 없음. 신원 식별은 email만 가능.</li>
+<li><strong>문제</strong>:<ul>
+<li>다중테넌트 환경에서 (company_id, email) 조합만 유니크 보장.</li>
+<li>단일 조직이라도 데이터 마이그레이션·통합 시 email 충돌 가능성.</li>
+<li>우리 erp_user.id (ERP users.id FK)에 의존하는데, 사용자 이전·데이터 리셋 시 ID 변경 가능성.</li>
+</ul>
+</li>
+<li><strong>완화</strong>:<ol>
+<li><strong>PK 전략</strong>: 우리는 erp_user.id를 PK로 삼고, email은 유니크 제약 없음 (동기화 시마다 검증).</li>
+<li><strong>soft-delete</strong>: erp_user.is_active 플래그로 비활성 사용자 구분 (하드 삭제 금지).</li>
+<li><strong>감시</strong>: audit_log에 user_id 매핑 변경 기록.</li>
+<li><strong>다중테넌트 확장 시 재검토</strong>: v3.3 이후 멀티테넌트 설계에서 사번·unique ID 추가 필수.</li>
+</ol>
+</li>
+</ul>
 <h4 id="r10-email-재사용-시-신원-충돌">R10: Email 재사용 시 신원 충돌</h4>
-<ul><li><strong>시나리오</strong>: A 직원(alice@company.com) 퇴사 → 새 직원 B(bob@company.com) 입사. 같은 email 재사용.</li><li><strong>영향</strong>: <ul><li>우리 DB: erp_user.id는 다르더라도, 동기화 시 email 기반 매칭 오류.</li><li>협업 기록: 이전 alice의 회의·일감이 bob으로 귀속될 수 있음.</li><li>KPI: 평가 기록 혼동.</li></ul></li><li><strong>완화</strong>:<ol><li><strong>Email + timestamp 조합</strong>: erp<em>user 동기화 시 (email, synced</em>at, erp<em>user</em>id) 조합으로 기록.</li><li><strong>Archive 정책</strong>: 퇴사자는 soft-delete (is_active=false), 기존 협업 기록은 유지.</li><li><strong>HR 조율</strong>: 퇴사자 email 재사용 정책을 HR과 사전 합의.</li><li><strong>다중테넌트 후속</strong>: v3.3에서 멀티테넌트 확장 시 (company_id, email) 조합을 더 엄격히 검증.</li></ol></li></ul>
-<h4 id="r11-godot-livekit-통합-폐기d27-2026-07-09"><del>R11: Godot ↔ LiveKit 통합</del> — <strong>폐기(D27, 2026-07-09)</strong></h4>
-<ul><li><strong>폐기 사유</strong>: Godot 클라이언트가 폐기되면서 GDExtension WebRTC 자체 래핑 필요가 사라짐. D27의 R3F 웹앱은 <strong>LiveKit 공식 JS SDK를 브라우저에서 네이티브로 사용</strong>하므로 통합 난제 소멸.</li><li><strong>후속</strong>: 화상/오디오는 P5(회의·화상)에서 웹 LiveKit SDK로 구현. 임베디드 브라우저 폴백도 불요.</li></ul>
-<h4 id="r15-깊이합성-실패-폴백-다층복잡-씬-확장-신규-d27">R15: 깊이합성 실패 폴백 — 다층·복잡 씬 확장 (신규, D27)</h4>
-<ul><li><strong>상황</strong>: Blender 오프라인 배경 + R3F 실시간 아바타의 <strong>깊이(depth) 합성 오클루전</strong>이 D27의 핵심 기법. <strong>단층 스파이크는 PASS(2026-07-08, commit b4736b1)</strong> — 초기 리스크 해소.</li><li><strong>잔존 리스크</strong>: 다층(멀티플로어)·가림 많은 복잡 씬으로 확장 시 depth 정밀도·경계 아티팩트로 오클루전이 붕괴할 수 있음.</li><li><strong>완화(§16 A.4 폴백)</strong>:<ol><li>P2에서 대표 복잡 씬으로 조기 재검증(단층 PASS를 다층으로 확장 시).</li><li>실패 시 폴백: <strong>빌보드 스프라이트 아바타</strong>(depth 미사용, 정렬 근사) 또는 <strong>부분 실시간 3D</strong>(가구 일부를 실시간 지오메트리로).</li></ol></li></ul>
-<h4 id="r16-skyofficecolyseus-이식량-자체-20hz-권위-서버-신규-d27">R16: SkyOffice/Colyseus 이식량 — 자체 20Hz 권위 서버 (신규, D27)</h4>
-<ul><li><strong>상황</strong>: D1 WSS는 D27에서 WA 내장이 아니라 <strong>SkyOffice 참조 이식 + Colyseus 권위 서버 자체 구현</strong>으로 전환(15-realtime-server-spec). 20Hz tick·이동검증·좌표동기화·스냅샷을 직접 구축해야 함.</li><li><strong>리스크</strong>: 드롭인 솔루션 부재로 이식량이 P3 일정을 지배. 권위 검증·재접속 스냅샷 등 상태 동기화 난이도.</li><li><strong>완화</strong>:<ol><li>P3에서 <strong>최소 이동서버(이동·좌표동기화)</strong> 우선 구현 후 점진 확장.</li><li>스코프 단계화: 이동검증→상태동기화→AOI 순.</li><li>SkyOffice 오픈소스 구조를 최대 재사용, 커스텀은 프레즌스 매핑에 국한.</li></ol></li></ul>
-<h4 id="r17-아바타-배경-조명정합-ibl-신규-d27">R17: 아바타 ↔ 배경 조명정합 (IBL) (신규, D27)</h4>
-<ul><li><strong>상황</strong>: 배경은 오프라인 Blender Cycles로 구운 이미지, 아바타는 런타임 R3F 실시간 셰이딩 → <strong>조명·그림자·톤 불일치</strong>가 이질감의 최대 원인.</li><li><strong>리스크</strong>: 정합 실패 시 &quot;붙여넣은 느낌&quot;으로 포토리얼 목표 훼손. D27 최난제.</li><li><strong>완화</strong>:<ol><li>씬별 <strong>IBL 데이터(HDRI/라이트프로브·앰비언트) 추출</strong>을 Blender 렌더 단계에서 함께 산출하여 R3F에 주입.</li><li>목표 정합도 <strong>80~90%</strong>(완벽 아님)로 설정, 미달 시 톤매핑·앰비언트 근사·접지 그림자(contact shadow)로 타협.</li><li>P2(배경)~P3(아바타) 교차 시점에 룩 검증 게이트.</li></ol></li></ul>
-<h4 id="r18-부하검증-p7-20명-도그푸딩-실측16-part-b12-p7-t4-정합-100명은-설계-목표d22-p7-이후-별도-검증-신규-d27">R18: 부하검증 — P7 = <strong>20명 도그푸딩 실측</strong>(16 §Part B·12 P7-T4 정합), 100명은 설계 목표(D22) — P7 이후 별도 검증 (신규, D27)</h4>
-<ul><li><strong>상황</strong>: Colyseus 단일 룸 동시 접속 목표(설계 100명). 20Hz 브로드캐스트 × 인원 → tick 지연·대역폭·클라 렌더 병목 가능.</li><li><strong>리스크</strong>: 부하 미검증 시 프로덕션에서 프레즌스 지연·끊김.</li><li><strong>완화</strong>:<ol><li><strong>P7 부하검증</strong>: 우선 20명 실측 → 100명 목표로 확장 측정(E2E p95 지연·tick 안정성).</li><li><strong>관심영역(AOI)</strong> 필터링·업데이트 스로틀링으로 브로드캐스트 절감.</li><li>미달 시 룸 분할(층/구역별) 또는 tick·전송률 적응.</li></ol></li></ul>
-<h4 id="r19-blender-렌더-파이프라인-배치화재렌더-지연-신규-d27">R19: Blender 렌더 파이프라인 배치화·재렌더 지연 (신규, D27)</h4>
-<ul><li><strong>상황</strong>: <code>layout JSON → Blender 파라메트릭 씬 빌더 → Cycles 오프라인 렌더(배경+depth)</code>는 배치성 작업으로 수 분 단위 소요. 배치 편집기에서 즉시 반영 불가.</li><li><strong>리스크</strong>: 편집→반영 UX 저하, 렌더 큐 적체, 다층 확장 시 렌더 시간 폭증.</li><li><strong>완화</strong>:<ol><li><strong>draft(경량) 모드</strong>로 편집 즉시 미리보기 후, 확정 시 배치 재렌더(D11 데스크톱 draft 계승).</li><li>렌더 <strong>큐·캐시·증분 재렌더</strong>(변경 씬만 재생성).</li><li>P2에서 1개 층 파이프라인 확립 후 P7에서 다층·배치 자동화.</li></ol></li></ul>
-<h4 id="r12-stt-정확도-한국어-화자분리-신규-d5f">R12: STT 정확도 / 한국어 화자분리 (신규, D5/F)</h4>
-<ul><li><strong>상황</strong>: 회의록 STT 자동 초안(LiveKit Egress → STT → 화자분리)이 정식 범위(D5). 한국어 화자분리 정확도가 관건.</li><li><strong>리스크</strong>: 누락률 &lt;5%(수동 전사 대조, D22) 미달 시 회의록 자동화 가치 저하.</li><li><strong>완화</strong>:<ol><li><strong>Phase 0 스파이크 S2</strong>: 한국어 회의록 초안 품질·누락률 측정.</li><li><strong>폴백 확정</strong>: 미달 시 수동 회의록 + AI 요약으로 격하(PRD 기준 하향 재협의).</li><li>외부 STT/LLM 전송 시 실명→사번 가명화(D20).</li></ol></li></ul>
-<h4 id="r13-개인정보-노동법-컴플라이언스-신규-d20">R13: 개인정보 / 노동법 컴플라이언스 (신규, D20)</h4>
-<ul><li><strong>상황</strong>: 평가 목적의 행동 데이터 수집(presence), 회의 녹음·STT, 외부 AI 전송이 근로자 모니터링·개인정보 규율 대상.</li><li><strong>리스크</strong>: 고지·동의 절차 미비 시 법적/노무 리스크.</li><li><strong>완화(D20)</strong>:<ol><li><strong>근로자 모니터링 고지·동의</strong>: 수집 항목·목적·보존기간 서면 고지 및 동의. presence 좌표는 KPI 미사용·30일 후 삭제.</li><li><strong>회의 녹음·STT 동의</strong>: 회의 시작 시 전원 고지 배너 + 참여 의사 확인(거부 시 오디오 미수집). 녹음 원본 90일, 회의록 텍스트는 평가 데이터로 관리.</li><li><strong>GPS 수집 기능 삭제</strong>(D13 연동), ERP lat/lng/radius 미러링 금지.</li><li><strong>외부 AI 전송</strong>: 실명→사번 가명화, 처리위탁·국외이전 고지 문서화.</li><li><strong>보존 기한</strong>: 평가 데이터(kpi<em>result·work</em>log) 5년, audit_log 5년.</li></ol></li></ul>
+<ul>
+<li><strong>시나리오</strong>: A 직원(<a href="mailto:&#97;&#108;&#x69;&#x63;&#101;&#64;&#x63;&#111;&#109;&#x70;&#97;&#110;&#121;&#46;&#x63;&#111;&#x6d;">&#97;&#108;&#x69;&#x63;&#101;&#64;&#x63;&#111;&#109;&#x70;&#97;&#110;&#121;&#46;&#x63;&#111;&#x6d;</a>) 퇴사 → 새 직원 B(<a href="mailto:&#98;&#x6f;&#98;&#64;&#99;&#111;&#x6d;&#x70;&#x61;&#110;&#121;&#46;&#99;&#111;&#x6d;">&#98;&#x6f;&#98;&#64;&#99;&#111;&#x6d;&#x70;&#x61;&#110;&#121;&#46;&#99;&#111;&#x6d;</a>) 입사. 같은 email 재사용.</li>
+<li><strong>영향</strong>: <ul>
+<li>우리 DB: erp_user.id는 다르더라도, 동기화 시 email 기반 매칭 오류.</li>
+<li>협업 기록: 이전 alice의 회의·일감이 bob으로 귀속될 수 있음.</li>
+<li>KPI: 평가 기록 혼동.</li>
+</ul>
+</li>
+<li><strong>완화</strong>:<ol>
+<li><strong>Email + timestamp 조합</strong>: erp_user 동기화 시 (email, synced_at, erp_user_id) 조합으로 기록.</li>
+<li><strong>Archive 정책</strong>: 퇴사자는 soft-delete (is_active=false), 기존 협업 기록은 유지.</li>
+<li><strong>HR 조율</strong>: 퇴사자 email 재사용 정책을 HR과 사전 합의.</li>
+<li><strong>다중테넌트 후속</strong>: v3.3에서 멀티테넌트 확장 시 (company_id, email) 조합을 더 엄격히 검증.</li>
+</ol>
+</li>
+</ul>
+<h4 id="r11-godot-↔-livekit-통합--폐기d27-2026-07-09"><del>R11: Godot ↔ LiveKit 통합</del> — <strong>폐기(D27, 2026-07-09)</strong></h4>
+<ul>
+<li><strong>폐기 사유</strong>: Godot 클라이언트가 폐기되면서 GDExtension WebRTC 자체 래핑 필요가 사라짐. D27의 R3F 웹앱은 <strong>LiveKit 공식 JS SDK를 브라우저에서 네이티브로 사용</strong>하므로 통합 난제 소멸.</li>
+<li><strong>후속</strong>: 화상/오디오는 P5(회의·화상)에서 웹 LiveKit SDK로 구현. 임베디드 브라우저 폴백도 불요.</li>
+</ul>
+<h4 id="r15-깊이합성-실패-폴백--다층·복잡-씬-확장-신규-d27">R15: 깊이합성 실패 폴백 — 다층·복잡 씬 확장 (신규, D27)</h4>
+<ul>
+<li><strong>상황</strong>: Blender 오프라인 배경 + R3F 실시간 아바타의 <strong>깊이(depth) 합성 오클루전</strong>이 D27의 핵심 기법. <strong>단층 스파이크는 PASS(2026-07-08, commit b4736b1)</strong> — 초기 리스크 해소.</li>
+<li><strong>잔존 리스크</strong>: 다층(멀티플로어)·가림 많은 복잡 씬으로 확장 시 depth 정밀도·경계 아티팩트로 오클루전이 붕괴할 수 있음.</li>
+<li><strong>완화(§16 A.4 폴백)</strong>:<ol>
+<li>P2에서 대표 복잡 씬으로 조기 재검증(단층 PASS를 다층으로 확장 시).</li>
+<li>실패 시 폴백: <strong>빌보드 스프라이트 아바타</strong>(depth 미사용, 정렬 근사) 또는 <strong>부분 실시간 3D</strong>(가구 일부를 실시간 지오메트리로).</li>
+</ol>
+</li>
+</ul>
+<h4 id="r16-skyofficecolyseus-이식량--자체-20hz-권위-서버-신규-d27">R16: SkyOffice/Colyseus 이식량 — 자체 20Hz 권위 서버 (신규, D27)</h4>
+<ul>
+<li><strong>상황</strong>: D1 WSS는 D27에서 WA 내장이 아니라 <strong>SkyOffice 참조 이식 + Colyseus 권위 서버 자체 구현</strong>으로 전환(15-realtime-server-spec). 20Hz tick·이동검증·좌표동기화·스냅샷을 직접 구축해야 함.</li>
+<li><strong>리스크</strong>: 드롭인 솔루션 부재로 이식량이 P3 일정을 지배. 권위 검증·재접속 스냅샷 등 상태 동기화 난이도.</li>
+<li><strong>완화</strong>:<ol>
+<li>P3에서 <strong>최소 이동서버(이동·좌표동기화)</strong> 우선 구현 후 점진 확장.</li>
+<li>스코프 단계화: 이동검증→상태동기화→AOI 순.</li>
+<li>SkyOffice 오픈소스 구조를 최대 재사용, 커스텀은 프레즌스 매핑에 국한.</li>
+</ol>
+</li>
+</ul>
+<h4 id="r17-아바타-↔-배경-조명정합-ibl-신규-d27">R17: 아바타 ↔ 배경 조명정합 (IBL) (신규, D27)</h4>
+<ul>
+<li><strong>상황</strong>: 배경은 오프라인 Blender Cycles로 구운 이미지, 아바타는 런타임 R3F 실시간 셰이딩 → <strong>조명·그림자·톤 불일치</strong>가 이질감의 최대 원인.</li>
+<li><strong>리스크</strong>: 정합 실패 시 &quot;붙여넣은 느낌&quot;으로 포토리얼 목표 훼손. D27 최난제.</li>
+<li><strong>완화</strong>:<ol>
+<li>씬별 <strong>IBL 데이터(HDRI/라이트프로브·앰비언트) 추출</strong>을 Blender 렌더 단계에서 함께 산출하여 R3F에 주입.</li>
+<li>목표 정합도 <strong>80~90%</strong>(완벽 아님)로 설정, 미달 시 톤매핑·앰비언트 근사·접지 그림자(contact shadow)로 타협.</li>
+<li>P2(배경)~P3(아바타) 교차 시점에 룩 검증 게이트.</li>
+</ol>
+</li>
+</ul>
+<h4 id="r18-부하검증--p7--20명-도그푸딩-실측16-§part-b·12-p7-t4-정합-100명은-설계-목표d22--p7-이후-별도-검증-신규-d27">R18: 부하검증 — P7 = <strong>20명 도그푸딩 실측</strong>(16 §Part B·12 P7-T4 정합), 100명은 설계 목표(D22) — P7 이후 별도 검증 (신규, D27)</h4>
+<ul>
+<li><strong>상황</strong>: Colyseus 단일 룸 동시 접속 목표(설계 100명). 20Hz 브로드캐스트 × 인원 → tick 지연·대역폭·클라 렌더 병목 가능.</li>
+<li><strong>리스크</strong>: 부하 미검증 시 프로덕션에서 프레즌스 지연·끊김.</li>
+<li><strong>완화</strong>:<ol>
+<li><strong>P7 부하검증</strong>: 우선 20명 실측 → 100명 목표로 확장 측정(E2E p95 지연·tick 안정성).</li>
+<li><strong>관심영역(AOI)</strong> 필터링·업데이트 스로틀링으로 브로드캐스트 절감.</li>
+<li>미달 시 룸 분할(층/구역별) 또는 tick·전송률 적응.</li>
+</ol>
+</li>
+</ul>
+<h4 id="r19-blender-렌더-파이프라인-배치화·재렌더-지연-신규-d27">R19: Blender 렌더 파이프라인 배치화·재렌더 지연 (신규, D27)</h4>
+<ul>
+<li><strong>상황</strong>: <code>layout JSON → Blender 파라메트릭 씬 빌더 → Cycles 오프라인 렌더(배경+depth)</code>는 배치성 작업으로 수 분 단위 소요. 배치 편집기에서 즉시 반영 불가.</li>
+<li><strong>리스크</strong>: 편집→반영 UX 저하, 렌더 큐 적체, 다층 확장 시 렌더 시간 폭증.</li>
+<li><strong>완화</strong>:<ol>
+<li><strong>draft(경량) 모드</strong>로 편집 즉시 미리보기 후, 확정 시 배치 재렌더(D11 데스크톱 draft 계승).</li>
+<li>렌더 <strong>큐·캐시·증분 재렌더</strong>(변경 씬만 재생성).</li>
+<li>P2에서 1개 층 파이프라인 확립 후 P7에서 다층·배치 자동화.</li>
+</ol>
+</li>
+</ul>
+<h4 id="r12-stt-정확도--한국어-화자분리-신규-d5f">R12: STT 정확도 / 한국어 화자분리 (신규, D5/F)</h4>
+<ul>
+<li><strong>상황</strong>: 회의록 STT 자동 초안(LiveKit Egress → STT → 화자분리)이 정식 범위(D5). 한국어 화자분리 정확도가 관건.</li>
+<li><strong>리스크</strong>: 누락률 &lt;5%(수동 전사 대조, D22) 미달 시 회의록 자동화 가치 저하.</li>
+<li><strong>완화</strong>:<ol>
+<li><strong>Phase 0 스파이크 S2</strong>: 한국어 회의록 초안 품질·누락률 측정.</li>
+<li><strong>폴백 확정</strong>: 미달 시 수동 회의록 + AI 요약으로 격하(PRD 기준 하향 재협의).</li>
+<li>외부 STT/LLM 전송 시 실명→사번 가명화(D20).</li>
+</ol>
+</li>
+</ul>
+<h4 id="r13-개인정보--노동법-컴플라이언스-신규-d20">R13: 개인정보 / 노동법 컴플라이언스 (신규, D20)</h4>
+<ul>
+<li><strong>상황</strong>: 평가 목적의 행동 데이터 수집(presence), 회의 녹음·STT, 외부 AI 전송이 근로자 모니터링·개인정보 규율 대상.</li>
+<li><strong>리스크</strong>: 고지·동의 절차 미비 시 법적/노무 리스크.</li>
+<li><strong>완화(D20)</strong>:<ol>
+<li><strong>근로자 모니터링 고지·동의</strong>: 수집 항목·목적·보존기간 서면 고지 및 동의. presence 좌표는 KPI 미사용·30일 후 삭제.</li>
+<li><strong>회의 녹음·STT 동의</strong>: 회의 시작 시 전원 고지 배너 + 참여 의사 확인(거부 시 오디오 미수집). 녹음 원본 90일, 회의록 텍스트는 평가 데이터로 관리.</li>
+<li><strong>GPS 수집 기능 삭제</strong>(D13 연동), ERP lat/lng/radius 미러링 금지.</li>
+<li><strong>외부 AI 전송</strong>: 실명→사번 가명화, 처리위탁·국외이전 고지 문서화.</li>
+<li><strong>보존 기한</strong>: 평가 데이터(kpi_result·work_log) 5년, audit_log 5년.</li>
+</ol>
+</li>
+</ul>
 <h4 id="r14-클라-서버-프로토콜-버전-호환-신규-d4">R14: 클라-서버 프로토콜 버전 호환 (신규, D4)</h4>
-<ul><li><strong>상황</strong>: 네이티브 클라이언트는 자동 업데이트 채널로 배포(D8)되므로, 서버 배포 시점과 클라 버전이 일시적으로 불일치할 수 있음.</li><li><strong>완화</strong>: WSS 핸드셰이크에 <code>protocol_version</code> 협상 포함(D4) — 미지원 버전은 거부하고 업데이트 안내. 재접속 시 sequence_num 기반 스냅샷 재수신(D1).</li></ul>
+<ul>
+<li><strong>상황</strong>: 네이티브 클라이언트는 자동 업데이트 채널로 배포(D8)되므로, 서버 배포 시점과 클라 버전이 일시적으로 불일치할 수 있음.</li>
+<li><strong>완화</strong>: WSS 핸드셰이크에 <code>protocol_version</code> 협상 포함(D4) — 미지원 버전은 거부하고 업데이트 안내. 재접속 시 sequence_num 기반 스냅샷 재수신(D1).</li>
+</ul>
 <hr>
 <h2 id="2-open-questions">2. Open Questions</h2>
-<div class="table-wrap"><table><thead><tr><th>#</th><th>질문</th><th>영향도</th><th>의존성</th><th>담당</th><th>예상 해결 시점</th></tr></thead><tbody><tr><td>OQ1</td><td><strong>ERP git 접근권한 보유 → 자체 dev 브랜치 작업(담당자 병합 대기 불필요)</strong></td><td>높음</td><td>없음</td><td>backend-specialist</td><td>Phase 0 완료(2026-07-01 확정)</td></tr><tr><td>OQ2</td><td><strong>근태 벌크 동기화: 초기 로드 vs 실시간 CDC?</strong></td><td>중</td><td>R4 완화</td><td>backend-specialist</td><td>Phase 2 설계 단계</td></tr><tr><td>OQ3</td><td><strong>3D 출근 규칙: 로그인→online, 좌석→working, 회의실→meeting, 근무상태 분리 확정</strong></td><td>높음</td><td>없음</td><td>기획 + backend-specialist</td><td>Phase 0 완료(2026-07-01 확정)</td></tr><tr><td>OQ4</td><td><strong>실시간 이동 프로토콜 → WebSocket(WSS) 확정 종결(D1)</strong>. D27에서 구현 주체는 Godot 멀티플레이어가 아니라 <strong>Colyseus 권위 서버(SkyOffice 이식, 20Hz)</strong> — R16 참조</td><td>중</td><td>없음</td><td>backend-specialist + 3d-engine-specialist</td><td>확정(2026-07-02, D27로 구현체 정정 2026-07-09)</td></tr><tr><td>OQ5</td><td><strong>LiveKit 호스팅: 사내 self-host(Docker Compose), TURN-over-TLS/UDP 직결(VPN 없음), 단일 SFU — 2026-07-02 최종 확정</strong></td><td>중</td><td>없음</td><td>인프라 담당자</td><td>확정(2026-07-02)</td></tr><tr><td>OQ6</td><td><strong>KPI AI 초안: Claude 확정(기본), Gemini 대안 여부만 검토</strong></td><td>낮음</td><td>Phase 6 설계</td><td>기획 + backend-specialist</td><td>Phase 5 말</td></tr><tr><td>OQ7</td><td><strong>좌석 미배정 시 아바타 fallback: 로비 vs 에러?</strong></td><td>낮음</td><td>Phase 2 데이터 설계</td><td>기획 + 3d-engine-specialist</td><td>Phase 2 설계</td></tr><tr><td>OQ8</td><td><strong>사무실 배치 롤백: 활성 좌석/아바타를 어떻게 처리?</strong></td><td>중</td><td>Phase 3 구현</td><td>PM + backend-specialist</td><td>Phase 3 말</td></tr><tr><td>OQ9</td><td><strong>조직 계층별 3D 구역 접근 제어: org_group.type별로?</strong></td><td>낮음</td><td>Phase 2 설계</td><td>기획 + backend-specialist</td><td>설계 Phase 2 말 / 구현 Phase 7 (2026-07-02)</td></tr><tr><td>OQ10</td><td><strong>ERP read-only DB 계정 프로비저닝: 언제? 누가 책임?</strong></td><td>높음</td><td>R3 완화</td><td>인프라 담당자</td><td>Phase 0 완료 시</td></tr><tr><td>OQ11</td><td><strong>회의실 예약 → 예약 시스템 + 즉석(FCFS) 병행 확정(D23)</strong></td><td>중</td><td>없음</td><td>기획</td><td>확정(2026-07-02)</td></tr><tr><td>OQ12</td><td><strong>아바타 콜리전 → 벽면 관통 차단 확정(로드맵 Phase 4 충돌 시스템과 정합) — 2026-07-02 종결</strong></td><td>낮음</td><td>없음</td><td>3d-engine-specialist</td><td>확정(2026-07-02)</td></tr><tr><td>OQ13</td><td><strong>ERP 회의실 예약 테이블(meeting<em>rooms/meeting</em>room<em>shares/meeting</em>reservations)과 우리 회의 기능의 관계 — 무시/미러/통합 중 결정</strong></td><td>중</td><td>Phase 5 착수 전 필수</td><td>기획 + backend-specialist</td><td>Phase 5 착수 전 (발견 2026-07-02, 라이브 스키마 검증)</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>질문</th>
+<th>영향도</th>
+<th>의존성</th>
+<th>담당</th>
+<th>예상 해결 시점</th>
+</tr>
+</thead><tbody><tr>
+<td>OQ1</td>
+<td><strong>ERP git 접근권한 보유 → 자체 dev 브랜치 작업(담당자 병합 대기 불필요)</strong></td>
+<td>높음</td>
+<td>없음</td>
+<td>backend-specialist</td>
+<td>Phase 0 완료(2026-07-01 확정)</td>
+</tr>
+<tr>
+<td>OQ2</td>
+<td><strong>근태 벌크 동기화: 초기 로드 vs 실시간 CDC?</strong></td>
+<td>중</td>
+<td>R4 완화</td>
+<td>backend-specialist</td>
+<td>Phase 2 설계 단계</td>
+</tr>
+<tr>
+<td>OQ3</td>
+<td><strong>3D 출근 규칙: 로그인→online, 좌석→working, 회의실→meeting, 근무상태 분리 확정</strong></td>
+<td>높음</td>
+<td>없음</td>
+<td>기획 + backend-specialist</td>
+<td>Phase 0 완료(2026-07-01 확정)</td>
+</tr>
+<tr>
+<td>OQ4</td>
+<td><strong>실시간 이동 프로토콜 → WebSocket(WSS) 확정 종결(D1)</strong>. D27에서 구현 주체는 Godot 멀티플레이어가 아니라 <strong>Colyseus 권위 서버(SkyOffice 이식, 20Hz)</strong> — R16 참조</td>
+<td>중</td>
+<td>없음</td>
+<td>backend-specialist + 3d-engine-specialist</td>
+<td>확정(2026-07-02, D27로 구현체 정정 2026-07-09)</td>
+</tr>
+<tr>
+<td>OQ5</td>
+<td><strong>LiveKit 호스팅: 사내 self-host(Docker Compose), TURN-over-TLS/UDP 직결(VPN 없음), 단일 SFU — 2026-07-02 최종 확정</strong></td>
+<td>중</td>
+<td>없음</td>
+<td>인프라 담당자</td>
+<td>확정(2026-07-02)</td>
+</tr>
+<tr>
+<td>OQ6</td>
+<td><strong>KPI AI 초안: Claude 확정(기본), Gemini 대안 여부만 검토</strong></td>
+<td>낮음</td>
+<td>Phase 6 설계</td>
+<td>기획 + backend-specialist</td>
+<td>Phase 5 말</td>
+</tr>
+<tr>
+<td>OQ7</td>
+<td><strong>좌석 미배정 시 아바타 fallback: 로비 vs 에러?</strong></td>
+<td>낮음</td>
+<td>Phase 2 데이터 설계</td>
+<td>기획 + 3d-engine-specialist</td>
+<td>Phase 2 설계</td>
+</tr>
+<tr>
+<td>OQ8</td>
+<td><strong>사무실 배치 롤백: 활성 좌석/아바타를 어떻게 처리?</strong></td>
+<td>중</td>
+<td>Phase 3 구현</td>
+<td>PM + backend-specialist</td>
+<td>Phase 3 말</td>
+</tr>
+<tr>
+<td>OQ9</td>
+<td><strong>조직 계층별 3D 구역 접근 제어: org_group.type별로?</strong></td>
+<td>낮음</td>
+<td>Phase 2 설계</td>
+<td>기획 + backend-specialist</td>
+<td>설계 Phase 2 말 / 구현 Phase 7 (2026-07-02)</td>
+</tr>
+<tr>
+<td>OQ10</td>
+<td><strong>ERP read-only DB 계정 프로비저닝: 언제? 누가 책임?</strong></td>
+<td>높음</td>
+<td>R3 완화</td>
+<td>인프라 담당자</td>
+<td>Phase 0 완료 시</td>
+</tr>
+<tr>
+<td>OQ11</td>
+<td><strong>회의실 예약 → 예약 시스템 + 즉석(FCFS) 병행 확정(D23)</strong></td>
+<td>중</td>
+<td>없음</td>
+<td>기획</td>
+<td>확정(2026-07-02)</td>
+</tr>
+<tr>
+<td>OQ12</td>
+<td><strong>아바타 콜리전 → 벽면 관통 차단 확정(로드맵 Phase 4 충돌 시스템과 정합) — 2026-07-02 종결</strong></td>
+<td>낮음</td>
+<td>없음</td>
+<td>3d-engine-specialist</td>
+<td>확정(2026-07-02)</td>
+</tr>
+<tr>
+<td>OQ13</td>
+<td><strong>ERP 회의실 예약 테이블(meeting_rooms/meeting_room_shares/meeting_reservations)과 우리 회의 기능의 관계 — 무시/미러/통합 중 결정</strong></td>
+<td>중</td>
+<td>Phase 5 착수 전 필수</td>
+<td>기획 + backend-specialist</td>
+<td>Phase 5 착수 전 (발견 2026-07-02, 라이브 스키마 검증)</td>
+</tr>
+</tbody></table></div>
 <hr>
 <h2 id="3-assumptions-명시적-가정">3. Assumptions (명시적 가정)</h2>
-<div class="table-wrap"><table><thead><tr><th>#</th><th>가정</th><th>근거</th><th>검증 방법</th><th>위험도</th></tr></thead><tbody><tr><td>A1</td><td><strong>ERP users.id는 변경되지 않음</strong></td><td>erp_user의 FK로 사용, 데이터 무결성</td><td>ERP 스키마 문서 확인 + DBA 인터뷰</td><td>높음</td></tr><tr><td>A2</td><td><strong>단일 조직(company_id) 운영</strong></td><td>v3.2 spec = 도그푸딩, 다중테넌트는 v3.3 이후</td><td>프로젝트 스코프 명시</td><td>높음</td></tr><tr><td>A3</td><td><strong>ERP teams는 리프 노드만 지원</strong></td><td>ERP 스키마에 parent<em>team</em>id 없음</td><td>ERP 소스코드 확인 (backend/app/models/tables.py)</td><td>중</td></tr><tr><td>A4</td><td><strong>사내망 안정적, 직접 DB 접근 가능</strong> (범위: 서버 PC↔ERP DB 구간 한정 — 사용자 접속은 인터넷 공개, onprem-docker §3, 2026-07-02)</td><td>read-only 계정으로 근태 벌크 조회</td><td>네트워크 아키텍처 검토 + Firewall 규칙</td><td>높음</td></tr><tr><td>A5</td><td><strong>EOD 배치는 고정 시간(예: 18:00) 실행</strong></td><td>work_hours 기준이 아니라 규칙적 스케줄</td><td>Phase 6에 APScheduler로 구현 및 테스트</td><td>중</td></tr><tr><td>A6</td><td><strong>직원은 하루에 한 번만 출근</strong></td><td>근태 로직 단순화 (중복 check_in 처리 불필요)</td><td>사내 근무 정책 확인</td><td>낮음</td></tr><tr><td><del>A7</del></td><td><del><strong>회의실은 first-come-first-served</strong></del> <strong>폐기(D23)</strong> — 예약 시스템 + 즉석(FCFS) <strong>병행</strong> 확정</td><td>예약 충돌 검증 유지</td><td>OQ11 확정 종결</td><td>—</td></tr><tr><td><del>A8</del></td><td><del><strong>Godot 헤드리스 서버는 권위 있는 소스</strong></del> <strong>폐기(D27, 2026-07-09)</strong> — Godot 헤드리스 폐기. 권위 서버 = <strong>Colyseus</strong>(SkyOffice 이식). &quot;서버 권위&quot; 원칙 자체는 Colyseus로 계승(이동검증은 서버가 판정)</td><td>클라는 서버 검증 결과만 신뢰(원칙 유지)</td><td>R16 / 15-realtime-server-spec</td><td>—</td></tr><tr><td>A9</td><td><strong>Asset 라이선스·속성 정확도</strong></td><td>CC0 및 라이선스 명시 에셋만 사용</td><td>각 에셋별 라이선스 문서 보관</td><td>낮음</td></tr><tr><td>A10</td><td><strong>Email은 (company_id, email) 복합 유니크</strong></td><td>다중테넌트 후속 고려</td><td>ERP 스키마 제약 조건 확인</td><td>중</td></tr><tr><td><del>A11</del></td><td><del><strong>아바타는 물리적 콜리전 무시 가능</strong></del> <strong>폐기(2026-07-02)</strong> — OQ12 벽면 관통 <strong>차단 확정</strong>(로드맵 Phase 4 충돌 시스템과 정합)</td><td>게임 UX 선례 (비-장애 기능)</td><td>OQ12 확정 종결</td><td>—</td></tr><tr><td><del>A12</del></td><td><del><strong>Godot 4 네이티브 빌드는 안정적</strong></del> <strong>폐기(D27, 2026-07-09)</strong> — 네이티브 빌드 노선 폐기. 대체 가정 <strong>A14</strong>(웹/R3F·Blender 스택 안정성)로 이관</td><td>—</td><td>—</td><td>—</td></tr><tr><td>A13</td><td><strong>공인 고정 IP 유지, 도메인 구매 전 임시 내부 CA 운용</strong></td><td>D21-r 온프렘 인터넷 공개 배포 확정(2026-07-02), onprem-docker 정본</td><td>배포 시 공인 IP·인증서 상태 확인</td><td>중</td></tr><tr><td>A14</td><td><strong>R3F(WebGL2)·Blender Cycles·Colyseus 스택은 목표 환경에서 안정적</strong> (D27 신규)</td><td>성숙한 오픈소스·웹 표준, 스파이크 PASS(b4736b1)</td><td>P0/P2 스파이크·P7 성능검증(GPU별 편차 포함)</td><td>중</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>가정</th>
+<th>근거</th>
+<th>검증 방법</th>
+<th>위험도</th>
+</tr>
+</thead><tbody><tr>
+<td>A1</td>
+<td><strong>ERP users.id는 변경되지 않음</strong></td>
+<td>erp_user의 FK로 사용, 데이터 무결성</td>
+<td>ERP 스키마 문서 확인 + DBA 인터뷰</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>A2</td>
+<td><strong>단일 조직(company_id) 운영</strong></td>
+<td>v3.2 spec = 도그푸딩, 다중테넌트는 v3.3 이후</td>
+<td>프로젝트 스코프 명시</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>A3</td>
+<td><strong>ERP teams는 리프 노드만 지원</strong></td>
+<td>ERP 스키마에 parent_team_id 없음</td>
+<td>ERP 소스코드 확인 (backend/app/models/tables.py)</td>
+<td>중</td>
+</tr>
+<tr>
+<td>A4</td>
+<td><strong>사내망 안정적, 직접 DB 접근 가능</strong> (범위: 서버 PC↔ERP DB 구간 한정 — 사용자 접속은 인터넷 공개, onprem-docker §3, 2026-07-02)</td>
+<td>read-only 계정으로 근태 벌크 조회</td>
+<td>네트워크 아키텍처 검토 + Firewall 규칙</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>A5</td>
+<td><strong>EOD 배치는 고정 시간(예: 18:00) 실행</strong></td>
+<td>work_hours 기준이 아니라 규칙적 스케줄</td>
+<td>Phase 6에 APScheduler로 구현 및 테스트</td>
+<td>중</td>
+</tr>
+<tr>
+<td>A6</td>
+<td><strong>직원은 하루에 한 번만 출근</strong></td>
+<td>근태 로직 단순화 (중복 check_in 처리 불필요)</td>
+<td>사내 근무 정책 확인</td>
+<td>낮음</td>
+</tr>
+<tr>
+<td><del>A7</del></td>
+<td><del><strong>회의실은 first-come-first-served</strong></del> <strong>폐기(D23)</strong> — 예약 시스템 + 즉석(FCFS) <strong>병행</strong> 확정</td>
+<td>예약 충돌 검증 유지</td>
+<td>OQ11 확정 종결</td>
+<td>—</td>
+</tr>
+<tr>
+<td><del>A8</del></td>
+<td><del><strong>Godot 헤드리스 서버는 권위 있는 소스</strong></del> <strong>폐기(D27, 2026-07-09)</strong> — Godot 헤드리스 폐기. 권위 서버 = <strong>Colyseus</strong>(SkyOffice 이식). &quot;서버 권위&quot; 원칙 자체는 Colyseus로 계승(이동검증은 서버가 판정)</td>
+<td>클라는 서버 검증 결과만 신뢰(원칙 유지)</td>
+<td>R16 / 15-realtime-server-spec</td>
+<td>—</td>
+</tr>
+<tr>
+<td>A9</td>
+<td><strong>Asset 라이선스·속성 정확도</strong></td>
+<td>CC0 및 라이선스 명시 에셋만 사용</td>
+<td>각 에셋별 라이선스 문서 보관</td>
+<td>낮음</td>
+</tr>
+<tr>
+<td>A10</td>
+<td><strong>Email은 (company_id, email) 복합 유니크</strong></td>
+<td>다중테넌트 후속 고려</td>
+<td>ERP 스키마 제약 조건 확인</td>
+<td>중</td>
+</tr>
+<tr>
+<td><del>A11</del></td>
+<td><del><strong>아바타는 물리적 콜리전 무시 가능</strong></del> <strong>폐기(2026-07-02)</strong> — OQ12 벽면 관통 <strong>차단 확정</strong>(로드맵 Phase 4 충돌 시스템과 정합)</td>
+<td>게임 UX 선례 (비-장애 기능)</td>
+<td>OQ12 확정 종결</td>
+<td>—</td>
+</tr>
+<tr>
+<td><del>A12</del></td>
+<td><del><strong>Godot 4 네이티브 빌드는 안정적</strong></del> <strong>폐기(D27, 2026-07-09)</strong> — 네이티브 빌드 노선 폐기. 대체 가정 <strong>A14</strong>(웹/R3F·Blender 스택 안정성)로 이관</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>A13</td>
+<td><strong>공인 고정 IP 유지, 도메인 구매 전 임시 내부 CA 운용</strong></td>
+<td>D21-r 온프렘 인터넷 공개 배포 확정(2026-07-02), onprem-docker 정본</td>
+<td>배포 시 공인 IP·인증서 상태 확인</td>
+<td>중</td>
+</tr>
+<tr>
+<td>A14</td>
+<td><strong>R3F(WebGL2)·Blender Cycles·Colyseus 스택은 목표 환경에서 안정적</strong> (D27 신규)</td>
+<td>성숙한 오픈소스·웹 표준, 스파이크 PASS(b4736b1)</td>
+<td>P0/P2 스파이크·P7 성능검증(GPU별 편차 포함)</td>
+<td>중</td>
+</tr>
+</tbody></table></div>
 <hr>
 <h2 id="4-검증-계획">4. 검증 계획</h2>
 <h3 id="41-phase별-검증-gate">4.1 Phase별 검증 Gate</h3>
 <blockquote>🔴 <strong>구 58주 간트(Godot/WA 기준) 폐기(D27, 2026-07-09)</strong> — 아래는 D27 Phase 편성(P0~P7, 정본 = 16-render-spike-and-roadmap §Part B)에 따른 <strong>의존성 순서 기반 게이트 목록</strong>이다. <strong>주 단위 절대 날짜는 P0 깊이합성 스파이크 완료 후 확정</strong>하며, 억지 숫자를 기재하지 않는다(참고: P0 스파이크는 2026-07-08 PASS, commit b4736b1). 아래 게이트는 순서(선후행) 관계만 규정한다.</blockquote>
-<div class="mermaid">graph TD
+<pre class="code"><code>graph TD
     P0[&quot;P0 스파이크&lt;br/&gt;(깊이합성 — PASS b4736b1)&quot;] --&gt; P1[&quot;P1 셸+데이터연결&lt;br/&gt;(대시보드 셸·백엔드 API)&quot;]
     P1 --&gt; P2[&quot;P2 렌더 파이프라인&lt;br/&gt;(layout→Blender→R3F 배경/depth)&quot;]
     P2 --&gt; P3[&quot;P3 이동서버&lt;br/&gt;(Colyseus 20Hz·아바타 깊이합성)&quot;]
@@ -126,28 +734,65 @@ img{max-width:100%;border-radius:8px}
     G2[&quot;Gate: R17 조명정합 룩검증 / R19 렌더 draft↔배치&quot;] -.-&gt; P2
     G3[&quot;Gate: R16 Colyseus 이동검증 / R15 다층 깊이합성 재검증&quot;] -.-&gt; P3
     G5[&quot;Gate: R12 STT 누락률&lt;5% / R13 동의배너&quot;] -.-&gt; P6
-    G7[&quot;Gate: R18 100명 부하검증 / 리스크 CLOSED·MITIGATED&quot;] -.-&gt; P7</div>
+    G7[&quot;Gate: R18 100명 부하검증 / 리스크 CLOSED·MITIGATED&quot;] -.-&gt; P7</code></pre>
 <blockquote><strong>주 단위 확정 방침</strong>: 각 Phase 기간은 P0 결과 및 P1~P2 실측 속도(1인 개발, R7)를 바탕으로 순차 확정한다. 확정 전까지 절대 날짜(예: 2027-08-16)는 기재하지 않는다.</blockquote>
 <h3 id="42-검증-체크리스트">4.2 검증 체크리스트</h3>
 <blockquote><strong>Phase 편성 정본 = 16-render-spike-and-roadmap §Part B (P0~P7).</strong> 아래 게이트는 D27 편성에 맞춰 재작성됨.</blockquote>
 <h4 id="p0-깊이합성-스파이크-완료-조건">P0 (깊이합성 스파이크) 완료 조건</h4>
-<ul><li class="task"><input type="checkbox" disabled checked> <strong>깊이합성 오클루전 스파이크 PASS</strong>(2026-07-08, commit b4736b1) — render-pipeline 최소본 + 판정 리포트(§16 A) 확보</li><li class="task"><input type="checkbox" disabled> OQ10: ERP read-only DB 계정 생성 완료</li><li class="task"><input type="checkbox" disabled> API 계약(OpenAPI spec, WebSocket(WSS)/Colyseus 메시지 스키마) 작성 및 검증</li><li class="task"><input type="checkbox" disabled> Test 스켈레톤 작성 (pytest, R3F/프론트 테스트)</li></ul>
-<h4 id="p1-셸-데이터-연결-완료-조건">P1 (셸 + 데이터 연결) 완료 조건</h4>
-<ul><li class="task"><input type="checkbox" disabled> 통합 대시보드 셸(시안 픽셀 재현) UI — 3D 뷰포트 자리는 placeholder</li><li class="task"><input type="checkbox" disabled> 기존 백엔드 API 연결(KPI·업무·유저·일정)</li><li class="task"><input type="checkbox" disabled> 단일 세션(별도 OIDC 로그인 없음) — 콘솔 JWT 세션 유지 확인(Colyseus onAuth 검증은 P3)</li></ul>
+<ul>
+<li class="task"><input type="checkbox" disabled checked> <strong>깊이합성 오클루전 스파이크 PASS</strong>(2026-07-08, commit b4736b1) — render-pipeline 최소본 + 판정 리포트(§16 A) 확보</li>
+<li class="task"><input type="checkbox" disabled> OQ10: ERP read-only DB 계정 생성 완료</li>
+<li class="task"><input type="checkbox" disabled> API 계약(OpenAPI spec, WebSocket(WSS)/Colyseus 메시지 스키마) 작성 및 검증</li>
+<li class="task"><input type="checkbox" disabled> Test 스켈레톤 작성 (pytest, R3F/프론트 테스트)</li>
+</ul>
+<h4 id="p1-셸--데이터-연결-완료-조건">P1 (셸 + 데이터 연결) 완료 조건</h4>
+<ul>
+<li class="task"><input type="checkbox" disabled> 통합 대시보드 셸(시안 픽셀 재현) UI — 3D 뷰포트 자리는 placeholder</li>
+<li class="task"><input type="checkbox" disabled> 기존 백엔드 API 연결(KPI·업무·유저·일정)</li>
+<li class="task"><input type="checkbox" disabled> 단일 세션(별도 OIDC 로그인 없음) — 콘솔 JWT 세션 유지 확인(Colyseus onAuth 검증은 P3)</li>
+</ul>
 <h4 id="p2-렌더-파이프라인-완료-조건">P2 (렌더 파이프라인) 완료 조건</h4>
-<ul><li class="task"><input type="checkbox" disabled> layout JSON → Blender 파라메트릭 씬 빌더, 1개 층 포토리얼 배경+depth 자동 생성</li><li class="task"><input type="checkbox" disabled> R3F 뷰포트에 배경 표시, 렌더 품질 기준 확정(참고 성능목표, GPU별 편차 P7 검증)</li><li class="task"><input type="checkbox" disabled> <strong>R17 조명정합 룩 검증</strong>(IBL 주입, 목표 정합도 80~90%), <strong>R19 draft↔배치 재렌더</strong> 흐름 확립</li></ul>
-<h4 id="p3-colyseus-이동서버-아바타-깊이합성-완료-조건">P3 (Colyseus 이동서버 + 아바타 깊이합성) 완료 조건</h4>
-<ul><li class="task"><input type="checkbox" disabled> <strong>R16</strong>: Colyseus 권위 서버(SkyOffice 이식) 이동·좌표동기화 20Hz·이동검증 (검증 20명/설계 100명 목표, tick 20Hz)</li><li class="task"><input type="checkbox" disabled> 아바타 GLTF+애니, <strong>깊이합성 아바타</strong> 멀티유저 이동</li><li class="task"><input type="checkbox" disabled> <strong>R15</strong>: 대표 복잡/다층 씬으로 깊이합성 재검증(붕괴 시 §16 A.4 폴백 판정)</li><li class="task"><input type="checkbox" disabled> 프로토콜 WSS 확정(OQ4 종결) — 클라-서버 <code>protocol_version</code> 협상(R14) 반영</li></ul>
-<h4 id="p4-프레즌스좌석-완료-조건">P4 (프레즌스·좌석) 완료 조건</h4>
-<ul><li class="task"><input type="checkbox" disabled> 7종 상태(D13) HUD·미니맵·우패널 실시간 시각화</li><li class="task"><input type="checkbox" disabled> 자율좌석 클릭 점유/반납, 3D 출근 규칙 분리(OQ3: 로그인→online, 좌석→working, 회의실→meeting, attendance read-only)</li><li class="task"><input type="checkbox" disabled> 가정 재검증 및 기록 (A7·A8·A11·A12 폐기 확인 포함)</li></ul>
-<h4 id="p5-회의화상-완료-조건">P5 (회의·화상) 완료 조건</h4>
-<ul><li class="task"><input type="checkbox" disabled> D24 명시입장(2m 트리거) + <strong>LiveKit 웹 JS SDK</strong> 오디오/영상, 화상 타일 UI (R11 폐기: GDExtension 불요)</li><li class="task"><input type="checkbox" disabled> R6: LiveKit self-host 성능 테스트(OQ5 종결), 동의 배너(D20/R13)</li><li class="task"><input type="checkbox" disabled> 회의실 스케줄 = <strong>예약 + FCFS 병행 확정(OQ11 종결, D23)</strong> — 구현 완료</li></ul>
-<h4 id="p6-sttai-완료-조건">P6 (STT·AI) 완료 조건</h4>
-<ul><li class="task"><input type="checkbox" disabled> <strong>회의록 STT 자동 초안</strong>(LiveKit Egress→한국어 STT→화자분리→검토·확정), 누락률 &lt;5% 측정(수동 전사 대조, D22) — <strong>R12</strong></li><li class="task"><input type="checkbox" disabled> KPI 산출 로직 + AI 초안(OQ6, Claude 기본) 배선</li><li class="task"><input type="checkbox" disabled> OQ1(2026-07-01 완료): feature/virtual-office-integration 브랜치에서 kpi_results 테이블·Alembic·KPI 수신 엔드포인트·서비스계정 구현</li><li class="task"><input type="checkbox" disabled> EOD 배치 구현 및 테스트 (A5 검증), ERP kpi_results 수신 동작 확인</li></ul>
-<h4 id="p7-정리부하하드닝-완료-조건">P7 (정리·부하·하드닝) 완료 조건</h4>
-<ul><li class="task"><input type="checkbox" disabled> WA 스택 제거, <strong>다층 렌더</strong> 확장(R15/R19), 보안 하드닝</li><li class="task"><input type="checkbox" disabled> <strong>R18</strong>: P7 = <strong>20명 도그푸딩 실측</strong>(16 §Part B·12 P7-T4 정합, E2E p95 지연·tick 안정성) — 100명은 설계 목표(D22), P7 이후 별도 검증</li><li class="task"><input type="checkbox" disabled> 감사 로그·ERP 동기화 실패 알림·도그푸딩 피드백(주 1회) 체계 완성</li><li class="task"><input type="checkbox" disabled> 전체 시스템 통합 테스트(1주일 도그푸딩), 편집기→재렌더 파이프라인 안정화</li><li class="task"><input type="checkbox" disabled> 모든 활성 리스크(R3~R10, R12~R19) 상태 CLOSED 또는 MITIGATED 확인 (폐기: R1·R2·R11)</li></ul>
+<ul>
+<li class="task"><input type="checkbox" disabled> layout JSON → Blender 파라메트릭 씬 빌더, 1개 층 포토리얼 배경+depth 자동 생성</li>
+<li class="task"><input type="checkbox" disabled> R3F 뷰포트에 배경 표시, 렌더 품질 기준 확정(참고 성능목표, GPU별 편차 P7 검증)</li>
+<li class="task"><input type="checkbox" disabled> <strong>R17 조명정합 룩 검증</strong>(IBL 주입, 목표 정합도 80~90%), <strong>R19 draft↔배치 재렌더</strong> 흐름 확립</li>
+</ul>
+<h4 id="p3-colyseus-이동서버--아바타-깊이합성-완료-조건">P3 (Colyseus 이동서버 + 아바타 깊이합성) 완료 조건</h4>
+<ul>
+<li class="task"><input type="checkbox" disabled> <strong>R16</strong>: Colyseus 권위 서버(SkyOffice 이식) 이동·좌표동기화 20Hz·이동검증 (검증 20명/설계 100명 목표, tick 20Hz)</li>
+<li class="task"><input type="checkbox" disabled> 아바타 GLTF+애니, <strong>깊이합성 아바타</strong> 멀티유저 이동</li>
+<li class="task"><input type="checkbox" disabled> <strong>R15</strong>: 대표 복잡/다층 씬으로 깊이합성 재검증(붕괴 시 §16 A.4 폴백 판정)</li>
+<li class="task"><input type="checkbox" disabled> 프로토콜 WSS 확정(OQ4 종결) — 클라-서버 <code>protocol_version</code> 협상(R14) 반영</li>
+</ul>
+<h4 id="p4-프레즌스·좌석-완료-조건">P4 (프레즌스·좌석) 완료 조건</h4>
+<ul>
+<li class="task"><input type="checkbox" disabled> 7종 상태(D13) HUD·미니맵·우패널 실시간 시각화</li>
+<li class="task"><input type="checkbox" disabled> 자율좌석 클릭 점유/반납, 3D 출근 규칙 분리(OQ3: 로그인→online, 좌석→working, 회의실→meeting, attendance read-only)</li>
+<li class="task"><input type="checkbox" disabled> 가정 재검증 및 기록 (A7·A8·A11·A12 폐기 확인 포함)</li>
+</ul>
+<h4 id="p5-회의·화상-완료-조건">P5 (회의·화상) 완료 조건</h4>
+<ul>
+<li class="task"><input type="checkbox" disabled> D24 명시입장(2m 트리거) + <strong>LiveKit 웹 JS SDK</strong> 오디오/영상, 화상 타일 UI (R11 폐기: GDExtension 불요)</li>
+<li class="task"><input type="checkbox" disabled> R6: LiveKit self-host 성능 테스트(OQ5 종결), 동의 배너(D20/R13)</li>
+<li class="task"><input type="checkbox" disabled> 회의실 스케줄 = <strong>예약 + FCFS 병행 확정(OQ11 종결, D23)</strong> — 구현 완료</li>
+</ul>
+<h4 id="p6-stt·ai-완료-조건">P6 (STT·AI) 완료 조건</h4>
+<ul>
+<li class="task"><input type="checkbox" disabled> <strong>회의록 STT 자동 초안</strong>(LiveKit Egress→한국어 STT→화자분리→검토·확정), 누락률 &lt;5% 측정(수동 전사 대조, D22) — <strong>R12</strong></li>
+<li class="task"><input type="checkbox" disabled> KPI 산출 로직 + AI 초안(OQ6, Claude 기본) 배선</li>
+<li class="task"><input type="checkbox" disabled> OQ1(2026-07-01 완료): feature/virtual-office-integration 브랜치에서 kpi_results 테이블·Alembic·KPI 수신 엔드포인트·서비스계정 구현</li>
+<li class="task"><input type="checkbox" disabled> EOD 배치 구현 및 테스트 (A5 검증), ERP kpi_results 수신 동작 확인</li>
+</ul>
+<h4 id="p7-정리·부하·하드닝-완료-조건">P7 (정리·부하·하드닝) 완료 조건</h4>
+<ul>
+<li class="task"><input type="checkbox" disabled> WA 스택 제거, <strong>다층 렌더</strong> 확장(R15/R19), 보안 하드닝</li>
+<li class="task"><input type="checkbox" disabled> <strong>R18</strong>: P7 = <strong>20명 도그푸딩 실측</strong>(16 §Part B·12 P7-T4 정합, E2E p95 지연·tick 안정성) — 100명은 설계 목표(D22), P7 이후 별도 검증</li>
+<li class="task"><input type="checkbox" disabled> 감사 로그·ERP 동기화 실패 알림·도그푸딩 피드백(주 1회) 체계 완성</li>
+<li class="task"><input type="checkbox" disabled> 전체 시스템 통합 테스트(1주일 도그푸딩), 편집기→재렌더 파이프라인 안정화</li>
+<li class="task"><input type="checkbox" disabled> 모든 활성 리스크(R3<del>R10, R12</del>R19) 상태 CLOSED 또는 MITIGATED 확인 (폐기: R1·R2·R11)</li>
+</ul>
 <h3 id="43-의존성-관리">4.3 의존성 관리</h3>
-<div class="mermaid">graph LR
+<pre class="code"><code>graph LR
     OQ10[&quot;OQ10&lt;br/&gt;(ERP DB계정)&quot;] --&gt;|P0 필수| P1[&quot;P1&lt;br/&gt;(셸+데이터)&quot;]
     R3[&quot;R3&lt;br/&gt;(DB접근)&quot;] --&gt;|동일| OQ10
 
@@ -171,51 +816,148 @@ img{max-width:100%;border-radius:8px}
 
     R7[&quot;R7&lt;br/&gt;(1인개발)&quot;] --&gt;|월별 재계획| P2r
     R7 --&gt;|월별 재계획| P3rp
-    R7 --&gt;|월별 재계획| P5p</div>
+    R7 --&gt;|월별 재계획| P5p</code></pre>
 <hr>
-<h2 id="5-우선순위-대응-전략">5. 우선순위 &amp; 대응 전략</h2>
+<h2 id="5-우선순위--대응-전략">5. 우선순위 &amp; 대응 전략</h2>
 <h3 id="51-즉시-대응-p0">5.1 즉시 대응 (P0)</h3>
-<ol><li><strong>OQ10 해결</strong>: 인프라 담당자와 협의, ERP read-only 계정 신청.</li><li><strong>R3 완화</strong>: DB 프로비저닝 스크립트 준비, 네트워크 테스트.</li><li><strong>R7 모니터</strong>: 주간 진도 기록, P0~P2 실측 후 위험도 재평가.</li><li><strong>깊이합성 스파이크(완료)</strong>: PASS(2026-07-08, b4736b1) — 단층 검증. 다층 재검증은 R15로 이월.</li></ol>
+<ol>
+<li><strong>OQ10 해결</strong>: 인프라 담당자와 협의, ERP read-only 계정 신청.</li>
+<li><strong>R3 완화</strong>: DB 프로비저닝 스크립트 준비, 네트워크 테스트.</li>
+<li><strong>R7 모니터</strong>: 주간 진도 기록, P0~P2 실측 후 위험도 재평가.</li>
+<li><strong>깊이합성 스파이크(완료)</strong>: PASS(2026-07-08, b4736b1) — 단층 검증. 다층 재검증은 R15로 이월.</li>
+</ol>
 <h3 id="52-초기-단계-p1p2">5.2 초기 단계 (P1~P2)</h3>
-<ol><li><strong>R19/R17</strong>: Blender 렌더 파이프라인(draft↔배치) 확립 + 배경↔아바타 조명정합(IBL) 룩 검증.</li><li><strong>OQ4 확정 종결(D1)</strong>: WebSocket(WSS) — 실시간 구현체는 Colyseus(R16). 핸드셰이크 protocol_version 협상 구현(D4/R14).</li><li><del><strong>R1/R2 폐기(D27)</strong></del>: 네이티브 빌드·OTA 불요(웹앱 전환) — 대응 항목에서 제거.</li></ol>
+<ol>
+<li><strong>R19/R17</strong>: Blender 렌더 파이프라인(draft↔배치) 확립 + 배경↔아바타 조명정합(IBL) 룩 검증.</li>
+<li><strong>OQ4 확정 종결(D1)</strong>: WebSocket(WSS) — 실시간 구현체는 Colyseus(R16). 핸드셰이크 protocol_version 협상 구현(D4/R14).</li>
+<li><del><strong>R1/R2 폐기(D27)</strong></del>: 네이티브 빌드·OTA 불요(웹앱 전환) — 대응 항목에서 제거.</li>
+</ol>
 <h3 id="53-중기-p3p4">5.3 중기 (P3~P4)</h3>
-<ol><li><strong>R16 우선</strong>: Colyseus 이동서버(SkyOffice 이식) 최소본 → 이동검증 → 상태동기화 단계화.</li><li><strong>R15 재검증</strong>: 다층·복잡 씬 깊이합성. 붕괴 시 §16 A.4 폴백(빌보드/부분 실시간 3D) 판정.</li><li><strong>OQ3 확정(2026-07-01)</strong>: 3D 출근 규칙 분리 구현(HR 검증 병행).</li><li><strong>R8 모니터</strong>: ERP main 변경사항 주 1회 검토.</li><li><strong>R7 재계획</strong>: 실제 개발 속도 기반 P5~P7 scope 조정.</li></ol>
+<ol>
+<li><strong>R16 우선</strong>: Colyseus 이동서버(SkyOffice 이식) 최소본 → 이동검증 → 상태동기화 단계화.</li>
+<li><strong>R15 재검증</strong>: 다층·복잡 씬 깊이합성. 붕괴 시 §16 A.4 폴백(빌보드/부분 실시간 3D) 판정.</li>
+<li><strong>OQ3 확정(2026-07-01)</strong>: 3D 출근 규칙 분리 구현(HR 검증 병행).</li>
+<li><strong>R8 모니터</strong>: ERP main 변경사항 주 1회 검토.</li>
+<li><strong>R7 재계획</strong>: 실제 개발 속도 기반 P5~P7 scope 조정.</li>
+</ol>
 <h3 id="54-후기-p5p7">5.4 후기 (P5~P7)</h3>
-<ol><li><strong>OQ1 완료(2026-07-01)</strong>: ERP git 접근권한 보유 확정, feature/virtual-office-integration 브랜치에서 자체 작업.</li><li><strong>OQ5 확정 + R6 프로덕션화</strong>: LiveKit 사내 self-host 모니터링, 화상은 웹 JS SDK(R11 폐기).</li><li><strong>R12/R13</strong>: STT 회의록 안정화 + 컴플라이언스 고지·동의(D20) 운영.</li><li><strong>R18</strong>: 100명 부하검증(우선 20명→100명), 미달 시 AOI·룸 분할.</li><li><strong>P7 하드닝</strong>: WA 스택 제거·다층 렌더·보안 하드닝, 편집기→재렌더 안정화.</li></ol>
+<ol>
+<li><strong>OQ1 완료(2026-07-01)</strong>: ERP git 접근권한 보유 확정, feature/virtual-office-integration 브랜치에서 자체 작업.</li>
+<li><strong>OQ5 확정 + R6 프로덕션화</strong>: LiveKit 사내 self-host 모니터링, 화상은 웹 JS SDK(R11 폐기).</li>
+<li><strong>R12/R13</strong>: STT 회의록 안정화 + 컴플라이언스 고지·동의(D20) 운영.</li>
+<li><strong>R18</strong>: 100명 부하검증(우선 20명→100명), 미달 시 AOI·룸 분할.</li>
+<li><strong>P7 하드닝</strong>: WA 스택 제거·다층 렌더·보안 하드닝, 편집기→재렌더 안정화.</li>
+</ol>
 <hr>
-<h2 id="6-risk-owner-escalation">6. Risk Owner &amp; Escalation</h2>
-<div class="table-wrap"><table><thead><tr><th>리스크/OQ</th><th>Owner</th><th>Escalation</th><th>Contact</th></tr></thead><tbody><tr><td>R7, R14, R15, R17, R19, OQ4(종결)</td><td>3d-engine-specialist</td><td>PM/기획팀</td><td>[담당자]</td></tr><tr><td>R3, R4, R8, R9, R10, R12, R16, R18, OQ2, OQ3, OQ7, OQ8, OQ10</td><td>backend-specialist</td><td>PM/기획팀</td><td>[담당자]</td></tr><tr><td>R6, OQ5(종결)</td><td>인프라 담당자(사내 VM)</td><td>PM/기획팀</td><td>[담당자]</td></tr><tr><td>R5, R13, OQ1, OQ6, OQ11(종결)</td><td>PM/기획팀</td><td>CTO/경영진</td><td>[담당자]</td></tr><tr><td>A1, A2, A3, A4 검증</td><td>DBA/ERP PM</td><td>CTO</td><td>[담당자]</td></tr><tr><td><del>R1, R2, R11</del> <strong>폐기(D27)</strong></td><td>— (웹앱 전환·Colyseus/웹 LiveKit로 소멸)</td><td>—</td><td>—</td></tr></tbody></table></div>
+<h2 id="6-risk-owner--escalation">6. Risk Owner &amp; Escalation</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>리스크/OQ</th>
+<th>Owner</th>
+<th>Escalation</th>
+<th>Contact</th>
+</tr>
+</thead><tbody><tr>
+<td>R7, R14, R15, R17, R19, OQ4(종결)</td>
+<td>3d-engine-specialist</td>
+<td>PM/기획팀</td>
+<td>[담당자]</td>
+</tr>
+<tr>
+<td>R3, R4, R8, R9, R10, R12, R16, R18, OQ2, OQ3, OQ7, OQ8, OQ10</td>
+<td>backend-specialist</td>
+<td>PM/기획팀</td>
+<td>[담당자]</td>
+</tr>
+<tr>
+<td>R6, OQ5(종결)</td>
+<td>인프라 담당자(사내 VM)</td>
+<td>PM/기획팀</td>
+<td>[담당자]</td>
+</tr>
+<tr>
+<td>R5, R13, OQ1, OQ6, OQ11(종결)</td>
+<td>PM/기획팀</td>
+<td>CTO/경영진</td>
+<td>[담당자]</td>
+</tr>
+<tr>
+<td>A1, A2, A3, A4 검증</td>
+<td>DBA/ERP PM</td>
+<td>CTO</td>
+<td>[담당자]</td>
+</tr>
+<tr>
+<td><del>R1, R2, R11</del> <strong>폐기(D27)</strong></td>
+<td>— (웹앱 전환·Colyseus/웹 LiveKit로 소멸)</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody></table></div>
 <hr>
-<h2 id="7-회고-갱신-주기">7. 회고 &amp; 갱신 주기</h2>
-<ul><li><strong>월 1회 회고</strong>: 각 Phase 종료 시, Risk/OQ 상태 업데이트.</li><li><strong>주 1회 스탠드업</strong>: R7 (1인 개발 병목) 진도 공유.</li><li><strong>분기 1회 재평가</strong>: 리스크 확률·영향도 재산정.</li><li><strong>문서 갱신</strong>: 결정 사항 즉시 반영 (Decision log 스타일).</li></ul>
+<h2 id="7-회고--갱신-주기">7. 회고 &amp; 갱신 주기</h2>
+<ul>
+<li><strong>월 1회 회고</strong>: 각 Phase 종료 시, Risk/OQ 상태 업데이트.</li>
+<li><strong>주 1회 스탠드업</strong>: R7 (1인 개발 병목) 진도 공유.</li>
+<li><strong>분기 1회 재평가</strong>: 리스크 확률·영향도 재산정.</li>
+<li><strong>문서 갱신</strong>: 결정 사항 즉시 반영 (Decision log 스타일).</li>
+</ul>
 <hr>
 <h2 id="loop-metadata">Loop Metadata</h2>
 <h3 id="upstream-문서">Upstream 문서</h3>
-<ul><li><strong>00-decisions.md (정본 결정 로그 D1~D27, F·H절 — 최우선 기준)</strong></li><li><strong>16-render-spike-and-roadmap.md (§Part A 스파이크 판정 / §Part B P0~P7 Phase 편성 — 정본)</strong></li><li>정본 컨텍스트 (2026-07-08 D27 확정)</li><li>01-prd.md (기획서, 미생성 시 이 문서가 원본)</li><li>04-data-model.md (office<em>layout, erp</em>user 스키마 정의)</li><li>10-roadmap.md (§D27 재산정 — P0~P7, 주 단위 스파이크 후 확정)</li><li>14-virtual-office-spec.md / 15-realtime-server-spec.md (R3F·Colyseus 스펙)</li></ul>
+<ul>
+<li><strong>00-decisions.md (정본 결정 로그 D1~D27, F·H절 — 최우선 기준)</strong></li>
+<li><strong>16-render-spike-and-roadmap.md (§Part A 스파이크 판정 / §Part B P0~P7 Phase 편성 — 정본)</strong></li>
+<li>정본 컨텍스트 (2026-07-08 D27 확정)</li>
+<li>01-prd.md (기획서, 미생성 시 이 문서가 원본)</li>
+<li>04-data-model.md (office_layout, erp_user 스키마 정의)</li>
+<li>10-roadmap.md (§D27 재산정 — P0~P7, 주 단위 스파이크 후 확정)</li>
+<li>14-virtual-office-spec.md / 15-realtime-server-spec.md (R3F·Colyseus 스펙)</li>
+</ul>
 <h3 id="downstream-문서">Downstream 문서</h3>
-<ul><li>12-tasks.md: 각 리스크별 완화 작업 Task 추가 (예: R15 → P3 폴백 판정 Task)</li><li>03-erp-integration.md: OQ10, R3, R4 상세 설계</li><li>16-render-spike-and-roadmap.md: R15(깊이합성 폴백)·R17(조명정합)·R19(렌더 파이프라인) 상세</li><li>15-realtime-server-spec.md: R16(Colyseus 이식)·R18(부하검증) 상세</li><li>02-trd-architecture.md: R6 (LiveKit) 모니터링·스케일 가이드</li></ul>
+<ul>
+<li>12-tasks.md: 각 리스크별 완화 작업 Task 추가 (예: R15 → P3 폴백 판정 Task)</li>
+<li>03-erp-integration.md: OQ10, R3, R4 상세 설계</li>
+<li>16-render-spike-and-roadmap.md: R15(깊이합성 폴백)·R17(조명정합)·R19(렌더 파이프라인) 상세</li>
+<li>15-realtime-server-spec.md: R16(Colyseus 이식)·R18(부하검증) 상세</li>
+<li>02-trd-architecture.md: R6 (LiveKit) 모니터링·스케일 가이드</li>
+</ul>
 <h3 id="open-questions">Open Questions</h3>
-<ul><li>OQ10: ERP read-only 계정 언제 생성 가능한가? (DBA 스케줄 확인 필요)</li><li>OQ1 완료(2026-07-01): ERP git 접근권한 보유, feature/virtual-office-integration 브랜치 자체 작업.</li><li>OQ3 완료(2026-07-01): 3D 출근 규칙 분리 확정 (로그인→online, 좌석→working, 회의실→meeting, attendance read-only).</li><li>OQ4 완료(2026-07-02): 실시간 프로토콜 WebSocket(WSS) 확정(D1).</li><li>OQ5 완료: LiveKit self-host (Docker Compose), TURN-over-TLS/UDP 직결(VPN 없음), 단일 SFU — 2026-07-02 최종 확정.</li><li>OQ11 완료(2026-07-02): 회의실 예약 + 즉석(FCFS) 병행 확정(D23), A7 폐기.</li><li><strong>깊이합성 스파이크 완료(2026-07-08, b4736b1)</strong>: 단층 PASS. 다층·복잡 씬 확장 검증은 R15로 진행 중.</li><li>R7: 1인 개발 속도가 P0~P2 실측 기준 어떤 페이스인가? (주 단위 일정은 이후 확정)</li></ul>
+<ul>
+<li>OQ10: ERP read-only 계정 언제 생성 가능한가? (DBA 스케줄 확인 필요)</li>
+<li>OQ1 완료(2026-07-01): ERP git 접근권한 보유, feature/virtual-office-integration 브랜치 자체 작업.</li>
+<li>OQ3 완료(2026-07-01): 3D 출근 규칙 분리 확정 (로그인→online, 좌석→working, 회의실→meeting, attendance read-only).</li>
+<li>OQ4 완료(2026-07-02): 실시간 프로토콜 WebSocket(WSS) 확정(D1).</li>
+<li>OQ5 완료: LiveKit self-host (Docker Compose), TURN-over-TLS/UDP 직결(VPN 없음), 단일 SFU — 2026-07-02 최종 확정.</li>
+<li>OQ11 완료(2026-07-02): 회의실 예약 + 즉석(FCFS) 병행 확정(D23), A7 폐기.</li>
+<li><strong>깊이합성 스파이크 완료(2026-07-08, b4736b1)</strong>: 단층 PASS. 다층·복잡 씬 확장 검증은 R15로 진행 중.</li>
+<li>R7: 1인 개발 속도가 P0~P2 실측 기준 어떤 페이스인가? (주 단위 일정은 이후 확정)</li>
+</ul>
 <h3 id="assumptions-재검증-포인트">Assumptions 재검증 포인트</h3>
-<ul><li><strong>A1, A2, A3</strong>: 착수 전 ERP 소스코드 재검토</li><li><strong>A4</strong>: 네트워크 아키텍처 문서 + DBA 인터뷰</li><li><strong>A5, A6</strong>: HR 근무 정책 확인 및 APScheduler 설정 검증</li><li><strong>A14 (신규)</strong>: R3F·Blender·Colyseus 스택 안정성 — P0/P2 스파이크·P7 성능검증(GPU별 편차 포함)</li><li><strong>폐기 확인</strong>: A8(Godot 헤드리스 권위)·A12(Godot 네이티브 빌드) 폐기 반영 여부</li></ul>
+<ul>
+<li><strong>A1, A2, A3</strong>: 착수 전 ERP 소스코드 재검토</li>
+<li><strong>A4</strong>: 네트워크 아키텍처 문서 + DBA 인터뷰</li>
+<li><strong>A5, A6</strong>: HR 근무 정책 확인 및 APScheduler 설정 검증</li>
+<li><strong>A14 (신규)</strong>: R3F·Blender·Colyseus 스택 안정성 — P0/P2 스파이크·P7 성능검증(GPU별 편차 포함)</li>
+<li><strong>폐기 확인</strong>: A8(Godot 헤드리스 권위)·A12(Godot 네이티브 빌드) 폐기 반영 여부</li>
+</ul>
 <h3 id="validation-criteria">Validation Criteria</h3>
-<ul><li>모든 활성 R(R3~R10, R12~R19): 완화 전략 실행 여부 및 효과 (월 1회). 폐기 R1·R2·R11은 제외.</li><li>모든 OQ1~OQ13: 해결/의사결정 기록 (OQ4·OQ11·OQ12 확정 종결 포함, OQ13은 회의 기능 착수 전 필수)</li><li>Phase별 Gate: Risk/OQ 관련 Task 완료 여부 (P0 깊이합성 스파이크 PASS 포함)</li></ul>
+<ul>
+<li>모든 활성 R(R3<del>R10, R12</del>R19): 완화 전략 실행 여부 및 효과 (월 1회). 폐기 R1·R2·R11은 제외.</li>
+<li>모든 OQ1~OQ13: 해결/의사결정 기록 (OQ4·OQ11·OQ12 확정 종결 포함, OQ13은 회의 기능 착수 전 필수)</li>
+<li>Phase별 Gate: Risk/OQ 관련 Task 완료 여부 (P0 깊이합성 스파이크 PASS 포함)</li>
+</ul>
 <h3 id="risks">Risks</h3>
-<ul><li><strong>R7</strong> (1인 개발 병목)이 모든 리스크의 원인이 될 수 있음 → 조기 감지·대응 필수.</li><li><strong>R15/R17</strong> (다층 깊이합성 폴백·조명정합 IBL)은 D27 포토리얼 목표의 최난제 — P2~P3에서 붕괴 시 §16 A.4 폴백 전환 판정 필요.</li><li><strong>R16</strong> (Colyseus 자체 이식)은 P3 일정을 지배 — 이식량 과소평가 시 전체 지연.</li><li><strong>R12</strong> (STT 정확도)는 P6 회의록 자동화 가치 좌우.</li><li><strong>R13</strong> (개인정보/노동법)은 도입 전 고지·동의(D20) 미이행 시 배포 자체가 불가.</li><li><strong>R18</strong> (100명 부하)는 P7 미검증 시 프로덕션 프레즌스 품질 리스크.</li><li><strong>OQ1</strong> (ERP 작업)이 지연되면 KPI 수신 엔드포인트가 없어 P6 완성 불가.</li></ul>
-<div class="meta-foot">원본: <code>13-risks-open-questions.md</code> · 자동 생성 2026-07-16 · md-to-html</div>
+<ul>
+<li><strong>R7</strong> (1인 개발 병목)이 모든 리스크의 원인이 될 수 있음 → 조기 감지·대응 필수.</li>
+<li><strong>R15/R17</strong> (다층 깊이합성 폴백·조명정합 IBL)은 D27 포토리얼 목표의 최난제 — P2~P3에서 붕괴 시 §16 A.4 폴백 전환 판정 필요.</li>
+<li><strong>R16</strong> (Colyseus 자체 이식)은 P3 일정을 지배 — 이식량 과소평가 시 전체 지연.</li>
+<li><strong>R12</strong> (STT 정확도)는 P6 회의록 자동화 가치 좌우.</li>
+<li><strong>R13</strong> (개인정보/노동법)은 도입 전 고지·동의(D20) 미이행 시 배포 자체가 불가.</li>
+<li><strong>R18</strong> (100명 부하)는 P7 미검증 시 프로덕션 프레즌스 품질 리스크.</li>
+<li><strong>OQ1</strong> (ERP 작업)이 지연되면 KPI 수신 엔드포인트가 없어 P6 완성 불가.</li>
+</ul>
+<div class="meta-foot">원본: <code>13-risks-open-questions.md</code> · 자동 생성 2026-07-22 · md-to-html</div>
 </main>
 </div>
 
-<script type="module">
-try{
-  const m = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
-  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  m.default.initialize({startOnLoad:true, theme: dark?'dark':'default', securityLevel:'loose'});
-}catch(e){
-  document.querySelectorAll('.mermaid').forEach(el=>{
-    const pre=document.createElement('pre');pre.className='code';
-    pre.textContent=el.textContent;el.replaceWith(pre);
-  });
-}
-</script>
 </body></html>

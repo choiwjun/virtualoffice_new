@@ -52,53 +52,130 @@ img{max-width:100%;border-radius:8px}
 </style>
 </head><body>
 <div class="layout">
-<nav class="toc"><div class="brand">기획 문서 갭 리포트 (document-gap-report)</div><div class="sub">document-gap-report.md</div><a class="lvl1" href="#기획-문서-갭-리포트-document-gap-report">기획 문서 갭 리포트 (document-gap-report)</a><a class="lvl2" href="#inventory-loop-0">Inventory (LOOP 0)</a><a class="lvl2" href="#클러스터-요약-심각도순">클러스터 요약 (심각도순)</a><a class="lvl3" href="#c1-배포-확정외부-공개-드리프트-d21-폐기-p05">C1. 🔴 배포 확정(외부 공개) 드리프트 — D21 폐기 [P0×5]</a><a class="lvl3" href="#c2-외부-공개-보안-요구-부재-p13">C2. 🔴 외부 공개 보안 요구 부재 [P1×3]</a><a class="lvl3" href="#c3-태스크-p0-갭-만들-수-없는-것-2개-p02">C3. 🔴 태스크 P0 갭 — 만들 수 없는 것 2개 [P0×2]</a><a class="lvl3" href="#c4-데이터-정본-충돌-구현이-갈라지는-지점-4건-정본-확정-필요">C4. 🔴 데이터 정본 충돌 — 구현이 갈라지는 지점 4건 [정본 확정 필요]</a><a class="lvl3" href="#c5-d5stt-회의록-구현-불가-데이터-모델-갭-p1">C5. 🟠 D5(STT 회의록) 구현 불가 — 데이터 모델 갭 [P1]</a><a class="lvl3" href="#c6-specsdomainresourcesyaml-전면-노후-p16-p24">C6. 🟠 specs/domain/resources.yaml 전면 노후 [P1×6, P2×4]</a><a class="lvl3" href="#c7-화면-yaml-6종-부재-d11-잔재-p14">C7. 🟠 화면 YAML 6종 부재 + D11 잔재 [P1×4]</a><a class="lvl3" href="#c8-kpi-산식원칙-충돌-p13">C8. 🟠 KPI 산식·원칙 충돌 [P1×3]</a><a class="lvl3" href="#c9-이미-구현된-코드의-수정-필요-p13-p25">C9. 🟠 이미 구현된 코드의 수정 필요 [P1×3, P2×5]</a><a class="lvl3" href="#c10-로드맵-스테일-표기-p14-p2-다수">C10. 🟡 로드맵 스테일 표기 [P1×4, P2 다수]</a><a class="lvl3" href="#c11-태스크-품질-상태-동기화-p15-p2-다수">C11. 🟡 태스크 품질 + 상태 동기화 [P1×5, P2 다수]</a><a class="lvl2" href="#검사-결과-이상-없음-확인-양호">검사 결과 &quot;이상 없음&quot; 확인 (양호)</a></nav>
+<nav class="toc"><div class="brand">기획 문서 갭 리포트 (document-gap-report)</div><div class="sub">document-gap-report.md</div><a class="lvl1" href="#기획-문서-갭-리포트-document-gap-report">기획 문서 갭 리포트 (document-gap-report)</a><a class="lvl2" href="#inventory-loop-0">Inventory (LOOP 0)</a><a class="lvl2" href="#클러스터-요약-심각도순">클러스터 요약 (심각도순)</a><a class="lvl3" href="#c1-🔴-배포-확정외부-공개-드리프트--d21-폐기-p0×5">C1. 🔴 배포 확정(외부 공개) 드리프트 — D21 폐기 [P0×5]</a><a class="lvl3" href="#c2-🔴-외부-공개-보안-요구-부재-p1×3">C2. 🔴 외부 공개 보안 요구 부재 [P1×3]</a><a class="lvl3" href="#c3-🔴-태스크-p0-갭--만들-수-없는-것-2개-p0×2">C3. 🔴 태스크 P0 갭 — 만들 수 없는 것 2개 [P0×2]</a><a class="lvl3" href="#c4-🔴-데이터-정본-충돌--구현이-갈라지는-지점-4건-정본-확정-필요">C4. 🔴 데이터 정본 충돌 — 구현이 갈라지는 지점 4건 [정본 확정 필요]</a><a class="lvl3" href="#c5-🟠-d5stt-회의록-구현-불가--데이터-모델-갭-p1">C5. 🟠 D5(STT 회의록) 구현 불가 — 데이터 모델 갭 [P1]</a><a class="lvl3" href="#c6-🟠-specsdomainresourcesyaml-전면-노후-p1×6-p2×4">C6. 🟠 specs/domain/resources.yaml 전면 노후 [P1×6, P2×4]</a><a class="lvl3" href="#c7-🟠-화면-yaml-6종-부재--d11-잔재-p1×4">C7. 🟠 화면 YAML 6종 부재 + D11 잔재 [P1×4]</a><a class="lvl3" href="#c8-🟠-kpi-산식·원칙-충돌-p1×3">C8. 🟠 KPI 산식·원칙 충돌 [P1×3]</a><a class="lvl3" href="#c9-🟠-이미-구현된-코드의-수정-필요-p1×3-p2×5">C9. 🟠 이미 구현된 코드의 수정 필요 [P1×3, P2×5]</a><a class="lvl3" href="#c10-🟡-로드맵-스테일-표기-p1×4-p2-다수">C10. 🟡 로드맵 스테일 표기 [P1×4, P2 다수]</a><a class="lvl3" href="#c11-🟡-태스크-품질--상태-동기화-p1×5-p2-다수">C11. 🟡 태스크 품질 + 상태 동기화 [P1×5, P2 다수]</a><a class="lvl2" href="#검사-결과-이상-없음-확인-양호">검사 결과 이상 없음 확인 (양호)</a></nav>
 <main><h1 id="기획-문서-갭-리포트-document-gap-report">기획 문서 갭 리포트 (document-gap-report)</h1>
 <blockquote>📦 <strong>아카이브 — D27 전환(2026-07-08) 이전 시점 스냅샷.</strong> 아키텍처 관련 서술은 현행(D27)과 다르며, 특정 시점 기록으로만 참조할 것. 코드 실측 수치(pytest 등)는 작성 시점 기준 유효.</blockquote>
-<p><strong>검증일</strong>: 2026-07-02 · <strong>검증 방식</strong>: 6개 병렬 검사 에이전트 (A1 PRD/결정/로드맵 · A2 화면/명세 · A3 데이터 · A4 기술/3D/KPI · A5 태스크 · A6 신규결정 드리프트) <strong>총 발견</strong>: 139건 — <strong>P0 8건 · P1 ~60건 · P2 ~71건</strong> <strong>개별 발견 원본</strong>: 에이전트 산출 그대로 loop-state.json 참조. 본 리포트는 클러스터 통합본.</p>
+<p><strong>검증일</strong>: 2026-07-02 · <strong>검증 방식</strong>: 6개 병렬 검사 에이전트 (A1 PRD/결정/로드맵 · A2 화면/명세 · A3 데이터 · A4 기술/3D/KPI · A5 태스크 · A6 신규결정 드리프트)
+<strong>총 발견</strong>: 139건 — <strong>P0 8건 · P1 ~60건 · P2 ~71건</strong>
+<strong>개별 발견 원본</strong>: 에이전트 산출 그대로 loop-state.json 참조. 본 리포트는 클러스터 통합본.</p>
 <hr>
 <h2 id="inventory-loop-0">Inventory (LOOP 0)</h2>
-<ul><li>존재: docs/planning/00~13 (14종), specs/screens 7 + domain + shared, docs/api 2종, 배포 정본 docs/deployment/onprem-docker.md</li><li><strong>missing 역할</strong>: User Flow 독립 문서(06-screens가 부분 대체 — 로딩/단절 상태 공백), 웹 Design System(토큰 부재 — A2-20), Coding Convention</li><li>Phase 0 완료 표시 7건 산출물 <strong>전부 실존 확인</strong> (위조 완료 없음 — A5 검사 6)</li></ul>
+<ul>
+<li>존재: docs/planning/00~13 (14종), specs/screens 7 + domain + shared, docs/api 2종, 배포 정본 docs/deployment/onprem-docker.md</li>
+<li><strong>missing 역할</strong>: User Flow 독립 문서(06-screens가 부분 대체 — 로딩/단절 상태 공백), 웹 Design System(토큰 부재 — A2-20), Coding Convention</li>
+<li>Phase 0 완료 표시 7건 산출물 <strong>전부 실존 확인</strong> (위조 완료 없음 — A5 검사 6)</li>
+</ul>
 <hr>
 <h2 id="클러스터-요약-심각도순">클러스터 요약 (심각도순)</h2>
-<h3 id="c1-배포-확정외부-공개-드리프트-d21-폐기-p05">C1. 🔴 배포 확정(외부 공개) 드리프트 — D21 폐기 [P0×5]</h3>
-<blockquote>A6-01~13, A6-17, A6-21~27 (약 20건)</blockquote>
-<p>기획 시점 결정 <strong>D21(&quot;사내 VM + 사내 PKI + Let's Encrypt 폐기 + VPN&quot;)</strong>이 2026-07-02 확정(Linux 서버 PC + <strong>VPN 없음 → 인터넷 공개</strong> + 고정 IP + 도메인 추후 구매 + Let's Encrypt/Caddy)과 정면 충돌.</p>
-<ul><li>무효 서술 13곳: 02-trd(130, 411, 424-429, 514-520, 597-598, 610, 899), 09(559, 564, 567), 13(97, 106, 195, 400), 11(169), 00(D21)</li><li>12-tasks에도 &quot;사내 PKI TLS&quot; 태스크 2곳 (A6-21) — 그대로 구현하면 잘못된 산출물</li><li><strong>수정 방향</strong>: ① 00-decisions <strong>D21 개정(D21-r)</strong> → ② 나머지 문서 일괄 치환 → ③ 12-tasks에 &quot;외부 공개 하드닝 태스크&quot;(Caddy 단일 진입·rate-limit·fail2ban — onprem §3.3의 태스크화) 신설</li></ul>
-<h3 id="c2-외부-공개-보안-요구-부재-p13">C2. 🔴 외부 공개 보안 요구 부재 [P1×3]</h3>
+<h3 id="c1-🔴-배포-확정외부-공개-드리프트--d21-폐기-p0×5">C1. 🔴 배포 확정(외부 공개) 드리프트 — D21 폐기 [P0×5]</h3>
+<blockquote>A6-01<del>13, A6-17, A6-21</del>27 (약 20건)</blockquote>
+<p>기획 시점 결정 **D21(&quot;사내 VM + 사내 PKI + Let&#39;s Encrypt 폐기 + VPN&quot;)**이 2026-07-02 확정(Linux 서버 PC + <strong>VPN 없음 → 인터넷 공개</strong> + 고정 IP + 도메인 추후 구매 + Let&#39;s Encrypt/Caddy)과 정면 충돌.</p>
+<ul>
+<li>무효 서술 13곳: 02-trd(130, 411, 424-429, 514-520, 597-598, 610, 899), 09(559, 564, 567), 13(97, 106, 195, 400), 11(169), 00(D21)</li>
+<li>12-tasks에도 &quot;사내 PKI TLS&quot; 태스크 2곳 (A6-21) — 그대로 구현하면 잘못된 산출물</li>
+<li><strong>수정 방향</strong>: ① 00-decisions <strong>D21 개정(D21-r)</strong> → ② 나머지 문서 일괄 치환 → ③ 12-tasks에 &quot;외부 공개 하드닝 태스크&quot;(Caddy 단일 진입·rate-limit·fail2ban — onprem §3.3의 태스크화) 신설</li>
+</ul>
+<h3 id="c2-🔴-외부-공개-보안-요구-부재-p1×3">C2. 🔴 외부 공개 보안 요구 부재 [P1×3]</h3>
 <blockquote>A6-15, A6-16, A6-17</blockquote>
-<ul><li>PRD에 보안 비기능 요구 섹션 자체가 없음 (grep &quot;보안|TLS&quot; 0건)</li><li><strong>계정 잠금/brute-force 방어 전 문서 0건</strong>, 로그인 rate-limit 100req/min은 사실상 무방비</li><li><strong>수정 방향</strong>: 01-prd §7에 보안 수용 기준 추가 + 02-trd §4.2에 로그인 잠금/rate-limit 하향</li></ul>
-<h3 id="c3-태스크-p0-갭-만들-수-없는-것-2개-p02">C3. 🔴 태스크 P0 갭 — 만들 수 없는 것 2개 [P0×2]</h3>
+<ul>
+<li>PRD에 보안 비기능 요구 섹션 자체가 없음 (grep &quot;보안|TLS&quot; 0건)</li>
+<li><strong>계정 잠금/brute-force 방어 전 문서 0건</strong>, 로그인 rate-limit 100req/min은 사실상 무방비</li>
+<li><strong>수정 방향</strong>: 01-prd §7에 보안 수용 기준 추가 + 02-trd §4.2에 로그인 잠금/rate-limit 하향</li>
+</ul>
+<h3 id="c3-🔴-태스크-p0-갭--만들-수-없는-것-2개-p0×2">C3. 🔴 태스크 P0 갭 — 만들 수 없는 것 2개 [P0×2]</h3>
 <blockquote>A5-01, A5-02 (+A1-01, A5-14~17)</blockquote>
-<ul><li><strong>Godot 클라이언트 네트워킹 태스크 부재</strong>: 서버(Phase 4)만 있고 클라이언트의 WSS 접속·이동 전송·원격 아바타 동기화 태스크 0건 → &quot;10명 연결 성공&quot; 검증 자체가 불가</li><li><strong>로그인/인증 구현 태스크 부재</strong>: JWT 계약만 있고 발급/미들웨어/로그인 화면 구현 태스크 0건</li><li>부가: 조직도 에디터(PRD SHOULD, 로드맵·태스크 모두 부재 — A1-01+A5-14), work_log 작성 UI(A5-15), presence 30일 파기 배치(A5-16), 팀 KPI 대시보드(A5-17)</li></ul>
-<h3 id="c4-데이터-정본-충돌-구현이-갈라지는-지점-4건-정본-확정-필요">C4. 🔴 데이터 정본 충돌 — 구현이 갈라지는 지점 4건 [정본 확정 필요]</h3>
+<ul>
+<li><strong>Godot 클라이언트 네트워킹 태스크 부재</strong>: 서버(Phase 4)만 있고 클라이언트의 WSS 접속·이동 전송·원격 아바타 동기화 태스크 0건 → &quot;10명 연결 성공&quot; 검증 자체가 불가</li>
+<li><strong>로그인/인증 구현 태스크 부재</strong>: JWT 계약만 있고 발급/미들웨어/로그인 화면 구현 태스크 0건</li>
+<li>부가: 조직도 에디터(PRD SHOULD, 로드맵·태스크 모두 부재 — A1-01+A5-14), work_log 작성 UI(A5-15), presence 30일 파기 배치(A5-16), 팀 KPI 대시보드(A5-17)</li>
+</ul>
+<h3 id="c4-🔴-데이터-정본-충돌--구현이-갈라지는-지점-4건-정본-확정-필요">C4. 🔴 데이터 정본 충돌 — 구현이 갈라지는 지점 4건 [정본 확정 필요]</h3>
 <blockquote>A3-07/09, A4-07/11/13/15/25, A2-10/11</blockquote>
-<div class="table-wrap"><table><thead><tr><th>#</th><th>충돌</th><th>갈라진 문서</th><th>추천 정본</th></tr></thead><tbody><tr><td>C4-a</td><td><strong>좌석 배정 모델</strong>: seat.assigned<em>user</em>id+seat<em>assignment</em>history(04·코드) vs seat<em>assignment(seat</em>db<em>id, released</em>at)(05·06·D10 문구)</td><td>04/코드 ↔ 05/06/YAML</td><td><strong>04/코드</strong> (이미 구현·마이그레이션 존재) → D10 문구·05·06·YAML 3종 수정</td></tr><tr><td>C4-b</td><td><strong>좌표계</strong>: room/seat coords {x,y,z} 3D(04·코드 주석) vs 2D top_left 미터(05, D25 정본)</td><td>04 ↔ 05</td><td><strong>05(D25)</strong> — 04·코드 docstring 수정</td></tr><tr><td>C4-c</td><td><strong>asset 스키마</strong>: 04 §2.6(UUID PK, model/texture enum) vs 07 §5.3(VARCHAR PK, tscn<em>path·dimension·footprint</em>2d 등 &quot;정본&quot; 주장)</td><td>04 ↔ 07</td><td><strong>07 v1.1</strong> (Phase 1 실사용 필드) → 04 §2.6 + 코드 Asset 모델 갱신</td></tr><tr><td>C4-d</td><td><strong>이의신청 상태머신</strong>: none→submitted→reviewing→resolved(04·08, D15) vs published→objection<em>filed→under</em>review→finalized(06·10·12)</td><td>04/08 ↔ 06/10/12</td><td><strong>04/08</strong> (D15 + 코드 enum 일치) → 06·10·12 치환</td></tr></tbody></table></div>
-<h3 id="c5-d5stt-회의록-구현-불가-데이터-모델-갭-p1">C5. 🟠 D5(STT 회의록) 구현 불가 — 데이터 모델 갭 [P1]</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>충돌</th>
+<th>갈라진 문서</th>
+<th>추천 정본</th>
+</tr>
+</thead><tbody><tr>
+<td>C4-a</td>
+<td><strong>좌석 배정 모델</strong>: seat.assigned_user_id+seat_assignment_history(04·코드) vs seat_assignment(seat_db_id, released_at)(05·06·D10 문구)</td>
+<td>04/코드 ↔ 05/06/YAML</td>
+<td><strong>04/코드</strong> (이미 구현·마이그레이션 존재) → D10 문구·05·06·YAML 3종 수정</td>
+</tr>
+<tr>
+<td>C4-b</td>
+<td><strong>좌표계</strong>: room/seat coords {x,y,z} 3D(04·코드 주석) vs 2D top_left 미터(05, D25 정본)</td>
+<td>04 ↔ 05</td>
+<td><strong>05(D25)</strong> — 04·코드 docstring 수정</td>
+</tr>
+<tr>
+<td>C4-c</td>
+<td><strong>asset 스키마</strong>: 04 §2.6(UUID PK, model/texture enum) vs 07 §5.3(VARCHAR PK, tscn_path·dimension·footprint_2d 등 &quot;정본&quot; 주장)</td>
+<td>04 ↔ 07</td>
+<td><strong>07 v1.1</strong> (Phase 1 실사용 필드) → 04 §2.6 + 코드 Asset 모델 갱신</td>
+</tr>
+<tr>
+<td>C4-d</td>
+<td><strong>이의신청 상태머신</strong>: none→submitted→reviewing→resolved(04·08, D15) vs published→objection_filed→under_review→finalized(06·10·12)</td>
+<td>04/08 ↔ 06/10/12</td>
+<td><strong>04/08</strong> (D15 + 코드 enum 일치) → 06·10·12 치환</td>
+</tr>
+</tbody></table></div>
+<h3 id="c5-🟠-d5stt-회의록-구현-불가--데이터-모델-갭-p1">C5. 🟠 D5(STT 회의록) 구현 불가 — 데이터 모델 갭 [P1]</h3>
 <blockquote>A4-15 (+A2-14)</blockquote>
-<p>09의 STT 흐름이 요구하는 <code>meeting_minute.stt_draft</code>·<code>ai_summary</code>·<code>published</code> 상태가 04/코드에 전부 없음. MUST 기능이 현 스키마로 구현 불가. <strong>수정 방향</strong>: 04 meeting<em>minute에 stt</em>draft/ai_summary 추가 + status enum 정리 → 코드 반영. meetings.yaml에 STT 기본 흐름+동의 배너(D20-b) 반영.</p>
-<h3 id="c6-specsdomainresourcesyaml-전면-노후-p16-p24">C6. 🟠 specs/domain/resources.yaml 전면 노후 [P1×6, P2×4]</h3>
+<p>09의 STT 흐름이 요구하는 <code>meeting_minute.stt_draft</code>·<code>ai_summary</code>·<code>published</code> 상태가 04/코드에 전부 없음. MUST 기능이 현 스키마로 구현 불가.
+<strong>수정 방향</strong>: 04 meeting_minute에 stt_draft/ai_summary 추가 + status enum 정리 → 코드 반영. meetings.yaml에 STT 기본 흐름+동의 배너(D20-b) 반영.</p>
+<h3 id="c6-🟠-specsdomainresourcesyaml-전면-노후-p1×6-p2×4">C6. 🟠 specs/domain/resources.yaml 전면 노후 [P1×6, P2×4]</h3>
 <blockquote>A3-01/03/04/05/06/14/15/16, A2-10/13</blockquote>
-<p>kpi<em>result가 D16 이전 구스키마(17필드 불일치), presence 폐기 enum 10종, 미러링 금지 개인정보 필드 3종 잔존(D20-f 위반), user</em>team_history 리소스 누락, KST/UUID 표기 구버전. <strong>화면·태스크 생성의 계약 파일이 가장 낡음.</strong> <strong>수정 방향</strong>: resources.yaml을 04 정본 기준 전면 재정합(1파일 집중 수정).</p>
-<h3 id="c7-화면-yaml-6종-부재-d11-잔재-p14">C7. 🟠 화면 YAML 6종 부재 + D11 잔재 [P1×4]</h3>
+<p>kpi_result가 D16 이전 구스키마(17필드 불일치), presence 폐기 enum 10종, 미러링 금지 개인정보 필드 3종 잔존(D20-f 위반), user_team_history 리소스 누락, KST/UUID 표기 구버전. <strong>화면·태스크 생성의 계약 파일이 가장 낡음.</strong>
+<strong>수정 방향</strong>: resources.yaml을 04 정본 기준 전면 재정합(1파일 집중 수정).</p>
+<h3 id="c7-🟠-화면-yaml-6종-부재--d11-잔재-p1×4">C7. 🟠 화면 YAML 6종 부재 + D11 잔재 [P1×4]</h3>
 <blockquote>A2-01~06, A2-08/09, A4-01/02</blockquote>
-<ul><li>06-screens에 정의된 13화면 중 YAML 없는 6개: <strong>로그인(P1)·이의신청(P1)·동기화모니터링(P1)</strong>·아바타·RBAC·자율좌석</li><li>seat-layout-editor.yaml에 폐기된 3D 미리보기 컴포넌트/테스트 잔존(D11 위반), &quot;무시하고 배포&quot; 옵션 잔존(D12 위반), 02/11에도 3D 미리보기 문구 2곳</li><li>로딩 상태가 <strong>전 화면 미정의</strong>, 3D WSS 단절/재연결 UX 미정의 (A2-18)</li></ul>
-<h3 id="c8-kpi-산식원칙-충돌-p13">C8. 🟠 KPI 산식·원칙 충돌 [P1×3]</h3>
+<ul>
+<li>06-screens에 정의된 13화면 중 YAML 없는 6개: **로그인(P1)·이의신청(P1)·동기화모니터링(P1)**·아바타·RBAC·자율좌석</li>
+<li>seat-layout-editor.yaml에 폐기된 3D 미리보기 컴포넌트/테스트 잔존(D11 위반), &quot;무시하고 배포&quot; 옵션 잔존(D12 위반), 02/11에도 3D 미리보기 문구 2곳</li>
+<li>로딩 상태가 <strong>전 화면 미정의</strong>, 3D WSS 단절/재연결 UX 미정의 (A2-18)</li>
+</ul>
+<h3 id="c8-🟠-kpi-산식·원칙-충돌-p1×3">C8. 🟠 KPI 산식·원칙 충돌 [P1×3]</h3>
 <blockquote>A4-10/11/13/18, A1-15</blockquote>
-<ul><li>work<em>completed</em>count 정의 충돌(08: 전건 vs 04: result_url 필수) → <strong>08(D14-a) 정본 추천</strong></li><li>minutes<em>authored</em>count가 존재하지 않는 공동작성 구조 요구 → created_by 단독으로 축소 추천</li><li>11-tech-stack이 AI에 &quot;정량화&quot; 역할 + 유령 테이블(external_activities) 입력 부여 — <strong>D14-e 정면 위반</strong></li><li>weekly 주기 잔재 1곳(08:521)</li></ul>
-<h3 id="c9-이미-구현된-코드의-수정-필요-p13-p25">C9. 🟠 이미 구현된 코드의 수정 필요 [P1×3, P2×5]</h3>
+<ul>
+<li>work_completed_count 정의 충돌(08: 전건 vs 04: result_url 필수) → <strong>08(D14-a) 정본 추천</strong></li>
+<li>minutes_authored_count가 존재하지 않는 공동작성 구조 요구 → created_by 단독으로 축소 추천</li>
+<li>11-tech-stack이 AI에 &quot;정량화&quot; 역할 + 유령 테이블(external_activities) 입력 부여 — <strong>D14-e 정면 위반</strong></li>
+<li>weekly 주기 잔재 1곳(08:521)</li>
+</ul>
+<h3 id="c9-🟠-이미-구현된-코드의-수정-필요-p1×3-p2×5">C9. 🟠 이미 구현된 코드의 수정 필요 [P1×3, P2×5]</h3>
 <blockquote>A3-02/11/12/13/19/20/21, (A3-22)</blockquote>
-<ul><li><strong>work<em>log.user</em>id가 CASCADE로 구현</strong> — D18(평가 근거 영구 보존) 위반, RESTRICT로 변경 필요</li><li>CHECK 제약 7종 + 좌석 배타성 부분 유니크가 코드에 전무</li><li>self-FK relationship remote_side 역전 의심 (ErpUser.manager/OrgGroup.parent)</li><li>KPI 점수 Float(문서는 NUMERIC — 감사 재현성), 타입힌트 datetime/date 3곳, 중복 인덱스 3곳</li><li>office_layout.schema.json 공식 파일 미생성</li></ul>
-<h3 id="c10-로드맵-스테일-표기-p14-p2-다수">C10. 🟡 로드맵 스테일 표기 [P1×4, P2 다수]</h3>
-<blockquote>A1-02~05, A1-11~13, A1-15</blockquote>
-<p>D10 위반 샘플 JSON(assigned<em>user</em>id 인라인), D11 위반 &quot;3D 미리보기&quot; 검증 기준, 10명/20명 자기모순, presence 엔드포인트가 D3와 충돌(서버 권위 침해), kpi_date 유령 필드 등.</p>
-<h3 id="c11-태스크-품질-상태-동기화-p15-p2-다수">C11. 🟡 태스크 품질 + 상태 동기화 [P1×5, P2 다수]</h3>
-<blockquote>A5-03~13, A5-18~23, A6-14</blockquote>
-<ul><li>이미 구현된 ERP 어댑터/직원 API와 태스크 상태 불일치 3건(계획 외 구현 포함)</li><li>마이그레이션 계획(0002~0013 증분)이 실제(0001 create_all)와 전면 불일치</li><li>과대 태스크 9건, 모호 완료조건 8건, V태스크 산출물 누락 7건, 총계 오기(70→78)</li><li><strong>ERP 회의실 예약 테이블 3종 중복 — 어느 문서에도 미등재</strong> → OQ13 신규 등록 필요 (Phase 5 전 결정)</li></ul>
+<ul>
+<li><strong>work_log.user_id가 CASCADE로 구현</strong> — D18(평가 근거 영구 보존) 위반, RESTRICT로 변경 필요</li>
+<li>CHECK 제약 7종 + 좌석 배타성 부분 유니크가 코드에 전무</li>
+<li>self-FK relationship remote_side 역전 의심 (ErpUser.manager/OrgGroup.parent)</li>
+<li>KPI 점수 Float(문서는 NUMERIC — 감사 재현성), 타입힌트 datetime/date 3곳, 중복 인덱스 3곳</li>
+<li>office_layout.schema.json 공식 파일 미생성</li>
+</ul>
+<h3 id="c10-🟡-로드맵-스테일-표기-p1×4-p2-다수">C10. 🟡 로드맵 스테일 표기 [P1×4, P2 다수]</h3>
+<blockquote>A1-02<del>05, A1-11</del>13, A1-15</blockquote>
+<p>D10 위반 샘플 JSON(assigned_user_id 인라인), D11 위반 &quot;3D 미리보기&quot; 검증 기준, 10명/20명 자기모순, presence 엔드포인트가 D3와 충돌(서버 권위 침해), kpi_date 유령 필드 등.</p>
+<h3 id="c11-🟡-태스크-품질--상태-동기화-p1×5-p2-다수">C11. 🟡 태스크 품질 + 상태 동기화 [P1×5, P2 다수]</h3>
+<blockquote>A5-03<del>13, A5-18</del>23, A6-14</blockquote>
+<ul>
+<li>이미 구현된 ERP 어댑터/직원 API와 태스크 상태 불일치 3건(계획 외 구현 포함)</li>
+<li>마이그레이션 계획(0002~0013 증분)이 실제(0001 create_all)와 전면 불일치</li>
+<li>과대 태스크 9건, 모호 완료조건 8건, V태스크 산출물 누락 7건, 총계 오기(70→78)</li>
+<li><strong>ERP 회의실 예약 테이블 3종 중복 — 어느 문서에도 미등재</strong> → OQ13 신규 등록 필요 (Phase 5 전 결정)</li>
+</ul>
 <hr>
 <h2 id="검사-결과-이상-없음-확인-양호">검사 결과 &quot;이상 없음&quot; 확인 (양호)</h2>
-<ul><li>ENet/GDNative/C#(.cs)/500명/26주 잔재 없음 (D1·D2·D22 정리 완료 상태)</li><li>라이트맵 배제(D7), tick 20Hz, p95&lt;500ms, GTX1650/IrisXe 기준 — 02↔07↔09 일관</li><li>KPI 산식 표본 4/5 계산 가능(work<em>quality/action</em>items/percentile), 접속시간·채팅 지표 잔존 없음</li><li>58주 일정 검산 일치, 간트 날짜 정합, WON'T 스코프 컷 명확</li><li>YAML에만 있고 06에 없는 유령 화면 없음</li><li>의존성: 존재하지 않는 태스크 ID 0건, 순환 0건</li></ul>
-<div class="meta-foot">원본: <code>document-gap-report.md</code> · 자동 생성 2026-07-16 · md-to-html</div>
+<ul>
+<li>ENet/GDNative/C#(.cs)/500명/26주 잔재 없음 (D1·D2·D22 정리 완료 상태)</li>
+<li>라이트맵 배제(D7), tick 20Hz, p95&lt;500ms, GTX1650/IrisXe 기준 — 02↔07↔09 일관</li>
+<li>KPI 산식 표본 4/5 계산 가능(work_quality/action_items/percentile), 접속시간·채팅 지표 잔존 없음</li>
+<li>58주 일정 검산 일치, 간트 날짜 정합, WON&#39;T 스코프 컷 명확</li>
+<li>YAML에만 있고 06에 없는 유령 화면 없음</li>
+<li>의존성: 존재하지 않는 태스크 ID 0건, 순환 0건</li>
+</ul>
+<div class="meta-foot">원본: <code>document-gap-report.md</code> · 자동 생성 2026-07-22 · md-to-html</div>
 </main>
 </div>
 

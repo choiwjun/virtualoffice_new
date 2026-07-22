@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>핸드오프 — 2026-07-21 세션 (UX 몰입모드 + 공간 진입점 + 에셋 방향 확정 스파이크)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">핸드오프 — 2026-07-21 세션 (UX 몰입모드 + 공간 진입점 + 에셋 방향 확정 스파이크)</div><div class="sub">handoff-session-2026-07-21.md</div><a class="lvl1" href="#핸드오프--2026-07-21-세션-ux-몰입모드--공간-진입점--에셋-방향-확정-스파이크">핸드오프 — 2026-07-21 세션 (UX 몰입모드 + 공간 진입점 + 에셋 방향 확정 스파이크)</a><a class="lvl2" href="#§1-완료-작업">§1. 완료 작업</a><a class="lvl3" href="#a-d33--office-몰입-모드-p0-5건-구현·검증-완료">A. D33 — /office 몰입 모드 (P0 5건 구현·검증 완료)</a><a class="lvl3" href="#b-d34--공간-진입점-wave12-메뉴-기능의-씬-통합">B. D34 — 공간 진입점 Wave1~2 (메뉴 기능의 씬 통합)</a><a class="lvl3" href="#c-에셋캐릭터-스파이크--poly-haven가구mixamo캐릭터-경로-전체-실증">C. 에셋/캐릭터 스파이크 — Poly Haven(가구)+Mixamo(캐릭터) 경로 전체 실증</a><a class="lvl3" href="#d-부수">D. 부수</a><a class="lvl2" href="#§2-미커밋-상태-git-status-실측">§2. 미커밋 상태 (git status 실측)</a><a class="lvl2" href="#§3-다음-작업">§3. 다음 작업</a><a class="lvl2" href="#§4-재현기동">§4. 재현/기동</a><a class="lvl2" href="#§5-함정·실측값-정본-재발-방지">§5. 함정·실측값 정본 (재발 방지)</a><a class="lvl2" href="#§6-포인터">§6. 포인터</a></nav>
+<main><h1 id="핸드오프--2026-07-21-세션-ux-몰입모드--공간-진입점--에셋-방향-확정-스파이크">핸드오프 — 2026-07-21 세션 (UX 몰입모드 + 공간 진입점 + 에셋 방향 확정 스파이크)</h1>
+<blockquote>선행: handoff-session-2026-07-17.md. 작업은 07-21 주간<del>07-22 새벽.
+<strong>세션 아크</strong>: 실화면 QA → oVice 경쟁조사 → &quot;복잡함·시각퀄리티 낮음&quot; 판정 → <strong>D33 몰입모드 P0 구현</strong>
+→ &quot;메뉴를 공간에 녹여라&quot; → **D34 공간 진입점 Wave1</del>2 구현** → &quot;에셋으로 퀄 상향 가능한가&quot; →
+<strong>Kenney(동급 판정)→Poly Haven+Mixamo 스파이크로 전체 파이프라인 실증</strong>(가구·캐릭터·배치·오클루전).
+⚠️ <strong>전부 미커밋</strong> — §2 참조. 다음 세션 첫 작업으로 커밋 정리 권장.</blockquote>
+<hr>
+<h2 id="§1-완료-작업">§1. 완료 작업</h2>
+<h3 id="a-d33--office-몰입-모드-p0-5건-구현·검증-완료">A. D33 — /office 몰입 모드 (P0 5건 구현·검증 완료)</h3>
+<ul>
+<li>정본: <strong>19-office-ux-simplify-spec.md</strong>(확정) · 00-decisions <strong>§N D33</strong> · 06-screens §1 D33 배너 · qa-runbook §2 체크리스트</li>
+<li>구현(파일 2개): <code>frontend/components/OfficeShell.tsx</code> + <code>OfficeViewport2D.tsx</code><ol>
+<li>사이드바 아이콘 레일(56px, /office 한정, 펼침 토글) + 우측 패널 접힘 기본(가장자리 &quot;구성원 N&quot; 핸들)</li>
+<li>좌상단 배지4+미디어바+회의 오버레이 → <strong>하단 중앙 통합 독</strong>(뷰포트가 <code>dockSlot</code> prop으로 셸 세그먼트 주입받음. 연결=점+툴팁, 상태 메뉴 위로 열림, MediaBar는 회의 연결 시에만)</li>
+<li>사이드바 &quot;2F 도면&quot; 위젯 삭제 → 층 전환은 미니맵 헤더로(접기 지원)</li>
+<li>네임플레이트 다이어트(이름+상태점만, 본인=발밑 파란 링, &quot;(나)&quot;·상태텍스트 제거)</li>
+<li>존 바닥 색면(ROOM_TINTS) + 존 라벨 호버/클릭 시만</li>
+</ol>
+</li>
+<li><strong>실측 수용기준</strong>: G1 캔버스 92.4%(전 55%) · G3 네임플레이트 16%(기준≤40%) · G5 호버 라벨 ✓</li>
+<li>검증: tsc 0 · vitest 20/20 · 육안(이동·착석 typing 프레임 진행·재연결·테마 순환·패널 토글)</li>
+</ul>
+<h3 id="b-d34--공간-진입점-wave12-메뉴-기능의-씬-통합">B. D34 — 공간 진입점 Wave1~2 (메뉴 기능의 씬 통합)</h3>
+<ul>
+<li>정본: <strong>20-office-spatial-entrypoints-spec.md</strong> · 00-decisions <strong>§O D34</strong></li>
+<li>구현(OfficeViewport2D.tsx): <strong>SpotCard</strong> 미니 카드(상단 중앙 288px, on-demand 조회, 신규 API 0)<ul>
+<li>아바타 클릭=프로필(타인)/내 업무(본인: 오늘 업무+KPI+내 자리로 걷기+<strong>자리 비우기</strong>)</li>
+<li>방 라벨 클릭=오늘 일정+예약(+진행중이면 ● 입장하기→onJoinMeeting D24) · Lounge는 general 채널 미리보기</li>
+<li>📌 게시판(n 0.615,0.27)=공지 · 🗂️ 서류함(n 0.263,0.35)=보고서 · 배포 존 라벨=존 카드</li>
+<li><strong>seatPrompt는 sit 전용화</strong>(구 release 모드는 myseat 카드 releaseSeat로 흡수)</li>
+<li>카드 액션 → D29 오버레이 창 라우팅(router.push — 씬/실시간 유지). 빈 곳 클릭 시 카드 닫힘</li>
+</ul>
+</li>
+<li>검증: tsc 0 · vitest 20/20 · 육안(게시판·내자리·Board Room·서류함 카드 + 기록추가→/work-log 오버레이 왕복 + D24 근접 프롬프트 회귀)</li>
+<li><strong>미검증 잔여</strong>: ①타인 프로필 카드(두 번째 유저 접속 필요 — 코드 경로 동일) ②배포 레이아웃 존 카드(dev_qa는 미배포 상태)</li>
+</ul>
+<h3 id="c-에셋캐릭터-스파이크--poly-haven가구mixamo캐릭터-경로-전체-실증">C. 에셋/캐릭터 스파이크 — &quot;Poly Haven(가구)+Mixamo(캐릭터)&quot; 경로 전체 실증</h3>
+<p><strong>판정 흐름</strong>: 오픈소스 코드 병합=기각(WA 전례·AGPL·시각상향 없음) → Kenney CC0 재렌더=각도·팔레트 정합 통과했으나 <strong>동급 대체 판정</strong>(사용자) → <strong>Poly Haven CC0(포토리얼급 PBR, 가구 115종 실측)</strong> 로 상향 확정 후보 → Mixamo(Josh)로 캐릭터까지.</p>
+<p><strong>산출물</strong>(전부 미커밋, <code>frontend/public/spike-kenney/</code>):</p>
+<ul>
+<li><code>index.html</code> — Kenney 합성 비교(토글: 숨김/CSS보정/★Blender 재렌더) + <code>kenney/</code>, <code>kenney-rr/</code></li>
+<li><strong><code>ph.html</code> — 메인 데모</strong>: CSS matrix 아이소 바닥/벽 + <strong>배치 데이터만으로 12인↔24인 토글</strong> + 캐릭터 애니</li>
+<li><code>ph/</code> — PH 모듈 스프라이트: ws-desk·ws-chair(분리)·meeting·sofa·coffee_table·plant_big/small·shelf + <strong>occupied-typing(24f)·occupied-sit(12f)</strong>(책상+캐릭터 합성)</li>
+<li><code>char/</code> — Mixamo Josh 프레임: walk16·sit12·typing24·idle12</li>
+<li>스크립트(레포로 복사 완료): <strong><code>tools/asset-gen/spike-scripts/</code></strong> — ph_download.py(PH 다운로더, UA 필요)·rr_render.py(Kenney 팔레트 리매핑)·ph_render.py(PH 모듈)·ph_render_ws.py(desk/chair 분리)·char_render.py(Cycles, 폐기 경로)·**char_render_eevee.py(캐릭터 정본)<strong>·</strong>char_desk_render.py(점유 합성 정본)**·char_diag.py</li>
+<li>원본 에셋: PH gltf 9종은 ph_download.py로 재취득(세션 scratchpad는 휘발) · <strong>Mixamo FBX 4종은 <code>C:\Users\wj941\Downloads\</code></strong>(Walking/Seated Idle/Typing/Idle.fbx, 각 ~52MB) — 레포 밖이므로 보존 주의</li>
+</ul>
+<h3 id="d-부수">D. 부수</h3>
+<ul>
+<li>오전 실화면 QA: 이동·착석·멀티유저(bob 스크립트)·고스트세션·재연결·테마 전부 통과. 발견=탭 백그라운드 rAF 정지(버그 아님, 메모리 기록)</li>
+<li>oVice 경쟁조사 리포트(대화 내). 회사 2020 설립·시리즈B 440억(2022)·이후 펀딩 없음·한국법인 6명</li>
+<li><strong>vitest 환경 수리</strong>: rollup-win32 optional dep 누락 → <code>npm i --no-save @rollup/rollup-win32-x64-msvc</code> (node_modules 재설치 시 재발 가능)</li>
+</ul>
+<h2 id="§2-미커밋-상태-git-status-실측">§2. 미커밋 상태 (git status 실측)</h2>
+<pre class="code"><code>M  docs/planning/00-decisions.md            ← §N D33 + §O D34 신설
+M  docs/planning/06-screens.md              ← §1 D33 몰입모드 배너
+M  docs/planning/realtime-qa-runbook.md     ← §2 D33 G1~G5 + D34 체크리스트
+M  frontend/components/OfficeShell.tsx      ← 레일·패널·독 세그먼트(meetingDock)
+M  frontend/components/OfficeViewport2D.tsx ← 독·틴트·네임플레이트·미니맵·SpotCard·핫스팟
+?? docs/planning/19-office-ux-simplify-spec.md
+?? docs/planning/20-office-spatial-entrypoints-spec.md
+?? docs/planning/handoff-session-2026-07-21.md (본 문서)
+?? frontend/public/spike-kenney/            ← 스파이크 전체(페이지 2·스프라이트 ~110장)
+?? tools/asset-gen/spike-scripts/           ← Blender 파이프라인 스크립트 8종
+M  artifacts/qa/shots-roles/*.png, backend/dev_qa.db  ← QA 부수(이전 세션부터)
+M  docs/_html/** 다수                        ← HTML 미러 스테일(이번 세션 무관, 재생성 대상)</code></pre>
+<p><strong>커밋 제안(3분할)</strong>: ① <code>feat(office): D33 몰입 모드 …</code>(셸·뷰포트 D33분+19-spec+00/06/runbook D33분) ② <code>feat(office): D34 공간 진입점 SpotCard …</code>(뷰포트 D34분+20-spec+00/runbook D34분) ③ <code>spike(assets): Poly Haven+Mixamo 파이프라인 실증</code>(spike-kenney/+spike-scripts/). 파일이 얽혀 있어 ①②를 합쳐 2분할도 무방.</p>
+<h2 id="§3-다음-작업">§3. 다음 작업</h2>
+<ol>
+<li><strong>(권장 선행) 커밋 정리</strong> — §2안대로</li>
+<li><strong>D35 결정 대기</strong>: &quot;Poly Haven 가구 + Mixamo 캐릭터를 M1 소스로 확정&quot; — 사용자 구두 흐름상 사실상 승인 분위기이나 <strong>명시 확정 없음</strong>. 확정 시 00-decisions §P 등재</li>
+<li><strong>M1 본작업</strong>(18-module 설계 이행, 스파이크 자산 재사용):<ul>
+<li>PH 모델 확장 선별(~30종) + <strong>의자 4방향 variant</strong> + 모듈러 벽 세트(ambientCG 재질)</li>
+<li>모듈 카탈로그 <code>catalog.json</code> — <strong>desk/chair 분리 원칙</strong>(§5 함정4) + occupied 합성 모듈(캐릭터×책상 조합)</li>
+<li>뷰포트 layout v2 직접 렌더(18-spec G3) + 좌석 편집기 연동(G4)</li>
+<li>캐릭터 스프라이트 교체: <code>frontend/public</code> 교체 + <code>lib/office2d.ts</code> AVATAR_ANIM 프레임 수(walk16/sit12/typing24/idle12) 수정. 다인 캐릭터는 Mixamo 추가 다운로드(캐릭터만 바꾸면 애니 재사용)</li>
+</ul>
+</li>
+<li>P1(프로필 사진 배지)·P2(씬 라이팅) 게이트는 유지 — M1이 사실상 P2를 흡수하는 방향</li>
+<li>잔여 검증: 타인 프로필 카드·배포 존 카드(§1-B)</li>
+</ol>
+<h2 id="§4-재현기동">§4. 재현/기동</h2>
+<ul>
+<li><strong>dev 스택</strong>: realtime-qa-runbook.md §1 그대로(backend는 반드시 <code>DATABASE_URL=sqlite+aiosqlite:///./dev_qa.db</code> — 없으면 기본 PostgreSQL로 붙어 로그인 500). 로그인 <a href="mailto:&#97;&#x6c;&#105;&#99;&#101;&#64;&#x76;&#105;&#x72;&#116;&#x75;&#x61;&#108;&#111;&#x66;&#102;&#x69;&#x63;&#101;&#x2e;&#108;&#x6f;&#x63;&#97;&#108;">&#97;&#x6c;&#105;&#99;&#101;&#64;&#x76;&#105;&#x72;&#116;&#x75;&#x61;&#108;&#111;&#x66;&#102;&#x69;&#x63;&#101;&#x2e;&#108;&#x6f;&#x63;&#97;&#108;</a> / password123</li>
+<li><strong>스파이크 페이지</strong>: 프론트 기동 후 <code>http://localhost:3000/spike-kenney/ph.html</code>(메인 데모) · <code>/spike-kenney/index.html</code>(Kenney 비교)</li>
+<li><strong>렌더 파이프라인</strong>(Blender 5.1 = <code>C:\Program Files\Blender Foundation\Blender 5.1\blender.exe</code>):<pre class="code"><code># PH 에셋 재다운로드(스크래치 휘발 시)
+python tools/asset-gen/spike-scripts/ph_download.py   # OUT 경로는 스크립트 내 OUT 상수 확인
+# 가구 모듈(Cycles):    blender -b --factory-startup -P ph_render.py    -- &lt;ph_dir&gt; &lt;out_dir&gt;
+# 분리 워크스테이션:    blender -b --factory-startup -P ph_render_ws.py -- &lt;ph_dir&gt; &lt;out_dir&gt;
+# 캐릭터 프레임(EEVEE): blender -b --factory-startup -P char_render_eevee.py -- &lt;fbx_dir&gt; &lt;out_dir&gt; [--probe]
+# 점유 합성(EEVEE):     blender -b --factory-startup -P char_desk_render.py  -- &lt;ph_dir&gt; &lt;fbx_dir&gt; &lt;out_dir&gt; [--probe]</code></pre>
+로그 규약: <code>MODULE/CHAR/OCC &lt;name&gt; ortho &lt;m&gt; anchor &lt;top%&gt;</code> — 페이지 SIZES/ANCHOR에 그대로 기입</li>
+</ul>
+<h2 id="§5-함정·실측값-정본-재발-방지">§5. 함정·실측값 정본 (재발 방지)</h2>
+<ol>
+<li><strong>Mixamo×Cycles: 몸 투명 렌더</strong>(속눈썹만 남음) — 알파 강제로도 불가. <strong>캐릭터는 EEVEE</strong>(<code>BLENDER_EEVEE</code>, 5.1 enum). 가구=Cycles 이원화. EEVEE는 섀도캐처 없음→접지 그림자는 CSS 블롭</li>
+<li><strong>스킨 메시 bound_box=레스트 포즈</strong> — 반드시 evaluated <code>to_mesh()</code> 버텍스 샘플링 bbox + 전프레임 통합 bbox로 카메라 고정</li>
+<li><strong>FBX 아마추어(-90X·scale.01)에 로컬 Z회전 = 물구나무</strong> — 빈 피벗 부모로 월드 Z 회전. <strong>rot_z=0이 정면-좌하</strong>(우리 기본, 반대는 런타임 scaleX 플립)</li>
+<li><strong>일체형 워크스테이션 모듈=착석 오클루전 불가</strong>(&quot;다리가 책상 위&quot;) — desk/chair 분리+z샌드위치. 단 &quot;손은 상판 위&quot;까지는 분리로도 불가 → <strong>착석 상태는 책상+캐릭터 합성 베이크(occupied-*)</strong> 가 정답</li>
+<li><strong>Mixamo 피벗≠메시 중심</strong>(책상 끝 착석 증상) — 실측 bbox 중심 자동 정렬(char_desk_render.py 반영)</li>
+<li><strong>그림자 잘림</strong> — 프레임 margin 1.7~1.8 + 태양 고도 상향(rot X 32°, angle 14°) + 앵커는 카메라 투영 산출</li>
+<li>소소: PH API 403→브라우저 UA 필요 · PS 파이프가 stdout 일부 유실(로그는 flush=True + 파일 grep)</li>
+</ol>
+<p><strong>실측 메타</strong>(표시폭=ortho×K×1.41, K=페이지 px/m):</p>
+<div class="table-wrap"><table><thead><tr>
+<th>모듈</th>
+<th>ortho(m)</th>
+<th>anchor(top%)</th>
+<th></th>
+<th>캐릭터</th>
+<th>n</th>
+<th>ortho</th>
+<th>anchor</th>
+</tr>
+</thead><tbody><tr>
+<td>ws-desk</td>
+<td>3.200</td>
+<td>68.0</td>
+<td></td>
+<td>walk</td>
+<td>16</td>
+<td>2.576</td>
+<td>79.9</td>
+</tr>
+<tr>
+<td>ws-chair</td>
+<td>1.739</td>
+<td>75.5</td>
+<td></td>
+<td>sit</td>
+<td>12</td>
+<td>2.018</td>
+<td>79.9</td>
+</tr>
+<tr>
+<td>meeting</td>
+<td>4.908</td>
+<td>59.0</td>
+<td></td>
+<td>typing</td>
+<td>24</td>
+<td>1.944</td>
+<td>79.9</td>
+</tr>
+<tr>
+<td>sofa</td>
+<td>2.671</td>
+<td>62.9</td>
+<td></td>
+<td>idle</td>
+<td>12</td>
+<td>2.586</td>
+<td>79.9</td>
+</tr>
+<tr>
+<td>occupied-typing/sit</td>
+<td>3.000</td>
+<td>74.3/75.3</td>
+<td></td>
+<td>의자 오프셋</td>
+<td></td>
+<td>desk+(0.25,−0.55)</td>
+<td>캐릭터 x−0.30</td>
+</tr>
+</tbody></table></div>
+<h2 id="§6-포인터">§6. 포인터</h2>
+<ul>
+<li>결정: 00-decisions §N(D33)·§O(D34) / 스펙: 19·20-spec / 설계 기반: <strong>18-module-composition-and-seat-editor.md</strong>(M0 완료·M1 대기 — 다음 본작업의 정본)</li>
+<li>메모리: feedback-office-ux-gap-2026-07-21 · game-asset-candidates-2026-07-21 · mixamo-char-bake-pipeline · browser-qa-tab-background-raf</li>
+<li>경쟁조사 근거 링크는 07-21 대화 내 oVice 리포트 참조(시리즈B·라이선스 출처 포함)</li>
+</ul>
+<div class="meta-foot">원본: <code>handoff-session-2026-07-21.md</code> · 자동 생성 2026-07-22 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

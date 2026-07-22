@@ -52,20 +52,69 @@ img{max-width:100%;border-radius:8px}
 </style>
 </head><body>
 <div class="layout">
-<nav class="toc"><div class="brand">ERP 연동 계약서</div><div class="sub">contract.md</div><a class="lvl1" href="#erp-연동-계약서">ERP 연동 계약서</a><a class="lvl2" href="#1-읽기-설계-read-only-동기화">1. 읽기 설계 (Read-Only 동기화)</a><a class="lvl3" href="#11-동기화-대상-5개-테이블">1.1 동기화 대상 5개 테이블</a><a class="lvl3" href="#12-필드-매핑-화이트리스트-view-명시">1.2 필드 매핑 (화이트리스트 VIEW 명시)</a><a class="lvl3" href="#13-동기화-알고리즘-d18">1.3 동기화 알고리즘 (D18)</a><a class="lvl3" href="#14-안전-제약">1.4 안전 제약</a><a class="lvl2" href="#2-쓰기-설계-우리-erp-역동기화">2. 쓰기 설계 (우리 → ERP 역동기화)</a><a class="lvl3" href="#21-채널-1-일일-업무-상태-daily_reports">2.1 채널 1: 일일 업무 상태 → daily_reports</a><a class="lvl3" href="#22-채널-2-kpi-확정-결과-kpi_results-신설">2.2 채널 2: KPI 확정 결과 → kpi_results (신설)</a><a class="lvl2" href="#3-배치-스케줄-d17">3. 배치 스케줄 (D17)</a><a class="lvl3" href="#31-일정표">3.1 일정표</a><a class="lvl3" href="#32-멱등성-설계">3.2 멱등성 설계</a><a class="lvl3" href="#33-재시도-정책">3.3 재시도 정책</a><a class="lvl2" href="#4-feature-flag-backfill-3-미준비-시-폴백">4. Feature Flag &amp; Backfill (§3 미준비 시 폴백)</a><a class="lvl3" href="#41-erp-kpi_results-미배포-시-폴백">4.1 ERP kpi_results 미배포 시 폴백</a><a class="lvl3" href="#42-erp-준비-완료-후-backfill">4.2 ERP 준비 완료 후 backfill</a><a class="lvl2" href="#5-스키마-드리프트-검증-2-시작-전-필수">5. 스키마 드리프트 검증 (§2 시작 전 필수)</a><a class="lvl2" href="#6-erp-dev-브랜치-작업">6. ERP Dev 브랜치 작업</a><a class="lvl3" href="#61-브랜치-명명">6.1 브랜치 명명</a><a class="lvl3" href="#62-신설-필수-항목">6.2 신설 필수 항목</a><a class="lvl3" href="#63-api-문서">6.3 API 문서</a><a class="lvl2" href="#7-타임존-규칙-d19">7. 타임존 규칙 (D19)</a><a class="lvl2" href="#완료-체크리스트">완료 체크리스트</a></nav>
+<nav class="toc"><div class="brand">ERP 연동 계약서</div><div class="sub">contract.md</div><a class="lvl1" href="#erp-연동-계약서">ERP 연동 계약서</a><a class="lvl2" href="#1-읽기-설계-read-only-동기화">1. 읽기 설계 (Read-Only 동기화)</a><a class="lvl3" href="#11-동기화-대상-5개-테이블">1.1 동기화 대상 5개 테이블</a><a class="lvl3" href="#12-필드-매핑-화이트리스트-view-명시">1.2 필드 매핑 (화이트리스트 VIEW 명시)</a><a class="lvl3" href="#13-동기화-알고리즘-d18">1.3 동기화 알고리즘 (D18)</a><a class="lvl3" href="#14-안전-제약">1.4 안전 제약</a><a class="lvl2" href="#2-쓰기-설계-우리-→-erp-역동기화">2. 쓰기 설계 (우리 → ERP 역동기화)</a><a class="lvl3" href="#21-채널-1-일일-업무-상태-→-daily_reports">2.1 채널 1: 일일 업무 상태 → daily_reports</a><a class="lvl3" href="#22-채널-2-kpi-확정-결과-→-kpi_results-신설">2.2 채널 2: KPI 확정 결과 → kpi_results (신설)</a><a class="lvl2" href="#3-배치-스케줄-d17">3. 배치 스케줄 (D17)</a><a class="lvl3" href="#31-일정표">3.1 일정표</a><a class="lvl3" href="#32-멱등성-설계">3.2 멱등성 설계</a><a class="lvl3" href="#33-재시도-정책">3.3 재시도 정책</a><a class="lvl2" href="#4-feature-flag--backfill-§3-미준비-시-폴백">4. Feature Flag  Backfill (§3 미준비 시 폴백)</a><a class="lvl3" href="#41-erp-kpi_results-미배포-시-폴백">4.1 ERP kpi_results 미배포 시 폴백</a><a class="lvl3" href="#42-erp-준비-완료-후-backfill">4.2 ERP 준비 완료 후 backfill</a><a class="lvl2" href="#5-스키마-드리프트-검증-§2-시작-전-필수">5. 스키마 드리프트 검증 (§2 시작 전 필수)</a><a class="lvl2" href="#6-erp-dev-브랜치-작업">6. ERP Dev 브랜치 작업</a><a class="lvl3" href="#61-브랜치-명명">6.1 브랜치 명명</a><a class="lvl3" href="#62-신설-필수-항목">6.2 신설 필수 항목</a><a class="lvl3" href="#63-api-문서">6.3 API 문서</a><a class="lvl2" href="#7-타임존-규칙-d19">7. 타임존 규칙 (D19)</a><a class="lvl2" href="#완료-체크리스트">완료 체크리스트</a></nav>
 <main><h1 id="erp-연동-계약서">ERP 연동 계약서</h1>
-<p><strong>문서명</strong>: ERP 연동 인터페이스 설계 <strong>버전</strong>: 1.0 <strong>작성일</strong>: 2026-07-02 <strong>상태</strong>: 확정(Phase 0, P0-T0.4) <strong>참조 정본</strong>:</p>
-<ul><li>00-decisions.md (D15·D16·D17·D18·D19·D20·D21)</li><li>03-erp-integration.md (§2~§7)</li><li>04-data-model.md §2.5 (kpi_result 정본 스키마)</li></ul>
+<p><strong>문서명</strong>: ERP 연동 인터페이스 설계<br><strong>버전</strong>: 1.0<br><strong>작성일</strong>: 2026-07-02<br><strong>상태</strong>: 확정(Phase 0, P0-T0.4)<br><strong>참조 정본</strong>: </p>
+<ul>
+<li>00-decisions.md (D15·D16·D17·D18·D19·D20·D21)</li>
+<li>03-erp-integration.md (§2~§7)</li>
+<li>04-data-model.md §2.5 (kpi_result 정본 스키마)</li>
+</ul>
 <blockquote><strong>원칙</strong>: ERP(DailyLog)는 직원·조직·근태 Source of Truth. 우리는 read-only 동기화 + 협업결과·KPI 역방향 전송(확정값만).</blockquote>
 <hr>
 <h2 id="1-읽기-설계-read-only-동기화">1. 읽기 설계 (Read-Only 동기화)</h2>
 <h3 id="11-동기화-대상-5개-테이블">1.1 동기화 대상 5개 테이블</h3>
-<div class="table-wrap"><table><thead><tr><th>#</th><th>ERP 테이블</th><th>우리 테이블</th><th>동기화 주기</th><th>목적</th></tr></thead><tbody><tr><td>1</td><td><strong>users</strong></td><td>erp_user</td><td>매시간 증분 + 매일 00:00 KST 전체 대사</td><td>직원 정보, 삭제 감지(soft-delete)</td></tr><tr><td>2</td><td><strong>teams</strong></td><td>team_zone(매핑용)</td><td>매시간 증분 + 매일 00:00 KST 전체 대사</td><td>팀 구조, 삭제 감지(soft-delete)</td></tr><tr><td>3</td><td><strong>job_positions</strong></td><td>(erp<em>user.position</em>id 참조)</td><td>일 1회(새벽)</td><td>직급/직책명</td></tr><tr><td>4</td><td><strong>attendances</strong></td><td>(근태 검증용)</td><td>일일 자정(KST)</td><td>출퇴근 기록, 근무형태</td></tr><tr><td>5</td><td><strong>leaves</strong></td><td>(휴가 판정)</td><td>매시간 증분</td><td>휴가/병가 예정/이력</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>ERP 테이블</th>
+<th>우리 테이블</th>
+<th>동기화 주기</th>
+<th>목적</th>
+</tr>
+</thead><tbody><tr>
+<td>1</td>
+<td><strong>users</strong></td>
+<td>erp_user</td>
+<td>매시간 증분 + 매일 00:00 KST 전체 대사</td>
+<td>직원 정보, 삭제 감지(soft-delete)</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>teams</strong></td>
+<td>team_zone(매핑용)</td>
+<td>매시간 증분 + 매일 00:00 KST 전체 대사</td>
+<td>팀 구조, 삭제 감지(soft-delete)</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>job_positions</strong></td>
+<td>(erp_user.position_id 참조)</td>
+<td>일 1회(새벽)</td>
+<td>직급/직책명</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>attendances</strong></td>
+<td>(근태 검증용)</td>
+<td>일일 자정(KST)</td>
+<td>출퇴근 기록, 근무형태</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>leaves</strong></td>
+<td>(휴가 판정)</td>
+<td>매시간 증분</td>
+<td>휴가/병가 예정/이력</td>
+</tr>
+</tbody></table></div>
 <h3 id="12-필드-매핑-화이트리스트-view-명시">1.2 필드 매핑 (화이트리스트 VIEW 명시)</h3>
 <p>ERP 원본 읽기는 <strong>컬럼 화이트리스트 VIEW(D20-f)</strong> 경유:</p>
-<ul><li><code>erp_users_public</code> VIEW: <strong>제외 컬럼</strong>: slack<em>user</em>id, github<em>username, jira</em>email, lat, lng, radius</li><li><code>erp_teams_public</code> VIEW: 기본 필드만</li></ul>
-<h4 id="users-erp_user">users → erp_user</h4>
-<pre class="code lang-sql"><code>-- ERP VIEW: erp_users_public (화이트리스트 컬럼만 노출)
+<ul>
+<li><code>erp_users_public</code> VIEW: <strong>제외 컬럼</strong>: slack_user_id, github_username, jira_email, lat, lng, radius</li>
+<li><code>erp_teams_public</code> VIEW: 기본 필드만</li>
+</ul>
+<h4 id="users-→-erp_user">users → erp_user</h4>
+<pre class="code"><code>-- ERP VIEW: erp_users_public (화이트리스트 컬럼만 노출)
 CREATE VIEW erp_users_public AS
 SELECT
     id, company_id, email, name, team_id, role, position, position_id,
@@ -78,15 +127,115 @@ WHERE company_id = &lt;COMPANY_ID&gt;
   AND (lat IS EXCLUDED)  -- GPS 수집 금지(D20-c)
   AND (lng IS EXCLUDED)
   AND (radius IS EXCLUDED);</code></pre>
-<div class="table-wrap"><table><thead><tr><th>ERP users</th><th>우리 erp_user</th><th>비고</th></tr></thead><tbody><tr><td>id</td><td>id</td><td><strong>조인 키</strong>, BIGINT</td></tr><tr><td>company_id</td><td>company_id</td><td>멀티테넌트 스코프</td></tr><tr><td>email</td><td>email</td><td>UNIQUE(company_id, email)</td></tr><tr><td>name</td><td>name</td><td>직원명</td></tr><tr><td>team_id</td><td>erp<em>team</em>id</td><td>ERP teams.id 참조</td></tr><tr><td>role</td><td>role</td><td>employee | leader | admin | super_admin</td></tr><tr><td>position</td><td>position</td><td>자유텍스트</td></tr><tr><td>position_id</td><td>position_id</td><td>FK job_positions.id</td></tr><tr><td>manager_id</td><td>manager_id</td><td>FK erp_user(id) self</td></tr><tr><td>work_type</td><td>work_type</td><td>office | remote</td></tr><tr><td>work_hours</td><td>work_hours</td><td>분 단위 환산</td></tr><tr><td>updated_at</td><td>last<em>synced</em>at</td><td>UTC 저장</td></tr><tr><td>(생략)</td><td>is_active</td><td>soft-delete 플래그(전체 대사에서 갱신)</td></tr><tr><td>(생략)</td><td>created_at</td><td>우리 DB 생성 시각</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>ERP users</th>
+<th>우리 erp_user</th>
+<th>비고</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>id</td>
+<td><strong>조인 키</strong>, BIGINT</td>
+</tr>
+<tr>
+<td>company_id</td>
+<td>company_id</td>
+<td>멀티테넌트 스코프</td>
+</tr>
+<tr>
+<td>email</td>
+<td>email</td>
+<td>UNIQUE(company_id, email)</td>
+</tr>
+<tr>
+<td>name</td>
+<td>name</td>
+<td>직원명</td>
+</tr>
+<tr>
+<td>team_id</td>
+<td>erp_team_id</td>
+<td>ERP teams.id 참조</td>
+</tr>
+<tr>
+<td>role</td>
+<td>role</td>
+<td>employee | leader | admin | super_admin</td>
+</tr>
+<tr>
+<td>position</td>
+<td>position</td>
+<td>자유텍스트</td>
+</tr>
+<tr>
+<td>position_id</td>
+<td>position_id</td>
+<td>FK job_positions.id</td>
+</tr>
+<tr>
+<td>manager_id</td>
+<td>manager_id</td>
+<td>FK erp_user(id) self</td>
+</tr>
+<tr>
+<td>work_type</td>
+<td>work_type</td>
+<td>office | remote</td>
+</tr>
+<tr>
+<td>work_hours</td>
+<td>work_hours</td>
+<td>분 단위 환산</td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>last_synced_at</td>
+<td>UTC 저장</td>
+</tr>
+<tr>
+<td>(생략)</td>
+<td>is_active</td>
+<td>soft-delete 플래그(전체 대사에서 갱신)</td>
+</tr>
+<tr>
+<td>(생략)</td>
+<td>created_at</td>
+<td>우리 DB 생성 시각</td>
+</tr>
+</tbody></table></div>
 <p><strong>미러링 최소수집(D20-f)</strong>: <code>slack_user_id, github_username, jira_email</code>은 우리 KPI/공간 기능에 불필요하므로 <strong>미러링하지 않음</strong>. ERP 원본 읽기는 반드시 화이트리스트 VIEW 경유.</p>
-<h4 id="teams-team_zone-매핑용">teams → team_zone (매핑용)</h4>
-<div class="table-wrap"><table><thead><tr><th>ERP teams</th><th>우리 team_zone</th><th>용도</th></tr></thead><tbody><tr><td>id</td><td>erp<em>team</em>id</td><td>FK 참조</td></tr><tr><td>company_id</td><td>(검증)</td><td>스코프</td></tr><tr><td>name</td><td>zone_label</td><td>팀 이름</td></tr><tr><td>leader_name</td><td>(참고용)</td><td>팀장명</td></tr></tbody></table></div>
-<h4 id="attendances-leaves">attendances &amp; leaves</h4>
+<h4 id="teams-→-team_zone-매핑용">teams → team_zone (매핑용)</h4>
+<div class="table-wrap"><table><thead><tr>
+<th>ERP teams</th>
+<th>우리 team_zone</th>
+<th>용도</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>erp_team_id</td>
+<td>FK 참조</td>
+</tr>
+<tr>
+<td>company_id</td>
+<td>(검증)</td>
+<td>스코프</td>
+</tr>
+<tr>
+<td>name</td>
+<td>zone_label</td>
+<td>팀 이름</td>
+</tr>
+<tr>
+<td>leader_name</td>
+<td>(참고용)</td>
+<td>팀장명</td>
+</tr>
+</tbody></table></div>
+<h4 id="attendances--leaves">attendances &amp; leaves</h4>
 <p>직접 DB 읽기(API 미존재, D18 근거).</p>
 <h3 id="13-동기화-알고리즘-d18">1.3 동기화 알고리즘 (D18)</h3>
 <h4 id="매시간-증분-updated_at-기반">매시간 증분 (updated_at 기반)</h4>
-<pre class="code lang-python"><code># Pseudocode: 직원 증분 동기화(매시간)
+<pre class="code"><code># Pseudocode: 직원 증분 동기화(매시간)
 async def sync_erp_users_incremental():
     OVERLAP = timedelta(minutes=5)  # 커밋 지연 누락 방지
     last_sync = await get_last_sync_timestamp(&quot;users&quot;)  # 우리 DB
@@ -114,7 +263,7 @@ async def sync_erp_users_incremental():
     if erp_users:
         await set_last_sync_timestamp(&quot;users&quot;, max(u.updated_at for u in erp_users))</code></pre>
 <h4 id="매일-0000-kst-전체-대사-하드-삭제-감지">매일 00:00 KST 전체 대사 (하드 삭제 감지)</h4>
-<pre class="code lang-python"><code># Pseudocode: 전체 대사(reconciliation) — 삭제 감지
+<pre class="code"><code># Pseudocode: 전체 대사(reconciliation) — 삭제 감지
 async def reconcile_erp_users():
     &quot;&quot;&quot;증분이 감지 못하는 하드 삭제를 전건 대사로 감지 → soft-delete.&quot;&quot;&quot;
     
@@ -144,13 +293,18 @@ async def reconcile_erp_users():
     # 5. 대사 불일치 시 관리자 알림
     await notify_admin_if_drift(len(deleted), len(reappeared))</code></pre>
 <h3 id="14-안전-제약">1.4 안전 제약</h3>
-<ul><li><strong>company_id 필터 필수</strong>: 모든 ERP 쿼리에 <code>WHERE company_id = ?</code> 포함</li><li><strong>soft-delete만 사용</strong>: CASCADE 금지 (평가 기록 영구성, D18)</li><li><strong>화이트리스트 VIEW 경유</strong>: GPS/slack/github/jira 컬럼 차단 (D20-f)</li><li><strong>team<em>change 이력</strong>: 분기 중 팀 이동자의 KPI 벤치마크 왜곡 방지 (user</em>team_history 기록)</li></ul>
+<ul>
+<li><strong>company_id 필터 필수</strong>: 모든 ERP 쿼리에 <code>WHERE company_id = ?</code> 포함</li>
+<li><strong>soft-delete만 사용</strong>: CASCADE 금지 (평가 기록 영구성, D18)</li>
+<li><strong>화이트리스트 VIEW 경유</strong>: GPS/slack/github/jira 컬럼 차단 (D20-f)</li>
+<li><strong>team_change 이력</strong>: 분기 중 팀 이동자의 KPI 벤치마크 왜곡 방지 (user_team_history 기록)</li>
+</ul>
 <hr>
-<h2 id="2-쓰기-설계-우리-erp-역동기화">2. 쓰기 설계 (우리 → ERP 역동기화)</h2>
-<h3 id="21-채널-1-일일-업무-상태-daily_reports">2.1 채널 1: 일일 업무 상태 → daily_reports</h3>
-<p><strong>시각</strong>: 매일 18:00 KST(주말·공휴일 스킵, D17) <strong>대상</strong>: ERP <code>POST /api/reports</code> (기존 엔드포인트) <strong>인증</strong>: 사용자 JWT 또는 배치 전용 토큰 <strong>내용</strong>: work_log + meeting 요약</p>
+<h2 id="2-쓰기-설계-우리-→-erp-역동기화">2. 쓰기 설계 (우리 → ERP 역동기화)</h2>
+<h3 id="21-채널-1-일일-업무-상태-→-daily_reports">2.1 채널 1: 일일 업무 상태 → daily_reports</h3>
+<p><strong>시각</strong>: 매일 18:00 KST(주말·공휴일 스킵, D17)<br><strong>대상</strong>: ERP <code>POST /api/reports</code> (기존 엔드포인트)<br><strong>인증</strong>: 사용자 JWT 또는 배치 전용 토큰<br><strong>내용</strong>: work_log + meeting 요약</p>
 <h4 id="요청-페이로드-예시">요청 페이로드 예시</h4>
-<pre class="code lang-json"><code>POST /api/reports
+<pre class="code"><code>POST /api/reports
 Authorization: Bearer &lt;JWT&gt;
 X-Company-Id: &lt;company_id&gt;
 
@@ -166,17 +320,17 @@ X-Company-Id: &lt;company_id&gt;
   &quot;status&quot;: &quot;submitted&quot;
 }</code></pre>
 <h4 id="응답-예시">응답 예시</h4>
-<pre class="code lang-json"><code>{
+<pre class="code"><code>{
   &quot;id&quot;: 123,
   &quot;user_id&quot;: 5,
   &quot;date&quot;: &quot;2026-07-01&quot;,
   &quot;status&quot;: &quot;submitted&quot;,
   &quot;created_at&quot;: &quot;2026-07-01T17:00:00Z&quot;
 }</code></pre>
-<h3 id="22-채널-2-kpi-확정-결과-kpi_results-신설">2.2 채널 2: KPI 확정 결과 → kpi_results (신설)</h3>
-<p><strong>시각</strong>: 관리자 확정 이벤트 + 분기 마감 배치(D15·D17) <strong>대상</strong>: ERP <code>POST /api/kpi-results</code> (신규 엔드포인트, 단건/배치 동일 경로) <strong>인증</strong>: 서비스계정 JWT(24h, safe pattern — 우리는 시크릿만 보유) <strong>내용</strong>: 확정 점수(final<em>score)만 전송, ai</em>draft 미포함(D15)</p>
+<h3 id="22-채널-2-kpi-확정-결과-→-kpi_results-신설">2.2 채널 2: KPI 확정 결과 → kpi_results (신설)</h3>
+<p><strong>시각</strong>: 관리자 확정 이벤트 + 분기 마감 배치(D15·D17)<br><strong>대상</strong>: ERP <code>POST /api/kpi-results</code> (신규 엔드포인트, 단건/배치 동일 경로)<br><strong>인증</strong>: 서비스계정 JWT(24h, safe pattern — 우리는 시크릿만 보유)<br><strong>내용</strong>: 확정 점수(final_score)만 전송, ai_draft 미포함(D15)</p>
 <h4 id="요청-페이로드-예시-롱포맷-metric-단위">요청 페이로드 예시 (롱포맷, metric 단위)</h4>
-<pre class="code lang-json"><code>POST /api/kpi-results
+<pre class="code"><code>POST /api/kpi-results
 Authorization: Bearer &lt;ServiceAccount JWT&gt;
 X-Company-Id: &lt;company_id&gt;
 
@@ -196,8 +350,8 @@ X-Company-Id: &lt;company_id&gt;
   ],
   &quot;source&quot;: &quot;virtual_office&quot;
 }</code></pre>
-<h4 id="응답-예시-2">응답 예시</h4>
-<pre class="code lang-json"><code>{
+<h4 id="응답-예시-1">응답 예시</h4>
+<pre class="code"><code>{
   &quot;user_id&quot;: 5,
   &quot;period_type&quot;: &quot;quarterly&quot;,
   &quot;period_key&quot;: &quot;2026-Q3&quot;,
@@ -207,14 +361,48 @@ X-Company-Id: &lt;company_id&gt;
   &quot;created_at&quot;: &quot;2026-07-01T17:00:00Z&quot;
 }</code></pre>
 <p><strong>주의</strong>:</p>
-<ul><li>ERP kpi_results는 <strong>스칼라 테이블</strong>(metric VARCHAR + value FLOAT) — metric 단위 행 저장</li><li><strong>확정 점수(final<em>score)만</strong> 저장 (D15) — ai</em>draft는 우리 플랫폼 DB에만 인라인</li><li><strong>metric 어휘 사전</strong>: 04-data-model.md §2.5 정본 참조</li><li><strong>UNIQUE 제약</strong>: (company<em>id, user</em>id, period<em>type, period</em>key, metric)</li><li>정정 발생 시 재push(upsert로 덮어씀, 멱등성)</li></ul>
+<ul>
+<li>ERP kpi_results는 <strong>스칼라 테이블</strong>(metric VARCHAR + value FLOAT) — metric 단위 행 저장</li>
+<li><strong>확정 점수(final_score)만</strong> 저장 (D15) — ai_draft는 우리 플랫폼 DB에만 인라인</li>
+<li><strong>metric 어휘 사전</strong>: 04-data-model.md §2.5 정본 참조</li>
+<li><strong>UNIQUE 제약</strong>: (company_id, user_id, period_type, period_key, metric)</li>
+<li>정정 발생 시 재push(upsert로 덮어씀, 멱등성)</li>
+</ul>
 <hr>
 <h2 id="3-배치-스케줄-d17">3. 배치 스케줄 (D17)</h2>
 <h3 id="31-일정표">3.1 일정표</h3>
-<div class="table-wrap"><table><thead><tr><th>배치</th><th>시각(KST)</th><th>대상</th><th>멱등성</th><th>비고</th></tr></thead><tbody><tr><td><strong>daily_reports push</strong></td><td>18:00</td><td>당일 work_log·meeting 요약 → ERP</td><td>metric 단위 아님, 행 단위 upsert</td><td>주말·공휴일 스킵, D17</td></tr><tr><td><strong>KPI AI 초안 생성</strong></td><td>21:00</td><td>정량 metric 계산(결정론적 코드) + AI 서술</td><td>metric 단위 upsert</td><td>ERP 전송 없음(검토 대기)</td></tr><tr><td><strong>kpi_results ERP push</strong></td><td>이벤트/분기 마감</td><td>관리자 확정(finalized_at 설정) → ERP</td><td>metric 단위 upsert + feature flag</td><td>D15·D17</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>배치</th>
+<th>시각(KST)</th>
+<th>대상</th>
+<th>멱등성</th>
+<th>비고</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>daily_reports push</strong></td>
+<td>18:00</td>
+<td>당일 work_log·meeting 요약 → ERP</td>
+<td>metric 단위 아님, 행 단위 upsert</td>
+<td>주말·공휴일 스킵, D17</td>
+</tr>
+<tr>
+<td><strong>KPI AI 초안 생성</strong></td>
+<td>21:00</td>
+<td>정량 metric 계산(결정론적 코드) + AI 서술</td>
+<td>metric 단위 upsert</td>
+<td>ERP 전송 없음(검토 대기)</td>
+</tr>
+<tr>
+<td><strong>kpi_results ERP push</strong></td>
+<td>이벤트/분기 마감</td>
+<td>관리자 확정(finalized_at 설정) → ERP</td>
+<td>metric 단위 upsert + feature flag</td>
+<td>D15·D17</td>
+</tr>
+</tbody></table></div>
 <h3 id="32-멱등성-설계">3.2 멱등성 설계</h3>
 <h4 id="daily_reports-행-단위-upsert">daily_reports: 행 단위 upsert</h4>
-<pre class="code lang-python"><code># 배치 실행 식별자 + advisory lock
+<pre class="code"><code># 배치 실행 식별자 + advisory lock
 async def daily_reports_push_batch():
     if is_weekend_or_holiday(today_kst()):
         logger.info(&quot;daily_reports batch skipped (weekend/holiday)&quot;)
@@ -232,8 +420,8 @@ async def daily_reports_push_batch():
                 await log_daily_status_push(user.id, run_id, &quot;erp_daily_reports&quot;,
                                            status=&quot;failed&quot;, error=str(e))
                 await enqueue_retry(user.id, today_kst(), target=&quot;erp_daily_reports&quot;)</code></pre>
-<h4 id="kpi_results-metric-단위-upsert-feature-flag">kpi_results: metric 단위 upsert + feature flag</h4>
-<pre class="code lang-python"><code># metric 단위 멱등 upsert
+<h4 id="kpi_results-metric-단위-upsert--feature-flag">kpi_results: metric 단위 upsert + feature flag</h4>
+<pre class="code"><code># metric 단위 멱등 upsert
 async def push_finalized_kpi_to_erp(user_id, period_type, period_key):
     # 관리자 확정분만 전송(finalized_at not null)
     rows = await db.execute(select(KpiResult).where(
@@ -257,7 +445,7 @@ async def push_finalized_kpi_to_erp(user_id, period_type, period_key):
                           period_key=period_key, metrics=metrics)</code></pre>
 <h3 id="33-재시도-정책">3.3 재시도 정책</h3>
 <p><strong>지수 백오프, 최대 3회, target별 분리</strong>:</p>
-<pre class="code lang-python"><code>async def retry_failed_pushes():
+<pre class="code"><code>async def retry_failed_pushes():
     &quot;&quot;&quot;실패 항목을 target별로 지수 백오프 재시도(최대 3회).&quot;&quot;&quot;
     for item in await get_retry_items(max_retries=3):
         try:
@@ -271,19 +459,23 @@ async def push_finalized_kpi_to_erp(user_id, period_type, period_key):
             if item.retry_count + 1 &gt;= 3:
                 await notify_admin_retry_exhausted(item)</code></pre>
 <p><strong>규칙</strong>:</p>
-<ul><li>한 사용자 실패 → 다음 사용자 계속(배치 중단 X)</li><li>한 target 실패, 다른 target 성공 → 독립 재시도</li><li>정규 배치와 재시도 겹침 → 정규 배치 upsert가 우선(최신 계산)</li></ul>
+<ul>
+<li>한 사용자 실패 → 다음 사용자 계속(배치 중단 X)</li>
+<li>한 target 실패, 다른 target 성공 → 독립 재시도</li>
+<li>정규 배치와 재시도 겹침 → 정규 배치 upsert가 우선(최신 계산)</li>
+</ul>
 <hr>
-<h2 id="4-feature-flag-backfill-3-미준비-시-폴백">4. Feature Flag &amp; Backfill (§3 미준비 시 폴백)</h2>
+<h2 id="4-feature-flag--backfill-§3-미준비-시-폴백">4. Feature Flag &amp; Backfill (§3 미준비 시 폴백)</h2>
 <h3 id="41-erp-kpi_results-미배포-시-폴백">4.1 ERP kpi_results 미배포 시 폴백</h3>
 <p>ERP <code>feature/virtual-office-integration</code> 브랜치의 kpi_results 테이블·엔드포인트 미배포 상황에 대응:</p>
-<pre class="code lang-python"><code># 환경변수: FEATURE_ERP_KPI_ENABLED (기본값: false)
+<pre class="code"><code># 환경변수: FEATURE_ERP_KPI_ENABLED (기본값: false)
 if not FEATURE_ERP_KPI_ENABLED:
     # 확정 점수를 로컬 스테이징 테이블에 적재
     await stage_for_backfill(user_id, period_type, period_key, metrics)
     logger.info(f&quot;KPI results staged for backfill (ERP not ready)&quot;)
     return</code></pre>
 <h3 id="42-erp-준비-완료-후-backfill">4.2 ERP 준비 완료 후 backfill</h3>
-<pre class="code lang-python"><code>async def backfill_kpi_to_erp():
+<pre class="code"><code>async def backfill_kpi_to_erp():
     &quot;&quot;&quot;ERP 준비 완료 후 미전송 확정분을 순차 전송(멱등 upsert).&quot;&quot;&quot;
     if not FEATURE_ERP_KPI_ENABLED:
         return  # 준비 전
@@ -296,9 +488,9 @@ if not FEATURE_ERP_KPI_ENABLED:
             logger.error(f&quot;Backfill failed: {e}&quot;)
             await notify_admin_backfill_failed(batch)</code></pre>
 <hr>
-<h2 id="5-스키마-드리프트-검증-2-시작-전-필수">5. 스키마 드리프트 검증 (§2 시작 전 필수)</h2>
+<h2 id="5-스키마-드리프트-검증-§2-시작-전-필수">5. 스키마 드리프트 검증 (§2 시작 전 필수)</h2>
 <p>배치 시작 전 ERP 스키마 버전 및 필드 가용성 확인:</p>
-<pre class="code lang-python"><code>async def validate_erp_schema():
+<pre class="code"><code>async def validate_erp_schema():
     &quot;&quot;&quot;ERP 스키마 준비 상태 확인. kpi_results 테이블 존재 검사 포함(D17).&quot;&quot;&quot;
     
     inspector = inspect(erp_engine)
@@ -339,9 +531,14 @@ async def kpi_quarterly_push_batch():
 <hr>
 <h2 id="6-erp-dev-브랜치-작업">6. ERP Dev 브랜치 작업</h2>
 <h3 id="61-브랜치-명명">6.1 브랜치 명명</h3>
-<p><strong>브랜치명</strong>: <code>feature/virtual-office-integration</code> <strong>베이스</strong>: ERP main <strong>담당</strong>: 사용자(ERP git 접근권한 보유) 또는 협력사 <strong>병합</strong>: 외부 담당자 승인 후(우리는 수신만)</p>
+<p><strong>브랜치명</strong>: <code>feature/virtual-office-integration</code><br><strong>베이스</strong>: ERP main<br><strong>담당</strong>: 사용자(ERP git 접근권한 보유) 또는 협력사<br><strong>병합</strong>: 외부 담당자 승인 후(우리는 수신만)</p>
 <h3 id="62-신설-필수-항목">6.2 신설 필수 항목</h3>
-<ol><li><strong>테이블</strong>: <code>kpi_results</code> (Alembic 마이그레이션 — 우리 산출물 §3 참고)</li><li><strong>엔드포인트</strong>: <code>POST /api/kpi-results</code> (단건/배치 동일 경로)</li><li><strong>서비스계정</strong>: <code>service_accounts</code> 테이블 + 토큰 발급 엔드포인트(§2.3 service-account-policy.md 참고)</li><li><strong>VIEW</strong>: <code>erp_users_public</code> (화이트리스트 컬럼만 노출, §1.2)</li></ol>
+<ol>
+<li><strong>테이블</strong>: <code>kpi_results</code> (Alembic 마이그레이션 — 우리 산출물 §3 참고)</li>
+<li><strong>엔드포인트</strong>: <code>POST /api/kpi-results</code> (단건/배치 동일 경로)</li>
+<li><strong>서비스계정</strong>: <code>service_accounts</code> 테이블 + 토큰 발급 엔드포인트(§2.3 service-account-policy.md 참고)</li>
+<li><strong>VIEW</strong>: <code>erp_users_public</code> (화이트리스트 컬럼만 노출, §1.2)</li>
+</ol>
 <h3 id="63-api-문서">6.3 API 문서</h3>
 <p><strong>POST /api/kpi-results</strong> 상세:</p>
 <pre class="code"><code>경로: POST /api/kpi-results
@@ -382,8 +579,38 @@ Error Codes:
 <hr>
 <h2 id="7-타임존-규칙-d19">7. 타임존 규칙 (D19)</h2>
 <p>모든 시각 저장은 <strong>UTC</strong>, 배치 경계는 <strong>KST</strong>로 계산:</p>
-<div class="table-wrap"><table><thead><tr><th>항목</th><th>저장</th><th>계산</th><th>표시</th></tr></thead><tbody><tr><td>동기화 시각(last<em>synced</em>at)</td><td>UTC</td><td>-</td><td>KST</td></tr><tr><td>배치 경계(18:00)</td><td>-</td><td><strong>KST 기준</strong></td><td>KST</td></tr><tr><td>DB created<em>at/updated</em>at</td><td><strong>UTC</strong></td><td>-</td><td>KST</td></tr><tr><td>분석 기준일(work_date)</td><td><strong>UTC 00:00</strong></td><td>-</td><td>KST</td></tr></tbody></table></div>
-<pre class="code lang-python"><code># 예시
+<div class="table-wrap"><table><thead><tr>
+<th>항목</th>
+<th>저장</th>
+<th>계산</th>
+<th>표시</th>
+</tr>
+</thead><tbody><tr>
+<td>동기화 시각(last_synced_at)</td>
+<td>UTC</td>
+<td>-</td>
+<td>KST</td>
+</tr>
+<tr>
+<td>배치 경계(18:00)</td>
+<td>-</td>
+<td><strong>KST 기준</strong></td>
+<td>KST</td>
+</tr>
+<tr>
+<td>DB created_at/updated_at</td>
+<td><strong>UTC</strong></td>
+<td>-</td>
+<td>KST</td>
+</tr>
+<tr>
+<td>분석 기준일(work_date)</td>
+<td><strong>UTC 00:00</strong></td>
+<td>-</td>
+<td>KST</td>
+</tr>
+</tbody></table></div>
+<pre class="code"><code># 예시
 now_utc = datetime.utcnow()
 now_kst = now_utc.replace(tzinfo=UTC).astimezone(KST)
 
@@ -395,8 +622,19 @@ scheduler.add_job(
 )</code></pre>
 <hr>
 <h2 id="완료-체크리스트">완료 체크리스트</h2>
-<ul><li class="task"><input type="checkbox" disabled checked> read-only 동기화 대상 5개 정의 (users, teams, job_positions, attendances, leaves)</li><li class="task"><input type="checkbox" disabled checked> 화이트리스트 VIEW 명시 (erp<em>users</em>public — GPS/slack/github/jira 제외, D20-f)</li><li class="task"><input type="checkbox" disabled checked> 쓰기 스펙 확정 (daily<em>reports 18:00 KST + kpi</em>results 이벤트/분기)</li><li class="task"><input type="checkbox" disabled checked> 멱등성 설계 (행 단위 + metric 단위 upsert)</li><li class="task"><input type="checkbox" disabled checked> 재시도 정책 (지수 백오프, 최대 3회, target별 분리)</li><li class="task"><input type="checkbox" disabled checked> feature flag/backfill 절차 (FEATURE<em>ERP</em>KPI_ENABLED)</li><li class="task"><input type="checkbox" disabled checked> ERP dev 브랜치명 명시 (feature/virtual-office-integration)</li><li class="task"><input type="checkbox" disabled checked> 스키마 드리프트 검증 (kpi_results 존재 검사 포함)</li><li class="task"><input type="checkbox" disabled checked> 페이로드 JSON 예시 (daily<em>reports + kpi</em>results)</li><li class="task"><input type="checkbox" disabled checked> 타임존 규칙 (UTC 저장, KST 표시, D19)</li></ul>
-<div class="meta-foot">원본: <code>contract.md</code> · 자동 생성 2026-07-16 · md-to-html</div>
+<ul>
+<li class="task"><input type="checkbox" disabled checked> read-only 동기화 대상 5개 정의 (users, teams, job_positions, attendances, leaves)</li>
+<li class="task"><input type="checkbox" disabled checked> 화이트리스트 VIEW 명시 (erp_users_public — GPS/slack/github/jira 제외, D20-f)</li>
+<li class="task"><input type="checkbox" disabled checked> 쓰기 스펙 확정 (daily_reports 18:00 KST + kpi_results 이벤트/분기)</li>
+<li class="task"><input type="checkbox" disabled checked> 멱등성 설계 (행 단위 + metric 단위 upsert)</li>
+<li class="task"><input type="checkbox" disabled checked> 재시도 정책 (지수 백오프, 최대 3회, target별 분리)</li>
+<li class="task"><input type="checkbox" disabled checked> feature flag/backfill 절차 (FEATURE_ERP_KPI_ENABLED)</li>
+<li class="task"><input type="checkbox" disabled checked> ERP dev 브랜치명 명시 (feature/virtual-office-integration)</li>
+<li class="task"><input type="checkbox" disabled checked> 스키마 드리프트 검증 (kpi_results 존재 검사 포함)</li>
+<li class="task"><input type="checkbox" disabled checked> 페이로드 JSON 예시 (daily_reports + kpi_results)</li>
+<li class="task"><input type="checkbox" disabled checked> 타임존 규칙 (UTC 저장, KST 표시, D19)</li>
+</ul>
+<div class="meta-foot">원본: <code>contract.md</code> · 자동 생성 2026-07-22 · md-to-html</div>
 </main>
 </div>
 

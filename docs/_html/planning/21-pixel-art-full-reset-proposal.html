@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>21 — 비주얼 전면 리셋 제안: Gather 계열 픽셀아트 (D35 후보)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">21 — 비주얼 전면 리셋 제안: Gather 계열 픽셀아트 (D35 후보)</div><div class="sub">21-pixel-art-full-reset-proposal.md</div><a class="lvl1" href="#21-비주얼-전면-리셋-제안-gather-계열-픽셀아트-d35-후보">21 — 비주얼 전면 리셋 제안: Gather 계열 픽셀아트 (D35 후보)</a><a class="lvl2" href="#1-결론-요약">§1. 결론 요약</a><a class="lvl2" href="#2-왜-이것이-확실한-방법인가-리서치-근거">§2. 왜 이것이 &quot;확실한&quot; 방법인가 (리서치 근거)</a><a class="lvl3" href="#2-1-시장-검증-상용-가상오피스에-포토리얼은-없다">2-1. 시장 검증 — 상용 가상오피스에 포토리얼은 없다</a><a class="lvl3" href="#2-2-이번-실패의-구조적-해결-단일-작가-원칙">2-2. 이번 실패의 구조적 해결 — 단일 작가 원칙</a><a class="lvl3" href="#2-3-1인-개발-적합성">2-3. 1인 개발 적합성</a><a class="lvl3" href="#2-4-라이선스-상용화-관점">2-4. 라이선스 (상용화 관점)</a><a class="lvl2" href="#3-기술-이행-계획">§3. 기술 이행 계획</a><a class="lvl3" href="#phase-0-스파이크-반나절1일-게이트">Phase 0 — 스파이크 (반나절~1일, 게이트)</a><a class="lvl3" href="#phase-1-씬-리셋-24일">Phase 1 — 씬 리셋 (2~4일)</a><a class="lvl3" href="#phase-2-상용-마감">Phase 2 — 상용 마감</a><a class="lvl3" href="#폐기-목록">폐기 목록</a><a class="lvl2" href="#4-리스크와-완화">§4. 리스크와 완화</a><a class="lvl2" href="#5-출처">§5. 출처</a></nav>
+<main><h1 id="21-비주얼-전면-리셋-제안-gather-계열-픽셀아트-d35-후보">21 — 비주얼 전면 리셋 제안: Gather 계열 픽셀아트 (D35 후보)</h1>
+<blockquote>상태: <strong>제안 — 스파이크 육안 게이트 통과 후 D35로 00-decisions 등재</strong> 작성: 2026-07-22. 배경: PH+Mixamo 스파이크 사용자 반려(&quot;캐릭터·에셋 부조화, 사무실로 안 보임&quot;). 사용자 지시: &quot;전면 리셋도 괜찮아. 확실한 방법을 찾아서 고민해. 상용화할 수 있는 수준으로.&quot;</blockquote>
+<hr>
+<h2 id="1-결론-요약">§1. 결론 요약</h2>
+<p><strong>탑다운 픽셀아트(Gather 계열)로 씬·아바타 전면 리셋. 에셋은 LimeZu 단일 작가 팩 스택.</strong></p>
+<ul><li>팩: <strong>Modern Interiors</strong>(메가팩, name-your-price ~$5, 16/32/48px) + <strong>Modern Office Revamped</strong>($2.50, 오피스 300+ 스프라이트) + 캐릭터 제너레이터(Interiors 동봉)</li><li>렌더 해상도: <strong>48px 타일</strong> + 정수 배율(pixelated) — 레트로가 아니라 &quot;크리스프 픽셀&quot;로</li><li>기존 시스템 생존율 높음: 좌표계(lib/office2d.ts)·A*·이동 불변식·Colyseus·좌석·D33/D34 UX 전부 좌표 기반 → 유지. 교체는 <strong>씬 렌더 계층(플레이트→타일맵)과 아바타 시트</strong>뿐</li><li>Blender 렌더 파이프라인(EEVEE/Cycles·앵커 실측·오클루전 베이크) <strong>전체 폐기</strong> — 유지비 제로</li></ul>
+<h2 id="2-왜-이것이-확실한-방법인가-리서치-근거">§2. 왜 이것이 &quot;확실한&quot; 방법인가 (리서치 근거)</h2>
+<h3 id="2-1-시장-검증-상용-가상오피스에-포토리얼은-없다">2-1. 시장 검증 — 상용 가상오피스에 포토리얼은 없다</h3>
+<p>2026년 현재 상용 플랫폼 상위권의 아트 스타일:</p>
+<div class="table-wrap"><table><thead><tr><th>서비스</th><th>스타일</th><th>비고</th></tr></thead><tbody><tr><td><strong>Gather</strong></td><td>16px 탑다운 픽셀아트</td><td>이 스타일 그 자체로 상용화 성공. 2026-02 창업자 AI팀 Figma行·비VC SMB로 분사했으나 제품·스타일은 유지, top-3 유지. 국내에 Gather 맵 제작 대행사(플러스마이너스픽셀)가 존재할 만큼 한국 B2B 수요 검증</td></tr><tr><td><strong>SoWork</strong></td><td>2.5D 아이소(심즈/동물의숲풍)</td><td>최상급 폴리시 — 단 전속 아트 인력 필요, 1인 재현 불가</td></tr><tr><td><strong>Sococo/oVice</strong></td><td>플랫 벡터 도면</td><td>미니멀 노선. 일러스트 일관성 확보가 1인에게 난제</td></tr></tbody></table></div>
+<p>공통점: <strong>전부 게임풍 2D/2.5D</strong>. &quot;게임처럼 보임&quot;은 결함이 아니라 이 카테고리의 표준 문법. 우리가 실패한 지점(포토리얼 스캔 가구 혼합)은 애초에 시장에 존재하지 않는 노선.</p>
+<h3 id="2-2-이번-실패의-구조적-해결-단일-작가-원칙">2-2. 이번 실패의 구조적 해결 — 단일 작가 원칙</h3>
+<p>PH+Mixamo 반려 원인 3가지가 전부 원천 해소:</p>
+<div class="table-wrap"><table><thead><tr><th>실패 원인 (07-22 진단)</th><th>LimeZu 스택에서</th></tr></thead><tbody><tr><td>가구 스타일 3계열 혼재(빈티지·미드센추리·앤티크)</td><td>한 작가가 바닥·벽·가구·소품·캐릭터 전부 제작 → 조화가 기본값</td></tr><tr><td>캐릭터(EEVEE) vs 가구(Cycles) vs 배경(CSS) 렌더 이원화</td><td>렌더 자체가 없음 — 전부 같은 팔레트의 픽셀 스프라이트</td></tr><tr><td>오피스 기호 전무</td><td>Modern Office 300+ 오피스 전용(듀얼모니터·파티션·화이트보드·프린터·자판기·워터쿨러). 데모 육안 확인: &quot;사무실&quot;이 즉시 읽힘</td></tr></tbody></table></div>
+<h3 id="2-3-1인-개발-적합성">2-3. 1인 개발 적합성</h3>
+<ul><li>아트스킬 병목([[free-asset-stack-2026]]의 결론) 제거: 필요한 아트가 전부 팩에 있고, 부족분(예: typing 애니 부재 시)은 16px 픽셀 수작업 — 유일하게 남는 아트 작업이 최소 난이도</li><li>캐릭터 제너레이터 동봉(의상 100+·헤어 200·액세서리 80·피부 9): 팀원별 개성 아바타를 같은 스타일 안에서 무한 생성 — Mixamo 다인 캐릭터 문제(캐릭터별 재베이크) 소멸</li><li>총 비용 <strong>$15 미만</strong></li></ul>
+<h3 id="2-4-라이선스-상용화-관점">2-4. 라이선스 (상용화 관점)</h3>
+<ul><li><strong>LimeZu</strong>: 상업/비상업 사용 명시 허용 · 에셋 재판매/재배포 금지 · <strong>크레딧 필수</strong>(limezu.itch.io 링크) → 앱 크레딧 페이지에 표기. Synty류 &quot;추출 방지 의무&quot; 조항 없음 — 웹 서빙 관행상 안전(성의 표시로 아틀라스 병합 배포 권장)</li><li><strong>Synty 기각 사유</strong>: EULA가 &quot;이미지 파일로 렌더된 에셋 재배포 금지&quot;+추출 방지 의무 → 웹에서 PNG 스프라이트 공개 서빙과 충돌. 상용화 시 법적 리스크</li><li><strong>Kokoro Reflections(48px 고밀도) 보류 사유</strong>: 퀄리티는 높으나 캐릭터 없음 → LimeZu와 혼용 시 &quot;작가 혼재&quot; 실패 재발. 단일 작가 원칙 위반</li></ul>
+<h2 id="3-기술-이행-계획">§3. 기술 이행 계획</h2>
+<h3 id="phase-0-스파이크-반나절1일-게이트">Phase 0 — 스파이크 (반나절~1일, 게이트)</h3>
+<ol><li>팩 확보: itch.io에서 Modern Interiors(권장 $5) + Modern Office Revamped($2.50) — <strong>사용자 결제 필요</strong></li><li>48px 타일로 현 레이아웃(20×11.256m ≈ 0.5m/타일 → 40×23타일) 정적 목업 1장(ph.html 방식의 단일 HTML)</li><li>검증 항목: ①캐릭터 sit 4방향 여부 ②typing 애니 유무(없으면 sit+노트북 소품 or 6프레임 자작) ③회의실·라운지·팬트리 구성 가능 여부 ④48px 크리스프 판정</li><li><strong>사용자 육안 게이트 — 통과 시에만 Phase 1. 통과 시 D35 등재</strong></li></ol>
+<h3 id="phase-1-씬-리셋-24일">Phase 1 — 씬 리셋 (2~4일)</h3>
+<ul><li>맵 제작: <strong>Tiled</strong>(무료 에디터) → JSON → 런타임 로드. 본사 맵 1종(워크존·회의실 2·라운지·팬트리·폰부스)</li><li>뷰포트 렌더러 교체: 타일맵 3레이어(floor / object / <strong>above</strong>) 캔버스 렌더. 오클루전 = above 레이어를 아바타 뒤에 드로우(행 기반 z) — 베이크·앵커 실측 전부 불필요</li><li>좌표계 유지: 미터↔타일(0.5m) 매핑만 추가. A*·WAYPOINT_EPS·착석 게이트([[office2d-movement-invariants]]) 무수정</li><li>아바타 교체: 제너레이터 산출 시트(walk/idle/sit/phone) → AVATAR_ANIM 프레임 수만 수정</li><li>레이아웃 v2 배포·hot-swap(D12)은 맵 JSON 참조로 정합</li></ul>
+<h3 id="phase-2-상용-마감">Phase 2 — 상용 마감</h3>
+<ul><li>시간대 테마(day/dusk/night 런타임 필터) 재적용 — 픽셀에도 동일 적용 가능</li><li>D33 몰입모드·D34 SpotCard 정합 확인(좌표 기반이라 대부분 무수정)</li><li>다인 아바타: 제너레이터로 팀원별 생성 + 프로필 연동</li></ul>
+<h3 id="폐기-목록">폐기 목록</h3>
+<ul><li>tools/asset-gen/spike-scripts/(Blender 파이프라인) — 스파이크 기록으로만 커밋 보존</li><li>frontend/public/spike-kenney/ — 판정 완료, 삭제</li><li>HORIZON 플레이트/스프라이트 씬 계층 — Phase 1 완료 시 교체</li></ul>
+<h2 id="4-리스크와-완화">§4. 리스크와 완화</h2>
+<div class="table-wrap"><table><thead><tr><th>리스크</th><th>완화</th></tr></thead><tbody><tr><td>typing 애니 미포함 가능성</td><td>sit+책상 노트북 소품으로 대체(phone 애니는 확인됨) or 6프레임 자작(픽셀 최소 난이도)</td></tr><tr><td>&quot;픽셀=장난감&quot; B2B 인식</td><td>Gather의 국내외 B2B 실적으로 반박 가능. 48px+정돈된 팔레트로 유치함 회피</td></tr><tr><td>16px 원본의 확대 열화</td><td>48px 버전 사용 + 정수 배율 + image-rendering: pixelated</td></tr><tr><td>LimeZu 크레딧 누락</td><td>앱 크레딧/설정 페이지에 명기(체크리스트化)</td></tr></tbody></table></div>
+<h2 id="5-출처">§5. 출처</h2>
+<ul><li>Gather 2026 현황: sowork.com/blog/best-virtual-office-for-distributed-teams-2026 · ro.am/gather-alternative</li><li>SoWork 스타일: sowork.com/glossary/2.5d-isometric-world</li><li>LimeZu Modern Office: limezu.itch.io/modernoffice (구성·가격·라이선스)</li><li>LimeZu Modern Interiors: limezu.itch.io/moderninteriors (메가팩·제너레이터·16/32/48px)</li><li>Synty EULA: syntystore.com/pages/licences-overview (이미지 렌더 재배포 금지)</li><li>Kokoro Reflections: kokororeflections.itch.io/kr-urban-modern-interiors-for-rpgs</li><li>데모 이미지 육안 판정: 세션 scratchpad limezu-preview/ (mo<em>2.png=오피스 씬, mi</em>hero.gif=캐릭터 착석 씬)</li></ul>
+<div class="meta-foot">원본: <code>21-pixel-art-full-reset-proposal.md</code> · 자동 생성 2026-07-22 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

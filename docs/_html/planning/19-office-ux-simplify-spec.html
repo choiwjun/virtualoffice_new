@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>19-office-ux-simplify-spec.md: /office 몰입 모드  시각 품질 개선 스펙</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">19-office-ux-simplify-spec.md: /office 몰입 모드  시각 품질 개선 스펙</div><div class="sub">19-office-ux-simplify-spec.md</div><a class="lvl1" href="#19-office-ux-simplify-specmd-office-몰입-모드--시각-품질-개선-스펙">19-office-ux-simplify-spec.md: /office 몰입 모드  시각 품질 개선 스펙</a><a class="lvl2" href="#1-문제-정의-증거-기반">1. 문제 정의 (증거 기반)</a><a class="lvl2" href="#2-목표--비목표">2. 목표 / 비목표</a><a class="lvl2" href="#3-p0--셸-정리-코드만-에셋-무변경">3. P0 — 셸 정리 (코드만, 에셋 무변경)</a><a class="lvl2" href="#4-p1--하이브리드-아바타-p0-검수-후">4. P1 — 하이브리드 아바타 (P0 검수 후)</a><a class="lvl2" href="#5-p2--아트-패스-별도-승인-필요-이번-착수-금지">5. P2 — 아트 패스 (별도 승인 필요, 이번 착수 금지)</a><a class="lvl2" href="#6-검증">6. 검증</a><a class="lvl2" href="#7-영향-문서-확정-시-갱신-대상">7. 영향 문서 (확정 시 갱신 대상)</a></nav>
+<main><h1 id="19-office-ux-simplify-specmd-office-몰입-모드--시각-품질-개선-스펙">19-office-ux-simplify-spec.md: /office 몰입 모드 &amp; 시각 품질 개선 스펙</h1>
+<blockquote><strong>상태: 확정 (2026-07-21, D33)</strong> — 00-decisions.md §N 등재 완료. P0 구현 착수.
+근거: 2026-07-21 내부 비교평가(&quot;복잡함, 타사 대비 시각 퀄리티 낮음&quot;) + oVice 경쟁조사(동일자).
+원칙: <strong>아트 재생성은 마지막 수단.</strong> 화면 구성(IA)·비율·소음 제거를 먼저 하고, 에셋 파이프라인 재실행(P2)은 별도 승인으로 분리한다.</blockquote>
+<hr>
+<h2 id="1-문제-정의-증거-기반">1. 문제 정의 (증거 기반)</h2>
+<p>2026-07-21 실화면 QA(realtime-qa-runbook §2 절차)와 oVice 제품 UI를 나란히 비교한 결과:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>관측</th>
+<th>우리 /office</th>
+<th>oVice</th>
+<th>판정</th>
+</tr>
+</thead><tbody><tr>
+<td>공간 캔버스 비중</td>
+<td>뷰포트의 ~55%</td>
+<td>~90%</td>
+<td>🔴 공간이 주인공이 아님</td>
+</tr>
+<tr>
+<td>동시 노출 UI 클러스터</td>
+<td>9개(사이드바 17메뉴·2F도면 위젯·미니맵·배지 4개·존 라벨 7개·우측 3섹션·미디어바·회의 오버레이·상단바)</td>
+<td>3개(얇은 상단바·접이식 이용자 목록·컨텍스트 툴)</td>
+<td>🔴 &quot;관리 콘솔 안의 게임&quot; 인상</td>
+</tr>
+<tr>
+<td>아바타 vs 네임플레이트</td>
+<td>네임플레이트가 아바타 본체보다 큼</td>
+<td>아바타(사진 원형)가 주, 라벨은 보조</td>
+<td>🔴 시선이 라벨로 감</td>
+</tr>
+<tr>
+<td>사람 인식성</td>
+<td>스프라이트 실루엣 소형·유사</td>
+<td>프로필 사진 원형 + 상태 링</td>
+<td>🟡 누군지 즉시 안 읽힘</td>
+</tr>
+<tr>
+<td>존 가독성</td>
+<td>검은 라벨 필만</td>
+<td>존 바닥 색면(회의실 녹색 등)</td>
+<td>🟡 공간 구획이 안 읽힘</td>
+</tr>
+<tr>
+<td>씬 렌더</td>
+<td>가구·구도·오클루전 준수, 그림자/톤 플랫</td>
+<td>일관된 파스텔 아트 디렉션</td>
+<td>🟡 &quot;미완성 렌더&quot; 인상</td>
+</tr>
+</tbody></table></div>
+<p>핵심 재해석: <strong>&quot;퀄리티 낮음&quot; 체감의 상당 부분은 에셋이 아니라 ①공간 점유율 ②비율 ③UI 소음에서 온다.</strong> 차별화 자산(운영 데이터 통합)은 유지하되, 표현 위치를 사이드바가 아니라 공간 안(자리 배지 등)으로 옮긴다.</p>
+<h2 id="2-목표--비목표">2. 목표 / 비목표</h2>
+<p><strong>목표</strong></p>
+<ul>
+<li>G1. /office 진입 시 공간 캔버스가 뷰포트의 <strong>85% 이상</strong>을 차지한다.</li>
+<li>G2. 상시 노출 UI 클러스터를 <strong>3개 이하</strong>로 줄인다(상단바 · 하단 독 · 접이식 우측 패널).</li>
+<li>G3. 아바타가 네임플레이트보다 시각적으로 우세하다(플레이트 높이 ≤ 아바타 렌더 높이의 40%).</li>
+<li>G4. 멀리서도 &quot;누구인지&quot; 읽힌다(프로필 사진 요소 도입).</li>
+<li>G5. 존이 라벨 없이도 바닥 색면으로 구획된다.</li>
+</ul>
+<p><strong>비목표 (이번 범위 OUT)</strong></p>
+<ul>
+<li>씬 에셋 재생성·캐릭터 스프라이트 재추출(→ P2, 별도 승인)</li>
+<li>운영 콘솔(업무관리·KPI 등) 화면 개편 — /office 한정</li>
+<li>모바일 대응, 신규 기능(DM·반응 이모지 등) 추가 금지</li>
+<li>oVice식 사진-원형 아바타로의 전면 교체(스프라이트 캐릭터는 차별점으로 유지)</li>
+</ul>
+<h2 id="3-p0--셸-정리-코드만-에셋-무변경">3. P0 — 셸 정리 (코드만, 에셋 무변경)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>항목</th>
+<th>스펙</th>
+<th>수용 기준</th>
+</tr>
+</thead><tbody><tr>
+<td>P0-1</td>
+<td>몰입 모드</td>
+<td>/office 진입 시 좌측 사이드바 자동 접힘 → <strong>아이콘 레일(≤64px)</strong>, 호버/클릭 시 오버레이 확장. 다른 라우트는 현행 유지</td>
+<td>캔버스 ≥85% 뷰포트. 사이드바 전 메뉴 접근성 유지(키보드 포함)</td>
+</tr>
+<tr>
+<td>P0-2</td>
+<td>하단 통합 독</td>
+<td>좌상단 배지 4개(연결·내자리로·테마·상태) + 하단 미디어바 + 우하단 회의 오버레이 → <strong>하단 중앙 단일 독</strong>으로 통합. 연결 상태는 점(●)+툴팁, 오프라인 시에만 문구+다시연결 버튼 노출</td>
+<td>상시 플로팅 요소 = 독 1개. 기존 기능(재연결·테마 순환·상태 변경·회의 입장) 전부 독에서 동작</td>
+</tr>
+<tr>
+<td>P0-3</td>
+<td>도면 위젯 제거</td>
+<td>사이드바 &quot;2F 도면&quot; 위젯 삭제, 층 전환(4F~B1F)을 미니맵 위에 흡수. 미니맵은 우하단 이동·접기 가능</td>
+<td>위젯 중복 0. 층 전환 동작 회귀 없음</td>
+</tr>
+<tr>
+<td>P0-4</td>
+<td>네임플레이트 다이어트</td>
+<td>이름+상태점만(상태 텍스트·&quot;(나)&quot; 제거). 폰트 11px급, 반투명 배경. 본인 표시 = 텍스트 대신 <strong>아바타 링 하이라이트</strong>(기존 파란 링 유지·강화)</td>
+<td>플레이트 높이 ≤ 아바타 높이 40%. 본인 식별 1초 내(육안 QA)</td>
+</tr>
+<tr>
+<td>P0-5</td>
+<td>존 바닥 색면</td>
+<td>존별 반투명 틴트 오버레이(회의실=그린, 포커스=퍼플, 라운지=앰버 계열; 씬 스프라이트 위 z-합성). 존 라벨은 <strong>호버/축소 시에만</strong> 표시</td>
+<td>라벨 없이 존 구획 식별 가능(육안 QA). 오클루전 z순서 회귀 없음</td>
+</tr>
+</tbody></table></div>
+<h2 id="4-p1--하이브리드-아바타-p0-검수-후">4. P1 — 하이브리드 아바타 (P0 검수 후)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>항목</th>
+<th>스펙</th>
+</tr>
+</thead><tbody><tr>
+<td>P1-1</td>
+<td>프로필 사진 배지</td>
+<td>스프라이트 머리 위(네임플레이트 좌측)에 <strong>사진 원형 24px + 상태 링</strong>. 사진 없으면 이니셜 원형(현 로스터와 동일 규칙)</td>
+</tr>
+<tr>
+<td>P1-2</td>
+<td>아바타 스케일</td>
+<td>스프라이트 렌더 스케일 1.3~1.4× 상향. 클리어런스/충돌 반경(office2d 불변식 0.035&lt;EPS 0.06&lt;0.07)은 <strong>불변</strong> — 렌더만 확대</td>
+</tr>
+<tr>
+<td>P1-3</td>
+<td>원거리 LOD</td>
+<td>줌아웃 시 스프라이트 대신 사진 원형만 렌더(oVice 인식성 차용) — 줌 기능 도입 시점에 연동</td>
+</tr>
+</tbody></table></div>
+<h2 id="5-p2--아트-패스-별도-승인-필요-이번-착수-금지">5. P2 — 아트 패스 (별도 승인 필요, 이번 착수 금지)</h2>
+<ul>
+<li>horizon-scene.js 렌더러에 소프트 섀도/AO/창광 패스 추가 → 씬 재캡처(tools/asset-gen 루프, 함정 목록은 asset-gen README 준수)</li>
+<li>캐릭터 스프라이트 해상도 상향 재추출(160f·208f 재실행 비용 큼)</li>
+<li>착수 조건: P0+P1 반영 후에도 시각 퀄리티 평가가 미달일 때</li>
+</ul>
+<h2 id="6-검증">6. 검증</h2>
+<ul>
+<li>육안 QA: realtime-qa-runbook §1 기동 → §2 체크리스트에 본 스펙 G1~G5 항목 추가</li>
+<li>회귀: 이동/착석/타이핑/재연결/테마/멀티유저(2026-07-21 QA 통과 항목) 전부 재확인</li>
+<li>자동: frontend <code>npx tsc --noEmit</code> 0 에러, seat-reach-qa 통과, 기존 스모크(25+8+8) 무회귀</li>
+</ul>
+<h2 id="7-영향-문서-확정-시-갱신-대상">7. 영향 문서 (확정 시 갱신 대상)</h2>
+<ul>
+<li>00-decisions.md — <strong>D33 신설</strong>(본 스펙 승인)</li>
+<li>06-screens.md §가상오피스 — 셸 구성(사이드바 상시 노출) 기술과 충돌 → 몰입 모드 반영</li>
+<li>17-asset-rework-spec.md — P2 착수 시 연계(이번엔 무변경)</li>
+<li>realtime-qa-runbook.md §2 — 체크리스트 항목 추가</li>
+</ul>
+<div class="meta-foot">원본: <code>19-office-ux-simplify-spec.md</code> · 자동 생성 2026-07-22 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

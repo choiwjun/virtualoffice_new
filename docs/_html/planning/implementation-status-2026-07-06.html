@@ -52,51 +52,276 @@ img{max-width:100%;border-radius:8px}
 </style>
 </head><body>
 <div class="layout">
-<nav class="toc"><div class="brand">구현 현황 · 핸드오프 문서 (2026-07-06)</div><div class="sub">implementation-status-2026-07-06.md</div><a class="lvl1" href="#구현-현황-핸드오프-문서-2026-07-06">구현 현황 · 핸드오프 문서 (2026-07-06)</a><a class="lvl2" href="#0-한눈에-요약">0. 한눈에 요약</a><a class="lvl2" href="#1-실행-환경-접속">1. 실행 환경 / 접속</a><a class="lvl2" href="#2-구현-완료-현황-management-apiyaml-2834">2. 구현 완료 현황 (management-api.yaml 28/34)</a><a class="lvl2" href="#3-미구현-누락-전수">3. 미구현 · 누락 (전수)</a><a class="lvl3" href="#31-계약-미구현-3개">3.1 계약 미구현 — 3개</a><a class="lvl3" href="#32-계약-drift-동작하나-명세-불일치-7건">3.2 계약 drift (동작하나 명세 불일치) — 7건</a><a class="lvl3" href="#33-req-게이트-잔여">3.3 REQ 게이트 잔여</a><a class="lvl3" href="#34-가상-오피스wa-미완-2026-07-06-진단">3.4 가상 오피스(WA) 미완 (2026-07-06 진단)</a><a class="lvl3" href="#35-d26-폐기-잔재-정리-대상">3.5 D26 폐기 잔재 (정리 대상)</a><a class="lvl2" href="#4-다음-작업-우선순위">4. 다음 작업 우선순위</a><a class="lvl3" href="#a-현-범위-즉시-구현-가능-외부-의존-없음">A. 현 범위 즉시 구현 가능 (외부 의존 없음)</a><a class="lvl3" href="#b-외부-의존-필요-phase-57">B. 외부 의존 필요 (Phase 5~7)</a><a class="lvl2" href="#5-검증-방법-재현">5. 검증 방법 (재현)</a><a class="lvl2" href="#6-알려진-함정-다음-담당자-필독">6. 알려진 함정 (다음 담당자 필독)</a><a class="lvl2" href="#7-파일-맵-이번-세션-신규변경">7. 파일 맵 (이번 세션 신규/변경)</a></nav>
-<main><h1 id="구현-현황-핸드오프-문서-2026-07-06">구현 현황 · 핸드오프 문서 (2026-07-06)</h1>
+<nav class="toc"><div class="brand">구현 현황 · 핸드오프 문서 (2026-07-06)</div><div class="sub">implementation-status-2026-07-06.md</div><a class="lvl1" href="#구현-현황-·-핸드오프-문서-2026-07-06">구현 현황 · 핸드오프 문서 (2026-07-06)</a><a class="lvl2" href="#0-한눈에-요약">0. 한눈에 요약</a><a class="lvl2" href="#1-실행-환경--접속">1. 실행 환경 / 접속</a><a class="lvl2" href="#2-구현-완료-현황-management-apiyaml-2834">2. 구현 완료 현황 (management-api.yaml 28/34)</a><a class="lvl2" href="#3-미구현-·-누락-전수">3. 미구현 · 누락 (전수)</a><a class="lvl3" href="#31-계약-미구현--3개">3.1 계약 미구현 — 3개</a><a class="lvl3" href="#32-계약-drift-동작하나-명세-불일치--7건">3.2 계약 drift (동작하나 명세 불일치) — 7건</a><a class="lvl3" href="#33-req-게이트-잔여">3.3 REQ 게이트 잔여</a><a class="lvl3" href="#34-가상-오피스wa-미완-2026-07-06-진단">3.4 가상 오피스(WA) 미완 (2026-07-06 진단)</a><a class="lvl3" href="#35-d26-폐기-잔재-정리-대상">3.5 D26 폐기 잔재 (정리 대상)</a><a class="lvl2" href="#4-다음-작업-우선순위">4. 다음 작업 우선순위</a><a class="lvl3" href="#a-현-범위-즉시-구현-가능-외부-의존-없음">A. 현 범위 즉시 구현 가능 (외부 의존 없음)</a><a class="lvl3" href="#b-외부-의존-필요-phase-57">B. 외부 의존 필요 (Phase 5~7)</a><a class="lvl2" href="#5-검증-방법-재현">5. 검증 방법 (재현)</a><a class="lvl2" href="#6-알려진-함정-다음-담당자-필독">6. 알려진 함정 (다음 담당자 필독)</a><a class="lvl2" href="#7-파일-맵-이번-세션-신규변경">7. 파일 맵 (이번 세션 신규/변경)</a></nav>
+<main><h1 id="구현-현황-·-핸드오프-문서-2026-07-06">구현 현황 · 핸드오프 문서 (2026-07-06)</h1>
 <blockquote>📦 <strong>아카이브 — D27 전환(2026-07-08) 이전 시점 스냅샷.</strong> 아키텍처 관련 서술은 현행(D27)과 다르며, 특정 시점 기록으로만 참조할 것. 코드 실측 수치(pytest 등)는 작성 시점 기준 유효.</blockquote>
-<blockquote>기획 정본 대비 개발 구현 상태 전수조사 결과 + 다음 담당자 인수인계. 기준 커밋: <code>aef929b</code> (feat: 미구현 계약 API 갭 구현) 정본 참조: <code>docs/api/management-api.yaml</code>, <code>docs/planning/loop/08-derived-gates.md</code>(REQ-001~011), <code>10-roadmap.md</code>(Phase 0~7), <code>specs/screens/</code>(11화면), <code>00-decisions.md</code>(D1~D26)</blockquote>
+<blockquote>기획 정본 대비 개발 구현 상태 전수조사 결과 + 다음 담당자 인수인계.
+기준 커밋: <code>aef929b</code> (feat: 미구현 계약 API 갭 구현)
+정본 참조: <code>docs/api/management-api.yaml</code>, <code>docs/planning/loop/08-derived-gates.md</code>(REQ-001<del>011), <code>10-roadmap.md</code>(Phase 0</del>7), <code>specs/screens/</code>(11화면), <code>00-decisions.md</code>(D1~D26)</blockquote>
 <hr>
 <h2 id="0-한눈에-요약">0. 한눈에 요약</h2>
-<ul><li><strong>아키텍처(D26)</strong>: 3D 메인 오피스 = WorkAdventure self-host(<code>:8090</code>) / 관리·업무·KPI = Next.js 웹 콘솔(<code>:3000</code>) + FastAPI 백엔드(<code>:8090/api/*</code>, Caddy 경유).</li><li><strong>계약 API</strong>: management-api.yaml 34개 경로 중 <strong>28 구현 / 3 미구현 / 7 drift</strong>. 구현 라우트 총 65개(OIDC·WA 포함).</li><li><strong>웹 콘솔 화면</strong>: 11 스펙 중 10 실동작 + 감사로그(추가). org-chart는 조회 전용, virtual-office는 WA.</li><li><strong>최대 잔여 리스크</strong>: ① 배치 스케줄러 부재(D17/D18 운영 자동화 0) ② WA 맵 비주얼/상호작용 미완(placeholder) ③ STT·AI·실ERP(외부 의존).</li><li><strong>테스트</strong>: <code>pytest 374 passed / 85 skipped / 0 failed</code>, <code>npm run build EXIT=0(16 routes)</code>.</li></ul>
+<ul>
+<li><strong>아키텍처(D26)</strong>: 3D 메인 오피스 = WorkAdventure self-host(<code>:8090</code>) / 관리·업무·KPI = Next.js 웹 콘솔(<code>:3000</code>) + FastAPI 백엔드(<code>:8090/api/*</code>, Caddy 경유).</li>
+<li><strong>계약 API</strong>: management-api.yaml 34개 경로 중 <strong>28 구현 / 3 미구현 / 7 drift</strong>. 구현 라우트 총 65개(OIDC·WA 포함).</li>
+<li><strong>웹 콘솔 화면</strong>: 11 스펙 중 10 실동작 + 감사로그(추가). org-chart는 조회 전용, virtual-office는 WA.</li>
+<li><strong>최대 잔여 리스크</strong>: ① 배치 스케줄러 부재(D17/D18 운영 자동화 0) ② WA 맵 비주얼/상호작용 미완(placeholder) ③ STT·AI·실ERP(외부 의존).</li>
+<li><strong>테스트</strong>: <code>pytest 374 passed / 85 skipped / 0 failed</code>, <code>npm run build EXIT=0(16 routes)</code>.</li>
+</ul>
 <hr>
-<h2 id="1-실행-환경-접속">1. 실행 환경 / 접속</h2>
-<div class="table-wrap"><table><thead><tr><th>구성</th><th>URL / 위치</th><th>비고</th></tr></thead><tbody><tr><td>웹 관리콘솔 (Next dev)</td><td>http://localhost:3000</td><td>반드시 <code>localhost</code>(CORS가 localhost:3000만 허용, 127.0.0.1 차단). <code>frontend/</code>에서 <code>npm run dev</code></td></tr><tr><td>백엔드 API (Caddy)</td><td>http://localhost:8090/api/*</td><td>도커 <code>volocal_backend</code>(:8000) → caddy 라우팅</td></tr><tr><td>가상 오피스 (WorkAdventure)</td><td>http://localhost:8090</td><td>OIDC 로그인 경유. 콘솔 사이드바 &quot;가상 오피스 입장&quot; 링크</td></tr><tr><td>OIDC Provider</td><td>http://auth.localhost:8090/oidc/*</td><td>FastAPI가 OIDC Provider (D4 JWT와 공존)</td></tr></tbody></table></div>
+<h2 id="1-실행-환경--접속">1. 실행 환경 / 접속</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>구성</th>
+<th>URL / 위치</th>
+<th>비고</th>
+</tr>
+</thead><tbody><tr>
+<td>웹 관리콘솔 (Next dev)</td>
+<td><a href="http://localhost:3000">http://localhost:3000</a></td>
+<td>반드시 <code>localhost</code>(CORS가 localhost:3000만 허용, 127.0.0.1 차단). <code>frontend/</code>에서 <code>npm run dev</code></td>
+</tr>
+<tr>
+<td>백엔드 API (Caddy)</td>
+<td><a href="http://localhost:8090/api/">http://localhost:8090/api/</a>*</td>
+<td>도커 <code>volocal_backend</code>(:8000) → caddy 라우팅</td>
+</tr>
+<tr>
+<td>가상 오피스 (WorkAdventure)</td>
+<td><a href="http://localhost:8090">http://localhost:8090</a></td>
+<td>OIDC 로그인 경유. 콘솔 사이드바 &quot;가상 오피스 입장&quot; 링크</td>
+</tr>
+<tr>
+<td>OIDC Provider</td>
+<td><a href="http://auth.localhost:8090/oidc/">http://auth.localhost:8090/oidc/</a>*</td>
+<td>FastAPI가 OIDC Provider (D4 JWT와 공존)</td>
+</tr>
+</tbody></table></div>
 <p><strong>로그인 계정</strong> (<code>@virtualoffice.local</code> / <code>password123</code>): <code>alice</code>(admin), <code>bob</code>(leader), <code>charlie</code>(employee).</p>
 <p><strong>도커</strong>: Windows Rancher <code>docker.exe</code> (WSL). <code>DEXE=&quot;/mnt/c/Users/wj941/AppData/Local/Programs/Rancher Desktop/resources/resources/win32/bin/docker.exe&quot;</code>. 로컬 스택 <code>docker-compose.local.yml</code>(volocal_*).</p>
 <hr>
 <h2 id="2-구현-완료-현황-management-apiyaml-2834">2. 구현 완료 현황 (management-api.yaml 28/34)</h2>
-<div class="table-wrap"><table><thead><tr><th>영역</th><th>구현 엔드포인트</th><th>파일</th></tr></thead><tbody><tr><td>인증</td><td>login, refresh, me</td><td><code>api/auth.py</code></td></tr><tr><td>직원</td><td>employees, employees/{id}</td><td><code>api/erp.py</code></td></tr><tr><td>팀·조직</td><td>teams, org-groups</td><td><code>api/directory.py</code></td></tr><tr><td>좌석</td><td>seats GET/POST/PUT/DELETE, floors</td><td><code>api/seats.py</code></td></tr><tr><td>배정</td><td>seat-assignments POST, release</td><td><code>api/seats.py</code></td></tr><tr><td>레이아웃</td><td>office-layouts CRUD+validate/deploy/rollback (D12)</td><td><code>api/office_layouts.py</code></td></tr><tr><td>회의</td><td>meetings CRUD+PUT/DELETE+join+participants</td><td><code>api/meetings.py</code></td></tr><tr><td>회의록</td><td>meeting-minutes CRUD+finalize+action-items</td><td><code>api/meeting_minutes.py</code></td></tr><tr><td>업무기록</td><td>work-logs CRUD+summary</td><td><code>api/work_logs.py</code></td></tr><tr><td>KPI</td><td>compute/list/detail/adjust/finalize/objections(POST·GET)/review</td><td><code>api/kpi.py</code></td></tr><tr><td>ERP</td><td>erp/sync, erp-sync/status, erp-sync/failures, attendances</td><td><code>api/erp.py</code></td></tr><tr><td>감사</td><td>audit-logs (+mutation 자동기록)</td><td><code>api/audit.py</code>, <code>services/audit.py</code></td></tr><tr><td>WA</td><td>wa/presence, presence/stream(SSE), wa/livekit-token</td><td><code>api/wa_*.py</code></td></tr><tr><td>OIDC</td><td>authorize/token/userinfo/jwks/discovery</td><td><code>integrations/workadventure/oidc.py</code></td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>영역</th>
+<th>구현 엔드포인트</th>
+<th>파일</th>
+</tr>
+</thead><tbody><tr>
+<td>인증</td>
+<td>login, refresh, me</td>
+<td><code>api/auth.py</code></td>
+</tr>
+<tr>
+<td>직원</td>
+<td>employees, employees/{id}</td>
+<td><code>api/erp.py</code></td>
+</tr>
+<tr>
+<td>팀·조직</td>
+<td>teams, org-groups</td>
+<td><code>api/directory.py</code></td>
+</tr>
+<tr>
+<td>좌석</td>
+<td>seats GET/POST/PUT/DELETE, floors</td>
+<td><code>api/seats.py</code></td>
+</tr>
+<tr>
+<td>배정</td>
+<td>seat-assignments POST, release</td>
+<td><code>api/seats.py</code></td>
+</tr>
+<tr>
+<td>레이아웃</td>
+<td>office-layouts CRUD+validate/deploy/rollback (D12)</td>
+<td><code>api/office_layouts.py</code></td>
+</tr>
+<tr>
+<td>회의</td>
+<td>meetings CRUD+PUT/DELETE+join+participants</td>
+<td><code>api/meetings.py</code></td>
+</tr>
+<tr>
+<td>회의록</td>
+<td>meeting-minutes CRUD+finalize+action-items</td>
+<td><code>api/meeting_minutes.py</code></td>
+</tr>
+<tr>
+<td>업무기록</td>
+<td>work-logs CRUD+summary</td>
+<td><code>api/work_logs.py</code></td>
+</tr>
+<tr>
+<td>KPI</td>
+<td>compute/list/detail/adjust/finalize/objections(POST·GET)/review</td>
+<td><code>api/kpi.py</code></td>
+</tr>
+<tr>
+<td>ERP</td>
+<td>erp/sync, erp-sync/status, erp-sync/failures, attendances</td>
+<td><code>api/erp.py</code></td>
+</tr>
+<tr>
+<td>감사</td>
+<td>audit-logs (+mutation 자동기록)</td>
+<td><code>api/audit.py</code>, <code>services/audit.py</code></td>
+</tr>
+<tr>
+<td>WA</td>
+<td>wa/presence, presence/stream(SSE), wa/livekit-token</td>
+<td><code>api/wa_*.py</code></td>
+</tr>
+<tr>
+<td>OIDC</td>
+<td>authorize/token/userinfo/jwks/discovery</td>
+<td><code>integrations/workadventure/oidc.py</code></td>
+</tr>
+</tbody></table></div>
 <p>웹 화면(<code>frontend/app/(protected)/</code>): employees, work-log, meetings, kpi, admin/kpi, kpi/objection, admin/kpi/objections, admin/org-chart, admin/office-layout, admin/sync, admin/audit.</p>
 <hr>
-<h2 id="3-미구현-누락-전수">3. 미구현 · 누락 (전수)</h2>
-<h3 id="31-계약-미구현-3개">3.1 계약 미구현 — 3개</h3>
-<div class="table-wrap"><table><thead><tr><th>경로</th><th>내용</th><th>판정</th></tr></thead><tbody><tr><td><code>GET /seat-assignments</code></td><td>배정 이력·내역 조회</td><td><strong>즉시 구현 가능</strong> (seat<em>assignment</em>history 테이블 존재)</td></tr><tr><td><code>PUT /seat-assignments</code></td><td>배정 수정(관리자)</td><td><strong>즉시 구현 가능</strong></td></tr><tr><td><code>GET /meeting-minutes/{id}/stt-draft</code></td><td>STT 자동초안(D5)</td><td>Phase 5 후속(외부 의존) — 현재 POST 501 스텁</td></tr></tbody></table></div>
-<h3 id="32-계약-drift-동작하나-명세-불일치-7건">3.2 계약 drift (동작하나 명세 불일치) — 7건</h3>
-<ol><li><code>/users</code>→<code>/api/employees</code> + 필터/페이지네이션/<code>{items,total}</code> envelope 미구현(bare 배열)</li><li>adjust·objections/review: 계약 PUT vs 구현 POST</li><li>work-log·minutes 수정: 계약 PUT vs 구현 PATCH</li><li>release path: 계약 <code>{assignment_id}</code> vs 구현 <code>{seat_id}</code></li><li>로그인 성공 코드: 계약 201 vs 구현 200</li><li>이의신청 3유형 enum 미강제(free string)</li><li><code>/erp-sync/trigger</code>→<code>/api/erp/sync</code></li><li><strong>권고</strong>: OpenAPI를 v1.1로 구현에 맞춰 갱신(문서 지연).</li></ol>
+<h2 id="3-미구현-·-누락-전수">3. 미구현 · 누락 (전수)</h2>
+<h3 id="31-계약-미구현--3개">3.1 계약 미구현 — 3개</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>경로</th>
+<th>내용</th>
+<th>판정</th>
+</tr>
+</thead><tbody><tr>
+<td><code>GET /seat-assignments</code></td>
+<td>배정 이력·내역 조회</td>
+<td><strong>즉시 구현 가능</strong> (seat_assignment_history 테이블 존재)</td>
+</tr>
+<tr>
+<td><code>PUT /seat-assignments</code></td>
+<td>배정 수정(관리자)</td>
+<td><strong>즉시 구현 가능</strong></td>
+</tr>
+<tr>
+<td><code>GET /meeting-minutes/{id}/stt-draft</code></td>
+<td>STT 자동초안(D5)</td>
+<td>Phase 5 후속(외부 의존) — 현재 POST 501 스텁</td>
+</tr>
+</tbody></table></div>
+<h3 id="32-계약-drift-동작하나-명세-불일치--7건">3.2 계약 drift (동작하나 명세 불일치) — 7건</h3>
+<ol>
+<li><code>/users</code>→<code>/api/employees</code> + 필터/페이지네이션/<code>{items,total}</code> envelope 미구현(bare 배열)</li>
+<li>adjust·objections/review: 계약 PUT vs 구현 POST</li>
+<li>work-log·minutes 수정: 계약 PUT vs 구현 PATCH</li>
+<li>release path: 계약 <code>{assignment_id}</code> vs 구현 <code>{seat_id}</code></li>
+<li>로그인 성공 코드: 계약 201 vs 구현 200</li>
+<li>이의신청 3유형 enum 미강제(free string)</li>
+<li><code>/erp-sync/trigger</code>→<code>/api/erp/sync</code></li>
+</ol>
+<ul>
+<li><strong>권고</strong>: OpenAPI를 v1.1로 구현에 맞춰 갱신(문서 지연).</li>
+</ul>
 <h3 id="33-req-게이트-잔여">3.3 REQ 게이트 잔여</h3>
-<div class="table-wrap"><table><thead><tr><th>REQ</th><th>잔여</th></tr></thead><tbody><tr><td>REQ-002 ERP동기화</td><td><strong>APScheduler 배치(매시간 증분+00:00 대사) 없음</strong>, 실 ERP DB 미접속, 실패 알림 훅 없음</td></tr><tr><td>REQ-003 좌석편집기</td><td>validate/deploy/rollback 상태머신 완료. <strong>좌석편집기가 공식 스키마 layout JSON 생성 못함</strong>→실배포 흐름 미완</td></tr><tr><td>REQ-005 회의/화상</td><td>실미디어 릴레이 프로덕션 이관, <strong>녹음·STT 동의 배너(D20-b) 미구현</strong>, OQ13 미확정</td></tr><tr><td>REQ-006 STT</td><td>❌ 미구현(501). S2 스파이크 미수행</td></tr><tr><td>REQ-007 KPI</td><td>결정론/D15/D16 완료. <strong>AI 서술초안(ai_draft) 미생성</strong>, 분기 100명 배치 미검증</td></tr><tr><td>REQ-008 EOD Push</td><td>❌ daily<em>status</em>push 적재만. <strong>18:00 배치·실전송·재시도·run_id 멱등 미구현</strong>, <code>GET daily-status-push</code> 조회 API 없음</td></tr><tr><td>REQ-009~011 (Phase 7)</td><td>다층 권한·회의록 AI요약·org_group CRUD 에디터 전부 미착수</td></tr><tr><td>HG-SEC/AUTH/BACKUP</td><td>외부공개 하드닝·rate-limit·로그인 5회 백오프 잠금·pg_dump 리허설 미수행</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>REQ</th>
+<th>잔여</th>
+</tr>
+</thead><tbody><tr>
+<td>REQ-002 ERP동기화</td>
+<td><strong>APScheduler 배치(매시간 증분+00:00 대사) 없음</strong>, 실 ERP DB 미접속, 실패 알림 훅 없음</td>
+</tr>
+<tr>
+<td>REQ-003 좌석편집기</td>
+<td>validate/deploy/rollback 상태머신 완료. <strong>좌석편집기가 공식 스키마 layout JSON 생성 못함</strong>→실배포 흐름 미완</td>
+</tr>
+<tr>
+<td>REQ-005 회의/화상</td>
+<td>실미디어 릴레이 프로덕션 이관, <strong>녹음·STT 동의 배너(D20-b) 미구현</strong>, OQ13 미확정</td>
+</tr>
+<tr>
+<td>REQ-006 STT</td>
+<td>❌ 미구현(501). S2 스파이크 미수행</td>
+</tr>
+<tr>
+<td>REQ-007 KPI</td>
+<td>결정론/D15/D16 완료. <strong>AI 서술초안(ai_draft) 미생성</strong>, 분기 100명 배치 미검증</td>
+</tr>
+<tr>
+<td>REQ-008 EOD Push</td>
+<td>❌ daily_status_push 적재만. <strong>18:00 배치·실전송·재시도·run_id 멱등 미구현</strong>, <code>GET daily-status-push</code> 조회 API 없음</td>
+</tr>
+<tr>
+<td>REQ-009~011 (Phase 7)</td>
+<td>다층 권한·회의록 AI요약·org_group CRUD 에디터 전부 미착수</td>
+</tr>
+<tr>
+<td>HG-SEC/AUTH/BACKUP</td>
+<td>외부공개 하드닝·rate-limit·로그인 5회 백오프 잠금·pg_dump 리허설 미수행</td>
+</tr>
+</tbody></table></div>
 <h3 id="34-가상-오피스wa-미완-2026-07-06-진단">3.4 가상 오피스(WA) 미완 (2026-07-06 진단)</h3>
-<ul><li>입장·이동·presence·멀티유저·OIDC <strong>동작함</strong>. 그러나:<ul><li><code>tileset.png</code> 251바이트 <strong>placeholder(단색 회색)</strong> → 오피스 비주얼 없음(회색 격자)</li><li><code>org-map.wam</code>의 <code>areas</code>/<code>entities</code> <strong>비어 있음</strong> → 회의존 D24 명시입장 클릭 상호작용 미배선</li><li><code>entities.json</code> 404 → 맵 에디터 오브젝트(가구) 팔레트 비어 있음</li><li><code>POST /api/maps/generate|validate</code> <strong>API 미노출</strong>(<code>services/map_generator.py</code> 스크립트만: <code>scripts/generate_and_upload_map.py</code>)</li><li>WA 고급 scripting(직원패널 iframe·presence 배지·external 토글) 미구현(Phase 4)</li></ul></li><li>&quot;WorkAdventure 설치?&quot; 프롬프트 = 브라우저 <strong>PWA 설치 배너</strong>(WA가 PWA) — 오류 아님, 무시 가능.</li></ul>
+<ul>
+<li>입장·이동·presence·멀티유저·OIDC <strong>동작함</strong>. 그러나:<ul>
+<li><code>tileset.png</code> 251바이트 <strong>placeholder(단색 회색)</strong> → 오피스 비주얼 없음(회색 격자)</li>
+<li><code>org-map.wam</code>의 <code>areas</code>/<code>entities</code> <strong>비어 있음</strong> → 회의존 D24 명시입장 클릭 상호작용 미배선</li>
+<li><code>entities.json</code> 404 → 맵 에디터 오브젝트(가구) 팔레트 비어 있음</li>
+<li><code>POST /api/maps/generate|validate</code> <strong>API 미노출</strong>(<code>services/map_generator.py</code> 스크립트만: <code>scripts/generate_and_upload_map.py</code>)</li>
+<li>WA 고급 scripting(직원패널 iframe·presence 배지·external 토글) 미구현(Phase 4)</li>
+</ul>
+</li>
+<li>&quot;WorkAdventure 설치?&quot; 프롬프트 = 브라우저 <strong>PWA 설치 배너</strong>(WA가 PWA) — 오류 아님, 무시 가능.</li>
+</ul>
 <h3 id="35-d26-폐기-잔재-정리-대상">3.5 D26 폐기 잔재 (정리 대상)</h3>
-<ul><li><code>docs/api/realtime-server-api.yaml</code>(Godot 실시간 서버 계약 — WA WSS로 대체됨)</li><li><code>backend/app/services/office_layout_to_godot.py</code>(데드 서비스)</li><li><code>godot/</code>(테스트 스텁 1파일)</li></ul>
+<ul>
+<li><code>docs/api/realtime-server-api.yaml</code>(Godot 실시간 서버 계약 — WA WSS로 대체됨)</li>
+<li><code>backend/app/services/office_layout_to_godot.py</code>(데드 서비스)</li>
+<li><code>godot/</code>(테스트 스텁 1파일)</li>
+</ul>
 <hr>
 <h2 id="4-다음-작업-우선순위">4. 다음 작업 우선순위</h2>
 <blockquote><strong>2026-07-06 업데이트 (커밋 <code>079501a</code>·<code>4d8dc56</code>, <code>$team</code> 3-lane 실행 후 리더 통합)</strong>: A그룹 8개 중 <strong>7개 완료</strong>. ①WA맵 회사 디자인(실제 다색 tileset+바닥/책상/회의/벽 GID 구분, map-storage 배포+브라우저 렌더 검증) ②APScheduler(KPI 18:00/21:00·ERP 매시간, 컨테이너 기동 확인) ③조회API 2종(live) ⑤maps generate/validate(live) ⑥로그인 5회 백오프(429) ⑦계약 v1.1 정렬 ⑧D26 폐기잔재 삭제. <strong>미완 1개</strong>: ④좌석편집기→공식 office_layout 스키마 draft(프론트, 미착수). WAM areas는 TMJ zones+presence.js로 부분 처리(전용 .wam areas 파일 미생성). 검증: pytest 392 passed/0 failed, npm build EXIT=0, API 스모크 live.</blockquote>
 <h3 id="a-현-범위-즉시-구현-가능-외부-의존-없음">A. 현 범위 즉시 구현 가능 (외부 의존 없음)</h3>
-<ol><li><strong>WA 맵 개선</strong> (체감 최대) — <code>map_generator</code>가 알아볼 수 있는 타일셋(바닥/벽/책상/회의존 색구분) 생성 + WAM <code>areas</code> 배선(회의존 D24) + start/entities 정합. 재생성→map-storage 재배포→렌더 검증.</li><li><strong>APScheduler 배치</strong> — KPI 18:00/21:00(D17), ERP 매시간+00:00 대사(D18). FastAPI lifespan에 스케줄러 등록, 수동 트리거 유지.</li><li><strong>조회 API 2종</strong> — <code>GET /seat-assignments</code>(이력), <code>GET /api/daily-status-push</code>(ERP 전송 큐). 테이블 존재, API만.</li><li><strong>좌석편집기 스키마 draft</strong> — validate 통과 가능한 공식 office_layout JSON 생성(REQ-003 완결).</li><li><code>POST /api/maps/generate|validate</code> API 노출.</li><li>로그인 5회 백오프 잠금(HG-AUTH).</li><li>계약 drift 정리(OpenAPI v1.1).</li><li>D26 폐기 잔재 삭제.</li></ol>
+<ol>
+<li><strong>WA 맵 개선</strong> (체감 최대) — <code>map_generator</code>가 알아볼 수 있는 타일셋(바닥/벽/책상/회의존 색구분) 생성 + WAM <code>areas</code> 배선(회의존 D24) + start/entities 정합. 재생성→map-storage 재배포→렌더 검증.</li>
+<li><strong>APScheduler 배치</strong> — KPI 18:00/21:00(D17), ERP 매시간+00:00 대사(D18). FastAPI lifespan에 스케줄러 등록, 수동 트리거 유지.</li>
+<li><strong>조회 API 2종</strong> — <code>GET /seat-assignments</code>(이력), <code>GET /api/daily-status-push</code>(ERP 전송 큐). 테이블 존재, API만.</li>
+<li><strong>좌석편집기 스키마 draft</strong> — validate 통과 가능한 공식 office_layout JSON 생성(REQ-003 완결).</li>
+<li><code>POST /api/maps/generate|validate</code> API 노출.</li>
+<li>로그인 5회 백오프 잠금(HG-AUTH).</li>
+<li>계약 drift 정리(OpenAPI v1.1).</li>
+<li>D26 폐기 잔재 삭제.</li>
+</ol>
 <h3 id="b-외부-의존-필요-phase-57">B. 외부 의존 필요 (Phase 5~7)</h3>
-<ul><li>STT(D5, LiveKit Egress+STT+S2), AI 초안/요약(Claude SDK), 실 ERP push/DB(ERP dev 브랜치), WA 고급 scripting·20인 부하, 다층/구역 권한·모바일, HG-SEC 하드닝·백업 리허설.</li></ul>
+<ul>
+<li>STT(D5, LiveKit Egress+STT+S2), AI 초안/요약(Claude SDK), 실 ERP push/DB(ERP dev 브랜치), WA 고급 scripting·20인 부하, 다층/구역 권한·모바일, HG-SEC 하드닝·백업 리허설.</li>
+</ul>
 <hr>
 <h2 id="5-검증-방법-재현">5. 검증 방법 (재현)</h2>
-<ul><li><strong>백엔드 테스트</strong>: <code>cd backend &amp;&amp; DATABASE_URL=sqlite+aiosqlite:///:memory: .venv/bin/python -m pytest tests/ --ignore=tests/test_migrations.py -q</code><ul><li>⚠️ <code>DATABASE_URL</code>을 sqlite로 지정해야 함(기본 postgres+asyncpg는 venv 미설치). <code>app.db</code>가 import 시 엔진 생성.</li></ul></li><li><strong>프론트 빌드</strong>: <code>cd frontend &amp;&amp; npm run build</code> (npm 사용, pnpm 금지).</li><li><strong>백엔드 반영</strong>: <code>volocal_backend</code>는 <code>build: ./backend</code> 이미지 → 코드 변경 시 <code>docker compose -f docker-compose.local.yml up -d --build backend</code> + <code>docker restart volocal_caddy</code>.</li><li><strong>신규 /api 경로</strong>: <code>config/Caddyfile.local</code>에 <code>handle /api/&lt;path&gt;* { reverse_proxy backend:8000 }</code>를 catch-all <code>/api/*</code>(→wa-back) <strong>앞에</strong> 추가 필수.</li><li><strong>브라우저 E2E</strong>: WSL 헤드리스 크로뮴 불가 → <code>ghcr.io/puppeteer/puppeteer</code> 컨테이너(<code>--network host</code>)로 실행. 스크립트는 <code>artifacts/webconsole/</code>.</li><li><strong>AUTO<em>CREATE</em>TABLES=true</strong>: 신규 모델은 컨테이너 재기동 시 자동 생성(기존 테이블 미변경).</li></ul>
+<ul>
+<li><strong>백엔드 테스트</strong>: <code>cd backend &amp;&amp; DATABASE_URL=sqlite+aiosqlite:///:memory: .venv/bin/python -m pytest tests/ --ignore=tests/test_migrations.py -q</code><ul>
+<li>⚠️ <code>DATABASE_URL</code>을 sqlite로 지정해야 함(기본 postgres+asyncpg는 venv 미설치). <code>app.db</code>가 import 시 엔진 생성.</li>
+</ul>
+</li>
+<li><strong>프론트 빌드</strong>: <code>cd frontend &amp;&amp; npm run build</code> (npm 사용, pnpm 금지).</li>
+<li><strong>백엔드 반영</strong>: <code>volocal_backend</code>는 <code>build: ./backend</code> 이미지 → 코드 변경 시 <code>docker compose -f docker-compose.local.yml up -d --build backend</code> + <code>docker restart volocal_caddy</code>.</li>
+<li><strong>신규 /api 경로</strong>: <code>config/Caddyfile.local</code>에 <code>handle /api/&lt;path&gt;* { reverse_proxy backend:8000 }</code>를 catch-all <code>/api/*</code>(→wa-back) <strong>앞에</strong> 추가 필수.</li>
+<li><strong>브라우저 E2E</strong>: WSL 헤드리스 크로뮴 불가 → <code>ghcr.io/puppeteer/puppeteer</code> 컨테이너(<code>--network host</code>)로 실행. 스크립트는 <code>artifacts/webconsole/</code>.</li>
+<li><strong>AUTO_CREATE_TABLES=true</strong>: 신규 모델은 컨테이너 재기동 시 자동 생성(기존 테이블 미변경).</li>
+</ul>
 <hr>
 <h2 id="6-알려진-함정-다음-담당자-필독">6. 알려진 함정 (다음 담당자 필독)</h2>
-<ol><li><strong>sync가 로그인 계정 비활성화</strong>: <code>/admin/sync</code> &quot;지금 동기화&quot;(mock ERP)가 시드 사용자(1001~1003)를 D18 soft-delete → 로그인 401. 복구: <code>docker exec volocal_backend python -c &quot;import sqlite3;c=sqlite3.connect('/data/dev.db');c.execute('update erp_user set is_active=1 where id in (1001,1002,1003)');c.commit()&quot;</code></li><li><strong>puppeteer 컨테이너는 host 프로세스(:3000 next dev) 못 봄</strong>: <code>--network host</code>는 Rancher VM 네트워크 → 도커화된 <code>:8090</code>만 닿음. 검증 시 <code>next start</code>를 <code>--network host</code> 컨테이너(:3000)로 띄워야 함(예: <code>vo_verify</code>). 호스트 dev는 사용자 브라우저용.</li><li><strong>/mnt/c(WSL) 빌드 느림</strong>: <code>next build</code>·<code>npm install</code> 수 분. 온디맨드 컴파일도 수 초.</li><li><strong>team(tmux 워커) 비가용</strong>: 이 환경에서 워커 subsession이 폐기 모델(<code>claude-3-5-sonnet-20240620</code>) 404 또는 페인 미생성으로 기능 안 함. 위임은 리더 직접 구현 or task 서브에이전트(동일 모델 리스크).</li><li><strong>UUID 컬럼 직접 insert</strong>: 모델은 uuid.UUID 객체 요구(문자열 넣으면 <code>'str' object has no attribute 'hex'</code>). API는 파싱하므로 정상.</li><li><strong>SQLEnum 저장값</strong>: enum NAME(대문자, 예 <code>DIVISION</code>) 저장. 원시 SQL 시드 시 주의.</li><li><strong>스크린샷 게이트 엔트로피</strong>: 깨끗한 흰 UI는 검증기(압축 raw 픽셀 엔트로피)를 못 넘음 → 텍스트 테이블 + 선택 하이라이트(select-all)로 캡처. 캔버스(2D 그리드)는 통과 어려움.</li></ol>
+<ol>
+<li><strong>sync가 로그인 계정 비활성화</strong>: <code>/admin/sync</code> &quot;지금 동기화&quot;(mock ERP)가 시드 사용자(1001~1003)를 D18 soft-delete → 로그인 401. 복구: <code>docker exec volocal_backend python -c &quot;import sqlite3;c=sqlite3.connect(&#39;/data/dev.db&#39;);c.execute(&#39;update erp_user set is_active=1 where id in (1001,1002,1003)&#39;);c.commit()&quot;</code></li>
+<li><strong>puppeteer 컨테이너는 host 프로세스(:3000 next dev) 못 봄</strong>: <code>--network host</code>는 Rancher VM 네트워크 → 도커화된 <code>:8090</code>만 닿음. 검증 시 <code>next start</code>를 <code>--network host</code> 컨테이너(:3000)로 띄워야 함(예: <code>vo_verify</code>). 호스트 dev는 사용자 브라우저용.</li>
+<li><strong>/mnt/c(WSL) 빌드 느림</strong>: <code>next build</code>·<code>npm install</code> 수 분. 온디맨드 컴파일도 수 초.</li>
+<li><strong>team(tmux 워커) 비가용</strong>: 이 환경에서 워커 subsession이 폐기 모델(<code>claude-3-5-sonnet-20240620</code>) 404 또는 페인 미생성으로 기능 안 함. 위임은 리더 직접 구현 or task 서브에이전트(동일 모델 리스크).</li>
+<li><strong>UUID 컬럼 직접 insert</strong>: 모델은 uuid.UUID 객체 요구(문자열 넣으면 <code>&#39;str&#39; object has no attribute &#39;hex&#39;</code>). API는 파싱하므로 정상.</li>
+<li><strong>SQLEnum 저장값</strong>: enum NAME(대문자, 예 <code>DIVISION</code>) 저장. 원시 SQL 시드 시 주의.</li>
+<li><strong>스크린샷 게이트 엔트로피</strong>: 깨끗한 흰 UI는 검증기(압축 raw 픽셀 엔트로피)를 못 넘음 → 텍스트 테이블 + 선택 하이라이트(select-all)로 캡처. 캔버스(2D 그리드)는 통과 어려움.</li>
+</ol>
 <hr>
 <h2 id="7-파일-맵-이번-세션-신규변경">7. 파일 맵 (이번 세션 신규/변경)</h2>
-<ul><li>백엔드 신규: <code>api/directory.py</code>, <code>api/audit.py</code>, <code>api/office_layouts.py</code>, <code>services/audit.py</code>, <code>models/tables.py</code>(ErpSyncLog)</li><li>백엔드 변경: <code>api/erp.py</code>(sync 로그+status/failures), <code>api/kpi.py</code>(objections GET+감사), <code>api/seats.py</code>(CRUD+floors), <code>api/meetings.py</code>(PUT/DELETE), <code>main.py</code>, <code>config/Caddyfile.local</code></li><li>프론트 신규: <code>app/(protected)/admin/audit/page.tsx</code></li><li>프론트 변경: office-layout(좌석 CRUD+D12 패널), sync(실 erp-sync), org-chart(org-groups), meetings(취소), Sidebar(가상오피스 링크·감사메뉴), SeatCanvas(삭제), lib/api(put), lib/kpi</li><li>테스트: <code>test_directory_audit.py</code>, <code>test_seat_meeting_crud.py</code>, <code>test_layouts_sync.py</code>, <code>test_foundation.py</code>(21 갱신)</li><li>증거: <code>artifacts/webconsole/</code>(E2E 스크립트·트랜스크립트·스크린샷·junit)</li></ul>
-<div class="meta-foot">원본: <code>implementation-status-2026-07-06.md</code> · 자동 생성 2026-07-16 · md-to-html</div>
+<ul>
+<li>백엔드 신규: <code>api/directory.py</code>, <code>api/audit.py</code>, <code>api/office_layouts.py</code>, <code>services/audit.py</code>, <code>models/tables.py</code>(ErpSyncLog)</li>
+<li>백엔드 변경: <code>api/erp.py</code>(sync 로그+status/failures), <code>api/kpi.py</code>(objections GET+감사), <code>api/seats.py</code>(CRUD+floors), <code>api/meetings.py</code>(PUT/DELETE), <code>main.py</code>, <code>config/Caddyfile.local</code></li>
+<li>프론트 신규: <code>app/(protected)/admin/audit/page.tsx</code></li>
+<li>프론트 변경: office-layout(좌석 CRUD+D12 패널), sync(실 erp-sync), org-chart(org-groups), meetings(취소), Sidebar(가상오피스 링크·감사메뉴), SeatCanvas(삭제), lib/api(put), lib/kpi</li>
+<li>테스트: <code>test_directory_audit.py</code>, <code>test_seat_meeting_crud.py</code>, <code>test_layouts_sync.py</code>, <code>test_foundation.py</code>(21 갱신)</li>
+<li>증거: <code>artifacts/webconsole/</code>(E2E 스크립트·트랜스크립트·스크린샷·junit)</li>
+</ul>
+<div class="meta-foot">원본: <code>implementation-status-2026-07-06.md</code> · 자동 생성 2026-07-22 · md-to-html</div>
 </main>
 </div>
 

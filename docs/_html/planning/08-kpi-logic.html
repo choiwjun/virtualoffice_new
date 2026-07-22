@@ -52,24 +52,129 @@ img{max-width:100%;border-radius:8px}
 </style>
 </head><body>
 <div class="layout">
-<nav class="toc"><div class="brand">08-kpi-logic.md — KPI 로직</div><div class="sub">08-kpi-logic.md</div><a class="lvl1" href="#08-kpi-logicmd-kpi-로직">08-kpi-logic.md — KPI 로직</a><a class="lvl2" href="#overview">Overview</a><a class="lvl2" href="#1-kpi-원칙-평가-항목">1. KPI 원칙 &amp; 평가 항목</a><a class="lvl3" href="#11-핵심-원칙">1.1 핵심 원칙</a><a class="lvl3" href="#12-평가제외-항목-d14-재작성">1.2 평가·제외 항목 (D14 재작성)</a><a class="lvl3" href="#13-평가-주기-범위-d16">1.3 평가 주기 &amp; 범위 (D16)</a><a class="lvl2" href="#2-신호-소스-산출-방식">2. 신호 소스 &amp; 산출 방식</a><a class="lvl3" href="#21-신호-수집-플로우">2.1 신호 수집 플로우</a><a class="lvl3" href="#22-신호-정의-수량화">2.2 신호 정의 &amp; 수량화</a><a class="lvl3" href="#23-일일분기-집계-d16-롱포맷">2.3 일일·분기 집계 (D16 롱포맷)</a><a class="lvl2" href="#3-ai-초안-검토-프로세스">3. AI 초안 검토 프로세스</a><a class="lvl3" href="#31-claude-ai-초안-생성-서술만-d14-e">3.1 Claude AI 초안 생성 (서술만, D14-e)</a><a class="lvl3" href="#32-관리자-검토-조정">3.2 관리자 검토 &amp; 조정</a><a class="lvl3" href="#33-직원-이의신청-확정-상태머신-d15">3.3 직원 이의신청 → 확정 상태머신 (D15)</a><a class="lvl2" href="#4-eod-배치-erp-연동">4. EOD 배치 &amp; ERP 연동</a><a class="lvl3" href="#41-배치-일정-d17">4.1 배치 일정 (D17)</a><a class="lvl3" href="#42-daily-status-push-매일">4.2 Daily Status Push (매일)</a><a class="lvl3" href="#43-분기말-kpi-최종-push-quarterly">4.3 분기말 KPI 최종 Push (quarterly)</a><a class="lvl3" href="#44-daily_status_push-로그">4.4 daily_status_push 로그</a><a class="lvl2" href="#5-erp-developer_evaluations-vs-우리-kpi-역할-분담">5. ERP developer_evaluations vs 우리 KPI 역할 분담</a><a class="lvl3" href="#51-두-시스템의-목적-차이">5.1 두 시스템의 목적 차이</a><a class="lvl3" href="#52-우리의-책임-범위">5.2 우리의 책임 범위</a><a class="lvl3" href="#54-팀-벤치마크-team_percentile-user_team_history-기준">5.4 팀 벤치마크 (team_percentile) — user_team_history 기준</a><a class="lvl3" href="#53-데이터-페더레이션">5.3 데이터 페더레이션</a><a class="lvl2" href="#6-데이터-모델-api">6. 데이터 모델 &amp; API</a><a class="lvl3" href="#61-kpi_result-테이블-정본-04-data-modelmd-25">6.1 kpi_result 테이블 (정본: 04-data-model.md §2.5)</a><a class="lvl3" href="#62-api-endpoints">6.2 API Endpoints</a><a class="lvl2" href="#7-보안-감시">7. 보안 &amp; 감시</a><a class="lvl3" href="#71-접근-제어">7.1 접근 제어</a><a class="lvl3" href="#72-감시-및-로깅">7.2 감시 및 로깅</a><a class="lvl3" href="#73-제외-민감성-d20">7.3 제외 &amp; 민감성 (D20)</a><a class="lvl2" href="#8-참고-erp측-인사평가-활용-우리-플랫폼-범위-밖">8. 참고: ERP측 인사평가 활용 (우리 플랫폼 범위 밖)</a><a class="lvl3" href="#81-평가-흐름-erphr-담당">8.1 평가 흐름 (ERP/HR 담당)</a><a class="lvl3" href="#82-평가-등급-예시-erp에서-결정">8.2 평가 등급 예시 (ERP에서 결정)</a><a class="lvl2" href="#loop-metadata">Loop Metadata</a><a class="lvl3" href="#upstream-documents-referenced">Upstream documents referenced</a><a class="lvl3" href="#downstream-documents-affected">Downstream documents affected</a><a class="lvl3" href="#open-questions">Open questions</a><a class="lvl3" href="#assumptions">Assumptions</a><a class="lvl3" href="#validation-criteria">Validation criteria</a><a class="lvl3" href="#risks">Risks</a><a class="lvl3" href="#변경-이력">변경 이력</a></nav>
-<main><h1 id="08-kpi-logicmd-kpi-로직">08-kpi-logic.md — KPI 로직</h1>
+<nav class="toc"><div class="brand">08-kpi-logic.md — KPI 로직</div><div class="sub">08-kpi-logic.md</div><a class="lvl1" href="#08-kpi-logicmd--kpi-로직">08-kpi-logic.md — KPI 로직</a><a class="lvl2" href="#overview">Overview</a><a class="lvl2" href="#1-kpi-원칙--평가-항목">1. KPI 원칙  평가 항목</a><a class="lvl3" href="#11-핵심-원칙">1.1 핵심 원칙</a><a class="lvl3" href="#12-평가·제외-항목-d14-재작성">1.2 평가·제외 항목 (D14 재작성)</a><a class="lvl3" href="#13-평가-주기--범위-d16">1.3 평가 주기  범위 (D16)</a><a class="lvl2" href="#2-신호-소스--산출-방식">2. 신호 소스  산출 방식</a><a class="lvl3" href="#21-신호-수집-플로우">2.1 신호 수집 플로우</a><a class="lvl3" href="#22-신호-정의--수량화">2.2 신호 정의  수량화</a><a class="lvl3" href="#23-일일·분기-집계-d16-롱포맷">2.3 일일·분기 집계 (D16 롱포맷)</a><a class="lvl2" href="#3-ai-초안-검토-프로세스">3. AI 초안 검토 프로세스</a><a class="lvl3" href="#31-claude-ai-초안-생성-서술만-d14-e">3.1 Claude AI 초안 생성 (서술만, D14-e)</a><a class="lvl3" href="#32-관리자-검토--조정">3.2 관리자 검토  조정</a><a class="lvl3" href="#33-직원-이의신청-→-확정-상태머신-d15">3.3 직원 이의신청 → 확정 상태머신 (D15)</a><a class="lvl2" href="#4-eod-배치--erp-연동">4. EOD 배치  ERP 연동</a><a class="lvl3" href="#41-배치-일정-d17">4.1 배치 일정 (D17)</a><a class="lvl3" href="#42-daily-status-push-매일">4.2 Daily Status Push (매일)</a><a class="lvl3" href="#43-분기말-kpi-최종-push-quarterly">4.3 분기말 KPI 최종 Push (quarterly)</a><a class="lvl3" href="#44-daily_status_push-로그">4.4 daily_status_push 로그</a><a class="lvl2" href="#5-erp-developer_evaluations-vs-우리-kpi-역할-분담">5. ERP developer_evaluations vs 우리 KPI 역할 분담</a><a class="lvl3" href="#51-두-시스템의-목적-차이">5.1 두 시스템의 목적 차이</a><a class="lvl3" href="#52-우리의-책임-범위">5.2 우리의 책임 범위</a><a class="lvl3" href="#54-팀-벤치마크-team_percentile--user_team_history-기준">5.4 팀 벤치마크 (team_percentile) — user_team_history 기준</a><a class="lvl3" href="#53-데이터-페더레이션">5.3 데이터 페더레이션</a><a class="lvl2" href="#6-데이터-모델--api">6. 데이터 모델  API</a><a class="lvl3" href="#61-kpi_result-테이블-정본-04-data-modelmd-§25">6.1 kpi_result 테이블 (정본: 04-data-model.md §2.5)</a><a class="lvl3" href="#62-api-endpoints">6.2 API Endpoints</a><a class="lvl2" href="#7-보안--감시">7. 보안  감시</a><a class="lvl3" href="#71-접근-제어">7.1 접근 제어</a><a class="lvl3" href="#72-감시-및-로깅">7.2 감시 및 로깅</a><a class="lvl3" href="#73-제외--민감성-d20">7.3 제외  민감성 (D20)</a><a class="lvl2" href="#8-참고-erp측-인사평가-활용-우리-플랫폼-범위-밖">8. 참고: ERP측 인사평가 활용 (우리 플랫폼 범위 밖)</a><a class="lvl3" href="#81-평가-흐름-erphr-담당">8.1 평가 흐름 (ERP/HR 담당)</a><a class="lvl3" href="#82-평가-등급-예시-erp에서-결정">8.2 평가 등급 예시 (ERP에서 결정)</a><a class="lvl2" href="#loop-metadata">Loop Metadata</a><a class="lvl3" href="#upstream-documents-referenced">Upstream documents referenced</a><a class="lvl3" href="#downstream-documents-affected">Downstream documents affected</a><a class="lvl3" href="#open-questions">Open questions</a><a class="lvl3" href="#assumptions">Assumptions</a><a class="lvl3" href="#validation-criteria">Validation criteria</a><a class="lvl3" href="#risks">Risks</a><a class="lvl3" href="#변경-이력">변경 이력</a></nav>
+<main><h1 id="08-kpi-logicmd--kpi-로직">08-kpi-logic.md — KPI 로직</h1>
 <h2 id="overview">Overview</h2>
 <p>KPI(Key Performance Indicator) 시스템은 직원의 업무 성과를 측정·평가하는 중핵 기능이다. 가상오피스에서 발생하는 협업 신호(회의·업무결과·의사결정·액션아이템)를 수집하고, AI가 사유+개선액션을 포함한 초안을 작성한 뒤, 관리자가 검토·조정하고 직원이 이의신청할 수 있는 공정한 흐름을 제공한다.</p>
 <p><strong>핵심 원칙</strong>: 결과가 남는 협업 산출물만 평가한다. 접속시간·채팅·근접·화상요청 횟수 같은 행동 기반 지표는 반감시(surveillance)로 인식하여 제외한다. <strong>정량 점수는 결정론적 코드로 계산하며(D14-e), AI는 서술(강점/개선/근거)만 생성한다.</strong></p>
 <hr>
-<h2 id="1-kpi-원칙-평가-항목">1. KPI 원칙 &amp; 평가 항목</h2>
+<h2 id="1-kpi-원칙--평가-항목">1. KPI 원칙 &amp; 평가 항목</h2>
 <h3 id="11-핵심-원칙">1.1 핵심 원칙</h3>
-<div class="table-wrap"><table><thead><tr><th>항목</th><th>설명</th></tr></thead><tbody><tr><td><strong>결과 중심</strong></td><td>완료 업무 <strong>건수 + 충실도</strong>·산출물 실체 평가(시간 비례 점수 폐기, D14-a)</td></tr><tr><td><strong>반감시</strong></td><td>접속시간·채팅 횟수·근접·화상 요청 횟수는 KPI에 미포함</td></tr><tr><td><strong>협업 신호</strong></td><td>회의록 작성 기여·담당 액션아이템 이행률·업무기록이 정량화·정성화 대상</td></tr><tr><td><strong>결정론</strong></td><td>정량 점수는 코드로 계산(같은 입력=같은 점수, 감사 요건). AI는 서술만(D14-e)</td></tr><tr><td><strong>공정성</strong></td><td>AI 초안 → 관리자 검토 → 직원 이의신청의 3단계 프로세스</td></tr><tr><td><strong>투명성</strong></td><td>AI 평가 사유, 개선액션, 조정 이력을 모두 기록</td></tr></tbody></table></div>
-<h3 id="12-평가제외-항목-d14-재작성">1.2 평가·제외 항목 (D14 재작성)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>항목</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>결과 중심</strong></td>
+<td>완료 업무 <strong>건수 + 충실도</strong>·산출물 실체 평가(시간 비례 점수 폐기, D14-a)</td>
+</tr>
+<tr>
+<td><strong>반감시</strong></td>
+<td>접속시간·채팅 횟수·근접·화상 요청 횟수는 KPI에 미포함</td>
+</tr>
+<tr>
+<td><strong>협업 신호</strong></td>
+<td>회의록 작성 기여·담당 액션아이템 이행률·업무기록이 정량화·정성화 대상</td>
+</tr>
+<tr>
+<td><strong>결정론</strong></td>
+<td>정량 점수는 코드로 계산(같은 입력=같은 점수, 감사 요건). AI는 서술만(D14-e)</td>
+</tr>
+<tr>
+<td><strong>공정성</strong></td>
+<td>AI 초안 → 관리자 검토 → 직원 이의신청의 3단계 프로세스</td>
+</tr>
+<tr>
+<td><strong>투명성</strong></td>
+<td>AI 평가 사유, 개선액션, 조정 이력을 모두 기록</td>
+</tr>
+</tbody></table></div>
+<h3 id="12-평가·제외-항목-d14-재작성">1.2 평가·제외 항목 (D14 재작성)</h3>
 <p>metric 어휘 사전의 정본은 <strong>04-data-model.md §2.5</strong>이다. 아래 비중은 <code>collaboration_score</code>(0–100) 합성 시 가중치이며, 정량은 결정론적 코드로 계산한다.</p>
-<div class="table-wrap"><table><thead><tr><th>카테고리</th><th>항목(metric)</th><th>비중</th><th>비고</th></tr></thead><tbody><tr><td><strong>평가 항목</strong></td><td></td><td></td><td></td></tr><tr><td></td><td>완료 업무 건수 (<code>work_completed_count</code>)</td><td>30%</td><td>완료(status=completed) work_log 건수. <strong>시간 비례 점수 폐기</strong>(D14-a)</td></tr><tr><td></td><td>업무 충실도 (<code>work_quality_score</code>)</td><td>25%</td><td>goal·category·result<em>url·next</em>action 작성도 + AI 신뢰도 검증(±0.5)</td></tr><tr><td></td><td>회의록 작성 기여 (<code>minutes_authored_count</code>)</td><td>20%</td><td>작성(created_by 기준). <strong>회의 참석 기본점·주최자 가점 폐기</strong>(D14-b). decisions 가점은 상한 유지 + 회의록 신뢰도 검증</td></tr><tr><td></td><td>액션아이템 이행 (<code>action_items_completed</code>·<code>action_items_ontime_rate</code>)</td><td>15%</td><td>완료 +1점 + 기한 내 보너스. <strong>생성 가점 폐기</strong>(D14-c). 일일 인정 상한(쪼개기 방지)</td></tr><tr><td></td><td>업무기록 충실도 (<code>report_fidelity_score</code>)</td><td>10%</td><td>일일리포트·work_log 작성도(보일러플레이트 감점)</td></tr><tr><td><strong>제외 항목</strong></td><td></td><td></td><td></td></tr><tr><td></td><td><strong>근태(지각·조퇴·결근 보정)</strong></td><td>✗</td><td><strong>우리 KPI 미반영</strong>(D14-d). ERP 종합식이 attendance를 별도 반영하므로 이중 반영 금지</td></tr><tr><td></td><td><strong>GPS/출장·외근 수집</strong></td><td>✗</td><td>GPS 수집 기능 폐기(D20-c)</td></tr><tr><td></td><td>접속시간 / 근무시간</td><td>✗</td><td>반감시 정책</td></tr><tr><td></td><td>채팅 메시지 수 / 근접 거리·빈도 / 화상회의 요청 수</td><td>✗</td><td>반감시 정책</td></tr></tbody></table></div>
-<h3 id="13-평가-주기-범위-d16">1.3 평가 주기 &amp; 범위 (D16)</h3>
-<ul><li><strong>일일 KPI</strong> (period<em>type=<code>daily</code>, period</em>key=<code>'YYYY-MM-DD'</code>): work_log·회의·액션아이템의 당일 누적</li><li><strong>분기 KPI</strong> (period<em>type=<code>quarterly</code>, period</em>key=<code>'YYYY-Q#'</code>): 13주 합산 → 확정 후 ERP push → 인사평가 자료</li><li><strong>범위</strong>: 단일 company<em>id, erp</em>user_id 기준</li><li><strong>팀 벤치마크</strong>: 평가 기간에 실제 소속했던 팀 기준(<code>user_team_history</code>, 팀 이동자 왜곡 방지 — §5)</li></ul>
+<div class="table-wrap"><table><thead><tr>
+<th>카테고리</th>
+<th>항목(metric)</th>
+<th>비중</th>
+<th>비고</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>평가 항목</strong></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>완료 업무 건수 (<code>work_completed_count</code>)</td>
+<td>30%</td>
+<td>완료(status=completed) work_log 건수. <strong>시간 비례 점수 폐기</strong>(D14-a)</td>
+</tr>
+<tr>
+<td></td>
+<td>업무 충실도 (<code>work_quality_score</code>)</td>
+<td>25%</td>
+<td>goal·category·result_url·next_action 작성도 + AI 신뢰도 검증(±0.5)</td>
+</tr>
+<tr>
+<td></td>
+<td>회의록 작성 기여 (<code>minutes_authored_count</code>)</td>
+<td>20%</td>
+<td>작성(created_by 기준). <strong>회의 참석 기본점·주최자 가점 폐기</strong>(D14-b). decisions 가점은 상한 유지 + 회의록 신뢰도 검증</td>
+</tr>
+<tr>
+<td></td>
+<td>액션아이템 이행 (<code>action_items_completed</code>·<code>action_items_ontime_rate</code>)</td>
+<td>15%</td>
+<td>완료 +1점 + 기한 내 보너스. <strong>생성 가점 폐기</strong>(D14-c). 일일 인정 상한(쪼개기 방지)</td>
+</tr>
+<tr>
+<td></td>
+<td>업무기록 충실도 (<code>report_fidelity_score</code>)</td>
+<td>10%</td>
+<td>일일리포트·work_log 작성도(보일러플레이트 감점)</td>
+</tr>
+<tr>
+<td><strong>제외 항목</strong></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>근태(지각·조퇴·결근 보정)</strong></td>
+<td>✗</td>
+<td><strong>우리 KPI 미반영</strong>(D14-d). ERP 종합식이 attendance를 별도 반영하므로 이중 반영 금지</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>GPS/출장·외근 수집</strong></td>
+<td>✗</td>
+<td>GPS 수집 기능 폐기(D20-c)</td>
+</tr>
+<tr>
+<td></td>
+<td>접속시간 / 근무시간</td>
+<td>✗</td>
+<td>반감시 정책</td>
+</tr>
+<tr>
+<td></td>
+<td>채팅 메시지 수 / 근접 거리·빈도 / 화상회의 요청 수</td>
+<td>✗</td>
+<td>반감시 정책</td>
+</tr>
+</tbody></table></div>
+<h3 id="13-평가-주기--범위-d16">1.3 평가 주기 &amp; 범위 (D16)</h3>
+<ul>
+<li><strong>일일 KPI</strong> (period_type=<code>daily</code>, period_key=<code>&#39;YYYY-MM-DD&#39;</code>): work_log·회의·액션아이템의 당일 누적</li>
+<li><strong>분기 KPI</strong> (period_type=<code>quarterly</code>, period_key=<code>&#39;YYYY-Q#&#39;</code>): 13주 합산 → 확정 후 ERP push → 인사평가 자료</li>
+<li><strong>범위</strong>: 단일 company_id, erp_user_id 기준</li>
+<li><strong>팀 벤치마크</strong>: 평가 기간에 실제 소속했던 팀 기준(<code>user_team_history</code>, 팀 이동자 왜곡 방지 — §5)</li>
+</ul>
 <hr>
-<h2 id="2-신호-소스-산출-방식">2. 신호 소스 &amp; 산출 방식</h2>
+<h2 id="2-신호-소스--산출-방식">2. 신호 소스 &amp; 산출 방식</h2>
 <h3 id="21-신호-수집-플로우">2.1 신호 수집 플로우</h3>
-<div class="mermaid">graph LR
+<pre class="code"><code>graph LR
     A[&quot;work_log 완료&quot;] --&gt;|건수+충실도| B[&quot;KPI 엔진&lt;br/&gt;(결정론적 코드)&quot;]
     C[&quot;meeting_minute 작성&quot;] --&gt;|작성 기여+decisions| B
     D[&quot;action_item 이행&quot;] --&gt;|완료·기한준수| B
@@ -78,11 +183,11 @@ img{max-width:100%;border-radius:8px}
     B --&gt;|신호 요약| G[&quot;AI Draft 생성&lt;br/&gt;Claude (서술만)&quot;]
     G --&gt;|강점/개선/근거| I
     I --&gt;|관리자 검토·조정| K[&quot;이의신청→확정&lt;br/&gt;final_score&quot;]
-    K --&gt;|확정·분기 마감| J[&quot;ERP kpi_results&lt;br/&gt;(final_score만)&quot;]</div>
+    K --&gt;|확정·분기 마감| J[&quot;ERP kpi_results&lt;br/&gt;(final_score만)&quot;]</code></pre>
 <blockquote><strong>주의</strong>: 근태(attendance)는 우리 KPI 신호에서 <strong>제외</strong>된다(D14-d, ERP가 별도 반영). AI는 정량 점수 산출에 관여하지 않으며 서술만 생성한다(D14-e).</blockquote>
-<h3 id="22-신호-정의-수량화">2.2 신호 정의 &amp; 수량화</h3>
+<h3 id="22-신호-정의--수량화">2.2 신호 정의 &amp; 수량화</h3>
 <blockquote><strong>공통</strong>: 아래 모든 점수는 <strong>결정론적 코드</strong>로 계산한다(D14-e). 같은 입력이면 항상 같은 점수가 나와야 하며(감사 요건), AI는 이 계산에 관여하지 않는다. &quot;AI 신뢰도 검증(±0.5)&quot;은 회의록·업무기록의 <strong>보일러플레이트/중복 탐지 보정</strong>이며 시드 고정·규칙 기반으로 재현 가능하게 구현한다.</blockquote>
-<h4 id="221-업무-결과물-work_completed_count-work_quality_score-d14-a">2.2.1 업무 결과물 → <code>work_completed_count</code> + <code>work_quality_score</code> (D14-a)</h4>
+<h4 id="221-업무-결과물-→-work_completed_count--work_quality_score-d14-a">2.2.1 업무 결과물 → <code>work_completed_count</code> + <code>work_quality_score</code> (D14-a)</h4>
 <pre class="code"><code>신호 정의:
   status: enum (started | completed)  ← 완료 상태 필수
   goal / category / result_url / next_action: 충실도 요소
@@ -94,9 +199,12 @@ img{max-width:100%;border-radius:8px}
     · AI 신뢰도 검증(보일러플레이트/중복 감점, ±0.5 규모)
     · 미완료(started) 건은 count/quality 모두 미산입</code></pre>
 <p>예:</p>
-<ul><li>완료 4건, 각 건이 goal·result<em>url·next</em>action 충실 → work<em>completed</em>count=4, work<em>quality</em>score≈90</li><li>완료 표시했으나 result_url 없음·목표 공란 → 해당 건 충실도 낮게 반영</li></ul>
+<ul>
+<li>완료 4건, 각 건이 goal·result_url·next_action 충실 → work_completed_count=4, work_quality_score≈90</li>
+<li>완료 표시했으나 result_url 없음·목표 공란 → 해당 건 충실도 낮게 반영</li>
+</ul>
 <blockquote>폐기: &quot;예정시간/100 = 시간당 1점&quot;(D14-a). 기존 예시의 산수 오류(480/100=4.8인데 8점)도 시간 비례 폐기로 자연 해소.</blockquote>
-<h4 id="222-회의록-기여-minutes_authored_count-d14-b">2.2.2 회의록 기여 → <code>minutes_authored_count</code> (D14-b)</h4>
+<h4 id="222-회의록-기여-→-minutes_authored_count-d14-b">2.2.2 회의록 기여 → <code>minutes_authored_count</code> (D14-b)</h4>
 <pre class="code"><code>신호 정의:
   meeting_minute.created_by: 회의록 작성 기여(작성자 기준)
   meeting_minute.decisions: 명확한 의사결정 수 — decisions(TEXT 마크다운)의 최상위 리스트 항목(-, *) 수 기준
@@ -108,9 +216,13 @@ img{max-width:100%;border-radius:8px}
     · 카운트 규칙: decisions(TEXT 마크다운)의 최상위 리스트 항목(-, *) 수 기준 — 결정론 보장(D14-e)
     · 회의록 신뢰도 검증(AI ±0.5): 실체 없는 decisions 인플레 방지(검증 확대 적용)</code></pre>
 <p>예:</p>
-<ul><li>회의록 2건 작성, 의사결정 총 5건(상한 내) → minutes<em>authored</em>count=2 + decisions 가점</li></ul>
-<blockquote>폐기: &quot;회의당 2점 + 주관자 +1점 + 발표 +0.5점&quot;(D14-b). 단순 참석·주최는 점수화하지 않는다.  공동작성 카운트 제외: 04 meeting_minute에는 공동작성 구조가 없다(<code>created_by</code> 단일). 공동작성 인정이 필요해지면 추후 결정 사항으로 다룬다.</blockquote>
-<h4 id="223-액션아이템-이행-action_items_completed-action_items_ontime_rate-d14-c">2.2.3 액션아이템 이행 → <code>action_items_completed</code> + <code>action_items_ontime_rate</code> (D14-c)</h4>
+<ul>
+<li>회의록 2건 작성, 의사결정 총 5건(상한 내) → minutes_authored_count=2 + decisions 가점</li>
+</ul>
+<blockquote><p>폐기: &quot;회의당 2점 + 주관자 +1점 + 발표 +0.5점&quot;(D14-b). 단순 참석·주최는 점수화하지 않는다.</p>
+<p>공동작성 카운트 제외: 04 meeting_minute에는 공동작성 구조가 없다(<code>created_by</code> 단일). 공동작성 인정이 필요해지면 추후 결정 사항으로 다룬다.</p>
+</blockquote>
+<h4 id="223-액션아이템-이행-→-action_items_completed--action_items_ontime_rate-d14-c">2.2.3 액션아이템 이행 → <code>action_items_completed</code> + <code>action_items_ontime_rate</code> (D14-c)</h4>
 <pre class="code"><code>신호 정의:
   assignee_user_id = 본인인 action_item만(담당분)
   status='completed', completed_at vs due_date
@@ -121,9 +233,11 @@ img{max-width:100%;border-radius:8px}
   기한 내 완료 보너스: completed_at &lt;= due_date 이면 추가 소량 보너스
   action_items_ontime_rate(%) = 기한 내 완료 / 완료 전체 × 100</code></pre>
 <p>예:</p>
-<ul><li>담당 액션 5건 완료, 그중 4건 기한 내 → action<em>items</em>completed=5, action<em>items</em>ontime_rate=80</li></ul>
+<ul>
+<li>담당 액션 5건 완료, 그중 4건 기한 내 → action_items_completed=5, action_items_ontime_rate=80</li>
+</ul>
 <blockquote>폐기: &quot;생성 시 +0.5점&quot;(D14-c). 생성만으로는 점수가 없으며, 완료·기한준수만 인정. 잘게 쪼개 생성·완료하는 게이밍은 일일 인정 상한으로 방지.</blockquote>
-<h4 id="224-업무기록-충실도-report_fidelity_score">2.2.4 업무기록 충실도 → <code>report_fidelity_score</code></h4>
+<h4 id="224-업무기록-충실도-→-report_fidelity_score">2.2.4 업무기록 충실도 → <code>report_fidelity_score</code></h4>
 <pre class="code"><code>신호 정의:
   daily_reports: 일일 자기보고 작성 여부
   work_log 기록 건수·품질
@@ -133,11 +247,16 @@ img{max-width:100%;border-radius:8px}
     · 일일리포트 제출 여부 + work_log 기록 충실도
     · 작성 신뢰도(AI): 중복·보일러플레이트 감점(재현 가능한 규칙 기반)</code></pre>
 <p>예:</p>
-<ul><li>매일 보고 + 충실한 work<em>log → report</em>fidelity_score 높음</li></ul>
-<h3 id="23-일일분기-집계-d16-롱포맷">2.3 일일·분기 집계 (D16 롱포맷)</h3>
-<p>우리 플랫폼의 kpi<em>result는 <strong>롱포맷(long format)</strong>으로 저장한다: <strong>1행 = 1 user + 1 period</em>type + 1 period_key + 1 metric</strong>. 정량 <code>value</code>는 결정론적 코드로 계산한 값이며, AI 서술은 별도 <code>ai_draft</code> JSONB(정량 미포함)에 저장한다. 스키마 정본은 04-data-model.md §2.5.</p>
-<ul><li><strong>일일</strong>: period<em>type=<code>daily</code>, period</em>key=<code>'2026-07-01'</code></li><li><strong>분기</strong>: period<em>type=<code>quarterly</code>, period</em>key=<code>'2026-Q3'</code> (일일 metric의 13주 합산/집계)</li></ul>
-<pre class="code lang-sql"><code>-- kpi_result 저장 (정본 롱포맷, metric 어휘는 04 §2.5)
+<ul>
+<li>매일 보고 + 충실한 work_log → report_fidelity_score 높음</li>
+</ul>
+<h3 id="23-일일·분기-집계-d16-롱포맷">2.3 일일·분기 집계 (D16 롱포맷)</h3>
+<p>우리 플랫폼의 kpi_result는 **롱포맷(long format)**으로 저장한다: <strong>1행 = 1 user + 1 period_type + 1 period_key + 1 metric</strong>. 정량 <code>value</code>는 결정론적 코드로 계산한 값이며, AI 서술은 별도 <code>ai_draft</code> JSONB(정량 미포함)에 저장한다. 스키마 정본은 04-data-model.md §2.5.</p>
+<ul>
+<li><strong>일일</strong>: period_type=<code>daily</code>, period_key=<code>&#39;2026-07-01&#39;</code></li>
+<li><strong>분기</strong>: period_type=<code>quarterly</code>, period_key=<code>&#39;2026-Q3&#39;</code> (일일 metric의 13주 합산/집계)</li>
+</ul>
+<pre class="code"><code>-- kpi_result 저장 (정본 롱포맷, metric 어휘는 04 §2.5)
 INSERT INTO kpi_result (user_id, period_type, period_key, metric, value, source)
 VALUES
   (101, 'quarterly', '2026-Q3', 'work_completed_count',   42,    'virtual_office'),
@@ -158,7 +277,12 @@ DO UPDATE SET value = EXCLUDED.value, updated_at = now();</code></pre>
 <p><strong>역할 분리(D14-e)</strong>: <strong>정량 점수(value)는 결정론적 코드가 이미 계산</strong>하여 kpi_result에 저장했다. AI는 그 정량 결과를 <strong>입력으로 받아</strong> 서술(강점/개선/근거)만 생성한다. AI는 점수를 산출·수정하지 않는다 → 같은 입력이면 같은 점수(재현 가능성 = 감사 요건).</p>
 <p><strong>가명화(D20-d)</strong>: 외부 AI(Claude API) 전송 시 <strong>실명 → 사번(사원번호/erp_user.id)으로 가명화</strong>한다. 이름·이메일 등 직접 식별자는 프롬프트에 포함하지 않는다. 처리위탁·국외이전 고지를 문서화한다.</p>
 <p><strong>입력 데이터</strong>:</p>
-<ul><li>결정론적 코드가 계산한 metric value(work<em>completed</em>count 등, 04 §2.5)</li><li>해당 기간 work<em>log / meeting</em>minute / action_item 요약(가명화)</li><li>지난 3개월 metric 트렌드</li><li>팀 벤치마크(user<em>team</em>history 기준 소속 팀, §5)</li></ul>
+<ul>
+<li>결정론적 코드가 계산한 metric value(work_completed_count 등, 04 §2.5)</li>
+<li>해당 기간 work_log / meeting_minute / action_item 요약(가명화)</li>
+<li>지난 3개월 metric 트렌드</li>
+<li>팀 벤치마크(user_team_history 기준 소속 팀, §5)</li>
+</ul>
 <p><strong>Claude Prompt 구조</strong>:</p>
 <pre class="code"><code>당신은 회사 KPI 평가 어시스턴트입니다.
 아래 정량 점수는 이미 확정된 값입니다. 점수를 바꾸지 말고, 근거를 해석하여 서술만 작성하세요.
@@ -207,18 +331,45 @@ DO UPDATE SET value = EXCLUDED.value, updated_at = now();</code></pre>
   &quot;model&quot;: &quot;claude-opus&quot;
 }</code></pre>
 <blockquote>AI 응답에는 <code>quantitative_scores</code>가 없다. 정량은 kpi_result.value(코드 계산)가 유일한 출처다.</blockquote>
-<blockquote>⚠ <strong>구현 정합 (2026-07-13, spec-impl-gap-audit §4 #27)</strong>: 현행 구현(<code>ai_draft.py</code>)의 저장 구조는 위 상세 스키마의 <strong>축약형</strong> — <code>{&quot;강점&quot;: str, &quot;개선&quot;: str, &quot;근거&quot;: str, &quot;_source&quot;: &quot;nvidia&quot;|&quot;mock&quot;}</code> 평면 한국어 키. &quot;서술 전용·정량 미개입·분기만 생성·가명화&quot; 원칙은 전부 준수하나, <code>strengths[]</code> 구조화 배열·<code>overall_assessment</code> 5단계·<code>team_percentile</code> 입력(§5.4의 벤치마크 산출 자체 미구현)은 미반영. 프론트(<code>/kpi</code>)가 평면 키를 직접 렌더하므로 <strong>구조 전환 시 백엔드·프론트 동시 개정 필요</strong> — team<em>percentile(§5.4) 구현과 묶어 후속 과제로 관리하며, 그 전까지 저장 구조 정본 = ai</em>draft.py.</blockquote>
-<h3 id="32-관리자-검토-조정">3.2 관리자 검토 &amp; 조정</h3>
+<blockquote>⚠ <strong>구현 정합 (2026-07-13, spec-impl-gap-audit §4 #27)</strong>: 현행 구현(<code>ai_draft.py</code>)의 저장 구조는 위 상세 스키마의 <strong>축약형</strong> — <code>{&quot;강점&quot;: str, &quot;개선&quot;: str, &quot;근거&quot;: str, &quot;_source&quot;: &quot;nvidia&quot;|&quot;mock&quot;}</code> 평면 한국어 키. &quot;서술 전용·정량 미개입·분기만 생성·가명화&quot; 원칙은 전부 준수하나, <code>strengths[]</code> 구조화 배열·<code>overall_assessment</code> 5단계·<code>team_percentile</code> 입력(§5.4의 벤치마크 산출 자체 미구현)은 미반영. 프론트(<code>/kpi</code>)가 평면 키를 직접 렌더하므로 <strong>구조 전환 시 백엔드·프론트 동시 개정 필요</strong> — team_percentile(§5.4) 구현과 묶어 후속 과제로 관리하며, 그 전까지 저장 구조 정본 = ai_draft.py.</blockquote>
+<h3 id="32-관리자-검토--조정">3.2 관리자 검토 &amp; 조정</h3>
 <p><strong>담당</strong>: team leader / manager (ERP users.role = leader | admin)</p>
 <p><strong>프로세스</strong>:</p>
-<ol><li><strong>검토 화면</strong>:<ul><li>AI 초안 점수 표시</li><li>각 신호별 원본 데이터 링크 (work<em>log, meeting</em>minute, action_item)</li><li>직원 평가 이력 (지난 분기 트렌드)</li><li>팀 평균 벤치마크</li></ul></li><li><strong>조정 권한</strong>:<ul><li>점수 <strong>±10% 범위</strong> 수정 가능(백분율 단일 기준 — &quot;± 최대 10점&quot; 병기 폐기)</li><li>초안 근거 동의/수정/반박</li><li>개선액션 추가·수정 (최대 +3개)</li><li>비고 입력 (개인적 기여·상황고려)</li></ul></li><li><strong>검증</strong>:<ul><li>조정사유 필수 입력 (≥30자)</li><li>이전 분기 대비 급격한 변화(±30%) 경고 표시</li><li>저성과 직원(&lt;평균-2σ) 한번 더 검토 권유</li><li><code>admin_adjusted_score</code> 설정 시 audit_log(<code>kpi_adjusted</code>) 자동 생성(04 §2.6, D20)</li></ul></li><li><strong>저장</strong> (정본 스키마 04 §2.5 컬럼명):</li></ol>
-<pre class="code lang-python"><code>   kpi_result.admin_adjusted_score = {{조정점수}}   # 미조정 시 NULL → value 유효
-   kpi_result.admin_note           = {{조정사유}}
-   kpi_result.admin_reviewed_at    = {{ISO8601}}
-   kpi_result.admin_user_id        = {{manager_id}}
-   # 조정 여부는 admin_adjusted_score IS NOT NULL 로 판정(별도 boolean 없음)</code></pre>
-<h3 id="33-직원-이의신청-확정-상태머신-d15">3.3 직원 이의신청 → 확정 상태머신 (D15)</h3>
-<p><strong>담당</strong>: 평가받은 직원 (erp<em>user</em>id) + 관리자/HR</p>
+<ol>
+<li><p><strong>검토 화면</strong>:</p>
+<ul>
+<li>AI 초안 점수 표시</li>
+<li>각 신호별 원본 데이터 링크 (work_log, meeting_minute, action_item)</li>
+<li>직원 평가 이력 (지난 분기 트렌드)</li>
+<li>팀 평균 벤치마크</li>
+</ul>
+</li>
+<li><p><strong>조정 권한</strong>:</p>
+<ul>
+<li>점수 <strong>±10% 범위</strong> 수정 가능(백분율 단일 기준 — &quot;± 최대 10점&quot; 병기 폐기)</li>
+<li>초안 근거 동의/수정/반박</li>
+<li>개선액션 추가·수정 (최대 +3개)</li>
+<li>비고 입력 (개인적 기여·상황고려)</li>
+</ul>
+</li>
+<li><p><strong>검증</strong>:</p>
+<ul>
+<li>조정사유 필수 입력 (≥30자)</li>
+<li>이전 분기 대비 급격한 변화(±30%) 경고 표시</li>
+<li>저성과 직원(&lt;평균-2σ) 한번 더 검토 권유</li>
+<li><code>admin_adjusted_score</code> 설정 시 audit_log(<code>kpi_adjusted</code>) 자동 생성(04 §2.6, D20)</li>
+</ul>
+</li>
+<li><p><strong>저장</strong> (정본 스키마 04 §2.5 컬럼명):</p>
+<pre class="code"><code>kpi_result.admin_adjusted_score = {{조정점수}}   # 미조정 시 NULL → value 유효
+kpi_result.admin_note           = {{조정사유}}
+kpi_result.admin_reviewed_at    = {{ISO8601}}
+kpi_result.admin_user_id        = {{manager_id}}
+# 조정 여부는 admin_adjusted_score IS NOT NULL 로 판정(별도 boolean 없음)</code></pre>
+</li>
+</ol>
+<h3 id="33-직원-이의신청-→-확정-상태머신-d15">3.3 직원 이의신청 → 확정 상태머신 (D15)</h3>
+<p><strong>담당</strong>: 평가받은 직원 (erp_user_id) + 관리자/HR</p>
 <p><strong>상태머신</strong> (<code>kpi_result.objection_status</code>: none → submitted → reviewing → resolved):</p>
 <pre class="code"><code>[평가 공개] objection_status='none', finalized_at=NULL
     │  (직원이 이의 접수, 공개 후 7일 이내)
@@ -235,9 +386,13 @@ DO UPDATE SET value = EXCLUDED.value, updated_at = now();</code></pre>
 [ERP push]  final_score 전송(POST /api/kpi-results). 정정 발생 시 재push(upsert).</code></pre>
 <p>이의신청이 없는 경우: 공개 후 7일 경과 시 자동으로 <code>final_score = admin_adjusted_score ?? value</code>로 확정(<code>finalized_at</code> 설정) → push.</p>
 <p><strong>이의신청 대상</strong>: 점수 자체가 아니라 &quot;근거가 타당하지 않음&quot;을 주장.</p>
-<ul><li>예: &quot;회의록 기여가 과소 집계됨(실제 공동작성 2건)&quot;</li><li>예: &quot;액션아이템 기한 내 완료가 지연으로 잘못 집계됨&quot;</li><li>(근태 관련 이의는 대상 아님 — 우리 KPI는 근태 미반영, D14-d)</li></ul>
+<ul>
+<li>예: &quot;회의록 기여가 과소 집계됨(실제 공동작성 2건)&quot;</li>
+<li>예: &quot;액션아이템 기한 내 완료가 지연으로 잘못 집계됨&quot;</li>
+<li>(근태 관련 이의는 대상 아님 — 우리 KPI는 근태 미반영, D14-d)</li>
+</ul>
 <p><strong>제출 형식</strong>(objection_detail JSONB):</p>
-<pre class="code lang-json"><code>{
+<pre class="code"><code>{
   &quot;kpi_result_id&quot;: &quot;{{id}}&quot;,
   &quot;objection_category&quot;: &quot;score_basis | missing_signal | data_error&quot;,
   &quot;objection_text&quot;: &quot;...&quot;,
@@ -245,7 +400,7 @@ DO UPDATE SET value = EXCLUDED.value, updated_at = now();</code></pre>
   &quot;submitted_at&quot;: &quot;{{ISO8601}}&quot;
 }</code></pre>
 <p><strong>저장</strong>(정본 스키마 04 §2.5 컬럼):</p>
-<pre class="code lang-python"><code># 접수
+<pre class="code"><code># 접수
 kpi_result.objection_status       = 'submitted'
 kpi_result.objection_detail       = {{objection 객체}}
 kpi_result.objection_submitted_at = {{ISO8601}}
@@ -257,14 +412,39 @@ kpi_result.objection_resolved_at  = {{ISO8601}}
 kpi_result.final_score            = {{재조정 or 유지}}
 kpi_result.finalized_at           = {{ISO8601}}   # 확정 → ERP push 트리거</code></pre>
 <hr>
-<h2 id="4-eod-배치-erp-연동">4. EOD 배치 &amp; ERP 연동</h2>
+<h2 id="4-eod-배치--erp-연동">4. EOD 배치 &amp; ERP 연동</h2>
 <h3 id="41-배치-일정-d17">4.1 배치 일정 (D17)</h3>
-<div class="table-wrap"><table><thead><tr><th>시점(KST)</th><th>대상</th><th>작업</th></tr></thead><tbody><tr><td><strong>매일 18:00</strong></td><td>당일 업무 요약</td><td>daily_reports push → ERP (18:00 이후 활동 익일 귀속, 주말·공휴일 스킵)</td></tr><tr><td><strong>매일 21:00</strong></td><td>당일 work_log·meeting·action</td><td>정량 metric 결정론적 계산 + AI 서술 초안(검토 대기, ERP 전송 없음)</td></tr><tr><td><strong>분기말 15:00</strong></td><td>분기 데이터</td><td>quarterly metric 집계 + AI 서술 초안 → 관리자·직원 공개</td></tr><tr><td><strong>확정 이벤트 / 분기 마감 +4영업일</strong></td><td>확정된 final_score</td><td>ERP kpi_results push (§4.3)</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>시점(KST)</th>
+<th>대상</th>
+<th>작업</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>매일 18:00</strong></td>
+<td>당일 업무 요약</td>
+<td>daily_reports push → ERP (18:00 이후 활동 익일 귀속, 주말·공휴일 스킵)</td>
+</tr>
+<tr>
+<td><strong>매일 21:00</strong></td>
+<td>당일 work_log·meeting·action</td>
+<td>정량 metric 결정론적 계산 + AI 서술 초안(검토 대기, ERP 전송 없음)</td>
+</tr>
+<tr>
+<td><strong>분기말 15:00</strong></td>
+<td>분기 데이터</td>
+<td>quarterly metric 집계 + AI 서술 초안 → 관리자·직원 공개</td>
+</tr>
+<tr>
+<td><strong>확정 이벤트 / 분기 마감 +4영업일</strong></td>
+<td>확정된 final_score</td>
+<td>ERP kpi_results push (§4.3)</td>
+</tr>
+</tbody></table></div>
 <blockquote>daily_reports push(18:00)와 KPI AI 초안(21:00)은 시각을 분리하여 &quot;18:00 생성 ↔ 18:00 검토완료분 push&quot; 순환 의존을 제거했다(D17). 주간(weekly)·월간 배치는 폐기(정본 주기는 daily/quarterly).</blockquote>
 <h3 id="42-daily-status-push-매일">4.2 Daily Status Push (매일)</h3>
 <p><strong>목적</strong>: 일일 업무 진행상태 및 KPI 신호를 ERP로 전송</p>
 <p><strong>Process Flow</strong>:</p>
-<div class="mermaid">sequenceDiagram
+<pre class="code"><code>sequenceDiagram
     participant VO as 가상오피스&lt;br/&gt;KPI 엔진
     participant ERPAPI as ERP API
     participant ERPdb as ERP DB
@@ -275,12 +455,16 @@ kpi_result.finalized_at           = {{ISO8601}}   # 확정 → ERP push 트리�
     VO-&gt;&gt;VO: 21:00 정량 metric 계산(코드) + AI 서술 초안&lt;br/&gt;(kpi_result 우리 DB, ERP 전송 없음)
     VO-&gt;&gt;VO: daily_status_push 로그 기록(target=erp_daily_reports)
 
-    Note over VO,ERPdb: [일일 완료] KPI는 검토 대기&lt;br/&gt;확정 후에만 ERP push(§4.3)</div>
-<blockquote>일일 배치는 daily<em>reports만 ERP로 push한다. <strong>kpi</em>results는 확정(finalized) 후 §4.3 경로로만</strong> 전송되며, 일일 신호를 ERP kpi_results로 직접 보내지 않는다(D15·D17). 이전의 <code>/api/kpi/results/batch</code> 별도 경로는 폐기 — 정본 경로는 <code>POST /api/kpi-results</code> 하나다.</blockquote>
-<p><strong>인증</strong>:</p>
-<ul><li>ERP API 호출 시 service_jwt (24h, 갱신) 사용</li><li>읽기(users, teams, attendances)는 read-only DB 계정</li><li>쓰기(daily<em>reports, kpi</em>results)는 API 경유로만 수행 (정본 연동 설계 준수)</li></ul>
+    Note over VO,ERPdb: [일일 완료] KPI는 검토 대기&lt;br/&gt;확정 후에만 ERP push(§4.3)</code></pre>
+<blockquote>일일 배치는 daily_reports만 ERP로 push한다. <strong>kpi_results는 확정(finalized) 후 §4.3 경로로만</strong> 전송되며, 일일 신호를 ERP kpi_results로 직접 보내지 않는다(D15·D17). 이전의 <code>/api/kpi/results/batch</code> 별도 경로는 폐기 — 정본 경로는 <code>POST /api/kpi-results</code> 하나다.</blockquote>
+<p><strong>인증</strong>: </p>
+<ul>
+<li>ERP API 호출 시 service_jwt (24h, 갱신) 사용</li>
+<li>읽기(users, teams, attendances)는 read-only DB 계정</li>
+<li>쓰기(daily_reports, kpi_results)는 API 경유로만 수행 (정본 연동 설계 준수)</li>
+</ul>
 <p><strong>API Call 예</strong>:</p>
-<pre class="code lang-bash"><code>curl -X POST &quot;http://erp.internal/api/reports&quot; \
+<pre class="code"><code>curl -X POST &quot;http://erp.internal/api/reports&quot; \
   -H &quot;Authorization: Bearer {{service_jwt}}&quot; \
   -H &quot;X-Company-Id: {{company_id}}&quot; \
   -H &quot;Content-Type: application/json&quot; \
@@ -293,10 +477,14 @@ kpi_result.finalized_at           = {{ISO8601}}   # 확정 → ERP push 트리�
     &quot;tomorrow_plan&quot;: &quot;KPI 배치 테스트 + 관리자 UI 통합&quot;,
     &quot;status&quot;: &quot;submitted&quot;
   }'</code></pre>
-<p><strong>참고</strong>:</p>
-<ul><li><code>status</code> 표기값(문서 통일): draft | submitted | reviewed. <strong>ERP 라이브 daily_reports.status enum은 재확인 필요</strong>(03 Open Questions) — 확인 후 03·08 동일하게 정정.</li><li><code>current_tasks</code>는 JSON 배열 형식 (정본 03-erp-integration.md 참조)</li><li>virtual<em>office 요약(완료 건수·회의록 기여 등)은 today</em>work 텍스트에 반영하고, 상세 KPI는 우리 kpi_result로만 관리</li></ul>
+<p><strong>참고</strong>: </p>
+<ul>
+<li><code>status</code> 표기값(문서 통일): draft | submitted | reviewed. <strong>ERP 라이브 daily_reports.status enum은 재확인 필요</strong>(03 Open Questions) — 확인 후 03·08 동일하게 정정.</li>
+<li><code>current_tasks</code>는 JSON 배열 형식 (정본 03-erp-integration.md 참조)</li>
+<li>virtual_office 요약(완료 건수·회의록 기여 등)은 today_work 텍스트에 반영하고, 상세 KPI는 우리 kpi_result로만 관리</li>
+</ul>
 <p><strong>응답</strong>:</p>
-<pre class="code lang-json"><code>{
+<pre class="code"><code>{
   &quot;id&quot;: 12345,
   &quot;user_id&quot;: 101,
   &quot;date&quot;: &quot;2026-07-01&quot;,
@@ -306,9 +494,9 @@ kpi_result.finalized_at           = {{ISO8601}}   # 확정 → ERP push 트리�
 }</code></pre>
 <h3 id="43-분기말-kpi-최종-push-quarterly">4.3 분기말 KPI 최종 Push (quarterly)</h3>
 <p><strong>시점</strong>: 분기말 + 4영업일 (모든 검토·이의신청 완료 후)</p>
-<p><strong>목표</strong>: quarterly<em>kpi → ERP kpi</em>results 테이블에 미러 동기화</p>
+<p><strong>목표</strong>: quarterly_kpi → ERP kpi_results 테이블에 미러 동기화</p>
 <p><strong>ERP DB 신규 테이블</strong>: <code>kpi_results</code> (ERP dev 브랜치 작업, 스키마 정본은 03 §5.1)</p>
-<pre class="code lang-sql"><code>CREATE TABLE kpi_results (
+<pre class="code"><code>CREATE TABLE kpi_results (
   id SERIAL PRIMARY KEY,
   company_id INTEGER NOT NULL REFERENCES companies(id),
   user_id INTEGER NOT NULL REFERENCES users(id),
@@ -322,7 +510,11 @@ kpi_result.finalized_at           = {{ISO8601}}   # 확정 → ERP push 트리�
   UNIQUE(company_id, user_id, period_type, period_key, metric)
 );</code></pre>
 <p><strong>설명</strong>:</p>
-<ul><li>ERP kpi<em>results는 <strong>확정 점수만</strong> 저장하는 최소 스키마: {id, company</em>id, user<em>id, period</em>type, period<em>key, metric, value, source, created</em>at, updated_at}</li><li>AI 초안(ai<em>draft), 관리자 검토(admin</em>adjusted<em>score, admin</em>note), 직원 이의신청(objection<em>*), 최종점수(final</em>score) 등은 <strong>우리 플랫폼 DB kpi_result 테이블에 인라인</strong>(04 §2.5 정본). <code>kpi_result_review</code> 테이블은 폐기(D16).</li><li>우리는 ERP의 producer일 뿐 consumer 아님</li></ul>
+<ul>
+<li>ERP kpi_results는 <strong>확정 점수만</strong> 저장하는 최소 스키마: {id, company_id, user_id, period_type, period_key, metric, value, source, created_at, updated_at}</li>
+<li>AI 초안(ai_draft), 관리자 검토(admin_adjusted_score, admin_note), 직원 이의신청(objection_*), 최종점수(final_score) 등은 <strong>우리 플랫폼 DB kpi_result 테이블에 인라인</strong>(04 §2.5 정본). <code>kpi_result_review</code> 테이블은 폐기(D16).</li>
+<li>우리는 ERP의 producer일 뿐 consumer 아님</li>
+</ul>
 <p><strong>Push API 엔드포인트</strong> (정본 경로: <code>POST /api/kpi-results</code>, 03 §5.2):</p>
 <pre class="code"><code>POST /api/kpi-results
 Authorization: Bearer {{service_jwt}}
@@ -346,9 +538,13 @@ Body:
   &quot;source&quot;: &quot;virtual_office&quot;
 }</code></pre>
 <p><strong>설명</strong>:</p>
-<ul><li><strong>관리자 확정 final_score만 전송</strong>(D15). value 필드에는 각 metric의 확정 점수가 담긴다.</li><li>ai<em>draft, admin</em>note, 이의신청 정보는 우리 kpi_result에만 유지하며 ERP로는 전송하지 않음</li><li>ERP는 이 메트릭들을 인사평가 자료로만 활용(§5)</li></ul>
+<ul>
+<li><strong>관리자 확정 final_score만 전송</strong>(D15). value 필드에는 각 metric의 확정 점수가 담긴다.</li>
+<li>ai_draft, admin_note, 이의신청 정보는 우리 kpi_result에만 유지하며 ERP로는 전송하지 않음</li>
+<li>ERP는 이 메트릭들을 인사평가 자료로만 활용(§5)</li>
+</ul>
 <p><strong>응답</strong>:</p>
-<pre class="code lang-json"><code>{
+<pre class="code"><code>{
   &quot;status&quot;: &quot;success&quot;,
   &quot;period_type&quot;: &quot;quarterly&quot;,
   &quot;period_key&quot;: &quot;2026-Q3&quot;,
@@ -356,9 +552,9 @@ Body:
   &quot;updated_count&quot;: 0,
   &quot;errors&quot;: []
 }</code></pre>
-<h3 id="44-daily_status_push-로그">4.4 daily<em>status</em>push 로그</h3>
+<h3 id="44-daily_status_push-로그">4.4 daily_status_push 로그</h3>
 <p><strong>용도</strong>: 각 배치 실행의 추적·재시도·감사. <strong>스키마 정본은 04-data-model.md §2.5</strong>(본 절은 참조용 요약). <code>target</code>별 재시도 분리, <code>run_id</code> + advisory lock으로 멱등성 보장(D17).</p>
-<pre class="code lang-python"><code># 모델 (정본: 04 §2.5 daily_status_push)
+<pre class="code"><code># 모델 (정본: 04 §2.5 daily_status_push)
 class DailyStatusPush(Base):
     __tablename__ = &quot;daily_status_push&quot;
 
@@ -378,14 +574,57 @@ class DailyStatusPush(Base):
 <hr>
 <h2 id="5-erp-developer_evaluations-vs-우리-kpi-역할-분담">5. ERP developer_evaluations vs 우리 KPI 역할 분담</h2>
 <h3 id="51-두-시스템의-목적-차이">5.1 두 시스템의 목적 차이</h3>
-<div class="table-wrap"><table><thead><tr><th>항목</th><th>ERP developer_evaluations</th><th>우리 KPI (virtual_office)</th></tr></thead><tbody><tr><td><strong>평가 대상</strong></td><td>전체 직원 (특히 개발자)</td><td>가상오피스 활동 기준 직원</td></tr><tr><td><strong>신호 출처</strong></td><td>GitHub, Jira, 코드리뷰</td><td>회의, 업무결과물, 협업</td></tr><tr><td><strong>평가 차원</strong></td><td>코드 품질, 생산성, 영향도</td><td>협업능력, 의사결정, 리더십</td></tr><tr><td><strong>빈도</strong></td><td>월간 + 분기별</td><td>일일 + 분기별(weekly 폐기, D16)</td></tr><tr><td><strong>AI 모델</strong></td><td>Gemini (ERP 기본)</td><td>Claude (우리 선택)</td></tr><tr><td><strong>최종 사용</strong></td><td>기술 성과 평가, 승급 근거</td><td>인사평가, 인센티브, 팀 배치</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>항목</th>
+<th>ERP developer_evaluations</th>
+<th>우리 KPI (virtual_office)</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>평가 대상</strong></td>
+<td>전체 직원 (특히 개발자)</td>
+<td>가상오피스 활동 기준 직원</td>
+</tr>
+<tr>
+<td><strong>신호 출처</strong></td>
+<td>GitHub, Jira, 코드리뷰</td>
+<td>회의, 업무결과물, 협업</td>
+</tr>
+<tr>
+<td><strong>평가 차원</strong></td>
+<td>코드 품질, 생산성, 영향도</td>
+<td>협업능력, 의사결정, 리더십</td>
+</tr>
+<tr>
+<td><strong>빈도</strong></td>
+<td>월간 + 분기별</td>
+<td>일일 + 분기별(weekly 폐기, D16)</td>
+</tr>
+<tr>
+<td><strong>AI 모델</strong></td>
+<td>Gemini (ERP 기본)</td>
+<td>Claude (우리 선택)</td>
+</tr>
+<tr>
+<td><strong>최종 사용</strong></td>
+<td>기술 성과 평가, 승급 근거</td>
+<td>인사평가, 인센티브, 팀 배치</td>
+</tr>
+</tbody></table></div>
 <h3 id="52-우리의-책임-범위">5.2 우리의 책임 범위</h3>
 <p><strong>우리 플랫폼이 하는 것</strong>:</p>
-<ul><li>협업·회의·업무결과물 신호 수집 및 KPI <strong>정량 산출(결정론적 코드, D14-e)</strong></li><li>정본 롱포맷 kpi_result 테이블에 메트릭 행 저장(04 §2.5)</li><li>관리자 검토·이의신청·확정을 거친 <strong>final<em>score를 ERP kpi</em>results로 push</strong>(D15)</li></ul>
+<ul>
+<li>협업·회의·업무결과물 신호 수집 및 KPI <strong>정량 산출(결정론적 코드, D14-e)</strong></li>
+<li>정본 롱포맷 kpi_result 테이블에 메트릭 행 저장(04 §2.5)</li>
+<li>관리자 검토·이의신청·확정을 거친 <strong>final_score를 ERP kpi_results로 push</strong>(D15)</li>
+</ul>
 <p><strong>우리 플랫폼이 하지 않는 것</strong>:</p>
-<ul><li>❌ ERP developer_evaluations, attendance 소비하여 종합 점수 계산 (ERP 책임)</li><li>❌ 인사평가 등급(S~F), 급여·보너스 배치 (ERP 및 HR 책임)</li><li>❌ 자체 역량평가 시스템 재구축 (정본 Won't 대상)</li></ul>
+<ul>
+<li>❌ ERP developer_evaluations, attendance 소비하여 종합 점수 계산 (ERP 책임)</li>
+<li>❌ 인사평가 등급(S~F), 급여·보너스 배치 (ERP 및 HR 책임)</li>
+<li>❌ 자체 역량평가 시스템 재구축 (정본 Won&#39;t 대상)</li>
+</ul>
 <p><strong>참고: ERP측 활용 예시</strong> (우리 플랫폼 범위 밖)</p>
-<p>ERP가 우리 kpi<em>results + 자체 developer</em>evaluations + attendance를 조합하여 다음과 같이 활용할 수 있음 (ERP 담당):</p>
+<p>ERP가 우리 kpi_results + 자체 developer_evaluations + attendance를 조합하여 다음과 같이 활용할 수 있음 (ERP 담당):</p>
 <pre class="code"><code>분기별 인사평가 (ERP에서 계산)
 ├─ 개발자 평가 (ERP): DORA, 코드리뷰, GitHub activity
 ├─ 협업 KPI (우리 제공): 우리가 확정한 final_score(회의록·업무·액션 이행)
@@ -393,15 +632,24 @@ class DailyStatusPush(Base):
 └─ 종합 점수 (가중합, ERP 계산)
     = 0.4 × dev_eval + 0.4 × kpi(우리 final_score) + 0.2 × attendance</code></pre>
 <blockquote>ERP 종합식의 <code>kpi</code> 항은 우리가 전송한 <strong>확정 final_score</strong>를 받는다(D15). <code>attendance</code> 0.2 가중치가 근태를 반영하므로, 우리 KPI에서 근태를 다시 보정하면 이중 반영이 된다 — 따라서 우리 KPI는 근태 미반영(D14-d).</blockquote>
-<h3 id="54-팀-벤치마크-team_percentile-user_team_history-기준">5.4 팀 벤치마크 (team<em>percentile) — user</em>team_history 기준</h3>
+<h3 id="54-팀-벤치마크-team_percentile--user_team_history-기준">5.4 팀 벤치마크 (team_percentile) — user_team_history 기준</h3>
 <p><code>team_percentile</code>은 <strong>평가 기간에 실제 소속했던 팀</strong>을 모수로 산출한다(D17). 분기 중 팀을 이동한 직원의 벤치마크 왜곡을 막기 위해 <code>user_team_history</code>(04 §2.3)로 기간별 소속 팀을 판정한다.</p>
-<ul><li><strong>모수</strong>: 해당 period<em>key 기간에 같은 <code>erp_team_id</code>에 소속했던 활성(is</em>active) 직원의 <code>quarterly_total</code> 분포</li><li><strong>판정 쿼리</strong>: <code>valid_from &lt;= period_end AND (valid_to IS NULL OR valid_to &gt; period_start)</code></li><li><strong>소규모 팀 처리</strong>: 모수 &lt; 5명이면 팀 백분위 대신 <strong>부서(org_group) 단위</strong>로 폴백하고, 그래도 부족하면 백분위를 표시하지 않고 절대 점수만 제공(과대 해석 방지)</li><li>산출된 team_percentile은 코드가 계산하여 AI에 입력으로 제공한다(AI가 임의 계산하지 않음, D14-e)</li></ul>
+<ul>
+<li><strong>모수</strong>: 해당 period_key 기간에 같은 <code>erp_team_id</code>에 소속했던 활성(is_active) 직원의 <code>quarterly_total</code> 분포</li>
+<li><strong>판정 쿼리</strong>: <code>valid_from &lt;= period_end AND (valid_to IS NULL OR valid_to &gt; period_start)</code></li>
+<li><strong>소규모 팀 처리</strong>: 모수 &lt; 5명이면 팀 백분위 대신 <strong>부서(org_group) 단위</strong>로 폴백하고, 그래도 부족하면 백분위를 표시하지 않고 절대 점수만 제공(과대 해석 방지)</li>
+<li>산출된 team_percentile은 코드가 계산하여 AI에 입력으로 제공한다(AI가 임의 계산하지 않음, D14-e)</li>
+</ul>
 <blockquote><strong>Open Question(미해결, 숨기지 않음)</strong>: <strong>직군별 정규화</strong>(개발/영업/지원 등 직군 간 신호 특성 차이 보정)는 현재 미해결이다. 직군마다 회의·업무·액션의 발생 패턴이 달라 동일 metric을 직접 비교하기 어렵다 — 직군별 z-score 정규화 또는 직군 내 백분위 도입 여부를 추후 결정한다.</blockquote>
 <p>직원별 종합 피드백 (예시):</p>
-<ul><li>Developer evaluation → &quot;코드 기술력이 우수하나, 팀 의사결정 참여 미흡&quot;</li><li>KPI → &quot;회의 및 협업 리더십 강점, GitHub 활동 보완 권고&quot;</li><li><strong>종합</strong>: &quot;기술 + 협업&quot; 양면 균형 피드백</li></ul>
+<ul>
+<li>Developer evaluation → &quot;코드 기술력이 우수하나, 팀 의사결정 참여 미흡&quot;</li>
+<li>KPI → &quot;회의 및 협업 리더십 강점, GitHub 활동 보완 권고&quot;</li>
+<li><strong>종합</strong>: &quot;기술 + 협업&quot; 양면 균형 피드백</li>
+</ul>
 <h3 id="53-데이터-페더레이션">5.3 데이터 페더레이션</h3>
 <p>우리는 ERP kpi_results 테이블의 단순 producer일 뿐, consumer가 아니다.</p>
-<pre class="code lang-python"><code># 우리 플랫폼에서 ERP 데이터 조회 (읽기만)
+<pre class="code"><code># 우리 플랫폼에서 ERP 데이터 조회 (읽기만)
 GET /api/kpi/federation?user_id={{id}}&amp;period_key={{2026-Q3}}
 
 응답:
@@ -425,14 +673,28 @@ GET /api/kpi/federation?user_id={{id}}&amp;period_key={{2026-Q3}}
 
 # 인사평가는 ERP에서 최종 계산(우리 final_score + dev_eval + attendance)</code></pre>
 <hr>
-<h2 id="6-데이터-모델-api">6. 데이터 모델 &amp; API</h2>
-<h3 id="61-kpi_result-테이블-정본-04-data-modelmd-25">6.1 kpi_result 테이블 (정본: 04-data-model.md §2.5)</h3>
+<h2 id="6-데이터-모델--api">6. 데이터 모델 &amp; API</h2>
+<h3 id="61-kpi_result-테이블-정본-04-data-modelmd-§25">6.1 kpi_result 테이블 (정본: 04-data-model.md §2.5)</h3>
 <p><strong>kpi_result 스키마의 정본은 04-data-model.md §2.5이다(D16).</strong> 본 문서는 자체 CREATE TABLE을 정의하지 않고 정본을 참조한다. 핵심 요약:</p>
-<ul><li><strong>롱포맷</strong>: 1행 = 1 user_id + 1 <code>period_type</code>(daily|quarterly) + 1 <code>period_key</code>('2026-07-01'|'2026-Q3') + 1 <code>metric</code></li><li><strong>UNIQUE(user<em>id, period</em>type, period_key, metric)</strong>, 모든 키 컬럼 NOT NULL (<code>period</code> 단일 컬럼 폐기, NULL 금지)</li><li><strong>정량</strong>: <code>value NUMERIC</code>(결정론적 코드 계산, D14-e)</li><li><strong>AI 서술</strong>: <code>ai_draft JSONB</code>(강점/개선/근거 — 정량 점수 미포함)</li><li><strong>관리자 검토</strong>: <code>admin_adjusted_score NUMERIC</code>, <code>admin_note TEXT</code>, <code>admin_user_id</code>, <code>admin_reviewed_at</code></li><li><strong>이의신청 상태머신</strong>: <code>objection_status</code>(none|submitted|reviewing|resolved), <code>objection_detail JSONB</code>, <code>objection_submitted_at</code>, <code>objection_resolved_at</code></li><li><strong>확정</strong>: <code>final_score NUMERIC</code>, <code>finalized_at TIMESTAMP</code></li><li><strong>FK</strong>: <code>user_id → erp_user(id) ON DELETE RESTRICT</code>(평가 기록 영구성, D18)</li><li><code>kpi_result_review</code> 테이블은 폐기(D16). 리뷰·이의·확정 필드는 위와 같이 인라인.</li></ul>
-<p>예시 행: <code>(user_id=101, period_type='quarterly', period_key='2026-Q3', metric='work_completed_count', value=42, final_score=42, finalized_at=...)</code></p>
+<ul>
+<li><strong>롱포맷</strong>: 1행 = 1 user_id + 1 <code>period_type</code>(daily|quarterly) + 1 <code>period_key</code>(&#39;2026-07-01&#39;|&#39;2026-Q3&#39;) + 1 <code>metric</code></li>
+<li><strong>UNIQUE(user_id, period_type, period_key, metric)</strong>, 모든 키 컬럼 NOT NULL (<code>period</code> 단일 컬럼 폐기, NULL 금지)</li>
+<li><strong>정량</strong>: <code>value NUMERIC</code>(결정론적 코드 계산, D14-e)</li>
+<li><strong>AI 서술</strong>: <code>ai_draft JSONB</code>(강점/개선/근거 — 정량 점수 미포함)</li>
+<li><strong>관리자 검토</strong>: <code>admin_adjusted_score NUMERIC</code>, <code>admin_note TEXT</code>, <code>admin_user_id</code>, <code>admin_reviewed_at</code></li>
+<li><strong>이의신청 상태머신</strong>: <code>objection_status</code>(none|submitted|reviewing|resolved), <code>objection_detail JSONB</code>, <code>objection_submitted_at</code>, <code>objection_resolved_at</code></li>
+<li><strong>확정</strong>: <code>final_score NUMERIC</code>, <code>finalized_at TIMESTAMP</code></li>
+<li><strong>FK</strong>: <code>user_id → erp_user(id) ON DELETE RESTRICT</code>(평가 기록 영구성, D18)</li>
+<li><code>kpi_result_review</code> 테이블은 폐기(D16). 리뷰·이의·확정 필드는 위와 같이 인라인.</li>
+</ul>
+<p>예시 행: <code>(user_id=101, period_type=&#39;quarterly&#39;, period_key=&#39;2026-Q3&#39;, metric=&#39;work_completed_count&#39;, value=42, final_score=42, finalized_at=...)</code></p>
 <h3 id="62-api-endpoints">6.2 API Endpoints</h3>
-<p><strong>설계 원칙</strong>:</p>
-<ul><li><strong>DB 저장</strong>: 롱포맷 (1행 = 1 metric)</li><li><strong>API 응답</strong>: 와이드포맷 (UI 편의, 집계된 뷰)</li><li>변환은 query 레이어에서 수행 (SQL GROUP BY / CASE 또는 애플리케이션 로직)</li></ul>
+<p><strong>설계 원칙</strong>: </p>
+<ul>
+<li><strong>DB 저장</strong>: 롱포맷 (1행 = 1 metric)</li>
+<li><strong>API 응답</strong>: 와이드포맷 (UI 편의, 집계된 뷰)</li>
+<li>변환은 query 레이어에서 수행 (SQL GROUP BY / CASE 또는 애플리케이션 로직)</li>
+</ul>
 <h4 id="621-일일-kpi-조회">6.2.1 일일 KPI 조회</h4>
 <pre class="code"><code>GET /api/kpi/daily?user_id={{id}}&amp;date={{YYYY-MM-DD}}
 
@@ -452,7 +714,7 @@ Response (와이드포맷 — 롱포맷 행을 집계):
   },
   &quot;finalized&quot;: false
 }</code></pre>
-<h4 id="622-분기별-kpi-ai-초안-조회">6.2.2 분기별 KPI + AI 초안 조회</h4>
+<h4 id="622-분기별-kpi--ai-초안-조회">6.2.2 분기별 KPI + AI 초안 조회</h4>
 <pre class="code"><code>GET /api/kpi/quarterly?user_id={{id}}&amp;period_key={{2026-Q3}}
 
 Response (와이드포맷):
@@ -502,7 +764,7 @@ Response (와이드포맷):
   }
 }</code></pre>
 <p><strong>참고</strong>: 정량 metric은 DB 롱포맷 행(value, 코드 계산)을 집계한 것이며, <code>ai_draft</code>는 서술만 담고 <strong>정량 점수를 포함하지 않는다</strong>(D14-e). 분기별 한 번 생성.</p>
-<h4 id="623-관리자-ai-초안-검토-조정">6.2.3 관리자: AI 초안 검토 &amp; 조정</h4>
+<h4 id="623-관리자-ai-초안-검토--조정">6.2.3 관리자: AI 초안 검토 &amp; 조정</h4>
 <pre class="code"><code>PUT /api/kpi/admin/review
 
 Body:
@@ -548,7 +810,7 @@ Response:
   &quot;objection_status&quot;: &quot;submitted&quot;,     // none→submitted (D15 상태머신)
   &quot;objection_submitted_at&quot;: &quot;2026-10-02T14:15:00Z&quot;
 }</code></pre>
-<blockquote>접수 기한: 평가 공개 후 <strong>7일 이내</strong>(§3.3). 이후 submitted → reviewing → resolved로 진행하며, resolved 시 final<em>score·finalized</em>at 확정 → ERP push.</blockquote>
+<blockquote>접수 기한: 평가 공개 후 <strong>7일 이내</strong>(§3.3). 이후 submitted → reviewing → resolved로 진행하며, resolved 시 final_score·finalized_at 확정 → ERP push.</blockquote>
 <h4 id="625-배치-eod-일일-신호-집계">6.2.5 배치: EOD 일일 신호 집계</h4>
 <pre class="code"><code>POST /api/kpi/batch/daily
 
@@ -566,7 +828,7 @@ Response:
   &quot;created&quot;: 100,
   &quot;failed&quot;: 0
 }</code></pre>
-<h4 id="626-배치-분기-kpi-ai-초안-생성">6.2.6 배치: 분기 KPI + AI 초안 생성</h4>
+<h4 id="626-배치-분기-kpi--ai-초안-생성">6.2.6 배치: 분기 KPI + AI 초안 생성</h4>
 <pre class="code"><code>POST /api/kpi/batch/quarterly
 
 Body:
@@ -604,64 +866,158 @@ Response:
   &quot;erp_api_status&quot;: &quot;success&quot;,
   &quot;synced_at&quot;: &quot;2026-10-05T10:30:00Z&quot;
 }</code></pre>
-<blockquote><code>only_finalized=true</code>는 <code>finalized_at IS NOT NULL AND objection_status IN ('none','resolved')</code> 행의 <strong>final<em>score만</strong> <code>POST /api/kpi-results</code>로 전송한다(D15). 이의신청 진행 중(submitted/reviewing)이면 스킵. ERP kpi</em>results 미준비 시 로컬 적재 후 backfill(03 §6.5).</blockquote>
+<blockquote><code>only_finalized=true</code>는 <code>finalized_at IS NOT NULL AND objection_status IN (&#39;none&#39;,&#39;resolved&#39;)</code> 행의 <strong>final_score만</strong> <code>POST /api/kpi-results</code>로 전송한다(D15). 이의신청 진행 중(submitted/reviewing)이면 스킵. ERP kpi_results 미준비 시 로컬 적재 후 backfill(03 §6.5).</blockquote>
 <hr>
-<h2 id="7-보안-감시">7. 보안 &amp; 감시</h2>
+<h2 id="7-보안--감시">7. 보안 &amp; 감시</h2>
 <h3 id="71-접근-제어">7.1 접근 제어</h3>
-<div class="table-wrap"><table><thead><tr><th>역할</th><th>볼 수 있는 데이터</th><th>수정 권한</th></tr></thead><tbody><tr><td><strong>직원</strong></td><td>본인 KPI만</td><td>이의신청만</td></tr><tr><td><strong>팀 리더</strong></td><td>팀 전체 KPI</td><td>AI초안 검토·조정</td></tr><tr><td><strong>HR / 관리자</strong></td><td>전사 KPI 대시보드</td><td>최종 확정</td></tr><tr><td><strong>감사</strong></td><td>모든 KPI + 수정이력</td><td>없음 (조회만)</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>역할</th>
+<th>볼 수 있는 데이터</th>
+<th>수정 권한</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>직원</strong></td>
+<td>본인 KPI만</td>
+<td>이의신청만</td>
+</tr>
+<tr>
+<td><strong>팀 리더</strong></td>
+<td>팀 전체 KPI</td>
+<td>AI초안 검토·조정</td>
+</tr>
+<tr>
+<td><strong>HR / 관리자</strong></td>
+<td>전사 KPI 대시보드</td>
+<td>최종 확정</td>
+</tr>
+<tr>
+<td><strong>감사</strong></td>
+<td>모든 KPI + 수정이력</td>
+<td>없음 (조회만)</td>
+</tr>
+</tbody></table></div>
 <h3 id="72-감시-및-로깅">7.2 감시 및 로깅</h3>
 <p>KPI 관련 감사는 공용 <code>audit_log</code>(04 §2.6)로 통합 기록한다. <code>admin_adjusted_score</code> 설정 시 <code>kpi_adjusted</code> 액션이 자동 생성되며, 확정(<code>kpi_finalized</code>)·이의신청 접수(<code>kpi_objection_submitted</code>)도 감사 대상이다.</p>
-<pre class="code lang-python"><code># 감사 액션(공용 audit_log에 기록, 04 §2.6)
+<pre class="code"><code># 감사 액션(공용 audit_log에 기록, 04 §2.6)
 #   ai_draft_generated | kpi_adjusted(자동) | kpi_finalized | kpi_objection_submitted
 #   old_value/new_value(JSONB)로 변경 전후 저장, 보존 5년(D20-e)</code></pre>
-<h3 id="73-제외-민감성-d20">7.3 제외 &amp; 민감성 (D20)</h3>
-<ul><li><strong>GPS 추적</strong>: <strong>GPS 수집 기능 폐기</strong>(D20-c). 위치 기반 KPI·상태 전환 없음. ERP lat/lng/radius 미러링 금지.</li><li><strong>채팅 분석</strong>: KPI에 미포함(반감시 원칙).</li><li><strong>일일 리포트</strong>: 직원 자기보고이므로 사용자 판단 존중. AI 초안은 서술 제안일 뿐.</li><li><strong>외부 AI 전송 가명화(D20-d)</strong>: Claude API 전송 시 실명 → 사번 가명화, 이름·이메일 등 직접 식별자 미포함. 처리위탁·국외이전 고지 문서화.</li><li><strong>보존 기한(D20-e)</strong>: 평가 데이터(kpi<em>result·work</em>log) <strong>5년 보존</strong> 후 파기/익명화(&quot;영구 보관&quot; 폐기). audit_log 5년.</li></ul>
+<h3 id="73-제외--민감성-d20">7.3 제외 &amp; 민감성 (D20)</h3>
+<ul>
+<li><strong>GPS 추적</strong>: <strong>GPS 수집 기능 폐기</strong>(D20-c). 위치 기반 KPI·상태 전환 없음. ERP lat/lng/radius 미러링 금지.</li>
+<li><strong>채팅 분석</strong>: KPI에 미포함(반감시 원칙).</li>
+<li><strong>일일 리포트</strong>: 직원 자기보고이므로 사용자 판단 존중. AI 초안은 서술 제안일 뿐.</li>
+<li><strong>외부 AI 전송 가명화(D20-d)</strong>: Claude API 전송 시 실명 → 사번 가명화, 이름·이메일 등 직접 식별자 미포함. 처리위탁·국외이전 고지 문서화.</li>
+<li><strong>보존 기한(D20-e)</strong>: 평가 데이터(kpi_result·work_log) <strong>5년 보존</strong> 후 파기/익명화(&quot;영구 보관&quot; 폐기). audit_log 5년.</li>
+</ul>
 <hr>
 <h2 id="8-참고-erp측-인사평가-활용-우리-플랫폼-범위-밖">8. 참고: ERP측 인사평가 활용 (우리 플랫폼 범위 밖)</h2>
-<blockquote><strong>⚠️ 이 섹션은 우리 플랫폼의 책임 범위가 아님을 명시합니다.</strong> 우리는 kpi_result 메트릭을 ERP로 push하며, ERP와 HR이 최종 인사평가를 계산합니다.</blockquote>
+<blockquote><strong>⚠️ 이 섹션은 우리 플랫폼의 책임 범위가 아님을 명시합니다.</strong>
+우리는 kpi_result 메트릭을 ERP로 push하며, ERP와 HR이 최종 인사평가를 계산합니다.</blockquote>
 <h3 id="81-평가-흐름-erphr-담당">8.1 평가 흐름 (ERP/HR 담당)</h3>
-<div class="mermaid">graph LR
+<pre class="code"><code>graph LR
     A[&quot;분기말&lt;br/&gt;09-30&quot;] --&gt;|+4영업일| B[&quot;우리 KPI최종확정&lt;br/&gt;10-05&quot;]
     B --&gt;|+ ERP 개발자평가&lt;br/&gt;+ 근태| C[&quot;ERP 종합평가&lt;br/&gt;계산&quot;]
     C --&gt;|공개| D[&quot;인사평가위원회&quot;]
     D --&gt;|검토| E[&quot;개인별 피드백&lt;br/&gt;10-15&quot;]
     E --&gt;|이의신청| F[&quot;최종반영&lt;br/&gt;10-22&quot;]
-    F --&gt;|급여/보너스&lt;br/&gt;배치| G[&quot;급여시스템&quot;]</div>
+    F --&gt;|급여/보너스&lt;br/&gt;배치| G[&quot;급여시스템&quot;]</code></pre>
 <h3 id="82-평가-등급-예시-erp에서-결정">8.2 평가 등급 예시 (ERP에서 결정)</h3>
-<div class="table-wrap"><table><thead><tr><th>최종점수&lt;br/&gt;(ERP 가중합)</th><th>등급</th><th>비고</th></tr></thead><tbody><tr><td>90+</td><td>S</td><td>상위 5%</td></tr><tr><td>80~89</td><td>A</td><td>상위 25%</td></tr><tr><td>70~79</td><td>B</td><td>중상</td></tr><tr><td>60~69</td><td>C</td><td>중</td></tr><tr><td>50~59</td><td>D</td><td>중하</td></tr><tr><td>&lt;50</td><td>F</td><td>하 (개선계획 요구)</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>최종점수<br/>(ERP 가중합)</th>
+<th>등급</th>
+<th>비고</th>
+</tr>
+</thead><tbody><tr>
+<td>90+</td>
+<td>S</td>
+<td>상위 5%</td>
+</tr>
+<tr>
+<td>80~89</td>
+<td>A</td>
+<td>상위 25%</td>
+</tr>
+<tr>
+<td>70~79</td>
+<td>B</td>
+<td>중상</td>
+</tr>
+<tr>
+<td>60~69</td>
+<td>C</td>
+<td>중</td>
+</tr>
+<tr>
+<td>50~59</td>
+<td>D</td>
+<td>중하</td>
+</tr>
+<tr>
+<td>&lt;50</td>
+<td>F</td>
+<td>하 (개선계획 요구)</td>
+</tr>
+</tbody></table></div>
 <p>등급별 인센티브·배치·교육·심화 검토는 ERP 및 HR에서 결정.</p>
 <hr>
 <h2 id="loop-metadata">Loop Metadata</h2>
 <h3 id="upstream-documents-referenced">Upstream documents referenced</h3>
-<ul><li><strong>00-decisions.md</strong>: D14(KPI 공식 재작성)·D15(final_score push)·D16(스키마 정본)·D17(배치)·D20(개인정보)</li><li><strong>04-data-model.md §2.5</strong>: kpi_result 정본 스키마 + metric 어휘 사전(정본)</li><li><strong>03-erp-integration.md §5</strong>: ERP 쓰기(daily<em>reports, kpi</em>results), <code>POST /api/kpi-results</code></li><li><strong>01-prd.md</strong>: §14 KPI 원칙 (결과중심, 반감시)</li></ul>
+<ul>
+<li><strong>00-decisions.md</strong>: D14(KPI 공식 재작성)·D15(final_score push)·D16(스키마 정본)·D17(배치)·D20(개인정보)</li>
+<li><strong>04-data-model.md §2.5</strong>: kpi_result 정본 스키마 + metric 어휘 사전(정본)</li>
+<li><strong>03-erp-integration.md §5</strong>: ERP 쓰기(daily_reports, kpi_results), <code>POST /api/kpi-results</code></li>
+<li><strong>01-prd.md</strong>: §14 KPI 원칙 (결과중심, 반감시)</li>
+</ul>
 <h3 id="downstream-documents-affected">Downstream documents affected</h3>
-<ul><li><strong>12-tasks.md</strong>: KPI API 엔드포인트 구현 (batch, review, objection)</li><li><strong>06-screens.md</strong>: KPI 대시보드 UI (AI초안검토, 관리자조정, 직원이의신청)</li><li><strong>03-erp-integration.md</strong>: EOD 배치 일정, 스케줄러 설정</li></ul>
+<ul>
+<li><strong>12-tasks.md</strong>: KPI API 엔드포인트 구현 (batch, review, objection)</li>
+<li><strong>06-screens.md</strong>: KPI 대시보드 UI (AI초안검토, 관리자조정, 직원이의신청)</li>
+<li><strong>03-erp-integration.md</strong>: EOD 배치 일정, 스케줄러 설정</li>
+</ul>
 <h3 id="open-questions">Open questions</h3>
-<ol><li><strong>AI 모델</strong>: Claude 확정(기본). AI는 서술만, 정량은 코드 계산(D14-e).</li><li><strong>분기 기간 정의</strong>: 캘린더 Q(Q3=7~9월) 가정. 회계연도 사용 시 재확인.</li><li><del><strong>팀 평균 벤치마크</strong></del> → <strong>종결(D17)</strong>: <code>user_team_history</code> 기준 기간별 소속 팀 모수(§5.4). 소규모 팀(&lt;5명)은 부서 폴백.</li><li><strong>직군별 정규화(미해결)</strong>: 직군(개발/영업/지원 등) 간 신호 특성 차이 보정은 <strong>미해결 Open Question</strong>(§5.4). 직군 내 백분위 또는 z-score 정규화 도입 여부 추후 결정.</li><li><strong>중복 평가 방지</strong>: 우리 KPI(협업)와 ERP 개발자평가(코드 활동)가 신호 차원에서 분리됨을 유지.</li></ol>
+<ol>
+<li><strong>AI 모델</strong>: Claude 확정(기본). AI는 서술만, 정량은 코드 계산(D14-e).</li>
+<li><strong>분기 기간 정의</strong>: 캘린더 Q(Q3=7~9월) 가정. 회계연도 사용 시 재확인.</li>
+<li><del><strong>팀 평균 벤치마크</strong></del> → <strong>종결(D17)</strong>: <code>user_team_history</code> 기준 기간별 소속 팀 모수(§5.4). 소규모 팀(&lt;5명)은 부서 폴백.</li>
+<li><strong>직군별 정규화(미해결)</strong>: 직군(개발/영업/지원 등) 간 신호 특성 차이 보정은 <strong>미해결 Open Question</strong>(§5.4). 직군 내 백분위 또는 z-score 정규화 도입 여부 추후 결정.</li>
+<li><strong>중복 평가 방지</strong>: 우리 KPI(협업)와 ERP 개발자평가(코드 활동)가 신호 차원에서 분리됨을 유지.</li>
+</ol>
 <h3 id="assumptions">Assumptions</h3>
-<ol><li>ERP users.id는 우리 erp_user.id의 조인키로 안정적이다.</li><li>모든 직원은 daily_reports(일일리포트)를 작성한다고 가정. (실제로는 옵션이므로 추후 검증)</li><li>meeting<em>minute와 action</em>item은 회의실(room)에서 LiveKit 종료 시 자동 생성된다.</li><li>AI 초안은 Claude API 비용 고려 필요 — 설계 기준 100명: 일일 서술 초안(§4.1, 매일 21:00) 100명 × 65 영업일(13주 × 5일) = 6,500회/분기 + 분기 초안(§6.2.6) 100회/분기.</li><li>관리자 조정 권한은 leader 역할 이상이라 가정. (role = leader | admin)</li></ol>
+<ol>
+<li>ERP users.id는 우리 erp_user.id의 조인키로 안정적이다.</li>
+<li>모든 직원은 daily_reports(일일리포트)를 작성한다고 가정. (실제로는 옵션이므로 추후 검증)</li>
+<li>meeting_minute와 action_item은 회의실(room)에서 LiveKit 종료 시 자동 생성된다.</li>
+<li>AI 초안은 Claude API 비용 고려 필요 — 설계 기준 100명: 일일 서술 초안(§4.1, 매일 21:00) 100명 × 65 영업일(13주 × 5일) = 6,500회/분기 + 분기 초안(§6.2.6) 100회/분기.</li>
+<li>관리자 조정 권한은 leader 역할 이상이라 가정. (role = leader | admin)</li>
+</ol>
 <h3 id="validation-criteria">Validation criteria</h3>
-<ul><li class="task"><input type="checkbox" disabled> kpi_result 테이블 마이그레이션 완료 (Alembic)</li><li class="task"><input type="checkbox" disabled> Claude API 프롬프트 테스트 (샘플 데이터 5건)</li><li class="task"><input type="checkbox" disabled> EOD 배치 스케줄러 등록 (APScheduler)</li><li class="task"><input type="checkbox" disabled> 관리자 UI 메뉴 추가 (Web console)</li><li class="task"><input type="checkbox" disabled> 이의신청 프로세스 문서화</li><li class="task"><input type="checkbox" disabled> 감사 로그 활성화</li><li class="task"><input type="checkbox" disabled> HR 인수테스트 완료</li></ul>
+<ul>
+<li class="task"><input type="checkbox" disabled> kpi_result 테이블 마이그레이션 완료 (Alembic)</li>
+<li class="task"><input type="checkbox" disabled> Claude API 프롬프트 테스트 (샘플 데이터 5건)</li>
+<li class="task"><input type="checkbox" disabled> EOD 배치 스케줄러 등록 (APScheduler)</li>
+<li class="task"><input type="checkbox" disabled> 관리자 UI 메뉴 추가 (Web console)</li>
+<li class="task"><input type="checkbox" disabled> 이의신청 프로세스 문서화</li>
+<li class="task"><input type="checkbox" disabled> 감사 로그 활성화</li>
+<li class="task"><input type="checkbox" disabled> HR 인수테스트 완료</li>
+</ul>
 <h3 id="risks">Risks</h3>
-<ol><li><strong>AI 서술 신뢰도</strong>: AI 서술이 편향될 수 있음 → 정량은 코드가 계산(AI 미관여, D14-e) + 관리자 검토 + 이의신청</li><li><strong>ERP API 연동 지연</strong>: daily_reports 수신 느림 → 배치 타임아웃·재시도(지수 백오프·최대 3회, 03 §6.4)</li><li><strong>개인정보·노동법 민감성</strong>: 모니터링 고지·동의, GPS 폐기(D20-c), 가명화(D20-d), 보존 5년(D20-e)</li><li><strong>분기말 몰림</strong>: 모든 직원 AI 초안 동시 생성 → Claude API 쿼터 추정, 병렬 처리</li><li><strong>직원 만족도</strong>: 이의신청 남용 → 근거 요구 필수, 상태머신으로 처리 투명화(§3.3)</li></ol>
+<ol>
+<li><strong>AI 서술 신뢰도</strong>: AI 서술이 편향될 수 있음 → 정량은 코드가 계산(AI 미관여, D14-e) + 관리자 검토 + 이의신청</li>
+<li><strong>ERP API 연동 지연</strong>: daily_reports 수신 느림 → 배치 타임아웃·재시도(지수 백오프·최대 3회, 03 §6.4)</li>
+<li><strong>개인정보·노동법 민감성</strong>: 모니터링 고지·동의, GPS 폐기(D20-c), 가명화(D20-d), 보존 5년(D20-e)</li>
+<li><strong>분기말 몰림</strong>: 모든 직원 AI 초안 동시 생성 → Claude API 쿼터 추정, 병렬 처리</li>
+<li><strong>직원 만족도</strong>: 이의신청 남용 → 근거 요구 필수, 상태머신으로 처리 투명화(§3.3)</li>
+</ol>
 <hr>
-<p><strong>작성일</strong>: 2026-07-02 <strong>버전</strong>: 1.2 <strong>작성자</strong>: Documentation Specialist</p>
+<p><strong>작성일</strong>: 2026-07-02<br><strong>버전</strong>: 1.2<br><strong>작성자</strong>: Documentation Specialist</p>
 <h3 id="변경-이력">변경 이력</h3>
-<ul><li><strong>v1.2 (2026-07-02)</strong>: 데이터 정본 정렬 — §5.1 빈도 &quot;일일 + 분기별&quot;로 정정(weekly 폐기, D16), minutes<em>authored</em>count를 작성(created_by 기준)으로 축소(공동작성 구조 04에 없음, 필요 시 추후 결정), decisions 가점 카운트 규칙 명문화(TEXT 마크다운 최상위 리스트 항목 수 기준, D14-e 결정론), Claude API 비용 추정·배치 예시를 설계 기준 100명으로 재계산(6,500회/분기 + 분기 100회).</li><li><strong>v1.1 (2026-07-02)</strong>: D14 점수 공식 전면 재작성(시간 비례·회의 참석 기본점·주최자 가점·액션 생성 가점·근태 보정 폐기 → 완료 건수+충실도·회의록 기여·액션 이행률). D14-e 정량은 결정론적 코드·AI는 서술만(프롬프트·JSON 재작성). D15 final<em>score 전송으로 반전 + 이의신청 상태머신(공개→7일→재검토→확정→push). D16 스키마 04 정본 참조(period</em>type/period<em>key, metric 어휘 통일, kpi</em>result<em>review 폐기). D17 배치 타임라인(18:00/21:00/분기 마감) + 팀 벤치마크 user</em>team<em>history 기준·team</em>percentile 산출·직군 정규화 OQ 등재. D20 GPS 삭제·가명화·보존 5년. ±10% 모순 정리. 엔드포인트 <code>POST /api/kpi-results</code> 통일.</li><li><strong>v1.0 (2026-07-01)</strong>: 초안.</li></ul>
-<div class="meta-foot">원본: <code>08-kpi-logic.md</code> · 자동 생성 2026-07-16 · md-to-html</div>
+<ul>
+<li><strong>v1.2 (2026-07-02)</strong>: 데이터 정본 정렬 — §5.1 빈도 &quot;일일 + 분기별&quot;로 정정(weekly 폐기, D16), minutes_authored_count를 작성(created_by 기준)으로 축소(공동작성 구조 04에 없음, 필요 시 추후 결정), decisions 가점 카운트 규칙 명문화(TEXT 마크다운 최상위 리스트 항목 수 기준, D14-e 결정론), Claude API 비용 추정·배치 예시를 설계 기준 100명으로 재계산(6,500회/분기 + 분기 100회).</li>
+<li><strong>v1.1 (2026-07-02)</strong>: D14 점수 공식 전면 재작성(시간 비례·회의 참석 기본점·주최자 가점·액션 생성 가점·근태 보정 폐기 → 완료 건수+충실도·회의록 기여·액션 이행률). D14-e 정량은 결정론적 코드·AI는 서술만(프롬프트·JSON 재작성). D15 final_score 전송으로 반전 + 이의신청 상태머신(공개→7일→재검토→확정→push). D16 스키마 04 정본 참조(period_type/period_key, metric 어휘 통일, kpi_result_review 폐기). D17 배치 타임라인(18:00/21:00/분기 마감) + 팀 벤치마크 user_team_history 기준·team_percentile 산출·직군 정규화 OQ 등재. D20 GPS 삭제·가명화·보존 5년. ±10% 모순 정리. 엔드포인트 <code>POST /api/kpi-results</code> 통일.</li>
+<li><strong>v1.0 (2026-07-01)</strong>: 초안.</li>
+</ul>
+<div class="meta-foot">원본: <code>08-kpi-logic.md</code> · 자동 생성 2026-07-22 · md-to-html</div>
 </main>
 </div>
 
-<script type="module">
-try{
-  const m = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
-  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  m.default.initialize({startOnLoad:true, theme: dark?'dark':'default', securityLevel:'loose'});
-}catch(e){
-  document.querySelectorAll('.mermaid').forEach(el=>{
-    const pre=document.createElement('pre');pre.className='code';
-    pre.textContent=el.textContent;el.replaceWith(pre);
-  });
-}
-</script>
 </body></html>

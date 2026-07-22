@@ -52,59 +52,408 @@ img{max-width:100%;border-radius:8px}
 </style>
 </head><body>
 <div class="layout">
-<nav class="toc"><div class="brand">14. 가상사무실 기능 기획 (재정의 · 정본)</div><div class="sub">14-virtual-office-spec.md</div><a class="lvl1" href="#14-가상사무실-기능-기획-재정의-정본">14. 가상사무실 기능 기획 (재정의 · 정본)</a><a class="lvl2" href="#0-핵심-전환-supersedes-d26">0. 핵심 전환 (Supersedes D26)</a><a class="lvl2" href="#1-화면-구조-시안-기준">1. 화면 구조 (시안 기준)</a><a class="lvl2" href="#2-기능-명세-7개-카테고리-현재-구현-상태">2. 기능 명세 (7개 카테고리) + 현재 구현 상태</a><a class="lvl3" href="#21-아바타-이동">2.1 아바타 / 이동</a><a class="lvl3" href="#22-프레즌스-d13-7종">2.2 프레즌스 (D13 · 7종)</a><a class="lvl3" href="#23-좌석">2.3 좌석</a><a class="lvl3" href="#24-회의실-화상-livekit">2.4 회의실 / 화상 (LiveKit)</a><a class="lvl3" href="#25-회의록-stt-d5">2.5 회의록 / STT (D5)</a><a class="lvl3" href="#26-공간-구조-레이아웃">2.6 공간 구조 / 레이아웃</a><a class="lvl3" href="#27-실시간-인프라">2.7 실시간 인프라</a><a class="lvl3" href="#28-대시보드-통합-패널-같은-화면">2.8 대시보드 통합 패널 (같은 화면)</a><a class="lvl3" href="#281-kpi-위젯-메트릭-매핑-08-kpi-logic-정본-바인딩">2.8.1 KPI 위젯 ↔ 메트릭 매핑 (08-kpi-logic 정본 바인딩)</a><a class="lvl3" href="#282-kpi-워크플로우-화면-좌내비-kpi평가">2.8.2 KPI 워크플로우 화면 (좌내비 &quot;KPI평가&quot;)</a><a class="lvl2" href="#3-요약-판정-기능-실현성">3. 요약 판정 (기능 실현성)</a><a class="lvl2" href="#4-mvp-컷오프-제안-확정-필요">4. MVP 컷오프 (제안 · 확정 필요)</a><a class="lvl2" href="#5-다음-문서-작업-기획-진행-순서">5. 다음 문서 작업 (기획 진행 순서)</a></nav>
-<main><h1 id="14-가상사무실-기능-기획-재정의-정본">14. 가상사무실 기능 기획 (재정의 · 정본)</h1>
+<nav class="toc"><div class="brand">14. 가상사무실 기능 기획 (재정의 · 정본)</div><div class="sub">14-virtual-office-spec.md</div><a class="lvl1" href="#14-가상사무실-기능-기획-재정의-·-정본">14. 가상사무실 기능 기획 (재정의 · 정본)</a><a class="lvl2" href="#0-핵심-전환-supersedes-d26">0. 핵심 전환 (Supersedes D26)</a><a class="lvl2" href="#1-화면-구조-시안-기준">1. 화면 구조 (시안 기준)</a><a class="lvl2" href="#2-기능-명세-7개-카테고리--현재-구현-상태">2. 기능 명세 (7개 카테고리) + 현재 구현 상태</a><a class="lvl3" href="#21-아바타--이동">2.1 아바타 / 이동</a><a class="lvl3" href="#22-프레즌스-d13-·-7종">2.2 프레즌스 (D13 · 7종)</a><a class="lvl3" href="#23-좌석">2.3 좌석</a><a class="lvl3" href="#24-회의실--화상-livekit">2.4 회의실 / 화상 (LiveKit)</a><a class="lvl3" href="#25-회의록--stt-d5">2.5 회의록 / STT (D5)</a><a class="lvl3" href="#26-공간-구조--레이아웃">2.6 공간 구조 / 레이아웃</a><a class="lvl3" href="#27-실시간-인프라">2.7 실시간 인프라</a><a class="lvl3" href="#28-대시보드-통합-패널-같은-화면">2.8 대시보드 통합 패널 (같은 화면)</a><a class="lvl3" href="#281-kpi-위젯-↔-메트릭-매핑-08-kpi-logic-정본-바인딩">2.8.1 KPI 위젯 ↔ 메트릭 매핑 (08-kpi-logic 정본 바인딩)</a><a class="lvl3" href="#282-kpi-워크플로우-화면-좌내비-kpi평가">2.8.2 KPI 워크플로우 화면 (좌내비 KPI평가)</a><a class="lvl2" href="#3-요약-판정-기능-실현성">3. 요약 판정 (기능 실현성)</a><a class="lvl2" href="#4-mvp-컷오프-제안-·-확정-필요">4. MVP 컷오프 (제안 · 확정 필요)</a><a class="lvl2" href="#5-다음-문서-작업-기획-진행-순서">5. 다음 문서 작업 (기획 진행 순서)</a></nav>
+<main><h1 id="14-가상사무실-기능-기획-재정의-·-정본">14. 가상사무실 기능 기획 (재정의 · 정본)</h1>
 <blockquote>🟦 <strong>D29 피벗(2026-07-12) — 렌더 방식만 재대체(2.5D).</strong> 아래 D27/D28 계열의 &quot;실시간 3D R3F·오프라인렌더·깊이합성&quot; 렌더 서술은 <strong>2.5D 클린플레이트 PNG + DOM 스프라이트 아바타</strong>(<code>OfficeViewport2D</code>)로 대체됨. 기능·화면·상호작용·좌표·단일세션·Colyseus 골격은 유효. 정본 = <strong>00-decisions §J(D29)</strong>.</blockquote>
 <blockquote>🔵 <strong>D28 피벗(2026-07-09) — 렌더 방식만 대체.</strong> 기능·화면·상호작용 기획은 유효하나, &quot;포토리얼 오프라인렌더+깊이합성&quot; 전제는 <strong>실시간 스타일라이즈드 R3F</strong>로 교체(오클루전 자동, Blender 굽기 불필요). 정본 = <strong>00-decisions §I(D28)</strong>.</blockquote>
 <blockquote>🟣 <strong>v8.0 에셋 업그레이드(2026-07-10, D28.1).</strong> 저폴리 v1.1 → <strong>v8.0 통합본</strong>(<code>docs/virtual_office_final_dev_complete_v8_0/</code>): V4 히어로 씬 + <strong>리깅+애니 휴머노이드</strong>(idle/walk/sit/typing 등 12클립). 이 기획의 아바타 동세·People 패널 상호작용은 이제 <strong>실제 애니메이션</strong>으로 구현된다. 상세 = 00-decisions §I(D28.1).</blockquote>
 <blockquote>🟪 <strong>v10.0 PBR 강화(2026-07-11, D28.2).</strong> v8.0 → <strong>v10.0 완제품 패키지</strong>(<code>docs/virtual_office_complete_product_v10_0/</code>)로 교체. 씬·캐릭터 토폴로지와 rig(18조인트·12클립명 동일)는 v8과 같고, <strong>모든 GLB에 PBR 텍스처 내장</strong>(씬 텍스처 54→114장)이라 아바타·씬 재질감이 상승했다. 프론트는 <code>frontend/public/office/*.glb</code> 8종 파일 교체만으로 반영(로직 변경 0). 상세 = 00-decisions §I(D28.2).</blockquote>
-<blockquote>2026-07-08 작성. 사용자 확정 디자인 시안 + 포토리얼 웹임베드 전환에 따른 <strong>가상사무실 전면 재기획</strong>. 이 문서는 가상사무실(3D 오피스) 화면과 그 전 기능을 <strong>새 아키텍처 기준</strong>으로 재정의한다. 정본 참조: <a href="../3d-design/design-style-analysis.md">3d-design/design-style-analysis.md</a>(스타일), <a href="../3d-design/photoreal-web-strategy.md">3d-design/photoreal-web-strategy.md</a>(렌더), 05-office-layout-schema.md, 08-kpi-logic.md(KPI 로직·메트릭), 09-realtime-collaboration.md, 00-decisions.md.</blockquote>
+<blockquote>2026-07-08 작성. 사용자 확정 디자인 시안 + 포토리얼 웹임베드 전환에 따른 <strong>가상사무실 전면 재기획</strong>.
+이 문서는 가상사무실(3D 오피스) 화면과 그 전 기능을 <strong>새 아키텍처 기준</strong>으로 재정의한다.
+정본 참조: <a href="../3d-design/design-style-analysis.md">3d-design/design-style-analysis.md</a>(스타일), <a href="../3d-design/photoreal-web-strategy.md">3d-design/photoreal-web-strategy.md</a>(렌더), 05-office-layout-schema.md, 08-kpi-logic.md(KPI 로직·메트릭), 09-realtime-collaboration.md, 00-decisions.md.</blockquote>
 <hr>
 <h2 id="0-핵심-전환-supersedes-d26">0. 핵심 전환 (Supersedes D26)</h2>
-<div class="table-wrap"><table><thead><tr><th>항목</th><th>기존(D26, 폐기 예정)</th><th>신규(본 문서)</th></tr></thead><tbody><tr><td>3D 오피스</td><td>WorkAdventure(2D 픽셀) <strong>별도 앱</strong>(:8090, 별도 OIDC 로그인)</td><td><strong>웹 앱 내 임베드</strong> R3F 포토리얼 뷰포트</td></tr><tr><td>앱 구조</td><td>웹콘솔 + 새 탭 가상오피스</td><td><strong>단일 통합 대시보드</strong>(시안) — 가상오피스는 한 화면의 뷰포트</td></tr><tr><td>인증</td><td>콘솔 JWT + WA OIDC(이중)</td><td><strong>단일 세션</strong>(콘솔 JWT 그대로 3D 진입)</td></tr><tr><td>실시간 이동</td><td>WorkAdventure back</td><td><strong>SkyOffice 이식</strong>(Colyseus 권위 서버, 20Hz)</td></tr><tr><td>렌더</td><td>WA Phaser 2D</td><td>Blender 오프라인 렌더 배경 + R3F 아바타 깊이합성</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>항목</th>
+<th>기존(D26, 폐기 예정)</th>
+<th>신규(본 문서)</th>
+</tr>
+</thead><tbody><tr>
+<td>3D 오피스</td>
+<td>WorkAdventure(2D 픽셀) <strong>별도 앱</strong>(:8090, 별도 OIDC 로그인)</td>
+<td><strong>웹 앱 내 임베드</strong> R3F 포토리얼 뷰포트</td>
+</tr>
+<tr>
+<td>앱 구조</td>
+<td>웹콘솔 + 새 탭 가상오피스</td>
+<td><strong>단일 통합 대시보드</strong>(시안) — 가상오피스는 한 화면의 뷰포트</td>
+</tr>
+<tr>
+<td>인증</td>
+<td>콘솔 JWT + WA OIDC(이중)</td>
+<td><strong>단일 세션</strong>(콘솔 JWT 그대로 3D 진입)</td>
+</tr>
+<tr>
+<td>실시간 이동</td>
+<td>WorkAdventure back</td>
+<td><strong>SkyOffice 이식</strong>(Colyseus 권위 서버, 20Hz)</td>
+</tr>
+<tr>
+<td>렌더</td>
+<td>WA Phaser 2D</td>
+<td>Blender 오프라인 렌더 배경 + R3F 아바타 깊이합성</td>
+</tr>
+</tbody></table></div>
 <blockquote><strong>정리 대상</strong>: docker WorkAdventure 스택(wa-*), 사이드바 &quot;가상 오피스 입장&quot; 외부링크, WA OIDC 브리지 → 신규 구조 확정 후 제거.</blockquote>
 <hr>
 <h2 id="1-화면-구조-시안-기준">1. 화면 구조 (시안 기준)</h2>
 <p>단일 통합 대시보드 = 좌 내비 + 중앙(3D 뷰포트 + 대시보드 3카드) + 우 패널. 상세 레이아웃은 design-style-analysis §3.</p>
-<ul><li><strong>좌 내비</strong>: 가상오피스 / 업무관리 / 업무현황 / 출장관리 / KPI평가 / 보고서 / 회의실예약 / 커뮤니케이션 / 인사·근태 / 설정 + 내 프로필.</li><li><strong>중앙 상단 3D 뷰포트</strong>: 포토리얼 아이소 오피스 + 아바타·프레즌스 HUD·미니맵·층선택·미디어바.</li><li><strong>중앙 하단 3카드</strong>: 오늘의 업무 · 나의 KPI 현황(게이지+지표바) · 진행중 화상회의(참석자 타일).</li><li><strong>우 패널</strong>: 사용자 목록(필터: 전체/사무실/회의중/외근·출장) · 오늘의 일정 · 공지사항.</li></ul>
+<ul>
+<li><strong>좌 내비</strong>: 가상오피스 / 업무관리 / 업무현황 / 출장관리 / KPI평가 / 보고서 / 회의실예약 / 커뮤니케이션 / 인사·근태 / 설정 + 내 프로필.</li>
+<li><strong>중앙 상단 3D 뷰포트</strong>: 포토리얼 아이소 오피스 + 아바타·프레즌스 HUD·미니맵·층선택·미디어바.</li>
+<li><strong>중앙 하단 3카드</strong>: 오늘의 업무 · 나의 KPI 현황(게이지+지표바) · 진행중 화상회의(참석자 타일).</li>
+<li><strong>우 패널</strong>: 사용자 목록(필터: 전체/사무실/회의중/외근·출장) · 오늘의 일정 · 공지사항.</li>
+</ul>
 <hr>
-<h2 id="2-기능-명세-7개-카테고리-현재-구현-상태">2. 기능 명세 (7개 카테고리) + 현재 구현 상태</h2>
+<h2 id="2-기능-명세-7개-카테고리--현재-구현-상태">2. 기능 명세 (7개 카테고리) + 현재 구현 상태</h2>
 <blockquote>상태 범례: ✅ 백엔드 구현됨(실측) · 🟡 부분/신규프론트 필요 · 🔴 미구현/외부의존 · 🆕 신규 인프라</blockquote>
-<h3 id="21-아바타-이동">2.1 아바타 / 이동</h3>
-<div class="table-wrap"><table><thead><tr><th>기능</th><th>정본</th><th>상태</th></tr></thead><tbody><tr><td>아바타 커스터마이징(5~10 템플릿, 이름/직급 HUD)</td><td>06 §1.2</td><td>🟡 프론트 신규</td></tr><tr><td>WASD/마우스 이동 + 로컬 예측</td><td>09 §1</td><td>🆕 이동서버</td></tr><tr><td>좌표 동기화 20Hz 서버 tick</td><td>09 §5, D3/D22</td><td>🆕 SkyOffice 이식</td></tr><tr><td>서버 이동 검증 8항목(충돌·층·속도·권한·점유·정원)</td><td>09 §5</td><td>🆕</td></tr><tr><td>상태 불일치 보정(&gt;0.5m Lerp), 재접속 스냅샷 복구</td><td>09 §5</td><td>🆕</td></tr><tr><td>presence 1~5초 DB 배치 push</td><td>09 §5</td><td>✅ presence_store/stream 존재</td></tr></tbody></table></div>
-<h3 id="22-프레즌스-d13-7종">2.2 프레즌스 (D13 · 7종)</h3>
-<div class="table-wrap"><table><thead><tr><th>상태</th><th>전이</th><th>상태</th></tr></thead><tbody><tr><td>offline/online/working/meeting/focus/away/external</td><td>좌석도착→working, 회의입장→meeting, 5분무입력→away 등</td><td>✅ 7종 상태·store·SSE stream 구현. HUD/미니맵 시각화 = 🟡 프론트</td></tr></tbody></table></div>
+<blockquote>🟩 <strong>상태표 실측 갱신(2026-07-17, spec-gap-audit P2-6)</strong>: 아래 표기는 코드 실측으로 재판정됨. 종전 🟡/🆕/🔴 다수가 구현 완료(✅)로 앞섬. §2.6 &quot;레이아웃→Blender 렌더 파이프라인&quot;은 D29/D30로 폐기·대체(2.5D tools/asset-gen + 18-문서 모듈 합성). &quot;WASD/마우스 이동&quot;은 실제 클릭 이동 전용(키보드 핸들러 미구현 — 09 §1과 함께 문서 정정, P2-7).</blockquote>
+<h3 id="21-아바타--이동">2.1 아바타 / 이동</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>기능</th>
+<th>정본</th>
+<th>상태</th>
+</tr>
+</thead><tbody><tr>
+<td>아바타 커스터마이징(5~10 템플릿, 이름/직급 HUD)</td>
+<td>06 §1.2</td>
+<td>✅ settings/page.tsx + api/avatar (프리셋 8직군·색상·이름표)</td>
+</tr>
+<tr>
+<td><strong>클릭 이동</strong>(목적지 A* 경로) + 로컬 예측</td>
+<td>09 §1</td>
+<td>✅ OfficeViewport2D. ⚠ 정본 &#39;WASD/마우스&#39;는 클릭 이동 전용으로 정정(키보드 핸들러 미구현, P2-7)</td>
+</tr>
+<tr>
+<td>좌표 동기화 20Hz 서버 tick</td>
+<td>09 §5, D3/D22</td>
+<td>✅ realtime config TICK_HZ=20</td>
+</tr>
+<tr>
+<td>서버 이동 검증(회사·오피스·층·바운즈·충돌·속도·권한·좌석·회의 = 9체크)</td>
+<td>09 §5</td>
+<td>✅ movement.ts MOVEMENT_CHECKS (정본 &#39;8항목&#39;은 회사/오피스 분리로 9체크 — 09 정정, P2-7)</td>
+</tr>
+<tr>
+<td>상태 불일치 보정(&gt;0.5m Lerp), 재접속 스냅샷 복구</td>
+<td>09 §5</td>
+<td>✅ OfficeRoom onLeave/allowReconnection + snapshot</td>
+</tr>
+<tr>
+<td>presence 1~5초 DB 배치 push</td>
+<td>09 §5</td>
+<td>✅ presence_store/stream 존재</td>
+</tr>
+</tbody></table></div>
+<h3 id="22-프레즌스-d13-·-7종">2.2 프레즌스 (D13 · 7종)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>상태</th>
+<th>전이</th>
+<th>상태</th>
+</tr>
+</thead><tbody><tr>
+<td>offline/online/working/meeting/focus/away/external</td>
+<td>좌석도착→working, 회의입장→meeting, 5분무입력→away 등</td>
+<td>✅ 7종 상태·store·SSE stream 구현. HUD/미니맵 시각화 = 🟡 프론트</td>
+</tr>
+</tbody></table></div>
 <h3 id="23-좌석">2.3 좌석</h3>
-<div class="table-wrap"><table><thead><tr><th>기능</th><th>정본</th><th>상태</th></tr></thead><tbody><tr><td>좌석 타입 fixed/free/temp/partner</td><td>05 §1.2.6, D10</td><td>✅ 스키마·CRUD</td></tr><tr><td>배정 분리(layout JSON ↔ DB assigned<em>user</em>id + history)</td><td>D10</td><td>✅ seats/seat-assignments/history</td></tr><tr><td>자율좌석 클릭 점유 / 자동 반납(퇴근·장기 away)</td><td>06 §3.11</td><td>✅ 백엔드 · 🟡 3D 클릭 UX</td></tr><tr><td>고정좌석 제약, 착석 방향(facing), 이름표</td><td>05/06</td><td>✅ 데이터 · 🟡 시각화</td></tr></tbody></table></div>
-<h3 id="24-회의실-화상-livekit">2.4 회의실 / 화상 (LiveKit)</h3>
-<div class="table-wrap"><table><thead><tr><th>기능</th><th>정본</th><th>상태</th></tr></thead><tbody><tr><td>D24 명시적 입장(2m 근접→프롬프트→클릭)</td><td>D24</td><td>✅ meetings/join · 🟡 근접 트리거 UX</td></tr><tr><td>LiveKit 토큰 발급·연결</td><td>D24</td><td>✅ livekit-token · 🔴 실 미디어릴레이(인프라)</td></tr><tr><td>녹음·STT 동의 배너(D20-b)</td><td>D20-b</td><td>✅ <strong>consent API 구현(2026-07-08)</strong> · 🟡 배너 UI</td></tr><tr><td>회의실 타입 meeting/lounge/focus/phonebooth, 정원</td><td>05/09</td><td>✅ room 스키마</td></tr><tr><td>화면공유·녹화(Egress)</td><td>09 §4</td><td>🔴 외부/인프라</td></tr><tr><td>회의 생명주기(scheduled→in_progress→completed) + 예약충돌검증</td><td>D23</td><td>✅ meetings(409 충돌검증)</td></tr></tbody></table></div>
-<h3 id="25-회의록-stt-d5">2.5 회의록 / STT (D5)</h3>
-<div class="table-wrap"><table><thead><tr><th>기능</th><th>정본</th><th>상태</th></tr></thead><tbody><tr><td>회의록 CRUD·확정·액션아이템</td><td>06 §3.5.2</td><td>✅ meeting-minutes/action-items</td></tr><tr><td>STT 자동초안(한국어 화자분리)</td><td>D5</td><td>🔴 <strong>501 스텁 · STT 엔진 외부의존</strong></td></tr><tr><td>AI 요약</td><td>Phase 7</td><td>🔴 외부(Claude) — KPI초안은 배선 완료</td></tr></tbody></table></div>
-<h3 id="26-공간-구조-레이아웃">2.6 공간 구조 / 레이아웃</h3>
-<div class="table-wrap"><table><thead><tr><th>기능</th><th>정본</th><th>상태</th></tr></thead><tbody><tr><td>floor/zones/rooms/seats/furniture/colliders/spawn/exit</td><td>05 전체</td><td>✅ 스키마·office-layouts CRUD</td></tr><tr><td>문 개구부(D9), 유리벽, 마커</td><td>D9</td><td>✅ 스키마 · 🟡 3D 렌더</td></tr><tr><td>레이아웃 검증(정밀 A* 도달성·충돌)</td><td>D12</td><td>✅ validator(AABB) · 🟡 A* 도달성 보강</td></tr><tr><td>층별 버전 관리·배포·롤백·라이브 동기화</td><td>D12</td><td>✅ deploy/rollback/validate</td></tr><tr><td>미니맵</td><td>06 §3.3</td><td>🟡 프론트</td></tr><tr><td><strong>레이아웃→Blender 씬 렌더 파이프라인</strong></td><td>신규</td><td>🔴 <strong>신규(render-pipeline 재구축)</strong></td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>기능</th>
+<th>정본</th>
+<th>상태</th>
+</tr>
+</thead><tbody><tr>
+<td>좌석 타입 fixed/free/temp/partner</td>
+<td>05 §1.2.6, D10</td>
+<td>✅ 스키마·CRUD</td>
+</tr>
+<tr>
+<td>배정 분리(layout JSON ↔ DB assigned_user_id + history)</td>
+<td>D10</td>
+<td>✅ seats/seat-assignments/history</td>
+</tr>
+<tr>
+<td>자율좌석 클릭 점유 / 자동 반납(퇴근·장기 away)</td>
+<td>06 §3.11</td>
+<td>✅ 백엔드 + 클릭 착석/반납 UX(OfficeViewport2D)</td>
+</tr>
+<tr>
+<td>고정좌석 제약, 착석 방향(facing), 이름표</td>
+<td>05/06</td>
+<td>✅ 데이터 + 좌석 렌더·이름표 시각화</td>
+</tr>
+</tbody></table></div>
+<h3 id="24-회의실--화상-livekit">2.4 회의실 / 화상 (LiveKit)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>기능</th>
+<th>정본</th>
+<th>상태</th>
+</tr>
+</thead><tbody><tr>
+<td>D24 명시적 입장(2m 근접→프롬프트→클릭)</td>
+<td>D24</td>
+<td>✅ meetings/join + 근접 트리거 프롬프트(OfficeViewport2D, QA 31/31)</td>
+</tr>
+<tr>
+<td>LiveKit 토큰 발급·연결</td>
+<td>D24</td>
+<td>✅ livekit-token · 🔴 실 미디어릴레이(인프라)</td>
+</tr>
+<tr>
+<td>녹음·STT 동의 배너(D20-b)</td>
+<td>D20-b</td>
+<td>✅ consent API + 동의/거부 배너(meetings/page.tsx)</td>
+</tr>
+<tr>
+<td>회의실 타입 meeting/lounge/focus/phonebooth, 정원</td>
+<td>05/09</td>
+<td>✅ room 스키마</td>
+</tr>
+<tr>
+<td>화면공유·녹화(Egress)</td>
+<td>09 §4</td>
+<td>🔴 외부/인프라</td>
+</tr>
+<tr>
+<td>회의 생명주기(scheduled→in_progress→completed) + 예약충돌검증</td>
+<td>D23</td>
+<td>✅ meetings(409 충돌검증)</td>
+</tr>
+</tbody></table></div>
+<h3 id="25-회의록--stt-d5">2.5 회의록 / STT (D5)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>기능</th>
+<th>정본</th>
+<th>상태</th>
+</tr>
+</thead><tbody><tr>
+<td>회의록 CRUD·확정·액션아이템</td>
+<td>06 §3.5.2</td>
+<td>✅ meeting-minutes/action-items</td>
+</tr>
+<tr>
+<td>STT 자동초안(한국어 화자분리)</td>
+<td>D5</td>
+<td>🔴 <strong>501 스텁 · STT 엔진 외부의존</strong></td>
+</tr>
+<tr>
+<td>AI 요약</td>
+<td>Phase 7</td>
+<td>🔴 외부(Claude) — KPI초안은 배선 완료</td>
+</tr>
+</tbody></table></div>
+<h3 id="26-공간-구조--레이아웃">2.6 공간 구조 / 레이아웃</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>기능</th>
+<th>정본</th>
+<th>상태</th>
+</tr>
+</thead><tbody><tr>
+<td>floor/zones/rooms/seats/furniture/colliders/spawn/exit</td>
+<td>05 전체</td>
+<td>✅ 스키마·office-layouts CRUD</td>
+</tr>
+<tr>
+<td>문 개구부(D9), 유리벽, 마커</td>
+<td>D9</td>
+<td>✅ 스키마 · 🟡 3D 렌더</td>
+</tr>
+<tr>
+<td>레이아웃 검증(정밀 A* 도달성·충돌)</td>
+<td>D12</td>
+<td>✅ validator(AABB + grid BFS A* 도달성)</td>
+</tr>
+<tr>
+<td>층별 버전 관리·배포·롤백·라이브 동기화</td>
+<td>D12</td>
+<td>✅ deploy/rollback/validate (실구동 QA 통과)</td>
+</tr>
+<tr>
+<td>미니맵</td>
+<td>06 §3.3</td>
+<td>✅ 실시간 아바타 도트 미니맵(OfficeViewport2D)</td>
+</tr>
+<tr>
+<td><del>레이아웃→Blender 씬 렌더 파이프라인</del></td>
+<td><del>신규</del></td>
+<td>⛔ <strong>D29/D30 폐기·대체</strong> — 2.5D 프로시저럴(tools/asset-gen) + 런타임 모듈 합성(18-문서). 정본 = 17/18</td>
+</tr>
+</tbody></table></div>
 <h3 id="27-실시간-인프라">2.7 실시간 인프라</h3>
-<div class="table-wrap"><table><thead><tr><th>기능</th><th>정본</th><th>상태</th></tr></thead><tbody><tr><td>WSS 프로토콜(TCP, TLS, 순서보장)</td><td>D1</td><td>🆕 SkyOffice/Colyseus 기반</td></tr><tr><td>20Hz tick, move<em>request/world</em>update</td><td>09 §5</td><td>🆕</td></tr><tr><td>근접 상호작용 검증 8항목(LOS 광선 등)</td><td>09 §5</td><td>🆕</td></tr><tr><td>JWT 인증(D4, 콘솔 세션 재사용)</td><td>D4</td><td>✅ JWT · 🟡 3D 핸드셰이크 연결</td></tr><tr><td>성능 SLA: p95&lt;500ms, 동시 20(도그푸딩)/100(설계)</td><td>D22</td><td>🔴 부하검증 필요</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>기능</th>
+<th>정본</th>
+<th>상태</th>
+</tr>
+</thead><tbody><tr>
+<td>WSS 프로토콜(TCP, TLS, 순서보장)</td>
+<td>D1</td>
+<td>✅ Colyseus(ws) + Caddy TLS 종단(docker-compose D29/D30)</td>
+</tr>
+<tr>
+<td>20Hz tick, move_request/world_update</td>
+<td>09 §5</td>
+<td>✅ OfficeRoom 20Hz</td>
+</tr>
+<tr>
+<td>근접 상호작용 검증 8항목(LOS 광선 등)</td>
+<td>09 §5</td>
+<td>✅ proximity.ts (거리·LOS·쿨다운·DND 등)</td>
+</tr>
+<tr>
+<td>JWT 인증(D4, 콘솔 세션 재사용)</td>
+<td>D4</td>
+<td>✅ onAuth JWT 검증 + production JWT_REQUIRED 강제(P1-4)</td>
+</tr>
+<tr>
+<td>성능 SLA: p95&lt;500ms, 동시 20(도그푸딩)/100(설계)</td>
+<td>D22</td>
+<td>🟡 인프로세스 20인 p95≈131ms PASS · 🔴 실배포망 실측 잔존</td>
+</tr>
+</tbody></table></div>
 <h3 id="28-대시보드-통합-패널-같은-화면">2.8 대시보드 통합 패널 (같은 화면)</h3>
-<div class="table-wrap"><table><thead><tr><th>패널</th><th>데이터</th><th>상태</th></tr></thead><tbody><tr><td>오늘의 업무</td><td>work_log</td><td>✅ work-logs API · 🟡 카드 UI</td></tr><tr><td>나의 KPI(게이지+지표바)</td><td>kpi_result</td><td>✅ KPI엔진+ai_draft · 🟡 게이지 UI · <strong>매핑=§2.8.1</strong></td></tr><tr><td>진행중 화상회의(참석자 타일)</td><td>meeting/participant</td><td>✅ API · 🟡 타일 UI</td></tr><tr><td>사용자 목록(상태필터)</td><td>presence/erp_user</td><td>✅ API · 🟡 리스트 UI</td></tr><tr><td>오늘의 일정</td><td>meeting</td><td>✅ API · 🟡 UI</td></tr><tr><td>공지사항</td><td>(신규 리소스)</td><td>🔴 공지 모델 신규</td></tr></tbody></table></div>
-<h3 id="281-kpi-위젯-메트릭-매핑-08-kpi-logic-정본-바인딩">2.8.1 KPI 위젯 ↔ 메트릭 매핑 (08-kpi-logic 정본 바인딩)</h3>
-<blockquote>로직 정본 = <a href="./08-kpi-logic.md">08-kpi-logic.md</a>, 메트릭 어휘 정본 = 04-data-model §2.5. UI는 아래 매핑을 따르며 임의 점수를 만들지 않는다(정량은 결정론적 코드가 계산, AI는 서술만 — D14-e). design-style-analysis §4의 <code>87/100</code>·<code>9/10</code>은 <strong>시안 목업 예시</strong>일 뿐, 실제 표시값은 아래 메트릭에서 온다.</blockquote>
-<div class="table-wrap"><table><thead><tr><th>UI 위젯 (design-style §4)</th><th>바인딩 메트릭 (08 / 04 §2.5)</th><th>형식</th><th>비고</th></tr></thead><tbody><tr><td><strong>도넛 게이지</strong>(중앙 숫자 <code>NN/100</code>)</td><td><code>collaboration_score</code></td><td>0–100</td><td>08 §1.2 합성 점수(구성비: 업무건수30·충실도25·회의록20·액션15·기록10). 헤드라인 = 이 값</td></tr><tr><td>지표바 ①</td><td><code>work_completed_count</code></td><td>건수</td><td>완료 업무 건수(막대는 팀 벤치마크 대비 상대표시 권장)</td></tr><tr><td>지표바 ②</td><td><code>work_quality_score</code></td><td>0–100</td><td>업무 충실도</td></tr><tr><td>지표바 ③</td><td><code>minutes_authored_count</code></td><td>건수</td><td>회의록 작성 기여</td></tr><tr><td>지표바 ④</td><td><code>action_items_ontime_rate</code></td><td>%</td><td>액션아이템 기한 내 이행률</td></tr><tr><td>지표바 ⑤</td><td><code>report_fidelity_score</code></td><td>0–100</td><td>업무기록 충실도</td></tr></tbody></table></div>
-<ul><li><strong>표시 주기</strong>: 대시보드 카드는 <strong>daily 뷰</strong>(period_type=<code>daily</code>, 당일 누적) 기본. AI 서술 초안·종합평가(상/중상/…)는 <strong>분기(quarterly)에만</strong> 존재하므로 카드에 표시하지 않고, &quot;KPI평가&quot; 화면(분기 상세)에서만 노출한다(08 §3·§6.2.2).</li><li><strong>API</strong>: 카드 = <code>GET /api/kpi/daily</code>(와이드포맷 집계, 08 §6.2.1). 분기 상세 = <code>GET /api/kpi/quarterly</code>.</li></ul>
+<div class="table-wrap"><table><thead><tr>
+<th>패널</th>
+<th>데이터</th>
+<th>상태</th>
+</tr>
+</thead><tbody><tr>
+<td>오늘의 업무</td>
+<td>work_log</td>
+<td>✅ work-logs API · 🟡 카드 UI</td>
+</tr>
+<tr>
+<td>나의 KPI(게이지+지표바)</td>
+<td>kpi_result</td>
+<td>✅ KPI엔진+ai_draft · 🟡 게이지 UI · <strong>매핑=§2.8.1</strong></td>
+</tr>
+<tr>
+<td>진행중 화상회의(참석자 타일)</td>
+<td>meeting/participant</td>
+<td>✅ API · 🟡 타일 UI</td>
+</tr>
+<tr>
+<td>사용자 목록(상태필터)</td>
+<td>presence/erp_user</td>
+<td>✅ API · 🟡 리스트 UI</td>
+</tr>
+<tr>
+<td>오늘의 일정</td>
+<td>meeting</td>
+<td>✅ API · 🟡 UI</td>
+</tr>
+<tr>
+<td>공지사항</td>
+<td>(신규 리소스)</td>
+<td>🔴 공지 모델 신규</td>
+</tr>
+</tbody></table></div>
+<h3 id="281-kpi-위젯-↔-메트릭-매핑-08-kpi-logic-정본-바인딩">2.8.1 KPI 위젯 ↔ 메트릭 매핑 (08-kpi-logic 정본 바인딩)</h3>
+<blockquote>로직 정본 = <a href="./08-kpi-logic.md">08-kpi-logic.md</a>, 메트릭 어휘 정본 = 04-data-model §2.5. UI는 아래 매핑을 따르며 임의 점수를 만들지 않는다(정량은 결정론적 코드가 계산, AI는 서술만 — D14-e).
+design-style-analysis §4의 <code>87/100</code>·<code>9/10</code>은 <strong>시안 목업 예시</strong>일 뿐, 실제 표시값은 아래 메트릭에서 온다.</blockquote>
+<div class="table-wrap"><table><thead><tr>
+<th>UI 위젯 (design-style §4)</th>
+<th>바인딩 메트릭 (08 / 04 §2.5)</th>
+<th>형식</th>
+<th>비고</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>도넛 게이지</strong>(중앙 숫자 <code>NN/100</code>)</td>
+<td><code>collaboration_score</code></td>
+<td>0–100</td>
+<td>08 §1.2 합성 점수(구성비: 업무건수30·충실도25·회의록20·액션15·기록10). 헤드라인 = 이 값</td>
+</tr>
+<tr>
+<td>지표바 ①</td>
+<td><code>work_completed_count</code></td>
+<td>건수</td>
+<td>완료 업무 건수(막대는 팀 벤치마크 대비 상대표시 권장)</td>
+</tr>
+<tr>
+<td>지표바 ②</td>
+<td><code>work_quality_score</code></td>
+<td>0–100</td>
+<td>업무 충실도</td>
+</tr>
+<tr>
+<td>지표바 ③</td>
+<td><code>minutes_authored_count</code></td>
+<td>건수</td>
+<td>회의록 작성 기여</td>
+</tr>
+<tr>
+<td>지표바 ④</td>
+<td><code>action_items_ontime_rate</code></td>
+<td>%</td>
+<td>액션아이템 기한 내 이행률</td>
+</tr>
+<tr>
+<td>지표바 ⑤</td>
+<td><code>report_fidelity_score</code></td>
+<td>0–100</td>
+<td>업무기록 충실도</td>
+</tr>
+</tbody></table></div>
+<ul>
+<li><strong>표시 주기</strong>: 대시보드 카드는 <strong>daily 뷰</strong>(period_type=<code>daily</code>, 당일 누적) 기본. AI 서술 초안·종합평가(상/중상/…)는 <strong>분기(quarterly)에만</strong> 존재하므로 카드에 표시하지 않고, &quot;KPI평가&quot; 화면(분기 상세)에서만 노출한다(08 §3·§6.2.2).</li>
+<li><strong>API</strong>: 카드 = <code>GET /api/kpi/daily</code>(와이드포맷 집계, 08 §6.2.1). 분기 상세 = <code>GET /api/kpi/quarterly</code>.</li>
+</ul>
 <h3 id="282-kpi-워크플로우-화면-좌내비-kpi평가">2.8.2 KPI 워크플로우 화면 (좌내비 &quot;KPI평가&quot;)</h3>
-<blockquote>대시보드 3카드는 <strong>읽기 전용 요약(글랜스)</strong>이다. 아래 전체 워크플로우 화면 명세는 <strong>06-screens.md 갱신에 위임</strong>한다(D27 리부트 미반영분 — 후속 작업).</blockquote>
-<div class="table-wrap"><table><thead><tr><th>화면</th><th>역할</th><th>정본</th></tr></thead><tbody><tr><td>분기 KPI 상세 + AI 초안 열람</td><td>직원 본인 열람</td><td>08 §6.2.2</td></tr><tr><td>관리자 검토·조정(±10%)</td><td>leader/admin</td><td>08 §3.2 · §6.2.3</td></tr><tr><td>직원 이의신청(상태머신 none→submitted→reviewing→resolved)</td><td>직원</td><td>08 §3.3 · §6.2.4</td></tr><tr><td>감사/이력 열람</td><td>HR·감사</td><td>08 §7.1</td></tr></tbody></table></div>
+<blockquote>대시보드 3카드는 **읽기 전용 요약(글랜스)**이다. 아래 전체 워크플로우 화면 명세는 <strong>06-screens.md 갱신에 위임</strong>한다(D27 리부트 미반영분 — 후속 작업).</blockquote>
+<div class="table-wrap"><table><thead><tr>
+<th>화면</th>
+<th>역할</th>
+<th>정본</th>
+</tr>
+</thead><tbody><tr>
+<td>분기 KPI 상세 + AI 초안 열람</td>
+<td>직원 본인 열람</td>
+<td>08 §6.2.2</td>
+</tr>
+<tr>
+<td>관리자 검토·조정(±10%)</td>
+<td>leader/admin</td>
+<td>08 §3.2 · §6.2.3</td>
+</tr>
+<tr>
+<td>직원 이의신청(상태머신 none→submitted→reviewing→resolved)</td>
+<td>직원</td>
+<td>08 §3.3 · §6.2.4</td>
+</tr>
+<tr>
+<td>감사/이력 열람</td>
+<td>HR·감사</td>
+<td>08 §7.1</td>
+</tr>
+</tbody></table></div>
 <hr>
 <h2 id="3-요약-판정-기능-실현성">3. 요약 판정 (기능 실현성)</h2>
-<ul><li><strong>데이터·비즈니스 로직 백엔드는 대부분 구축됨</strong>(프레즌스 7종·좌석·회의·레이아웃·KPI·동의·EOD). 이번 세션에 AI초안·EOD·동의까지 추가.</li><li><strong>신규 핵심 작업 3개</strong>: ① 포토리얼 프론트(R3F + Blender, 깊이합성 스파이크) ② 실시간 이동서버(SkyOffice 이식) ③ 대시보드 셸 통합.</li><li><strong>외부 의존(코드만으론 불가)</strong>: STT 엔진(한국어 화자분리), 실 LiveKit 미디어/Egress, 실 ERP, 100명 부하검증.</li><li><strong>정리 대상</strong>: WorkAdventure docker 스택·외부링크·OIDC 브리지.</li></ul>
+<ul>
+<li><strong>데이터·비즈니스 로직 백엔드는 대부분 구축됨</strong>(프레즌스 7종·좌석·회의·레이아웃·KPI·동의·EOD). 이번 세션에 AI초안·EOD·동의까지 추가.</li>
+<li><strong>신규 핵심 작업 3개</strong>: ① 포토리얼 프론트(R3F + Blender, 깊이합성 스파이크) ② 실시간 이동서버(SkyOffice 이식) ③ 대시보드 셸 통합.</li>
+<li><strong>외부 의존(코드만으론 불가)</strong>: STT 엔진(한국어 화자분리), 실 LiveKit 미디어/Egress, 실 ERP, 100명 부하검증.</li>
+<li><strong>정리 대상</strong>: WorkAdventure docker 스택·외부링크·OIDC 브리지.</li>
+</ul>
 <hr>
-<h2 id="4-mvp-컷오프-제안-확정-필요">4. MVP 컷오프 (제안 · 확정 필요)</h2>
+<h2 id="4-mvp-컷오프-제안-·-확정-필요">4. MVP 컷오프 (제안 · 확정 필요)</h2>
 <p><strong>In (MVP)</strong>: 통합 대시보드 셸 + 포토리얼 뷰포트(고정 아이소, 1개 층) + 아바타 이동/프레즌스 7종 + 자율좌석 점유 + 회의실 명시입장+LiveKit 오디오 + 대시보드 3카드 + 사용자목록/일정/공지.</p>
 <p><strong>Later</strong>: STT 자동초안, AI 요약, 녹화(Egress), 다층 렌더, 레이아웃 편집기→실시간 재렌더, 100명 부하, 모바일.</p>
 <p><strong>Out(이번 버전)</strong>: 자유시점 풀3D, 멀티테넌트, VR.</p>
 <hr>
 <h2 id="5-다음-문서-작업-기획-진행-순서">5. 다음 문서 작업 (기획 진행 순서)</h2>
-<ol><li>✅ design-style-analysis.md (완료)</li><li>✅ photoreal-web-strategy.md (완료)</li><li>✅ 14-virtual-office-spec.md (본 문서)</li><li>✅ specs/screens/virtual-office-3d.yaml v3.0 갱신 (2026-07-09 완료)</li><li>✅ 15-realtime-server-spec.md (2026-07-08 완료)</li><li>✅ render-pipeline 스파이크 계획서 = 16 §Part A (작성 + <strong>PASS 2026-07-08, commit b4736b1</strong>)</li><li>✅ 00-decisions.md §H D27 결정 추가 + D26 폐기 명문화 (2026-07-08 완료)</li><li>✅ 10-roadmap.md v3.1 재산정 (2026-07-09 완료 — 주 단위는 원칙대로 미확정 유지)</li><li>✅ 06-screens.md §3.13 KPI평가 워크플로우 화면 (2026-07-09 완료)</li></ol>
-<div class="meta-foot">원본: <code>14-virtual-office-spec.md</code> · 자동 생성 2026-07-16 · md-to-html</div>
+<ol>
+<li>✅ design-style-analysis.md (완료)</li>
+<li>✅ photoreal-web-strategy.md (완료)</li>
+<li>✅ 14-virtual-office-spec.md (본 문서)</li>
+<li>✅ specs/screens/virtual-office-3d.yaml v3.0 갱신 (2026-07-09 완료)</li>
+<li>✅ 15-realtime-server-spec.md (2026-07-08 완료)</li>
+<li>✅ render-pipeline 스파이크 계획서 = 16 §Part A (작성 + <strong>PASS 2026-07-08, commit b4736b1</strong>)</li>
+<li>✅ 00-decisions.md §H D27 결정 추가 + D26 폐기 명문화 (2026-07-08 완료)</li>
+<li>✅ 10-roadmap.md v3.1 재산정 (2026-07-09 완료 — 주 단위는 원칙대로 미확정 유지)</li>
+<li>✅ 06-screens.md §3.13 KPI평가 워크플로우 화면 (2026-07-09 완료)</li>
+</ol>
+<div class="meta-foot">원본: <code>14-virtual-office-spec.md</code> · 자동 생성 2026-07-22 · md-to-html</div>
 </main>
 </div>
 

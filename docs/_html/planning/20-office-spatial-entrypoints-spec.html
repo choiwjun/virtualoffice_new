@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>20-office-spatial-entrypoints-spec.md: 공간 진입점 — 메뉴 기능의 씬 통합 (D34)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">20-office-spatial-entrypoints-spec.md: 공간 진입점 — 메뉴 기능의 씬 통합 (D34)</div><div class="sub">20-office-spatial-entrypoints-spec.md</div><a class="lvl1" href="#20-office-spatial-entrypoints-specmd-공간-진입점--메뉴-기능의-씬-통합-d34">20-office-spatial-entrypoints-spec.md: 공간 진입점 — 메뉴 기능의 씬 통합 (D34)</a><a class="lvl2" href="#1-인터랙션-모델">1. 인터랙션 모델</a><a class="lvl2" href="#2-진입점-매핑-wave-12">2. 진입점 매핑 (Wave 1~2)</a><a class="lvl2" href="#3-좌석-프롬프트-정리">3. 좌석 프롬프트 정리</a><a class="lvl2" href="#4-out-이번-범위-제외">4. OUT (이번 범위 제외)</a><a class="lvl2" href="#5-수용-기준">5. 수용 기준</a></nav>
+<main><h1 id="20-office-spatial-entrypoints-specmd-공간-진입점--메뉴-기능의-씬-통합-d34">20-office-spatial-entrypoints-spec.md: 공간 진입점 — 메뉴 기능의 씬 통합 (D34)</h1>
+<blockquote><strong>상태: 확정 (2026-07-21, D34)</strong> — Wave 1~2 동시 착수(사용자 지시).
+원칙: <strong>공간은 진입점, 폼/상세는 오버레이 창</strong>(D27 &quot;문서 작성 폼을 뷰포트 안에 두지 않는다&quot; 유지,
+D29 셸 단일화의 오버레이 창을 그대로 상세 화면으로 사용). 좌측 레일은 폴백으로 유지(발견성·접근성).</blockquote>
+<h2 id="1-인터랙션-모델">1. 인터랙션 모델</h2>
+<p>씬 오브젝트/존/아바타 클릭 → <strong>SpotCard</strong>(공용 미니 카드, 상단 중앙, 폭 288px) →
+핵심 액션 1클릭(기록 추가·예약·입장·비우기) 또는 상세 열기(기존 라우트 = 씬 위 오버레이 창).
+스테이지 빈 곳 클릭(이동)·X 버튼으로 닫힘. 카드 데이터는 열릴 때 on-demand 조회(기존 API 재사용, 신규 API 없음).</p>
+<h2 id="2-진입점-매핑-wave-12">2. 진입점 매핑 (Wave 1~2)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>진입점</th>
+<th>카드 내용</th>
+<th>액션</th>
+<th>API</th>
+</tr>
+</thead><tbody><tr>
+<td>W1-1</td>
+<td><strong>아바타 클릭</strong>(타인)</td>
+<td>이름·팀·프레즌스 상태</td>
+<td>채팅 열기(/chat)</td>
+<td>/api/employees</td>
+</tr>
+<tr>
+<td>W1-2</td>
+<td><strong>내 아바타/내 좌석 클릭</strong></td>
+<td>오늘의 업무 목록(≤4) + 나의 KPI(collaboration_score)</td>
+<td>기록 추가(/work-log) · KPI 상세(/kpi) · 내 자리로 걷기 · <strong>자리 비우기</strong>(통합)</td>
+<td>/api/work-logs, /api/kpi-results</td>
+</tr>
+<tr>
+<td>W1-3</td>
+<td><strong>방 라벨 클릭</strong></td>
+<td>오늘 이 방 일정(시간·제목·상태)</td>
+<td>예약(/meetings) · (진행중 시) 입장하기(D24 onJoinMeeting)</td>
+<td>/api/rooms, /api/meetings</td>
+</tr>
+<tr>
+<td>W1-4</td>
+<td><strong>게시판 핫스팟</strong>(Reception 옆 액자)</td>
+<td>최근 공지 5건</td>
+<td>— (읽기 전용)</td>
+<td>/api/notices</td>
+</tr>
+<tr>
+<td>W2-1</td>
+<td><strong>서류함 핫스팟</strong>(Pantry 옆 캐비닛)</td>
+<td>최근 보고서 5건(유형·상태)</td>
+<td>보고서 열기(/reports)</td>
+<td>/api/reports</td>
+</tr>
+<tr>
+<td>W2-2</td>
+<td><strong>Lounge 방 카드 확장</strong></td>
+<td>+ general 채널 최근 메시지 3건</td>
+<td>채팅 열기(/chat)</td>
+<td>/api/chat/messages?channel=general</td>
+</tr>
+<tr>
+<td>W2-3</td>
+<td><strong>배포 존 라벨 클릭</strong>(팀 존)</td>
+<td>존 이름·팀</td>
+<td>업무현황(/work-status) · 팀 채팅(/chat)</td>
+<td>— (링크 수준)</td>
+</tr>
+</tbody></table></div>
+<p>핫스팟 = 씬 모드 한정 아이콘 칩(22px, 호버 확대+title, 좌석 마커와 동일 z(15000) 패턴).
+게시판 n=(0.615, 0.27) · 서류함 n=(0.263, 0.35) — HORIZON 씬 가구 실측 좌표.</p>
+<h2 id="3-좌석-프롬프트-정리">3. 좌석 프롬프트 정리</h2>
+<p>기존 seatPrompt의 release 모드(내 좌석 클릭 → 비우기 확인)는 <strong>W1-2 카드로 흡수</strong> — seatPrompt는
+sit(빈 자율석 착석 확인) 전용으로 축소. 자리 비우기·여기 앉기는 카드 액션으로 이동.</p>
+<h2 id="4-out-이번-범위-제외">4. OUT (이번 범위 제외)</h2>
+<ul>
+<li>설정 + 관리 6종(KPI관리·조직도·동기화·감사로그·공지관리) — 공간 은유 없음, 메뉴 유지</li>
+<li>카드 내 폼 입력(메시지 전송·업무 작성 등) — D27 원칙, 상세 화면으로만</li>
+<li>씬 내 신규 아트/오브젝트 제작 — 기존 가구 위 핫스팟 칩만(P2 게이트 별도)</li>
+<li>Wave 3(출장 오브젝트·프로필 사진 배지)는 후속</li>
+</ul>
+<h2 id="5-수용-기준">5. 수용 기준</h2>
+<ul>
+<li>S1: 카드 6종(profile·myseat·room·board·cabinet·zone) 각 진입점에서 열리고 데이터 표시</li>
+<li>S2: 카드 액션 → 해당 라우트가 <strong>씬 위 오버레이 창</strong>으로 열림(씬/실시간 연결 유지)</li>
+<li>S3: 회의실 카드에서 진행중 회의 입장하기 → 기존 LiveKit join 흐름(D24) 호출</li>
+<li>S4: 자리 비우기가 카드에서 동작(구 release 프롬프트와 동일 API), 빈 좌석 sit 프롬프트 회귀 없음</li>
+<li>S5: 스테이지 클릭 이동·착석·독·존 호버(D33) 회귀 없음, tsc 0·vitest 무회귀</li>
+</ul>
+<div class="meta-foot">원본: <code>20-office-spatial-entrypoints-spec.md</code> · 자동 생성 2026-07-22 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

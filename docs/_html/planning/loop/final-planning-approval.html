@@ -52,25 +52,134 @@ img{max-width:100%;border-radius:8px}
 </style>
 </head><body>
 <div class="layout">
-<nav class="toc"><div class="brand">최종 기획 승인 리포트 (Final Planning Approval)</div><div class="sub">final-planning-approval.md</div><a class="lvl1" href="#최종-기획-승인-리포트-final-planning-approval">최종 기획 승인 리포트 (Final Planning Approval)</a><a class="lvl2" href="#판정-ready-with-risks-개발-착수-가능">판정: ✅ **Ready with Risks** — 개발 착수 가능</a><a class="lvl2" href="#검증-요약">검증 요약</a><a class="lvl2" href="#round-2-스코어-재채점">Round 2 스코어 (재채점)</a><a class="lvl2" href="#잔존-리스크-ready-with-risks의-근거">잔존 리스크 (Ready **with Risks**의 근거)</a><a class="lvl2" href="#우선-구현-순서-권장">우선 구현 순서 (권장)</a><a class="lvl2" href="#개발자가-가장-조심할-지점">개발자가 가장 조심할 지점</a><a class="lvl2" href="#발행-확인">발행 확인</a></nav>
+<nav class="toc"><div class="brand">최종 기획 승인 리포트 (Final Planning Approval)</div><div class="sub">final-planning-approval.md</div><a class="lvl1" href="#최종-기획-승인-리포트-final-planning-approval">최종 기획 승인 리포트 (Final Planning Approval)</a><a class="lvl2" href="#판정-✅-ready-with-risks--개발-착수-가능">판정: ✅ Ready with Risks — 개발 착수 가능</a><a class="lvl2" href="#검증-요약">검증 요약</a><a class="lvl2" href="#round-2-스코어-재채점">Round 2 스코어 (재채점)</a><a class="lvl2" href="#잔존-리스크-ready-with-risks의-근거">잔존 리스크 (Ready with Risks의 근거)</a><a class="lvl2" href="#우선-구현-순서-권장">우선 구현 순서 (권장)</a><a class="lvl2" href="#개발자가-가장-조심할-지점">개발자가 가장 조심할 지점</a><a class="lvl2" href="#발행-확인">발행 확인</a></nav>
 <main><h1 id="최종-기획-승인-리포트-final-planning-approval">최종 기획 승인 리포트 (Final Planning Approval)</h1>
 <blockquote>📦 <strong>아카이브 — D27 전환(2026-07-08) 이전 시점 스냅샷.</strong> 아키텍처 관련 서술은 현행(D27)과 다르며, 특정 시점 기록으로만 참조할 것. 코드 실측 수치(pytest 등)는 작성 시점 기준 유효.</blockquote>
 <p><strong>판정일</strong>: 2026-07-02 · <strong>iteration</strong>: 2/3 (Round 1 발견 → 패치 → Round 2 재검증)</p>
-<h2 id="판정-ready-with-risks-개발-착수-가능">판정: ✅ <strong>Ready with Risks</strong> — 개발 착수 가능</h2>
+<h2 id="판정-✅-ready-with-risks--개발-착수-가능">판정: ✅ <strong>Ready with Risks</strong> — 개발 착수 가능</h2>
 <h2 id="검증-요약">검증 요약</h2>
-<div class="table-wrap"><table><thead><tr><th>라운드</th><th>결과</th></tr></thead><tbody><tr><td>Round 1 (6축 병렬 검사)</td><td>139건 발견 (P0 8) → <strong>Not Ready</strong> (하드페일 2: 태스크 갭, 스키마 갭)</td></tr><tr><td>패치 (7개 병렬)</td><td>139건 전체 + 코드 8건 수정. 정본 4건 확정(사용자 승인)</td></tr><tr><td>Round 2 (재검증)</td><td>pytest <strong>32 passed</strong>(직접 실행) · YAML 15/15 · 하드페일 2건 해소 확인(grep) · 라이브 잔재 0건</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>라운드</th>
+<th>결과</th>
+</tr>
+</thead><tbody><tr>
+<td>Round 1 (6축 병렬 검사)</td>
+<td>139건 발견 (P0 8) → <strong>Not Ready</strong> (하드페일 2: 태스크 갭, 스키마 갭)</td>
+</tr>
+<tr>
+<td>패치 (7개 병렬)</td>
+<td>139건 전체 + 코드 8건 수정. 정본 4건 확정(사용자 승인)</td>
+</tr>
+<tr>
+<td>Round 2 (재검증)</td>
+<td>pytest <strong>32 passed</strong>(직접 실행) · YAML 15/15 · 하드페일 2건 해소 확인(grep) · 라이브 잔재 0건</td>
+</tr>
+</tbody></table></div>
 <h2 id="round-2-스코어-재채점">Round 2 스코어 (재채점)</h2>
-<div class="table-wrap"><table><thead><tr><th>항목</th><th>R1 → R2</th><th>근거</th></tr></thead><tbody><tr><td>Requirement Completeness ★</td><td>3 → <strong>4</strong></td><td>PRD 보안 수용 기준 신설, 지표 정량화</td></tr><tr><td>User Flow Coverage ★</td><td>3 → <strong>4</strong></td><td>§5.3 로딩/재연결 신설, WSS 단절 UX 정의</td></tr><tr><td>Data Model Fit</td><td>2 → <strong>4</strong></td><td>정본 4건 정렬, STT 필드 추가, yaml D16 재정합</td></tr><tr><td>Design System</td><td>2 → <strong>3</strong></td><td>Tailwind 정본 결정 + rbac.yaml</td></tr><tr><td>Task Executability ★</td><td>3 → <strong>4</strong></td><td>P0 갭 2건 신설, 86태스크, 모호 8건 명기</td></tr><tr><td>Traceability ★</td><td>3 → <strong>4</strong></td><td>조직도 에디터 체인 복구, 상태 동기화</td></tr><tr><td>Consistency</td><td>2 → <strong>4</strong></td><td>D21-r 13곳 정렬, 어휘 통일</td></tr><tr><td>Implementation Readiness ★</td><td>3 → <strong>4</strong></td><td>하드페일 해소 + 게이트 발행</td></tr><tr><td>(유지) Clarity 4 · Feasibility 4 · Screens 4(-YAML 6종→4종 신규+2 병합) · Testability 4 · Scope 4</td><td></td><td></td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>항목</th>
+<th>R1 → R2</th>
+<th>근거</th>
+</tr>
+</thead><tbody><tr>
+<td>Requirement Completeness ★</td>
+<td>3 → <strong>4</strong></td>
+<td>PRD 보안 수용 기준 신설, 지표 정량화</td>
+</tr>
+<tr>
+<td>User Flow Coverage ★</td>
+<td>3 → <strong>4</strong></td>
+<td>§5.3 로딩/재연결 신설, WSS 단절 UX 정의</td>
+</tr>
+<tr>
+<td>Data Model Fit</td>
+<td>2 → <strong>4</strong></td>
+<td>정본 4건 정렬, STT 필드 추가, yaml D16 재정합</td>
+</tr>
+<tr>
+<td>Design System</td>
+<td>2 → <strong>3</strong></td>
+<td>Tailwind 정본 결정 + rbac.yaml</td>
+</tr>
+<tr>
+<td>Task Executability ★</td>
+<td>3 → <strong>4</strong></td>
+<td>P0 갭 2건 신설, 86태스크, 모호 8건 명기</td>
+</tr>
+<tr>
+<td>Traceability ★</td>
+<td>3 → <strong>4</strong></td>
+<td>조직도 에디터 체인 복구, 상태 동기화</td>
+</tr>
+<tr>
+<td>Consistency</td>
+<td>2 → <strong>4</strong></td>
+<td>D21-r 13곳 정렬, 어휘 통일</td>
+</tr>
+<tr>
+<td>Implementation Readiness ★</td>
+<td>3 → <strong>4</strong></td>
+<td>하드페일 해소 + 게이트 발행</td>
+</tr>
+<tr>
+<td>(유지) Clarity 4 · Feasibility 4 · Screens 4(-YAML 6종→4종 신규+2 병합) · Testability 4 · Scope 4</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table></div>
 <p><strong>핵심 7항목 전부 ≥4 · 하드페일 0</strong> → 통과.</p>
 <h2 id="잔존-리스크-ready-with-risks의-근거">잔존 리스크 (Ready <strong>with Risks</strong>의 근거)</h2>
-<div class="table-wrap"><table><thead><tr><th>#</th><th>리스크</th><th>대응 시점</th></tr></thead><tbody><tr><td>R-a</td><td><strong>스파이크 S1~S4 미실행</strong> (LiveKit·STT·부하·라이팅 PoC) — 실환경(Godot/GPU/LiveKit) 필요</td><td>Phase 1 병행 또는 실환경 확보 시. REQ-004/005/006 게이트가 스파이크 산출물 요구</td></tr><tr><td>R-b</td><td><strong>OQ13</strong>: ERP 회의실 예약 테이블과 우리 회의 기능 관계 미결</td><td>Phase 5 착수 전 필수 결정</td></tr><tr><td>R-c</td><td><strong>OQ10</strong>: ERP dailylog read-only DB 계정 — DB 담당자 대기 중</td><td>접속정보 수령 시 (.env 1줄, 어댑터 준비됨)</td></tr><tr><td>R-d</td><td>도메인 미구매 — 외부(재택) 접속 개시 전 필수</td><td>외부 오픈 전</td></tr><tr><td>R-e</td><td>3D 에셋 라이선스 상용 확인, ERP dev 브랜치 병합 일정</td><td>Phase 1 / Phase 6</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>리스크</th>
+<th>대응 시점</th>
+</tr>
+</thead><tbody><tr>
+<td>R-a</td>
+<td><strong>스파이크 S1~S4 미실행</strong> (LiveKit·STT·부하·라이팅 PoC) — 실환경(Godot/GPU/LiveKit) 필요</td>
+<td>Phase 1 병행 또는 실환경 확보 시. REQ-004/005/006 게이트가 스파이크 산출물 요구</td>
+</tr>
+<tr>
+<td>R-b</td>
+<td><strong>OQ13</strong>: ERP 회의실 예약 테이블과 우리 회의 기능 관계 미결</td>
+<td>Phase 5 착수 전 필수 결정</td>
+</tr>
+<tr>
+<td>R-c</td>
+<td><strong>OQ10</strong>: ERP dailylog read-only DB 계정 — DB 담당자 대기 중</td>
+<td>접속정보 수령 시 (.env 1줄, 어댑터 준비됨)</td>
+</tr>
+<tr>
+<td>R-d</td>
+<td>도메인 미구매 — 외부(재택) 접속 개시 전 필수</td>
+<td>외부 오픈 전</td>
+</tr>
+<tr>
+<td>R-e</td>
+<td>3D 에셋 라이선스 상용 확인, ERP dev 브랜치 병합 일정</td>
+<td>Phase 1 / Phase 6</td>
+</tr>
+</tbody></table></div>
 <h2 id="우선-구현-순서-권장">우선 구현 순서 (권장)</h2>
-<ol><li><strong>Phase 2 잔여</strong> (외부 의존 낮음): P2-R2-T0 인증 → P2-R4-T1 보안 하드닝 → P2-R1-T1 잔여(스케줄러) → 좌석/조직 API</li><li>Phase 3 배치 편집기 (웹 완결)</li><li>실환경 확보 시 스파이크 S1~S4 → Phase 1(3D) / Phase 4~5</li></ol>
+<ol>
+<li><strong>Phase 2 잔여</strong> (외부 의존 낮음): P2-R2-T0 인증 → P2-R4-T1 보안 하드닝 → P2-R1-T1 잔여(스케줄러) → 좌석/조직 API</li>
+<li>Phase 3 배치 편집기 (웹 완결)</li>
+<li>실환경 확보 시 스파이크 S1<del>S4 → Phase 1(3D) / Phase 4</del>5</li>
+</ol>
 <h2 id="개발자가-가장-조심할-지점">개발자가 가장 조심할 지점</h2>
-<ul><li><strong>완료 판정은 <code>08-derived-gates.md</code> 게이트+증거 기준</strong> — 빌더 자기보고 금지</li><li>HG-SEC(외부 공개 하드닝)은 도그푸딩 시작 전 완료 게이트</li><li>pre-prod 마이그레이션 규약: 0001이 모델 자동 반영 — 운영 첫 배포 후 불변 전환</li><li>resources.yaml이 이제 정본과 동기 — 화면/태스크 생성 시 이 파일 기준</li></ul>
+<ul>
+<li><strong>완료 판정은 <code>08-derived-gates.md</code> 게이트+증거 기준</strong> — 빌더 자기보고 금지</li>
+<li>HG-SEC(외부 공개 하드닝)은 도그푸딩 시작 전 완료 게이트</li>
+<li>pre-prod 마이그레이션 규약: 0001이 모델 자동 반영 — 운영 첫 배포 후 불변 전환</li>
+<li>resources.yaml이 이제 정본과 동기 — 화면/태스크 생성 시 이 파일 기준</li>
+</ul>
 <h2 id="발행-확인">발행 확인</h2>
-<ul><li class="task"><input type="checkbox" disabled checked> document-gap-report.md · planning-loop-report.md (Round 1)</li><li class="task"><input type="checkbox" disabled checked> 08-derived-gates.md (REQ-001~011 + 공통 게이트)</li><li class="task"><input type="checkbox" disabled checked> loop-state.json (iteration 2, readiness 갱신)</li></ul>
-<div class="meta-foot">원본: <code>final-planning-approval.md</code> · 자동 생성 2026-07-16 · md-to-html</div>
+<ul>
+<li class="task"><input type="checkbox" disabled checked> document-gap-report.md · planning-loop-report.md (Round 1)</li>
+<li class="task"><input type="checkbox" disabled checked> 08-derived-gates.md (REQ-001~011 + 공통 게이트)</li>
+<li class="task"><input type="checkbox" disabled checked> loop-state.json (iteration 2, readiness 갱신)</li>
+</ul>
+<div class="meta-foot">원본: <code>final-planning-approval.md</code> · 자동 생성 2026-07-22 · md-to-html</div>
 </main>
 </div>
 

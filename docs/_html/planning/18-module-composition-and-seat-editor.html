@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>18. 런타임 모듈 합성 + 좌석 편집기 layout-JSON 재설계 (설계 정본)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">18. 런타임 모듈 합성 + 좌석 편집기 layout-JSON 재설계 (설계 정본)</div><div class="sub">18-module-composition-and-seat-editor.md</div><a class="lvl1" href="#18-런타임-모듈-합성--좌석-편집기-layout-json-재설계-설계-정본">18. 런타임 모듈 합성 + 좌석 편집기 layout-JSON 재설계 (설계 정본)</a><a class="lvl2" href="#1-배경--왜-지금-구조인가-무엇이-문제인가">1. 배경 — 왜 지금 구조인가, 무엇이 문제인가</a><a class="lvl2" href="#2-목표--비목표">2. 목표 / 비목표</a><a class="lvl2" href="#3-아키텍처">3. 아키텍처</a><a class="lvl3" href="#31-모듈-카탈로그-frontendpublicoffice2dmodulescatalogjson--스프라이트">3.1 모듈 카탈로그 (frontend/public/office2d/modules/catalog.json + 스프라이트)</a><a class="lvl3" href="#32-scene-layout-v2-get-apirealtimefloor-layout-확장-페이로드">3.2 scene-layout v2 (GET /api/realtime/floor-layout 확장 페이로드)</a><a class="lvl3" href="#33-뷰포트-렌더-경로-officeviewport2d">3.3 뷰포트 렌더 경로 (OfficeViewport2D)</a><a class="lvl3" href="#34-지오메트리-동기--수동-주입-소멸">3.4 지오메트리 동기 — 수동 주입 소멸</a><a class="lvl3" href="#35-편집기-adminoffice-layout-확장">3.5 편집기 (admin/office-layout 확장)</a><a class="lvl2" href="#4-마이그레이션-단계-각-단계-독립-검증·롤백-가능">4. 마이그레이션 단계 (각 단계 독립 검증·롤백 가능)</a><a class="lvl2" href="#5-리스크-·-오픈-퀘스천">5. 리스크 · 오픈 퀘스천</a><a class="lvl2" href="#6-착수-전-필요-승인">6. 착수 전 필요 승인</a></nav>
+<main><h1 id="18-런타임-모듈-합성--좌석-편집기-layout-json-재설계-설계-정본">18. 런타임 모듈 합성 + 좌석 편집기 layout-JSON 재설계 (설계 정본)</h1>
+<p><strong>작성일</strong>: 2026-07-17
+<strong>상태</strong>: 설계 승인 → <strong>M0 완료(2026-07-17, 게이트 PASS)</strong> · M1 대기
+<strong>범위</strong>: 시안 A안(모듈 개별 스프라이트 런타임 합성) + #14 좌석 편집기 layout-JSON 재설계(P7-T3의 D30 재해석). <strong>반드시 한 묶음</strong>으로 구현한다.
+<strong>정본 참조</strong>: 17-asset-rework-spec(D30) · 05-office-layout-schema(D12/D25) · 00-decisions §K · tools/asset-gen/README.md(v2.1~2.3 레이어 합성 실증) · 15-realtime-server-spec</p>
+<hr>
+<h2 id="1-배경--왜-지금-구조인가-무엇이-문제인가">1. 배경 — 왜 지금 구조인가, 무엇이 문제인가</h2>
+<p>현행(v2.2) 파이프라인은 <strong>&quot;고정 배치 1종&quot;에 최적화</strong>되어 있다:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>데이터</th>
+<th>위치</th>
+<th>생성 방식</th>
+</tr>
+</thead><tbody><tr>
+<td>그림(배경+가구 57스프라이트)</td>
+<td><code>frontend/public/office2d/layers/</code></td>
+<td>horizon-scene.js 오프라인 캡처(extract-layers.js)</td>
+</tr>
+<tr>
+<td>스프라이트 좌표·z</td>
+<td><code>layers/manifest.json</code></td>
+<td>캡처 시 픽셀 산출(바닥 접점)</td>
+</tr>
+<tr>
+<td>지오메트리 정본</td>
+<td><code>tools/asset-gen/out/layout.json</code></td>
+<td>plate.js 산출</td>
+</tr>
+<tr>
+<td>프론트 지오메트리</td>
+<td><code>frontend/lib/office2d.ts</code> 리터럴</td>
+<td><strong>수동 주입</strong></td>
+</tr>
+<tr>
+<td>서버 지오메트리</td>
+<td><code>realtime/.../FloorLayoutProvider.ts</code> 리터럴</td>
+<td><strong>수동 주입</strong> (meetingZones 오주입 사고 이력)</td>
+</tr>
+<tr>
+<td>좌석 DB</td>
+<td><code>seat</code> 테이블</td>
+<td>seed_seats.py 수동 실행</td>
+</tr>
+</tbody></table></div>
+<p>문제 3가지:</p>
+<ol>
+<li><strong>배치 변경 비용이 파이프라인 전체 재수행</strong> — 가구 하나 옮기면 씬 재캡처 + 4곳 수동 동기(handoff 07-16 §2-B가 대형인 이유).</li>
+<li><strong>편집기가 없다</strong> — 05-스키마(D12) 기반 admin/office-layout 편집기·검증기(<code>office_layout_validator.py</code>)는 존재하지만 2.5D 뷰포트 렌더와 <strong>완전히 분리</strong>되어 있다(편집해도 화면이 안 바뀜 = P7-T3 미구현).</li>
+<li><strong>P7-T3 원설계(Blender 재렌더 루프)는 D29/D30로 무효</strong> — 오프라인 배치 재렌더 대신, v2.1~2.3에서 실증된 <strong>레이어 z-합성이 곧 재렌더</strong>다(스프라이트는 그대로, 좌표만 바꾸면 즉시 반영).</li>
+</ol>
+<h2 id="2-목표--비목표">2. 목표 / 비목표</h2>
+<p><strong>목표</strong></p>
+<ul>
+<li>G1. <strong>모듈 카탈로그</strong>: 가구를 &quot;모듈&quot;(스프라이트 + footprint + 좌석앵커 + baseline 규칙) 단위로 1회 추출·등록.</li>
+<li>G2. <strong>scene-layout v2 JSON</strong>: 층 배치 = 모듈 인스턴스 목록(미터, top_left/D25). 그림·충돌·좌석·회의존이 전부 이 한 파일에서 파생.</li>
+<li>G3. <strong>뷰포트 직접 렌더</strong>: manifest 대신 layout v2를 읽어 (모듈 스프라이트, 배치 좌표, 파생 z)로 합성 — 배치 변경 = JSON 변경 = 즉시 반영.</li>
+<li>G4. <strong>좌석 편집기</strong>: admin 편집기에서 모듈 배치/이동/좌석 지정 → 검증(D12) → 배포 → 뷰포트·이동서버·seat 테이블 자동 동기.</li>
+<li>G5. <strong>B(베이스 씬 배치 변형 3종)의 데이터화</strong>: 변형 = layout v2 파일 3개. 씬 재캡처·재앵커링·수동 동기 소멸.</li>
+</ul>
+<p><strong>비목표</strong></p>
+<ul>
+<li>다층/층전환(P7-T2)은 스키마만 대비(floor_id 필드)하고 구현하지 않는다.</li>
+<li>시안 A안의 픽셀 occlusion 마스크: 현행 &quot;바닥 접점 baseline&quot; 규칙으로 충분함이 실증됨(v2.1~2.2). 부분 겹침 아티팩트가 실측되면 후속.</li>
+<li>멀티테넌트·브랜드별 층(#21 연동)은 유보.</li>
+</ul>
+<h2 id="3-아키텍처">3. 아키텍처</h2>
+<h3 id="31-모듈-카탈로그-frontendpublicoffice2dmodulescatalogjson--스프라이트">3.1 모듈 카탈로그 (<code>frontend/public/office2d/modules/catalog.json</code> + 스프라이트)</h3>
+<p>horizon-scene.js의 아이템 클로저를 <strong>모듈 타입별 로컬 캔버스 캡처</strong>로 확장한다(extract-modules.js 신설, extract-layers.js 유지).</p>
+<pre class="code"><code>{
+  &quot;version&quot;: 1,
+  &quot;modules&quot;: {
+    &quot;workstation-desk&quot;: {
+      &quot;variants&quot;: { &quot;v+&quot;: {&quot;src&quot;: &quot;workstation-desk.v+.webp&quot;, &quot;w&quot;: 2.0, &quot;h&quot;: 1.3,
+        &quot;anchorPx&quot;: [0.5, 0.93],        // 스프라이트 내 바닥 접점(정규) — z 산출 기준
+        &quot;baselineDy&quot;: 0.0 }},
+      &quot;footprint&quot;: [[0,0],[2.0,0],[2.0,1.3],[0,1.3]],   // 모듈-로컬 미터 폴리곤(충돌)
+      &quot;seats&quot;: [{ &quot;id&quot;: &quot;s1&quot;, &quot;at&quot;: [1.0, 1.72], &quot;back&quot;: &quot;v+&quot; }], // 로컬 좌석앵커(의자 모듈 자동 페어)
+      &quot;flat&quot;: false
+    },
+    &quot;office-chair&quot;: { &quot;variants&quot;: { &quot;v-&quot;: {...}, &quot;v+&quot;: {...}, &quot;u-&quot;: {...}, &quot;u+&quot;: {...} }, &quot;footprint&quot;: null },
+    &quot;rug-lounge&quot;:   { &quot;flat&quot;: true, ... }   // flat=배경층 흡수(아바타 비가림) — 현행 규칙 유지
+  }
+}</code></pre>
+<p>핵심 계약:</p>
+<ul>
+<li><strong>변형(variant) = 사전 렌더</strong>: 아이소 고정 시점이라 임의 회전 대신 렌더러가 이미 갖고 있는 방향 파라미터(officeChair back 4종, sofa backAt 2종 등)를 변형으로 캡처. 편집기는 변형 중 선택만 한다.</li>
+<li><strong>z 규칙 불변</strong>: 인스턴스 z = (배치 y_m + anchor 오프셋) → 정규 y → <code>zIndex = z·10000</code>. 아바타와 동일(변경 없음).</li>
+<li><strong>그룹 분리 원칙 승계</strong>(README &quot;세분화 원리&quot;): 아바타가 부재 사이에 설 수 있는 구성은 모듈을 쪼갠다. 카탈로그 단위가 이미 분리 단위.</li>
+</ul>
+<h3 id="32-scene-layout-v2-get-apirealtimefloor-layout-확장-페이로드">3.2 scene-layout v2 (<code>GET /api/realtime/floor-layout</code> 확장 페이로드)</h3>
+<p>05-스키마(D12)와 <strong>별도 문서가 아니라 확장</strong>이다: <code>furniture[]</code> 항목이 <code>asset_id</code> 대신 <code>module_id</code>+<code>variant</code>를 갖는 profile을 정의한다(スキーマ_version=2). 단위는 미터·top_left(D25 그대로).</p>
+<pre class="code"><code>{
+  &quot;metadata&quot;: { &quot;schema_version&quot;: 2, &quot;scene&quot;: &quot;HORIZON_OPEN_PLAN&quot;, &quot;brand&quot;: &quot;HORIZON&quot; },
+  &quot;dimensions&quot;: { &quot;width_m&quot;: 20.0, &quot;height_m&quot;: 11.256 },
+  &quot;background&quot;: { &quot;src&quot;: &quot;/office2d/layers/background.webp&quot; },  // 벽·바닥·창·브랜드월(모듈 아님)
+  &quot;walk_area&quot;: [[x,y],...],                                     // 미터
+  &quot;modules&quot;: [
+    { &quot;id&quot;: &quot;ws-a1-desk&quot;, &quot;module&quot;: &quot;workstation-desk&quot;, &quot;variant&quot;: &quot;v+&quot;, &quot;at&quot;: [6.9, 4.55] },
+    { &quot;id&quot;: &quot;ws-a1-chair&quot;, &quot;module&quot;: &quot;office-chair&quot;, &quot;variant&quot;: &quot;v+&quot;, &quot;at&quot;: [7.9, 5.35],
+      &quot;seat&quot;: { &quot;code&quot;: &quot;WS-A1&quot;, &quot;fixed_user&quot;: &quot;alice&quot; } }
+  ],
+  &quot;rooms&quot;: [...], &quot;meeting_zones&quot;: [...], &quot;spawns&quot;: {...}
+}</code></pre>
+<p>파생 규칙(단일 소스 → 3소비처):</p>
+<ul>
+<li><strong>obstacles</strong> = Σ 모듈 footprint(at으로 평행이동). office2d.ts <code>OBSTACLES</code>/<code>WALK_AREA</code> 리터럴과 FloorLayoutProvider의 <code>HORIZON_*</code> 리터럴은 <strong>파생 코드젠 산출물</strong>로 대체(§3.4).</li>
+<li><strong>seats</strong> = seat 필드 가진 모듈 인스턴스 → <code>seed_seats.py</code>가 layout v2를 직접 읽도록 변경(현 layout.json 의존 제거).</li>
+<li><strong>meetingZones</strong> = rooms 중 회의존 마킹 → SceneFloorLayoutProvider 주입(오주입 사고 원천 차단).</li>
+</ul>
+<h3 id="33-뷰포트-렌더-경로-officeviewport2d">3.3 뷰포트 렌더 경로 (OfficeViewport2D)</h3>
+<pre class="code"><code>loadSceneLayout() ──존재─→ 모듈 합성 렌더(카탈로그 스프라이트 + at→normToMeters 역변환 + z 파생)
+        └──없음/구버전─→ 현행 manifest 폴백 → 단일 플레이트 폴백   (3단 폴백, ASSETS_READY 계약 유지)</code></pre>
+<ul>
+<li>스프라이트 DOM 노드 수는 현행(57)과 동급 — 성능 예산 변화 없음.</li>
+<li>시간대 테마(SCENE_THEMES)·typing 버스트는 렌더 경로와 직교 — 변경 없음.</li>
+</ul>
+<h3 id="34-지오메트리-동기--수동-주입-소멸">3.4 지오메트리 동기 — 수동 주입 소멸</h3>
+<p><strong>빌드타임 코드젠</strong>(런타임 fetch보다 리스크 낮음, 1단계):
+<code>tools/asset-gen/gen-geometry.js</code> — layout v2 → ① <code>frontend/lib/office2d.generated.ts</code>(WALK_AREA/OBSTACLES/SPAWNS/ROOMS) ② <code>realtime/src/integration/floorLayout.generated.ts</code>(HORIZON_* 상수). 리뷰 가능한 diff로 남는다.
+<strong>2단계(편집기 배포 연동 후)</strong>: FloorLayoutProvider가 이미 지원하는 deployed-layout API 로드로 전환, 코드젠은 dev 폴백.</p>
+<h3 id="35-편집기-adminoffice-layout-확장">3.5 편집기 (admin/office-layout 확장)</h3>
+<ul>
+<li>모듈 팔레트(카탈로그) + 드래그 배치 + grid_snap(10cm) + 변형 선택 + 좌석 코드/고정배정 입력.</li>
+<li>저장 → <code>office_layout_validator.py</code> 확장 검증: 기존 D12 규칙(경계·중첩·도달성 A*) + v2 신규 규칙(모듈 footprint 중첩 금지, 좌석앵커→최근접 보행점 도달성 = seat-reach-qa 로직 서버 이식, WAYPOINT_EPS 0.06/클리어런스 0.07 불변식 준수).</li>
+<li>배포 → <code>layout_updated</code>(Colyseus) + 뷰포트 재로드 + seat upsert. <strong>Blender/재캡처 없음 — 이것이 P7-T3 &quot;편집→재렌더 루프&quot;의 D30 이행 완성형.</strong></li>
+</ul>
+<h2 id="4-마이그레이션-단계-각-단계-독립-검증·롤백-가능">4. 마이그레이션 단계 (각 단계 독립 검증·롤백 가능)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>단계</th>
+<th>산출물</th>
+<th>검증 게이트</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>M0 ✅(2026-07-17)</strong></td>
+<td>extract-modules.js + catalog.json — <strong>실측: 15타입 × 33변형</strong>(대표 0.25MB = 기존 57장 0.50MB 대비 -50%), 인스턴스 57, 산출 <code>frontend/public/office2d/modules/</code></td>
+<td>재합성 픽셀 diff <strong>0.296%</strong> &lt; 1% <strong>PASS</strong> + 기존 extract-layers 산출물 바이트 불변(무회귀)</td>
+</tr>
+<tr>
+<td><strong>M1</strong></td>
+<td>scene-layout v2 생성기(plate.js geometry → v2 변환) + 뷰포트 v2 렌더 경로(플래그)</td>
+<td>실화면 QA: 현행과 동일 프레임(z-순서 회귀 0) — v2.2 QA 절차 재사용</td>
+</tr>
+<tr>
+<td><strong>M2</strong></td>
+<td>gen-geometry.js 코드젠 + office2d/FloorLayoutProvider 리터럴 대체</td>
+<td><code>realtime npm test</code>(scene-floor) + frontend build + seat-reach-qa 그린</td>
+</tr>
+<tr>
+<td><strong>M3</strong></td>
+<td>편집기 팔레트·배치 UI + validator v2 규칙 + 배포·동기 루프</td>
+<td>E2E: 모듈 이동 → 배포 → 뷰포트/이동서버 반영, 잘못된 배치 reject</td>
+</tr>
+<tr>
+<td><strong>M4</strong></td>
+<td>배치 변형 3종(B) layout v2 데이터 + seed_seats v2</td>
+<td>변형별 scene-floor 파라미터라이즈 테스트</td>
+</tr>
+</tbody></table></div>
+<h2 id="5-리스크-·-오픈-퀘스천">5. 리스크 · 오픈 퀘스천</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>내용</th>
+<th>대응</th>
+</tr>
+</thead><tbody><tr>
+<td>R1</td>
+<td>모듈-로컬 캡처 시 그림자·바닥광 절단(현 스프라이트는 씬 문맥 포함)</td>
+<td>캡처 pad에 그림자 여백 포함, 러그·바닥광은 flat 모듈로 분리(현행 규칙)</td>
+</tr>
+<tr>
+<td>R2</td>
+<td>scene-floor 테스트가 좌표 하드코딩 — v2 전환 시 대량 재캘리브레이션</td>
+<td>M2에서 테스트를 layout 파생값 기반으로 재작성(하드코딩 제거가 목적의 일부)</td>
+</tr>
+<tr>
+<td>R3</td>
+<td>편집기 자유 배치가 경로탐색 그리드(0.1m)·doorway 폭 가정 깨뜨림</td>
+<td>validator에 도달성·개구부 최소폭(1.2m) 규칙 — reject가 정답, 런타임 방어 아님</td>
+</tr>
+<tr>
+<td>OQ1</td>
+<td>벽·창·브랜드월도 모듈화할가?</td>
+<td>1차 아니오 — 배경 1장 유지(배치 변형은 배경 N장). 벽 개편 수요 생기면 후속</td>
+</tr>
+<tr>
+<td>OQ2</td>
+<td>좌석앵커를 의자 모듈에 둘까 책상 모듈에 둘까</td>
+<td>의자 모듈(착석 스냅 대상이 의자) + 책상 페어링은 편집기 편의 기능</td>
+</tr>
+</tbody></table></div>
+<h2 id="6-착수-전-필요-승인">6. 착수 전 필요 승인</h2>
+<ul>
+<li>스키마 확장 방향(05 v2 profile) 승인 — 05-office-layout-schema.md에 §7 &quot;schema_version 2 (2.5D 모듈 프로파일)&quot; 추가는 M1에서.</li>
+<li>M0<del>M4 순차 진행, 단계별 커밋. 예상 규모: M0</del>M2 = 파이프라인/렌더(중형), M3 = 편집기(대형), M4 = 데이터(소형).</li>
+</ul>
+<hr>
+<p><em>이 문서 승인 후 M0 착수. B(배치 변형)는 M4로 흡수되어 별도 대형 작업이 소멸한다.</em></p>
+<div class="meta-foot">원본: <code>18-module-composition-and-seat-editor.md</code> · 자동 생성 2026-07-22 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

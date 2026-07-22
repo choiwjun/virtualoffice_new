@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>21 — 비주얼 전면 리셋 전략: 제로베이스 전수조사 결과 (D35 후보) v1.2</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">21 — 비주얼 전면 리셋 전략: 제로베이스 전수조사 결과 (D35 후보) v1.2</div><div class="sub">21-visual-reset-strategy.md</div><a class="lvl1" href="#21--비주얼-전면-리셋-전략-제로베이스-전수조사-결과-d35-후보-v12">21 — 비주얼 전면 리셋 전략: 제로베이스 전수조사 결과 (D35 후보) v1.2</a><a class="lvl2" href="#§0-사업-전제-v11-신설--모든-판단의-기준">§0. 사업 전제 (v1.1 신설 — 모든 판단의 기준)</a><a class="lvl2" href="#§1-결론-요약">§1. 결론 요약</a><a class="lvl2" href="#§2-시장-판정-rx-market">§2. 시장 판정 (rx-market)</a><a class="lvl2" href="#§3-캐릭터-병목의-해체">§3. 캐릭터 병목의 해체</a><a class="lvl2" href="#§4-노선별-상세-판정">§4. 노선별 상세 판정</a><a class="lvl3" href="#4-1-픽셀-전략-2-폴백">4-1. 픽셀 (전략 2 폴백)</a><a class="lvl3" href="#4-2-고해상-25d-기성-에셋-보조-소스">4-2. 고해상 2.5D 기성 에셋 (보조 소스)</a><a class="lvl3" href="#4-3-ai-생성-전략-1-핵심-도구">4-3. AI 생성 (전략 1 핵심 도구)</a><a class="lvl3" href="#4-4-웹-실시간-3d-기각">4-4. 웹 실시간 3D (기각)</a><a class="lvl2" href="#§5-실행-계획">§5. 실행 계획</a><a class="lvl3" href="#§5-0-품질-규율--찍어내되-상용화-퀄리티-6원칙-v12-신설-사용자-요구">§5-0. 품질 규율 — 찍어내되 상용화 퀄리티 6원칙 (v1.2 신설, 사용자 요구)</a><a class="lvl3" href="#phase-0--전략-1-스파이크-3단-사다리-v13-사용자-승인-2026-07-22">Phase 0 — 전략 1 스파이크: 3단 사다리 (v1.3, 사용자 승인 2026-07-22)</a><a class="lvl3" href="#phase-1--카탈로그-확장--씬-교체-35일">Phase 1 — 카탈로그 확장 + 씬 교체 (3~5일)</a><a class="lvl3" href="#phase-2--플랫폼-상용-마감">Phase 2 — 플랫폼 상용 마감</a><a class="lvl2" href="#§6-리스크">§6. 리스크</a><a class="lvl2" href="#§7-출처-트랙별-핵심">§7. 출처 (트랙별 핵심)</a></nav>
+<main><h1 id="21--비주얼-전면-리셋-전략-제로베이스-전수조사-결과-d35-후보-v12">21 — 비주얼 전면 리셋 전략: 제로베이스 전수조사 결과 (D35 후보) v1.2</h1>
+<blockquote>상태: <strong>제안 — Phase 0 스파이크 육안 게이트 통과 후 D35로 00-decisions 등재</strong>
+작성: 2026-07-22. 배경: PH+Mixamo 스파이크 반려 → &quot;전면 리셋 OK, 처음부터 재검색, 상용화 수준&quot; → 5트랙 병렬 리서치(픽셀 전수/고해상 2.5D/웹 3D/AI 생성/시장 해부).
+<strong>v1.1 (동일자)</strong>: 사용자 사업 전제 명시 — &quot;에셋으로 만든 가상사무실을 파는 게 아니라 <strong>B2B 플랫폼 자체를 판매</strong>&quot; → 생산 방식을 정적 플레이트에서 <strong>모듈 카탈로그 합성</strong>으로 교정.
+<strong>v1.2 (동일자)</strong>: 사용자 조건 — &quot;찍어낼 수 있되 <strong>상용화 수준 퀄리티</strong> 필수&quot; → §5-0 품질 규율 6원칙 신설, 게이트 ①을 벤치마크 비교(vs Kumospace/SoWork)로 조작적 정의, 미달 시 모듈 국소 재생성 2회 반복 규칙 추가.</blockquote>
+<hr>
+<h2 id="§0-사업-전제-v11-신설--모든-판단의-기준">§0. 사업 전제 (v1.1 신설 — 모든 판단의 기준)</h2>
+<p><strong>판매 대상 = B2B SaaS 플랫폼.</strong> 고객사별 맵 제작 서비스가 아니다. 따라서 시각 시스템의 1급 요구사항은:</p>
+<ol>
+<li><strong>재현성</strong>: 신규 고객사의 레이아웃(인원·평면·좌석)이 무엇이든 <strong>수작업 아트 없이 데이터에서 씬이 생성</strong>되어야 함 — 고객별 AI 재생성·검수가 필요한 구조는 서비스업이지 플랫폼이 아님</li>
+<li><strong>확장성</strong>: 팀 증원·자리 이동·층 추가가 좌석 편집기(18-spec)·레이아웃 v2 배포·hot-swap(D12)으로 즉시 반영 — 이미 구축된 데이터 기반 아키텍처와 정합해야 함</li>
+<li><strong>브랜딩</strong>: 고객사 로고·컬러 반영 여지(틴트 가능한 요소) — 정적 원장 이미지는 불가</li>
+<li><strong>모트 구분</strong>: 비주얼은 <strong>도어 오프너</strong>(경쟁 데모에서 지지 않을 수준), 클로징 모트는 운영 계층(ERP 연동·KPI·근태/좌석·온프렘 배포) — 비주얼 투자는 &quot;Kumospace급 첫인상&quot;까지, 그 이상의 예술 투자는 ROI 없음</li>
+</ol>
+<p>이 전제에서 &quot;정적 AI 플레이트 1장&quot; 방식(v1.0 초안)은 <strong>기각</strong>되고, 스타일 방향은 유지하되 생산 방식이 바뀐다.</p>
+<h2 id="§1-결론-요약">§1. 결론 요약</h2>
+<p><strong>전략 1 (권장): 하이엔드 2.5D 일러스트 × 모듈 카탈로그 합성 — &quot;Kumospace 퀄리티를 ZEP 아키텍처로&quot;</strong></p>
+<ul>
+<li><strong>모듈 카탈로그를 AI로 1회 생성</strong>(GPT Image 2/Nano Banana 2 Pro, 상업 라이선스 클린): 바닥/벽 타일·데스크·의자·회의 테이블·소파·화분·파티션 등 ~40–60종을 <strong>한 스타일 레퍼런스·한 조명 방향</strong>으로 생성, 1회 QA로 스타일 고정 → 이후 어떤 고객 레이아웃이든 합성 렌더(기존 z합성 오클루전 아키텍처·18-module M1 설계 그대로, 아트 소스만 교체)</li>
+<li><strong>캐릭터</strong> = 동일 스타일 레퍼런스의 일러스트 아바타(방향별 스틸 + sit/typing 포즈), 이동은 글라이드+밥 — <strong>걷기 사이클은 폴리시드 계열의 상용 필수조건이 아님</strong>(oVice=사진 원형, Sococo=도트, Roam=버블로 상용 판매 중)</li>
+<li>스타일 통일 담보 = &quot;한 모델·한 레퍼런스·한 조명&quot;의 <strong>카탈로그 단위 1회 생성</strong> — 단일 작가 원칙의 AI 구현. 고객별 생성이 없으므로 스타일 드리프트 리스크도 온보딩이 아닌 카탈로그 증보 시점에만 존재</li>
+<li>대형 고객 전용 <strong>커스텀 맵(정적 플레이트)은 유료 서비스 티어로 업셀</strong>(oVice 커스텀 배경 모델) — 플랫폼 기본은 어디까지나 합성</li>
+</ul>
+<p><strong>전략 2 (폴백, 확실성 최상): 픽셀아트 노선</strong> — 전략 1 게이트 실패 시 전환(LimeZu/operationcwal/lennoxstudio, §4-1). 픽셀은 태생이 타일 합성이라 플랫폼 요구(§0)와는 자연 정합. 대신 한국 시장 커머디티 포지션 감수.</p>
+<p><strong>기각</strong>: 정적 플레이트 기본형(§0 위반) · 웹 실시간 3D(§4-4) · Synty(EULA) · 포토리얼(시장 부재) · 기성 벡터 캐릭터 팩(존재하지 않음).</p>
+<h2 id="§2-시장-판정-rx-market">§2. 시장 판정 (rx-market)</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>스타일 계열</th>
+<th>대표</th>
+<th>2026 상태</th>
+<th>판정</th>
+</tr>
+</thead><tbody><tr>
+<td>픽셀아트 탑다운</td>
+<td>Gather, <strong>ZEP(한국 지배)</strong>, WorkAdventure</td>
+<td>도입 폭 최대. Gather 벤처 이탈(2026-02), &quot;리더십에 팔기 어렵다&quot; 태그 반복</td>
+<td>검증됐지만 <strong>한국에선 저가 커머디티</strong>(ZEP 무료+크몽 맵 외주 20만~250만원)</td>
+</tr>
+<tr>
+<td><strong>고해상 2.5D 일러스트</strong></td>
+<td><strong>Kumospace</strong>(Kosy 인수·성장), SoWork, Teemyco</td>
+<td><strong>&quot;비주얼이 구매 결정에 영향&quot; 직접 증거가 붙은 유일한 계열</strong></td>
+<td><strong>한국 시장 빈 포지션</strong> — D33 피드백과 일치</td>
+</tr>
+<tr>
+<td>플랫 벡터 도면</td>
+<td>Sococo(피인수), Roam, <del>Teamflow</del>(사망)</td>
+<td>기능성 판매, 통폐합 다발</td>
+<td>차별화 불가</td>
+</tr>
+<tr>
+<td>풀 3D</td>
+<td>Virbela(네이티브 앱), Spot</td>
+<td>이벤트·교육 니치, 웹네이티브 상용 부재</td>
+<td>기각</td>
+</tr>
+</tbody></table></div>
+<p>한국 특화: ZEP의 확산 동력은 &quot;가볍고 저렴&quot;이지 비주얼이 아님. <strong>&quot;픽셀보다 세련된 2.5D&quot; 포지션이 비어 있음</strong>. 단 §0에 따라 우리의 실제 무기는 [세련된 비주얼 도어오프너] + [ZEP에 없는 운영 계층(ERP·KPI·온프렘)] 조합.</p>
+<h2 id="§3-캐릭터-병목의-해체">§3. 캐릭터 병목의 해체</h2>
+<p>세 트랙 수렴: ①픽셀 팩조차 sit+typing+phone 완비 팩 없음(rx-pixel) ②일러스트+애니 기성 팩 부재, 외주 $400~800/캐릭터(rx-hires) ③AI 애니 사이클 프레임 일관성 미해결(rx-aigen).</p>
+<p><strong>돌파구 = 요구 재정의</strong>: 폴리시드 상용 계열은 걷기 사이클 없이 판매된다(oVice·Sococo·Roam). <strong>방향별 스틸+글라이드+상태 포즈</strong>로 낮추면 AI 스틸 생성(사이클보다 훨씬 쉬움)으로 1인 조달 가능. 기존 이동계(A*·dt·Colyseus)는 무수정.</p>
+<h2 id="§4-노선별-상세-판정">§4. 노선별 상세 판정</h2>
+<h3 id="4-1-픽셀-전략-2-폴백">4-1. 픽셀 (전략 2 폴백)</h3>
+<ul>
+<li>후보: <strong>LimeZu</strong>(Modern Office $2.50 + Modern Interiors ~$5·제너레이터, 크레딧 필수, 제너레이터 툴 GPL3—생성물 무관) / <strong>operationcwal</strong>($1+, 16·32px, 제너레이터+seated, 2026-07 활발) / <strong>lennoxstudio</strong>($2.99, 유리 회의실+애니 워커)</li>
+<li>LimeZu phone 애니 유무 조사 상충 → 구매 전 시트 확인</li>
+<li>플랫폼 정합은 우수(타일 합성 태생). 리스크는 시장 포지션(커머디티·&quot;장난감&quot; 인식)</li>
+</ul>
+<h3 id="4-2-고해상-25d-기성-에셋-보조-소스">4-2. 고해상 2.5D 기성 에셋 (보조 소스)</h3>
+<ul>
+<li>Icograms(웹앱 명시 허용, 최청정)/Envato Elements(웹앱 1개=1라이선스)/Freepik·Vecteezy(수량 상한) — 카탈로그 보충·프로토타이핑 소스</li>
+<li>기성 애니 일러스트 캐릭터는 부재 확정 → §3 방식</li>
+</ul>
+<h3 id="4-3-ai-생성-전략-1-핵심-도구">4-3. AI 생성 (전략 1 핵심 도구)</h3>
+<ul>
+<li>카탈로그 생성: GPT Image 2(소유권 명시) / Nano Banana 2 Pro(일관성 최강, <strong>SynthID 워터마크 주의</strong>) — 레퍼런스 이미지·멀티턴 편집으로 모듈 간 스타일·조명 일관 유지. 시간대 테마는 런타임 필터(기존) 우선</li>
+<li>함정: FLUX dev weights 자가호스팅 비상업 / Scenario 상업은 Pro $45/mo부터 / AI 애니 사이클 비현실 — 스틸+포즈까지만</li>
+<li>Gather 공식 맵 구조(배경 PNG+캐릭터층+전경층)=우리 v2.1 오클루전과 동형 — 합성 아키텍처 정당성 방증</li>
+</ul>
+<h3 id="4-4-웹-실시간-3d-기각">4-4. 웹 실시간 3D (기각)</h3>
+<ul>
+<li>Mozilla Hubs 종료(2024-05), <strong>Ready Player Me 종료(2026-01-31, Netflix 인수)</strong>, Virbela 네이티브 전용, Kumospace조차 데스크톱 앱 권장</li>
+<li>Synty: &quot;소스 파일 외부 공유 금지&quot;와 raw glb 웹 노출 회색지대 → 상용 비권장</li>
+<li>CC0 조합(Kenney+Quaternius)은 톤 통일=아트 병목 재발 + 최적화 유지비</li>
+</ul>
+<h2 id="§5-실행-계획">§5. 실행 계획</h2>
+<h3 id="§5-0-품질-규율--찍어내되-상용화-퀄리티-6원칙-v12-신설-사용자-요구">§5-0. 품질 규율 — &quot;찍어내되 상용화 퀄리티&quot; 6원칙 (v1.2 신설, 사용자 요구)</h3>
+<blockquote>전제 인식: <strong>Kumospace·SoWork·ZEP 모두 모듈 합성 렌더</strong>다. 합성이라서 싸구려가 되는 게 아니라, 규율 없는 합성(PH 스파이크의 실패 = 스타일 혼재·렌더 이원화·조명 불일치)이 싸구려를 만든다. 아래 6원칙이 &quot;합성인데 프리미엄&quot;의 기술적 담보.</blockquote>
+<ol>
+<li><strong>카탈로그 생성 규율</strong>: 전 모듈 동일 카메라각·동일 조명 방향(좌상 고정)·동일 팔레트·동일 텍스처 밀도. 레퍼런스 시트를 모든 생성 호출에 첨부, 그리드 일괄 생성(모듈 간 상대 일관성 확보) 우선</li>
+<li><strong>접지 내장</strong>: 모든 모듈에 소프트 컨택트 섀도 포함(또는 런타임 블롭) — PH 스파이크에서 확보한 그림자 파라미터 지식 재사용. &quot;떠 있는 가구&quot; 금지</li>
+<li><strong>글로벌 통합 레이어</strong>: 씬 전체 비네트+앰비언트 그라디언트+시간대 필터(기존 day/dusk/night 재사용)+존 틴트(D33 ROOM_TINTS) — 모듈 잔여 편차를 런타임에서 눌러 팔레트 통일감 생성</li>
+<li><strong>바닥·벽은 연속면</strong>: 타일 반복이 아니라 연속 패턴/9-slice+미세 노이즈 — &quot;타일 티&quot; 제거</li>
+<li><strong>반복 기계감 제거</strong>: 주요 모듈 2~3 변형(색·소품 조합) + 클러터 소품 카탈로그(머그·서류·러그·창가 화분) + 배치 시 클러터 자동 살포 규칙 — 같은 책상 12개가 &quot;복붙&quot;으로 안 보이게</li>
+<li><strong>벤치마크 비교를 게이트에 명문화</strong>: &quot;예쁜가&quot;(주관) 대신 <strong>Kumospace/SoWork 실제 스크린샷과 나란히 놓고 밀리지 않는가</strong>(비교 판정) — 상용화 수준의 조작적 정의</li>
+</ol>
+<h3 id="phase-0--전략-1-스파이크-3단-사다리-v13-사용자-승인-2026-07-22">Phase 0 — 전략 1 스파이크: 3단 사다리 (v1.3, 사용자 승인 2026-07-22)</h3>
+<blockquote><p><strong>0-A. Claude Design 벡터 렌더러</strong> → ❌ <strong>게이트 탈락(2026-07-22 사용자 판정: &quot;이런 퀄리티는 말도 안 된다&quot;)</strong>. 산출물은 spike-vector/에 보존(구도·조명·재현성 검증은 유효 — 렌더 아키텍처와 착석 문법 지식은 0-B에 계승). <strong>교훈: 코드 아트의 상한은 다이어그램 수준. 아트 퀄은 아트 소스(AI 모델/실작가 팩)에서만 나온다. 이로써 &quot;1인이 직접 만드는 아트&quot; 계열은 3회 연속 탈락(HORIZON·PH합성·벡터) — 재시도 금지.</strong>
+→ <strong>0-B. claude.ai/design 재생성 — 실행 완료(2026-07-22, CLI가 Chrome으로 직접 오케스트레이션)</strong>. &quot;claude design&quot; = <strong>claude.ai/design 제품</strong>(용어 확인). 흐름: 브리프 카드+벤치마크를 HORIZON 2.5D Asset Pack(5ad05dde…)에 푸시 → 신규 디자인 프로젝트 <strong>&quot;상용 가상오피스 씬 V3&quot;(78c01975-6214-4ab2-99dc-a63e6be0200e)</strong> 에서 Fable 5 Max로 생성(자체 스크린샷 QA 2회 포함, 총 ~15분) → 산출물을 DesignSync로 레포 회수.
+<strong>산출물</strong>: <code>frontend/public/plate-v3/</code> — horizon-scene-v3.js(<strong>renderScene(layout,{canvas,theme,layers}) 캔버스 렌더러</strong>, 절차적 텍스처 100%·외부 에셋 0·좌석 레지스트리 반환) + horizon-layouts-v3.js(24석 HQ 20×11.25m / 12석 스튜디오 14.5×9.5m — 월드 크기까지 데이터) + index.html(로컬 뷰어, <code>http://127.0.0.1:3100/plate-v3/</code>).
+<strong>CLI 육안 사전판정</strong>: 벤치마크와 동일 시각 언어 도달(우드 결·오리엔탈/추상 러그·글라스 회의실·젠 페블 코너·식물 밀도·소프트 섀도·<strong>사진 배지 아바타</strong>) · 24↔12 동일 코드 재현 ✓ · day/dusk/night(야간=쿨 그레이딩+램프 광 풀) ✓. <strong>역대 4개 시안과 차원이 다름 — 사용자 최종 게이트 대기.</strong></p>
+<p><strong>2차 고도화 패스 완료(동일자, 사용자 &quot;상용화급으로 고도화&quot; 지시 → v3.1.0)</strong>: 시그니처·스키마 동결 상태에서 렌더러 내부만 고도화 — ①데스크 장비 좌석별 시드 변형(듀얼/노트북/클로즈드+매트·헤드폰·머그·화분, 점유석만 발광) ②체어 헤드레스트·팔걸이·스티치+미세 회전 ③벽 코너 AO·창 멀리언·주간 광 풀 ④회의실 바스켓위브 카펫·TV 차트·유리 스펙큘러 2중·화이트보드 ⑤팬트리 백스플래시·커피머신 디테일·오픈 선반 ⑥신규 소품(액자 3종·북셸프·프린터·코트랙·존 사이니지) ⑦클러스터 컨택트 섀도·식물 2중 그림자·<strong>DPR 2x</strong>. <strong>성능 지식(Phase 1 필수)</strong>: ctx.filter blur는 2x에서 메인스레드 수십 초 블로킹 → <strong>전 그림자 shadowBlur 방식 = 레이아웃당 ~200ms</strong>(런타임 플레이트 재생성 가능 수준), 페인트는 코얼레싱 setTimeout으로 비차단. 디자인 에이전트 자체 QA 2회(원형 러그 링 과대비 자가 발견·수정).
+→ 미달 시 <strong>0-C. AI 이미지 API</strong>(~$20·키 필요) → <strong>전략 2 픽셀</strong>.</p>
+<p><strong>3차 히어로-퀄리티 패스 완료(동일자, 사용자 &quot;에셋 하나하나 상용 퀄리티&quot; 지시 → v3.2)</strong>: 전 품목 재질·구조 고도화(체어=5스타·캐스터·가스리프트·메시 등판·암패드·헤드레스트 / 데스크 킷 4변형+소품 / 소파 4단 셰이딩·파이핑 / 식물 잎맥·2톤 폴드 / 오리엔탈 러그 파일·프린지 / 커피머신·냉장고 곡면 스펙 / 우드 엣지 베벨 / 유리 스펙큘러 2중) + <strong>renderAssetSheet(canvas) 신설</strong>(카탈로그 전 품목 개별 히어로 렌더 — 검수·문서·마케팅 겸용). <strong>자체 QA 3라운드: 1차에서 5종(터브체어·비스트로·푸프·코트랙·카운터)을 스스로 벤치마크 밀림 판정→재작업→2·3차 통과</strong>. 성능: 그림자·오브젝트 스프라이트 캐시+플로어 레이어 캐시(테마 전환 재사용)로 plate24 1546ms→<strong>콜드 269~347ms/웜 282ms</strong>, plate12 81~261ms, DPR 2x 유지. CLI 로컬 검증: 300% 줌 크롭에서 메시 짜임·캐스터·퀼팅·잎맥 성립 확인. 로컬 뷰어 ASSET GALLERY 섹션 추가. <strong>패스 방법론(시그니처 동결·벤치마크 게이트·자체 QA 라운드·국소 재작업)이 품질 담보 수단으로 확립됨.</strong></p>
+<p><strong>벤치마크 실화면 분석의 결정적 발견(2026-07-22)</strong>: Kumospace 아바타는 일러스트 캐릭터가 아니라 <strong>프로필 사진 배지 타일</strong>이다(+텍스처드 탑다운 플로어플랜). → <strong>아바타=사진 배지 확정 방향</strong>(§3 대체): 캐릭터 휴먼 아트 문제가 통째로 소멸하고, 기존 P1(프로필 사진 배지) 계획과 일치. 씬만 벤치마크급이면 된다.
+0-A 근거: 코드 렌더러는 §0 플랫폼 요구에 구조적 최적(씬=코드+데이터라 재현성 완벽, 한 패스 렌더라 합성 심·조명 문제 원천 소멸, 라이선스 0, 팔레트=변수라 브랜딩 자유). 타깃 미학은 코드의 강점인 <strong>플랫 프리미엄 벡터(oVice·Sococo 계열)</strong> — Kumospace식 페인털리 리치함은 코드로 비현실(정직 한계, 그건 0-B 영역). 지난 HORIZON 저평가는 방법이 아니라 [독자 스타일 시도+벤치마크 루프 부재+걷기 애니]가 원인 — 이번엔 검증 미학 고정+실스크린샷 비교 루프+스틸 아바타로 교정. 스파이크 산출물=frontend/public/spike-vector/</p>
+</blockquote>
+<ol>
+<li><strong>스타일 레퍼런스 확정</strong>: 아이소 오피스 일러스트 무드 후보 2~3장 생성 → 사용자 선택</li>
+<li><strong>시드 카탈로그 생성</strong>(~15종): 바닥/벽·데스크·의자·회의 테이블·소파·화분·파티션·수납 + 아바타 2종×(방향 스틸·sit·typing) — 한 레퍼런스·한 조명</li>
+<li><strong>재현성 증명(플랫폼 게이트 핵심)</strong>: <strong>같은 카탈로그로 서로 다른 레이아웃 2종</strong>(12인/24인)을 데이터만 바꿔 합성 — &quot;고객마다 아트 없이 찍어낼 수 있는가&quot;를 직접 증명(ph.html 방식 목업+글라이드 데모)</li>
+<li><strong>육안 게이트 3항목</strong>: ①<strong>Kumospace/SoWork 실스크린샷과 나란히 비교해 밀리지 않는가</strong>(§5-0-6, 상용화 수준의 조작적 정의) ②두 레이아웃 모두 조화로운가(합성 심·조명 일관) ③아바타-씬 스타일 통일</li>
+<li><strong>판정 규칙</strong>: 통과 → D35 등재·Phase 1 / 부분 미달 → 문제 모듈만 국소 재생성으로 <strong>최대 2회 반복 개선</strong>(합성 방식의 장점 — 원장 그림이면 전체 재작업, 모듈이면 해당 모듈만 교체) / 2회 후에도 ① 미달 → 전략 2(픽셀) 전환(유계 리스크)</li>
+</ol>
+<h3 id="phase-1--카탈로그-확장--씬-교체-35일">Phase 1 — 카탈로그 확장 + 씬 교체 (3~5일)</h3>
+<ul>
+<li>카탈로그 ~40–60종 확장 + <code>catalog.json</code>(18-spec M1 이행 — desk/chair 분리 원칙 등 기존 함정 지식 계승, 아트 소스만 교체)</li>
+<li>뷰포트: 레이아웃 v2 직접 렌더(18-spec G3) + 좌석 편집기(G4) + z합성 오클루전 유지</li>
+<li>아바타: 글라이드+밥, 상태 포즈 스왑. A*·좌석·Colyseus·D33/D34 무수정</li>
+<li>스타일 정본화: 레퍼런스 이미지·프롬프트·생성 절차를 tools/asset-gen에 문서화(카탈로그 증보 시 드리프트 방지)</li>
+</ul>
+<h3 id="phase-2--플랫폼-상용-마감">Phase 2 — 플랫폼 상용 마감</h3>
+<ul>
+<li>프리셋 오피스 템플릿 S/M/L(영업 데모·온보딩용 쇼룸)</li>
+<li>브랜딩 계층: 로고 배치 슬롯·존 틴트·컬러 테마</li>
+<li>업셀 티어: 대형 고객 커스텀 맵(AI 정적 플레이트 — v1.0 방식은 여기서 활용)</li>
+<li>아바타 커스터마이즈 파이프라인(스타일 고정 생성 절차)</li>
+</ul>
+<h2 id="§6-리스크">§6. 리스크</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>리스크</th>
+<th>완화</th>
+</tr>
+</thead><tbody><tr>
+<td>모듈 합성 심(seam)·조명 불일치로 &quot;조립 티&quot;</td>
+<td>전 모듈 동일 조명 방향 강제 + 바닥/벽은 연속면(타일 반복이 아닌 9-slice/패턴) + 접지 그림자 블롭 + PH 스파이크의 심 지식 재사용. <strong>게이트 ②가 이것을 직접 검증</strong></td>
+</tr>
+<tr>
+<td>AI 카탈로그 내 스타일 편차</td>
+<td>1회 생성·1회 QA로 고정. 증보 시 레퍼런스+프롬프트 정본 사용. 편차 모듈은 재생성(모듈 단위라 국소 수리 가능)</td>
+</tr>
+<tr>
+<td>캐릭터 방향별 일관성</td>
+<td>스틸+포즈만 요구. 실패 시 외주 $400~800/1세트(유계) 또는 전략 2</td>
+</tr>
+<tr>
+<td>워터마크(Nano Banana SynthID)</td>
+<td>GPT Image 2 우선</td>
+</tr>
+<tr>
+<td>레이아웃 자유도 요구 초과(고객이 미세 배치 요구)</td>
+<td>좌석 편집기+모듈 배치로 대응(합성 방식이라 가능). 정적 플레이트였다면 불가능했을 요구 — 방식 전환의 정당성</td>
+</tr>
+<tr>
+<td>비주얼 과투자</td>
+<td>§0-4 기준: Kumospace급 첫인상 도달 시 중단, 이후 투자는 운영 계층(ERP·KPI·온프렘)으로</td>
+</tr>
+</tbody></table></div>
+<h2 id="§7-출처-트랙별-핵심">§7. 출처 (트랙별 핵심)</h2>
+<ul>
+<li>시장: kumospace.com/blog/gather-town-alternatives · g2.com/compare/gather-town-gather-vs-kumospace · flat.social/blog/gather-town-alternative(Gather 벤처 이탈) · kumospace.com/blog/teamflow-shutdown · blog.zep.us/zep-news-2/(ZEP 500만) · 크몽 ZEP 맵 외주 시세(kmong.com/gig/371889 외)</li>
+<li>픽셀: operationcwal.itch.io/pixel-office-dungeon-top-down-asset-pack · lennoxstudio.itch.io/animated-corporate-open-office-pixel-art-asset-pack · limezu.itch.io/modernoffice · limezu.itch.io/moderninteriors</li>
+<li>고해상 2.5D: icograms.com/license-agreement-commercial · help.elements.envato.com(웹앱 1개=1라이선스) · esotericsoftware.com/spine-asset-packs · fiverr.com/resources/guides/costs/2d-animation</li>
+<li>AI: terms.law/ai-output-rights/chatgpt/ · glbgpt.com/hub/nano-banana-pro-commercial-use/ · deepwiki.com/black-forest-labs/flux2/7.4-licensing-and-terms · scenario.com/pricing · support.gather.town(Mapmaker Background-Foreground)</li>
+<li>웹3D: uploadvr.com/mozilla-hubs-shutdown · avatarsdk.com(RPM 종료) · syntystore.com/pages/one-time-purchase-licence · quaternius.com · kenney.nl/assets/furniture-kit</li>
+</ul>
+<div class="meta-foot">원본: <code>21-visual-reset-strategy.md</code> · 자동 생성 2026-07-22 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

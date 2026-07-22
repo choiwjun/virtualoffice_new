@@ -52,10 +52,10 @@ img{max-width:100%;border-radius:8px}
 </style>
 </head><body>
 <div class="layout">
-<nav class="toc"><div class="brand">migration-strategy.md: Alembic 마이그레이션 전략</div><div class="sub">migration-strategy.md</div><a class="lvl1" href="#migration-strategymd-alembic-마이그레이션-전략">migration-strategy.md: Alembic 마이그레이션 전략</a><a class="lvl2" href="#1-alembic-운영-원칙">1. Alembic 운영 원칙</a><a class="lvl3" href="#11-기본-구조">1.1 기본 구조</a><a class="lvl3" href="#12-마이그레이션-파일-명명-규칙">1.2 마이그레이션 파일 명명 규칙</a><a class="lvl3" href="#13-autogenerate-검토-프로세스">1.3 autogenerate 검토 프로세스</a><a class="lvl2" href="#2-phase-0-초기-마이그레이션-순서">2. Phase 0 초기 마이그레이션 순서</a><a class="lvl3" href="#21-migration-001-핵심-테이블-생성">2.1 Migration 001: 핵심 테이블 생성</a><a class="lvl3" href="#22-migration-002-erp-동기화-테이블">2.2 Migration 002: ERP 동기화 테이블</a><a class="lvl3" href="#23-migration-003-kpi-협업-시스템">2.3 Migration 003: KPI &amp; 협업 시스템</a><a class="lvl2" href="#3-초기-fixtures-생성-계획">3. 초기 Fixtures 생성 계획</a><a class="lvl3" href="#31-fixtures-데이터-범위">3.1 Fixtures 데이터 범위</a><a class="lvl3" href="#32-fixtures-생성-스크립트-seed">3.2 Fixtures 생성 스크립트 (Seed)</a><a class="lvl3" href="#33-fixtures-실행-방법">3.3 Fixtures 실행 방법</a><a class="lvl2" href="#4-enum-변경-절차">4. Enum 변경 절차</a><a class="lvl3" href="#41-enum-값-추가">4.1 Enum 값 추가</a><a class="lvl3" href="#42-enum-값-제거-대체-방법">4.2 Enum 값 제거 (대체 방법)</a><a class="lvl2" href="#5-롤백-정책">5. 롤백 정책</a><a class="lvl3" href="#51-개발-환경-로컬">5.1 개발 환경 (로컬)</a><a class="lvl3" href="#52-스테이징-환경">5.2 스테이징 환경</a><a class="lvl3" href="#53-프로덕션-환경-금지">5.3 프로덕션 환경 (금지)</a><a class="lvl2" href="#6-erp-동기화-마이그레이션">6. ERP 동기화 마이그레이션</a><a class="lvl3" href="#61-erp-users-동기화-초기화">6.1 ERP users 동기화 초기화</a><a class="lvl3" href="#62-erp-soft-delete-감지-마이그레이션">6.2 ERP soft-delete 감지 마이그레이션</a><a class="lvl2" href="#7-테스트-전략">7. 테스트 전략</a><a class="lvl3" href="#71-마이그레이션-테스트">7.1 마이그레이션 테스트</a><a class="lvl3" href="#72-모델-테스트">7.2 모델 테스트</a><a class="lvl2" href="#8-마이그레이션-실행-체크리스트">8. 마이그레이션 실행 체크리스트</a><a class="lvl3" href="#phase-0-배포-전">Phase 0 배포 전</a><a class="lvl3" href="#phase-1-배포-전">Phase 1+ 배포 전</a><a class="lvl2" href="#9-참고-마이그레이션-파일-템플릿">9. 참고: 마이그레이션 파일 템플릿</a><a class="lvl2" href="#다음-단계-12-tasks-v30-정합">다음 단계 (12-tasks v3.0 정합)</a></nav>
+<nav class="toc"><div class="brand">migration-strategy.md: Alembic 마이그레이션 전략</div><div class="sub">migration-strategy.md</div><a class="lvl1" href="#migration-strategymd-alembic-마이그레이션-전략">migration-strategy.md: Alembic 마이그레이션 전략</a><a class="lvl2" href="#1-alembic-운영-원칙">1. Alembic 운영 원칙</a><a class="lvl3" href="#11-기본-구조">1.1 기본 구조</a><a class="lvl3" href="#12-마이그레이션-파일-명명-규칙">1.2 마이그레이션 파일 명명 규칙</a><a class="lvl3" href="#13-autogenerate-검토-프로세스">1.3 autogenerate 검토 프로세스</a><a class="lvl2" href="#2-phase-0-초기-마이그레이션-순서">2. Phase 0 초기 마이그레이션 순서</a><a class="lvl3" href="#21-migration-001-핵심-테이블-생성">2.1 Migration 001: 핵심 테이블 생성</a><a class="lvl3" href="#22-migration-002-erp-동기화-테이블">2.2 Migration 002: ERP 동기화 테이블</a><a class="lvl3" href="#23-migration-003-kpi--협업-시스템">2.3 Migration 003: KPI  협업 시스템</a><a class="lvl2" href="#3-초기-fixtures-생성-계획">3. 초기 Fixtures 생성 계획</a><a class="lvl3" href="#31-fixtures-데이터-범위">3.1 Fixtures 데이터 범위</a><a class="lvl3" href="#32-fixtures-생성-스크립트-seed">3.2 Fixtures 생성 스크립트 (Seed)</a><a class="lvl3" href="#33-fixtures-실행-방법">3.3 Fixtures 실행 방법</a><a class="lvl2" href="#4-enum-변경-절차">4. Enum 변경 절차</a><a class="lvl3" href="#41-enum-값-추가">4.1 Enum 값 추가</a><a class="lvl3" href="#42-enum-값-제거-대체-방법">4.2 Enum 값 제거 (대체 방법)</a><a class="lvl2" href="#5-롤백-정책">5. 롤백 정책</a><a class="lvl3" href="#51-개발-환경-로컬">5.1 개발 환경 (로컬)</a><a class="lvl3" href="#52-스테이징-환경">5.2 스테이징 환경</a><a class="lvl3" href="#53-프로덕션-환경-금지">5.3 프로덕션 환경 (금지)</a><a class="lvl2" href="#6-erp-동기화-마이그레이션">6. ERP 동기화 마이그레이션</a><a class="lvl3" href="#61-erp-users-동기화-초기화">6.1 ERP users 동기화 초기화</a><a class="lvl3" href="#62-erp-soft-delete-감지-마이그레이션">6.2 ERP soft-delete 감지 마이그레이션</a><a class="lvl2" href="#7-테스트-전략">7. 테스트 전략</a><a class="lvl3" href="#71-마이그레이션-테스트">7.1 마이그레이션 테스트</a><a class="lvl3" href="#72-모델-테스트">7.2 모델 테스트</a><a class="lvl2" href="#8-마이그레이션-실행-체크리스트">8. 마이그레이션 실행 체크리스트</a><a class="lvl3" href="#phase-0-배포-전">Phase 0 배포 전</a><a class="lvl3" href="#phase-1-배포-전">Phase 1+ 배포 전</a><a class="lvl2" href="#9-참고-마이그레이션-파일-템플릿">9. 참고: 마이그레이션 파일 템플릿</a><a class="lvl2" href="#다음-단계-12-tasks-v30-정합">다음 단계 (12-tasks v3.0 정합)</a></nav>
 <main><h1 id="migration-strategymd-alembic-마이그레이션-전략">migration-strategy.md: Alembic 마이그레이션 전략</h1>
 <blockquote>🟡 <strong>D27 부분 개정(2026-07-09) — company_id INTEGER 정정 반영.</strong> 마이그레이션 정본은 <code>04-data-model.md</code> 스키마 기준. asset <code>tscn_path</code>→신스키마(3d-design/asset-registry §1.1) Alembic 마이그레이션 별도 필요.</blockquote>
-<p><strong>작성일</strong>: 2026-07-02 <strong>상태</strong>: 확정 (Phase 0, P0-T0.3) <strong>정본 참조</strong>: <code>04-data-model.md</code>, <code>00-decisions.md</code> (D18, D19)</p>
+<p><strong>작성일</strong>: 2026-07-02<br><strong>상태</strong>: 확정 (Phase 0, P0-T0.3)<br><strong>정본 참조</strong>: <code>04-data-model.md</code>, <code>00-decisions.md</code> (D18, D19)</p>
 <blockquote>이 문서는 Alembic 운영 원칙, ERP 동기화 마이그레이션, 초기 fixtures, enum 변경 절차, 롤백 정책을 정의합니다.</blockquote>
 <hr>
 <h2 id="1-alembic-운영-원칙">1. Alembic 운영 원칙</h2>
@@ -82,7 +82,7 @@ img{max-width:100%;border-radius:8px}
 <h3 id="13-autogenerate-검토-프로세스">1.3 autogenerate 검토 프로세스</h3>
 <p><strong>금지 사항</strong>: 자동 마이그레이션 생성 후 무조건 적용 금지!</p>
 <p><strong>필수 프로세스</strong>:</p>
-<pre class="code lang-bash"><code># Step 1: 자동 생성 (초안)
+<pre class="code"><code># Step 1: 자동 생성 (초안)
 alembic revision --autogenerate -m &quot;Add users table&quot;
 
 # Step 2: 검토 (마이그레이션 파일 내용 확인)
@@ -104,8 +104,8 @@ alembic upgrade head --sql &gt; migration.sql</code></pre>
 <hr>
 <h2 id="2-phase-0-초기-마이그레이션-순서">2. Phase 0 초기 마이그레이션 순서</h2>
 <h3 id="21-migration-001-핵심-테이블-생성">2.1 Migration 001: 핵심 테이블 생성</h3>
-<p><strong>대상</strong>: erp<em>user, org</em>group, team_zone, office, floor, room, seat 등 8개 테이블</p>
-<pre class="code lang-python"><code># alembic/versions/001_create_core_tables.py
+<p><strong>대상</strong>: erp_user, org_group, team_zone, office, floor, room, seat 등 8개 테이블</p>
+<pre class="code"><code># alembic/versions/001_create_core_tables.py
 
 def upgrade():
     # 1. PostgreSQL Enum 타입 생성
@@ -229,8 +229,8 @@ def downgrade():
     op.execute('DROP TYPE org_group_type')
     # ... enum 타입 삭제</code></pre>
 <h3 id="22-migration-002-erp-동기화-테이블">2.2 Migration 002: ERP 동기화 테이블</h3>
-<p><strong>대상</strong>: user<em>team</em>history, presence, audit_log</p>
-<pre class="code lang-python"><code># alembic/versions/002_add_erp_sync.py
+<p><strong>대상</strong>: user_team_history, presence, audit_log</p>
+<pre class="code"><code># alembic/versions/002_add_erp_sync.py
 
 def upgrade():
     # user_team_history (팀 이동 이력, D18)
@@ -268,9 +268,9 @@ def upgrade():
 def downgrade():
     op.drop_table('presence')
     op.drop_table('user_team_history')</code></pre>
-<h3 id="23-migration-003-kpi-협업-시스템">2.3 Migration 003: KPI &amp; 협업 시스템</h3>
-<p><strong>대상</strong>: work<em>log, kpi</em>result, daily<em>status</em>push, meeting, meeting<em>minute, action</em>item 등</p>
-<pre class="code lang-python"><code># alembic/versions/003_add_kpi_collaboration.py
+<h3 id="23-migration-003-kpi--협업-시스템">2.3 Migration 003: KPI &amp; 협업 시스템</h3>
+<p><strong>대상</strong>: work_log, kpi_result, daily_status_push, meeting, meeting_minute, action_item 등</p>
+<pre class="code"><code># alembic/versions/003_add_kpi_collaboration.py
 
 def upgrade():
     # Enum 타입 확장
@@ -360,7 +360,7 @@ def downgrade():
 - work_log (테스트 데이터)
 - kpi_result (샘플 평가 데이터)</code></pre>
 <h3 id="32-fixtures-생성-스크립트-seed">3.2 Fixtures 생성 스크립트 (Seed)</h3>
-<pre class="code lang-python"><code># scripts/seed_initial_data.py
+<pre class="code"><code># scripts/seed_initial_data.py
 
 import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -512,7 +512,7 @@ async def seed_data():
 # 실행
 # asyncio.run(seed_data())</code></pre>
 <h3 id="33-fixtures-실행-방법">3.3 Fixtures 실행 방법</h3>
-<pre class="code lang-bash"><code># 1. 마이그레이션 적용
+<pre class="code"><code># 1. 마이그레이션 적용
 alembic upgrade head
 
 # 2. Seed 스크립트 실행
@@ -525,7 +525,7 @@ pytest tests/fixtures/  # 초기 데이터 검증 테스트</code></pre>
 <h3 id="41-enum-값-추가">4.1 Enum 값 추가</h3>
 <p><strong>금지</strong>: 기존 값 변경 / 값 순서 변경</p>
 <p><strong>필수 절차</strong>:</p>
-<pre class="code lang-python"><code># Migration 파일: XXX_add_enum_value.py
+<pre class="code"><code># Migration 파일: XXX_add_enum_value.py
 
 def upgrade():
     # PostgreSQL Enum 타입에 값 추가 (가상 enum 예시 — sample_status)
@@ -536,7 +536,7 @@ def downgrade():
     # PostgreSQL Enum은 값 삭제 불가 (대신 deprecated 처리)
     raise Exception(&quot;PostgreSQL Enum values cannot be removed. Mark as deprecated instead.&quot;)</code></pre>
 <h3 id="42-enum-값-제거-대체-방법">4.2 Enum 값 제거 (대체 방법)</h3>
-<pre class="code lang-python"><code># 방법: deprecated 플래그 추가
+<pre class="code"><code># 방법: deprecated 플래그 추가
 
 def upgrade():
     # 컬럼 추가: deprecated
@@ -553,7 +553,7 @@ def downgrade():
 <hr>
 <h2 id="5-롤백-정책">5. 롤백 정책</h2>
 <h3 id="51-개발-환경-로컬">5.1 개발 환경 (로컬)</h3>
-<pre class="code lang-bash"><code># 가장 최근 마이그레이션 1개 롤백
+<pre class="code"><code># 가장 최근 마이그레이션 1개 롤백
 alembic downgrade -1
 
 # 특정 버전까지 롤백
@@ -563,8 +563,12 @@ alembic downgrade 001_create_core_tables
 alembic downgrade base</code></pre>
 <h3 id="52-스테이징-환경">5.2 스테이징 환경</h3>
 <p><strong>조건</strong>:</p>
-<ol><li>마이그레이션 자동 테스트 통과 (pytest)</li><li>데이터 손실 없음 (soft-delete만 사용)</li><li>FK 제약 위반 없음</li></ol>
-<pre class="code lang-bash"><code># 안전 롤백
+<ol>
+<li>마이그레이션 자동 테스트 통과 (pytest)</li>
+<li>데이터 손실 없음 (soft-delete만 사용)</li>
+<li>FK 제약 위반 없음</li>
+</ol>
+<pre class="code"><code># 안전 롤백
 alembic downgrade -1  # 마이그레이션 1개 롤백
 
 # 검증
@@ -572,13 +576,23 @@ SELECT COUNT(*) FROM erp_user;  # 데이터 확인</code></pre>
 <h3 id="53-프로덕션-환경-금지">5.3 프로덕션 환경 (금지)</h3>
 <p><strong>원칙</strong>: 프로덕션 롤백 금지 (대신 Forward 마이그레이션만 사용)</p>
 <p><strong>예외 상황 절차</strong>:</p>
-<ol><li>DBA 협의 필수</li><li>데이터 백업 완료 후</li><li>마이그레이션 Downgrade SQL 수동 검토</li><li>서비스 중단 시간 공지</li><li>롤백 후 원인 분석 및 Fix 마이그레이션 준비</li></ol>
+<ol>
+<li>DBA 협의 필수</li>
+<li>데이터 백업 완료 후</li>
+<li>마이그레이션 Downgrade SQL 수동 검토</li>
+<li>서비스 중단 시간 공지</li>
+<li>롤백 후 원인 분석 및 Fix 마이그레이션 준비</li>
+</ol>
 <hr>
 <h2 id="6-erp-동기화-마이그레이션">6. ERP 동기화 마이그레이션</h2>
 <h3 id="61-erp-users-동기화-초기화">6.1 ERP users 동기화 초기화</h3>
 <p><strong>절차</strong>:</p>
-<ol><li>ERP users 전체 조회 (화이트리스트 VIEW 경유)</li><li>erp_user 테이블 bulk insert</li><li>user<em>team</em>history 초기 레코드 생성 (valid_from = migration 실행 시각)</li></ol>
-<pre class="code lang-python"><code># Migration 또는 사후 스크립트
+<ol>
+<li>ERP users 전체 조회 (화이트리스트 VIEW 경유)</li>
+<li>erp_user 테이블 bulk insert</li>
+<li>user_team_history 초기 레코드 생성 (valid_from = migration 실행 시각)</li>
+</ol>
+<pre class="code"><code># Migration 또는 사후 스크립트
 
 async def init_erp_user_sync():
     &quot;&quot;&quot;ERP users 최초 동기화&quot;&quot;&quot;
@@ -608,7 +622,7 @@ async def init_erp_user_sync():
             ON CONFLICT DO NOTHING
         &quot;&quot;&quot;, (eu.id, eu.team_id, now))</code></pre>
 <h3 id="62-erp-soft-delete-감지-마이그레이션">6.2 ERP soft-delete 감지 마이그레이션</h3>
-<pre class="code lang-python"><code># Migration: 002_add_erp_sync.py
+<pre class="code"><code># Migration: 002_add_erp_sync.py
 
 def upgrade():
     # is_active 컬럼 추가 (기존 데이터는 TRUE로 설정)
@@ -623,7 +637,7 @@ def upgrade():
 <hr>
 <h2 id="7-테스트-전략">7. 테스트 전략</h2>
 <h3 id="71-마이그레이션-테스트">7.1 마이그레이션 테스트</h3>
-<pre class="code lang-python"><code># tests/test_migrations.py
+<pre class="code"><code># tests/test_migrations.py
 
 async def test_migration_001_up():
     &quot;&quot;&quot;Migration 001 적용 검증&quot;&quot;&quot;
@@ -650,7 +664,7 @@ async def test_erp_user_unique_constraint():
                    (2, 1, 'test@company.com', 'Test2', 1, 'employee')
         &quot;&quot;&quot;)</code></pre>
 <h3 id="72-모델-테스트">7.2 모델 테스트</h3>
-<pre class="code lang-python"><code># tests/test_models.py
+<pre class="code"><code># tests/test_models.py
 
 async def test_erp_user_soft_delete():
     &quot;&quot;&quot;soft-delete 동작 검증&quot;&quot;&quot;
@@ -687,12 +701,27 @@ async def test_kpi_result_unique_metric():
 <hr>
 <h2 id="8-마이그레이션-실행-체크리스트">8. 마이그레이션 실행 체크리스트</h2>
 <h3 id="phase-0-배포-전">Phase 0 배포 전</h3>
-<ul><li class="task"><input type="checkbox" disabled> Migration 001: 핵심 테이블 생성 (alembic upgrade head 성공)</li><li class="task"><input type="checkbox" disabled> Migration 테스트 통과 (pytest tests/test_migrations.py -v)</li><li class="task"><input type="checkbox" disabled> 모델 테스트 통과 (pytest tests/models/ -v)</li><li class="task"><input type="checkbox" disabled> Fixtures 생성 완료 (python scripts/seed<em>initial</em>data.py)</li><li class="task"><input type="checkbox" disabled> Rollback 테스트 성공 (alembic downgrade -1 + 재적용)</li><li class="task"><input type="checkbox" disabled> FK 제약 검증 (no dangling references)</li><li class="task"><input type="checkbox" disabled> 인덱스 생성 확인 (EXPLAIN ANALYZE)</li><li class="task"><input type="checkbox" disabled> DBA 리뷰 완료</li></ul>
+<ul>
+<li class="task"><input type="checkbox" disabled> Migration 001: 핵심 테이블 생성 (alembic upgrade head 성공)</li>
+<li class="task"><input type="checkbox" disabled> Migration 테스트 통과 (pytest tests/test_migrations.py -v)</li>
+<li class="task"><input type="checkbox" disabled> 모델 테스트 통과 (pytest tests/models/ -v)</li>
+<li class="task"><input type="checkbox" disabled> Fixtures 생성 완료 (python scripts/seed_initial_data.py)</li>
+<li class="task"><input type="checkbox" disabled> Rollback 테스트 성공 (alembic downgrade -1 + 재적용)</li>
+<li class="task"><input type="checkbox" disabled> FK 제약 검증 (no dangling references)</li>
+<li class="task"><input type="checkbox" disabled> 인덱스 생성 확인 (EXPLAIN ANALYZE)</li>
+<li class="task"><input type="checkbox" disabled> DBA 리뷰 완료</li>
+</ul>
 <h3 id="phase-1-배포-전">Phase 1+ 배포 전</h3>
-<ul><li class="task"><input type="checkbox" disabled> 새 Migration 자동 생성 검토 (alembic revision --autogenerate)</li><li class="task"><input type="checkbox" disabled> 위험 작업 제거 (DROP TABLE, ALTER COLUMN 검토)</li><li class="task"><input type="checkbox" disabled> 마이그레이션 테스트 추가 (해당 마이그레이션용)</li><li class="task"><input type="checkbox" disabled> 성능 테스트 (대용량 데이터 환경)</li><li class="task"><input type="checkbox" disabled> 롤백 경로 검증 (downgrade 테스트)</li></ul>
+<ul>
+<li class="task"><input type="checkbox" disabled> 새 Migration 자동 생성 검토 (alembic revision --autogenerate)</li>
+<li class="task"><input type="checkbox" disabled> 위험 작업 제거 (DROP TABLE, ALTER COLUMN 검토)</li>
+<li class="task"><input type="checkbox" disabled> 마이그레이션 테스트 추가 (해당 마이그레이션용)</li>
+<li class="task"><input type="checkbox" disabled> 성능 테스트 (대용량 데이터 환경)</li>
+<li class="task"><input type="checkbox" disabled> 롤백 경로 검증 (downgrade 테스트)</li>
+</ul>
 <hr>
 <h2 id="9-참고-마이그레이션-파일-템플릿">9. 참고: 마이그레이션 파일 템플릿</h2>
-<pre class="code lang-python"><code># alembic/versions/XXX_migration_name.py
+<pre class="code"><code># alembic/versions/XXX_migration_name.py
 
 &quot;&quot;&quot;
 마이그레이션 제목
@@ -730,8 +759,14 @@ def downgrade():
     op.drop_table(...)</code></pre>
 <hr>
 <h2 id="다음-단계-12-tasks-v30-정합">다음 단계 (12-tasks v3.0 정합)</h2>
-<ul><li class="task"><input type="checkbox" disabled checked> Alembic 초기 마이그레이션·핵심 스키마 — <strong>[구현됨]</strong> (백엔드 도메인, pytest 417+ · HG-DATA 게이트)</li><li class="task"><input type="checkbox" disabled checked> ERPUser 동기화 배치 — <strong>[구현됨]</strong> (<code>erp_sync.py</code> — 실패 알림 훅 연결은 12-tasks P7-T5)</li><li class="task"><input type="checkbox" disabled checked> FastAPI 모델 serializer·기존 CRUD 엔드포인트 — <strong>[구현됨]</strong> (KPI·좌석·회의·work-log 등)</li><li class="task"><input type="checkbox" disabled> announcement 모델·API 신설 — 12-tasks <strong>P1-T5</strong> (04-data-model §2.7 정본)</li><li class="task"><input type="checkbox" disabled> asset <code>tscn_path</code>→신스키마(asset-registry §1.1) Alembic 마이그레이션 — 별도 필요(상단 배너)</li></ul>
-<div class="meta-foot">원본: <code>migration-strategy.md</code> · 자동 생성 2026-07-16 · md-to-html</div>
+<ul>
+<li class="task"><input type="checkbox" disabled checked> Alembic 초기 마이그레이션·핵심 스키마 — <strong>[구현됨]</strong> (백엔드 도메인, pytest 417+ · HG-DATA 게이트)</li>
+<li class="task"><input type="checkbox" disabled checked> ERPUser 동기화 배치 — <strong>[구현됨]</strong> (<code>erp_sync.py</code> — 실패 알림 훅 연결은 12-tasks P7-T5)</li>
+<li class="task"><input type="checkbox" disabled checked> FastAPI 모델 serializer·기존 CRUD 엔드포인트 — <strong>[구현됨]</strong> (KPI·좌석·회의·work-log 등)</li>
+<li class="task"><input type="checkbox" disabled> announcement 모델·API 신설 — 12-tasks <strong>P1-T5</strong> (04-data-model §2.7 정본)</li>
+<li class="task"><input type="checkbox" disabled> asset <code>tscn_path</code>→신스키마(asset-registry §1.1) Alembic 마이그레이션 — 별도 필요(상단 배너)</li>
+</ul>
+<div class="meta-foot">원본: <code>migration-strategy.md</code> · 자동 생성 2026-07-22 · md-to-html</div>
 </main>
 </div>
 

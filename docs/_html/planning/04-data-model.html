@@ -52,18 +52,23 @@ img{max-width:100%;border-radius:8px}
 </style>
 </head><body>
 <div class="layout">
-<nav class="toc"><div class="brand">04-data-model.md: 데이터 모델</div><div class="sub">04-data-model.md</div><a class="lvl1" href="#04-data-modelmd-데이터-모델">04-data-model.md: 데이터 모델</a><a class="lvl2" href="#개요">개요</a><a class="lvl2" href="#1-postgresql-erd-우리-플랫폼">1. PostgreSQL ERD (우리 플랫폼)</a><a class="lvl2" href="#2-엔티티-상세-정의">2. 엔티티 상세 정의</a><a class="lvl3" href="#21-erp-미러-계층">2.1 ERP 미러 계층</a><a class="lvl3" href="#22-조직구역공간-계층">2.2 조직·구역·공간 계층</a><a class="lvl3" href="#23-공간-설계배치">2.3 공간 설계·배치</a><a class="lvl3" href="#24-실시간협업-계층">2.4 실시간·협업 계층</a><a class="lvl3" href="#25-업무kpi연동-계층">2.5 업무·KPI·연동 계층</a><a class="lvl3" href="#26-자산감시감사-계층">2.6 자산·감시·감사 계층</a><a class="lvl2" href="#3-상태-열거형enum-정의">3. 상태 &amp; 열거형(Enum) 정의</a><a class="lvl3" href="#31-presence-status">3.1 Presence Status</a><a class="lvl3" href="#32-seat-type-status">3.2 Seat Type &amp; Status</a><a class="lvl3" href="#33-meeting-status">3.3 Meeting Status</a><a class="lvl3" href="#34-office-layout-status">3.4 Office Layout Status</a><a class="lvl3" href="#35-kpi-source-period-objection-d16">3.5 KPI Source · Period · Objection (D16)</a><a class="lvl3" href="#36-erp-연동-role">3.6 ERP 연동 Role</a><a class="lvl3" href="#37-org-group-type">3.7 Org Group Type</a><a class="lvl3" href="#38-room-type">3.8 Room Type</a><a class="lvl3" href="#39-daily-status-push-target">3.9 Daily Status Push Target</a><a class="lvl2" href="#4-핵심-인덱스-제약">4. 핵심 인덱스 &amp; 제약</a><a class="lvl3" href="#41-성능-인덱스">4.1 성능 인덱스</a><a class="lvl3" href="#42-제약-조건">4.2 제약 조건</a><a class="lvl3" href="#43-데이터-타입-특수성">4.3 데이터 타입 특수성</a><a class="lvl2" href="#5-office_layout-json-스키마">5. office_layout JSON 스키마</a><a class="lvl2" href="#6-erp-읽기-전용-스키마참고">6. ERP 읽기 전용 스키마(참고)</a><a class="lvl2" href="#7-데이터-무결성-전략">7. 데이터 무결성 전략</a><a class="lvl3" href="#71-ttl-보관-정책-d20-ae">7.1 TTL &amp; 보관 정책 (D20-a·e)</a><a class="lvl3" href="#72-동기화-충돌-해결-d18-확정">7.2 동기화 충돌 해결 (D18 — 확정)</a><a class="lvl2" href="#8-보안-컴플라이언스">8. 보안 &amp; 컴플라이언스</a><a class="lvl3" href="#81-접근-제어">8.1 접근 제어</a><a class="lvl3" href="#82-데이터-민감도">8.2 데이터 민감도</a><a class="lvl2" href="#9-마이그레이션-배포">9. 마이그레이션 &amp; 배포</a><a class="lvl3" href="#91-alembic-마이그레이션">9.1 Alembic 마이그레이션</a><a class="lvl3" href="#92-초기화-시퀀스">9.2 초기화 시퀀스</a><a class="lvl3" href="#93-데이터-검증">9.3 데이터 검증</a><a class="lvl2" href="#27-공지사항-계층-d27-신설">2.7 공지사항 계층 (D27 신설)</a><a class="lvl2" href="#28-출장보고서커뮤니케이션-계층-2026-07-13-신설-06-2-좌내비-메뉴-구현분">2.8 출장·보고서·커뮤니케이션 계층 (2026-07-13 신설 — 06 §2 좌내비 메뉴 구현분)</a><a class="lvl3" href="#business_trip-출장-신청승인">business_trip — 출장 신청·승인</a><a class="lvl3" href="#report-업무-보고서-일일주간월간-수기">report — 업무 보고서 (일일/주간/월간, 수기)</a><a class="lvl3" href="#chat_message-커뮤니케이션-채널-메시지">chat_message — 커뮤니케이션 채널 메시지</a><a class="lvl3" href="#기존-문서와의-정합-정정-v14">기존 문서와의 정합 정정 (v1.4)</a><a class="lvl2" href="#loop-metadata">Loop Metadata</a><a class="lvl3" href="#upstream-documents-referenced">Upstream Documents Referenced</a><a class="lvl3" href="#downstream-documents-affected">Downstream Documents Affected</a><a class="lvl3" href="#open-questions">Open Questions</a><a class="lvl3" href="#assumptions">Assumptions</a><a class="lvl3" href="#validation-criteria">Validation Criteria</a><a class="lvl3" href="#risks">Risks</a><a class="lvl3" href="#변경-이력">변경 이력</a></nav>
+<nav class="toc"><div class="brand">04-data-model.md: 데이터 모델</div><div class="sub">04-data-model.md</div><a class="lvl1" href="#04-data-modelmd-데이터-모델">04-data-model.md: 데이터 모델</a><a class="lvl2" href="#개요">개요</a><a class="lvl2" href="#1-postgresql-erd-우리-플랫폼">1. PostgreSQL ERD (우리 플랫폼)</a><a class="lvl2" href="#2-엔티티-상세-정의">2. 엔티티 상세 정의</a><a class="lvl3" href="#21-erp-미러-계층">2.1 ERP 미러 계층</a><a class="lvl3" href="#22-조직·구역·공간-계층">2.2 조직·구역·공간 계층</a><a class="lvl3" href="#23-공간-설계·배치">2.3 공간 설계·배치</a><a class="lvl3" href="#24-실시간·협업-계층">2.4 실시간·협업 계층</a><a class="lvl3" href="#25-업무·kpi·연동-계층">2.5 업무·KPI·연동 계층</a><a class="lvl3" href="#26-자산·감시·감사-계층">2.6 자산·감시·감사 계층</a><a class="lvl2" href="#3-상태--열거형enum-정의">3. 상태  열거형(Enum) 정의</a><a class="lvl3" href="#31-presence-status">3.1 Presence Status</a><a class="lvl3" href="#32-seat-type--status">3.2 Seat Type  Status</a><a class="lvl3" href="#33-meeting-status">3.3 Meeting Status</a><a class="lvl3" href="#34-office-layout-status">3.4 Office Layout Status</a><a class="lvl3" href="#35-kpi-source-·-period-·-objection-d16">3.5 KPI Source · Period · Objection (D16)</a><a class="lvl3" href="#36-erp-연동-role">3.6 ERP 연동 Role</a><a class="lvl3" href="#37-org-group-type">3.7 Org Group Type</a><a class="lvl3" href="#38-room-type">3.8 Room Type</a><a class="lvl3" href="#39-daily-status-push-target">3.9 Daily Status Push Target</a><a class="lvl2" href="#4-핵심-인덱스--제약">4. 핵심 인덱스  제약</a><a class="lvl3" href="#41-성능-인덱스">4.1 성능 인덱스</a><a class="lvl3" href="#42-제약-조건">4.2 제약 조건</a><a class="lvl3" href="#43-데이터-타입-특수성">4.3 데이터 타입 특수성</a><a class="lvl2" href="#5-office_layout-json-스키마">5. office_layout JSON 스키마</a><a class="lvl2" href="#6-erp-읽기-전용-스키마참고">6. ERP 읽기 전용 스키마(참고)</a><a class="lvl2" href="#7-데이터-무결성-전략">7. 데이터 무결성 전략</a><a class="lvl3" href="#71-ttl--보관-정책-d20-a·e">7.1 TTL  보관 정책 (D20-a·e)</a><a class="lvl3" href="#72-동기화-충돌-해결-d18--확정">7.2 동기화 충돌 해결 (D18 — 확정)</a><a class="lvl2" href="#8-보안--컴플라이언스">8. 보안  컴플라이언스</a><a class="lvl3" href="#81-접근-제어">8.1 접근 제어</a><a class="lvl3" href="#82-데이터-민감도">8.2 데이터 민감도</a><a class="lvl2" href="#9-마이그레이션--배포">9. 마이그레이션  배포</a><a class="lvl3" href="#91-alembic-마이그레이션">9.1 Alembic 마이그레이션</a><a class="lvl3" href="#92-초기화-시퀀스">9.2 초기화 시퀀스</a><a class="lvl3" href="#93-데이터-검증">9.3 데이터 검증</a><a class="lvl2" href="#27-공지사항-계층-d27-신설">2.7 공지사항 계층 (D27 신설)</a><a class="lvl2" href="#28-출장·보고서·커뮤니케이션-계층-2026-07-13-신설--06-§2-좌내비-메뉴-구현분">2.8 출장·보고서·커뮤니케이션 계층 (2026-07-13 신설 — 06 §2 좌내비 메뉴 구현분)</a><a class="lvl3" href="#business_trip--출장-신청·승인">business_trip — 출장 신청·승인</a><a class="lvl3" href="#report--업무-보고서-일일주간월간-수기">report — 업무 보고서 (일일/주간/월간, 수기)</a><a class="lvl3" href="#chat_message--커뮤니케이션-채널-메시지">chat_message — 커뮤니케이션 채널 메시지</a><a class="lvl3" href="#기존-문서와의-정합-정정-v14">기존 문서와의 정합 정정 (v1.4)</a><a class="lvl2" href="#loop-metadata">Loop Metadata</a><a class="lvl3" href="#upstream-documents-referenced">Upstream Documents Referenced</a><a class="lvl3" href="#downstream-documents-affected">Downstream Documents Affected</a><a class="lvl3" href="#open-questions">Open Questions</a><a class="lvl3" href="#assumptions">Assumptions</a><a class="lvl3" href="#validation-criteria">Validation Criteria</a><a class="lvl3" href="#risks">Risks</a><a class="lvl3" href="#변경-이력">변경 이력</a></nav>
 <main><h1 id="04-data-modelmd-데이터-모델">04-data-model.md: 데이터 모델</h1>
-<p><strong>최종 수정일</strong>: 2026-07-09 <strong>상태</strong>: 확정(00-decisions.md D10·D16·D18·D19·D20·D27 반영) <strong>대상</strong>: 개발팀(DB 설계, API 계약 검증)</p>
-<blockquote><strong>정본 우선순위</strong>: 이 문서는 <code>kpi_result</code> 스키마와 metric 어휘 사전의 <strong>정본(SoT)</strong>이다(D16). 03·08 문서는 본 문서를 참조만 하며 자체 스키마를 중복 정의하지 않는다. 충돌 시 00-decisions.md &gt; 본 문서 순으로 이긴다.</blockquote>
+<p><strong>최종 수정일</strong>: 2026-07-09<br><strong>상태</strong>: 확정(00-decisions.md D10·D16·D18·D19·D20·D27 반영)<br><strong>대상</strong>: 개발팀(DB 설계, API 계약 검증)</p>
+<blockquote><strong>정본 우선순위</strong>: 이 문서는 <code>kpi_result</code> 스키마와 metric 어휘 사전의 **정본(SoT)**이다(D16). 03·08 문서는 본 문서를 참조만 하며 자체 스키마를 중복 정의하지 않는다. 충돌 시 00-decisions.md &gt; 본 문서 순으로 이긴다.</blockquote>
 <hr>
 <h2 id="개요">개요</h2>
 <p>가상오피스 운영 플랫폼의 PostgreSQL 데이터 모델 정의. 우리 플랫폼 고유 테이블(좌석·3D구역·회의·KPI) + ERP 읽기 미러(erp_user 기반 동기화) + 감시/감사 로그 계층으로 구성.</p>
 <p><strong>핵심 원칙</strong>:</p>
-<ol><li>ERP(Space-Daily)는 Source of Truth: users(직원) / teams(조직) / attendances(근태) / leaves(휴가) → 우리는 read-only 동기화</li><li>우리 플랫폼: 좌석배치 / 3D구역 / 회의 / 협업기록 / KPI 산출 → 우리가 소유, ERP로 push</li><li>회의·결정·액션·업무결과: 우리→ERP 역방향 연동(EOD 배치, POST /api/reports, 신규 kpi_results 엔드포인트)</li><li>ERP 스키마 수정: 신규 dev 브랜치(feature/virtual-office-integration)에서만. main 직접 수정 금지.</li></ol>
+<ol>
+<li>ERP(Space-Daily)는 Source of Truth: users(직원) / teams(조직) / attendances(근태) / leaves(휴가) → 우리는 read-only 동기화</li>
+<li>우리 플랫폼: 좌석배치 / 3D구역 / 회의 / 협업기록 / KPI 산출 → 우리가 소유, ERP로 push</li>
+<li>회의·결정·액션·업무결과: 우리→ERP 역방향 연동(EOD 배치, POST /api/reports, 신규 kpi_results 엔드포인트)</li>
+<li>ERP 스키마 수정: 신규 dev 브랜치(feature/virtual-office-integration)에서만. main 직접 수정 금지.</li>
+</ol>
 <hr>
 <h2 id="1-postgresql-erd-우리-플랫폼">1. PostgreSQL ERD (우리 플랫폼)</h2>
-<div class="mermaid">erDiagram
+<pre class="code"><code>erDiagram
     ERP_USER ||--o{ ORG_GROUP : &quot;소속(직원→팀→org_group)&quot;
     ORG_GROUP ||--o{ ORG_GROUP : &quot;self_parent(계층)&quot;
     ORG_GROUP ||--o{ TEAM_ZONE : &quot;매핑&quot;
@@ -96,189 +101,1968 @@ img{max-width:100%;border-radius:8px}
     ERP_USER ||--o{ KPI_RESULT : &quot;KPI평가&quot;
     ERP_USER ||--o{ DAILY_STATUS_PUSH : &quot;EOD푸시&quot;
     ERP_USER ||--o{ AUDIT_LOG : &quot;감사&quot;
-    AUDIT_LOG }o--|| ERP_USER : &quot;created_by&quot;</div>
-<blockquote><strong>ERD 주석</strong>: <code>ERP_TEAMS</code>는 ERP 원본 테이블(우리 DB 아님, read-only 참조)이며 <code>team_zone.erp_team_id</code>가 이를 가리킨다. <code>MEETING ↔ MEETING_MINUTE</code>는 <strong>단방향</strong>(meeting<em>minute.meeting</em>id)만 유지한다 — meeting.meeting<em>minute</em>id 역방향 FK는 폐기(순환 참조 방지). 분기 중 팀 이동자의 KPI 벤치마크 왜곡을 막기 위해 <code>USER_TEAM_HISTORY</code>를 신설한다(D18).</blockquote>
+    AUDIT_LOG }o--|| ERP_USER : &quot;created_by&quot;</code></pre>
+<blockquote><strong>ERD 주석</strong>: <code>ERP_TEAMS</code>는 ERP 원본 테이블(우리 DB 아님, read-only 참조)이며 <code>team_zone.erp_team_id</code>가 이를 가리킨다. <code>MEETING ↔ MEETING_MINUTE</code>는 <strong>단방향</strong>(meeting_minute.meeting_id)만 유지한다 — meeting.meeting_minute_id 역방향 FK는 폐기(순환 참조 방지). 분기 중 팀 이동자의 KPI 벤치마크 왜곡을 막기 위해 <code>USER_TEAM_HISTORY</code>를 신설한다(D18).</blockquote>
 <p><strong>다이어그램 범례</strong>:</p>
-<ul><li><code>||--o{</code>: 1:N 관계 (1개가 여러 개를 소유)</li><li><code>}o--||</code>: N:1 관계 (FK 방향)</li><li><code>||--o|</code>: 1:0..1 관계 (nullable FK)</li><li><code>}o--o{</code>: N:M 관계 (mapping table)</li></ul>
+<ul>
+<li><code>||--o{</code>: 1:N 관계 (1개가 여러 개를 소유)</li>
+<li><code>}o--||</code>: N:1 관계 (FK 방향)</li>
+<li><code>||--o|</code>: 1:0..1 관계 (nullable FK)</li>
+<li><code>}o--o{</code>: N:M 관계 (mapping table)</li>
+</ul>
 <hr>
 <h2 id="2-엔티티-상세-정의">2. 엔티티 상세 정의</h2>
 <h3 id="21-erp-미러-계층">2.1 ERP 미러 계층</h3>
 <h4 id="erp_user-erp-users의-읽기전용-동기화"><strong>erp_user</strong> (ERP users의 읽기전용 동기화)</h4>
 <p><strong>역할</strong>: 직원 정보의 단일 진실 공급처. ERP users.id를 PK로 사용해 모든 참조 통일.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>BIGINT</td><td>PK</td><td>ERP users.id (=조인 키, ERP 원본 타입)</td></tr><tr><td>company_id</td><td>INTEGER</td><td>NN</td><td>ERP company_id 스코프(ERP 원본 타입, 사내 단일값)</td></tr><tr><td>email</td><td>VARCHAR(255)</td><td>NN, UNIQUE(company_id)</td><td>ERP와 동일</td></tr><tr><td>name</td><td>VARCHAR(255)</td><td>NN</td><td>직원명</td></tr><tr><td>erp<em>team</em>id</td><td>BIGINT</td><td>NN</td><td>ERP teams.id(원본 참조)</td></tr><tr><td>role</td><td>ENUM</td><td>NN, DEFAULT 'employee'</td><td>employee | leader | admin | super_admin</td></tr><tr><td>position</td><td>VARCHAR(255)</td><td></td><td>자유텍스트 직책(예: &quot;선임&quot;, &quot;팀장&quot;)</td></tr><tr><td>position_id</td><td>BIGINT</td><td></td><td>ERP job_positions.id (nullable)</td></tr><tr><td>manager_id</td><td>BIGINT</td><td>FK, self</td><td>ERP users.id (보고라인)</td></tr><tr><td>work_type</td><td>VARCHAR(50)</td><td></td><td>ERP work_type</td></tr><tr><td>work_hours</td><td>INT</td><td></td><td>ERP work_hours(일일 근무시간, <strong>분 단위</strong>)</td></tr><tr><td>is_active</td><td>BOOLEAN</td><td>NN, DEFAULT TRUE</td><td>soft-delete 플래그(ERP 하드 삭제 감지 시 FALSE, D18)</td></tr><tr><td>last<em>synced</em>at</td><td>TIMESTAMP</td><td></td><td>마지막 ERP 동기화 시각(<strong>UTC 저장</strong>, 표시 시 KST 변환)</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td>우리 DB 생성 시각(UTC)</td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td>우리 DB 수정 시각(UTC)</td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>: <code>manager_id</code> → <code>erp_user(id)</code> (self, nullable, ON DELETE SET NULL) <strong>인덱스</strong>:</p>
-<ul><li><code>UNIQUE(company_id, email)</code></li><li><code>INDEX(erp_team_id)</code> (회의/업무/KPI 조인)</li><li><code>INDEX(role)</code> (관리자 필터)</li><li><code>INDEX(is_active)</code> (활성 직원 필터)</li></ul>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>BIGINT</td>
+<td>PK</td>
+<td>ERP users.id (=조인 키, ERP 원본 타입)</td>
+</tr>
+<tr>
+<td>company_id</td>
+<td>INTEGER</td>
+<td>NN</td>
+<td>ERP company_id 스코프(ERP 원본 타입, 사내 단일값)</td>
+</tr>
+<tr>
+<td>email</td>
+<td>VARCHAR(255)</td>
+<td>NN, UNIQUE(company_id)</td>
+<td>ERP와 동일</td>
+</tr>
+<tr>
+<td>name</td>
+<td>VARCHAR(255)</td>
+<td>NN</td>
+<td>직원명</td>
+</tr>
+<tr>
+<td>erp_team_id</td>
+<td>BIGINT</td>
+<td>NN</td>
+<td>ERP teams.id(원본 참조)</td>
+</tr>
+<tr>
+<td>role</td>
+<td>ENUM</td>
+<td>NN, DEFAULT &#39;employee&#39;</td>
+<td>employee | leader | admin | super_admin</td>
+</tr>
+<tr>
+<td>position</td>
+<td>VARCHAR(255)</td>
+<td></td>
+<td>자유텍스트 직책(예: &quot;선임&quot;, &quot;팀장&quot;)</td>
+</tr>
+<tr>
+<td>position_id</td>
+<td>BIGINT</td>
+<td></td>
+<td>ERP job_positions.id (nullable)</td>
+</tr>
+<tr>
+<td>manager_id</td>
+<td>BIGINT</td>
+<td>FK, self</td>
+<td>ERP users.id (보고라인)</td>
+</tr>
+<tr>
+<td>work_type</td>
+<td>VARCHAR(50)</td>
+<td></td>
+<td>ERP work_type</td>
+</tr>
+<tr>
+<td>work_hours</td>
+<td>INT</td>
+<td></td>
+<td>ERP work_hours(일일 근무시간, <strong>분 단위</strong>)</td>
+</tr>
+<tr>
+<td>is_active</td>
+<td>BOOLEAN</td>
+<td>NN, DEFAULT TRUE</td>
+<td>soft-delete 플래그(ERP 하드 삭제 감지 시 FALSE, D18)</td>
+</tr>
+<tr>
+<td>last_synced_at</td>
+<td>TIMESTAMP</td>
+<td></td>
+<td>마지막 ERP 동기화 시각(<strong>UTC 저장</strong>, 표시 시 KST 변환)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td>우리 DB 생성 시각(UTC)</td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td>우리 DB 수정 시각(UTC)</td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: <code>manager_id</code> → <code>erp_user(id)</code> (self, nullable, ON DELETE SET NULL)<br><strong>인덱스</strong>:</p>
+<ul>
+<li><code>UNIQUE(company_id, email)</code></li>
+<li><code>INDEX(erp_team_id)</code> (회의/업무/KPI 조인)</li>
+<li><code>INDEX(role)</code> (관리자 필터)</li>
+<li><code>INDEX(is_active)</code> (활성 직원 필터)</li>
+</ul>
 <p><strong>미러링 최소수집(D20-f)</strong>: ERP <code>slack_user_id·github_username·jira_email·lat·lng·radius</code> 등은 우리 KPI/공간 기능에 불필요하므로 <strong>미러링하지 않는다</strong>. ERP 원본 읽기는 컬럼 화이트리스트 VIEW(예: <code>erp_users_public</code>)를 경유하여 필요한 컬럼만 노출한다. GPS 좌표(lat/lng/radius)는 D20-c에 따라 수집·미러링 전면 금지.</p>
 <p><strong>동기화(D18)</strong>: <strong>매시간 증분(updated_at 기준) + 매일 00:00 KST 전체 대사</strong>. 전체 대사에서 ERP 하드 삭제를 감지하면 <code>is_active=false</code> soft-delete 처리(물리 삭제 금지, 평가 기록 영구성 보장). 상세 알고리즘은 03-erp-integration.md §2 참조.</p>
-<p><strong>가정</strong>:</p>
-<ul><li>company_id는 현재 사내 단일(멀티테넌트 격리는 이후). </li><li>사번(社番) 필드는 ERP에 없으므로 id로 매핑.</li></ul>
+<p><strong>가정</strong>: </p>
+<ul>
+<li>company_id는 현재 사내 단일(멀티테넌트 격리는 이후). </li>
+<li>사번(社番) 필드는 ERP에 없으므로 id로 매핑.</li>
+</ul>
 <hr>
 <h4 id="erp-읽기-원본-테이블직접-접근-우리-db-아님"><strong>ERP 읽기 원본 테이블</strong>(직접 접근, 우리 DB 아님)</h4>
 <p>우리 plat form은 PostgreSQL read-only 커넥션으로 ERP DB(dailylog)의 다음 테이블 직접 접근:</p>
-<div class="table-wrap"><table><thead><tr><th>ERP 테이블</th><th>동기 대상</th><th>읽기 빈도(D18)</th></tr></thead><tbody><tr><td>users</td><td>erp_user</td><td>매시간 증분 + 매일 00:00 KST 전체 대사</td></tr><tr><td>teams</td><td>(team_zone 매핑용)</td><td>매시간 증분 + 매일 00:00 KST 전체 대사</td></tr><tr><td>job_positions</td><td>(erp<em>user.position</em>id FK)</td><td>일 1회(새벽)</td></tr><tr><td>attendances</td><td>(근태 검증, 출퇴근 기록)</td><td>일일 자정(KST) 배치</td></tr><tr><td>leaves</td><td>(휴가 판정)</td><td>매시간 증분</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>ERP 테이블</th>
+<th>동기 대상</th>
+<th>읽기 빈도(D18)</th>
+</tr>
+</thead><tbody><tr>
+<td>users</td>
+<td>erp_user</td>
+<td>매시간 증분 + 매일 00:00 KST 전체 대사</td>
+</tr>
+<tr>
+<td>teams</td>
+<td>(team_zone 매핑용)</td>
+<td>매시간 증분 + 매일 00:00 KST 전체 대사</td>
+</tr>
+<tr>
+<td>job_positions</td>
+<td>(erp_user.position_id FK)</td>
+<td>일 1회(새벽)</td>
+</tr>
+<tr>
+<td>attendances</td>
+<td>(근태 검증, 출퇴근 기록)</td>
+<td>일일 자정(KST) 배치</td>
+</tr>
+<tr>
+<td>leaves</td>
+<td>(휴가 판정)</td>
+<td>매시간 증분</td>
+</tr>
+</tbody></table></div>
 <p><strong>주의</strong>: ERP 테이블 직접 접근은 사내망 동일 PostgreSQL이므로 psycopg2 read-only 직접 커넥션. 스키마 변경 시 협의 필수(ERP 담당자). 전체 대사(users/teams)에서 하드 삭제 감지 → <code>is_active=false</code> soft-delete(D18).</p>
 <hr>
-<h3 id="22-조직구역공간-계층">2.2 조직·구역·공간 계층</h3>
+<h3 id="22-조직·구역·공간-계층">2.2 조직·구역·공간 계층</h3>
 <h4 id="org_group-우리-플랫폼-상위-조직"><strong>org_group</strong> (우리 플랫폼 상위 조직)</h4>
 <p><strong>역할</strong>: ERP teams(리프)를 묶어서 본부/부서/파트 계층 구성. ERP 스키마는 건드리지 않음.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>company_id</td><td>INTEGER</td><td>NN</td><td>테넌트 스코프 값 — company 테이블 없음, ERP company<em>id와 동일 값(FK 아님, erp</em>user와 동일 타입)</td></tr><tr><td>name</td><td>VARCHAR(255)</td><td>NN</td><td>&quot;엔지니어링 본부&quot;, &quot;마케팅 팀&quot;</td></tr><tr><td>type</td><td>ENUM</td><td>NN</td><td>division | department | part</td></tr><tr><td>parent_id</td><td>UUID</td><td>FK, self</td><td>상위 그룹(null = 루트)</td></tr><tr><td>color</td><td>VARCHAR(7)</td><td></td><td>HEX 컬러(3D 구역 시각화)</td></tr><tr><td>sort_order</td><td>INT</td><td></td><td>UI 정렬 순서</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>: <code>parent_id</code> → <code>org_group(id)</code> (nullable, self) <strong>인덱스</strong>: <code>INDEX(company_id, parent_id)</code>, <code>INDEX(type)</code></p>
-<p><strong>관계</strong>: org<em>group(1) : team</em>zone(N). 여러 팀이 하나의 본부/부서 아래.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>company_id</td>
+<td>INTEGER</td>
+<td>NN</td>
+<td>테넌트 스코프 값 — company 테이블 없음, ERP company_id와 동일 값(FK 아님, erp_user와 동일 타입)</td>
+</tr>
+<tr>
+<td>name</td>
+<td>VARCHAR(255)</td>
+<td>NN</td>
+<td>&quot;엔지니어링 본부&quot;, &quot;마케팅 팀&quot;</td>
+</tr>
+<tr>
+<td>type</td>
+<td>ENUM</td>
+<td>NN</td>
+<td>division | department | part</td>
+</tr>
+<tr>
+<td>parent_id</td>
+<td>UUID</td>
+<td>FK, self</td>
+<td>상위 그룹(null = 루트)</td>
+</tr>
+<tr>
+<td>color</td>
+<td>VARCHAR(7)</td>
+<td></td>
+<td>HEX 컬러(3D 구역 시각화)</td>
+</tr>
+<tr>
+<td>sort_order</td>
+<td>INT</td>
+<td></td>
+<td>UI 정렬 순서</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: <code>parent_id</code> → <code>org_group(id)</code> (nullable, self)<br><strong>인덱스</strong>: <code>INDEX(company_id, parent_id)</code>, <code>INDEX(type)</code></p>
+<p><strong>관계</strong>: org_group(1) : team_zone(N). 여러 팀이 하나의 본부/부서 아래.</p>
 <hr>
-<h4 id="team_zone-erp-팀-3d-구역-매핑"><strong>team_zone</strong> (ERP 팀 ↔ 3D 구역 매핑)</h4>
+<h4 id="team_zone-erp-팀-↔-3d-구역-매핑"><strong>team_zone</strong> (ERP 팀 ↔ 3D 구역 매핑)</h4>
 <p><strong>역할</strong>: ERP 팀을 물리적 3D 오피스 구역(floor의 폴리곤)으로 배치. 좌석/회의실/색/권한 할당 기준.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>erp<em>team</em>id</td><td>BIGINT</td><td>FK, NN</td><td>ERP teams.id</td></tr><tr><td>org<em>group</em>id</td><td>UUID</td><td>FK, NN</td><td>org_group(상위 그룹)</td></tr><tr><td>office_id</td><td>UUID</td><td>FK, NN</td><td>office(어느 사무실)</td></tr><tr><td>floor_id</td><td>UUID</td><td>FK, NN</td><td>floor(어느 층)</td></tr><tr><td>zone_label</td><td>VARCHAR(255)</td><td>NN</td><td>&quot;백엔드팀 구역&quot;, &quot;마케팅 존&quot;</td></tr><tr><td>color</td><td>VARCHAR(7)</td><td></td><td>HEX(3D 구역 강조색)</td></tr><tr><td>polygon</td><td>JSON</td><td></td><td>2D 좌표 배열(Konva 좌석편집기용)</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>:</p>
-<ul><li><code>erp_team_id</code> → (ERP teams, 직접읽기)</li><li><code>org_group_id</code> → <code>org_group(id)</code></li><li><code>office_id</code> → <code>office(id)</code></li><li><code>floor_id</code> → <code>floor(id)</code></li></ul>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>erp_team_id</td>
+<td>BIGINT</td>
+<td>FK, NN</td>
+<td>ERP teams.id</td>
+</tr>
+<tr>
+<td>org_group_id</td>
+<td>UUID</td>
+<td>FK, NN</td>
+<td>org_group(상위 그룹)</td>
+</tr>
+<tr>
+<td>office_id</td>
+<td>UUID</td>
+<td>FK, NN</td>
+<td>office(어느 사무실)</td>
+</tr>
+<tr>
+<td>floor_id</td>
+<td>UUID</td>
+<td>FK, NN</td>
+<td>floor(어느 층)</td>
+</tr>
+<tr>
+<td>zone_label</td>
+<td>VARCHAR(255)</td>
+<td>NN</td>
+<td>&quot;백엔드팀 구역&quot;, &quot;마케팅 존&quot;</td>
+</tr>
+<tr>
+<td>color</td>
+<td>VARCHAR(7)</td>
+<td></td>
+<td>HEX(3D 구역 강조색)</td>
+</tr>
+<tr>
+<td>polygon</td>
+<td>JSON</td>
+<td></td>
+<td>2D 좌표 배열(Konva 좌석편집기용)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: </p>
+<ul>
+<li><code>erp_team_id</code> → (ERP teams, 직접읽기)</li>
+<li><code>org_group_id</code> → <code>org_group(id)</code></li>
+<li><code>office_id</code> → <code>office(id)</code></li>
+<li><code>floor_id</code> → <code>floor(id)</code></li>
+</ul>
 <p><strong>인덱스</strong>: <code>UNIQUE(erp_team_id, office_id, floor_id)</code>, <code>INDEX(org_group_id)</code></p>
 <p><strong>제약</strong>: 같은 팀이 같은 오피스·층에 중복 배치 불가(zone 합병).</p>
 <hr>
 <h4 id="office-사무실"><strong>office</strong> (사무실)</h4>
 <p><strong>역할</strong>: 회사의 물리적 오피스 단위.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>company_id</td><td>INTEGER</td><td>NN</td><td>테넌트 스코프 값(사내 단일) — company 테이블 없음, ERP company<em>id와 동일 값(FK 아님, erp</em>user와 동일 타입)</td></tr><tr><td>name</td><td>VARCHAR(255)</td><td>NN</td><td>&quot;본사&quot;, &quot;판교&quot;</td></tr><tr><td>description</td><td>TEXT</td><td></td><td></td></tr><tr><td>address</td><td>VARCHAR(500)</td><td></td><td>사무실 주소(GPS 기준점?)</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>인덱스</strong>: <code>INDEX(company_id)</code></p>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>company_id</td>
+<td>INTEGER</td>
+<td>NN</td>
+<td>테넌트 스코프 값(사내 단일) — company 테이블 없음, ERP company_id와 동일 값(FK 아님, erp_user와 동일 타입)</td>
+</tr>
+<tr>
+<td>name</td>
+<td>VARCHAR(255)</td>
+<td>NN</td>
+<td>&quot;본사&quot;, &quot;판교&quot;</td>
+</tr>
+<tr>
+<td>description</td>
+<td>TEXT</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>address</td>
+<td>VARCHAR(500)</td>
+<td></td>
+<td>사무실 주소(GPS 기준점?)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>인덱스</strong>: <code>INDEX(company_id)</code></p>
 <hr>
 <h4 id="floor-층"><strong>floor</strong> (층)</h4>
 <p><strong>역할</strong>: office 내 층 단위.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>office_id</td><td>UUID</td><td>FK, NN</td><td>office</td></tr><tr><td>level</td><td>INT</td><td>NN</td><td>1, 2, 3... (B1 = -1)</td></tr><tr><td>name</td><td>VARCHAR(255)</td><td>NN</td><td>&quot;1층 오픈좌석&quot;, &quot;2층 회의실&quot;</td></tr><tr><td>minimap_config</td><td>JSON</td><td></td><td>미니맵 2D 레이아웃(캐시용)</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>: <code>office_id</code> → <code>office(id)</code> <strong>인덱스</strong>: <code>UNIQUE(office_id, level)</code></p>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>office_id</td>
+<td>UUID</td>
+<td>FK, NN</td>
+<td>office</td>
+</tr>
+<tr>
+<td>level</td>
+<td>INT</td>
+<td>NN</td>
+<td>1, 2, 3... (B1 = -1)</td>
+</tr>
+<tr>
+<td>name</td>
+<td>VARCHAR(255)</td>
+<td>NN</td>
+<td>&quot;1층 오픈좌석&quot;, &quot;2층 회의실&quot;</td>
+</tr>
+<tr>
+<td>minimap_config</td>
+<td>JSON</td>
+<td></td>
+<td>미니맵 2D 레이아웃(캐시용)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: <code>office_id</code> → <code>office(id)</code><br><strong>인덱스</strong>: <code>UNIQUE(office_id, level)</code></p>
 <hr>
-<h3 id="23-공간-설계배치">2.3 공간 설계·배치</h3>
+<h3 id="23-공간-설계·배치">2.3 공간 설계·배치</h3>
 <h4 id="office_layout-사무실-배치-버전-관리"><strong>office_layout</strong> (사무실 배치 버전 관리)</h4>
 <p><strong>역할</strong>: 좌석·회의실·구역 정보를 모듈형 JSON으로 저장. 버전 관리(draft→validated→deployed) 및 롤백 지원.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>office_id</td><td>UUID</td><td>FK, NN</td><td>office</td></tr><tr><td>floor_id</td><td>UUID</td><td>FK, NN</td><td>floor</td></tr><tr><td>version</td><td>INT</td><td>NN</td><td>1, 2, 3... (증분)</td></tr><tr><td>status</td><td>ENUM</td><td>NN, DEFAULT 'draft'</td><td>draft | validated | deployed | archived</td></tr><tr><td>json</td><td>JSONB</td><td>NN</td><td>구조 정의(하단 섹션 3 참조)</td></tr><tr><td>created_by</td><td>BIGINT</td><td>FK</td><td>erp_user.id(배치 설계자)</td></tr><tr><td>validated_by</td><td>BIGINT</td><td>FK, NULL</td><td>erp_user.id(검증자)</td></tr><tr><td>deployed_at</td><td>TIMESTAMP</td><td>NULL</td><td>배포 시각(<strong>UTC 저장</strong>, 표시 시 KST 변환)</td></tr><tr><td>deployment_notes</td><td>TEXT</td><td></td><td>배포 메모</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>:</p>
-<ul><li><code>office_id</code> → <code>office(id)</code></li><li><code>floor_id</code> → <code>floor(id)</code></li><li><code>created_by</code> → <code>erp_user(id)</code> (nullable)</li><li><code>validated_by</code> → <code>erp_user(id)</code> (nullable)</li></ul>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>office_id</td>
+<td>UUID</td>
+<td>FK, NN</td>
+<td>office</td>
+</tr>
+<tr>
+<td>floor_id</td>
+<td>UUID</td>
+<td>FK, NN</td>
+<td>floor</td>
+</tr>
+<tr>
+<td>version</td>
+<td>INT</td>
+<td>NN</td>
+<td>1, 2, 3... (증분)</td>
+</tr>
+<tr>
+<td>status</td>
+<td>ENUM</td>
+<td>NN, DEFAULT &#39;draft&#39;</td>
+<td>draft | validated | deployed | archived</td>
+</tr>
+<tr>
+<td>json</td>
+<td>JSONB</td>
+<td>NN</td>
+<td>구조 정의(하단 섹션 3 참조)</td>
+</tr>
+<tr>
+<td>created_by</td>
+<td>BIGINT</td>
+<td>FK</td>
+<td>erp_user.id(배치 설계자)</td>
+</tr>
+<tr>
+<td>validated_by</td>
+<td>BIGINT</td>
+<td>FK, NULL</td>
+<td>erp_user.id(검증자)</td>
+</tr>
+<tr>
+<td>deployed_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>배포 시각(<strong>UTC 저장</strong>, 표시 시 KST 변환)</td>
+</tr>
+<tr>
+<td>deployment_notes</td>
+<td>TEXT</td>
+<td></td>
+<td>배포 메모</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: </p>
+<ul>
+<li><code>office_id</code> → <code>office(id)</code></li>
+<li><code>floor_id</code> → <code>floor(id)</code></li>
+<li><code>created_by</code> → <code>erp_user(id)</code> (nullable)</li>
+<li><code>validated_by</code> → <code>erp_user(id)</code> (nullable)</li>
+</ul>
 <p><strong>인덱스</strong>: <code>UNIQUE(office_id, floor_id, version)</code>, <code>INDEX(status, deployed_at)</code></p>
 <p><strong>상태 전이</strong>: draft → validated(검증) → deployed(라이브) / ← draft(롤백, 신규버전)</p>
 <p><strong>JSON 스키마</strong>: 하단 섹션 5 참조.</p>
 <hr>
 <h4 id="room-회의실라운지집중실폰부스"><strong>room</strong> (회의실/라운지/집중실/폰부스)</h4>
 <p><strong>역할</strong>: floor 내 공간(회의실, 라운지, 집중실 등). office_layout JSON과는 별개로 메타데이터 관리.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>floor_id</td><td>UUID</td><td>FK, NN</td><td>floor</td></tr><tr><td>type</td><td>ENUM</td><td>NN</td><td>lobby | meeting | lounge | focus | phonebooth</td></tr><tr><td>name</td><td>VARCHAR(255)</td><td>NN</td><td>&quot;컨퍼런스룸 A&quot;, &quot;집중실&quot;</td></tr><tr><td>capacity</td><td>INT</td><td>NN</td><td>수용인원</td></tr><tr><td>coords</td><td>JSON</td><td>NN</td><td>{x, y, width, height} 2D 위치·크기(원점 top_left, 미터 — D25)</td></tr><tr><td>enter_trigger</td><td>JSON</td><td></td><td>{trigger<em>x, trigger</em>y, trigger<em>width, trigger</em>height, entry_direction} 진입 감지 박스(room 경계 내부, 05 §1.2.5)</td></tr><tr><td>livekit_room</td><td>VARCHAR(255)</td><td></td><td>LiveKit room ID(회의 이용 시)</td></tr><tr><td>status</td><td>ENUM</td><td>DEFAULT 'active'</td><td>active | inactive | maintenance</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>: <code>floor_id</code> → <code>floor(id)</code> <strong>인덱스</strong>: <code>INDEX(floor_id, type)</code>, <code>INDEX(livekit_room)</code></p>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>floor_id</td>
+<td>UUID</td>
+<td>FK, NN</td>
+<td>floor</td>
+</tr>
+<tr>
+<td>type</td>
+<td>ENUM</td>
+<td>NN</td>
+<td>lobby | meeting | lounge | focus | phonebooth</td>
+</tr>
+<tr>
+<td>name</td>
+<td>VARCHAR(255)</td>
+<td>NN</td>
+<td>&quot;컨퍼런스룸 A&quot;, &quot;집중실&quot;</td>
+</tr>
+<tr>
+<td>capacity</td>
+<td>INT</td>
+<td>NN</td>
+<td>수용인원</td>
+</tr>
+<tr>
+<td>coords</td>
+<td>JSON</td>
+<td>NN</td>
+<td>{x, y, width, height} 2D 위치·크기(원점 top_left, 미터 — D25)</td>
+</tr>
+<tr>
+<td>enter_trigger</td>
+<td>JSON</td>
+<td></td>
+<td>{trigger_x, trigger_y, trigger_width, trigger_height, entry_direction} 진입 감지 박스(room 경계 내부, 05 §1.2.5)</td>
+</tr>
+<tr>
+<td>livekit_room</td>
+<td>VARCHAR(255)</td>
+<td></td>
+<td>LiveKit room ID(회의 이용 시)</td>
+</tr>
+<tr>
+<td>status</td>
+<td>ENUM</td>
+<td>DEFAULT &#39;active&#39;</td>
+<td>active | inactive | maintenance</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: <code>floor_id</code> → <code>floor(id)</code><br><strong>인덱스</strong>: <code>INDEX(floor_id, type)</code>, <code>INDEX(livekit_room)</code></p>
 <p><strong>참고</strong>: room은 office_layout JSON에도 정의되지만, 메타 저장(용량, 화상회의 링크)은 별도 테이블.</p>
-<blockquote><strong>좌표계 정본(D25, 2026-07-02 정렬)</strong>: coords·enter<em>trigger는 05-office-layout-schema.md의 <strong>2D top</em>left 원점·미터 단위</strong> 규약을 따른다. Godot 3D 월드좌표는 DB에 저장하지 않으며 05 §5.3 변환식으로 파생한다.</blockquote>
+<blockquote><strong>좌표계 정본(D25, 2026-07-02 정렬)</strong>: coords·enter_trigger는 05-office-layout-schema.md의 <strong>2D top_left 원점·미터 단위</strong> 규약을 따른다. Godot 3D 월드좌표는 DB에 저장하지 않으며 05 §5.3 변환식으로 파생한다.</blockquote>
 <hr>
 <h4 id="seat-좌석"><strong>seat</strong> (좌석)</h4>
 <p><strong>역할</strong>: floor 내 개별 좌석. 직원 할당, 타입(고정/자율/임시/협력사), 상태 관리.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>floor_id</td><td>UUID</td><td>FK, NN</td><td>floor</td></tr><tr><td>team<em>zone</em>id</td><td>UUID</td><td>FK, NULL</td><td>team_zone(소속 구역, null = 공용)</td></tr><tr><td>type</td><td>ENUM</td><td>NN</td><td>fixed | free | temp | partner</td></tr><tr><td>assigned<em>user</em>id</td><td>BIGINT</td><td>FK, NULL</td><td>erp_user.id(현재 배정 사원)</td></tr><tr><td>coords</td><td>JSON</td><td>NN</td><td>{x, y} 2D 위치(top_left 미터, D25 — 착석 방향 <code>facing</code>은 layout JSON에서 정의, Godot 월드좌표는 05 §5.3 변환식으로 파생)</td></tr><tr><td>status</td><td>ENUM</td><td>DEFAULT 'available'</td><td>available | occupied | disabled | reserved</td></tr><tr><td>seat_number</td><td>VARCHAR(50)</td><td></td><td>&quot;1-A-01&quot; (선택)</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>:</p>
-<ul><li><code>floor_id</code> → <code>floor(id)</code></li><li><code>team_zone_id</code> → <code>team_zone(id)</code> (nullable)</li><li><code>assigned_user_id</code> → <code>erp_user(id)</code> (nullable)</li></ul>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>floor_id</td>
+<td>UUID</td>
+<td>FK, NN</td>
+<td>floor</td>
+</tr>
+<tr>
+<td>team_zone_id</td>
+<td>UUID</td>
+<td>FK, NULL</td>
+<td>team_zone(소속 구역, null = 공용)</td>
+</tr>
+<tr>
+<td>type</td>
+<td>ENUM</td>
+<td>NN</td>
+<td>fixed | free | temp | partner</td>
+</tr>
+<tr>
+<td>assigned_user_id</td>
+<td>BIGINT</td>
+<td>FK, NULL</td>
+<td>erp_user.id(현재 배정 사원)</td>
+</tr>
+<tr>
+<td>coords</td>
+<td>JSON</td>
+<td>NN</td>
+<td>{x, y} 2D 위치(top_left 미터, D25 — 착석 방향 <code>facing</code>은 layout JSON에서 정의, Godot 월드좌표는 05 §5.3 변환식으로 파생)</td>
+</tr>
+<tr>
+<td>status</td>
+<td>ENUM</td>
+<td>DEFAULT &#39;available&#39;</td>
+<td>available | occupied | disabled | reserved</td>
+</tr>
+<tr>
+<td>seat_number</td>
+<td>VARCHAR(50)</td>
+<td></td>
+<td>&quot;1-A-01&quot; (선택)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: </p>
+<ul>
+<li><code>floor_id</code> → <code>floor(id)</code></li>
+<li><code>team_zone_id</code> → <code>team_zone(id)</code> (nullable)</li>
+<li><code>assigned_user_id</code> → <code>erp_user(id)</code> (nullable)</li>
+</ul>
 <p><strong>인덱스</strong>: <code>INDEX(floor_id, type)</code>, <code>INDEX(assigned_user_id)</code>, <code>UNIQUE(floor_id, seat_number)</code> if seat_number</p>
-<p><strong>상태</strong>:</p>
-<ul><li>available = 비어있음 (assigned<em>user</em>id=NULL)</li><li>occupied = 배정됨 (assigned<em>user</em>id NOT NULL)</li><li>disabled = 사용 불가(수리/제거)</li><li>reserved = 임시 예약</li></ul>
-<p><strong>좌석 배정 분리 원칙(D10)</strong>: 좌석↔직원 배정은 <strong>DB(seat.assigned<em>user</em>id + seat<em>assignment</em>history)</strong>가 소유하며, <strong>layout JSON에서 분리</strong>된다. layout JSON(05-office-layout-schema.md)은 공간 구조(좌석 위치·타입·방향·furniture 참조)만 정의하고 배정 정보는 담지 않는다. 따라서 배정 변경 시 레이아웃 재배포가 불필요하다. 좌석 방향(<code>facing</code>, 도 단위)과 seat↔furniture 상호 참조(<code>furniture_id</code>)는 layout JSON 스키마에서 정의한다(05 참조).</p>
+<p><strong>상태</strong>: </p>
+<ul>
+<li>available = 비어있음 (assigned_user_id=NULL)</li>
+<li>occupied = 배정됨 (assigned_user_id NOT NULL)</li>
+<li>disabled = 사용 불가(수리/제거)</li>
+<li>reserved = 임시 예약</li>
+</ul>
+<p><strong>좌석 배정 분리 원칙(D10)</strong>: 좌석↔직원 배정은 **DB(seat.assigned_user_id + seat_assignment_history)**가 소유하며, <strong>layout JSON에서 분리</strong>된다. layout JSON(05-office-layout-schema.md)은 공간 구조(좌석 위치·타입·방향·furniture 참조)만 정의하고 배정 정보는 담지 않는다. 따라서 배정 변경 시 레이아웃 재배포가 불필요하다. 좌석 방향(<code>facing</code>, 도 단위)과 seat↔furniture 상호 참조(<code>furniture_id</code>)는 layout JSON 스키마에서 정의한다(05 참조).</p>
 <hr>
-<h4 id="seat_assignment_history-좌석-배정-변경이력"><strong>seat<em>assignment</em>history</strong> (좌석 배정 변경이력)</h4>
+<h4 id="seat_assignment_history-좌석-배정-변경이력"><strong>seat_assignment_history</strong> (좌석 배정 변경이력)</h4>
 <p><strong>역할</strong>: 좌석 배정 생애주기 추적(감사, UI 타임라인).</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>seat_id</td><td>UUID</td><td>FK, NN</td><td>seat</td></tr><tr><td>user_id</td><td>BIGINT</td><td>FK, NN</td><td>erp_user.id</td></tr><tr><td>assigned_at</td><td>TIMESTAMP</td><td>NN</td><td>배정 시각</td></tr><tr><td>unassigned_at</td><td>TIMESTAMP</td><td>NULL</td><td>해제 시각</td></tr><tr><td>assigned_by</td><td>BIGINT</td><td>FK</td><td>erp_user.id(배정 담당자)</td></tr><tr><td>reason</td><td>VARCHAR(255)</td><td></td><td>&quot;팀 재구성&quot;, &quot;퇴사&quot;, &quot;출장&quot;</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>:</p>
-<ul><li><code>seat_id</code> → <code>seat(id)</code></li><li><code>user_id</code> → <code>erp_user(id)</code></li><li><code>assigned_by</code> → <code>erp_user(id)</code> (nullable)</li></ul>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>seat_id</td>
+<td>UUID</td>
+<td>FK, NN</td>
+<td>seat</td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>BIGINT</td>
+<td>FK, NN</td>
+<td>erp_user.id</td>
+</tr>
+<tr>
+<td>assigned_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td>배정 시각</td>
+</tr>
+<tr>
+<td>unassigned_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>해제 시각</td>
+</tr>
+<tr>
+<td>assigned_by</td>
+<td>BIGINT</td>
+<td>FK</td>
+<td>erp_user.id(배정 담당자)</td>
+</tr>
+<tr>
+<td>reason</td>
+<td>VARCHAR(255)</td>
+<td></td>
+<td>&quot;팀 재구성&quot;, &quot;퇴사&quot;, &quot;출장&quot;</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: </p>
+<ul>
+<li><code>seat_id</code> → <code>seat(id)</code></li>
+<li><code>user_id</code> → <code>erp_user(id)</code></li>
+<li><code>assigned_by</code> → <code>erp_user(id)</code> (nullable)</li>
+</ul>
 <p><strong>인덱스</strong>: <code>INDEX(seat_id, assigned_at DESC)</code>, <code>INDEX(user_id, assigned_at DESC)</code></p>
 <hr>
-<h4 id="user_team_history-직원-팀-이동-이력-신설d18"><strong>user<em>team</em>history</strong> (직원 팀 이동 이력) — 신설(D18)</h4>
+<h4 id="user_team_history-직원-팀-이동-이력--신설d18"><strong>user_team_history</strong> (직원 팀 이동 이력) — 신설(D18)</h4>
 <p><strong>역할</strong>: 직원의 ERP 팀 소속 변경 이력. 분기 KPI 벤치마크(팀 백분위) 계산 시 <strong>평가 기간에 실제 소속했던 팀</strong>을 기준으로 삼아, 분기 중 팀 이동자의 벤치마크 왜곡을 방지한다(08-kpi-logic.md §5 참조).</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>user_id</td><td>BIGINT</td><td>FK, NN</td><td>erp_user.id</td></tr><tr><td>erp<em>team</em>id</td><td>BIGINT</td><td>NN</td><td>ERP teams.id(당시 소속 팀)</td></tr><tr><td>valid_from</td><td>TIMESTAMP</td><td>NN</td><td>소속 시작(UTC)</td></tr><tr><td>valid_to</td><td>TIMESTAMP</td><td>NULL</td><td>소속 종료(UTC, NULL = 현재 소속)</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td>기록 생성(UTC)</td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>: <code>user_id</code> → <code>erp_user(id)</code> (ON DELETE RESTRICT — 이력 보존) <strong>인덱스</strong>: <code>INDEX(user_id, valid_from DESC)</code>, <code>INDEX(erp_team_id, valid_from)</code></p>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>BIGINT</td>
+<td>FK, NN</td>
+<td>erp_user.id</td>
+</tr>
+<tr>
+<td>erp_team_id</td>
+<td>BIGINT</td>
+<td>NN</td>
+<td>ERP teams.id(당시 소속 팀)</td>
+</tr>
+<tr>
+<td>valid_from</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td>소속 시작(UTC)</td>
+</tr>
+<tr>
+<td>valid_to</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>소속 종료(UTC, NULL = 현재 소속)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td>기록 생성(UTC)</td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: <code>user_id</code> → <code>erp_user(id)</code> (ON DELETE RESTRICT — 이력 보존)<br><strong>인덱스</strong>: <code>INDEX(user_id, valid_from DESC)</code>, <code>INDEX(erp_team_id, valid_from)</code></p>
 <p><strong>갱신</strong>: ERP 동기화(D18) 시 <code>erp_user.erp_team_id</code> 변경을 감지하면 이전 행의 <code>valid_to</code>를 현재 시각으로 닫고 새 행을 연다. 특정 기간 팀 판정: <code>WHERE valid_from &lt;= :period_end AND (valid_to IS NULL OR valid_to &gt; :period_start)</code>.</p>
 <hr>
-<h3 id="24-실시간협업-계층">2.4 실시간·협업 계층</h3>
+<h3 id="24-실시간·협업-계층">2.4 실시간·협업 계층</h3>
 <h4 id="presence-직원-실시간-상태"><strong>presence</strong> (직원 실시간 상태)</h4>
 <p><strong>역할</strong>: 아바타 위치, 상태(온라인/회의/집중/외근). Colyseus(메모리 권위) → FastAPI <code>POST /api/presence/batch</code>(1~5초 배치) → DB 업데이트 (D3/D27). 실시간 동기화.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>user_id</td><td>BIGINT</td><td>PK, FK</td><td>erp_user.id</td></tr><tr><td>office_id</td><td>UUID</td><td>FK, NULL</td><td>현재 오피스 (offline/미접속 시 NULL)</td></tr><tr><td>floor_id</td><td>UUID</td><td>FK, NULL</td><td>현재 층 (〃)</td></tr><tr><td>x</td><td>FLOAT</td><td>NULL</td><td>2D 위치(미터, D25). <strong>D20-a 30일 파기 시 NULL 처리</strong> → NN 불가</td></tr><tr><td>y</td><td>FLOAT</td><td>NULL</td><td>〃</td></tr><tr><td>z</td><td>FLOAT</td><td>NULL</td><td>〃 (2.5D 전환으로 미사용 예비)</td></tr><tr><td>status</td><td>ENUM</td><td>NN</td><td>offline | online | working | meeting | focus | away | external (<strong>7종 확정, D13</strong>)</td></tr><tr><td>last<em>activity</em>at</td><td>TIMESTAMP</td><td></td><td>마지막 활동 시각(UTC)</td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td>상태 업데이트 시각(<strong>UTC 저장</strong>, 표시 시 KST 변환)</td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>user_id</code> <strong>FK</strong>:</p>
-<ul><li><code>user_id</code> → <code>erp_user(id)</code> (with ON DELETE CASCADE)</li><li><code>office_id</code> → <code>office(id)</code></li><li><code>floor_id</code> → <code>floor(id)</code></li></ul>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>user_id</td>
+<td>BIGINT</td>
+<td>PK, FK</td>
+<td>erp_user.id</td>
+</tr>
+<tr>
+<td>office_id</td>
+<td>UUID</td>
+<td>FK, NULL</td>
+<td>현재 오피스 (offline/미접속 시 NULL)</td>
+</tr>
+<tr>
+<td>floor_id</td>
+<td>UUID</td>
+<td>FK, NULL</td>
+<td>현재 층 (〃)</td>
+</tr>
+<tr>
+<td>x</td>
+<td>FLOAT</td>
+<td>NULL</td>
+<td>2D 위치(미터, D25). <strong>D20-a 30일 파기 시 NULL 처리</strong> → NN 불가</td>
+</tr>
+<tr>
+<td>y</td>
+<td>FLOAT</td>
+<td>NULL</td>
+<td>〃</td>
+</tr>
+<tr>
+<td>z</td>
+<td>FLOAT</td>
+<td>NULL</td>
+<td>〃 (2.5D 전환으로 미사용 예비)</td>
+</tr>
+<tr>
+<td>status</td>
+<td>ENUM</td>
+<td>NN</td>
+<td>offline | online | working | meeting | focus | away | external (<strong>7종 확정, D13</strong>)</td>
+</tr>
+<tr>
+<td>last_activity_at</td>
+<td>TIMESTAMP</td>
+<td></td>
+<td>마지막 활동 시각(UTC)</td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td>상태 업데이트 시각(<strong>UTC 저장</strong>, 표시 시 KST 변환)</td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>user_id</code><br><strong>FK</strong>: </p>
+<ul>
+<li><code>user_id</code> → <code>erp_user(id)</code> (with ON DELETE CASCADE)</li>
+<li><code>office_id</code> → <code>office(id)</code></li>
+<li><code>floor_id</code> → <code>floor(id)</code></li>
+</ul>
 <p><strong>인덱스</strong>: <code>INDEX(office_id, floor_id)</code> (필터용), <code>INDEX(status)</code>, <code>INDEX(updated_at DESC)</code> (타임스탬프 쿼리)</p>
-<p><strong>갱신</strong>:</p>
-<ul><li>R3F 웹 클라이언트 → Colyseus(20Hz, 메모리 권위) → <strong>1~5초 배치 <code>POST /api/presence/batch</code></strong> → DB 영속 (D3/D27, FastAPI가 단독으로 DB 기록)</li><li>TTL: 5분 무활동 → status = offline (선택)</li></ul>
+<p><strong>갱신</strong>: </p>
+<ul>
+<li>R3F 웹 클라이언트 → Colyseus(20Hz, 메모리 권위) → <strong>1~5초 배치 <code>POST /api/presence/batch</code></strong> → DB 영속 (D3/D27, FastAPI가 단독으로 DB 기록)</li>
+<li>TTL: 5분 무활동 → status = offline (선택)</li>
+</ul>
 <p><strong>상태 정의</strong> (섹션 3.1 참조):</p>
-<ul><li>online = 앱 실행, 오피스 로그인</li><li>working = 좌석에서 업무 중</li><li>meeting = 회의실 입장</li><li>focus = 집중실</li><li>away = 일시 자리 비움 (자동 전이 5분, D13)</li><li>external = 외근/출장/재택 (<strong>수동 전환</strong>, GPS 기반 자동 전환 폐기 — D13/D20)</li><li>offline = 로그아웃</li></ul>
+<ul>
+<li>online = 앱 실행, 오피스 로그인</li>
+<li>working = 좌석에서 업무 중</li>
+<li>meeting = 회의실 입장</li>
+<li>focus = 집중실</li>
+<li>away = 일시 자리 비움 (자동 전이 5분, D13)</li>
+<li>external = 외근/출장/재택 (<strong>수동 전환</strong>, GPS 기반 자동 전환 폐기 — D13/D20)</li>
+<li>offline = 로그아웃</li>
+</ul>
 <blockquote>GPS 기반 <code>trip_moving</code>·<code>trip_arrived</code>·<code>returning</code> 상태는 폐기되었다(데스크톱 클라이언트에 GPS 없음, D13).</blockquote>
 <hr>
 <h4 id="meeting-회의"><strong>meeting</strong> (회의)</h4>
 <p><strong>역할</strong>: 회의실에서의 회의. 화상(LiveKit), 회의록, 결정사항, 액션아이템 추적.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>room_id</td><td>UUID</td><td>FK, NN</td><td>room</td></tr><tr><td>title</td><td>VARCHAR(255)</td><td>NN</td><td>&quot;Q2 계획 회의&quot;</td></tr><tr><td>description</td><td>TEXT</td><td></td><td></td></tr><tr><td>scheduled_at</td><td>TIMESTAMP</td><td>NN</td><td>예정 시각</td></tr><tr><td>started_at</td><td>TIMESTAMP</td><td>NULL</td><td>실제 시작 시각</td></tr><tr><td>ended_at</td><td>TIMESTAMP</td><td>NULL</td><td>실제 종료 시각</td></tr><tr><td>host<em>user</em>id</td><td>BIGINT</td><td>FK, NN</td><td>erp_user.id(주최자)</td></tr><tr><td>status</td><td>ENUM</td><td>NN, DEFAULT 'scheduled'</td><td>scheduled | in_progress | completed | cancelled</td></tr><tr><td>livekit_room</td><td>VARCHAR(255)</td><td></td><td>LiveKit room ID</td></tr><tr><td>recording_url</td><td>VARCHAR(1000)</td><td></td><td>화상 녹화 URL(선택, <strong>녹음 동의 시에만</strong>, 보존 90일 후 파기 — D20-b)</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>:</p>
-<ul><li><code>room_id</code> → <code>room(id)</code></li><li><code>host_user_id</code> → <code>erp_user(id)</code></li></ul>
-<p><strong>관계</strong>: meeting ↔ meeting<em>minute는 <strong>단방향</strong>(meeting</em>minute.meeting<em>id → meeting.id)만 유지한다. 이전의 meeting.meeting</em>minute_id 역방향 FK는 폐기(순환 참조 방지). 회의록 조회는 <code>meeting_minute WHERE meeting_id = :id</code>로 수행한다.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>room_id</td>
+<td>UUID</td>
+<td>FK, NN</td>
+<td>room</td>
+</tr>
+<tr>
+<td>title</td>
+<td>VARCHAR(255)</td>
+<td>NN</td>
+<td>&quot;Q2 계획 회의&quot;</td>
+</tr>
+<tr>
+<td>description</td>
+<td>TEXT</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>scheduled_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td>예정 시각</td>
+</tr>
+<tr>
+<td>started_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>실제 시작 시각</td>
+</tr>
+<tr>
+<td>ended_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>실제 종료 시각</td>
+</tr>
+<tr>
+<td>host_user_id</td>
+<td>BIGINT</td>
+<td>FK, NN</td>
+<td>erp_user.id(주최자)</td>
+</tr>
+<tr>
+<td>status</td>
+<td>ENUM</td>
+<td>NN, DEFAULT &#39;scheduled&#39;</td>
+<td>scheduled | in_progress | completed | cancelled</td>
+</tr>
+<tr>
+<td>livekit_room</td>
+<td>VARCHAR(255)</td>
+<td></td>
+<td>LiveKit room ID</td>
+</tr>
+<tr>
+<td>recording_url</td>
+<td>VARCHAR(1000)</td>
+<td></td>
+<td>화상 녹화 URL(선택, <strong>녹음 동의 시에만</strong>, 보존 90일 후 파기 — D20-b)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: </p>
+<ul>
+<li><code>room_id</code> → <code>room(id)</code></li>
+<li><code>host_user_id</code> → <code>erp_user(id)</code></li>
+</ul>
+<p><strong>관계</strong>: meeting ↔ meeting_minute는 <strong>단방향</strong>(meeting_minute.meeting_id → meeting.id)만 유지한다. 이전의 meeting.meeting_minute_id 역방향 FK는 폐기(순환 참조 방지). 회의록 조회는 <code>meeting_minute WHERE meeting_id = :id</code>로 수행한다.</p>
 <p><strong>인덱스</strong>: <code>INDEX(room_id, scheduled_at DESC)</code>, <code>INDEX(host_user_id)</code>, <code>INDEX(status, started_at DESC)</code></p>
 <p><strong>상태 전이</strong>: scheduled → in_progress → completed (또는 cancelled)</p>
-<p><strong>녹음·STT 컴플라이언스(D20-b)</strong>: <code>recording_url</code>이 설정되는 회의는 시작 시 참석자 전원에게 녹음 고지 배너를 표시하고 참여 의사를 확인한다(거부 시 오디오 미수집). 녹화 원본은 보존 90일 후 자동 파기하며, 회의록 텍스트(meeting<em>minute)만 평가 데이터로 관리한다. 녹화 시작/중지는 audit</em>log 대상 액션이다(§2.6).</p>
+<p><strong>녹음·STT 컴플라이언스(D20-b)</strong>: <code>recording_url</code>이 설정되는 회의는 시작 시 참석자 전원에게 녹음 고지 배너를 표시하고 참여 의사를 확인한다(거부 시 오디오 미수집). 녹화 원본은 보존 90일 후 자동 파기하며, 회의록 텍스트(meeting_minute)만 평가 데이터로 관리한다. 녹화 시작/중지는 audit_log 대상 액션이다(§2.6).</p>
 <hr>
 <h4 id="meeting_participant-회의-참석자"><strong>meeting_participant</strong> (회의 참석자)</h4>
-<p><strong>역할</strong>: 회의 참석자 관리. joined<em>at/left</em>at로 실제 참석 추적(예약과 실제의 갭 감지).</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>meeting_id</td><td>UUID</td><td>FK, NN</td><td>meeting</td></tr><tr><td>user_id</td><td>BIGINT</td><td>FK, NN</td><td>erp_user.id</td></tr><tr><td>invited_at</td><td>TIMESTAMP</td><td>NN</td><td>초대 시각</td></tr><tr><td>joined_at</td><td>TIMESTAMP</td><td>NULL</td><td>실제 입장 시각</td></tr><tr><td>left_at</td><td>TIMESTAMP</td><td>NULL</td><td>퇴장 시각</td></tr><tr><td>role</td><td>ENUM</td><td>DEFAULT 'participant'</td><td>organizer | presenter | participant</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>:</p>
-<ul><li><code>meeting_id</code> → <code>meeting(id)</code> (with ON DELETE CASCADE)</li><li><code>user_id</code> → <code>erp_user(id)</code></li></ul>
+<p><strong>역할</strong>: 회의 참석자 관리. joined_at/left_at로 실제 참석 추적(예약과 실제의 갭 감지).</p>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>meeting_id</td>
+<td>UUID</td>
+<td>FK, NN</td>
+<td>meeting</td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>BIGINT</td>
+<td>FK, NN</td>
+<td>erp_user.id</td>
+</tr>
+<tr>
+<td>invited_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td>초대 시각</td>
+</tr>
+<tr>
+<td>joined_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>실제 입장 시각</td>
+</tr>
+<tr>
+<td>left_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>퇴장 시각</td>
+</tr>
+<tr>
+<td>role</td>
+<td>ENUM</td>
+<td>DEFAULT &#39;participant&#39;</td>
+<td>organizer | presenter | participant</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: </p>
+<ul>
+<li><code>meeting_id</code> → <code>meeting(id)</code> (with ON DELETE CASCADE)</li>
+<li><code>user_id</code> → <code>erp_user(id)</code></li>
+</ul>
 <p><strong>인덱스</strong>: <code>UNIQUE(meeting_id, user_id)</code>, <code>INDEX(user_id, invited_at DESC)</code></p>
 <hr>
 <h4 id="meeting_minute-회의록"><strong>meeting_minute</strong> (회의록)</h4>
 <p><strong>역할</strong>: 회의 결과 기록(논의, 결정사항, 액션아이템). 회의 이후 작성.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>meeting_id</td><td>UUID</td><td>FK, NN</td><td>meeting</td></tr><tr><td>title</td><td>VARCHAR(255)</td><td></td><td>회의록 제목(회의.title과 동일 가능)</td></tr><tr><td>summary</td><td>TEXT</td><td></td><td>논의 요약</td></tr><tr><td>decisions</td><td>TEXT</td><td>NN</td><td>결정사항(마크다운)</td></tr><tr><td>action<em>items</em>summary</td><td>TEXT</td><td></td><td>액션아이템 요약</td></tr><tr><td>notes</td><td>TEXT</td><td></td><td>추가 노트</td></tr><tr><td>stt_draft</td><td>TEXT</td><td>NULL</td><td>STT 원본 초안(회의 음성 STT 산출, D5)</td></tr><tr><td>ai_summary</td><td>TEXT</td><td>NULL</td><td>AI 요약(Phase 7)</td></tr><tr><td>attachments</td><td>JSON</td><td></td><td>[{filename, url, mime_type}]</td></tr><tr><td>created_by</td><td>BIGINT</td><td>FK, NN</td><td>erp_user.id(기록자)</td></tr><tr><td>reviewed_by</td><td>BIGINT</td><td>FK, NULL</td><td>erp_user.id(검토자)</td></tr><tr><td>status</td><td>ENUM</td><td>DEFAULT 'draft'</td><td>draft | finalized</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>:</p>
-<ul><li><code>meeting_id</code> → <code>meeting(id)</code> (with ON DELETE CASCADE)</li><li><code>created_by</code> → <code>erp_user(id)</code></li><li><code>reviewed_by</code> → <code>erp_user(id)</code> (nullable)</li></ul>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>meeting_id</td>
+<td>UUID</td>
+<td>FK, NN</td>
+<td>meeting</td>
+</tr>
+<tr>
+<td>title</td>
+<td>VARCHAR(255)</td>
+<td></td>
+<td>회의록 제목(회의.title과 동일 가능)</td>
+</tr>
+<tr>
+<td>summary</td>
+<td>TEXT</td>
+<td></td>
+<td>논의 요약</td>
+</tr>
+<tr>
+<td>decisions</td>
+<td>TEXT</td>
+<td>NN</td>
+<td>결정사항(마크다운)</td>
+</tr>
+<tr>
+<td>action_items_summary</td>
+<td>TEXT</td>
+<td></td>
+<td>액션아이템 요약</td>
+</tr>
+<tr>
+<td>notes</td>
+<td>TEXT</td>
+<td></td>
+<td>추가 노트</td>
+</tr>
+<tr>
+<td>stt_draft</td>
+<td>TEXT</td>
+<td>NULL</td>
+<td>STT 원본 초안(회의 음성 STT 산출, D5)</td>
+</tr>
+<tr>
+<td>ai_summary</td>
+<td>TEXT</td>
+<td>NULL</td>
+<td>AI 요약(Phase 7)</td>
+</tr>
+<tr>
+<td>attachments</td>
+<td>JSON</td>
+<td></td>
+<td>[{filename, url, mime_type}]</td>
+</tr>
+<tr>
+<td>created_by</td>
+<td>BIGINT</td>
+<td>FK, NN</td>
+<td>erp_user.id(기록자)</td>
+</tr>
+<tr>
+<td>reviewed_by</td>
+<td>BIGINT</td>
+<td>FK, NULL</td>
+<td>erp_user.id(검토자)</td>
+</tr>
+<tr>
+<td>status</td>
+<td>ENUM</td>
+<td>DEFAULT &#39;draft&#39;</td>
+<td>draft | finalized</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: </p>
+<ul>
+<li><code>meeting_id</code> → <code>meeting(id)</code> (with ON DELETE CASCADE)</li>
+<li><code>created_by</code> → <code>erp_user(id)</code></li>
+<li><code>reviewed_by</code> → <code>erp_user(id)</code> (nullable)</li>
+</ul>
 <p><strong>인덱스</strong>: <code>UNIQUE(meeting_id)</code>, <code>INDEX(status)</code></p>
-<p><strong>참고</strong>: meeting<em>minute과 action</em>item은 1:N. 하나의 회의록에 다수의 액션아이템. status enum은 <code>draft | finalized</code> 2종을 <strong>유지</strong>한다 — stt<em>draft(D5)·ai</em>summary(Phase 7)는 초안 보조 필드일 뿐 별도 상태를 추가하지 않는다.</p>
+<p><strong>참고</strong>: meeting_minute과 action_item은 1:N. 하나의 회의록에 다수의 액션아이템. status enum은 <code>draft | finalized</code> 2종을 <strong>유지</strong>한다 — stt_draft(D5)·ai_summary(Phase 7)는 초안 보조 필드일 뿐 별도 상태를 추가하지 않는다.</p>
 <hr>
 <h4 id="action_item-액션아이템"><strong>action_item</strong> (액션아이템)</h4>
 <p><strong>역할</strong>: 회의에서 나온 할일. 담당자, 기한, 진행상태 추적. ERP의 task/issue 와는 독립적.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>meeting_id</td><td>UUID</td><td>FK, NN</td><td>meeting</td></tr><tr><td>title</td><td>VARCHAR(255)</td><td>NN</td><td>&quot;프로토타입 설계 완료&quot;</td></tr><tr><td>description</td><td>TEXT</td><td></td><td>상세 설명</td></tr><tr><td>assignee<em>user</em>id</td><td>BIGINT</td><td>FK, NN</td><td>erp_user.id(담당자)</td></tr><tr><td>due_date</td><td>DATE</td><td>NN</td><td>기한(KST)</td></tr><tr><td>priority</td><td>ENUM</td><td>DEFAULT 'medium'</td><td>high | medium | low</td></tr><tr><td>status</td><td>ENUM</td><td>NN, DEFAULT 'open'</td><td>open | in_progress | completed | cancelled</td></tr><tr><td>related_ref</td><td>VARCHAR(500)</td><td></td><td>외부 참조(Jira issue URL, GitHub PR 등)</td></tr><tr><td>completed_at</td><td>TIMESTAMP</td><td>NULL</td><td>완료 시각</td></tr><tr><td>completed<em>evidence</em>url</td><td>VARCHAR(1000)</td><td></td><td>완료 증거(결과물 링크)</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>:</p>
-<ul><li><code>meeting_id</code> → <code>meeting(id)</code> (with ON DELETE CASCADE)</li><li><code>assignee_user_id</code> → <code>erp_user(id)</code></li></ul>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>meeting_id</td>
+<td>UUID</td>
+<td>FK, NN</td>
+<td>meeting</td>
+</tr>
+<tr>
+<td>title</td>
+<td>VARCHAR(255)</td>
+<td>NN</td>
+<td>&quot;프로토타입 설계 완료&quot;</td>
+</tr>
+<tr>
+<td>description</td>
+<td>TEXT</td>
+<td></td>
+<td>상세 설명</td>
+</tr>
+<tr>
+<td>assignee_user_id</td>
+<td>BIGINT</td>
+<td>FK, NN</td>
+<td>erp_user.id(담당자)</td>
+</tr>
+<tr>
+<td>due_date</td>
+<td>DATE</td>
+<td>NN</td>
+<td>기한(KST)</td>
+</tr>
+<tr>
+<td>priority</td>
+<td>ENUM</td>
+<td>DEFAULT &#39;medium&#39;</td>
+<td>high | medium | low</td>
+</tr>
+<tr>
+<td>status</td>
+<td>ENUM</td>
+<td>NN, DEFAULT &#39;open&#39;</td>
+<td>open | in_progress | completed | cancelled</td>
+</tr>
+<tr>
+<td>related_ref</td>
+<td>VARCHAR(500)</td>
+<td></td>
+<td>외부 참조(Jira issue URL, GitHub PR 등)</td>
+</tr>
+<tr>
+<td>completed_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>완료 시각</td>
+</tr>
+<tr>
+<td>completed_evidence_url</td>
+<td>VARCHAR(1000)</td>
+<td></td>
+<td>완료 증거(결과물 링크)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: </p>
+<ul>
+<li><code>meeting_id</code> → <code>meeting(id)</code> (with ON DELETE CASCADE)</li>
+<li><code>assignee_user_id</code> → <code>erp_user(id)</code></li>
+</ul>
 <p><strong>인덱스</strong>: <code>INDEX(assignee_user_id, status)</code>, <code>INDEX(due_date, status)</code></p>
 <hr>
-<h3 id="25-업무kpi연동-계층">2.5 업무·KPI·연동 계층</h3>
+<h3 id="25-업무·kpi·연동-계층">2.5 업무·KPI·연동 계층</h3>
 <h4 id="work_log-업무-기록"><strong>work_log</strong> (업무 기록)</h4>
 <p><strong>역할</strong>: 직원이 수행한 업무 단위 기록. 목표, 소요시간, 결과물 추적. 업무결과 집계→KPI 산출 기초.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>user_id</td><td>BIGINT</td><td>FK, NN</td><td>erp_user.id</td></tr><tr><td>work_date</td><td>DATE</td><td>NN</td><td>업무 날짜(KST)</td></tr><tr><td>category</td><td>VARCHAR(50)</td><td></td><td>&quot;개발&quot;, &quot;리뷰&quot;, &quot;회의&quot;, &quot;설계&quot;</td></tr><tr><td>title</td><td>VARCHAR(255)</td><td>NN</td><td>&quot;API 엔드포인트 개발&quot;</td></tr><tr><td>goal</td><td>TEXT</td><td></td><td>이번 업무의 목표</td></tr><tr><td>related_project</td><td>VARCHAR(255)</td><td></td><td>프로젝트명(Jira Project key?)</td></tr><tr><td>url</td><td>VARCHAR(1000)</td><td></td><td>관련 URL(PR, Issue, Confluence)</td></tr><tr><td>est_minutes</td><td>INT</td><td></td><td>예상 소요시간</td></tr><tr><td>actual_minutes</td><td>INT</td><td></td><td>실제 소요시간</td></tr><tr><td>status</td><td>ENUM</td><td>NN</td><td>started | completed</td></tr><tr><td>result_url</td><td>VARCHAR(1000)</td><td></td><td>결과물 URL(코드, 문서)</td></tr><tr><td>result_description</td><td>TEXT</td><td></td><td>결과 설명</td></tr><tr><td>attachments</td><td>JSON</td><td></td><td>[{filename, url, mime_type}]</td></tr><tr><td>issues</td><td>JSON</td><td></td><td>발생한 이슈(자유텍스트 배열)</td></tr><tr><td>next_action</td><td>TEXT</td><td></td><td>다음 액션(follow-up)</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>: <code>user_id</code> → <code>erp_user(id)</code> (ON DELETE RESTRICT — D18 평가 근거 영구 보존, §4.2와 통일)</p>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>BIGINT</td>
+<td>FK, NN</td>
+<td>erp_user.id</td>
+</tr>
+<tr>
+<td>work_date</td>
+<td>DATE</td>
+<td>NN</td>
+<td>업무 날짜(KST)</td>
+</tr>
+<tr>
+<td>category</td>
+<td>VARCHAR(50)</td>
+<td></td>
+<td>&quot;개발&quot;, &quot;리뷰&quot;, &quot;회의&quot;, &quot;설계&quot;</td>
+</tr>
+<tr>
+<td>title</td>
+<td>VARCHAR(255)</td>
+<td>NN</td>
+<td>&quot;API 엔드포인트 개발&quot;</td>
+</tr>
+<tr>
+<td>goal</td>
+<td>TEXT</td>
+<td></td>
+<td>이번 업무의 목표</td>
+</tr>
+<tr>
+<td>related_project</td>
+<td>VARCHAR(255)</td>
+<td></td>
+<td>프로젝트명(Jira Project key?)</td>
+</tr>
+<tr>
+<td>url</td>
+<td>VARCHAR(1000)</td>
+<td></td>
+<td>관련 URL(PR, Issue, Confluence)</td>
+</tr>
+<tr>
+<td>est_minutes</td>
+<td>INT</td>
+<td></td>
+<td>예상 소요시간</td>
+</tr>
+<tr>
+<td>actual_minutes</td>
+<td>INT</td>
+<td></td>
+<td>실제 소요시간</td>
+</tr>
+<tr>
+<td>status</td>
+<td>ENUM</td>
+<td>NN</td>
+<td>started | completed</td>
+</tr>
+<tr>
+<td>result_url</td>
+<td>VARCHAR(1000)</td>
+<td></td>
+<td>결과물 URL(코드, 문서)</td>
+</tr>
+<tr>
+<td>result_description</td>
+<td>TEXT</td>
+<td></td>
+<td>결과 설명</td>
+</tr>
+<tr>
+<td>attachments</td>
+<td>JSON</td>
+<td></td>
+<td>[{filename, url, mime_type}]</td>
+</tr>
+<tr>
+<td>issues</td>
+<td>JSON</td>
+<td></td>
+<td>발생한 이슈(자유텍스트 배열)</td>
+</tr>
+<tr>
+<td>next_action</td>
+<td>TEXT</td>
+<td></td>
+<td>다음 액션(follow-up)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: <code>user_id</code> → <code>erp_user(id)</code> (ON DELETE RESTRICT — D18 평가 근거 영구 보존, §4.2와 통일)</p>
 <p><strong>인덱스</strong>: <code>INDEX(user_id, work_date DESC)</code>, <code>INDEX(status, work_date DESC)</code></p>
-<p><strong>KPI 산출 로직(D14-a)</strong>: status='completed' <strong>전건</strong>이 <code>work_completed_count</code> 카운트 대상이며, result_url 존재 건은 <code>work_quality_score</code>의 충실도 가점으로 반영한다(08-kpi-logic.md §2.2.1 정합).</p>
+<p><strong>KPI 산출 로직(D14-a)</strong>: status=&#39;completed&#39; <strong>전건</strong>이 <code>work_completed_count</code> 카운트 대상이며, result_url 존재 건은 <code>work_quality_score</code>의 충실도 가점으로 반영한다(08-kpi-logic.md §2.2.1 정합).</p>
 <hr>
 <h4 id="kpi_result-kpi-평가-결과"><strong>kpi_result</strong> (KPI 평가 결과)</h4>
 <p><strong>역할</strong>: 우리 플랫폼에서 산출한 KPI. <strong>본 테이블이 kpi_result 스키마의 정본(SoT)이다(D16)</strong> — 03·08은 이 정의를 참조만 한다. metric별 <strong>롱포맷</strong>(1행 = 1 user + 1 기간 + 1 metric). 정량 값은 결정론적 코드로 계산하고(D14-e), AI는 서술만 생성한다. 관리자 확정 <code>final_score</code>가 이의신청 흐름을 거쳐 ERP로 push된다(D15).</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>user_id</td><td>BIGINT</td><td>FK, NN</td><td>erp_user.id</td></tr><tr><td>period_type</td><td>ENUM(kpi<em>period</em>type)</td><td>NN</td><td><code>daily</code> | <code>quarterly</code> (§3.5 enum 참조, D16 — <code>period</code> 컬럼 폐기)</td></tr><tr><td>period_key</td><td>VARCHAR(20)</td><td>NN</td><td>period_type=daily → <code>'2026-07-01'</code>, quarterly → <code>'2026-Q3'</code></td></tr><tr><td>metric</td><td>VARCHAR(100)</td><td>NN</td><td>metric 어휘 사전(하단) 값만 허용</td></tr><tr><td>value</td><td>NUMERIC</td><td>NN</td><td>결정론적 코드로 계산된 정량 값</td></tr><tr><td>unit</td><td>VARCHAR(50)</td><td></td><td>&quot;count&quot;, &quot;%&quot;, &quot;score&quot;</td></tr><tr><td>source</td><td>ENUM</td><td>NN, DEFAULT 'virtual_office'</td><td>virtual_office(우리만 해당)</td></tr><tr><td>ai_draft</td><td>JSONB</td><td>NULL</td><td>AI 서술 초안(강점/개선/근거) — <strong>정량 점수 미포함</strong>(D14-e)</td></tr><tr><td>ai<em>draft</em>generated_at</td><td>TIMESTAMP</td><td>NULL</td><td>AI 생성 시각(UTC)</td></tr><tr><td>ai_model</td><td>VARCHAR(50)</td><td>DEFAULT 'claude-opus'</td><td>사용 모델</td></tr><tr><td>admin<em>adjusted</em>score</td><td>NUMERIC</td><td>NULL</td><td>관리자 조정 점수(미조정 시 NULL → value가 유효)</td></tr><tr><td>admin_note</td><td>TEXT</td><td>NULL</td><td>관리자 검토/조정 사유</td></tr><tr><td>admin<em>user</em>id</td><td>BIGINT</td><td>FK, NULL</td><td>조정한 관리자 erp_user.id</td></tr><tr><td>admin<em>reviewed</em>at</td><td>TIMESTAMP</td><td>NULL</td><td>검토 시각(UTC)</td></tr><tr><td>objection_status</td><td>ENUM(kpi<em>objection</em>status)</td><td>NN, DEFAULT 'none'</td><td><code>none</code> | <code>submitted</code> | <code>reviewing</code> | <code>resolved</code> (§3.5 enum 참조 — 이의신청 상태머신, D15)</td></tr><tr><td>objection_detail</td><td>JSONB</td><td>NULL</td><td>{category, text, evidence, submitted_at}</td></tr><tr><td>objection<em>submitted</em>at</td><td>TIMESTAMP</td><td>NULL</td><td>이의 접수 시각(UTC)</td></tr><tr><td>objection<em>resolved</em>at</td><td>TIMESTAMP</td><td>NULL</td><td>이의 처리 완료 시각(UTC)</td></tr><tr><td>final_score</td><td>NUMERIC</td><td>NULL</td><td>관리자 확정 최종 점수(= admin<em>adjusted</em>score ?? value, 확정 시 설정)</td></tr><tr><td>finalized_at</td><td>TIMESTAMP</td><td>NULL</td><td>확정 시각(UTC, NULL = 미확정)</td></tr><tr><td>note</td><td>TEXT</td><td></td><td>메트릭별 추가 주석</td></tr><tr><td>pushed<em>to</em>erp</td><td>BOOLEAN</td><td>DEFAULT FALSE</td><td>ERP로 전송됨</td></tr><tr><td>pushed_at</td><td>TIMESTAMP</td><td>NULL</td><td>ERP 전송 시각(UTC)</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td>(UTC)</td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td>(UTC)</td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>:</p>
-<ul><li><code>user_id</code> → <code>erp_user(id)</code> (<strong>ON DELETE RESTRICT</strong> — 평가 기록 영구성, D18)</li><li><code>admin_user_id</code> → <code>erp_user(id)</code> (nullable, ON DELETE SET NULL)</li></ul>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>BIGINT</td>
+<td>FK, NN</td>
+<td>erp_user.id</td>
+</tr>
+<tr>
+<td>period_type</td>
+<td>ENUM(kpi_period_type)</td>
+<td>NN</td>
+<td><code>daily</code> | <code>quarterly</code> (§3.5 enum 참조, D16 — <code>period</code> 컬럼 폐기)</td>
+</tr>
+<tr>
+<td>period_key</td>
+<td>VARCHAR(20)</td>
+<td>NN</td>
+<td>period_type=daily → <code>&#39;2026-07-01&#39;</code>, quarterly → <code>&#39;2026-Q3&#39;</code></td>
+</tr>
+<tr>
+<td>metric</td>
+<td>VARCHAR(100)</td>
+<td>NN</td>
+<td>metric 어휘 사전(하단) 값만 허용</td>
+</tr>
+<tr>
+<td>value</td>
+<td>NUMERIC</td>
+<td>NN</td>
+<td>결정론적 코드로 계산된 정량 값</td>
+</tr>
+<tr>
+<td>unit</td>
+<td>VARCHAR(50)</td>
+<td></td>
+<td>&quot;count&quot;, &quot;%&quot;, &quot;score&quot;</td>
+</tr>
+<tr>
+<td>source</td>
+<td>ENUM</td>
+<td>NN, DEFAULT &#39;virtual_office&#39;</td>
+<td>virtual_office(우리만 해당)</td>
+</tr>
+<tr>
+<td>ai_draft</td>
+<td>JSONB</td>
+<td>NULL</td>
+<td>AI 서술 초안(강점/개선/근거) — <strong>정량 점수 미포함</strong>(D14-e)</td>
+</tr>
+<tr>
+<td>ai_draft_generated_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>AI 생성 시각(UTC)</td>
+</tr>
+<tr>
+<td>ai_model</td>
+<td>VARCHAR(50)</td>
+<td>DEFAULT &#39;claude-opus&#39;</td>
+<td>사용 모델</td>
+</tr>
+<tr>
+<td>admin_adjusted_score</td>
+<td>NUMERIC</td>
+<td>NULL</td>
+<td>관리자 조정 점수(미조정 시 NULL → value가 유효)</td>
+</tr>
+<tr>
+<td>admin_note</td>
+<td>TEXT</td>
+<td>NULL</td>
+<td>관리자 검토/조정 사유</td>
+</tr>
+<tr>
+<td>admin_user_id</td>
+<td>BIGINT</td>
+<td>FK, NULL</td>
+<td>조정한 관리자 erp_user.id</td>
+</tr>
+<tr>
+<td>admin_reviewed_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>검토 시각(UTC)</td>
+</tr>
+<tr>
+<td>objection_status</td>
+<td>ENUM(kpi_objection_status)</td>
+<td>NN, DEFAULT &#39;none&#39;</td>
+<td><code>none</code> | <code>submitted</code> | <code>reviewing</code> | <code>resolved</code> (§3.5 enum 참조 — 이의신청 상태머신, D15)</td>
+</tr>
+<tr>
+<td>objection_detail</td>
+<td>JSONB</td>
+<td>NULL</td>
+<td>{category, text, evidence, submitted_at}</td>
+</tr>
+<tr>
+<td>objection_submitted_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>이의 접수 시각(UTC)</td>
+</tr>
+<tr>
+<td>objection_resolved_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>이의 처리 완료 시각(UTC)</td>
+</tr>
+<tr>
+<td>final_score</td>
+<td>NUMERIC</td>
+<td>NULL</td>
+<td>관리자 확정 최종 점수(= admin_adjusted_score ?? value, 확정 시 설정)</td>
+</tr>
+<tr>
+<td>finalized_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>확정 시각(UTC, NULL = 미확정)</td>
+</tr>
+<tr>
+<td>note</td>
+<td>TEXT</td>
+<td></td>
+<td>메트릭별 추가 주석</td>
+</tr>
+<tr>
+<td>pushed_to_erp</td>
+<td>BOOLEAN</td>
+<td>DEFAULT FALSE</td>
+<td>ERP로 전송됨</td>
+</tr>
+<tr>
+<td>pushed_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>ERP 전송 시각(UTC)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td>(UTC)</td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td>(UTC)</td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: </p>
+<ul>
+<li><code>user_id</code> → <code>erp_user(id)</code> (<strong>ON DELETE RESTRICT</strong> — 평가 기록 영구성, D18)</li>
+<li><code>admin_user_id</code> → <code>erp_user(id)</code> (nullable, ON DELETE SET NULL)</li>
+</ul>
 <p><strong>인덱스</strong>: <code>UNIQUE(user_id, period_type, period_key, metric)</code>, <code>INDEX(pushed_to_erp, pushed_at)</code>, <code>INDEX(objection_status)</code>, <code>INDEX(finalized_at)</code></p>
-<blockquote><strong>kpi<em>result</em>review 테이블 폐기(D16)</strong>: 이전 설계의 별도 리뷰 테이블은 폐기되었다. 리뷰·이의신청·확정 필드는 위와 같이 kpi_result에 <strong>인라인</strong>된다.</blockquote>
-<h5 id="metric-어휘-사전-정본-0308은-이-표를-참조">metric 어휘 사전 (정본 — 03·08은 이 표를 참조)</h5>
+<blockquote><strong>kpi_result_review 테이블 폐기(D16)</strong>: 이전 설계의 별도 리뷰 테이블은 폐기되었다. 리뷰·이의신청·확정 필드는 위와 같이 kpi_result에 <strong>인라인</strong>된다.</blockquote>
+<h5 id="metric-어휘-사전-정본--03·08은-이-표를-참조">metric 어휘 사전 (정본 — 03·08은 이 표를 참조)</h5>
 <p>D14 재작성 공식에 정합하는 최종 metric 어휘. 이 8개 외의 metric 값은 사용하지 않는다(3문서 공통).</p>
-<div class="table-wrap"><table><thead><tr><th>metric</th><th>타입/단위</th><th>범위</th><th>계산(결정론적, D14-e)</th></tr></thead><tbody><tr><td><code>work_completed_count</code></td><td>count</td><td>≥0</td><td>완료(status=completed) work_log 건수 (D14-a)</td></tr><tr><td><code>work_quality_score</code></td><td>score</td><td>0–100</td><td>완료 work<em>log의 충실도: goal·category·result</em>url·next_action 작성도 각 가점 + AI 신뢰도 검증 반영 (D14-a)</td></tr><tr><td><code>minutes_authored_count</code></td><td>count</td><td>≥0</td><td>회의록 작성 수(created_by 기준 — 공동작성 구조 없음, 필요 시 추후 결정) (decisions 신뢰도 AI ±0.5 검증 반영, D14-b)</td></tr><tr><td><code>action_items_completed</code></td><td>count</td><td>≥0</td><td>완료(status='completed')한 <strong>담당</strong> 액션아이템 수, 일일 인정 상한 적용(쪼개기 방지, D14-c)</td></tr><tr><td><code>action_items_ontime_rate</code></td><td>%</td><td>0–100</td><td>담당 액션아이템의 기한 내 완료율 (D14-c)</td></tr><tr><td><code>report_fidelity_score</code></td><td>score</td><td>0–100</td><td>업무기록/일일리포트 충실도(작성 신뢰도, 보일러플레이트 감점)</td></tr><tr><td><code>collaboration_score</code></td><td>score</td><td>0–100</td><td>위 신호를 합성한 종합 협업 점수(결정론적 코드 계산)</td></tr><tr><td><code>quarterly_total</code></td><td>score</td><td>≥0</td><td>분기 종합 점수(분기 집계 행)</td></tr></tbody></table></div>
-<blockquote><strong>폐기된 metric</strong>: <code>completed_work_count</code>(→work<em>completed</em>count), <code>meetings_hosted</code>·<code>meetings_attended</code>·<code>meeting_participation</code>(회의 참석 기본점 폐기, D14-b), <code>action_items_closed</code>(→action<em>items</em>completed, 'closed' 유령 값 제거), <code>quality_score</code>·<code>productivity_score</code>(정량 점수 어휘로 통합). 근태 관련 metric은 D14-d에 따라 미포함(ERP가 attendance를 별도 반영, 이중 반영 금지).</blockquote>
+<div class="table-wrap"><table><thead><tr>
+<th>metric</th>
+<th>타입/단위</th>
+<th>범위</th>
+<th>계산(결정론적, D14-e)</th>
+</tr>
+</thead><tbody><tr>
+<td><code>work_completed_count</code></td>
+<td>count</td>
+<td>≥0</td>
+<td>완료(status=completed) work_log 건수 (D14-a)</td>
+</tr>
+<tr>
+<td><code>work_quality_score</code></td>
+<td>score</td>
+<td>0–100</td>
+<td>완료 work_log의 충실도: goal·category·result_url·next_action 작성도 각 가점 + AI 신뢰도 검증 반영 (D14-a)</td>
+</tr>
+<tr>
+<td><code>minutes_authored_count</code></td>
+<td>count</td>
+<td>≥0</td>
+<td>회의록 작성 수(created_by 기준 — 공동작성 구조 없음, 필요 시 추후 결정) (decisions 신뢰도 AI ±0.5 검증 반영, D14-b)</td>
+</tr>
+<tr>
+<td><code>action_items_completed</code></td>
+<td>count</td>
+<td>≥0</td>
+<td>완료(status=&#39;completed&#39;)한 <strong>담당</strong> 액션아이템 수, 일일 인정 상한 적용(쪼개기 방지, D14-c)</td>
+</tr>
+<tr>
+<td><code>action_items_ontime_rate</code></td>
+<td>%</td>
+<td>0–100</td>
+<td>담당 액션아이템의 기한 내 완료율 (D14-c)</td>
+</tr>
+<tr>
+<td><code>report_fidelity_score</code></td>
+<td>score</td>
+<td>0–100</td>
+<td>업무기록/일일리포트 충실도(작성 신뢰도, 보일러플레이트 감점)</td>
+</tr>
+<tr>
+<td><code>collaboration_score</code></td>
+<td>score</td>
+<td>0–100</td>
+<td>위 신호를 합성한 종합 협업 점수(결정론적 코드 계산)</td>
+</tr>
+<tr>
+<td><code>quarterly_total</code></td>
+<td>score</td>
+<td>≥0</td>
+<td>분기 종합 점수(분기 집계 행)</td>
+</tr>
+</tbody></table></div>
+<blockquote><strong>폐기된 metric</strong>: <code>completed_work_count</code>(→work_completed_count), <code>meetings_hosted</code>·<code>meetings_attended</code>·<code>meeting_participation</code>(회의 참석 기본점 폐기, D14-b), <code>action_items_closed</code>(→action_items_completed, &#39;closed&#39; 유령 값 제거), <code>quality_score</code>·<code>productivity_score</code>(정량 점수 어휘로 통합). 근태 관련 metric은 D14-d에 따라 미포함(ERP가 attendance를 별도 반영, 이중 반영 금지).</blockquote>
 <p><strong>AI 초안 생성(D14-e)</strong>: 정량 점수(value)는 <strong>결정론적 코드</strong>가 계산하며 같은 입력=같은 점수를 보장한다(감사 요건). Claude API는 서술(강점/개선/근거)만 반환하고 <code>ai_draft</code> JSONB에 저장한다 — 정량 점수 산출에 관여하지 않는다.</p>
 <p><strong>ERP 푸시(D15·D17)</strong>: 관리자 확정(<code>finalized_at</code> 설정) 이벤트 + 분기 마감 배치 시, <code>final_score</code>를 metric 단위 upsert로 ERP 엔드포인트(<code>POST /api/kpi-results</code>, 03-erp-integration.md §5.2 참조)에 전송한다. <code>ai_draft</code>는 ERP 미전송. 정정 발생 시 재push(upsert). 인증은 서비스계정 JWT.</p>
 <hr>
-<h4 id="daily_status_push-일일-상태-푸시-로그"><strong>daily<em>status</em>push</strong> (일일 상태 푸시 로그)</h4>
-<p><strong>역할</strong>: 우리 플랫폼 → ERP 연동의 배치 로그. <code>target</code>별로 재시도를 분리 관리한다(D17). <strong>본 테이블이 daily<em>status</em>push 정의의 정본이다</strong> — 08은 참조만 한다.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>user_id</td><td>BIGINT</td><td>FK, NN</td><td>erp_user.id</td></tr><tr><td>push_date</td><td>DATE</td><td>NN</td><td>푸시 대상 날짜(KST 경계로 산정)</td></tr><tr><td>target</td><td>ENUM</td><td>NN</td><td>erp<em>daily</em>reports | erp<em>kpi</em>results</td></tr><tr><td>payload</td><td>JSONB</td><td>NN</td><td>전송 페이로드(일일리포트 or KPI)</td></tr><tr><td>status</td><td>ENUM</td><td>NN, DEFAULT 'pending'</td><td>pending | sent | failed</td></tr><tr><td>pushed_at</td><td>TIMESTAMP</td><td>NULL</td><td>실제 전송 시각(UTC)</td></tr><tr><td>erp_response</td><td>JSON</td><td>NULL</td><td>ERP 응답(성공/에러 본문)</td></tr><tr><td>error_message</td><td>TEXT</td><td>NULL</td><td>실패 사유 요약(재시도 판정용)</td></tr><tr><td>retry_count</td><td>INT</td><td>DEFAULT 0</td><td>재시도 횟수(최대 3, 지수 백오프)</td></tr><tr><td>run_id</td><td>UUID</td><td>NULL</td><td>배치 실행 식별자(멱등성·감사)</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td>(UTC)</td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td>(UTC)</td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>: <code>user_id</code> → <code>erp_user(id)</code> (<strong>ON DELETE RESTRICT</strong> — 전송 이력 보존, D18)</p>
+<h4 id="daily_status_push-일일-상태-푸시-로그"><strong>daily_status_push</strong> (일일 상태 푸시 로그)</h4>
+<p><strong>역할</strong>: 우리 플랫폼 → ERP 연동의 배치 로그. <code>target</code>별로 재시도를 분리 관리한다(D17). <strong>본 테이블이 daily_status_push 정의의 정본이다</strong> — 08은 참조만 한다.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>BIGINT</td>
+<td>FK, NN</td>
+<td>erp_user.id</td>
+</tr>
+<tr>
+<td>push_date</td>
+<td>DATE</td>
+<td>NN</td>
+<td>푸시 대상 날짜(KST 경계로 산정)</td>
+</tr>
+<tr>
+<td>target</td>
+<td>ENUM</td>
+<td>NN</td>
+<td>erp_daily_reports | erp_kpi_results</td>
+</tr>
+<tr>
+<td>payload</td>
+<td>JSONB</td>
+<td>NN</td>
+<td>전송 페이로드(일일리포트 or KPI)</td>
+</tr>
+<tr>
+<td>status</td>
+<td>ENUM</td>
+<td>NN, DEFAULT &#39;pending&#39;</td>
+<td>pending | sent | failed</td>
+</tr>
+<tr>
+<td>pushed_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>실제 전송 시각(UTC)</td>
+</tr>
+<tr>
+<td>erp_response</td>
+<td>JSON</td>
+<td>NULL</td>
+<td>ERP 응답(성공/에러 본문)</td>
+</tr>
+<tr>
+<td>error_message</td>
+<td>TEXT</td>
+<td>NULL</td>
+<td>실패 사유 요약(재시도 판정용)</td>
+</tr>
+<tr>
+<td>retry_count</td>
+<td>INT</td>
+<td>DEFAULT 0</td>
+<td>재시도 횟수(최대 3, 지수 백오프)</td>
+</tr>
+<tr>
+<td>run_id</td>
+<td>UUID</td>
+<td>NULL</td>
+<td>배치 실행 식별자(멱등성·감사)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td>(UTC)</td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td>(UTC)</td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: <code>user_id</code> → <code>erp_user(id)</code> (<strong>ON DELETE RESTRICT</strong> — 전송 이력 보존, D18)</p>
 <p><strong>인덱스</strong>: <code>INDEX(user_id, push_date DESC)</code>, <code>INDEX(status, target, created_at)</code> (배치 쿼리용), <code>INDEX(run_id)</code></p>
 <p><strong>푸시 워크플로우(D17)</strong>:</p>
-<ol><li>daily<em>reports push = 매일 <strong>18:00 KST</strong>(18:00 이후 활동은 익일 귀속, 주말·공휴일 스킵) → target=erp</em>daily_reports</li><li>kpi<em>results push = <strong>관리자 확정 이벤트 + 분기 마감 배치</strong>(D15) → target=erp</em>kpi<em>results (final</em>score만 전송)</li><li>daily<em>status</em>push row 생성(status=pending, run_id 부여)</li><li>ERP 엔드포인트 호출(서비스계정 JWT 인증)</li><li>성공 시 status=sent, pushed_at 업데이트</li><li>실패 시 status=failed, error<em>message/erp</em>response 로깅</li><li>재시도는 target별로 분리(최대 3회, 지수 백오프). 다음날 정규 배치가 upsert로 우선(정규 배치가 이김). 상세는 03-erp-integration.md §6 참조.</li></ol>
+<ol>
+<li>daily_reports push = 매일 <strong>18:00 KST</strong>(18:00 이후 활동은 익일 귀속, 주말·공휴일 스킵) → target=erp_daily_reports</li>
+<li>kpi_results push = <strong>관리자 확정 이벤트 + 분기 마감 배치</strong>(D15) → target=erp_kpi_results (final_score만 전송)</li>
+<li>daily_status_push row 생성(status=pending, run_id 부여)</li>
+<li>ERP 엔드포인트 호출(서비스계정 JWT 인증)</li>
+<li>성공 시 status=sent, pushed_at 업데이트</li>
+<li>실패 시 status=failed, error_message/erp_response 로깅</li>
+<li>재시도는 target별로 분리(최대 3회, 지수 백오프). 다음날 정규 배치가 upsert로 우선(정규 배치가 이김). 상세는 03-erp-integration.md §6 참조.</li>
+</ol>
 <hr>
-<h3 id="26-자산감시감사-계층">2.6 자산·감시·감사 계층</h3>
+<h3 id="26-자산·감시·감사-계층">2.6 자산·감시·감사 계층</h3>
 <h4 id="asset-에셋-레지스트리"><strong>asset</strong> (에셋 레지스트리)</h4>
 <p><strong>역할</strong>: 3D 에셋(모델, 텍스처) 메타데이터. Blender → GLB → Godot 변환 파이프라인. 라이선스/저작권 추적.</p>
 <blockquote><strong>정본 출처: 3d-design/asset-registry.md §1.1</strong>(D27 스키마 정본). 07-3d-visual-asset-pipeline.md는 파이프라인 참조 문서다. 아래 표는 정본 스키마의 사본이며, 충돌 시 asset-registry.md §1.1이 이긴다.</blockquote>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>asset_id</td><td>VARCHAR(64)</td><td>PK</td><td>예: &quot;DESK<em>STANDARD</em>001&quot; (05 정본 명명. 버전은 asset 테이블·CHANGELOG로 관리)</td></tr><tr><td>asset_name</td><td>VARCHAR(256)</td><td>NN</td><td>&quot;Reception Desk&quot;</td></tr><tr><td>asset_type</td><td>VARCHAR(50)</td><td>NN</td><td>furniture | structure | material | ui3d | character | environment</td></tr><tr><td>asset_category</td><td>VARCHAR(100)</td><td></td><td>&quot;office&quot;, &quot;meeting-room&quot;, &quot;lounge&quot;, &quot;lobby&quot;</td></tr><tr><td>source_url</td><td>TEXT</td><td></td><td>원본 다운로드 URL(ambientCG, Poly Haven)</td></tr><tr><td>author</td><td>VARCHAR(256)</td><td></td><td>에셋 제작자</td></tr><tr><td>license</td><td>VARCHAR(100)</td><td>NN</td><td>CC0 | CC-BY | custom | proprietary</td></tr><tr><td>license_url</td><td>TEXT</td><td></td><td>라이선스 문서 링크</td></tr><tr><td>downloaded_at</td><td>TIMESTAMP</td><td></td><td>최초 획득 시각</td></tr><tr><td>modified_by</td><td>VARCHAR(256)</td><td></td><td>수정/가공 담당자</td></tr><tr><td>commercial_allowed</td><td>BOOLEAN</td><td>DEFAULT TRUE</td><td>상용 이용 가능</td></tr><tr><td>attribution_required</td><td>BOOLEAN</td><td></td><td>저작권 표시 필수</td></tr><tr><td>redistribution_allowed</td><td>BOOLEAN</td><td></td><td>재배포 허용</td></tr><tr><td>original<em>file</em>hash</td><td>VARCHAR(64)</td><td></td><td>원본 파일 SHA-256(변조 감지)</td></tr><tr><td>optimized<em>file</em>hash</td><td>VARCHAR(64)</td><td></td><td>최적화 후 GLB SHA-256</td></tr><tr><td>tscn_path</td><td>VARCHAR(256)</td><td>NN</td><td>⚠️<strong>D27 마이그레이션 대기</strong> — Godot 잔재. D27 목표 = <code>gltf_path</code>(웹 런타임 <code>.glb</code>, 예 <code>frontend/public/assets/3d/&lt;name&gt;.glb</code> — 웹 서빙 규약) + 배경은 별도 렌더 산출(office<em>bg/depth). 정본 = 07-3d-visual-asset-pipeline·3d-design/asset-registry. 실측 <code>backend/app/models/tables.py:Asset</code>가 아직 <code>tscn_path</code>라 <strong>Alembic 마이그레이션(tscn</em>path→gltf_path) 필요</strong>.</td></tr><tr><td>source<em>glb</em>path</td><td>VARCHAR(256)</td><td></td><td>임포트 소스 glb(저장소 보관). D27: 아바타·소품 런타임 GLTF의 소스</td></tr><tr><td>file<em>size</em>bytes</td><td>BIGINT</td><td></td><td>산출물 크기(성능 예산 참고용, 런타임 다운로드 없음 — D8)</td></tr><tr><td>polygon_count</td><td>INT</td><td></td><td>LOD 0 삼각형 수. 05 performance 파생 계산의 정본 소스</td></tr><tr><td>texture_resolution</td><td>VARCHAR(20)</td><td></td><td>예: &quot;2048x2048&quot;</td></tr><tr><td>dimension</td><td>JSONB</td><td></td><td>실측 크기 {&quot;width&quot;,&quot;depth&quot;,&quot;height&quot;}(m). 05 좌석↔가구 정합·검증의 정본</td></tr><tr><td>footprint_2d</td><td>JSONB</td><td></td><td>편집기 도면용 2D 풋프린트 {&quot;width&quot;,&quot;depth&quot;}(m)</td></tr><tr><td>thumbnail_url</td><td>TEXT</td><td></td><td>편집기 팔레트 썸네일</td></tr><tr><td>used<em>in</em>scene</td><td>JSONB</td><td></td><td>[&quot;stage1<em>lobby&quot;, &quot;stage1</em>office&quot;] (사용 장면)</td></tr><tr><td>external_dependencies</td><td>TEXT</td><td></td><td>의존 에셋(예: materials/wood<em>floor</em>006)</td></tr><tr><td>notes</td><td>TEXT</td><td></td><td>비고</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td></td></tr><tr><td>deleted_at</td><td>TIMESTAMP</td><td>NULL</td><td>soft delete</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>asset_id</td>
+<td>VARCHAR(64)</td>
+<td>PK</td>
+<td>예: &quot;DESK_STANDARD_001&quot; (05 정본 명명. 버전은 asset 테이블·CHANGELOG로 관리)</td>
+</tr>
+<tr>
+<td>asset_name</td>
+<td>VARCHAR(256)</td>
+<td>NN</td>
+<td>&quot;Reception Desk&quot;</td>
+</tr>
+<tr>
+<td>asset_type</td>
+<td>VARCHAR(50)</td>
+<td>NN</td>
+<td>furniture | structure | material | ui3d | character | environment</td>
+</tr>
+<tr>
+<td>asset_category</td>
+<td>VARCHAR(100)</td>
+<td></td>
+<td>&quot;office&quot;, &quot;meeting-room&quot;, &quot;lounge&quot;, &quot;lobby&quot;</td>
+</tr>
+<tr>
+<td>source_url</td>
+<td>TEXT</td>
+<td></td>
+<td>원본 다운로드 URL(ambientCG, Poly Haven)</td>
+</tr>
+<tr>
+<td>author</td>
+<td>VARCHAR(256)</td>
+<td></td>
+<td>에셋 제작자</td>
+</tr>
+<tr>
+<td>license</td>
+<td>VARCHAR(100)</td>
+<td>NN</td>
+<td>CC0 | CC-BY | custom | proprietary</td>
+</tr>
+<tr>
+<td>license_url</td>
+<td>TEXT</td>
+<td></td>
+<td>라이선스 문서 링크</td>
+</tr>
+<tr>
+<td>downloaded_at</td>
+<td>TIMESTAMP</td>
+<td></td>
+<td>최초 획득 시각</td>
+</tr>
+<tr>
+<td>modified_by</td>
+<td>VARCHAR(256)</td>
+<td></td>
+<td>수정/가공 담당자</td>
+</tr>
+<tr>
+<td>commercial_allowed</td>
+<td>BOOLEAN</td>
+<td>DEFAULT TRUE</td>
+<td>상용 이용 가능</td>
+</tr>
+<tr>
+<td>attribution_required</td>
+<td>BOOLEAN</td>
+<td></td>
+<td>저작권 표시 필수</td>
+</tr>
+<tr>
+<td>redistribution_allowed</td>
+<td>BOOLEAN</td>
+<td></td>
+<td>재배포 허용</td>
+</tr>
+<tr>
+<td>original_file_hash</td>
+<td>VARCHAR(64)</td>
+<td></td>
+<td>원본 파일 SHA-256(변조 감지)</td>
+</tr>
+<tr>
+<td>optimized_file_hash</td>
+<td>VARCHAR(64)</td>
+<td></td>
+<td>최적화 후 GLB SHA-256</td>
+</tr>
+<tr>
+<td>tscn_path</td>
+<td>VARCHAR(256)</td>
+<td>NN</td>
+<td>⚠️<strong>D27 마이그레이션 대기</strong> — Godot 잔재. D27 목표 = <code>gltf_path</code>(웹 런타임 <code>.glb</code>, 예 <code>frontend/public/assets/3d/&lt;name&gt;.glb</code> — 웹 서빙 규약) + 배경은 별도 렌더 산출(office_bg/depth). 정본 = 07-3d-visual-asset-pipeline·3d-design/asset-registry. 실측 <code>backend/app/models/tables.py:Asset</code>가 아직 <code>tscn_path</code>라 <strong>Alembic 마이그레이션(tscn_path→gltf_path) 필요</strong>.</td>
+</tr>
+<tr>
+<td>source_glb_path</td>
+<td>VARCHAR(256)</td>
+<td></td>
+<td>임포트 소스 glb(저장소 보관). D27: 아바타·소품 런타임 GLTF의 소스</td>
+</tr>
+<tr>
+<td>file_size_bytes</td>
+<td>BIGINT</td>
+<td></td>
+<td>산출물 크기(성능 예산 참고용, 런타임 다운로드 없음 — D8)</td>
+</tr>
+<tr>
+<td>polygon_count</td>
+<td>INT</td>
+<td></td>
+<td>LOD 0 삼각형 수. 05 performance 파생 계산의 정본 소스</td>
+</tr>
+<tr>
+<td>texture_resolution</td>
+<td>VARCHAR(20)</td>
+<td></td>
+<td>예: &quot;2048x2048&quot;</td>
+</tr>
+<tr>
+<td>dimension</td>
+<td>JSONB</td>
+<td></td>
+<td>실측 크기 {&quot;width&quot;,&quot;depth&quot;,&quot;height&quot;}(m). 05 좌석↔가구 정합·검증의 정본</td>
+</tr>
+<tr>
+<td>footprint_2d</td>
+<td>JSONB</td>
+<td></td>
+<td>편집기 도면용 2D 풋프린트 {&quot;width&quot;,&quot;depth&quot;}(m)</td>
+</tr>
+<tr>
+<td>thumbnail_url</td>
+<td>TEXT</td>
+<td></td>
+<td>편집기 팔레트 썸네일</td>
+</tr>
+<tr>
+<td>used_in_scene</td>
+<td>JSONB</td>
+<td></td>
+<td>[&quot;stage1_lobby&quot;, &quot;stage1_office&quot;] (사용 장면)</td>
+</tr>
+<tr>
+<td>external_dependencies</td>
+<td>TEXT</td>
+<td></td>
+<td>의존 에셋(예: materials/wood_floor_006)</td>
+</tr>
+<tr>
+<td>notes</td>
+<td>TEXT</td>
+<td></td>
+<td>비고</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td></td>
+</tr>
+<tr>
+<td>deleted_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>soft delete</td>
+</tr>
+</tbody></table></div>
 <p><strong>PK</strong>: <code>asset_id</code></p>
 <p><strong>인덱스</strong>: <code>INDEX(asset_type, asset_category)</code>, <code>INDEX(license)</code></p>
 <p><strong>라이선스 준수</strong>: 배포 시 asset.attribution_required=true인 에셋은 ATTRIBUTION.md 자동 생성.</p>
 <hr>
 <h4 id="audit_log-감사-로그"><strong>audit_log</strong> (감사 로그)</h4>
 <p><strong>역할</strong>: 중요 엔티티 변경(좌석배정, 회의 생성, KPI 조정, 배포)의 감시. 컴플라이언스.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>user_id</td><td>BIGINT</td><td>FK, NULL</td><td>erp_user.id(행위자, null=시스템)</td></tr><tr><td>action</td><td>VARCHAR(100)</td><td>NN</td><td>&quot;seat<em>assigned&quot;, &quot;meeting</em>created&quot;, &quot;kpi<em>adjusted&quot;, &quot;layout</em>deployed&quot;</td></tr><tr><td>entity_type</td><td>VARCHAR(50)</td><td>NN</td><td>seat, meeting, kpi<em>result, office</em>layout</td></tr><tr><td>entity_id</td><td>VARCHAR(255)</td><td>NN</td><td>대상 엔티티 ID</td></tr><tr><td>old_value</td><td>JSONB</td><td>NULL</td><td>변경 전 값</td></tr><tr><td>new_value</td><td>JSONB</td><td>NULL</td><td>변경 후 값</td></tr><tr><td>ip_address</td><td>VARCHAR(45)</td><td></td><td>요청 IP(IPv4/IPv6)</td></tr><tr><td>user_agent</td><td>VARCHAR(500)</td><td></td><td>클라이언트 user-agent</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td>행위 시각(<strong>UTC 저장</strong>, 표시 시 KST 변환)</td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>: <code>user_id</code> → <code>erp_user(id)</code> (nullable, with ON DELETE SET NULL)</p>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>BIGINT</td>
+<td>FK, NULL</td>
+<td>erp_user.id(행위자, null=시스템)</td>
+</tr>
+<tr>
+<td>action</td>
+<td>VARCHAR(100)</td>
+<td>NN</td>
+<td>&quot;seat_assigned&quot;, &quot;meeting_created&quot;, &quot;kpi_adjusted&quot;, &quot;layout_deployed&quot;</td>
+</tr>
+<tr>
+<td>entity_type</td>
+<td>VARCHAR(50)</td>
+<td>NN</td>
+<td>seat, meeting, kpi_result, office_layout</td>
+</tr>
+<tr>
+<td>entity_id</td>
+<td>VARCHAR(255)</td>
+<td>NN</td>
+<td>대상 엔티티 ID</td>
+</tr>
+<tr>
+<td>old_value</td>
+<td>JSONB</td>
+<td>NULL</td>
+<td>변경 전 값</td>
+</tr>
+<tr>
+<td>new_value</td>
+<td>JSONB</td>
+<td>NULL</td>
+<td>변경 후 값</td>
+</tr>
+<tr>
+<td>ip_address</td>
+<td>VARCHAR(45)</td>
+<td></td>
+<td>요청 IP(IPv4/IPv6)</td>
+</tr>
+<tr>
+<td>user_agent</td>
+<td>VARCHAR(500)</td>
+<td></td>
+<td>클라이언트 user-agent</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td>행위 시각(<strong>UTC 저장</strong>, 표시 시 KST 변환)</td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: <code>user_id</code> → <code>erp_user(id)</code> (nullable, with ON DELETE SET NULL)</p>
 <p><strong>인덱스</strong>: <code>INDEX(user_id, created_at DESC)</code>, <code>INDEX(entity_type, entity_id)</code>, <code>INDEX(action, created_at DESC)</code></p>
 <p><strong>감시 대상 액션</strong>:</p>
-<ul><li>seat<em>assigned / seat</em>unassigned (좌석 배정)</li><li>meeting<em>created / meeting</em>updated / meeting_cancelled (회의)</li><li>recording<em>started / recording</em>stopped (회의 녹화 시작/중지 — D20-b)</li><li>kpi<em>adjusted (KPI 관리자 조정 — <code>admin_adjusted_score</code> 설정 시 <strong>자동 생성</strong>, D20 / OQ 종결) / kpi</em>finalized (KPI 확정) / kpi<em>objection</em>submitted (이의신청 접수)</li><li>office<em>layout</em>deployed (사무실 배치 배포)</li></ul>
+<ul>
+<li>seat_assigned / seat_unassigned (좌석 배정)</li>
+<li>meeting_created / meeting_updated / meeting_cancelled (회의)</li>
+<li>recording_started / recording_stopped (회의 녹화 시작/중지 — D20-b)</li>
+<li>kpi_adjusted (KPI 관리자 조정 — <code>admin_adjusted_score</code> 설정 시 <strong>자동 생성</strong>, D20 / OQ 종결) / kpi_finalized (KPI 확정) / kpi_objection_submitted (이의신청 접수)</li>
+<li>office_layout_deployed (사무실 배치 배포)</li>
+</ul>
 <p><strong>보존(D20-e)</strong>: audit_log는 <strong>5년 보존</strong> 후 파기/익명화한다.</p>
 <hr>
-<h2 id="3-상태-열거형enum-정의">3. 상태 &amp; 열거형(Enum) 정의</h2>
+<h2 id="3-상태--열거형enum-정의">3. 상태 &amp; 열거형(Enum) 정의</h2>
 <h3 id="31-presence-status">3.1 Presence Status</h3>
-<pre class="code lang-sql"><code>-- 7종 확정 (D13). GPS 기반 trip_moving/trip_arrived/returning 폐기(데스크톱에 GPS 없음)
+<pre class="code"><code>-- 7종 확정 (D13). GPS 기반 trip_moving/trip_arrived/returning 폐기(데스크톱에 GPS 없음)
 CREATE TYPE presence_status AS ENUM (
   'offline',        -- 로그아웃
   'online',         -- 앱 실행, 오피스 로그인
@@ -297,8 +2081,8 @@ online
   ├─→ away(무활동 5분 자동 전이) → 활동 재개 시 이전 상태 복귀
   └─→ external(외근/출장/재택 — 수동 전환) → 수동 해제 시 online</code></pre>
 <hr>
-<h3 id="32-seat-type-status">3.2 Seat Type &amp; Status</h3>
-<pre class="code lang-sql"><code>CREATE TYPE seat_type AS ENUM (
+<h3 id="32-seat-type--status">3.2 Seat Type &amp; Status</h3>
+<pre class="code"><code>CREATE TYPE seat_type AS ENUM (
   'fixed',     -- 고정 배치(팀 소속)
   'free',      -- 자율석(누구나 앉을 수 있음)
   'temp',      -- 임시석(게스트)
@@ -313,7 +2097,7 @@ CREATE TYPE seat_status AS ENUM (
 );</code></pre>
 <hr>
 <h3 id="33-meeting-status">3.3 Meeting Status</h3>
-<pre class="code lang-sql"><code>CREATE TYPE meeting_status AS ENUM (
+<pre class="code"><code>CREATE TYPE meeting_status AS ENUM (
   'scheduled',    -- 예정(미시작)
   'in_progress',  -- 진행 중
   'completed',    -- 완료
@@ -321,15 +2105,15 @@ CREATE TYPE seat_status AS ENUM (
 );</code></pre>
 <hr>
 <h3 id="34-office-layout-status">3.4 Office Layout Status</h3>
-<pre class="code lang-sql"><code>CREATE TYPE office_layout_status AS ENUM (
+<pre class="code"><code>CREATE TYPE office_layout_status AS ENUM (
   'draft',      -- 편집 중
   'validated',  -- 검증 완료(배포 대기)
   'deployed',   -- 라이브
   'archived'    -- 이전 버전(롤백 참고)
 );</code></pre>
 <hr>
-<h3 id="35-kpi-source-period-objection-d16">3.5 KPI Source · Period · Objection (D16)</h3>
-<pre class="code lang-sql"><code>CREATE TYPE kpi_source AS ENUM (
+<h3 id="35-kpi-source-·-period-·-objection-d16">3.5 KPI Source · Period · Objection (D16)</h3>
+<pre class="code"><code>CREATE TYPE kpi_source AS ENUM (
   'virtual_office'  -- 우리 플랫폼만(ERP developer_evaluations과는 독립)
 );
 
@@ -348,7 +2132,7 @@ CREATE TYPE kpi_objection_status AS ENUM (
 );</code></pre>
 <hr>
 <h3 id="36-erp-연동-role">3.6 ERP 연동 Role</h3>
-<pre class="code lang-sql"><code>CREATE TYPE erp_role AS ENUM (
+<pre class="code"><code>CREATE TYPE erp_role AS ENUM (
   'employee',     -- 일반 직원
   'leader',       -- 팀장
   'admin',        -- 관리자(회사 범위)
@@ -356,14 +2140,14 @@ CREATE TYPE kpi_objection_status AS ENUM (
 );</code></pre>
 <hr>
 <h3 id="37-org-group-type">3.7 Org Group Type</h3>
-<pre class="code lang-sql"><code>CREATE TYPE org_group_type AS ENUM (
+<pre class="code"><code>CREATE TYPE org_group_type AS ENUM (
   'division',    -- 본부
   'department',  -- 부서
   'part'         -- 파트
 );</code></pre>
 <hr>
 <h3 id="38-room-type">3.8 Room Type</h3>
-<pre class="code lang-sql"><code>CREATE TYPE room_type AS ENUM (
+<pre class="code"><code>CREATE TYPE room_type AS ENUM (
   'lobby',      -- 로비
   'meeting',    -- 회의실
   'lounge',     -- 라운지
@@ -372,14 +2156,14 @@ CREATE TYPE kpi_objection_status AS ENUM (
 );</code></pre>
 <hr>
 <h3 id="39-daily-status-push-target">3.9 Daily Status Push Target</h3>
-<pre class="code lang-sql"><code>CREATE TYPE daily_status_push_target AS ENUM (
+<pre class="code"><code>CREATE TYPE daily_status_push_target AS ENUM (
   'erp_daily_reports',   -- ERP POST /api/reports
   'erp_kpi_results'      -- ERP 신규 POST /api/kpi-results
 );</code></pre>
 <hr>
-<h2 id="4-핵심-인덱스-제약">4. 핵심 인덱스 &amp; 제약</h2>
+<h2 id="4-핵심-인덱스--제약">4. 핵심 인덱스 &amp; 제약</h2>
 <h3 id="41-성능-인덱스">4.1 성능 인덱스</h3>
-<pre class="code lang-sql"><code>-- erp_user 동기화 &amp; 조인
+<pre class="code"><code>-- erp_user 동기화 &amp; 조인
 CREATE INDEX idx_erp_user_company_email ON erp_user(company_id, email);
 CREATE INDEX idx_erp_user_team ON erp_user(erp_team_id);
 CREATE INDEX idx_erp_user_role ON erp_user(role);
@@ -412,7 +2196,7 @@ CREATE INDEX idx_audit_log_entity ON audit_log(entity_type, entity_id);
 CREATE INDEX idx_audit_log_action_time ON audit_log(action, created_at DESC);</code></pre>
 <hr>
 <h3 id="42-제약-조건">4.2 제약 조건</h3>
-<pre class="code lang-sql"><code>-- 고유성
+<pre class="code"><code>-- 고유성
 ALTER TABLE erp_user ADD CONSTRAINT uk_erp_user_email UNIQUE(company_id, email);
 ALTER TABLE seat ADD CONSTRAINT uk_seat_number UNIQUE(floor_id, seat_number) WHERE seat_number IS NOT NULL;
 ALTER TABLE team_zone ADD CONSTRAINT uk_team_zone_placement UNIQUE(erp_team_id, office_id, floor_id);
@@ -448,23 +2232,67 @@ ALTER TABLE user_team_history ADD CONSTRAINT ck_uth_dates CHECK (valid_to IS NUL
 <hr>
 <h3 id="43-데이터-타입-특수성">4.3 데이터 타입 특수성</h3>
 <p><strong>JSONB</strong> (동적 필드):</p>
-<ul><li>office_layout.json: 매우 크고 자주 변경 → JSONB로 인덱싱 가능 (GIN 인덱스)</li><li>seat<em>assignment</em>history.reason: 자유텍스트 또는 enum 분류?<ul><li>현재: VARCHAR(255) 단순화. 나중에 이유 분류 필요 시 enum 추가.</li></ul></li></ul>
+<ul>
+<li>office_layout.json: 매우 크고 자주 변경 → JSONB로 인덱싱 가능 (GIN 인덱스)</li>
+<li>seat_assignment_history.reason: 자유텍스트 또는 enum 분류?<ul>
+<li>현재: VARCHAR(255) 단순화. 나중에 이유 분류 필요 시 enum 추가.</li>
+</ul>
+</li>
+</ul>
 <p><strong>UUID vs BIGINT</strong>:</p>
-<ul><li>내부 엔티티(erp_user 제외): UUID (분산 생성 지원)</li><li>ERP 외래키: BIGINT (ERP users.id 타입 맞춤)</li></ul>
+<ul>
+<li>내부 엔티티(erp_user 제외): UUID (분산 생성 지원)</li>
+<li>ERP 외래키: BIGINT (ERP users.id 타입 맞춤)</li>
+</ul>
 <hr>
 <h2 id="5-office_layout-json-스키마">5. office_layout JSON 스키마</h2>
 <p><strong>참조</strong>: 별도 문서 05-office-layout-schema.md (정본)</p>
-<p>office<em>layout JSON의 상세 스키마(metadata, floor, dimensions, zones, rooms, seats, furniture, colliders, spawn</em>points, minimap 등)는 <strong>05-office-layout-schema.md</strong>에서 정의하며, 최상위에 modules 개념 없이 seats/furniture/colliders 등을 직접 배치합니다.</p>
+<p>office_layout JSON의 상세 스키마(metadata, floor, dimensions, zones, rooms, seats, furniture, colliders, spawn_points, minimap 등)는 <strong>05-office-layout-schema.md</strong>에서 정의하며, 최상위에 modules 개념 없이 seats/furniture/colliders 등을 직접 배치합니다.</p>
 <p>해당 문서에서 JSON 구조, 검증 규칙, Konva.js 호환성, 3D 좌표계를 참조하세요.</p>
 <hr>
 <h2 id="6-erp-읽기-전용-스키마참고">6. ERP 읽기 전용 스키마(참고)</h2>
 <p>우리는 다음 ERP 테이블을 <strong>read-only PostgreSQL 직접 접근</strong>으로 동기화:</p>
-<div class="table-wrap"><table><thead><tr><th>ERP 테이블</th><th>동기화 대상</th><th>접근 빈도</th></tr></thead><tbody><tr><td>users</td><td>erp_user</td><td>일일 1회 배치</td></tr><tr><td>teams</td><td>team_zone 매핑</td><td>일일 1회 배치</td></tr><tr><td>job_positions</td><td>erp<em>user.position</em>id</td><td>주간 1회 배치</td></tr><tr><td>attendances</td><td>근태 검증(EOD)</td><td>일일 EOD</td></tr><tr><td>leaves</td><td>휴가 판정(presence 상태)</td><td>일일 EOD</td></tr><tr><td>daily_reports</td><td>(읽기, 중복 방지)</td><td>필요시</td></tr></tbody></table></div>
-<p><strong>인증</strong>: 사내망 동일 DB, 읽기 전용 계정(read<em>only</em>user@localhost).</p>
+<div class="table-wrap"><table><thead><tr>
+<th>ERP 테이블</th>
+<th>동기화 대상</th>
+<th>접근 빈도</th>
+</tr>
+</thead><tbody><tr>
+<td>users</td>
+<td>erp_user</td>
+<td>일일 1회 배치</td>
+</tr>
+<tr>
+<td>teams</td>
+<td>team_zone 매핑</td>
+<td>일일 1회 배치</td>
+</tr>
+<tr>
+<td>job_positions</td>
+<td>erp_user.position_id</td>
+<td>주간 1회 배치</td>
+</tr>
+<tr>
+<td>attendances</td>
+<td>근태 검증(EOD)</td>
+<td>일일 EOD</td>
+</tr>
+<tr>
+<td>leaves</td>
+<td>휴가 판정(presence 상태)</td>
+<td>일일 EOD</td>
+</tr>
+<tr>
+<td>daily_reports</td>
+<td>(읽기, 중복 방지)</td>
+<td>필요시</td>
+</tr>
+</tbody></table></div>
+<p><strong>인증</strong>: 사내망 동일 DB, 읽기 전용 계정(read_only_user@localhost).</p>
 <p><strong>마이그레이션</strong>: ERP dev 브랜치(feature/virtual-office-integration)에서만.</p>
 <hr>
 <h2 id="7-데이터-무결성-전략">7. 데이터 무결성 전략</h2>
-<h3 id="71-ttl-보관-정책-d20-ae">7.1 TTL &amp; 보관 정책 (D20-a·e)</h3>
+<h3 id="71-ttl--보관-정책-d20-a·e">7.1 TTL &amp; 보관 정책 (D20-a·e)</h3>
 <pre class="code"><code>- presence 상태: 5분 무활동 → offline (설정 가능)
 - presence 좌표(x,y): KPI 산출에 미사용. 보존 30일 후 삭제(D20-a)
 - 회의 recording_url(녹화 원본): 보존 90일 후 파기(D20-b). 회의록 텍스트는 평가 데이터로 관리
@@ -473,13 +2301,16 @@ ALTER TABLE user_team_history ADD CONSTRAINT ck_uth_dates CHECK (valid_to IS NUL
 - kpi_result: 평가 데이터 → 5년 보존 후 파기/익명화(D20-e, &quot;영구 보관&quot; 폐기)
 - audit_log: 5년 보관(D20-e, 기존 1년에서 상향)</code></pre>
 <p><strong>개인정보·노동 컴플라이언스(D20)</strong>: 근로자 모니터링 항목·목적·보존기간을 서면 고지·동의 취득한다. presence 좌표는 KPI에 미사용하며 30일 후 삭제한다. 외부 AI(Claude API) 전송 시 실명→사번 가명화 후 전송하고 처리위탁·국외이전을 문서화한다(08-kpi-logic.md §7 참조). GPS 수집 기능은 폐기(D20-c).</p>
-<h3 id="72-동기화-충돌-해결-d18-확정">7.2 동기화 충돌 해결 (D18 — 확정)</h3>
+<h3 id="72-동기화-충돌-해결-d18--확정">7.2 동기화 충돌 해결 (D18 — 확정)</h3>
 <p><strong>시나리오</strong>: ERP에서 user 삭제 → 우리 DB의 erp_user는?</p>
-<ul><li><strong>확정(D18)</strong>: <strong>soft-delete</strong>. 매일 00:00 KST 전체 대사에서 ERP 하드 삭제를 감지하면 <code>erp_user.is_active=false</code>로 표시(물리 삭제·CASCADE 금지). 평가 기록(kpi<em>result·work</em>log·daily<em>status</em>push)의 FK는 RESTRICT이므로 연쇄 삭제되지 않고 영구 보존된다.</li><li>재활성화: ERP에 동일 id가 재등장하면 <code>is_active=true</code>로 복원.</li></ul>
+<ul>
+<li><strong>확정(D18)</strong>: <strong>soft-delete</strong>. 매일 00:00 KST 전체 대사에서 ERP 하드 삭제를 감지하면 <code>erp_user.is_active=false</code>로 표시(물리 삭제·CASCADE 금지). 평가 기록(kpi_result·work_log·daily_status_push)의 FK는 RESTRICT이므로 연쇄 삭제되지 않고 영구 보존된다.</li>
+<li>재활성화: ERP에 동일 id가 재등장하면 <code>is_active=true</code>로 복원.</li>
+</ul>
 <hr>
-<h2 id="8-보안-컴플라이언스">8. 보안 &amp; 컴플라이언스</h2>
+<h2 id="8-보안--컴플라이언스">8. 보안 &amp; 컴플라이언스</h2>
 <h3 id="81-접근-제어">8.1 접근 제어</h3>
-<pre class="code lang-sql"><code>-- 서비스계정(ERP 연동용)
+<pre class="code"><code>-- 서비스계정(ERP 연동용)
 CREATE ROLE svc_virtual_office WITH LOGIN PASSWORD '***';
 GRANT SELECT ON erp_user, job_positions TO svc_virtual_office;
 GRANT INSERT, UPDATE ON kpi_result, daily_status_push TO svc_virtual_office;
@@ -506,39 +2337,134 @@ GRANT SELECT ON presence, seat TO colyseus_server;
 GRANT SELECT ON office, floor, room TO colyseus_server;</code></pre>
 <blockquote><strong>컬럼명 정정</strong>: 이전 문서의 <code>admin_adjusted_value</code>는 정본 스키마에서 <code>admin_adjusted_score</code>이다(§2.5 kpi_result 참조). 조정 여부는 별도 boolean 없이 <code>admin_adjusted_score IS NOT NULL</code>로 판정한다.</blockquote>
 <h3 id="82-데이터-민감도">8.2 데이터 민감도</h3>
-<ul><li>위치정보(presence.x, y): 인증된 내부 기능 전용(공개/외부 연동 API 미노출), 30일 후 삭제(D20-a)</li><li>개인평가(kpi<em>result.ai</em>draft): 본인 + 담당 관리자만 열람</li><li>급여/휴가: 미포함(ERP leaves는 참조만, 우리 DB에 사본 불가)</li><li>외부 AI 전송: 실명 대신 사번 가명화(D20-d)</li></ul>
+<ul>
+<li>위치정보(presence.x, y): 인증된 내부 기능 전용(공개/외부 연동 API 미노출), 30일 후 삭제(D20-a)</li>
+<li>개인평가(kpi_result.ai_draft): 본인 + 담당 관리자만 열람</li>
+<li>급여/휴가: 미포함(ERP leaves는 참조만, 우리 DB에 사본 불가)</li>
+<li>외부 AI 전송: 실명 대신 사번 가명화(D20-d)</li>
+</ul>
 <hr>
-<h2 id="9-마이그레이션-배포">9. 마이그레이션 &amp; 배포</h2>
+<h2 id="9-마이그레이션--배포">9. 마이그레이션 &amp; 배포</h2>
 <h3 id="91-alembic-마이그레이션">9.1 Alembic 마이그레이션</h3>
-<pre class="code lang-bash"><code>alembic init alembic/
+<pre class="code"><code>alembic init alembic/
 alembic revision -m &quot;init_virtual_office_schema&quot;
 alembic upgrade head</code></pre>
 <h3 id="92-초기화-시퀀스">9.2 초기화 시퀀스</h3>
-<ol><li>PostgreSQL 17.5 생성 (사내 DBA)</li><li>스키마 마이그레이션 (Alembic)</li><li>ERP 읽기 계정 생성 + 권한 부여</li><li>초기 erp_user 동기화(ERP 직원 일괄 import)</li><li>office, floor, team_zone 수동 초기화</li><li>office_layout v1 배포 준비</li></ol>
+<ol>
+<li>PostgreSQL 17.5 생성 (사내 DBA)</li>
+<li>스키마 마이그레이션 (Alembic)</li>
+<li>ERP 읽기 계정 생성 + 권한 부여</li>
+<li>초기 erp_user 동기화(ERP 직원 일괄 import)</li>
+<li>office, floor, team_zone 수동 초기화</li>
+<li>office_layout v1 배포 준비</li>
+</ol>
 <h3 id="93-데이터-검증">9.3 데이터 검증</h3>
-<pre class="code lang-sql"><code>-- 마이그레이션 후 검증 쿼리
+<pre class="code"><code>-- 마이그레이션 후 검증 쿼리
 SELECT COUNT(*) FROM erp_user; -- &gt; 0?
 SELECT COUNT(*) FROM office; -- &gt;= 1?
 SELECT COUNT(*) FROM seat WHERE assigned_user_id IS NULL; -- available 좌석?
 SELECT COUNT(*) FROM presence; -- 0 (시스템 가동 전)?</code></pre>
 <hr>
 <h2 id="27-공지사항-계층-d27-신설">2.7 공지사항 계층 (D27 신설)</h2>
-<blockquote><strong>신설 배경</strong>: D27 포토리얼 웹임베드 전환에 따라 통합 대시보드 시안의 우측 패널에 <strong>공지사항(announcement)</strong> 리소스가 확정됨 (16-render-spike-and-roadmap.md §B.2 &quot;공지 리소스&quot; 명시). 관리자가 시스템·운영 공지를 게시하고 전 직원이 대시보드 우측 패널에서 확인하는 기능.  ⚠ <strong>구현 정합 (2026-07-13, v1.4)</strong>: 실제 테이블명은 <strong><code>notice</code></strong>(tables.py)이며 본 절과 다음이 다르다 — ① company<em>id 없음(단일 조직 전제, directory.py와 동일), ② body NULL 허용, ③ author</em>user<em>id 대신 표시명 <code>author</code>(문자열) + 실제 작성자 추적 <code>created_by</code>(FK SET NULL) 2필드 체계. API는 게시/수정/삭제 모두 구현되고 audit</em>log(announcement_published/updated/deleted) 기록됨. 멀티테넌트 전환 시 본 절 스키마로 마이그레이션 예정 — 그 전까지 구현 정본은 tables.py.</blockquote>
+<blockquote><p><strong>신설 배경</strong>: D27 포토리얼 웹임베드 전환에 따라 통합 대시보드 시안의 우측 패널에 <strong>공지사항(announcement)</strong> 리소스가 확정됨 (16-render-spike-and-roadmap.md §B.2 &quot;공지 리소스&quot; 명시). 관리자가 시스템·운영 공지를 게시하고 전 직원이 대시보드 우측 패널에서 확인하는 기능.</p>
+<p>⚠ <strong>구현 정합 (2026-07-13, v1.4)</strong>: 실제 테이블명은 <strong><code>notice</code></strong>(tables.py)이며 본 절과 다음이 다르다 — ① company_id 없음(단일 조직 전제, directory.py와 동일), ② body NULL 허용, ③ author_user_id 대신 표시명 <code>author</code>(문자열) + 실제 작성자 추적 <code>created_by</code>(FK SET NULL) 2필드 체계. API는 게시/수정/삭제 모두 구현되고 audit_log(announcement_published/updated/deleted) 기록됨. 멀티테넌트 전환 시 본 절 스키마로 마이그레이션 예정 — 그 전까지 구현 정본은 tables.py.</p>
+</blockquote>
 <h4 id="announcement-공지사항"><strong>announcement</strong> (공지사항)</h4>
 <p><strong>역할</strong>: 관리자가 작성한 회사 공지·시스템 안내를 전 직원에게 게시. 통합 대시보드 우측 패널에 표시. 카테고리별 분류 및 핀(상단 고정) 지원.</p>
-<div class="table-wrap"><table><thead><tr><th>필드</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>company_id</td><td>INTEGER</td><td>NN</td><td>테넌트 스코프 값 (ERP company_id와 동일 값, FK 아님)</td></tr><tr><td>title</td><td>VARCHAR(255)</td><td>NN</td><td>공지 제목</td></tr><tr><td>body</td><td>TEXT</td><td>NN</td><td>공지 본문(마크다운 허용)</td></tr><tr><td>category</td><td>ENUM</td><td>NN, DEFAULT 'notice'</td><td><code>system</code> | <code>notice</code> | <code>info</code> — system: 시스템·장애 안내, notice: 운영 공지, info: 일반 정보</td></tr><tr><td>pinned</td><td>BOOLEAN</td><td>NN, DEFAULT FALSE</td><td>우측 패널 최상단 고정 여부</td></tr><tr><td>author<em>user</em>id</td><td>BIGINT</td><td>FK, NN</td><td>erp_user.id (작성자)</td></tr><tr><td>published_at</td><td>TIMESTAMP</td><td>NULL</td><td>게시 예약 시각(NULL = 즉시 게시, UTC 저장)</td></tr><tr><td>expires_at</td><td>TIMESTAMP</td><td>NULL</td><td>게시 만료 시각(NULL = 무기한, UTC 저장)</td></tr><tr><td>created_at</td><td>TIMESTAMP</td><td>NN</td><td>생성 시각(UTC)</td></tr><tr><td>updated_at</td><td>TIMESTAMP</td><td>NN</td><td>수정 시각(UTC)</td></tr></tbody></table></div>
-<p><strong>PK</strong>: <code>id</code> <strong>FK</strong>: <code>author_user_id</code> → <code>erp_user(id)</code> (ON DELETE RESTRICT — 공지 이력 보존) <strong>인덱스</strong>:</p>
-<ul><li><code>INDEX(company_id, published_at DESC)</code> (전사 공지 최신순 조회)</li><li><code>INDEX(category, pinned, published_at DESC)</code> (카테고리+핀 필터)</li><li><code>INDEX(expires_at)</code> (만료 공지 정리 배치용)</li></ul>
+<div class="table-wrap"><table><thead><tr>
+<th>필드</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>company_id</td>
+<td>INTEGER</td>
+<td>NN</td>
+<td>테넌트 스코프 값 (ERP company_id와 동일 값, FK 아님)</td>
+</tr>
+<tr>
+<td>title</td>
+<td>VARCHAR(255)</td>
+<td>NN</td>
+<td>공지 제목</td>
+</tr>
+<tr>
+<td>body</td>
+<td>TEXT</td>
+<td>NN</td>
+<td>공지 본문(마크다운 허용)</td>
+</tr>
+<tr>
+<td>category</td>
+<td>ENUM</td>
+<td>NN, DEFAULT &#39;notice&#39;</td>
+<td><code>system</code> | <code>notice</code> | <code>info</code> — system: 시스템·장애 안내, notice: 운영 공지, info: 일반 정보</td>
+</tr>
+<tr>
+<td>pinned</td>
+<td>BOOLEAN</td>
+<td>NN, DEFAULT FALSE</td>
+<td>우측 패널 최상단 고정 여부</td>
+</tr>
+<tr>
+<td>author_user_id</td>
+<td>BIGINT</td>
+<td>FK, NN</td>
+<td>erp_user.id (작성자)</td>
+</tr>
+<tr>
+<td>published_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>게시 예약 시각(NULL = 즉시 게시, UTC 저장)</td>
+</tr>
+<tr>
+<td>expires_at</td>
+<td>TIMESTAMP</td>
+<td>NULL</td>
+<td>게시 만료 시각(NULL = 무기한, UTC 저장)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td>생성 시각(UTC)</td>
+</tr>
+<tr>
+<td>updated_at</td>
+<td>TIMESTAMP</td>
+<td>NN</td>
+<td>수정 시각(UTC)</td>
+</tr>
+</tbody></table></div>
+<p><strong>PK</strong>: <code>id</code><br><strong>FK</strong>: <code>author_user_id</code> → <code>erp_user(id)</code> (ON DELETE RESTRICT — 공지 이력 보존)<br><strong>인덱스</strong>:</p>
+<ul>
+<li><code>INDEX(company_id, published_at DESC)</code> (전사 공지 최신순 조회)</li>
+<li><code>INDEX(category, pinned, published_at DESC)</code> (카테고리+핀 필터)</li>
+<li><code>INDEX(expires_at)</code> (만료 공지 정리 배치용)</li>
+</ul>
 <p><strong>category ENUM</strong>:</p>
-<pre class="code lang-sql"><code>CREATE TYPE announcement_category AS ENUM (
+<pre class="code"><code>CREATE TYPE announcement_category AS ENUM (
   'system',   -- 시스템·장애·점검 안내 (관리자 전용 게시)
   'notice',   -- 운영 공지 (휴일·이벤트·규정 변경 등)
   'info'      -- 일반 정보 (팁·뉴스레터 등)
 );</code></pre>
 <p><strong>게시 정책</strong>:</p>
-<ul><li><code>published_at IS NULL</code> 또는 <code>published_at &lt;= NOW()</code> → 활성 공지</li><li><code>expires_at IS NOT NULL AND expires_at &lt; NOW()</code> → 만료 공지(목록에서 제외, 관리자 콘솔에서 조회 가능)</li><li><code>pinned = TRUE</code> 공지는 우측 패널 상단 우선 노출, 복수 개 핀 허용</li><li>작성·수정·삭제는 <code>role IN ('admin', 'super_admin')</code> 제한 (애플리케이션 레이어 검사)</li></ul>
+<ul>
+<li><code>published_at IS NULL</code> 또는 <code>published_at &lt;= NOW()</code> → 활성 공지</li>
+<li><code>expires_at IS NOT NULL AND expires_at &lt; NOW()</code> → 만료 공지(목록에서 제외, 관리자 콘솔에서 조회 가능)</li>
+<li><code>pinned = TRUE</code> 공지는 우측 패널 상단 우선 노출, 복수 개 핀 허용</li>
+<li>작성·수정·삭제는 <code>role IN (&#39;admin&#39;, &#39;super_admin&#39;)</code> 제한 (애플리케이션 레이어 검사)</li>
+</ul>
 <p><strong>SQLAlchemy 모델 관례</strong>:</p>
-<pre class="code lang-python"><code>class Announcement(Base):
+<pre class="code"><code>class Announcement(Base):
     __tablename__ = &quot;announcement&quot;
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -556,54 +2482,239 @@ SELECT COUNT(*) FROM presence; -- 0 (시스템 가동 전)?</code></pre>
     updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
 
     author: Mapped[&quot;ErpUser&quot;] = relationship(&quot;ErpUser&quot;, foreign_keys=[author_user_id])</code></pre>
-<p><strong>감사 대상</strong>: 공지 게시·수정·삭제는 audit_log(<code>action='announcement_published'</code> / <code>'announcement_updated'</code> / <code>'announcement_deleted'</code>) 기록 대상.</p>
+<p><strong>감사 대상</strong>: 공지 게시·수정·삭제는 audit_log(<code>action=&#39;announcement_published&#39;</code> / <code>&#39;announcement_updated&#39;</code> / <code>&#39;announcement_deleted&#39;</code>) 기록 대상.</p>
 <p><strong>보존</strong>: 만료 공지는 소프트 방식으로 보존(물리 삭제 금지). 관리자 콘솔에서 archive 조회 가능.</p>
 <hr>
-<h2 id="28-출장보고서커뮤니케이션-계층-2026-07-13-신설-06-2-좌내비-메뉴-구현분">2.8 출장·보고서·커뮤니케이션 계층 (2026-07-13 신설 — 06 §2 좌내비 메뉴 구현분)</h2>
+<h2 id="28-출장·보고서·커뮤니케이션-계층-2026-07-13-신설--06-§2-좌내비-메뉴-구현분">2.8 출장·보고서·커뮤니케이션 계층 (2026-07-13 신설 — 06 §2 좌내비 메뉴 구현분)</h2>
 <blockquote>구현 정본: <code>backend/app/models/tables.py</code>. 화면 스펙: 06-screens §3.15~§3.17.</blockquote>
-<h3 id="business_trip-출장-신청승인">business_trip — 출장 신청·승인</h3>
-<div class="table-wrap"><table><thead><tr><th>컬럼</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>user_id</td><td>BIGINT</td><td>FK erp_user.id RESTRICT, NN</td><td>신청자 (근태 이력 보존)</td></tr><tr><td>destination</td><td>VARCHAR(255)</td><td>NN</td><td>출장지</td></tr><tr><td>purpose</td><td>VARCHAR(500)</td><td>NN</td><td>목적</td></tr><tr><td>start<em>date / end</em>date</td><td>DATE</td><td>NN, end≥start(앱 검증)</td><td>기간</td></tr><tr><td>status</td><td>ENUM</td><td>NN, requested|approved|rejected|cancelled|completed</td><td>상태머신 §아래</td></tr><tr><td>note / report</td><td>TEXT</td><td>NULL</td><td>비고 / 완료 결과보고</td></tr><tr><td>approver_id</td><td>BIGINT</td><td>FK erp_user.id SET NULL</td><td>승인/반려 처리자</td></tr><tr><td>decided_at</td><td>TIMESTAMPTZ</td><td>NULL</td><td>처리 시각 (UTC, D19)</td></tr><tr><td>reject_reason</td><td>VARCHAR(500)</td><td>NULL</td><td>반려 사유</td></tr></tbody></table></div>
-<p>상태머신: requested → approved/rejected(leader/admin/super<em>admin) · requested/approved → cancelled(본인) · approved → completed(본인, report 필수). 처리된 건 DELETE 불가(409, D18 준용). 인덱스: (user</em>id,start<em>date), (status,start</em>date).</p>
-<h3 id="report-업무-보고서-일일주간월간-수기">report — 업무 보고서 (일일/주간/월간, 수기)</h3>
-<div class="table-wrap"><table><thead><tr><th>컬럼</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>user_id</td><td>BIGINT</td><td>FK erp_user.id RESTRICT, NN</td><td>작성자</td></tr><tr><td>report_type</td><td>ENUM</td><td>NN, daily|weekly|monthly</td><td></td></tr><tr><td>report_date</td><td>DATE</td><td>NN</td><td>기준일</td></tr><tr><td>title</td><td>VARCHAR(255) / content TEXT</td><td>NN</td><td></td></tr><tr><td>status</td><td>ENUM</td><td>NN, draft|submitted</td><td>submitted 후 불변</td></tr><tr><td>submitted_at</td><td>TIMESTAMPTZ</td><td>NULL</td><td>제출 시각</td></tr></tbody></table></div>
+<h3 id="business_trip--출장-신청·승인">business_trip — 출장 신청·승인</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>컬럼</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>BIGINT</td>
+<td>FK erp_user.id RESTRICT, NN</td>
+<td>신청자 (근태 이력 보존)</td>
+</tr>
+<tr>
+<td>destination</td>
+<td>VARCHAR(255)</td>
+<td>NN</td>
+<td>출장지</td>
+</tr>
+<tr>
+<td>purpose</td>
+<td>VARCHAR(500)</td>
+<td>NN</td>
+<td>목적</td>
+</tr>
+<tr>
+<td>start_date / end_date</td>
+<td>DATE</td>
+<td>NN, end≥start(앱 검증)</td>
+<td>기간</td>
+</tr>
+<tr>
+<td>status</td>
+<td>ENUM</td>
+<td>NN, requested|approved|rejected|cancelled|completed</td>
+<td>상태머신 §아래</td>
+</tr>
+<tr>
+<td>note / report</td>
+<td>TEXT</td>
+<td>NULL</td>
+<td>비고 / 완료 결과보고</td>
+</tr>
+<tr>
+<td>approver_id</td>
+<td>BIGINT</td>
+<td>FK erp_user.id SET NULL</td>
+<td>승인/반려 처리자</td>
+</tr>
+<tr>
+<td>decided_at</td>
+<td>TIMESTAMPTZ</td>
+<td>NULL</td>
+<td>처리 시각 (UTC, D19)</td>
+</tr>
+<tr>
+<td>reject_reason</td>
+<td>VARCHAR(500)</td>
+<td>NULL</td>
+<td>반려 사유</td>
+</tr>
+</tbody></table></div>
+<p>상태머신: requested → approved/rejected(leader/admin/super_admin) · requested/approved → cancelled(본인) · approved → completed(본인, report 필수). 처리된 건 DELETE 불가(409, D18 준용). 인덱스: (user_id,start_date), (status,start_date).</p>
+<h3 id="report--업무-보고서-일일주간월간-수기">report — 업무 보고서 (일일/주간/월간, 수기)</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>컬럼</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>BIGINT</td>
+<td>FK erp_user.id RESTRICT, NN</td>
+<td>작성자</td>
+</tr>
+<tr>
+<td>report_type</td>
+<td>ENUM</td>
+<td>NN, daily|weekly|monthly</td>
+<td></td>
+</tr>
+<tr>
+<td>report_date</td>
+<td>DATE</td>
+<td>NN</td>
+<td>기준일</td>
+</tr>
+<tr>
+<td>title</td>
+<td>VARCHAR(255) / content TEXT</td>
+<td>NN</td>
+<td></td>
+</tr>
+<tr>
+<td>status</td>
+<td>ENUM</td>
+<td>NN, draft|submitted</td>
+<td>submitted 후 불변</td>
+</tr>
+<tr>
+<td>submitted_at</td>
+<td>TIMESTAMPTZ</td>
+<td>NULL</td>
+<td>제출 시각</td>
+</tr>
+</tbody></table></div>
 <p>draft에서만 수정·삭제. ⚠ 06 §3.6의 &quot;주간/월간 자동 집계 리포트&quot;(work_log 집계·CSV)와는 별개 리소스 — 자동 집계 리포트는 후속 과제(06 §3.16 참조).</p>
-<h3 id="chat_message-커뮤니케이션-채널-메시지">chat_message — 커뮤니케이션 채널 메시지</h3>
-<div class="table-wrap"><table><thead><tr><th>컬럼</th><th>타입</th><th>제약</th><th>설명</th></tr></thead><tbody><tr><td>id</td><td>UUID</td><td>PK</td><td></td></tr><tr><td>channel</td><td>VARCHAR(50)</td><td>NN, IDX</td><td>'general' | 'team:{erp<em>team</em>id}' (테이블 없이 키 파생)</td></tr><tr><td>user_id</td><td>BIGINT</td><td>FK erp_user.id RESTRICT, NN</td><td>발신자</td></tr><tr><td>content</td><td>TEXT</td><td>NN, 1~2000자(앱 검증)</td><td>불변(수정·삭제 없음)</td></tr><tr><td>created_at</td><td>TIMESTAMPTZ</td><td>NN, IDX</td><td>UTC</td></tr></tbody></table></div>
+<h3 id="chat_message--커뮤니케이션-채널-메시지">chat_message — 커뮤니케이션 채널 메시지</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>컬럼</th>
+<th>타입</th>
+<th>제약</th>
+<th>설명</th>
+</tr>
+</thead><tbody><tr>
+<td>id</td>
+<td>UUID</td>
+<td>PK</td>
+<td></td>
+</tr>
+<tr>
+<td>channel</td>
+<td>VARCHAR(50)</td>
+<td>NN, IDX</td>
+<td>&#39;general&#39; | &#39;team:{erp_team_id}&#39; (테이블 없이 키 파생)</td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>BIGINT</td>
+<td>FK erp_user.id RESTRICT, NN</td>
+<td>발신자</td>
+</tr>
+<tr>
+<td>content</td>
+<td>TEXT</td>
+<td>NN, 1~2000자(앱 검증)</td>
+<td>불변(수정·삭제 없음)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>TIMESTAMPTZ</td>
+<td>NN, IDX</td>
+<td>UTC</td>
+</tr>
+</tbody></table></div>
 <p>접근: general=전 직원, team:{id}=팀원 또는 admin/super_admin. ⚠ 기획 원칙(06 §2: &quot;회의 메모·근접 DM 수준, 본격 채팅은 Phase 7&quot;)보다 앞선 구현 — 스코프 결정 기록은 06 §3.17 참조.</p>
 <h3 id="기존-문서와의-정합-정정-v14">기존 문서와의 정합 정정 (v1.4)</h3>
-<ul><li><strong>work_log</strong>: <code>completed_at TIMESTAMPTZ NULL</code> 컬럼 추가 등재(D14-a 완료 전환 시각), status enum에 <code>aborted</code> 추가(06 §3.6 정본 반영).</li><li><strong>meeting</strong>: <code>duration_minutes INTEGER NN DEFAULT 60</code> 추가 등재 — D23 시간대 겹침 충돌검사 기준([scheduled_at, +duration) 반개구간).</li><li><strong>org<em>group.company</em>id / office.company<em>id</strong>: UUID로 잘못 구현되어 있던 것을 v1.2 정본(INTEGER, erp</em>user.company_id 동일)으로 구현 정정 완료(2026-07-13).</li><li><strong>kpi<em>result.ai</em>model 기본값</strong>: 구현은 <code>'mock'</code>(NVIDIA 미설정 시) — v1.3의 'claude-opus' 표기는 D-NVIDIA 전환으로 폐기.</li><li><strong>asset.tscn_path 마이그레이션 노트</strong>: 구현은 이미 <code>gltf_path</code> 전환 완료 — §2.6 경고 문구는 스테일(해소됨).</li><li><strong>미등재 보조 테이블 3종 등재</strong>: <code>recording_consent</code>(D20-b 녹음/STT 동의, meeting<em>id+user</em>id+consent<em>type 업서트), <code>erp_sync_log</code>(동기화 이력·실패 추적), <code>user_avatar</code>(user</em>id PK 1:1, 프리셋+색상+이름표) — 상세는 tables.py 참조.</li><li><strong>erp<em>user.password</em>hash</strong>: dev/도그푸딩 로컬 인증 전용 컬럼(ERP 동기화 무관). 운영 전 제거 또는 별도 자격증명 테이블 분리 검토(D20-f).</li></ul>
+<ul>
+<li><strong>work_log</strong>: <code>completed_at TIMESTAMPTZ NULL</code> 컬럼 추가 등재(D14-a 완료 전환 시각), status enum에 <code>aborted</code> 추가(06 §3.6 정본 반영).</li>
+<li><strong>meeting</strong>: <code>duration_minutes INTEGER NN DEFAULT 60</code> 추가 등재 — D23 시간대 겹침 충돌검사 기준([scheduled_at, +duration) 반개구간).</li>
+<li><strong>org_group.company_id / office.company_id</strong>: UUID로 잘못 구현되어 있던 것을 v1.2 정본(INTEGER, erp_user.company_id 동일)으로 구현 정정 완료(2026-07-13).</li>
+<li><strong>kpi_result.ai_model 기본값</strong>: 구현은 <code>&#39;mock&#39;</code>(NVIDIA 미설정 시) — v1.3의 &#39;claude-opus&#39; 표기는 D-NVIDIA 전환으로 폐기.</li>
+<li><strong>asset.tscn_path 마이그레이션 노트</strong>: 구현은 이미 <code>gltf_path</code> 전환 완료 — §2.6 경고 문구는 스테일(해소됨).</li>
+<li><strong>미등재 보조 테이블 3종 등재</strong>: <code>recording_consent</code>(D20-b 녹음/STT 동의, meeting_id+user_id+consent_type 업서트), <code>erp_sync_log</code>(동기화 이력·실패 추적), <code>user_avatar</code>(user_id PK 1:1, 프리셋+색상+이름표) — 상세는 tables.py 참조.</li>
+<li><strong>erp_user.password_hash</strong>: dev/도그푸딩 로컬 인증 전용 컬럼(ERP 동기화 무관). 운영 전 제거 또는 별도 자격증명 테이블 분리 검토(D20-f).</li>
+</ul>
 <hr>
 <h2 id="loop-metadata">Loop Metadata</h2>
 <h3 id="upstream-documents-referenced">Upstream Documents Referenced</h3>
-<ul><li><strong>01-prd.md</strong>: 제품 요구사항, KPI 정의</li><li><strong>11-tech-stack.md</strong>: 기술 선택(PostgreSQL 17.5, FastAPI)</li><li><strong>03-erp-integration.md</strong>: ERP 연동 계약(읽기/쓰기 엔드포인트)</li><li><strong>05-office-layout-schema.md</strong>: office_layout JSON 스키마 상세</li></ul>
+<ul>
+<li><strong>01-prd.md</strong>: 제품 요구사항, KPI 정의</li>
+<li><strong>11-tech-stack.md</strong>: 기술 선택(PostgreSQL 17.5, FastAPI)</li>
+<li><strong>03-erp-integration.md</strong>: ERP 연동 계약(읽기/쓰기 엔드포인트)</li>
+<li><strong>05-office-layout-schema.md</strong>: office_layout JSON 스키마 상세</li>
+</ul>
 <h3 id="downstream-documents-affected">Downstream Documents Affected</h3>
-<ul><li><strong>08-kpi-logic.md</strong>: KPI 산출 로직(work<em>log → kpi</em>result)</li><li><strong>DB 초기화 스크립트</strong>: seed_data.sql (office, room, seat 샘플)</li></ul>
+<ul>
+<li><strong>08-kpi-logic.md</strong>: KPI 산출 로직(work_log → kpi_result)</li>
+<li><strong>DB 초기화 스크립트</strong>: seed_data.sql (office, room, seat 샘플)</li>
+</ul>
 <h3 id="open-questions">Open Questions</h3>
-<ol><li><del><strong>ERP user 삭제 시 처리</strong></del> → <strong>종결(D18)</strong>: soft-delete(<code>is_active=false</code>) 확정, 평가 계층 FK는 RESTRICT.</li><li><strong>presence TTL</strong>: 5분 무활동 → offline 자동(D13, 설정 가능 기본값). 좌표는 30일 후 삭제(D20-a).</li><li><strong>좌석 배정 이력 보관 기간</strong>: 평가 데이터 5년 보존 기준에 맞춤(D20-e).</li><li><del><strong>KPI 수정 감시</strong></del> → <strong>종결(D20)</strong>: <code>admin_adjusted_score</code> 설정 시 audit_log(<code>kpi_adjusted</code>) 자동 생성.</li><li><strong>최적화</strong>: presence.updated_at 고빈도 쓰기 → 파티셔닝/TimescaleDB 검토 (대규모 확장 시).</li></ol>
+<ol>
+<li><del><strong>ERP user 삭제 시 처리</strong></del> → <strong>종결(D18)</strong>: soft-delete(<code>is_active=false</code>) 확정, 평가 계층 FK는 RESTRICT.</li>
+<li><strong>presence TTL</strong>: 5분 무활동 → offline 자동(D13, 설정 가능 기본값). 좌표는 30일 후 삭제(D20-a).</li>
+<li><strong>좌석 배정 이력 보관 기간</strong>: 평가 데이터 5년 보존 기준에 맞춤(D20-e).</li>
+<li><del><strong>KPI 수정 감시</strong></del> → <strong>종결(D20)</strong>: <code>admin_adjusted_score</code> 설정 시 audit_log(<code>kpi_adjusted</code>) 자동 생성.</li>
+<li><strong>최적화</strong>: presence.updated_at 고빈도 쓰기 → 파티셔닝/TimescaleDB 검토 (대규모 확장 시).</li>
+</ol>
 <h3 id="assumptions">Assumptions</h3>
-<ul><li>company_id는 현재 사내 단일(멀티테넌트 아키텍처는 v2).</li><li>ERP users.id = BIGINT 타입 (테이블 구조 확인 필수).</li><li>office_layout JSON은 05 문서에서 상세 정의 (현재 초안만).</li><li>asset 테이블은 Godot 3D 에셋만 포함(2D UI 아이콘 등은 별도).</li><li>회의 참석자는 erp_user만(외부 게스트 미지원).</li></ul>
+<ul>
+<li>company_id는 현재 사내 단일(멀티테넌트 아키텍처는 v2).</li>
+<li>ERP users.id = BIGINT 타입 (테이블 구조 확인 필수).</li>
+<li>office_layout JSON은 05 문서에서 상세 정의 (현재 초안만).</li>
+<li>asset 테이블은 Godot 3D 에셋만 포함(2D UI 아이콘 등은 별도).</li>
+<li>회의 참석자는 erp_user만(외부 게스트 미지원).</li>
+</ul>
 <h3 id="validation-criteria">Validation Criteria</h3>
-<ul><li class="task"><input type="checkbox" disabled> Alembic 마이그레이션 성공(PostgreSQL 17.5)</li><li class="task"><input type="checkbox" disabled> ERP read-only 커넥션 정상 (배치 테스트)</li><li class="task"><input type="checkbox" disabled> 모든 FK 참조 무결성 검증</li><li class="task"><input type="checkbox" disabled> 인덱스 성능 테스트(1만+ 좌석, 1천+ 직원 기준)</li><li class="task"><input type="checkbox" disabled> 감사 로그 샘플 기록 검증</li><li class="task"><input type="checkbox" disabled> 데이터 타입 호환성(Godot JSON serialization 테스트)</li></ul>
+<ul>
+<li class="task"><input type="checkbox" disabled> Alembic 마이그레이션 성공(PostgreSQL 17.5)</li>
+<li class="task"><input type="checkbox" disabled> ERP read-only 커넥션 정상 (배치 테스트)</li>
+<li class="task"><input type="checkbox" disabled> 모든 FK 참조 무결성 검증</li>
+<li class="task"><input type="checkbox" disabled> 인덱스 성능 테스트(1만+ 좌석, 1천+ 직원 기준)</li>
+<li class="task"><input type="checkbox" disabled> 감사 로그 샘플 기록 검증</li>
+<li class="task"><input type="checkbox" disabled> 데이터 타입 호환성(Godot JSON serialization 테스트)</li>
+</ul>
 <h3 id="risks">Risks</h3>
-<ul><li><strong>N+1 쿼리</strong>: presence 조회 시 office<em>id, floor</em>id 조인 → 배치 조회 강제</li><li><strong>실시간 업데이트 폭증</strong>: presence 0.5초마다 쓰기 → 샤딩/파티셔닝 검토 필요 (대규모 확장 시)</li><li><strong>ERP 스키마 변경</strong>: users.id 타입 변경 → 마이그레이션 복잡도 증가</li><li><strong>시간대 혼돈</strong>: KST 하드코딩 vs. UTC 저장 → 타임존 일관성 정책 필수</li><li><strong>좌석 충돌</strong>: 동시에 2명이 같은 좌석에 앉음 → unique 제약으로 보호하되, 동시성 제어 필요</li></ul>
+<ul>
+<li><strong>N+1 쿼리</strong>: presence 조회 시 office_id, floor_id 조인 → 배치 조회 강제</li>
+<li><strong>실시간 업데이트 폭증</strong>: presence 0.5초마다 쓰기 → 샤딩/파티셔닝 검토 필요 (대규모 확장 시)</li>
+<li><strong>ERP 스키마 변경</strong>: users.id 타입 변경 → 마이그레이션 복잡도 증가</li>
+<li><strong>시간대 혼돈</strong>: KST 하드코딩 vs. UTC 저장 → 타임존 일관성 정책 필수</li>
+<li><strong>좌석 충돌</strong>: 동시에 2명이 같은 좌석에 앉음 → unique 제약으로 보호하되, 동시성 제어 필요</li>
+</ul>
 <hr>
-<p><strong>문서 버전</strong>: 1.4 <strong>최종 검토</strong>: 2026-07-13 (QA 감사 후속 — §2.8 신설·구현 정합 정정)</p>
+<p><strong>문서 버전</strong>: 1.4<br><strong>최종 검토</strong>: 2026-07-13 (QA 감사 후속 — §2.8 신설·구현 정합 정정)</p>
 <h3 id="변경-이력">변경 이력</h3>
-<ul><li><strong>v1.4 (2026-07-13)</strong>: QA 감사(qa-audit-2026-07-13.md) 후속. §2.8 신설 — business<em>trip/report/chat</em>message 3테이블 등재 + recording<em>consent/erp</em>sync<em>log/user</em>avatar 등재 누락 해소. work<em>log.completed</em>at·aborted, meeting.duration<em>minutes 등재. org</em>group/office company<em>id UUID→INTEGER 구현 정정 확인. ai</em>model 기본값·tscn<em>path 스테일 노트 정리. password</em>hash dev 전용 명시.</li><li><strong>v1.3 (2026-07-09)</strong>: D27 정합 — §2.6 asset 정본 출처를 3d-design/asset-registry.md §1.1(D27 스키마 정본)로 교체(07은 파이프라인 참조)·asset<em>id 예시 05 정본 명명(DESK</em>STANDARD<em>001)·tscn</em>path 마이그레이션 노트 목표 경로 <code>frontend/public/assets/3d/</code> 웹 서빙 규약 표기, §2.7 announcement 계층 신설(16 §B.2 공지 리소스), presence 갱신 경로 &quot;매 0.5초 클라이언트 업로드&quot;·&quot;Godot 서버→FastAPI&quot; → <strong>Colyseus(20Hz 메모리 권위) → 1~5초 배치 <code>POST /api/presence/batch</code> → DB</strong>(D3)로 정정, §8.1 <code>godot_server</code> 롤 → <code>colyseus_server</code>(D3 정합, DB 직접 쓰기 권한 제거·읽기 최소권한).</li><li><strong>v1.2 (2026-07-02)</strong>: 데이터 정본 정렬 — room/seat coords를 D25 2D top<em>left 미터 규약으로 정정(Godot 월드좌표는 05 §5.3 파생), asset 표를 07 §5.3 v1.1 정본으로 동기화, work</em>log FK RESTRICT 통일(D18), meeting<em>minute stt</em>draft·ai<em>summary 추가(D5·Phase 7), uk</em>current<em>seat</em>user UNIQUE(seat<em>id) 정정, company</em>id INTEGER 통일, ck<em>work</em>dates 앱 레이어 이관, period<em>type·objection</em>status §3.5 enum 참조 통일, work<em>completed</em>count 정의 D14-a 정합, presence 좌표 노출 문구 정정.</li><li><strong>v1.1 (2026-07-02)</strong>: D16 kpi<em>result 정본 스키마 재정의(period</em>type/period<em>key, 이의신청 필드 인라인, kpi</em>result<em>review 폐기, metric 어휘 사전 신설). D18 user</em>team<em>history 신설·erp</em>user.is<em>active·평가 계층 FK RESTRICT+soft-delete. D19 타임존 저장 UTC 통일(KST 주석 정정). D20 개인정보 절 보강(5년 보존·녹화 90일·좌표 30일·audit 대상 확대·app</em>admin 롤 분리). D10 좌석 배정 layout 분리 원칙. ERD 오타(ERE<em>USER)·company</em>id INTEGER·work_hours 분 단위·meeting↔minute 단방향 FK 정정.</li><li><strong>v1.0 (2026-07-01)</strong>: 초안(ERP 통합 반영).</li></ul>
-<div class="meta-foot">원본: <code>04-data-model.md</code> · 자동 생성 2026-07-16 · md-to-html</div>
+<ul>
+<li><strong>v1.4 (2026-07-13)</strong>: QA 감사(qa-audit-2026-07-13.md) 후속. §2.8 신설 — business_trip/report/chat_message 3테이블 등재 + recording_consent/erp_sync_log/user_avatar 등재 누락 해소. work_log.completed_at·aborted, meeting.duration_minutes 등재. org_group/office company_id UUID→INTEGER 구현 정정 확인. ai_model 기본값·tscn_path 스테일 노트 정리. password_hash dev 전용 명시.</li>
+<li><strong>v1.3 (2026-07-09)</strong>: D27 정합 — §2.6 asset 정본 출처를 3d-design/asset-registry.md §1.1(D27 스키마 정본)로 교체(07은 파이프라인 참조)·asset_id 예시 05 정본 명명(DESK_STANDARD_001)·tscn_path 마이그레이션 노트 목표 경로 <code>frontend/public/assets/3d/</code> 웹 서빙 규약 표기, §2.7 announcement 계층 신설(16 §B.2 공지 리소스), presence 갱신 경로 &quot;매 0.5초 클라이언트 업로드&quot;·&quot;Godot 서버→FastAPI&quot; → <strong>Colyseus(20Hz 메모리 권위) → 1~5초 배치 <code>POST /api/presence/batch</code> → DB</strong>(D3)로 정정, §8.1 <code>godot_server</code> 롤 → <code>colyseus_server</code>(D3 정합, DB 직접 쓰기 권한 제거·읽기 최소권한).</li>
+<li><strong>v1.2 (2026-07-02)</strong>: 데이터 정본 정렬 — room/seat coords를 D25 2D top_left 미터 규약으로 정정(Godot 월드좌표는 05 §5.3 파생), asset 표를 07 §5.3 v1.1 정본으로 동기화, work_log FK RESTRICT 통일(D18), meeting_minute stt_draft·ai_summary 추가(D5·Phase 7), uk_current_seat_user UNIQUE(seat_id) 정정, company_id INTEGER 통일, ck_work_dates 앱 레이어 이관, period_type·objection_status §3.5 enum 참조 통일, work_completed_count 정의 D14-a 정합, presence 좌표 노출 문구 정정.</li>
+<li><strong>v1.1 (2026-07-02)</strong>: D16 kpi_result 정본 스키마 재정의(period_type/period_key, 이의신청 필드 인라인, kpi_result_review 폐기, metric 어휘 사전 신설). D18 user_team_history 신설·erp_user.is_active·평가 계층 FK RESTRICT+soft-delete. D19 타임존 저장 UTC 통일(KST 주석 정정). D20 개인정보 절 보강(5년 보존·녹화 90일·좌표 30일·audit 대상 확대·app_admin 롤 분리). D10 좌석 배정 layout 분리 원칙. ERD 오타(ERE_USER)·company_id INTEGER·work_hours 분 단위·meeting↔minute 단방향 FK 정정.</li>
+<li><strong>v1.0 (2026-07-01)</strong>: 초안(ERP 통합 반영).</li>
+</ul>
+<div class="meta-foot">원본: <code>04-data-model.md</code> · 자동 생성 2026-07-22 · md-to-html</div>
 </main>
 </div>
 
-<script type="module">
-try{
-  const m = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
-  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  m.default.initialize({startOnLoad:true, theme: dark?'dark':'default', securityLevel:'loose'});
-}catch(e){
-  document.querySelectorAll('.mermaid').forEach(el=>{
-    const pre=document.createElement('pre');pre.className='code';
-    pre.textContent=el.textContent;el.replaceWith(pre);
-  });
-}
-</script>
 </body></html>

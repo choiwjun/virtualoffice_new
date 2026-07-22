@@ -1,0 +1,11 @@
+{
+  "name": "docs-html",
+  "private": true,
+  "description": "docs/*.md → docs/_html/*.html 미러 생성기 (md-to-html)",
+  "scripts": {
+    "generate": "node generate.js"
+  },
+  "dependencies": {
+    "marked": "4.3.0"
+  }
+}
