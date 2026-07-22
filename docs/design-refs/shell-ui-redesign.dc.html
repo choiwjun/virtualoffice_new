@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta charset="utf-8">
+  <meta name="design_doc_mode" content="canvas">
+  <title>Shell UI 리디자인 — /office 크롬 2방향</title>
+  <script src="_ds/horizon-2-5d-asset-pack-5ad05dde-f226-4a9c-8b61-cb7d275c4341/_ds_bundle.js"></script>
+  <script src="assets/horizon-scene-v3.js"></script>
+  <style>
+    body{margin:0;background:#0E121C}
+    a{color:#8FB0FF;text-decoration:none} a:hover{color:#BBCDFF;text-decoration:underline}
+  </style>
+</helmet>
+<div style="min-height:100vh;background:linear-gradient(180deg,#0E121C 0%,#141926 100%);font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#DFE5F0;padding:36px 44px 64px;box-sizing:border-box">
+<div style="width:1920px;margin:0 auto;display:flex;flex-direction:column;gap:28px">
+
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <div style="font-size:12px;font-weight:700;letter-spacing:2.5px;color:#8FB0FF">HORIZON · /OFFICE 셸 리디자인 · 풀스크린 목업 2방향</div>
+    <h1 style="margin:0;font-size:27px;font-weight:700;color:#FFFFFF;letter-spacing:-0.3px">Shell UI 리디자인 — 씬 몰입형 크롬</h1>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:#AEBCD8">
+      <span style="background:#1C2130;border:1px solid #2A3040;border-radius:6px;padding:3px 10px">배경 = renderScene v3.2 실렌더 · 벤치 3 (12석) + 회의실 8·4</span>
+      <span style="background:#1C2130;border:1px solid #2A3040;border-radius:6px;padding:3px 10px">IA: 주 메뉴 10 + 관리 6 전 기능 유지 · 레일 5그룹+더보기로 재조직</span>
+      <span style="background:#1C2130;border:1px solid #2A3040;border-radius:6px;padding:3px 10px">D33 몰입 · D34 메뉴=폴백 · 아바타=씬 배지 언어 · 검색=커맨드 팔레트</span>
+      <span style="background:#1C2130;border:1px solid #2A3040;border-radius:6px;padding:3px 10px">CLI 구현용 스펙 시트 하단</span>
+    </div>
+  </header>
+
+  <section style="display:flex;flex-direction:column;gap:36px">
+
+    <div id="1a" data-screen-label="A 라이트 웜 글래스" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:800;color:#0E121C;background:#8FB0FF;border-radius:6px;padding:3px 10px">1a</span>
+        <span style="font-size:16px;font-weight:700;color:#FFFFFF">A — 라이트 웜 글래스</span>
+        <span style="font-size:12.5px;color:#8593AC">V3 우드 톤에 크롬을 맞춘 밝은 반투명 셸 · 활성 = 에스프레소 필 · 더보기 팝오버(설정+관리 콘솔) 열림 데모 · 씬 호버 진입 데모</span>
+        <span style="font-size:11.5px;color:#7BD8A6;background:#16251C;border:1px solid #24402E;border-radius:6px;padding:2px 8px">본문 대비 12.5:1 · 보조 5.3:1</span>
+      </div>
+      <div style="position:relative;width:1920px;height:1080px;border-radius:18px;overflow:hidden;background:#1B1F29;box-shadow:0 24px 60px rgba(0,0,0,0.45);font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif">
+        <canvas id="shellSceneA" aria-label="가상오피스 씬 A" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
+
+        <div style="position:absolute;left:16px;top:16px;height:44px;display:flex;align-items:center;gap:10px;padding:0 14px 0 8px;border-radius:14px;background:rgba(253,250,244,0.80);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border:1px solid rgba(93,64,38,0.14);box-shadow:0 10px 30px rgba(66,45,24,0.18),inset 0 1px 0 rgba(255,255,255,0.55);z-index:10">
+          <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#C4553B,#E3B23C);display:flex;align-items:center;justify-content:center;color:#FFF;font-size:12px;font-weight:800">H</div>
+          <span style="font-size:13px;font-weight:800;color:#33261A;letter-spacing:-0.2px">HORIZON · 판교 HQ</span>
+          <span style="display:flex;align-items:center;gap:5px;background:rgba(51,38,26,0.06);border-radius:999px;padding:4px 9px;font-size:11px;font-weight:700;color:#6E5E4B"><span style="width:7px;height:7px;border-radius:50%;background:#34B369"></span>12/17</span>
+        </div>
+
+        <div style="position:absolute;left:50%;top:16px;transform:translateX(-50%);width:480px;height:44px;display:flex;align-items:center;gap:9px;padding:0 14px;box-sizing:border-box;border-radius:12px;background:rgba(255,253,248,0.88);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border:1px solid rgba(93,64,38,0.14);box-shadow:0 10px 30px rgba(66,45,24,0.18),inset 0 1px 0 rgba(255,255,255,0.55);z-index:10">
+          <svg viewBox="0 0 20 20" fill="none" stroke="#6E5E4B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex:none"><path d="M14.2 8.7a5.5 5.5 0 11-11 0 5.5 5.5 0 0111 0zM12.8 12.8 16.4 16.4"></path></svg>
+          <span style="flex:1;font-size:12.5px;color:#6E5E4B">구성원 · 방 · 기능 검색 — 이동은 여기서</span>
+          <span style="font-size:10.5px;font-weight:700;color:#5A4B3A;background:rgba(51,38,26,0.08);border-radius:6px;padding:3px 7px">⌘K</span>
+        </div>
+
+        <div style="position:absolute;right:16px;top:16px;display:flex;gap:8px;z-index:10">
+          <div style="position:relative;width:44px;height:44px;border-radius:14px;background:rgba(253,250,244,0.80);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border:1px solid rgba(93,64,38,0.14);box-shadow:0 10px 30px rgba(66,45,24,0.18),inset 0 1px 0 rgba(255,255,255,0.55);display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 20 20" fill="none" stroke="#5F5140" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:19px;height:19px"><path d="M6.2 8.2a3.8 3.8 0 017.6 0c0 2.9 1.4 4.2 1.4 4.2H4.8s1.4-1.3 1.4-4.2M8.6 15.2a1.5 1.5 0 002.8 0"></path></svg>
+            <span style="position:absolute;top:5px;right:5px;min-width:14px;height:14px;border-radius:7px;background:#E0524D;color:#FFF;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #FBF6EE">3</span>
+          </div>
+          <div style="height:44px;display:flex;align-items:center;gap:6px;padding:0 10px;border-radius:14px;background:rgba(253,250,244,0.80);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border:1px solid rgba(93,64,38,0.14);box-shadow:0 10px 30px rgba(66,45,24,0.18),inset 0 1px 0 rgba(255,255,255,0.55)">
+            <div style="position:relative;width:30px;height:30px">
+              <div style="position:absolute;inset:0;border-radius:8px;background:{{ me.grad }};box-shadow:0 0 0 2px {{ me.ring }};display:flex;align-items:center;justify-content:center;color:#FFF;font-size:11px;font-weight:700">{{ me.ini }}</div>
+              <div style="position:absolute;right:-2px;bottom:-2px;width:9px;height:9px;border-radius:50%;background:#34B369;box-shadow:0 0 0 2px #FBF6EE"></div>
+            </div>
+            <svg viewBox="0 0 20 20" fill="none" stroke="#6E5E4B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M6.6 8.6 10 12l3.4-3.4"></path></svg>
+          </div>
+        </div>
+
+        <div style="position:absolute;left:16px;top:378px;z-index:10"><div style="width:52px;height:324px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0;border-radius:16px;background:rgba(253,250,244,0.80);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border:1px solid rgba(93,64,38,0.14);box-shadow:0 10px 30px rgba(66,45,24,0.18),inset 0 1px 0 rgba(255,255,255,0.55)">
+          <button title="가상오피스" style="width:44px;height:44px;border-radius:12px;border:none;cursor:pointer;background:#33261A;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(51,38,26,0.35)">
+            <svg viewBox="0 0 20 20" fill="none" stroke="#FFF6EA" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M4 9.2 10 4.2l6 5M5.6 8.4V15.8h8.8V8.4"></path></svg>
+          </button>
+          <sc-for list="{{ railRest }}" as="it" hint-placeholder-count="4">
+            <button title="{{ it.label }}" style="position:relative;width:44px;height:44px;border-radius:12px;border:none;cursor:pointer;background:transparent;display:flex;align-items:center;justify-content:center" style-hover="background:rgba(51,38,26,0.06)">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#5F5140" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="{{ it.d }}"></path></svg>
+              <sc-if value="{{ it.badge }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:3px;right:3px;min-width:15px;height:15px;border-radius:8px;background:#C4553B;color:#FFF;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #FBF6EE">{{ it.badge }}</span></sc-if>
+            </button>
+          </sc-for>
+          <div style="width:26px;height:1px;background:rgba(51,38,26,0.14);margin:2px 0"></div>
+          <button title="더보기" style="width:44px;height:44px;border-radius:12px;border:none;cursor:pointer;background:rgba(51,38,26,0.06);display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 20 20" fill="none" stroke="#5F5140" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M4.9 10a1 1 0 102 0 1 1 0 10-2 0M9 10a1 1 0 102 0 1 1 0 10-2 0M13.1 10a1 1 0 102 0 1 1 0 10-2 0"></path></svg>
+          </button>
+        </div></div>
+
+        <sc-if value="{{ showPopovers }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;left:78px;top:338px;width:232px;box-sizing:border-box;padding:8px;border-radius:14px;background:rgba(253,250,244,0.88);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border:1px solid rgba(93,64,38,0.16);box-shadow:0 14px 36px rgba(66,45,24,0.24),inset 0 1px 0 rgba(255,255,255,0.55);z-index:20">
+            <div style="font-size:11px;font-weight:700;color:#7C6B56;padding:6px 10px 4px;letter-spacing:0.4px">더보기</div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:10px" style-hover="background:rgba(51,38,26,0.06)">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#5F5140" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M12.6 10a2.6 2.6 0 11-5.2 0 2.6 2.6 0 015.2 0zM10 3.4v1.8M10 14.8v1.8M3.4 10h1.8M14.8 10h1.8M5.3 5.3l1.3 1.3M13.4 13.4l1.3 1.3M14.7 5.3l-1.3 1.3M6.6 13.4l-1.3 1.3"></path></svg>
+              <span style="font-size:12.5px;font-weight:600;color:#33261A;white-space:nowrap">설정</span>
+            </div>
+            <div style="height:1px;background:rgba(51,38,26,0.12);margin:6px 4px"></div>
+            <div style="display:flex;align-items:center;gap:7px;padding:5px 10px 3px">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#7C6B56" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M10 3.5 4.5 5.5v4.5c0 3.5 2.4 5.5 5.5 6.5 3.1-1 5.5-3 5.5-6.5V5.5z"></path></svg>
+              <span style="font-size:11px;font-weight:700;color:#7C6B56;letter-spacing:0.4px">관리 콘솔</span>
+              <span style="font-size:9px;font-weight:800;color:#A3492F;background:rgba(196,85,59,0.14);border-radius:6px;padding:2px 6px">ADMIN</span>
+            </div>
+            <sc-for list="{{ adminItems }}" as="ad" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:10px" style-hover="background:rgba(51,38,26,0.06)">
+                <svg viewBox="0 0 20 20" fill="none" stroke="#5F5140" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="{{ ad.d }}"></path></svg>
+                <span style="font-size:12.5px;font-weight:600;color:#33261A;white-space:nowrap">{{ ad.label }}</span>
+              </div>
+            </sc-for>
+            <div style="font-size:10.5px;color:#7C6B56;padding:6px 10px 4px">역할 게이트 — 관리자 계정에만 노출</div>
+          </div>
+
+          <svg viewBox="0 0 24 24" style="position:absolute;left:1340px;top:326px;width:22px;height:22px;z-index:6"><path d="M5.5 3.2 11.2 17.5l2.1-5.6 5.6-2.1z" fill="#1A1611" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round"></path></svg>
+          <div style="position:absolute;left:1362px;top:352px;display:flex;flex-direction:column;gap:2px;padding:9px 13px;border-radius:10px;background:rgba(253,250,244,0.88);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border:1px solid rgba(93,64,38,0.16);box-shadow:0 10px 26px rgba(66,45,24,0.22);z-index:6">
+            <span style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#33261A"><span style="width:7px;height:7px;border-radius:50%;background:#7B6BC9"></span>회의실 · 8 — 클릭해 입장</span>
+            <span style="font-size:10.5px;color:#6E5E4B">한도윤 외 2명 회의 중 · D34: 씬 = 주 진입점</span>
+          </div>
+        </sc-if>
+
+        <div style="position:absolute;right:16px;top:76px;bottom:86px;width:276px;box-sizing:border-box;border-radius:16px;background:rgba(253,250,244,0.80);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border:1px solid rgba(93,64,38,0.14);box-shadow:0 10px 30px rgba(66,45,24,0.18),inset 0 1px 0 rgba(255,255,255,0.55);display:flex;flex-direction:column;overflow:hidden;z-index:10">
+          <div style="display:flex;align-items:center;gap:8px;padding:12px 14px 8px">
+            <span style="font-size:13.5px;font-weight:800;color:#33261A">구성원</span>
+            <span style="font-size:11px;font-weight:700;color:#6E5E4B;background:rgba(51,38,26,0.06);border-radius:999px;padding:2px 8px">17</span>
+            <span style="flex:1"></span>
+            <span title="패널 접기" style="font-size:15px;color:#6E5E4B;cursor:pointer">»</span>
+          </div>
+          <div style="margin:0 12px;display:flex;align-items:center;gap:8px;height:34px;border-radius:10px;background:rgba(51,38,26,0.06);padding:0 10px">
+            <svg viewBox="0 0 20 20" fill="none" stroke="#6E5E4B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex:none"><path d="M14.2 8.7a5.5 5.5 0 11-11 0 5.5 5.5 0 0111 0zM12.8 12.8 16.4 16.4"></path></svg>
+            <span style="font-size:11.5px;color:#6E5E4B">이름 · 팀 검색 — 팔레트와 연동</span>
+          </div>
+          <div style="display:flex;gap:6px;padding:10px 12px 8px">
+            <span style="height:26px;display:flex;align-items:center;border-radius:8px;padding:0 10px;font-size:11.5px;font-weight:700;background:#33261A;color:#FFF6EA">전체 17</span>
+            <span style="height:26px;display:flex;align-items:center;border-radius:8px;padding:0 10px;font-size:11.5px;font-weight:700;background:rgba(51,38,26,0.06);color:#6E5E4B">내 팀</span>
+            <span style="height:26px;display:flex;align-items:center;border-radius:8px;padding:0 10px;font-size:11.5px;font-weight:700;background:rgba(51,38,26,0.06);color:#6E5E4B">★</span>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:0 6px 8px">
+            <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+              <div style="display:flex;flex-direction:column">
+                <div style="display:flex;align-items:center;gap:7px;height:28px;padding:0 10px">
+                  <span style="width:7px;height:7px;border-radius:50%;background:{{ g.dot }}"></span>
+                  <span style="font-size:11px;font-weight:700;color:#7C6B56;letter-spacing:0.4px">{{ g.label }}</span>
+                  <span style="font-size:10.5px;font-weight:700;color:#7C6B56">{{ g.count }}</span>
+                  <span style="flex:1"></span>
+                  <span style="font-size:10px;color:#7C6B56">{{ g.chev }}</span>
+                </div>
+                <sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}">
+                  <sc-for list="{{ g.rows }}" as="m" hint-placeholder-count="3">
+                    <div style="display:flex;align-items:center;gap:10px;height:42px;padding:0 10px;border-radius:10px" style-hover="background:rgba(51,38,26,0.05)">
+                      <div style="position:relative;width:30px;height:30px;flex:none">
+                        <div style="position:absolute;inset:0;border-radius:8px;background:{{ m.grad }};box-shadow:0 0 0 2px {{ m.ring }};display:flex;align-items:center;justify-content:center;color:#FFF;font-size:11px;font-weight:700">{{ m.ini }}</div>
+                        <div style="position:absolute;right:-2px;bottom:-2px;width:9px;height:9px;border-radius:50%;background:{{ m.dot }};box-shadow:0 0 0 2px #FBF6EE"></div>
+                      </div>
+                      <div style="min-width:0;flex:1">
+                        <div style="font-size:12.5px;font-weight:600;color:#33261A;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.name }}</div>
+                        <div style="font-size:10.5px;color:#6E5E4B;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.sub }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:10px;align-items:center;z-index:10">
+          <div style="height:54px;border-radius:16px;background:rgba(253,250,244,0.80);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border:1px solid rgba(93,64,38,0.14);box-shadow:0 10px 30px rgba(66,45,24,0.18),inset 0 1px 0 rgba(255,255,255,0.55);display:flex;align-items:center;gap:8px;padding:0 10px">
+            <button style="display:flex;align-items:center;gap:7px;height:38px;padding:0 14px;border-radius:10px;background:#33261A;color:#FFF6EA;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:inherit">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#FFF6EA" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M15.4 10a5.4 5.4 0 11-10.8 0 5.4 5.4 0 0110.8 0zM10 2.8v2M10 15.2v2M2.8 10h2M15.2 10h2M9.1 10a.9.9 0 101.8 0 .9.9 0 10-1.8 0"></path></svg>내 자리로
+            </button>
+            <button style="display:flex;align-items:center;gap:7px;height:38px;padding:0 12px;border-radius:10px;background:transparent;border:1px solid rgba(51,38,26,0.14);color:#33261A;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit" style-hover="background:rgba(51,38,26,0.06)">
+              <span style="width:8px;height:8px;border-radius:50%;background:#34B369"></span>재실
+              <svg viewBox="0 0 20 20" fill="none" stroke="#6E5E4B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M6.6 8.6 10 12l3.4-3.4"></path></svg>
+            </button>
+            <div style="width:1px;height:24px;background:rgba(51,38,26,0.12)"></div>
+            <div style="display:flex;align-items:center;gap:6px;padding:0 4px">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#34B369" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M4.6 15.4v-2.8M8.2 15.4v-5M11.8 15.4V6.8M15.4 15.4V4.6"></path></svg>
+              <span style="font-size:11.5px;font-weight:700;color:#6E5E4B">24ms</span>
+            </div>
+          </div>
+          <sc-if value="{{ showBanner }}" hint-placeholder-val="{{ true }}">
+            <div style="height:54px;border-radius:16px;background:rgba(253,250,244,0.84);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border:1px solid rgba(123,107,201,0.45);box-shadow:0 10px 30px rgba(66,45,24,0.18),inset 0 1px 0 rgba(255,255,255,0.55);display:flex;align-items:center;gap:10px;padding:0 10px 0 14px">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#7B6BC9" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M3.6 6.2h8.8v7.6H3.6zM12.4 9.4l4-2.6v6.4l-4-2.6"></path></svg>
+              <div style="display:flex;flex-direction:column;gap:1px">
+                <span style="font-size:12px;font-weight:700;color:#33261A;white-space:nowrap">디자인 스탠드업</span>
+                <span style="font-size:10.5px;color:#6E5E4B;white-space:nowrap">회의실 · 8 — 3명 참여 중</span>
+              </div>
+              <button style="height:34px;padding:0 16px;border-radius:10px;background:#7B6BC9;color:#FFF;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:inherit">참여</button>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+
+    <div id="1b" data-screen-label="B 다크 정제" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:800;color:#0E121C;background:#8FB0FF;border-radius:6px;padding:3px 10px">1b</span>
+        <span style="font-size:16px;font-weight:700;color:#FFFFFF">B — 다크 정제</span>
+        <span style="font-size:12.5px;color:#8593AC">현행 다크 유지 · 웜 블랙으로 재조율 + 밀도·계층 정리 · 활성 = 머스터드 필 · 업무 허브 플라이아웃 열림 데모</span>
+        <span style="font-size:11.5px;color:#7BD8A6;background:#16251C;border:1px solid #24402E;border-radius:6px;padding:2px 8px">본문 대비 7.1:1 · 보조 4.6:1</span>
+      </div>
+      <div style="position:relative;width:1920px;height:1080px;border-radius:18px;overflow:hidden;background:#1B1F29;box-shadow:0 24px 60px rgba(0,0,0,0.45);font-family:'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif">
+        <canvas id="shellSceneB" aria-label="가상오피스 씬 B" style="position:absolute;inset:0;width:100%;height:100%;display:block"></canvas>
+
+        <div style="position:absolute;left:16px;top:16px;height:44px;display:flex;align-items:center;gap:10px;padding:0 14px 0 8px;border-radius:14px;background:rgba(22,20,18,0.84);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid rgba(255,255,255,0.09);box-shadow:0 12px 32px rgba(0,0,0,0.42),inset 0 1px 0 rgba(255,255,255,0.06);z-index:10">
+          <div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#C4553B,#E3B23C);display:flex;align-items:center;justify-content:center;color:#FFF;font-size:12px;font-weight:800">H</div>
+          <span style="font-size:13px;font-weight:800;color:#F0EAE2;letter-spacing:-0.2px">HORIZON · 판교 HQ</span>
+          <span style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.07);border-radius:999px;padding:4px 9px;font-size:11px;font-weight:700;color:#CBBEAC"><span style="width:7px;height:7px;border-radius:50%;background:#34B369"></span>12/17</span>
+        </div>
+
+        <div style="position:absolute;left:50%;top:16px;transform:translateX(-50%);width:480px;height:44px;display:flex;align-items:center;gap:9px;padding:0 14px;box-sizing:border-box;border-radius:12px;background:rgba(30,27,24,0.88);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid rgba(255,255,255,0.09);box-shadow:0 12px 32px rgba(0,0,0,0.42),inset 0 1px 0 rgba(255,255,255,0.06);z-index:10">
+          <svg viewBox="0 0 20 20" fill="none" stroke="#CBBEAC" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;flex:none"><path d="M14.2 8.7a5.5 5.5 0 11-11 0 5.5 5.5 0 0111 0zM12.8 12.8 16.4 16.4"></path></svg>
+          <span style="flex:1;font-size:12.5px;color:#CBBEAC">구성원 · 방 · 기능 검색 — 이동은 여기서</span>
+          <span style="font-size:10.5px;font-weight:700;color:#CBBEAC;background:rgba(255,255,255,0.08);border-radius:6px;padding:3px 7px">⌘K</span>
+        </div>
+
+        <div style="position:absolute;right:16px;top:16px;display:flex;gap:8px;z-index:10">
+          <div style="position:relative;width:44px;height:44px;border-radius:14px;background:rgba(22,20,18,0.84);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid rgba(255,255,255,0.09);box-shadow:0 12px 32px rgba(0,0,0,0.42),inset 0 1px 0 rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 20 20" fill="none" stroke="#BFB2A0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:19px;height:19px"><path d="M6.2 8.2a3.8 3.8 0 017.6 0c0 2.9 1.4 4.2 1.4 4.2H4.8s1.4-1.3 1.4-4.2M8.6 15.2a1.5 1.5 0 002.8 0"></path></svg>
+            <span style="position:absolute;top:5px;right:5px;min-width:14px;height:14px;border-radius:7px;background:#E0524D;color:#FFF;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #211E1B">3</span>
+          </div>
+          <div style="height:44px;display:flex;align-items:center;gap:6px;padding:0 10px;border-radius:14px;background:rgba(22,20,18,0.84);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid rgba(255,255,255,0.09);box-shadow:0 12px 32px rgba(0,0,0,0.42),inset 0 1px 0 rgba(255,255,255,0.06)">
+            <div style="position:relative;width:30px;height:30px">
+              <div style="position:absolute;inset:0;border-radius:8px;background:{{ me.grad }};box-shadow:0 0 0 2px {{ me.ring }};display:flex;align-items:center;justify-content:center;color:#FFF;font-size:11px;font-weight:700">{{ me.ini }}</div>
+              <div style="position:absolute;right:-2px;bottom:-2px;width:9px;height:9px;border-radius:50%;background:#34B369;box-shadow:0 0 0 2px #211E1B"></div>
+            </div>
+            <svg viewBox="0 0 20 20" fill="none" stroke="#CBBEAC" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M6.6 8.6 10 12l3.4-3.4"></path></svg>
+          </div>
+        </div>
+
+        <div style="position:absolute;left:16px;top:378px;z-index:10"><div style="width:52px;height:324px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0;border-radius:16px;background:rgba(22,20,18,0.84);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid rgba(255,255,255,0.09);box-shadow:0 12px 32px rgba(0,0,0,0.42),inset 0 1px 0 rgba(255,255,255,0.06)">
+          <button title="가상오피스" style="width:44px;height:44px;border-radius:12px;border:none;cursor:pointer;background:#E3B23C;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(227,178,60,0.35)">
+            <svg viewBox="0 0 20 20" fill="none" stroke="#1A1611" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M4 9.2 10 4.2l6 5M5.6 8.4V15.8h8.8V8.4"></path></svg>
+          </button>
+          <sc-for list="{{ railRest }}" as="it" hint-placeholder-count="4">
+            <button title="{{ it.label }}" style="position:relative;width:44px;height:44px;border-radius:12px;border:none;cursor:pointer;background:transparent;display:flex;align-items:center;justify-content:center" style-hover="background:rgba(255,255,255,0.07)">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#BFB2A0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="{{ it.d }}"></path></svg>
+              <sc-if value="{{ it.badge }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:3px;right:3px;min-width:15px;height:15px;border-radius:8px;background:#E3B23C;color:#1A1611;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #211E1B">{{ it.badge }}</span></sc-if>
+            </button>
+          </sc-for>
+          <div style="width:26px;height:1px;background:rgba(255,255,255,0.10);margin:2px 0"></div>
+          <button title="더보기" style="width:44px;height:44px;border-radius:12px;border:none;cursor:pointer;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 20 20" fill="none" stroke="#BFB2A0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M4.9 10a1 1 0 102 0 1 1 0 10-2 0M9 10a1 1 0 102 0 1 1 0 10-2 0M13.1 10a1 1 0 102 0 1 1 0 10-2 0"></path></svg>
+          </button>
+        </div></div>
+
+        <sc-if value="{{ showPopovers }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;left:78px;top:424px;width:204px;box-sizing:border-box;padding:8px;border-radius:14px;background:rgba(28,25,22,0.92);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid rgba(255,255,255,0.10);box-shadow:0 14px 36px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.06);z-index:20">
+            <div style="font-size:11px;font-weight:700;color:#C3B5A2;padding:6px 10px 4px;letter-spacing:0.4px">업무 허브</div>
+            <sc-for list="{{ workHub }}" as="wh" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:10px" style-hover="background:rgba(255,255,255,0.07)">
+                <svg viewBox="0 0 20 20" fill="none" stroke="#BFB2A0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="{{ wh.d }}"></path></svg>
+                <span style="font-size:12.5px;font-weight:600;color:#F0EAE2;white-space:nowrap">{{ wh.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <div style="position:absolute;right:16px;top:76px;bottom:86px;width:276px;box-sizing:border-box;border-radius:16px;background:rgba(22,20,18,0.84);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid rgba(255,255,255,0.09);box-shadow:0 12px 32px rgba(0,0,0,0.42),inset 0 1px 0 rgba(255,255,255,0.06);display:flex;flex-direction:column;overflow:hidden;z-index:10">
+          <div style="display:flex;align-items:center;gap:8px;padding:12px 14px 8px">
+            <span style="font-size:13.5px;font-weight:800;color:#F0EAE2">구성원</span>
+            <span style="font-size:11px;font-weight:700;color:#CBBEAC;background:rgba(255,255,255,0.07);border-radius:999px;padding:2px 8px">17</span>
+            <span style="flex:1"></span>
+            <span title="패널 접기" style="font-size:15px;color:#CBBEAC;cursor:pointer">»</span>
+          </div>
+          <div style="margin:0 12px;display:flex;align-items:center;gap:8px;height:34px;border-radius:10px;background:rgba(255,255,255,0.07);padding:0 10px">
+            <svg viewBox="0 0 20 20" fill="none" stroke="#CBBEAC" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex:none"><path d="M14.2 8.7a5.5 5.5 0 11-11 0 5.5 5.5 0 0111 0zM12.8 12.8 16.4 16.4"></path></svg>
+            <span style="font-size:11.5px;color:#CBBEAC">이름 · 팀 검색 — 팔레트와 연동</span>
+          </div>
+          <div style="display:flex;gap:6px;padding:10px 12px 8px">
+            <span style="height:26px;display:flex;align-items:center;border-radius:8px;padding:0 10px;font-size:11.5px;font-weight:700;background:#E3B23C;color:#1A1611">전체 17</span>
+            <span style="height:26px;display:flex;align-items:center;border-radius:8px;padding:0 10px;font-size:11.5px;font-weight:700;background:rgba(255,255,255,0.07);color:#CBBEAC">내 팀</span>
+            <span style="height:26px;display:flex;align-items:center;border-radius:8px;padding:0 10px;font-size:11.5px;font-weight:700;background:rgba(255,255,255,0.07);color:#CBBEAC">★</span>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:0 6px 8px">
+            <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+              <div style="display:flex;flex-direction:column">
+                <div style="display:flex;align-items:center;gap:7px;height:28px;padding:0 10px">
+                  <span style="width:7px;height:7px;border-radius:50%;background:{{ g.dot }}"></span>
+                  <span style="font-size:11px;font-weight:700;color:#C3B5A2;letter-spacing:0.4px">{{ g.label }}</span>
+                  <span style="font-size:10.5px;font-weight:700;color:#C3B5A2">{{ g.count }}</span>
+                  <span style="flex:1"></span>
+                  <span style="font-size:10px;color:#C3B5A2">{{ g.chev }}</span>
+                </div>
+                <sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}">
+                  <sc-for list="{{ g.rows }}" as="m" hint-placeholder-count="3">
+                    <div style="display:flex;align-items:center;gap:10px;height:42px;padding:0 10px;border-radius:10px" style-hover="background:rgba(255,255,255,0.06)">
+                      <div style="position:relative;width:30px;height:30px;flex:none">
+                        <div style="position:absolute;inset:0;border-radius:8px;background:{{ m.grad }};box-shadow:0 0 0 2px {{ m.ring }};display:flex;align-items:center;justify-content:center;color:#FFF;font-size:11px;font-weight:700">{{ m.ini }}</div>
+                        <div style="position:absolute;right:-2px;bottom:-2px;width:9px;height:9px;border-radius:50%;background:{{ m.dot }};box-shadow:0 0 0 2px #211E1B"></div>
+                      </div>
+                      <div style="min-width:0;flex:1">
+                        <div style="font-size:12.5px;font-weight:600;color:#F0EAE2;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.name }}</div>
+                        <div style="font-size:10.5px;color:#CBBEAC;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.sub }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:10px;align-items:center;z-index:10">
+          <div style="height:54px;border-radius:16px;background:rgba(22,20,18,0.84);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid rgba(255,255,255,0.09);box-shadow:0 12px 32px rgba(0,0,0,0.42),inset 0 1px 0 rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px;padding:0 10px">
+            <button style="display:flex;align-items:center;gap:7px;height:38px;padding:0 14px;border-radius:10px;background:#E3B23C;color:#1A1611;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:inherit">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#1A1611" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M15.4 10a5.4 5.4 0 11-10.8 0 5.4 5.4 0 0110.8 0zM10 2.8v2M10 15.2v2M2.8 10h2M15.2 10h2M9.1 10a.9.9 0 101.8 0 .9.9 0 10-1.8 0"></path></svg>내 자리로
+            </button>
+            <button style="display:flex;align-items:center;gap:7px;height:38px;padding:0 12px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.12);color:#F0EAE2;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit" style-hover="background:rgba(255,255,255,0.07)">
+              <span style="width:8px;height:8px;border-radius:50%;background:#34B369"></span>재실
+              <svg viewBox="0 0 20 20" fill="none" stroke="#CBBEAC" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M6.6 8.6 10 12l3.4-3.4"></path></svg>
+            </button>
+            <div style="width:1px;height:24px;background:rgba(255,255,255,0.10)"></div>
+            <div style="display:flex;align-items:center;gap:6px;padding:0 4px">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#34B369" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M4.6 15.4v-2.8M8.2 15.4v-5M11.8 15.4V6.8M15.4 15.4V4.6"></path></svg>
+              <span style="font-size:11.5px;font-weight:700;color:#CBBEAC">24ms</span>
+            </div>
+          </div>
+          <sc-if value="{{ showBanner }}" hint-placeholder-val="{{ true }}">
+            <div style="height:54px;border-radius:16px;background:rgba(28,25,22,0.90);backdrop-filter:blur(22px) saturate(1.15);-webkit-backdrop-filter:blur(22px) saturate(1.15);border:1px solid rgba(123,107,201,0.55);box-shadow:0 12px 32px rgba(0,0,0,0.42),inset 0 1px 0 rgba(255,255,255,0.06);display:flex;align-items:center;gap:10px;padding:0 10px 0 14px">
+              <svg viewBox="0 0 20 20" fill="none" stroke="#9C8FD8" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M3.6 6.2h8.8v7.6H3.6zM12.4 9.4l4-2.6v6.4l-4-2.6"></path></svg>
+              <div style="display:flex;flex-direction:column;gap:1px">
+                <span style="font-size:12px;font-weight:700;color:#F0EAE2;white-space:nowrap">디자인 스탠드업</span>
+                <span style="font-size:10.5px;color:#CBBEAC;white-space:nowrap">회의실 · 8 — 3명 참여 중</span>
+              </div>
+              <button style="height:34px;padding:0 16px;border-radius:10px;background:#7B6BC9;color:#FFF;font-size:12.5px;font-weight:700;border:none;cursor:pointer;font-family:inherit">참여</button>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="background:#151A26;border:1px solid #262C3A;border-radius:14px;padding:18px 20px 20px;display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:800;color:#0E121C;background:#7BD8A6;border-radius:6px;padding:2px 9px">SPEC</span>
+      <span style="font-size:15px;font-weight:700;color:#FFFFFF">CLI 구현용 스펙 시트</span>
+      <span style="font-size:12.5px;color:#8593AC">측정(1920×1080 산술): 상시 크롬 4.4% · 패널 펼침 16.5% · 팝오버 +4.2%(<a href="#1a">1a</a>) / +1.9%(<a href="#1b">1b</a>) — D33 대응: 우측 패널 기본 자동 접힘(호버 확장) 제안</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="font-size:13px;font-weight:700;color:#AEBCD8">1 · 공통 지오메트리 (A·B 동일)</div>
+      <div style="border:1px solid #262C3A;border-radius:10px;overflow:hidden">
+        <sc-for list="{{ geomRows }}" as="r" hint-placeholder-count="9">
+          <div style="display:grid;grid-template-columns:200px 430px 1fr;border-bottom:1px solid rgba(42,48,64,0.7)">
+            <div style="padding:8px 12px;font-size:12px;font-weight:700;color:#AEBCD8;background:#171C29">{{ r.k }}</div>
+            <div style="padding:8px 12px;font-size:11.5px;color:#E6ECF7;font-family:ui-monospace,Consolas,monospace">{{ r.v }}</div>
+            <div style="padding:8px 12px;font-size:11.5px;color:#8593AC">{{ r.n }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="font-size:13px;font-weight:700;color:#AEBCD8">2 · 컬러 토큰 — A vs B</div>
+      <div style="border:1px solid #262C3A;border-radius:10px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:200px 1fr 1fr;border-bottom:1px solid rgba(42,48,64,0.7)">
+          <div style="padding:8px 12px;font-size:12px;font-weight:700;color:#AEBCD8;background:#171C29">토큰</div>
+          <div style="padding:8px 12px;font-size:12px;font-weight:700;color:#E9DFCE;background:#171C29">A 라이트 웜 글래스</div>
+          <div style="padding:8px 12px;font-size:12px;font-weight:700;color:#E3B23C;background:#171C29">B 다크 정제</div>
+        </div>
+        <sc-for list="{{ tokenRows }}" as="r" hint-placeholder-count="14">
+          <div style="display:grid;grid-template-columns:200px 1fr 1fr;border-bottom:1px solid rgba(42,48,64,0.7)">
+            <div style="padding:8px 12px;font-size:12px;font-weight:700;color:#AEBCD8;background:#171C29">{{ r.k }}</div>
+            <div style="padding:8px 12px;font-size:11.5px;color:#E6ECF7;font-family:ui-monospace,Consolas,monospace">{{ r.a }}</div>
+            <div style="padding:8px 12px;font-size:11.5px;color:#E6ECF7;font-family:ui-monospace,Consolas,monospace">{{ r.b }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font-size:11.5px;color:#8593AC">상태 컬러(공용 · 씬 STATUS 맵과 동일): 재실 <span style="color:#34B369">#34B369</span> · 방해금지 <span style="color:#E0524D">#E0524D</span> · 자리비움 <span style="color:#EFAF3C">#EFAF3C</span> · 회의중 <span style="color:#9C8FD8">#7B6BC9</span> · 외근·출장 <span style="color:#7FA7E0">#3E6FB0</span> · 오프라인 <span style="color:#98A0AC">#98A0AC</span> — 패널 도트 9px + 표면색 링 2px, 씬 배지 도트와 동일 규격</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="font-size:13px;font-weight:700;color:#AEBCD8">3 · IA 재조직 매핑 (기능 10+6 전부 유지)</div>
+      <div style="border:1px solid #262C3A;border-radius:10px;overflow:hidden">
+        <sc-for list="{{ iaRows }}" as="r" hint-placeholder-count="9">
+          <div style="display:grid;grid-template-columns:230px 480px 1fr;border-bottom:1px solid rgba(42,48,64,0.7)">
+            <div style="padding:8px 12px;font-size:12px;font-weight:700;color:#AEBCD8;background:#171C29">{{ r.k }}</div>
+            <div style="padding:8px 12px;font-size:11.5px;color:#E6ECF7">{{ r.v }}</div>
+            <div style="padding:8px 12px;font-size:11.5px;color:#8593AC">{{ r.n }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;day&quot;,&quot;options&quot;:[&quot;day&quot;,&quot;dusk&quot;,&quot;night&quot;],&quot;tsType&quot;:&quot;'day'|'dusk'|'night'&quot;,&quot;section&quot;:&quot;씬&quot;},&quot;showPopovers&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;크롬 데모&quot;},&quot;showMeetingBanner&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;크롬 데모&quot;}}">
+class Component extends DCLogic {
+  hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  badge(n) {
+    const h = this.hash(n) % 360, h2 = (h + 46) % 360;
+    return { ini: n.length >= 3 ? n.slice(1) : n.slice(0, 2), grad: 'linear-gradient(135deg,hsl(' + h + ',52%,58%),hsl(' + h2 + ',56%,38%))', ring: 'hsl(' + h + ',46%,88%)' };
+  }
+  layout() {
+    if (this._L) return this._L;
+    return this._L = {
+      id: 'shell-16', name: '셸 · 벤치3 + 회의실2', world: { w: 20, h: 11.25 },
+      room: { x: 0.5, y: 0.5, w: 19, h: 10.25 },
+      windows: [
+        { side: 'N', a: 1.6, b: 5.4 }, { side: 'N', a: 7.4, b: 11.2 }, { side: 'N', a: 13.2, b: 16.4 },
+        { side: 'W', a: 1.6, b: 4.2 }, { side: 'E', a: 1.4, b: 4.4 }, { side: 'E', a: 7.6, b: 9.8 }, { side: 'S', a: 2.2, b: 4.6 }
+      ],
+      entry: { side: 'S', a: 9.3, b: 10.9 },
+      zones: [
+        { id: 'communal', label: '커뮤널', kind: 'communal', x: 0.9, y: 0.9, w: 5.2, h: 4.2 },
+        { id: 'work', label: '워크존', kind: 'work', x: 6.9, y: 0.9, w: 6.8, h: 5.6 },
+        { id: 'meetA', label: '회의실 · 8', kind: 'meeting', x: 14.3, y: 0.5, w: 5.2, h: 5.0, ly: 1.28, floor: 'carpet', glass: ['W', 'S'], door: { side: 'S', at: 0.7, w: 0.95 } },
+        { id: 'pantry', label: '팬트리', kind: 'pantry', x: 0.5, y: 6.5, w: 5.9, h: 4.25, floor: 'tile' },
+        { id: 'lounge', label: '라운지', kind: 'lounge', x: 7.4, y: 6.9, w: 5.9, h: 3.85 },
+        { id: 'meetB', label: '회의실 · 4', kind: 'meeting', x: 14.05, y: 6.35, w: 5.45, h: 4.4, floor: 'carpet', glass: ['W', 'N'], door: { side: 'N', at: 0.8, w: 0.95 } }
+      ],
+      furniture: [
+        { t: 'rug', style: 'oriental', x: 3.5, y: 2.9, w: 4.6, h: 3.2 },
+        { t: 'diningTable', x: 3.5, y: 2.9, w: 2.7, h: 1.05 },
+        { t: 'credenza', x: 0.88, y: 2.6, len: 2.0, rot: 90 },
+        { t: 'plant', x: 0.98, y: 0.98, s: 1.05, kind: 'monstera' },
+        { t: 'plant', x: 5.65, y: 4.55, s: 0.8, kind: 'fern' },
+        { t: 'bench4', x: 8.5, y: 2.35 }, { t: 'bench4', x: 12.1, y: 2.35 }, { t: 'bench4', x: 8.5, y: 5.05 },
+        { t: 'trough', x: 6.5, y: 2.95, len: 3.4, rot: 90 },
+        { t: 'trough', x: 10.2, y: 6.28, len: 3.4, rot: 0 },
+        { t: 'plant', x: 6.5, y: 0.95, s: 0.85, kind: 'fern' },
+        { t: 'plant', x: 13.85, y: 5.95, s: 0.95, kind: 'monstera' },
+        { t: 'pouf', x: 11.65, y: 4.85, color: '#3E6FB0' },
+        { t: 'pouf', x: 12.5, y: 5.3, color: '#E3B23C' },
+        { t: 'meetingTable', x: 16.9, y: 3.0, w: 3.3, h: 1.15, seats: 8 },
+        { t: 'tv', x: 19.34, y: 3.0, len: 1.7, rot: 90 },
+        { t: 'plant', x: 14.78, y: 0.98, s: 0.8, kind: 'fern' },
+        { t: 'plant', x: 18.98, y: 4.95, s: 0.85, kind: 'monstera' },
+        { t: 'counter', x: 0.83, y: 8.3, len: 2.8, side: 'W' },
+        { t: 'fridge', x: 0.98, y: 10.15, rot: 90 },
+        { t: 'rug', style: 'round', x: 3.5, y: 7.8, r: 1.05, base: '#C4553B' },
+        { t: 'cafeTable', x: 3.5, y: 7.8, chairs: [80, 250] },
+        { t: 'cafeTable', x: 4.85, y: 9.45, chairs: [0, 180] },
+        { t: 'waterCooler', x: 5.6, y: 6.85 },
+        { t: 'trough', x: 6.35, y: 8.55, len: 3.3, rot: 90 },
+        { t: 'plant', x: 2.3, y: 10.2, s: 0.7, kind: 'fern' },
+        { t: 'rug', style: 'abstract', x: 10.3, y: 8.45, w: 3.5, h: 2.3 },
+        { t: 'sofa', x: 10.3, y: 9.95, w: 2.5, rot: 180, color: '#E3B23C' },
+        { t: 'tubChair', x: 8.8, y: 7.5, rot: 135, color: '#C4553B' },
+        { t: 'tubChair', x: 11.8, y: 7.5, rot: 225, color: '#2E3A55' },
+        { t: 'coffeeTable', x: 10.3, y: 8.55, r: 0.42 },
+        { t: 'sideTable', x: 11.85, y: 10.05, r: 0.22 },
+        { t: 'lamp', x: 12.5, y: 10.1 },
+        { t: 'plant', x: 7.85, y: 10.15, s: 0.9, kind: 'monstera' },
+        { t: 'meetingTable', x: 16.75, y: 8.65, w: 2.4, h: 1.05, seats: 4 },
+        { t: 'tv', x: 19.34, y: 8.65, len: 1.5, rot: 90 },
+        { t: 'plant', x: 19.0, y: 10.28, s: 0.75, kind: 'fern' },
+        { t: 'sign', x: 15.95, y: 6.05, text: '회의실 · 4' },
+        { t: 'trough', x: 3.5, y: 5.55, len: 3.0, rot: 0 },
+        { t: 'plant', x: 5.75, y: 5.62, s: 0.85, kind: 'monstera' },
+        { t: 'whiteboard', x: 17.55, y: 0.68, len: 2.1, side: 'N' },
+        { t: 'art', x: 0.98, y: 4.65, side: 'W', variant: 'botanic' },
+        { t: 'art', x: 13.42, y: 10.38, side: 'S', variant: 'sunset' },
+        { t: 'bookshelf', x: 0.78, y: 5.75, len: 1.4, rot: 90 },
+        { t: 'printer', x: 5.78, y: 1.08 },
+        { t: 'coatrack', x: 8.62, y: 10.32 },
+        { t: 'sign', x: 14.62, y: 5.52, text: '회의실 · 8' },
+        { t: 'shelf', x: 3.9, y: 10.56, len: 1.4, side: 'S' },
+        { t: 'doormat', x: 10.1, y: 10.5, w: 1.5, h: 0.45 }
+      ],
+      people: [
+        { name: '김서연', x: 7.775, y: 1.18, status: 'online' },
+        { name: '이하은', x: 12.825, y: 1.18, status: 'online' },
+        { name: '최지아', x: 11.375, y: 3.52, status: 'online' },
+        { name: '박민준', x: 9.225, y: 3.52, status: 'busy' },
+        { name: '문태윤', x: 9.225, y: 6.22, status: 'online' },
+        { name: '윤가온', x: 9.85, y: 9.93, status: 'online' },
+        { name: '서준호', x: 3.5, y: 8.62, status: 'away' },
+        { name: '한도윤', x: 15.9, y: 2.0, status: 'meeting' },
+        { name: '오세린', x: 16.9, y: 4.0, status: 'meeting' },
+        { name: '곽지원', x: 18.85, y: 3.0, status: 'meeting' },
+        { name: '정우진', x: 16.15, y: 7.6, status: 'meeting' },
+        { name: '배수현', x: 17.35, y: 9.7, status: 'meeting' }
+      ]
+    };
+  }
+  theme() { return this.props.theme || 'day'; }
+  componentDidMount() { this.schedulePaint(); }
+  componentDidUpdate() { this.schedulePaint(); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._p); }
+  schedulePaint() {
+    if (this._p) return;
+    this._p = setTimeout(() => {
+      this._p = null;
+      const NS = window.HorizonSceneV3, a = document.getElementById('shellSceneA'), b = document.getElementById('shellSceneB');
+      if (!NS || !a || !b) { clearTimeout(this._t); this._t = setTimeout(() => this.schedulePaint(), 150); return; }
+      const sig = this.theme();
+      if (a.dataset.sig === sig && b.dataset.sig === sig && b.width === a.width) return;
+      const t0 = performance.now();
+      try {
+        if (a.dataset.sig !== sig) {
+          NS.renderScene(this.layout(), { canvas: a, theme: sig, layers: ['floor', 'furniture', 'people', 'foreground', 'grade'], width: 1920, height: 1080, dpr: 1.5 });
+          a.dataset.sig = sig;
+        }
+        b.width = a.width; b.height = a.height;
+        b.getContext('2d').drawImage(a, 0, 0);
+        b.dataset.sig = sig;
+      } catch (e) { console.error('[shell scene]', e); }
+      console.log('[perf] shell scene ' + Math.round(performance.now() - t0) + 'ms');
+    }, 16);
+  }
+  renderVals() {
+    const I = {
+      brief: 'M7 6V5a1.4 1.4 0 011.4-1.4h3.2A1.4 1.4 0 0113 5v1M3.6 6.4h12.8v9.2H3.6zM3.6 10.2h12.8',
+      cal: 'M4 5.6h12v10.4H4zM4 9h12M7.4 3.6v3M12.6 3.6v3',
+      chat: 'M4 4.6h12v8.6H9.8L6.4 16v-2.8H4z',
+      clock: 'M16.4 10a6.4 6.4 0 11-12.8 0 6.4 6.4 0 0112.8 0zM10 6.4V10l2.4 1.6',
+      chart: 'M4 16h12M6.2 13V9.4M10 13V5.6M13.8 13V7.8',
+      org: 'M8.4 3.8h3.2v3H8.4zM3.8 13.2H7v3H3.8zM13 13.2h3.2v3H13zM10 6.8v3.2M5.4 13.2v-3.2h9.2v3.2',
+      grid4: 'M4 4h5.2v5.2H4zM10.8 4H16v5.2h-5.2zM4 10.8h5.2V16H4zM10.8 10.8H16V16h-5.2z',
+      sync: 'M15.6 8.4A6 6 0 005.2 6.2M4.4 11.6a6 6 0 0010.4 2.2M15.6 4.2v4.2h-4.2M4.4 15.8v-4.2h4.2',
+      log: 'M5.2 3.6h9.6v12.8H5.2zM7.6 7h4.8M7.6 10h4.8M7.6 13h3',
+      mega: 'M4 8.6v3l2.6.5L14 15.2V4.8L6.6 8.1zM15.4 8.2a3 3 0 010 3.6',
+      tasks: 'M8 5.4h8.4M8 10h8.4M8 14.6h6M3.6 5.2l1 1L6.4 4M3.6 9.8l1 1 1.8-2.2',
+      pulse: 'M3.4 10h2.8l1.9-4.4 3 8.8 1.9-4.4h3.6',
+      report: 'M5.6 3.6h6.2l3 3v9.8H5.6zM11.6 3.8V7h3M8 10.4h4M8 13h4',
+      gauge: 'M4 13.6a6 6 0 0112 0M10 13.6l2.8-3'
+    };
+    const railRest = [
+      { d: I.brief, label: '업무 허브 (업무관리·업무현황·보고서·KPI평가)', badge: '4' },
+      { d: I.cal, label: '회의실 예약', badge: null },
+      { d: I.chat, label: '커뮤니케이션', badge: null },
+      { d: I.clock, label: '근태 · 출장', badge: null }
+    ];
+    const workHub = [
+      { d: I.tasks, label: '업무관리' }, { d: I.pulse, label: '업무현황' },
+      { d: I.report, label: '보고서' }, { d: I.gauge, label: 'KPI평가' }
+    ];
+    const adminItems = [
+      { d: I.chart, label: 'KPI관리' }, { d: I.org, label: '조직도' }, { d: I.grid4, label: '좌석배치' },
+      { d: I.sync, label: '동기화' }, { d: I.log, label: '감사로그' }, { d: I.mega, label: '공지관리' }
+    ];
+    const G = [
+      { label: '재실', dot: '#34B369', rows: [
+        { n: '김서연', sub: '워크존 · A-01' }, { n: '이하은', sub: '워크존 · A-04' },
+        { n: '최지아', sub: '워크존 · B-02' }, { n: '박민준', sub: '방해금지 · B-03', dot: '#E0524D' },
+        { n: '문태윤', sub: '워크존 · C-02' }, { n: '윤가온', sub: '라운지' }
+      ] },
+      { label: '회의중', dot: '#7B6BC9', rows: [
+        { n: '한도윤', sub: '회의실 · 8 — 32분' }, { n: '오세린', sub: '회의실 · 8 — 32분' },
+        { n: '곽지원', sub: '회의실 · 8 — 32분' }, { n: '정우진', sub: '회의실 · 4 — 12분' },
+        { n: '배수현', sub: '회의실 · 4 — 12분' }
+      ] },
+      { label: '자리비움', dot: '#EFAF3C', rows: [{ n: '서준호', sub: '12분째 자리 비움' }] },
+      { label: '외근 · 출장', dot: '#3E6FB0', rows: [
+        { n: '임채원', sub: '고객사 방문 · ~18:00' }, { n: '강현우', sub: '부산 출장 · 7/23 복귀' }
+      ] },
+      { label: '오프라인', dot: '#98A0AC', collapsed: true, rows: [{ n: '조은별' }, { n: '신재민' }, { n: '홍지수' }] }
+    ];
+    const groups = G.map(g => ({
+      label: g.label, dot: g.dot, count: g.rows.length, open: !g.collapsed, chev: g.collapsed ? '▸' : '▾',
+      rows: g.rows.map(r => Object.assign(this.badge(r.n), { name: r.n, sub: r.sub || '', dot: r.dot || g.dot }))
+    }));
+    const geomRows = [
+      { k: '크롬 인셋', v: '16px', n: '모든 플로팅 크롬 공통 — 씬 가장자리 밀착 금지' },
+      { k: '상단바', v: 'h 44 · 좌 로고 클러스터 / 중앙 팔레트 / 우 알림·프로필', n: '풀폭 바 없음 — 세그먼트 플로팅' },
+      { k: '커맨드 팔레트', v: '480×44 · r12 · ⌘K 또는 /', n: '스코프: 구성원 이동 · 방 이동 · 기능 실행 · 최근' },
+      { k: '좌측 레일', v: 'w52 · 아이템 44×44 · 아이콘 20 · gap 6 · r16', n: '세로 중앙 · 5그룹 + 더보기 (16개 → 6버튼)' },
+      { k: '플라이아웃 · 팝오버', v: 'w 204–232 · 행 34–36 · r14 · 레일 +10px', n: 'z20 · 외부 클릭으로 닫힘' },
+      { k: '우측 패널', v: 'w276 · top 76 / bottom 86 · r16 · 행 42 · 아바타 30(r8)', n: '그룹 헤더 28 · 오프라인 기본 접힘 · » 로 접기' },
+      { k: '하단 독', v: 'h54 · r16 · 하단 16 중앙 · 버튼 h38 r10', n: '회의 배너 = 우측 gap10 별도 필 · 참여 가능 시에만' },
+      { k: 'z-index', v: '씬 0 · 크롬 10 · 팝오버 20 · 토스트 30', n: '씬 호버 태그는 z6 (크롬 아래)' },
+      { k: '점유율 (1920×1080)', v: '상시 4.4% · 패널 펼침 16.5%', n: 'D33: 패널 자동 접힘 기본 + 호버 확장 제안 → 상시 95%+ 노출' }
+    ];
+    const tokenRows = [
+      { k: '표면 surface', a: 'rgba(253,250,244,0.80)', b: 'rgba(22,20,18,0.84)' },
+      { k: '백드롭 필터', a: 'blur(22px) saturate(1.4)', b: 'blur(22px) saturate(1.15)' },
+      { k: '보더', a: '1px rgba(93,64,38,0.14)', b: '1px rgba(255,255,255,0.09)' },
+      { k: '이너 하이라이트', a: 'inset 0 1px 0 rgba(255,255,255,0.55)', b: 'inset 0 1px 0 rgba(255,255,255,0.06)' },
+      { k: '텍스트 1', a: '#33261A', b: '#F0EAE2' },
+      { k: '텍스트 2 (보조)', a: '#6E5E4B', b: '#CBBEAC' },
+      { k: '그룹 라벨', a: '#7C6B56', b: '#C3B5A2' },
+      { k: '아이콘 (기본)', a: '#5F5140', b: '#BFB2A0' },
+      { k: '활성 레일 아이템', a: '#33261A 필 / 아이콘 #FFF6EA', b: '#E3B23C 필 / 아이콘 #1A1611' },
+      { k: '호버', a: 'rgba(51,38,26,0.06)', b: 'rgba(255,255,255,0.07)' },
+      { k: '프라이머리 버튼', a: '#33261A / #FFF6EA', b: '#E3B23C / #1A1611' },
+      { k: '포커스 링', a: '0 0 0 2px rgba(169,113,58,0.55)', b: '0 0 0 2px rgba(227,178,60,0.55)' },
+      { k: '그림자', a: '0 10px 30px rgba(66,45,24,0.18)', b: '0 12px 32px rgba(0,0,0,0.42)' },
+      { k: 'kbd 칩', a: 'rgba(51,38,26,0.08) / #5A4B3A', b: 'rgba(255,255,255,0.08) / #CBBEAC' },
+      { k: '상태 도트 링', a: '#FBF6EE', b: '#211E1B' }
+    ];
+    const iaRows = [
+      { k: '레일 1 — 가상오피스', v: '가상오피스 (씬 홈 · 활성)', n: 'D34: 씬 클릭이 주 진입점, 레일은 폴백' },
+      { k: '레일 2 — 업무 허브', v: '업무관리 · 업무현황 · 보고서 · KPI평가', n: '플라이아웃 그룹 — 1b에 열림 데모' },
+      { k: '레일 3 — 회의실 예약', v: '회의실예약', n: '씬 회의실 클릭과 동일 목적지' },
+      { k: '레일 4 — 커뮤니케이션', v: '커뮤니케이션', n: '' },
+      { k: '레일 5 — 근태 · 출장', v: '인사근태 · 출장관리', n: '' },
+      { k: '더보기 ⋯', v: '설정 + 관리 콘솔 6종 (KPI관리 · 조직도 · 좌석배치 · 동기화 · 감사로그 · 공지관리)', n: '역할 게이트 · 1안 프로필 메뉴 하단 / 2안 설정 내 관리 탭 — 1a에 팝오버 데모' },
+      { k: '상단 검색 → 커맨드 팔레트', v: '구성원 · 방 · 기능 · 최근 통합 (⌘K)', n: '선택 시 씬 카메라 이동 또는 기능 실행' },
+      { k: '우측 패널', v: '프레즌스 5그룹 + 필터 탭 + 검색 연동', n: '아바타 = 씬 배지 언어 (r8 타일 · 링 · 이니셜 · 상태 도트 동일 규격)' },
+      { k: '하단 독', v: '내 자리로 · 내 상태 · 연결 24ms · 회의 참여 배너', n: '배너는 참여 가능 회의 존재 시에만 표시' }
+    ];
+    return {
+      me: this.badge('김서연'), railRest, workHub, adminItems, groups,
+      geomRows, tokenRows, iaRows,
+      showPopovers: this.props.showPopovers ?? true,
+      showBanner: this.props.showMeetingBanner ?? true
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1863,8 +1863,8 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
           onClick={(e) => e.stopPropagation()}
         >
           <div
-            className="flex items-center gap-0.5 pl-2.5 pr-1 py-1 rounded-full border border-border-subtle"
-            style={{ background: 'rgba(13,27,54,.88)', backdropFilter: 'blur(6px)' }}
+            className="flex items-center gap-0.5 pl-2.5 pr-1 py-1 rounded-full"
+            style={{ background: 'rgba(22,20,18,0.84)', backdropFilter: 'blur(22px) saturate(1.15)', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 12px 32px rgba(0,0,0,0.42),inset 0 1px 0 rgba(255,255,255,0.06)' }}
           >
             <span
               title={statusChip.text}
@@ -1894,7 +1894,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
               className="px-2 py-1 rounded-full text-[10px] font-semibold flex items-center gap-1.5 hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
               style={{ color: mySeat ? '#fff' : 'rgba(255,255,255,.55)' }}
             >
-              <span className="w-1.5 h-1.5 rounded-[2px] inline-block" style={{ background: mySeat ? '#3B5BFE' : '#64748B' }} />
+              <span className="w-1.5 h-1.5 rounded-[2px] inline-block" style={{ background: mySeat ? '#E3B23C' : '#64748B' }} />
               내 자리로
             </button>
             <button

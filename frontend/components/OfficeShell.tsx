@@ -5,9 +5,9 @@
 // @SPEC docs/planning/14-virtual-office-spec.md §1 §2.8
 // @SPEC docs/3d-design/design-style-analysis.md §3 §4
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { getUser, logout, type User, type UserRole } from '@/lib/auth';
 import { Card } from '@/components/ui/Card';
@@ -205,6 +205,137 @@ const ADMIN_ITEMS: (NavItem & { roles: UserRole[] })[] = [
 ];
 
 // ─────────────────────────────────────────────
+// 커맨드 팔레트(⌘K) — 스펙 시트 §3 "상단 검색 → 커맨드 팔레트": 구성원·방·기능 통합.
+// 구성원 클릭 → 검색어 설정(기존 우측 패널 필터 동작 유지). 방/기능 클릭 → 라우팅.
+// ─────────────────────────────────────────────
+interface PaletteEntry {
+  id: string;
+  group: '구성원' | '방' | '기능';
+  label: string;
+  sub?: string;
+  status?: EmployeePresenceStatus;
+  action: () => void;
+}
+
+function CommandPalette({
+  open,
+  onClose,
+  entries,
+}: {
+  open: boolean;
+  onClose: () => void;
+  entries: PaletteEntry[];
+}) {
+  const [q, setQ] = useState('');
+  const [active, setActive] = useState(0);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setQ('');
+      setActive(0);
+      // 열릴 때 입력 포커스(다음 프레임 — 렌더 후).
+      const id = requestAnimationFrame(() => inputRef.current?.focus());
+      return () => cancelAnimationFrame(id);
+    }
+  }, [open]);
+
+  const nq = q.trim().toLowerCase();
+  const filtered = nq
+    ? entries.filter((e) => e.label.toLowerCase().includes(nq) || e.sub?.toLowerCase().includes(nq))
+    : entries;
+  // 그룹 순서 유지(구성원 → 방 → 기능).
+  const order: PaletteEntry['group'][] = ['구성원', '방', '기능'];
+  const grouped = order
+    .map((g) => ({ g, rows: filtered.filter((e) => e.group === g) }))
+    .filter((x) => x.rows.length > 0);
+  const flat = grouped.flatMap((x) => x.rows);
+
+  useEffect(() => {
+    if (active >= flat.length) setActive(Math.max(0, flat.length - 1));
+  }, [flat.length, active]);
+
+  if (!open) return null;
+
+  const run = (e: PaletteEntry) => {
+    e.action();
+    onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-start justify-center pt-[12vh] px-4"
+      style={{ background: 'rgba(8,7,6,0.55)', backdropFilter: 'blur(3px)' }}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="커맨드 팔레트"
+    >
+      <div
+        className="w-full max-w-xl rounded-2xl overflow-hidden"
+        style={chromeSurface('hi')}
+        onClick={(ev) => ev.stopPropagation()}
+        onKeyDown={(ev) => {
+          if (ev.key === 'Escape') { ev.preventDefault(); onClose(); }
+          else if (ev.key === 'ArrowDown') { ev.preventDefault(); setActive((a) => Math.min(flat.length - 1, a + 1)); }
+          else if (ev.key === 'ArrowUp') { ev.preventDefault(); setActive((a) => Math.max(0, a - 1)); }
+          else if (ev.key === 'Enter') { ev.preventDefault(); if (flat[active]) run(flat[active]); }
+        }}
+      >
+        <div className="flex items-center gap-2.5 px-4 h-12 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+          <span style={{ color: T1B.text2 }}><StrokeIcon d={RAIL_ICON.search} size={16} /></span>
+          <input
+            ref={inputRef}
+            value={q}
+            onChange={(e) => { setQ(e.target.value); setActive(0); }}
+            placeholder="구성원 · 방 · 기능 검색 — 이동은 여기서"
+            aria-label="구성원·방·기능 검색"
+            className="flex-1 min-w-0 bg-transparent outline-none text-[13px]"
+            style={{ color: T1B.text1 }}
+          />
+          <span className="text-[10px] font-bold px-1.5 py-1 rounded" style={{ background: 'rgba(255,255,255,0.08)', color: T1B.text2 }}>ESC</span>
+        </div>
+        <div className="max-h-[52vh] overflow-y-auto py-1.5">
+          {flat.length === 0 ? (
+            <div className="px-4 py-6 text-center text-[12px]" style={{ color: T1B.text2 }}>결과가 없습니다</div>
+          ) : (
+            grouped.map(({ g, rows }) => (
+              <div key={g} className="px-1.5 pb-1">
+                <div className="px-2.5 pt-2 pb-1 text-[10px] font-bold tracking-wide" style={{ color: T1B.groupLbl }}>{g}</div>
+                {rows.map((e) => {
+                  const idx = flat.indexOf(e);
+                  const isActive = idx === active;
+                  return (
+                    <button
+                      key={e.id}
+                      type="button"
+                      onMouseEnter={() => setActive(idx)}
+                      onClick={() => run(e)}
+                      className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-lg text-left transition-colors"
+                      style={{ background: isActive ? T1B.hover : 'transparent' }}
+                    >
+                      {e.group === '구성원' && e.status ? (
+                        <SceneBadge name={e.label} status={e.status} size={22} />
+                      ) : (
+                        <span style={{ color: T1B.icon }}>
+                          <StrokeIcon d={e.group === '방' ? RAIL_ICON.cal : RAIL_ICON.grid4} size={16} />
+                        </span>
+                      )}
+                      <span className="text-[12.5px] font-medium truncate" style={{ color: T1B.text1 }}>{e.label}</span>
+                      {e.sub && <span className="ml-auto text-[11px] truncate flex-shrink-0 pl-2" style={{ color: T1B.text2 }}>{e.sub}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // (D33) 층 도면 카드 삭제 — 층 전환은 뷰포트 미니맵에 흡수(19-spec P0-3)
 // ─────────────────────────────────────────────
 
@@ -220,19 +351,143 @@ const FILTER_TABS: { key: PresenceFilter; label: string }[] = [
 ];
 
 // 시안 People 패널: 상태 그룹 헤더(재실/회의중/자리비움/외근·출장/오프라인)
+// 도트 색 = 씬 STATUS 맵과 동일(스펙 시트 §2): 재실 #34B369 · 회의중 #7B6BC9 · 자리비움 #EFAF3C · 외근 #3E6FB0 · 오프라인 #98A0AC
 const PRESENCE_GROUPS: { key: string; label: string; color: string; statuses: EmployeePresenceStatus[] }[] = [
-  { key: 'office',   label: '사무실 재실', color: '#22C55E', statuses: ['online', 'working', 'focus'] },
-  { key: 'meeting',  label: '회의중',      color: '#EF4444', statuses: ['meeting'] },
-  { key: 'away',     label: '자리비움',    color: '#94A3B8', statuses: ['away'] },
-  { key: 'external', label: '외근·출장',   color: '#F59E0B', statuses: ['external'] },
-  { key: 'offline',  label: '오프라인',    color: '#64748B', statuses: ['offline'] },
+  { key: 'office',   label: '재실',       color: '#34B369', statuses: ['online', 'working', 'focus'] },
+  { key: 'meeting',  label: '회의중',      color: '#7B6BC9', statuses: ['meeting'] },
+  { key: 'away',     label: '자리비움',    color: '#EFAF3C', statuses: ['away'] },
+  { key: 'external', label: '외근·출장',   color: '#3E6FB0', statuses: ['external'] },
+  { key: 'offline',  label: '오프라인',    color: '#98A0AC', statuses: ['offline'] },
 ];
+
+// ─────────────────────────────────────────────
+// (1b 다크 정제) 셸 UI 리디자인 — docs/design-refs/shell-ui-redesign.dc.html "1b" 컬럼
+// 웜 블랙 크롬 + 머스터드 활성. 스펙 시트 §2 컬러 토큰(B열)을 그대로 상수화.
+// ─────────────────────────────────────────────
+const T1B = {
+  surface:   'rgba(22,20,18,0.84)',   // 표면
+  surfaceHi: 'rgba(28,25,22,0.92)',   // 팝오버/플라이아웃(불투명↑)
+  paletteBg: 'rgba(30,27,24,0.88)',   // 커맨드 팔레트 트리거
+  blur:      'blur(22px) saturate(1.15)',
+  border:    '1px solid rgba(255,255,255,0.09)',
+  borderHi:  '1px solid rgba(255,255,255,0.10)',
+  inset:     'inset 0 1px 0 rgba(255,255,255,0.06)',
+  shadow:    '0 12px 32px rgba(0,0,0,0.42)',
+  shadowHi:  '0 14px 36px rgba(0,0,0,0.5)',
+  text1:     '#F0EAE2',
+  text2:     '#CBBEAC',
+  groupLbl:  '#C3B5A2',
+  icon:      '#BFB2A0',
+  mustard:   '#E3B23C',   // 활성 필/프라이머리 버튼
+  mustardInk:'#1A1611',   // 머스터드 위 잉크
+  hover:     'rgba(255,255,255,0.07)',
+  dotRing:   '#211E1B',   // 상태 도트 표면 링
+} as const;
+
+// 셸 크롬 표면 공통 스타일(웜 블랙 글래스).
+const chromeSurface = (raised?: 'hi' | 'palette'): React.CSSProperties => ({
+  background: raised === 'hi' ? T1B.surfaceHi : raised === 'palette' ? T1B.paletteBg : T1B.surface,
+  backdropFilter: T1B.blur,
+  WebkitBackdropFilter: T1B.blur,
+  border: raised === 'hi' ? T1B.borderHi : T1B.border,
+  boxShadow: raised === 'hi' ? `${T1B.shadowHi},${T1B.inset}` : `${T1B.shadow},${T1B.inset}`,
+});
+
+// 스트로크 아이콘(레일/플라이아웃/팝오버) — 시안 renderVals()의 path 사전과 동일.
+function StrokeIcon({ d, size = 20 }: { d: string; size?: number }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ width: size, height: size, flex: 'none' }}>
+      <path d={d} />
+    </svg>
+  );
+}
+const RAIL_ICON = {
+  office:  'M4 9.2 10 4.2l6 5M5.6 8.4V15.8h8.8V8.4',
+  brief:   'M7 6V5a1.4 1.4 0 011.4-1.4h3.2A1.4 1.4 0 0113 5v1M3.6 6.4h12.8v9.2H3.6zM3.6 10.2h12.8',
+  cal:     'M4 5.6h12v10.4H4zM4 9h12M7.4 3.6v3M12.6 3.6v3',
+  chat:    'M4 4.6h12v8.6H9.8L6.4 16v-2.8H4z',
+  clock:   'M16.4 10a6.4 6.4 0 11-12.8 0 6.4 6.4 0 0112.8 0zM10 6.4V10l2.4 1.6',
+  more:    'M4.9 10a1 1 0 102 0 1 1 0 10-2 0M9 10a1 1 0 102 0 1 1 0 10-2 0M13.1 10a1 1 0 102 0 1 1 0 10-2 0',
+  gear:    'M12.6 10a2.6 2.6 0 11-5.2 0 2.6 2.6 0 015.2 0zM10 3.4v1.8M10 14.8v1.8M3.4 10h1.8M14.8 10h1.8M5.3 5.3l1.3 1.3M13.4 13.4l1.3 1.3M14.7 5.3l-1.3 1.3M6.6 13.4l-1.3 1.3',
+  // 업무 허브 플라이아웃 4종
+  tasks:   'M8 5.4h8.4M8 10h8.4M8 14.6h6M3.6 5.2l1 1L6.4 4M3.6 9.8l1 1 1.8-2.2',
+  pulse:   'M3.4 10h2.8l1.9-4.4 3 8.8 1.9-4.4h3.6',
+  report:  'M5.6 3.6h6.2l3 3v9.8H5.6zM11.6 3.8V7h3M8 10.4h4M8 13h4',
+  gauge:   'M4 13.6a6 6 0 0112 0M10 13.6l2.8-3',
+  // 관리 콘솔 6종
+  chart:   'M4 16h12M6.2 13V9.4M10 13V5.6M13.8 13V7.8',
+  org:     'M8.4 3.8h3.2v3H8.4zM3.8 13.2H7v3H3.8zM13 13.2h3.2v3H13zM10 6.8v3.2M5.4 13.2v-3.2h9.2v3.2',
+  grid4:   'M4 4h5.2v5.2H4zM10.8 4H16v5.2h-5.2zM4 10.8h5.2V16H4zM10.8 10.8H16V16h-5.2z',
+  sync:    'M15.6 8.4A6 6 0 005.2 6.2M4.4 11.6a6 6 0 0010.4 2.2M15.6 4.2v4.2h-4.2M4.4 15.8v-4.2h4.2',
+  log:     'M5.2 3.6h9.6v12.8H5.2zM7.6 7h4.8M7.6 10h4.8M7.6 13h3',
+  mega:    'M4 8.6v3l2.6.5L14 15.2V4.8L6.6 8.1zM15.4 8.2a3 3 0 010 3.6',
+  search:  'M14.2 8.7a5.5 5.5 0 11-11 0 5.5 5.5 0 0111 0zM12.8 12.8 16.4 16.4',
+} as const;
+
+// IA 재조직 매핑(스펙 시트 §3). href/역할 게이트는 NAV_ITEMS·ADMIN_ITEMS 그대로 참조.
+// 업무 허브 = 업무관리·업무현황·보고서·KPI평가 (플라이아웃). 더보기 = 설정 + 관리 6종(역할 게이트).
+const WORK_HUB_HREFS = ['/work-log', '/work-status', '/reports', '/kpi'];
+const RAIL_MORE_ICON: Record<string, string> = {
+  '/settings': RAIL_ICON.gear,
+  '/admin/kpi': RAIL_ICON.chart,
+  '/admin/org-chart': RAIL_ICON.org,
+  '/admin/office-layout': RAIL_ICON.grid4,
+  '/admin/sync': RAIL_ICON.sync,
+  '/admin/audit': RAIL_ICON.log,
+  '/admin/notices': RAIL_ICON.mega,
+};
+const WORK_HUB_ICON: Record<string, string> = {
+  '/work-log': RAIL_ICON.tasks,
+  '/work-status': RAIL_ICON.pulse,
+  '/reports': RAIL_ICON.report,
+  '/kpi': RAIL_ICON.gauge,
+};
+
+// 씬 배지 언어(V3 사진 배지 규격) — 이름 해시 → 그라디언트+링. OfficeViewport2D V3 배지와 동일 언어.
+function badgeStyle(name: string): { grad: string; ring: string; ini: string } {
+  let h = 2166136261;
+  for (let i = 0; i < name.length; i++) { h ^= name.charCodeAt(i); h = Math.imul(h, 16777619); }
+  h >>>= 0;
+  const hue = h % 360;
+  const hue2 = (hue + 46) % 360;
+  return {
+    ini: name.length >= 3 ? name.slice(1) : name.slice(0, 2),
+    grad: `linear-gradient(135deg,hsl(${hue},52%,58%),hsl(${hue2},56%,38%))`,
+    ring: `hsl(${hue},46%,88%)`,
+  };
+}
+
+// 상태 → 도트 색(스펙 시트 §2 상태 컬러, PRESENCE_GROUPS와 동일 팔레트).
+const STATUS_DOT_1B: Record<EmployeePresenceStatus, string> = {
+  online: '#34B369', working: '#34B369', focus: '#34B369',
+  meeting: '#7B6BC9', away: '#EFAF3C', external: '#3E6FB0', offline: '#98A0AC',
+};
+// 팀명 부재 시 부제 폴백(상태 라벨).
+const PRESENCE_META_LABEL: Record<EmployeePresenceStatus, string> = {
+  online: '온라인', working: '업무 중', focus: '집중', meeting: '회의 중',
+  away: '자리비움', external: '외근·출장', offline: '오프라인',
+};
+
+// 씬 배지 규격 아바타(우측 패널) — r8 타일 + 이니셜 + 상태 도트(스펙 시트 §2·IA §3).
+function SceneBadge({ name, status, size = 30 }: { name: string; status: EmployeePresenceStatus; size?: number }) {
+  const b = badgeStyle(name);
+  const dot = STATUS_DOT_1B[status] ?? STATUS_DOT_1B.offline;
+  return (
+    <div style={{ position: 'relative', width: size, height: size, flex: 'none' }}>
+      <div style={{ position: 'absolute', inset: 0, borderRadius: 8, background: b.grad, boxShadow: `0 0 0 2px ${b.ring}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontSize: 11, fontWeight: 700 }}>
+        {b.ini}
+      </div>
+      <div style={{ position: 'absolute', right: -2, bottom: -2, width: 9, height: 9, borderRadius: '50%', background: dot, boxShadow: `0 0 0 2px ${T1B.dotRing}` }} />
+    </div>
+  );
+}
 
 // ─────────────────────────────────────────────
 // 오피스 셸 (모든 (protected) 라우트의 상주 레이아웃)
 // ─────────────────────────────────────────────
 export default function OfficeShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [me, setMe] = useState<User | null>(null);
   const [presenceFilter, setPresenceFilter] = useState<PresenceFilter>('all');
   // D33 몰입 모드(19-spec P0-1): /office에서 사이드바=아이콘 레일·우측 패널=접힘이 기본.
@@ -244,6 +499,12 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
   // 알림 드롭다운 + 마지막 확인 시각(localStorage 'notices_seen_at')
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [noticesSeenAt, setNoticesSeenAt] = useState<string | null>(null);
+
+  // (1b) 커맨드 팔레트(⌘K/Ctrl+K) + 레일 플라이아웃/팝오버.
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [workHubOpen, setWorkHubOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   // 역할 게이트 관리 메뉴 + 오버레이(비-/office 라우트) 타이틀
   const role = (me?.role ?? 'employee') as UserRole;
@@ -517,6 +778,60 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
     return new Date(ts).getTime() > new Date(noticesSeenAt).getTime();
   }).length;
 
+  // (1b) 재실 카운터 — 오프라인이 아닌 구성원 수 / 전체(우측 패널 데이터, 스펙 시트 오피스 필).
+  const onlineCount = employees.filter((e) => e.status !== 'offline').length;
+
+  // (1b) ⌘K / Ctrl+K → 커맨드 팔레트. / 도 트리거(입력 포커스 중이 아닐 때).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // (1b) 커맨드 팔레트 엔트리 — 구성원(검색어 설정, 기존 패널 필터 동작 유지)·방·기능.
+  const paletteEntries = useMemo<PaletteEntry[]>(() => {
+    const memberEntries: PaletteEntry[] = employees.map((e) => ({
+      id: `member-${e.id}`,
+      group: '구성원' as const,
+      label: e.name,
+      sub: e.team_name,
+      status: e.status,
+      action: () => {
+        // 기존 헤더 검색과 동일: 우측 패널 필터에 이름 반영 + 패널 열기(/office 몰입 시 접혀있을 수 있음).
+        setSearchQuery(e.name);
+        setPresenceFilter('all');
+        setPanelOpen(true);
+        if (pathname !== '/office') router.push('/office');
+      },
+    }));
+    const roomEntries: PaletteEntry[] = VIEWPORT_ROOMS.map((r) => ({
+      id: `room-${r.id}`,
+      group: '방' as const,
+      label: r.label,
+      sub: '오피스에서 보기',
+      action: () => {
+        // 방 카메라/포커스는 후속 — 일단 /office 이동 + 검색어로 방 이름 유지(스펙 지침).
+        setSearchQuery(r.label);
+        if (pathname !== '/office') router.push('/office');
+      },
+    }));
+    const fnEntries: PaletteEntry[] = [...NAV_ITEMS, ...adminItems]
+      .filter((i) => !i.disabled)
+      .map((i) => ({
+        id: `fn-${i.href}`,
+        group: '기능' as const,
+        label: i.label,
+        sub: i.href,
+        action: () => router.push(i.href),
+      }));
+    return [...memberEntries, ...roomEntries, ...fnEntries];
+  }, [employees, adminItems, pathname, router]);
+
   // 알림 드롭다운 토글 — 열 때 확인 시각 갱신(localStorage 'notices_seen_at') → 배지 해소
   const handleNoticeToggle = () => {
     if (!noticeOpen) {
@@ -665,7 +980,11 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
       className="flex flex-col h-screen overflow-hidden font-sans"
       style={{ background: '#0E1626' }}
     >
-      {/* ── 상단 헤더 (시안) ── */}
+      {/* (1b) 커맨드 팔레트 — ⌘K/Ctrl+K 또는 팔레트 트리거로 열림 */}
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} entries={paletteEntries} />
+
+      {/* ── 상단 헤더 (시안) — /office 몰입(railMode)에선 플로팅 크롬으로 대체(아래), 그 외 라우트는 상단바 유지 ── */}
+      {!railMode && (
       <header className="flex-shrink-0 h-14 flex items-center justify-between px-4 border-b border-border-subtle">
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-sm">V</div>
@@ -675,29 +994,18 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
           </button>
         </div>
         <div className="flex-1 max-w-md mx-6 hidden md:block">
-          {/* 헤더 검색(06 §1.2) — 우측 패널 직원 목록을 이름/팀으로 필터.
-              뷰포트 아바타 강조·카메라 팬은 스코프 외(후속). */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-surface text-text-muted text-[13px] border border-border-subtle focus-within:ring-2 focus-within:ring-accent-cyan">
+          {/* 헤더 검색 → 커맨드 팔레트 트리거(스펙 시트 §3). 클릭·포커스 시 팔레트 오픈. */}
+          <button
+            type="button"
+            onClick={() => setPaletteOpen(true)}
+            className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-surface text-text-muted text-[13px] border border-border-subtle hover:border-primary/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+          >
             <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 flex-shrink-0"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="구성원 검색 (이름·팀)"
-              aria-label="구성원 검색"
-              className="flex-1 min-w-0 bg-transparent outline-none text-text-primary placeholder:text-text-muted [&::-webkit-search-cancel-button]:hidden"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                aria-label="검색어 지우기"
-                className="flex-shrink-0 text-text-muted hover:text-text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan rounded"
-              >
-                <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-              </button>
-            )}
-          </div>
+            <span className="flex-1 min-w-0 text-left truncate">
+              {searchQuery ? `검색: ${searchQuery}` : '구성원 · 방 · 기능 검색 — 이동은 여기서'}
+            </span>
+            <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-bg-surface-raised text-text-secondary">⌘K</span>
+          </button>
         </div>
         <div className="flex items-center gap-3">
           {/* 메시지 → 커뮤니케이션(/chat) 이동 */}
@@ -782,112 +1090,73 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
           </div>
         </div>
       </header>
+      )}
 
-      {/* ── 본문 3열 ── */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-      {/* ── 좌 내비 — D33: /office 기본=아이콘 레일(56px), 그 외/펼침=240px ── */}
+      {/* ── 본문 3열 (railMode에선 씬 풀블리드 + 플로팅 패널 → relative 앵커) ── */}
+      <div className="relative flex flex-1 min-h-0 overflow-hidden">
+      {/* ── 좌 내비 — 펼침 사이드바(그 외 라우트 · /office 메뉴 펼침). railMode는 플로팅 미니 레일로 대체(아래) ── */}
+      {!railMode && (
       <aside
-        className={[
-          railMode ? 'w-14' : 'w-60',
-          'flex-shrink-0 flex flex-col border-r border-border-subtle transition-[width] duration-200',
-        ].join(' ')}
+        className="w-60 flex-shrink-0 flex flex-col border-r border-border-subtle transition-[width] duration-200"
         style={{ background: '#161F32' }}
       >
-        {/* 로고 + 레일 토글(/office 한정) */}
-        {railMode ? (
-          <div className="py-3 border-b border-border-subtle flex-shrink-0 flex flex-col items-center gap-1.5">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-sm">V</div>
+        {/* 로고 + 레일 접기(/office 메뉴 펼침 상태에서만 노출) */}
+        <div className="px-5 py-4 border-b border-border-subtle flex-shrink-0 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-[10px] text-text-muted uppercase tracking-widest mb-0.5">VirtualOffice</div>
+            <div className="text-base font-bold text-text-primary">가상 오피스</div>
+          </div>
+          {isOffice && (
             <button
               type="button"
-              onClick={() => setNavExpanded(true)}
-              title="메뉴 펼치기"
-              aria-label="메뉴 펼치기"
-              aria-expanded={false}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-surface-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+              onClick={() => setNavExpanded(false)}
+              title="메뉴 접기"
+              aria-label="메뉴 접기"
+              aria-expanded={true}
+              className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-surface-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
             >
-              <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" /></svg>
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
             </button>
-          </div>
-        ) : (
-          <div className="px-5 py-4 border-b border-border-subtle flex-shrink-0 flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <div className="text-[10px] text-text-muted uppercase tracking-widest mb-0.5">VirtualOffice</div>
-              <div className="text-base font-bold text-text-primary">가상 오피스</div>
-            </div>
-            {isOffice && (
-              <button
-                type="button"
-                onClick={() => setNavExpanded(false)}
-                title="메뉴 접기"
-                aria-label="메뉴 접기"
-                aria-expanded={true}
-                className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-surface-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
-              >
-                <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-              </button>
-            )}
-          </div>
-        )}
+          )}
+        </div>
 
         {/* 내비 메뉴 */}
-        <nav
-          className={['flex-1 py-3 overflow-y-auto', railMode ? 'px-2 space-y-1' : 'px-3 space-y-0.5'].join(' ')}
-          aria-label="주 메뉴"
-        >
+        <nav className="flex-1 py-3 overflow-y-auto px-3 space-y-0.5" aria-label="주 메뉴">
           {NAV_ITEMS.map(renderNav)}
           {adminItems.length > 0 && (
             <>
-              {railMode ? (
-                <div className="mx-2 my-2 border-t border-border-subtle" role="separator" aria-label="관리" />
-              ) : (
-                <div className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted">관리</div>
-              )}
+              <div className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted">관리</div>
               {adminItems.map(renderNav)}
             </>
           )}
         </nav>
 
-        {/* 내 프로필 카드 — 레일에선 아바타+로그아웃만 */}
-        <div className={[railMode ? 'px-2' : 'px-3', 'py-3 border-t border-border-subtle flex-shrink-0'].join(' ')}>
+        {/* 내 프로필 카드 */}
+        <div className="px-3 py-3 border-t border-border-subtle flex-shrink-0">
           {me ? (
-            railMode ? (
-              <div className="flex flex-col items-center gap-1.5" title={me.name}>
-                <Avatar name={me.name} status="online" size="sm" />
-                <button
-                  onClick={logout}
-                  className="text-text-muted hover:text-danger transition-colors p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
-                  title="로그아웃"
-                  aria-label="로그아웃"
-                >
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                    <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm9.293 2.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                  </svg>
-                </button>
+            <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-bg-surface-raised">
+              <Avatar name={me.name} status="online" size="md" />
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-semibold text-text-primary truncate">{me.name}</div>
+                <StatusBadge status="online" />
               </div>
-            ) : (
-              <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg bg-bg-surface-raised">
-                <Avatar name={me.name} status="online" size="md" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-semibold text-text-primary truncate">{me.name}</div>
-                  <StatusBadge status="online" />
-                </div>
-                <button
-                  onClick={logout}
-                  className="text-text-muted hover:text-danger transition-colors p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
-                  title="로그아웃"
-                  aria-label="로그아웃"
-                >
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                    <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm9.293 2.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </div>
-            )
+              <button
+                onClick={logout}
+                className="text-text-muted hover:text-danger transition-colors p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                title="로그아웃"
+                aria-label="로그아웃"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                  <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm9.293 2.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
           ) : (
-            <div className={railMode ? 'h-8 rounded-lg bg-bg-surface-raised animate-pulse' : 'h-12 rounded-lg bg-bg-surface-raised animate-pulse'} />
+            <div className="h-12 rounded-lg bg-bg-surface-raised animate-pulse" />
           )}
         </div>
       </aside>
+      )}
 
       {/* ── 중앙 영역 ── */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -897,6 +1166,248 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
             <OfficeViewport2D onJoinMeeting={handleViewportJoin} dockSlot={meetingDock} />
           </div>
 
+          {/* ── (1b) 플로팅 셸 크롬 — /office 몰입(railMode) 전용. 씬 위 z-30 오버레이 ── */}
+          {railMode && (
+            <>
+              {/* 좌상단: 오피스 필 — HORIZON · {오피스명} + 재실 카운터 */}
+              <div
+                className="absolute left-4 top-4 z-30 h-11 flex items-center gap-2.5 pl-2 pr-3.5 rounded-2xl"
+                style={chromeSurface()}
+              >
+                <div className="w-[26px] h-[26px] rounded-lg flex items-center justify-center text-white text-xs font-extrabold" style={{ background: 'linear-gradient(135deg,#C4553B,#E3B23C)' }}>H</div>
+                <span className="text-[13px] font-extrabold tracking-tight" style={{ color: T1B.text1 }}>HORIZON · 판교 HQ</span>
+                <span className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: 'rgba(255,255,255,0.07)', color: T1B.text2 }}>
+                  <span className="w-[7px] h-[7px] rounded-full" style={{ background: '#34B369' }} />
+                  {onlineCount}/{employees.length || onlineCount}
+                </span>
+              </div>
+
+              {/* 상단 중앙: 커맨드 팔레트 트리거 */}
+              <button
+                type="button"
+                onClick={() => setPaletteOpen(true)}
+                aria-label="구성원·방·기능 검색 (커맨드 팔레트)"
+                className="absolute left-1/2 top-4 -translate-x-1/2 z-30 w-[480px] max-w-[46vw] h-11 flex items-center gap-2.5 px-3.5 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B23C]/60"
+                style={chromeSurface('palette')}
+              >
+                <span style={{ color: T1B.text2 }}><StrokeIcon d={RAIL_ICON.search} size={16} /></span>
+                <span className="flex-1 min-w-0 text-left text-[12.5px] truncate" style={{ color: T1B.text2 }}>
+                  {searchQuery ? `검색: ${searchQuery}` : '구성원 · 방 · 기능 검색 — 이동은 여기서'}
+                </span>
+                <span className="text-[10.5px] font-bold px-1.5 py-1 rounded" style={{ background: 'rgba(255,255,255,0.08)', color: T1B.text2 }}>⌘K</span>
+              </button>
+
+              {/* 우상단: 알림 + 프로필 */}
+              <div className="absolute right-4 top-4 z-30 flex gap-2">
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={handleNoticeToggle}
+                    title="알림"
+                    aria-label={unseenNoticeCount > 0 ? `알림 — 새 공지 ${unseenNoticeCount}건` : '알림'}
+                    aria-haspopup="true"
+                    aria-expanded={noticeOpen}
+                    className="relative w-11 h-11 rounded-2xl flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B23C]/60"
+                    style={{ ...chromeSurface(), color: T1B.icon }}
+                  >
+                    <StrokeIcon d="M6.2 8.2a3.8 3.8 0 017.6 0c0 2.9 1.4 4.2 1.4 4.2H4.8s1.4-1.3 1.4-4.2M8.6 15.2a1.5 1.5 0 002.8 0" size={19} />
+                    {unseenNoticeCount > 0 && (
+                      <span className="absolute top-1 right-1 min-w-[14px] h-3.5 px-1 rounded-full text-white text-[9px] font-extrabold flex items-center justify-center leading-none" style={{ background: '#E0524D', boxShadow: `0 0 0 2px ${T1B.dotRing}` }}>
+                        {unseenNoticeCount > 9 ? '9+' : unseenNoticeCount}
+                      </span>
+                    )}
+                  </button>
+                  {noticeOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" aria-hidden="true" onClick={() => setNoticeOpen(false)} />
+                      <div role="menu" aria-label="최근 공지" className="absolute right-0 top-12 z-50 w-72 rounded-2xl overflow-hidden" style={chromeSurface('hi')}>
+                        <div className="px-3.5 py-2.5 text-[12px] font-bold" style={{ color: T1B.text1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>최근 공지</div>
+                        <div className="max-h-80 overflow-y-auto py-1">
+                          {notices.length === 0 ? (
+                            <div className="px-3 py-4 text-[12px] text-center" style={{ color: T1B.text2 }}>공지사항이 없습니다</div>
+                          ) : (
+                            notices.map((n) => (
+                              <div key={n.id} className="px-3.5 py-2 transition-colors" style={{ color: T1B.text1 }}>
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  {n.pinned && <span className="flex-shrink-0 text-[9px] font-bold px-1 py-0.5 rounded leading-none" style={{ background: 'rgba(227,178,60,0.2)', color: T1B.mustard }}>고정</span>}
+                                  <span className="text-[12px] truncate">{n.title}</span>
+                                </div>
+                                <div className="text-[10px] mt-0.5" style={{ color: T1B.text2 }}>{(n.published_at ?? n.created_at)?.slice(0, 10).replace(/-/g, '.')}</div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                        {canViewAllNotices && (
+                          <Link href="/admin/notices" onClick={() => setNoticeOpen(false)} className="block px-3 py-2 text-center text-[11px] font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B23C]/60" style={{ color: T1B.mustard, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                            전체 보기 ›
+                          </Link>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setProfileOpen((o) => !o)}
+                    title={me?.name ?? '프로필'}
+                    aria-haspopup="true"
+                    aria-expanded={profileOpen}
+                    className="h-11 flex items-center gap-1.5 px-2.5 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B23C]/60"
+                    style={chromeSurface()}
+                  >
+                    <div className="relative w-[30px] h-[30px]">
+                      <div className="absolute inset-0 rounded-lg flex items-center justify-center text-white text-[11px] font-bold" style={{ background: badgeStyle(me?.name ?? '나').grad, boxShadow: `0 0 0 2px ${badgeStyle(me?.name ?? '나').ring}` }}>
+                        {(me?.name ?? '나').slice(0, 2)}
+                      </div>
+                      <div className="absolute -right-0.5 -bottom-0.5 w-2.5 h-2.5 rounded-full" style={{ background: '#34B369', boxShadow: `0 0 0 2px ${T1B.dotRing}` }} />
+                    </div>
+                    <span style={{ color: T1B.text2 }}><StrokeIcon d="M6.6 8.6 10 12l3.4-3.4" size={14} /></span>
+                  </button>
+                  {profileOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" aria-hidden="true" onClick={() => setProfileOpen(false)} />
+                      <div role="menu" className="absolute right-0 top-12 z-50 w-52 rounded-2xl overflow-hidden p-1.5" style={chromeSurface('hi')}>
+                        <div className="px-2.5 py-2">
+                          <div className="text-[13px] font-bold truncate" style={{ color: T1B.text1 }}>{me?.name ?? '—'}</div>
+                          <div className="text-[11px] mt-0.5 flex items-center gap-1.5" style={{ color: T1B.text2 }}>
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#34B369' }} /> 온라인
+                          </div>
+                        </div>
+                        <div className="h-px my-1 mx-1" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                        <Link href="/settings" onClick={() => setProfileOpen(false)} className="flex items-center gap-2.5 h-9 px-2.5 rounded-lg text-[12.5px] font-medium transition-colors" style={{ color: T1B.text1 }}>
+                          <span style={{ color: T1B.icon }}><StrokeIcon d={RAIL_ICON.gear} size={16} /></span> 설정
+                        </Link>
+                        <button type="button" onClick={() => { setProfileOpen(false); logout(); }} className="w-full flex items-center gap-2.5 h-9 px-2.5 rounded-lg text-[12.5px] font-medium text-left transition-colors" style={{ color: '#E0857A' }}>
+                          <StrokeIcon d="M8 4.5H5.2A1.2 1.2 0 004 5.7v8.6a1.2 1.2 0 001.2 1.2H8M12.5 12.8 15.3 10l-2.8-2.8M15 10H8" size={16} /> 로그아웃
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* 좌측 미니 레일 — 5그룹 + 더보기(세로 중앙). 활성 = 머스터드 필 */}
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 z-30">
+                <div className="w-[52px] flex flex-col items-center gap-1.5 py-2 rounded-2xl" style={chromeSurface()}>
+                  {/* 1) 가상오피스(활성=씬 홈) */}
+                  <Link
+                    href="/office"
+                    title="가상오피스"
+                    aria-label="가상오피스"
+                    aria-current="page"
+                    className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: T1B.mustard, color: T1B.mustardInk, boxShadow: '0 4px 12px rgba(227,178,60,0.35)' }}
+                  >
+                    <StrokeIcon d={RAIL_ICON.office} size={20} />
+                  </Link>
+                  {/* 2) 업무 허브(플라이아웃) */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => { setWorkHubOpen((o) => !o); setMoreOpen(false); }}
+                      title="업무 허브 — 업무관리 · 업무현황 · 보고서 · KPI평가"
+                      aria-label="업무 허브"
+                      aria-haspopup="true"
+                      aria-expanded={workHubOpen}
+                      className="relative w-11 h-11 rounded-xl flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B23C]/60"
+                      style={{ background: workHubOpen ? T1B.hover : 'transparent', color: T1B.icon }}
+                    >
+                      <StrokeIcon d={RAIL_ICON.brief} size={20} />
+                      <span className="absolute top-[3px] right-[3px] min-w-[15px] h-[15px] rounded-lg text-[9px] font-extrabold flex items-center justify-center" style={{ background: T1B.mustard, color: T1B.mustardInk, boxShadow: `0 0 0 2px ${T1B.dotRing}` }}>4</span>
+                    </button>
+                    {workHubOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" aria-hidden="true" onClick={() => setWorkHubOpen(false)} />
+                        <div role="menu" aria-label="업무 허브" className="absolute left-[62px] top-1/2 -translate-y-1/2 z-50 w-[204px] p-2 rounded-2xl" style={chromeSurface('hi')}>
+                          <div className="px-2.5 pt-1.5 pb-1 text-[11px] font-bold tracking-wide" style={{ color: T1B.groupLbl }}>업무 허브</div>
+                          {WORK_HUB_HREFS.map((href) => {
+                            const item = NAV_ITEMS.find((n) => n.href === href);
+                            if (!item) return null;
+                            return (
+                              <Link
+                                key={href}
+                                href={href}
+                                onClick={() => setWorkHubOpen(false)}
+                                className="flex items-center gap-2.5 h-9 px-2.5 rounded-xl text-[12.5px] font-medium transition-colors"
+                                style={{ color: T1B.text1 }}
+                              >
+                                <span style={{ color: T1B.icon }}><StrokeIcon d={WORK_HUB_ICON[href]} size={16} /></span>
+                                {item.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {/* 3) 회의실 예약 */}
+                  <Link href="/meetings" title="회의실예약" aria-label="회의실예약" className="w-11 h-11 rounded-xl flex items-center justify-center transition-colors" style={{ color: T1B.icon }}>
+                    <StrokeIcon d={RAIL_ICON.cal} size={20} />
+                  </Link>
+                  {/* 4) 커뮤니케이션 */}
+                  <Link href="/chat" title="커뮤니케이션" aria-label="커뮤니케이션" className="w-11 h-11 rounded-xl flex items-center justify-center transition-colors" style={{ color: T1B.icon }}>
+                    <StrokeIcon d={RAIL_ICON.chat} size={20} />
+                  </Link>
+                  {/* 5) 근태 · 출장 */}
+                  <Link href="/trip" title="근태 · 출장" aria-label="근태 · 출장" className="w-11 h-11 rounded-xl flex items-center justify-center transition-colors" style={{ color: T1B.icon }}>
+                    <StrokeIcon d={RAIL_ICON.clock} size={20} />
+                  </Link>
+                  <div className="w-[26px] h-px my-0.5" style={{ background: 'rgba(255,255,255,0.10)' }} />
+                  {/* 더보기 — 설정 + 관리 콘솔(역할 게이트) */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => { setMoreOpen((o) => !o); setWorkHubOpen(false); }}
+                      title="더보기 — 설정 · 관리 콘솔"
+                      aria-label="더보기"
+                      aria-haspopup="true"
+                      aria-expanded={moreOpen}
+                      className="w-11 h-11 rounded-xl flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B23C]/60"
+                      style={{ background: moreOpen ? T1B.hover : 'rgba(255,255,255,0.07)', color: T1B.icon }}
+                    >
+                      <StrokeIcon d={RAIL_ICON.more} size={20} />
+                    </button>
+                    {moreOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" aria-hidden="true" onClick={() => setMoreOpen(false)} />
+                        <div role="menu" aria-label="더보기" className="absolute left-[62px] bottom-0 z-50 w-[220px] p-2 rounded-2xl" style={chromeSurface('hi')}>
+                          <div className="px-2.5 pt-1.5 pb-1 text-[11px] font-bold tracking-wide" style={{ color: T1B.groupLbl }}>더보기</div>
+                          <Link href="/settings" onClick={() => setMoreOpen(false)} className="flex items-center gap-2.5 h-9 px-2.5 rounded-xl text-[12.5px] font-medium transition-colors" style={{ color: T1B.text1 }}>
+                            <span style={{ color: T1B.icon }}><StrokeIcon d={RAIL_ICON.gear} size={16} /></span> 설정
+                          </Link>
+                          {adminItems.length > 0 && (
+                            <>
+                              <div className="h-px my-1.5 mx-1" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                              <div className="flex items-center gap-1.5 px-2.5 pb-1">
+                                <span style={{ color: T1B.groupLbl }}><StrokeIcon d="M10 3.5 4.5 5.5v4.5c0 3.5 2.4 5.5 5.5 6.5 3.1-1 5.5-3 5.5-6.5V5.5z" size={14} /></span>
+                                <span className="text-[11px] font-bold tracking-wide" style={{ color: T1B.groupLbl }}>관리 콘솔</span>
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded" style={{ background: 'rgba(227,178,60,0.16)', color: T1B.mustard }}>ADMIN</span>
+                              </div>
+                              {adminItems.map((item) => (
+                                <Link
+                                  key={item.href}
+                                  href={item.href}
+                                  onClick={() => setMoreOpen(false)}
+                                  className="flex items-center gap-2.5 h-[34px] px-2.5 rounded-xl text-[12.5px] font-medium transition-colors"
+                                  style={{ color: T1B.text1 }}
+                                >
+                                  <span style={{ color: T1B.icon }}><StrokeIcon d={RAIL_MORE_ICON[item.href] ?? RAIL_ICON.grid4} size={16} /></span>
+                                  {item.label}
+                                </Link>
+                              ))}
+                              <div className="px-2.5 pt-1 text-[10px]" style={{ color: T1B.text2 }}>역할 게이트 — 관리자에게만 노출</div>
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
           {/* 회의 화상 그리드 (상단 중앙) — 연결 시 참가자 비디오/오디오 표시(C3) */}
           {activeRoom && (
             <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
@@ -904,7 +1415,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
             </div>
           )}
 
-          {/* D33: 우측 패널 접힘 시 가장자리 핸들 — 구성원 패널 열기 */}
+          {/* D33: 우측 패널 접힘 시 가장자리 핸들 — 구성원 패널 열기(1b 웜 블랙) */}
           {isOffice && !showPanel && (
             <button
               type="button"
@@ -912,12 +1423,12 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
               title="구성원 패널 열기"
               aria-label="구성원 패널 열기"
               aria-expanded={false}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-1.5 py-3 px-1 rounded-l-lg border border-r-0 border-border-subtle text-text-secondary hover:text-text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
-              style={{ background: 'rgba(22,31,50,0.92)', backdropFilter: 'blur(6px)' }}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1.5 py-3 px-1 rounded-l-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B23C]/60"
+              style={{ ...chromeSurface(), borderRight: 'none', color: T1B.text2 }}
             >
               <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3"><path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
               <span className="text-[10px] font-semibold" style={{ writingMode: 'vertical-rl' }}>
-                구성원 {employees.filter((e) => e.status !== 'offline').length}
+                구성원 {onlineCount}
               </span>
             </button>
           )}
@@ -1055,72 +1566,112 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
         </div>
       </main>
 
-      {/* ── 우 패널 320px — D33: /office에선 접이식(기본 접힘, 가장자리 핸들로 열기) ── */}
+      {/* ── 우 패널 — 그 외 라우트=280px 컬럼 · /office(railMode)=플로팅 웜 블랙 글래스(1b) ── */}
       {showPanel && (
       <aside
-        className="w-80 flex-shrink-0 flex flex-col border-l border-border-subtle overflow-y-auto"
-        style={{ background: '#161F32' }}
+        className={
+          railMode
+            ? 'absolute right-4 top-20 bottom-[86px] z-30 w-[276px] flex flex-col rounded-2xl overflow-hidden'
+            : 'w-80 flex-shrink-0 flex flex-col border-l border-border-subtle overflow-y-auto'
+        }
+        style={railMode ? chromeSurface() : { background: '#161F32' }}
       >
         {/* ── 사용자 목록 ── */}
-        <section className="flex-shrink-0 border-b border-border-subtle">
+        <section
+          className={railMode ? 'flex-shrink-0 flex flex-col min-h-0' : 'flex-shrink-0 border-b border-border-subtle'}
+          style={railMode ? { borderBottom: 'none' } : undefined}
+        >
           <div className="px-4 py-3 flex items-center justify-between">
-            <span className="text-[13px] font-semibold text-text-primary">구성원 ({employees.length})</span>
+            <span className="flex items-center gap-2">
+              <span className="text-[13.5px] font-extrabold" style={railMode ? { color: T1B.text1 } : undefined}>구성원</span>
+              <span
+                className="text-[11px] font-bold rounded-full px-2 py-0.5"
+                style={railMode ? { background: 'rgba(255,255,255,0.07)', color: T1B.text2 } : { background: '#1E2940', color: '#7A899E' }}
+              >
+                {employees.length}
+              </span>
+            </span>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded bg-bg-surface-raised">실시간</span>
+              {!railMode && <span className="text-[10px] text-text-muted px-1.5 py-0.5 rounded bg-bg-surface-raised">실시간</span>}
               {isOffice && (
                 <button
                   type="button"
                   onClick={() => setPanelOpen(false)}
                   title="패널 접기"
                   aria-label="패널 접기"
-                  className="w-6 h-6 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-surface-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                  className="w-6 h-6 rounded-lg flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                  style={railMode ? { color: T1B.text2 } : undefined}
                 >
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5"><path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" /></svg>
+                  <svg viewBox="0 0 20 20" fill="currentColor" className={['w-3.5 h-3.5', railMode ? '' : 'text-text-muted hover:text-text-primary'].join(' ')}><path fillRule="evenodd" d="M8.707 5.293a1 1 0 010 1.414L5.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0zm6 0a1 1 0 010 1.414L11.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                 </button>
               )}
             </div>
           </div>
+          {/* 팔레트 연동 검색 트리거(스펙 IA §3) — 클릭 시 커맨드 팔레트 오픈 */}
+          {railMode && (
+            <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              className="mx-3 mb-2 flex items-center gap-2 h-[34px] rounded-xl px-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B23C]/60"
+              style={{ background: T1B.hover, color: T1B.text2 }}
+            >
+              <StrokeIcon d={RAIL_ICON.search} size={14} />
+              <span className="text-[11.5px] truncate">이름 · 팀 검색 — 팔레트와 연동</span>
+            </button>
+          )}
           {/* 헤더 검색어 활성 표시(06 §1.2) — 필터 결과 수 + 지우기 */}
           {normalizedQuery && (
             <div className="px-4 pb-2 flex items-center justify-between gap-2">
-              <span className="text-[11px] text-primary truncate">
-                검색: {searchQuery.trim()} ({filteredEmployees.length}명)
+              <span className="text-[11px] truncate" style={railMode ? { color: T1B.mustard } : undefined}>
+                <span className={railMode ? '' : 'text-primary'}>검색: {searchQuery.trim()} ({filteredEmployees.length}명)</span>
               </span>
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="flex-shrink-0 text-[10px] text-text-muted hover:text-text-primary px-1.5 py-0.5 rounded bg-bg-surface-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                style={railMode ? { background: T1B.hover, color: T1B.text2 } : undefined}
               >
-                지우기
+                <span className={railMode ? '' : 'text-text-muted hover:text-text-primary bg-bg-surface-raised'}>지우기</span>
               </button>
             </div>
           )}
           {/* 상태 필터 탭 */}
-          <div className="flex border-b border-border-subtle" role="tablist" aria-label="상태 필터">
-            {FILTER_TABS.map((t) => (
-              <button
-                key={t.key}
-                role="tab"
-                aria-selected={presenceFilter === t.key}
-                onClick={() => setPresenceFilter(t.key)}
-                className={[
-                  'flex-1 py-1.5 text-[11px] font-medium transition-colors',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan',
-                  presenceFilter === t.key
-                    ? 'text-primary border-b-2 border-primary -mb-px'
-                    : 'text-text-muted hover:text-text-secondary',
-                ].join(' ')}
-              >
-                {t.label}
-              </button>
-            ))}
+          <div
+            className="flex"
+            role="tablist"
+            aria-label="상태 필터"
+            style={railMode ? { borderBottom: '1px solid rgba(255,255,255,0.08)' } : { borderBottom: '1px solid #273350' }}
+          >
+            {FILTER_TABS.map((t) => {
+              const on = presenceFilter === t.key;
+              return (
+                <button
+                  key={t.key}
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => setPresenceFilter(t.key)}
+                  className="flex-1 py-1.5 text-[11px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                  style={
+                    railMode
+                      ? on
+                        ? { color: T1B.mustard, borderBottom: `2px solid ${T1B.mustard}`, marginBottom: -1 }
+                        : { color: T1B.text2 }
+                      : undefined
+                  }
+                >
+                  <span className={railMode ? '' : on ? 'text-primary border-b-2 border-primary -mb-px' : 'text-text-muted hover:text-text-secondary'}>
+                    {t.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-          <div className="py-1 max-h-72 overflow-y-auto">
+          <div className={railMode ? 'flex-1 min-h-0 py-1 overflow-y-auto' : 'py-1 max-h-72 overflow-y-auto'}>
             {loadingEmp ? (
-              <div className="px-4 py-3 text-[12px] text-text-muted">로딩 중...</div>
+              <div className="px-4 py-3 text-[12px]" style={railMode ? { color: T1B.text2 } : undefined}><span className={railMode ? '' : 'text-text-muted'}>로딩 중...</span></div>
             ) : filteredEmployees.length === 0 ? (
-              <div className="px-4 py-3 text-[12px] text-text-muted">
-                {normalizedQuery ? '검색 결과가 없습니다' : '해당 상태 사용자 없음'}
+              <div className="px-4 py-3 text-[12px]" style={railMode ? { color: T1B.text2 } : undefined}>
+                <span className={railMode ? '' : 'text-text-muted'}>{normalizedQuery ? '검색 결과가 없습니다' : '해당 상태 사용자 없음'}</span>
               </div>
             ) : (
               PRESENCE_GROUPS.map((g) => {
@@ -1128,24 +1679,45 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                 if (members.length === 0) return null;
                 return (
                   <div key={g.key} className="mb-0.5">
-                    {/* 상태 그룹 헤더 (시안: In Office · N) */}
+                    {/* 상태 그룹 헤더 (시안: 재실 · N) */}
                     <div className="px-4 pt-2 pb-1 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: g.color }} />
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">{g.label}</span>
-                      <span className="text-[10px] text-text-muted">· {members.length}</span>
+                      <span className="w-[7px] h-[7px] rounded-full flex-shrink-0" style={{ background: g.color }} />
+                      <span className="text-[11px] font-bold tracking-wide" style={railMode ? { color: T1B.groupLbl } : undefined}>
+                        <span className={railMode ? '' : 'text-text-muted uppercase tracking-wider text-[10px] font-semibold'}>{g.label}</span>
+                      </span>
+                      <span className="text-[10.5px] font-bold" style={railMode ? { color: T1B.groupLbl } : undefined}>
+                        <span className={railMode ? '' : 'text-text-muted'}>{railMode ? members.length : `· ${members.length}`}</span>
+                      </span>
                     </div>
-                    {members.map((emp) => (
-                      <ListItem
-                        key={emp.id}
-                        leading={
-                          // Avatar 상태 점은 6종 union만 지원 — working은 online 점으로 표시(뱃지는 업무중)
-                          <Avatar name={emp.name} status={emp.status === 'working' ? 'online' : emp.status} size="sm" />
-                        }
-                        primary={emp.name}
-                        secondary={emp.team_name ?? ''}
-                        trailing={<StatusBadge status={emp.status} showDot={false} />}
-                      />
-                    ))}
+                    {members.map((emp) =>
+                      railMode ? (
+                        // 1b: 씬 배지 규격 아바타(r8 타일 + 이니셜 + 상태 도트) + 자리/상태 부제
+                        <button
+                          key={emp.id}
+                          type="button"
+                          onClick={() => { setSearchQuery(emp.name); setPresenceFilter('all'); }}
+                          className="w-full flex items-center gap-2.5 h-[42px] px-2.5 mx-1.5 rounded-xl text-left transition-colors hover:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B23C]/60"
+                          style={{ width: 'calc(100% - 12px)' }}
+                        >
+                          <SceneBadge name={emp.name} status={emp.status} size={30} />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[12.5px] font-semibold truncate" style={{ color: T1B.text1 }}>{emp.name}</div>
+                            <div className="text-[10.5px] truncate" style={{ color: T1B.text2 }}>{emp.team_name ?? PRESENCE_META_LABEL[emp.status] ?? ''}</div>
+                          </div>
+                        </button>
+                      ) : (
+                        <ListItem
+                          key={emp.id}
+                          leading={
+                            // Avatar 상태 점은 6종 union만 지원 — working은 online 점으로 표시(뱃지는 업무중)
+                            <Avatar name={emp.name} status={emp.status === 'working' ? 'online' : emp.status} size="sm" />
+                          }
+                          primary={emp.name}
+                          secondary={emp.team_name ?? ''}
+                          trailing={<StatusBadge status={emp.status} showDot={false} />}
+                        />
+                      ),
+                    )}
                   </div>
                 );
               })
@@ -1153,7 +1725,8 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
           </div>
         </section>
 
-        {/* ── 오늘의 일정 ── */}
+        {/* ── 오늘의 일정 · 공지 — 그 외 라우트 컬럼에서만(railMode 씬은 게시판/서류함 핫스팟으로 흡수) ── */}
+        {!railMode && (<>
         <section className="flex-shrink-0 border-b border-border-subtle">
           <div className="px-4 py-3 flex items-center justify-between">
             <span className="text-[13px] font-semibold text-text-primary">오늘의 일정</span>
@@ -1214,6 +1787,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
             ))}
           </div>
         </section>
+        </>)}
       </aside>
       )}
       </div>
