@@ -237,9 +237,9 @@ export class SceneFloorLayoutProvider implements FloorLayoutProvider {
 const V3_ROOM_INSET = 0.5;
 /** top-left 미터 사각형(가구 충돌). officeV3.V3_OBSTACLE_RECTS와 바이트 정합. */
 const V3_OBSTACLE_RECTS_M: Rect[] = [
-  // 워크벤치 데스크 상판 2개(중심 8.4,5.3 / 8.4,8.5; w2.9×d1.5).
-  { x: 8.4 - 2.9 / 2, y: 5.3 - 1.5 / 2, w: 2.9, h: 1.5 },
-  { x: 8.4 - 2.9 / 2, y: 8.5 - 1.5 / 2, w: 2.9, h: 1.5 },
+  // 워크벤치 데스크 상판 2개(중심 8.4,5.7 / 8.4,8.9; w2.9×d1.5) — ⚠ SYNC frontend/lib/officeV3.ts
+  { x: 8.4 - 2.9 / 2, y: 5.7 - 1.5 / 2, w: 2.9, h: 1.5 },
+  { x: 8.4 - 2.9 / 2, y: 8.9 - 1.5 / 2, w: 2.9, h: 1.5 },
   { x: 14.0, y: 5.9, w: 3.6, h: 2.1 }, // 보드룸 테이블
   { x: 0.7, y: 3.2, w: 1.1, h: 3.0 }, // 팬트리 카운터
   { x: 10.9, y: 4.0, w: 3.0, h: 2.0 }, // 라운지
@@ -250,8 +250,8 @@ const V3_OBSTACLE_RECTS_M: Rect[] = [
 const V3_SEATS_M: Seat[] = (() => {
   const DX = 0.725, DY = 1.5 / 2 + 0.42; // 1.17
   const benches: Array<{ c: "WS-A" | "WS-B"; x: number; y: number }> = [
-    { c: "WS-A", x: 8.4, y: 5.3 },
-    { c: "WS-B", x: 8.4, y: 8.5 },
+    { c: "WS-A", x: 8.4, y: 5.7 },
+    { c: "WS-B", x: 8.4, y: 8.9 },
   ];
   const order: Array<[number, number]> = [[-DX, -DY], [DX, -DY], [-DX, DY], [DX, DY]];
   const out: Seat[] = [];

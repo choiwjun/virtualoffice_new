@@ -41,7 +41,7 @@ SCENE_H_M = (941 / 1672) * 20.0
 # 벤치 중심 → 좌석 4점 = (bx ± 0.725, by ± 1.17). 순서 1=좌상,2=우상,3=좌하,4=우하.
 _SEAT_DX = 0.725
 _SEAT_DY = 1.5 / 2 + 0.42  # 1.17
-_BENCHES = [("WS-A", 8.4, 5.3), ("WS-B", 8.4, 8.5)]
+_BENCHES = [("WS-A", 8.4, 5.7), ("WS-B", 8.4, 8.9)]
 _ORDER = [(-_SEAT_DX, -_SEAT_DY), (_SEAT_DX, -_SEAT_DY), (-_SEAT_DX, _SEAT_DY), (_SEAT_DX, _SEAT_DY)]
 
 

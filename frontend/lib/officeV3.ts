@@ -34,7 +34,9 @@ export const BENCH_DESK_W = 2.9;
 export const BENCH_DESK_D = 1.5;
 
 /** 워크벤치 배치(미터, 탑다운 축정렬) — 상하 2열로 분리해 겹침 해소.
- *  work 존(x 5.6–12.0, y 4.2–9.6) 내부. 두 벤치 사이 통로 확보(A 하단석 y≈6.47, B 상단석 y≈7.33 → 0.86m). */
+ *  두 벤치 사이 통로 확보(A 하단석 y≈6.87, B 상단석 y≈7.73 → 0.86m).
+ *  y+0.4 남하(2026-07-22): 리셉션 다이닝 의자(렌더러가 테이블 주위에 그림, 하단 ≈3.9)와
+ *  A 상단석 의자 시각 겹침 + 리셉션 방 히트영역(y≤4.0)이 좌석 클릭을 삼키는 문제 해소. */
 export interface BenchSpec {
   /** 클러스터 prefix(좌석 id 앞부분). */
   cluster: 'WS-A' | 'WS-B';
@@ -42,8 +44,8 @@ export interface BenchSpec {
   y: number;
 }
 export const BENCHES: BenchSpec[] = [
-  { cluster: 'WS-A', x: 8.4, y: 5.3 },
-  { cluster: 'WS-B', x: 8.4, y: 8.5 },
+  { cluster: 'WS-A', x: 8.4, y: 5.7 },
+  { cluster: 'WS-B', x: 8.4, y: 8.9 },
 ];
 
 /** 좌석 id 파생 순서 — 렌더러 seatDefs 인덱스와 동일: 0=좌상,1=우상,2=좌하,3=우하.

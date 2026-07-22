@@ -1361,6 +1361,8 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
                   </span>
                 </>
               )}
+              {/* 히트영역(30px 투명)과 가시 점을 분리 — 의자 몸통 클릭이 방 폴리곤(z30)에
+                  삼켜지지 않게 좌석 타깃을 넓힌다(마커 점은 기존 크기 유지). */}
               <button
                 type="button"
                 title={title}
@@ -1368,23 +1370,33 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
                   e.stopPropagation();
                   handleSeatClick(seat);
                 }}
-                className="absolute -translate-x-1/2 -translate-y-1/2 rounded-[3px]"
+                className="absolute -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
                 style={{
                   left: `${n.x * 100}%`,
                   top: seatTop,
-                  width: isMine ? 13 : 10,
-                  height: isMine ? 13 : 10,
-                  background: fill,
-                  border: `2px solid ${border}`,
-                  boxShadow: isMine
-                    ? '0 0 10px rgba(59,91,254,.95)'
-                    : occupied || unavailable || fixedUnassigned
-                      ? 'none'
-                      : '0 0 6px rgba(34,197,94,.55)',
+                  width: 30,
+                  height: 30,
+                  background: 'transparent',
+                  border: 'none',
                   zIndex: SEAT_Z,
                   cursor: unavailable || fixedUnassigned ? 'default' : 'pointer',
                 }}
-              />
+              >
+                <span
+                  className="rounded-[3px]"
+                  style={{
+                    width: isMine ? 13 : 10,
+                    height: isMine ? 13 : 10,
+                    background: fill,
+                    border: `2px solid ${border}`,
+                    boxShadow: isMine
+                      ? '0 0 10px rgba(59,91,254,.95)'
+                      : occupied || unavailable || fixedUnassigned
+                        ? 'none'
+                        : '0 0 6px rgba(34,197,94,.55)',
+                  }}
+                />
+              </button>
             </Fragment>
           );
         })}
