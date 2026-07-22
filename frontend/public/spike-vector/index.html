@@ -1,0 +1,67 @@
+<!doctype html>
+<!-- spike-vector — Claude Design 벡터 오피스 데모 (Phase 0-A 게이트용)
+     같은 카탈로그 코드 + 배치 데이터만 교체 → 12인↔24인 재현성 실증.
+     접근: http://localhost:3000/spike-vector/ 또는 파일 직접 열기 -->
+<meta charset="utf-8">
+<title>벡터 오피스 스파이크 — Claude Design</title>
+<style>
+  html,body{margin:0;height:100%;background:#20242e;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif}
+  #bar{position:fixed;top:12px;left:12px;z-index:10;display:flex;gap:8px;align-items:center}
+  #bar button{background:#161f32;color:#fff;border:1px solid #3b5bfe;border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer}
+  #bar button.on{background:#3b5bfe}
+  #bar .sep{width:1px;height:22px;background:#39415a;margin:0 4px}
+  #bar span{color:#9fb0d0;font-size:12px}
+  #stage{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
+  #stage svg{max-width:100vw;max-height:100vh}
+</style>
+<div id="bar">
+  <button id="n12" class="on">12인</button><button id="n24">24인</button>
+  <div class="sep"></div>
+  <button id="tday" class="on">주간</button><button id="tdusk">황혼</button><button id="tnight">야간</button>
+  <span>같은 카탈로그 코드 · 배치 데이터만 교체 (Claude Design 벡터 · 라이선스 0)</span>
+</div>
+<div id="stage"></div>
+<script src="scene.js"></script>
+<script>
+  let n = 12, theme = 'day', raf = 0;
+  const stage = document.getElementById('stage');
+
+  function render() {
+    cancelAnimationFrame(raf);
+    // SVG 문자열은 scene.js가 자체 생성(외부 입력 없음) — DOMParser로 안전 주입
+    const doc = new DOMParser().parseFromString(SpikeScene.renderSVG(n, theme), 'image/svg+xml');
+    stage.replaceChildren(doc.documentElement);
+    startWalker();
+    for (const [id, on] of [['n12', n === 12], ['n24', n === 24], ['tday', theme === 'day'], ['tdusk', theme === 'dusk'], ['tnight', theme === 'night']])
+      document.getElementById(id).className = on ? 'on' : '';
+  }
+
+  // 글라이드 + 밥 이동 데모 — 걷기 사이클 없이 dt 기반 이동감 (전략 1 아바타 문법)
+  function startWalker() {
+    const w = document.getElementById('walker');
+    const pill = document.getElementById('walker-pill');
+    if (!w) return;
+    const K = SpikeScene.K;
+    const x0 = n === 12 ? 11.0 : 9.0, x1 = x0 - 7.0;
+    let last = performance.now(), t = 0, dir = 1;
+    const loop = (now) => {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      t += dt * 0.16 * dir;
+      if (t > 1) { t = 1; dir = -1; } if (t < 0) { t = 0; dir = 1; }
+      const mx = x0 + (x1 - x0) * t;
+      const dxp = (mx - x0) * K, dyp = (mx - x0) * K / 2;   // iso: x축 이동만
+      const bob = Math.sin(now / 130) * 2.2;
+      w.setAttribute('transform', `translate(${dxp} ${dyp + bob})`);
+      if (pill) pill.setAttribute('transform', `translate(${dxp} ${dyp})`);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+  }
+
+  document.getElementById('n12').onclick = () => { n = 12; render(); };
+  document.getElementById('n24').onclick = () => { n = 24; render(); };
+  document.getElementById('tday').onclick = () => { theme = 'day'; render(); };
+  document.getElementById('tdusk').onclick = () => { theme = 'dusk'; render(); };
+  document.getElementById('tnight').onclick = () => { theme = 'night'; render(); };
+  render();
+</script>

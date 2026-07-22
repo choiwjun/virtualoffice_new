@@ -1,0 +1,210 @@
+<!doctype html>
+<!-- Poly Haven 스파이크 v3 — CC0 PBR 모듈 스프라이트로 "인원수 기반 사무실 배치" 데모.
+     같은 스프라이트 + 배치 데이터(JSON)만 교체 → 즉시 재배치 (18-module 설계 실증).
+     임시 파일. 접근: http://localhost:3000/spike-kenney/ph.html -->
+<meta charset="utf-8">
+<title>Poly Haven 사무실 배치 데모</title>
+<style>
+  html,body{margin:0;height:100%;background:#0d1b36;overflow:hidden;font-family:system-ui,sans-serif}
+  #stage{position:relative;width:1500px;height:860px;transform-origin:0 0}
+  .floor{position:absolute;transform-origin:0 0;background:
+    repeating-linear-gradient(to right, rgba(0,0,0,.045) 0 .03px, transparent .03px 2px),
+    repeating-linear-gradient(to bottom, rgba(0,0,0,.045) 0 .03px, transparent .03px 2px),
+    linear-gradient(135deg,#efe9df 0%,#e7e0d4 60%,#ded6c8 100%)}
+  .wallx,.wally{position:absolute;transform-origin:0 0}
+  .wallx{background:linear-gradient(to bottom,#ece5da 0%,#ddd4c6 78%,#c9bfae 100%);box-shadow:inset 0 -0.06px 0 rgba(0,0,0,.18)}
+  .wally{background:linear-gradient(to bottom,#e2dacd 0%,#d2c8b8 78%,#bdb2a0 100%);box-shadow:inset 0 -0.06px 0 rgba(0,0,0,.22)}
+  .m{position:absolute;pointer-events:none}
+  #bar{position:fixed;top:10px;left:10px;z-index:1000;display:flex;gap:8px;align-items:center}
+  #bar button{background:#161f32;color:#fff;border:1px solid #3b5bfe;border-radius:8px;padding:7px 16px;font-size:13px;cursor:pointer}
+  #bar button.on{background:#3b5bfe}
+  #bar span{color:#9fb0d0;font-size:12px}
+</style>
+<div id="bar">
+  <button id="b12" class="on">12인 사무실</button>
+  <button id="b24">24인 사무실</button>
+  <span>같은 스프라이트 · 배치 데이터만 교체 (Poly Haven CC0 · Blender 실렌더)</span>
+</div>
+<div id="stage"></div>
+<script>
+const K = 40;            // px per meter (iso axis)
+const OX = 12 * K + 60;  // 원점 오프셋
+const OY = 120;
+const WALL_H = 2.7;      // m
+const KZ = K * 0.865;    // 수직 px/m
+const W = 20, D = 12;    // 바닥 20×12m
+
+// 렌더 스크립트 산출 ortho_scale + 접지 앵커(카메라 투영 정밀값, MODULE 로그) — 표시폭 = ortho*K*1.41
+// 워크스테이션은 그룹 분리(18-spec): ws-chair(뒤) < 캐릭터 < ws-desk(앞) z-정렬로 다리 가림 해결
+const SIZES = { 'ws-desk': 3.200, 'ws-chair': 1.739, meeting: 4.908, sofa: 2.671, coffee_table: 2.212, plant_big: 2.295, plant_small: 1.430, shelf: 3.537 };
+const ANCHOR = { 'ws-desk': 68.0, 'ws-chair': 75.5, meeting: 59.0, sofa: 62.9, coffee_table: 59.6, plant_big: 75.0, plant_small: 75.5, shelf: 75.5 };
+
+const S = document.getElementById('stage');
+const sx = (mx, my) => OX + (mx - my) * K;
+const sy = (mx, my) => OY + ((mx + my) * K) / 2;
+
+// ── 캐릭터(Mixamo Josh, EEVEE 베이크) — 상태별 프레임 루프. EEVEE는 섀도캐처가 없어
+//    접지 그림자는 CSS 블롭(운영 앱 아바타와 동일 패턴). ──
+const CHAR_META = {
+  walk: { n: 16, ortho: 2.576, anchor: 79.9 },
+  sit: { n: 12, ortho: 2.018, anchor: 79.9 },
+  typing: { n: 24, ortho: 1.944, anchor: 79.9 },
+  idle: { n: 12, ortho: 2.586, anchor: 79.9 },
+};
+let timers = [];
+function placeChar(state, mx, my, opts) {
+  const { flip = false, fps = 10 } = opts || {};
+  const meta = CHAR_META[state];
+  const wrap = document.createElement('div');
+  const w = meta.ortho * K * 1.41;
+  const x = sx(mx, my), y = sy(mx, my);
+  wrap.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;z-index:${Math.round(y * 10)};transform:translate(-50%,-${meta.anchor}%);pointer-events:none`;
+  const sh = document.createElement('div');
+  sh.style.cssText = `position:absolute;left:50%;top:${meta.anchor}%;width:36%;height:${(w * 0.11).toFixed(1)}px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.30),rgba(0,0,0,0) 70%)`;
+  wrap.appendChild(sh);
+  const i = new Image();
+  i.src = `char/${state}/00.png`;
+  i.style.cssText = `display:block;width:100%;position:relative;${flip ? 'transform:scaleX(-1)' : ''}`;
+  wrap.appendChild(i);
+  S.appendChild(wrap);
+  let f = 0;
+  timers.push(setInterval(() => {
+    f = (f + 1) % meta.n;
+    i.src = `char/${state}/${String(f).padStart(2, '0')}.png`;
+  }, 1000 / fps));
+  return wrap;
+}
+// 통로 왕복 워커 — 베이크 기본 방향은 좌하 응시 → +x 이동 시 좌우 반전
+function walker(x0, y0, x1, y1, speed) {
+  const wrap = placeChar('walk', x0, y0, { fps: 12 });
+  const img = wrap.querySelector('img');
+  let t = 0, dir = 1;
+  const dist = Math.hypot(x1 - x0, y1 - y0) || 1;
+  timers.push(setInterval(() => {
+    t += (0.1 * (speed || 1.1) / dist) * dir;
+    if (t >= 1) { t = 1; dir = -1; }
+    if (t <= 0) { t = 0; dir = 1; }
+    img.style.transform = dir > 0 ? 'scaleX(-1)' : '';
+    const mx = x0 + (x1 - x0) * t, my = y0 + (y1 - y0) * t;
+    const x = sx(mx, my), y = sy(mx, my);
+    wrap.style.left = x + 'px';
+    wrap.style.top = y + 'px';
+    wrap.style.zIndex = Math.round(y * 10);
+  }, 100));
+}
+
+function floorAndWalls() {
+  const f = document.createElement('div');
+  f.className = 'floor';
+  f.style.width = W + 'px';
+  f.style.height = D + 'px';
+  f.style.transform = `matrix(${K},${K * 0.5},${-K},${K * 0.5},${OX},${OY})`;
+  S.appendChild(f);
+  const wx = document.createElement('div');   // 상단 벽(x축, y=0)
+  wx.className = 'wallx';
+  wx.style.width = W + 'px';
+  wx.style.height = WALL_H + 'px';
+  wx.style.transform = `matrix(${K},${K * 0.5},0,${-KZ},${OX},${OY})`;
+  S.appendChild(wx);
+  const wy = document.createElement('div');   // 좌측 벽(y축, x=0)
+  wy.className = 'wally';
+  wy.style.width = D + 'px';
+  wy.style.height = WALL_H + 'px';
+  wy.style.transform = `matrix(${-K},${K * 0.5},0,${-KZ},${OX},${OY})`;
+  S.appendChild(wy);
+}
+
+function place(mod, mx, my, flip) {
+  const i = new Image();
+  i.src = 'ph/' + mod + '.png';
+  i.className = 'm';
+  const w = SIZES[mod] * K * 1.41;
+  const x = sx(mx, my), y = sy(mx, my);
+  i.style.width = w + 'px';
+  i.style.left = x + 'px';
+  i.style.top = y + 'px';
+  i.style.transform = `translate(-50%,-${ANCHOR[mod]}%)${flip ? ' scaleX(-1)' : ''}`;
+  i.style.zIndex = Math.round(y * 10);
+  S.appendChild(i);
+}
+
+// ── 배치 데이터 (미터) — 이것만 바꾸면 다른 사무실 ──
+// 데스크마다 의자(뒤층)+책상(앞층) 분리 배치. 점유 좌석은 ws-desk 대신
+// occupied-* 합성 스프라이트(책상+캐릭터 한 장 — 3D가 오클루전 해결)로 치환.
+const CHAIR_OFF = [0.25, -0.55];
+function grid(cols, rows, x0, y0, px, py, skip) {
+  const out = [];
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++) {
+      const x = x0 + c * px, y = y0 + r * py;
+      out.push(['ws-chair', x + CHAIR_OFF[0], y + CHAIR_OFF[1]]);
+      if (!skip || !skip.has(c + ',' + r)) out.push(['ws-desk', x, y]);
+    }
+  return out;
+}
+// 점유 워크스테이션(애니메이션 합성 모듈) — 값은 char_desk_render 로그 실측
+const OCC_META = { 'occupied-typing': { n: 24, ortho: 3.0, anchor: 74.3 }, 'occupied-sit': { n: 12, ortho: 3.0, anchor: 75.3 } };
+function placeOcc(kind, mx, my, fps) {
+  const meta = OCC_META[kind];
+  const wrap = document.createElement('div');
+  const w = meta.ortho * K * 1.41;
+  const x = sx(mx, my), y = sy(mx, my);
+  wrap.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;z-index:${Math.round(y * 10)};transform:translate(-50%,-${meta.anchor}%);pointer-events:none`;
+  const sh = document.createElement('div');
+  sh.style.cssText = `position:absolute;left:50%;top:${meta.anchor}%;width:62%;height:${(w * 0.13).toFixed(1)}px;transform:translate(-50%,-46%);border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.22),rgba(0,0,0,0) 70%)`;
+  wrap.appendChild(sh);
+  const i = new Image();
+  i.src = `ph/${kind}/00.png`;
+  i.style.cssText = 'display:block;width:100%;position:relative';
+  wrap.appendChild(i);
+  S.appendChild(wrap);
+  let f = 0;
+  timers.push(setInterval(() => {
+    f = (f + 1) % meta.n;
+    i.src = `ph/${kind}/${String(f).padStart(2, '0')}.png`;
+  }, 1000 / (fps || 10)));
+}
+const COMMON = [
+  ['shelf', 6.2, 0.42],
+  ['meeting', 16.3, 3.0],
+  ['sofa', 16.8, 8.4, true],
+  ['coffee_table', 15.4, 9.6],
+  ['plant_big', 13.6, 10.6],
+  ['plant_big', 1.1, 1.0],
+  ['plant_small', 19.2, 6.3],
+  ['plant_small', 10.6, 0.5],
+];
+// 점유 좌석(데스크 그리드 c,r + 상태) — 이 자리는 occupied 합성 모듈로 렌더
+const OCCUPIED = [[0, 0, 'occupied-typing', 12], [1, 1, 'occupied-typing', 10], [2, 2, 'occupied-typing', 11], [3, 0, 'occupied-sit', 8]];
+const OCC_SKIP = new Set(OCCUPIED.map(([c, r]) => c + ',' + r));
+const LAYOUTS = {
+  12: [...grid(4, 3, 2.6, 2.6, 2.7, 3.1, OCC_SKIP), ...COMMON],
+  24: [...grid(6, 4, 1.9, 1.7, 2.45, 2.62, OCC_SKIP), ...COMMON],
+};
+
+function render(n) {
+  timers.forEach(clearInterval);
+  timers = [];
+  S.replaceChildren();
+  floorAndWalls();
+  const items = [...LAYOUTS[n]].sort((a, b) => a[1] + a[2] - (b[1] + b[2]));
+  for (const [mod, mx, my, flip] of items) place(mod, mx, my, flip);
+  // 점유 워크스테이션(책상+캐릭터 합성 애니) + 라운지 대기 1 + 통로 워커 1
+  const g = n === 12 ? { x0: 2.6, y0: 2.6, px: 2.7, py: 3.1 } : { x0: 1.9, y0: 1.7, px: 2.45, py: 2.62 };
+  for (const [c, r, kind, fps] of OCCUPIED) placeOcc(kind, g.x0 + c * g.px, g.y0 + r * g.py, fps);
+  placeChar('idle', 14.8, 8.8, { fps: 8 });
+  walker(2.2, 7.6, 13.5, 7.6, 1.15);
+  document.getElementById('b12').className = n === 12 ? 'on' : '';
+  document.getElementById('b24').className = n === 24 ? 'on' : '';
+}
+document.getElementById('b12').onclick = () => render(12);
+document.getElementById('b24').onclick = () => render(24);
+render(12);
+
+const fit = () => {
+  const s = Math.min(innerWidth / 1500, innerHeight / 860);
+  S.style.transform = `scale(${s})`;
+};
+fit();
+onresize = fit;
+</script>

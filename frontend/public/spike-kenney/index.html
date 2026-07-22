@@ -1,0 +1,90 @@
+<!doctype html>
+<!-- Kenney Furniture Kit(CC0) 스타일 스파이크 — 실제 HORIZON 레이어(manifest) 위에 Kenney iso 렌더를 합성해 육안 비교.
+     임시 파일: 판정 후 폴더째 삭제. 접근: http://localhost:3000/spike-kenney/index.html -->
+<meta charset="utf-8">
+<title>Kenney 합성 스파이크</title>
+<style>
+  html,body{margin:0;height:100%;background:#0d1b36;overflow:hidden;font-family:system-ui,sans-serif}
+  #stage{position:relative;width:1672px;height:941px;transform-origin:0 0}
+  #stage img{display:block;pointer-events:none;user-select:none}
+  .kk{position:absolute;filter:drop-shadow(0 5px 5px rgba(0,0,0,.28))}
+  .tag{position:absolute;transform:translate(-50%,-100%);background:#e11d48;color:#fff;font-size:12px;font-weight:700;
+       padding:2px 8px;border-radius:999px;z-index:99999;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+  #bar{position:fixed;top:10px;left:10px;z-index:100000;display:flex;gap:8px}
+  #bar button{background:#161f32;color:#fff;border:1px solid #3b5bfe;border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer}
+</style>
+<div id="bar"><button id="t">Kenney 숨기기/보이기</button><button id="c">팔레트 보정 토글 (CSS 근사)</button><button id="r" style="border-color:#22c55e">★ 재렌더 버전 토글 (Blender 실렌더)</button></div>
+<div id="stage"></div>
+<script>
+const S = document.getElementById('stage');
+const BASE = '/office2d/layers';
+// Kenney 배치(정규 좌표, 좌상단 앵커) — 빈 바닥에 기존 가구와 인접 배치해 대조.
+// z는 대략 (y+h) 기준 — 기존 스프라이트 z(=sp.z*10000)와 동일 스케일.
+const K = [
+  { src: 'desk_SE.png',              x: 0.295, y: 0.575, w: 0.070, label: 'Kenney 책상+의자+모니터' },
+  { src: 'computerScreen_SE.png',    x: 0.312, y: 0.558, w: 0.024 },
+  { src: 'computerKeyboard_SE.png',  x: 0.322, y: 0.588, w: 0.018 },
+  { src: 'chairDesk_SW.png',         x: 0.318, y: 0.625, w: 0.030 },
+  { src: 'loungeDesignSofa_SW.png',  x: 0.640, y: 0.520, w: 0.085, label: 'Kenney 소파' },
+  { src: 'bookcaseClosedWide_SE.png',x: 0.245, y: 0.415, w: 0.055, label: 'Kenney 책장' },
+  { src: 'tableCoffee_SE.png',       x: 0.175, y: 0.620, w: 0.050, label: 'Kenney 테이블+커피머신' },
+  { src: 'kitchenCoffeeMachine_SE.png', x: 0.190, y: 0.598, w: 0.020 },
+  { src: 'pottedPlant_SE.png',       x: 0.475, y: 0.660, w: 0.026, label: 'Kenney 화분' },
+  { src: 'lampRoundFloor_SE.png',    x: 0.560, y: 0.620, w: 0.022, label: 'Kenney 램프' },
+];
+fetch(BASE + '/manifest.json').then(r => r.json()).then(m => {
+  const bg = new Image();
+  bg.src = BASE + '/background.webp';
+  bg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%';
+  S.appendChild(bg);
+  for (const sp of (m.sprites || [])) {
+    const i = new Image();
+    i.src = BASE + '/' + sp.src;
+    i.style.cssText = `position:absolute;left:${sp.x*100}%;top:${sp.y*100}%;width:${sp.w*100}%;height:${sp.h*100}%;z-index:${Math.round(sp.z*10000)}`;
+    S.appendChild(i);
+  }
+  for (const k of K) {
+    const i = new Image();
+    i.src = 'kenney/' + k.src;
+    i.className = 'kk';
+    i.dataset.orig = 'kenney/' + k.src;
+    i.dataset.rr = 'kenney-rr/' + k.src.replace(/_S[EW]\.png$/, '.png');
+    i.dataset.w = k.w;
+    i.style.cssText += `left:${k.x*100}%;top:${k.y*100}%;width:${k.w*100}%;z-index:${Math.round((k.y+0.10)*10000)}`;
+    S.appendChild(i);
+    if (k.label) {
+      const t = document.createElement('div');
+      t.className = 'tag';
+      t.textContent = k.label;
+      t.style.left = (k.x + k.w/2) * 100 + '%';
+      t.style.top = k.y * 100 + '%';
+      S.appendChild(t);
+    }
+  }
+});
+document.getElementById('t').onclick = () =>
+  document.querySelectorAll('.kk,.tag').forEach(e => { e.style.display = e.style.display === 'none' ? '' : 'none'; });
+// 팔레트 보정 미리보기 — Blender 재렌더로 재질을 뮤트톤 교체했을 때의 근사치(채도↓·미세 브라이트).
+let corrected = false;
+document.getElementById('c').onclick = () => {
+  corrected = !corrected;
+  document.querySelectorAll('.kk').forEach(e => {
+    e.style.filter = corrected
+      ? 'saturate(.5) brightness(1.04) contrast(.96) drop-shadow(0 5px 5px rgba(0,0,0,.28))'
+      : 'drop-shadow(0 5px 5px rgba(0,0,0,.28))';
+  });
+};
+// 재렌더 실물 토글 — Blender(팔레트 재질+소프트라이팅+AO+접지그림자) 산출 PNG로 교체.
+// 렌더는 바운딩 여백(1.5x)이 있어 폭을 1.45배 보정. 그림자가 구워져 있어 CSS drop-shadow 제거.
+let rrMode = false;
+document.getElementById('r').onclick = () => {
+  rrMode = !rrMode;
+  document.querySelectorAll('.kk').forEach(e => {
+    e.src = rrMode ? e.dataset.rr : e.dataset.orig;
+    e.style.width = (parseFloat(e.dataset.w) * (rrMode ? 1.45 : 1) * 100) + '%';
+    e.style.filter = rrMode ? 'none' : 'drop-shadow(0 5px 5px rgba(0,0,0,.28))';
+  });
+};
+const fit = () => { const s = Math.min(innerWidth/1672, innerHeight/941); S.style.transform = `scale(${s})`; };
+fit(); onresize = fit;
+</script>
