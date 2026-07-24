@@ -10,6 +10,9 @@
  * 캔버스는 절대충전(inset-0, w/h 100%) — 스테이지 박스(플레이트 20:11.256 비율)에 맞춰
  * object-fit: fill로 늘린다. v3 월드(20×11.256)와 스테이지 비율이 동일하므로 왜곡 없음.
  * 좌표 정합: 월드 미터 → 정규는 metersToNorm과 일치(어댑터 주석 참조) → 아바타/좌석 정렬 유지.
+ *
+ * renderScale: 방 포커스 줌 시 캔버스가 CSS로 확대되면 백킹 해상도가 그만큼 떨어져 흐려진다.
+ *   줌 배율만큼 백킹 픽셀을 키워(1920×scale) 재렌더하면 확대해도 선명(D35 "줌 재렌더"). 기본 1.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -63,9 +66,10 @@ function loadV3(): Promise<HorizonSceneV3Api> {
   return scriptPromise;
 }
 
-export default function SceneV3Layer({ theme }: { theme: SceneThemeId }) {
+export default function SceneV3Layer({ theme, renderScale = 1 }: { theme: SceneThemeId; renderScale?: number }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [ready, setReady] = useState(false);
+  const scale = Math.min(2.5, Math.max(1, renderScale)); // 백킹 해상도 배율(과도한 메모리 방지 상한 2.5)
 
   // 스크립트 로드(마운트 1회).
   useEffect(() => {
@@ -93,12 +97,13 @@ export default function SceneV3Layer({ theme }: { theme: SceneThemeId }) {
     raf = requestAnimationFrame(() => {
       if (cancelled) return;
       try {
+        const width = Math.round(1920 * scale);
         api.renderScene(buildV3Layout(), {
           canvas,
           theme,
           layers: V3_LAYERS,
-          width: 1920,
-          height: Math.round((1920 * 941) / 1672), // 플레이트 20:11.256 비율
+          width,
+          height: Math.round((width * 941) / 1672), // 플레이트 20:11.256 비율
         });
       } catch {
         // 렌더 실패 시 이전 프레임 유지(빈 캔버스면 배경색 노출) — 회귀 없음.
@@ -108,7 +113,7 @@ export default function SceneV3Layer({ theme }: { theme: SceneThemeId }) {
       cancelled = true;
       cancelAnimationFrame(raf);
     };
-  }, [ready, theme]);
+  }, [ready, theme, scale]);
 
   return (
     <canvas

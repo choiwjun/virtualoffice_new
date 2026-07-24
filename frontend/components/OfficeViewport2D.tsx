@@ -244,13 +244,18 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
 
   // 방 라벨 클릭 글로우.
   const [glowRoom, setGlowRoom] = useState<string | null>(null);
+  // 방 포커스 줌(D35 잔여) — 선택 방으로 확대·센터링. null이면 전체 뷰(배율 1). 글로우와 분리:
+  // 글로우는 바닥 클릭으로도 켜지지만 줌은 명시 포커스(⌘K·방 라벨 클릭)에서만 — 이동 클릭이 줌을 유발하지 않게.
+  const [focusedRoomId, setFocusedRoomId] = useState<string | null>(null);
 
-  // 커맨드 팔레트 방 포커스(셸 ⌘K, 1b §3) — 전체 플레이트 뷰(팬/줌 없음)라 "씬 카메라 이동"의
-  // 등가물 = 방 글로우 + 라벨 표시(방 라벨 클릭과 동일 상태). 같은 라우트면 CustomEvent,
-  // 타 라우트 진입이면 /office?focus=<roomId> 쿼리를 마운트 시 1회 반영.
+  // 커맨드 팔레트 방 포커스(셸 ⌘K, 1b §3) = 방 글로우 + **확대 센터링**(D35 줌 재렌더). 같은 라우트면
+  // CustomEvent, 타 라우트 진입이면 /office?focus=<roomId> 쿼리를 마운트 시 1회 반영. ESC로 전체 뷰 복귀.
   useEffect(() => {
     const focusRoom = (roomId: string) => {
-      if (roomsRef.current.some((r) => r.id === roomId)) setGlowRoom(roomId);
+      if (roomsRef.current.some((r) => r.id === roomId)) {
+        setGlowRoom(roomId);
+        setFocusedRoomId(roomId);
+      }
     };
     try {
       const q = new URLSearchParams(window.location.search).get('focus');
@@ -265,6 +270,16 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
     window.addEventListener('office:focus-room', onFocus);
     return () => window.removeEventListener('office:focus-room', onFocus);
   }, []);
+
+  // ESC = 방 포커스 해제(전체 뷰 복귀). 포커스 중일 때만 리스너 부착.
+  useEffect(() => {
+    if (!focusedRoomId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFocusedRoomId(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [focusedRoomId]);
 
   // ── 씬 시간대 테마 — 자동(로컬 시각) 기본 + 수동 전환(자동→주간→석양→야간 순환) ──
   // autoTheme 초기값은 'day' 고정: SSR/hydration 시각차 방지 — 마운트 후 실제 시각으로 평가.
@@ -933,11 +948,15 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
     (e: React.MouseEvent<HTMLDivElement>) => {
       const el = e.currentTarget;
       const r = el.getBoundingClientRect();
-      const n: Vec2 = { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+      // 스테이지 박스 기준 화면 프랙션. 방 포커스 줌 중이면 테마 래퍼가 (t + k·f)로 변환돼 있으므로
+      // 월드 프랙션으로 역변환: f = (screen − t) / k. (클릭 핸들러는 변환 안 된 스테이지 박스에 붙어 있음.)
+      const s: Vec2 = { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+      const zv = zoomViewRef.current;
+      const n: Vec2 = zv ? { x: (s.x - zv.tx) / zv.k, y: (s.y - zv.ty) / zv.k } : s;
       const clamped = clampToWalkable(n);
       moveTo(normToMeters(clamped)); // A* 경로 — 유리벽 회의실도 문으로 진입
       setSpot(null); // D34: 빈 곳 클릭(이동) 시 스팟 카드 닫기
-      // 방 폴리곤 안 클릭이면 글로우도.
+      // 방 폴리곤 안 클릭이면 글로우도(줌은 유발 안 함 — 명시 포커스 전용).
       const room = roomsRef.current.find((rm) => pointInPolygon(n, rm.polygon));
       if (room) setGlowRoom(room.id);
     },
@@ -967,6 +986,31 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
     };
   }, [glowRoom, activeRooms]);
 
+  // 방 포커스 줌 뷰(정규 좌표계): 선택 방을 뷰 중앙에 ~72% 채우도록 배율 k와 오프셋(tx,ty) 산출.
+  // 월드 프랙션 f → 화면 프랙션 = t + k·f (테마 래퍼에 transform-origin 0 0 + translate%·scale로 적용).
+  // 오프셋은 [1-k, 0]로 클램프해 플레이트 밖 여백이 뷰에 노출되지 않게 한다(스케일 콘텐츠가 뷰를 항상 덮음).
+  const zoomView = useMemo(() => {
+    if (!focusedRoomId) return null;
+    const room = activeRooms.find((r) => r.id === focusedRoomId);
+    if (!room) return null;
+    const xs = room.polygon.map((p) => p.x);
+    const ys = room.polygon.map((p) => p.y);
+    const left = Math.min(...xs);
+    const top = Math.min(...ys);
+    const w = Math.max(...xs) - left;
+    const h = Math.max(...ys) - top;
+    if (w <= 0 || h <= 0) return null;
+    const k = Math.min(2.6, Math.max(1, Math.min(0.72 / w, 0.72 / h)));
+    if (k <= 1.001) return null; // 방이 이미 화면 대부분 → 줌 불필요(전체 뷰 유지)
+    const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+    const tx = clamp(0.5 - k * (left + w / 2), 1 - k, 0);
+    const ty = clamp(0.5 - k * (top + h / 2), 1 - k, 0);
+    return { k, tx, ty };
+  }, [focusedRoomId, activeRooms]);
+  // 클릭 역변환용 최신 zoomView 참조(콜백 재생성 없이 읽기).
+  const zoomViewRef = useRef(zoomView);
+  zoomViewRef.current = zoomView;
+
   // isolate: 내부의 큰 z-index(아바타·라벨 ≤23000)를 이 컴포넌트 안에 가둬 셸 오버레이(z-20)를 뚫지 않게 함
   return (
     <div ref={containerRef} className="absolute inset-0 isolate flex items-center justify-center overflow-hidden">
@@ -977,19 +1021,26 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
         onClick={handleStageClick}
       >
         {/* 씬 톤 래퍼 — 시간대 테마 필터를 씬·아바타·씬내 오버레이에 일괄 적용(톤 정합, D29 교훈).
-            프롬프트·미니맵·칩(z 22000+)은 래퍼 밖 형제라 테마와 무관하게 선명 유지. */}
+            프롬프트·미니맵·칩(z 22000+)은 래퍼 밖 형제라 테마와 무관하게 선명 유지.
+            방 포커스 줌(D35): 이 래퍼(=씬+월드 오버레이 전부)에만 transform을 걸어 배경·아바타·좌석이
+            좌표 관계를 유지한 채 함께 확대된다. origin 0 0 + translate%·scale로 (t + k·f) 사상. */}
         <div
           className="absolute inset-0"
           style={{
             filter: sceneTheme.filter === 'none' ? undefined : sceneTheme.filter,
-            transition: 'filter 1000ms ease',
+            transformOrigin: '0 0',
+            transform: zoomView
+              ? `translate(${(zoomView.tx * 100).toFixed(4)}%, ${(zoomView.ty * 100).toFixed(4)}%) scale(${zoomView.k.toFixed(4)})`
+              : undefined,
+            transition: 'filter 1000ms ease, transform 420ms cubic-bezier(.22,.61,.36,1)',
           }}
         >
         {!useDeployed ? (
           /* D35 씬 V3 — 텍스처드 탑다운 캔버스를 배경으로. 존 색면·핫스팟·좌석 마커·
              아바타는 아래 형제 레이어가 좌표(metersToNorm) 기반으로 그대로 얹힌다. */
           <div className="absolute inset-0 w-full h-full" style={{ background: '#EBE7E0' }}>
-            <SceneV3Layer theme={sceneTheme.id} />
+            {/* 방 포커스 줌 시 캔버스를 배율만큼 고해상 재렌더(CSS 확대 블러 방지 — D35 "줌 재렌더"). */}
+            <SceneV3Layer theme={sceneTheme.id} renderScale={zoomView ? 2 : 1} />
           </div>
         ) : (
           /* 배포된 편집기 레이아웃을 벡터로 렌더 — 좌석배치대로 반영(방/벽/구역). 좌표=좌석과 동일 metersToNorm(0~1). */
@@ -1066,8 +1117,9 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
               aria-hidden={!visible}
               onClick={(e) => {
                 e.stopPropagation();
-                // D34 W1-3: 방 라벨 클릭 = 오늘 일정 카드(예약/입장 진입점)
+                // D34 W1-3: 방 라벨 클릭 = 오늘 일정 카드(예약/입장 진입점) + D35 방 포커스 줌.
                 setGlowRoom(room.id);
+                setFocusedRoomId(room.id);
                 setSpot({ kind: 'room', title: room.label, roomId: room.id, roomLabel: room.label });
               }}
               className="absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-[12px] text-[11px] font-bold text-white transition-opacity duration-200"
@@ -1388,6 +1440,22 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
           />
         ))}
         </div>
+
+        {/* 방 포커스 줌 해제(전체 뷰) — 줌 중일 때만. 테마 래퍼 밖 형제라 변환에 안 휩쓸림. */}
+        {zoomView && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setFocusedRoomId(null);
+            }}
+            className="absolute left-3 top-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-white hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+            style={{ background: 'rgba(7,16,29,.86)', border: '1px solid rgba(255,255,255,.18)', zIndex: 23000 }}
+            title="전체 보기 (ESC)"
+          >
+            <span aria-hidden>⤢</span> 전체 보기
+          </button>
+        )}
 
         {/* 회의 명시입장 프롬프트(D24) — 서버 2m 근접+정원 통과 시 표시 */}
         {meetingPrompt && (

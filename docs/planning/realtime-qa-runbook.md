@@ -1,7 +1,9 @@
-# 실시간 스택 QA 런북 (2026-07-12)
+# 실시간 스택 QA 런북 (2026-07-12, D35 v3 갱신 2026-07-23)
 
 > C2(프론트 Colyseus 배선)·서버 스텁 실체화(JWT/presence/layout)·C3(LiveKit) 검증용.
-> **자동 검증은 이미 통과**(아래 §3). 이 문서는 **3D/미디어 육안 QA**(브라우저 필요)를 위한 절차.
+> **자동 검증은 이미 통과**(아래 §3). 이 문서는 **2.5D 씬/미디어 육안 QA**(브라우저 필요)를 위한 절차.
+> ⚠ **씬 정본 = D35 텍스처드 탑다운 V3**(캔버스 데이터 렌더 + 프로필 사진 배지 아바타). HORIZON 스프라이트·legacy
+>   씬 계층은 D35-b에서 제거됨 — realtime는 `SCENE_FLOOR=v3`로 기동해야 클라 V3와 지오메트리 정합.
 
 ## 1. 3개 서비스 기동 (각각 별 터미널)
 
@@ -18,12 +20,13 @@ INTERNAL_API_TOKEN="dev-internal-token-CHANGE-IN-PRODUCTION" \
 ./.venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 # (2) 실시간 이동서버 :2567  (JWT_SECRET 기본값이 백엔드 jwt_secret_key 기본과 일치)
-# ⚠ HORIZON 씬 QA는 SCENE_FLOOR=horizon 필수. LAYOUT_SOURCE_URL을 함께 주면 배포 레이아웃이
-#   우선하며, 미배포(404) 시 폴백도 SCENE_FLOOR를 따른다(2026-07-17 수리 — 이전엔 Demo로 떨어져
-#   클라 HORIZON 렌더와 지오메트리 불일치 → 전 이동 collision 거부).
+# ⚠ D35 V3 씬 QA는 SCENE_FLOOR=v3 필수(탑다운 축정렬 · officeV3.ts 정본과 SYNC). LAYOUT_SOURCE_URL을
+#   함께 주면 배포 레이아웃이 우선하며, 미배포(404) 시 폴백도 SCENE_FLOOR를 따른다(2026-07-17 수리 —
+#   이전엔 Demo 20×15로 떨어져 클라 V3 렌더와 지오메트리 불일치 → 전 이동 collision 거부).
+#   (SCENE_FLOOR=horizon은 구 다이아 legacy 폴백값 — 클라 씬 계층이 제거되어 QA 무의미.)
 cd realtime && npm run build
 PORT=2567 \
-SCENE_FLOOR=horizon \
+SCENE_FLOOR=v3 \
 PRESENCE_SINK_URL="http://127.0.0.1:8000" \
 PRESENCE_SINK_TOKEN="dev-internal-token-CHANGE-IN-PRODUCTION" \
 node dist/index.js
@@ -41,7 +44,7 @@ npm run dev
 
 > D33(2026-07-21) 몰입 모드 반영판 — 배지·미디어바·회의 칩은 **하단 중앙 독**, 사이드바=아이콘 레일, 우측 패널=접힘 기본.
 
-- [ ] 2.5D HORIZON 씬 + 아바타 스프라이트 렌더
+- [ ] V3 텍스처드 탑다운 캔버스 씬 렌더(절차적 텍스처, 외부 에셋 0) + 프로필 사진 배지 아바타(사진 없으면 이니셜)
 - [ ] **하단 독**: 연결 점(초록=연결·툴팁, 오프라인 시 문구+"다시 연결") · 내 자리로 · 테마 · 상태 메뉴(위로 열림) · (LIVE 회의 시) 입장 칩 · (회의 연결 시) MediaBar
 - [ ] **본인 아바타**: 발밑 파란 링 + 네임플레이트 파란 테두리. 다른 탭/브라우저로 alice·bob 동시 접속 시 상대 아바타 표시
 - [ ] **바닥 클릭 → 아바타가 그 지점으로 걸어감**(walk 애니 → 도착 시 idle). 다른 탭에서 실시간 반영

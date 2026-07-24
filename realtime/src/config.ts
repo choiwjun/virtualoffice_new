@@ -78,9 +78,11 @@ export const PRESENCE_SINK_TOKEN = process.env.PRESENCE_SINK_TOKEN ?? "";
 export const LAYOUT_SOURCE_URL = process.env.LAYOUT_SOURCE_URL ?? "";
 
 /**
- * 2.5D 씬 플로어 선택. "horizon" 설정 시(LAYOUT_SOURCE_URL 미설정일 때)
- * HORIZON_OPEN_PLAN(v2.2 팩 05_layouts) 보행 폴리곤 기반 플로어를 사용한다.
- * 미설정 시 기존 데모 플로어(기존 테스트 호환).
+ * 2.5D 씬 플로어 선택(LAYOUT_SOURCE_URL 미설정 또는 404 폴백 시 적용).
+ *   "v3"      = D35 탑다운 축정렬 플로어(officeV3.ts 정본과 SYNC). **현 클라 씬 정본** — QA 기본값.
+ *   "horizon" = 구 다이아(legacy) 폴백값. 클라 씬 계층이 D35-b에서 제거되어 육안 QA는 무의미.
+ *   그 외/미설정 = 데모 플로어(20×15, 기존 테스트 호환).
+ * createFloorLayoutProvider() 팩토리가 이 값으로 프로바이더를 선택한다.
  */
 export const SCENE_FLOOR = process.env.SCENE_FLOOR ?? "";
 
