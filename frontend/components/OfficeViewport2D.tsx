@@ -144,6 +144,10 @@ interface OfficeViewport2DProps {
   /** D33 하단 통합 독(19-spec P0-2)의 셸 세그먼트(회의 LIVE 칩·MediaBar·입장 오류) —
    *  뷰포트 컨트롤 필 오른쪽에 나란히 렌더된다. */
   dockSlot?: React.ReactNode;
+  /** 실시간(Colyseus) 연결 활성화 (감사 23 D1 / 22 T1-13). 기본 true.
+   *  /office가 아닌 메뉴 라우트에선 셸이 false를 주입 → 씬 배경은 유지하되 실시간 방 슬롯을
+   *  점유하지 않는다(유휴 유저가 maxClients·rAF 프레즌스를 잠식하던 문제 해소). */
+  realtimeEnabled?: boolean;
 }
 
 /** 층 선택(19-spec P0-3) — 미니맵 헤더로 흡수. 현재 콘텐츠는 2F뿐(타 층 시각 전환만). */
@@ -173,7 +177,7 @@ const HOTSPOTS: { id: string; kind: SpotKind; title: string; label: string; icon
   { id: 'cabinet', kind: 'cabinet', title: '서류함 — 보고서', label: '보고서', icon: '🗂️', n: { x: 0.263, y: 0.35 } },
 ];
 
-export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeViewport2DProps = {}) {
+export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnabled = true }: OfficeViewport2DProps = {}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [stage, setStage] = useState({ w: 0, h: 0 });
 
@@ -208,7 +212,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
     enterMeeting,
     setStatus: setPresence,
     reconnect,
-  } = useOfficeRoom(true, handleMeetingEntry, onLayoutUpdated);
+  } = useOfficeRoom(realtimeEnabled, handleMeetingEntry, onLayoutUpdated);
 
   const me = useMemo(() => getUser(), []);
   const myName = me?.name ?? 'Guest';
@@ -964,8 +968,11 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot }: OfficeView
   );
 
   // ── 연결 상태 칩 ───────────────────────────────────────────────────────
+  // D1: 메뉴 라우트(realtimeEnabled=false)에선 실시간 미연결이 정상 — "연결 중…" 대신 중립 칩.
   const statusChip =
-    status === 'connected'
+    !realtimeEnabled
+      ? { text: '내 오피스에서 실시간', color: '#64748B' }
+      : status === 'connected'
       ? { text: '실시간 연결됨', color: '#22C55E' }
       : status === 'reconnecting'
         ? { text: '재연결 중…', color: '#F59E0B' }

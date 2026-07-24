@@ -1202,7 +1202,9 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
         {/* 가상오피스 씬 = 2.5D 클린 플레이트 + 실시간 아바타 (v2.2 팩 + realtime Colyseus) */}
         <div className="relative flex-1 min-h-0">
           <div className="absolute inset-0 overflow-hidden" style={{ background: '#0d1b36' }}>
-            <OfficeViewport2D onJoinMeeting={handleViewportJoin} dockSlot={meetingDock} />
+            {/* D1(감사 23)/T1-13(22): 실시간 연결은 /office에서만 — 메뉴 라우트는 씬 배경만 유지하고
+                Colyseus 방 슬롯·프레즌스 rAF를 점유하지 않는다(유휴 유저의 동접 천장 잠식 해소). */}
+            <OfficeViewport2D onJoinMeeting={handleViewportJoin} dockSlot={meetingDock} realtimeEnabled={isOffice} />
           </div>
 
           {/* ── (1b) 플로팅 셸 크롬 — /office 몰입(railMode) 전용. 씬 위 z-30 오버레이 ── */}
