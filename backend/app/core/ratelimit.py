@@ -25,11 +25,16 @@ _WINDOW_SEC = 60.0
 
 
 class LoginRateLimitMiddleware(BaseHTTPMiddleware):
-    """POST /api/auth/login 에 대해 IP당 분당 요청 수를 제한한다(429)."""
+    """공개 인증 POST 경로(로그인·셀프서브 가입)에 대해 IP당 분당 요청 수를 제한한다(429).
 
-    def __init__(self, app, *, path: str = "/api/auth/login"):
+    24-spec Phase 2: `POST /api/auth/register`(공개 테넌트 프로비저닝)도 로그인과 동일하게
+    IP 기준으로 남용을 막는다(무제한 회사 생성 DoS 방지). 카운터는 IP·경로 무관 공유 버킷
+    (동일 IP의 로그인+가입 합산) — 공개 인증면 전체에 대한 IP 예산으로 취급한다.
+    """
+
+    def __init__(self, app, *, paths: tuple[str, ...] = ("/api/auth/login", "/api/auth/register")):
         super().__init__(app)
-        self._path = path
+        self._paths = frozenset(paths)
         self._hits: Dict[str, Deque[float]] = defaultdict(deque)
 
     def _client_ip(self, request: Request, trust_proxy: bool) -> str:
@@ -43,7 +48,7 @@ class LoginRateLimitMiddleware(BaseHTTPMiddleware):
         from app.config import settings
 
         limit = settings.login_rate_limit_per_min
-        if limit <= 0 or request.method != "POST" or request.url.path != self._path:
+        if limit <= 0 or request.method != "POST" or request.url.path not in self._paths:
             return await call_next(request)
 
         ip = self._client_ip(request, settings.trust_proxy_ip_header)
