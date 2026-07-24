@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── 디자인 토큰: CSS 변수 레이어 (감사 23 A1/A7) ─────────────────────────────
+   Tailwind 색 토큰의 단일 정본. RGB '채널'로 정의 → tailwind가 rgb(var(--x) / <alpha-value>)로
+   참조하므로 solid·불투명도 유틸(bg-primary/20 등) 모두 그대로 동작하고 렌더값도 종전과 동일.
+   테넌트 화이트라벨 = 이 변수 세트만 런타임 교체(1-플립):
+     document.documentElement.style.setProperty('--color-primary', '99 102 241');
+   (인라인 style hex의 var() 이관은 후속 — 24-스펙 화이트라벨 Phase.) */
+:root {
+  --color-bg-base: 14 22 38;
+  --color-bg-surface: 22 31 50;
+  --color-bg-surface-raised: 30 41 64;
+  --color-border-subtle: 39 51 80;
+  --color-primary: 59 91 254;
+  --color-primary-hover: 47 75 224;
+  --color-accent-cyan: 56 189 248;
+  --color-status-online: 34 197 94;
+  --color-status-meeting: 239 68 68;
+  --color-status-external: 245 158 11;
+  --color-status-focus: 139 92 246;
+  --color-status-away: 148 163 184;
+  --color-status-offline: 75 85 104;
+  --color-danger: 239 68 68;
+  --color-text-primary: 241 245 249;
+  --color-text-secondary: 180 192 211;
+  --color-text-muted: 122 137 158;
+}
+
 /* ── 2.5D 아바타 코드 모션 (v3 character-motion-profiles 유래) ──
    프레임 애니 위에 얹는 상하 반동/기울임 — 없으면 스프라이트가 미끄러지는(둥둥 뜨는) 느낌.
    주기는 walk 프레임 사이클(8프레임 @10fps = 0.8s)과 반드시 동기 — 어긋나면 흔들림이 따로 논다. */

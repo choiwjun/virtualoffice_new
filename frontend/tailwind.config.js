@@ -8,28 +8,29 @@ module.exports = {
   theme: {
     extend: {
       // ─── design-style-analysis §1 컬러 토큰 ────────────────────────────────
+      // 정본은 globals.css :root의 --color-* (RGB 채널). 화이트라벨 = 변수 1-플립(감사 23 A1/A7).
       colors: {
         // 1.1 배경/서피스
-        'bg-base':              '#0E1626',
-        'bg-surface':           '#161F32',
-        'bg-surface-raised':    '#1E2940',
-        'border-subtle':        '#273350',
+        'bg-base':              'rgb(var(--color-bg-base) / <alpha-value>)',
+        'bg-surface':           'rgb(var(--color-bg-surface) / <alpha-value>)',
+        'bg-surface-raised':    'rgb(var(--color-bg-surface-raised) / <alpha-value>)',
+        'border-subtle':        'rgb(var(--color-border-subtle) / <alpha-value>)',
         // 1.2 브랜드/프라이머리
-        primary:               '#3B5BFE',
-        'primary-hover':        '#2F4BE0',
-        'accent-cyan':          '#38BDF8',
+        primary:               'rgb(var(--color-primary) / <alpha-value>)',
+        'primary-hover':        'rgb(var(--color-primary-hover) / <alpha-value>)',
+        'accent-cyan':          'rgb(var(--color-accent-cyan) / <alpha-value>)',
         // 1.3 상태 시맨틱
-        'status-online':        '#22C55E',
-        'status-meeting':       '#EF4444',
-        'status-external':      '#F59E0B',
-        'status-focus':         '#8B5CF6',
-        'status-away':          '#94A3B8',
-        'status-offline':       '#4B5568',
-        danger:                '#EF4444',
+        'status-online':        'rgb(var(--color-status-online) / <alpha-value>)',
+        'status-meeting':       'rgb(var(--color-status-meeting) / <alpha-value>)',
+        'status-external':      'rgb(var(--color-status-external) / <alpha-value>)',
+        'status-focus':         'rgb(var(--color-status-focus) / <alpha-value>)',
+        'status-away':          'rgb(var(--color-status-away) / <alpha-value>)',
+        'status-offline':       'rgb(var(--color-status-offline) / <alpha-value>)',
+        danger:                'rgb(var(--color-danger) / <alpha-value>)',
         // 1.4 텍스트
-        'text-primary':         '#F1F5F9',
-        'text-secondary':       '#B4C0D3',
-        'text-muted':           '#7A899E',
+        'text-primary':         'rgb(var(--color-text-primary) / <alpha-value>)',
+        'text-secondary':       'rgb(var(--color-text-secondary) / <alpha-value>)',
+        'text-muted':           'rgb(var(--color-text-muted) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['Pretendard', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
