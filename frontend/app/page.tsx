@@ -98,11 +98,11 @@ export default function Home() {
         </p>
         <div className="mt-8 flex items-center justify-center gap-3">
           <Link
-            href="/login"
+            href="/signup"
             className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-lg transition-transform hover:-translate-y-0.5"
             style={{ background: '#3B5BFE' }}
           >
-            시작하기
+            무료로 시작하기
           </Link>
           <Link
             href="/login?demo=1"

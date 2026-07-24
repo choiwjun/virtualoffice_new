@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { login, getToken } from '@/lib/auth';
 import { ApiError } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
@@ -126,6 +127,13 @@ function LoginForm() {
             {loading ? '로그인 중...' : '로그인'}
           </Button>
         </form>
+
+        <p className="mt-5 text-center text-[13px] text-text-muted">
+          회사가 처음이신가요?{' '}
+          <Link href="/signup" className="text-accent-cyan hover:underline font-medium">
+            회사 만들기
+          </Link>
+        </p>
       </div>
     </main>
   );

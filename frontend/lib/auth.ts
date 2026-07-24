@@ -26,6 +26,33 @@ export async function login(email: string, password: string): Promise<LoginRespo
   return res;
 }
 
+export interface Company {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export interface RegisterResponse extends LoginResponse {
+  company: Company;
+}
+
+export interface RegisterInput {
+  company_name: string;
+  admin_name: string;
+  admin_email: string;
+  admin_password: string;
+}
+
+/** 셀프 가입(E2): 회사 개설 + 첫 admin 발급 → 자동 로그인(토큰 저장). */
+export async function register(input: RegisterInput): Promise<RegisterResponse> {
+  const res = await api.post<RegisterResponse>('/api/auth/register', input);
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('access_token', res.access_token);
+    localStorage.setItem('user', JSON.stringify(res.user));
+  }
+  return res;
+}
+
 export function logout(): void {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('access_token');
