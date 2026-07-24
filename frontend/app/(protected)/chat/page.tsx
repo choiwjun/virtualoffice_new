@@ -3,6 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { getUser, type User } from '@/lib/auth';
+import {
+  ToolbarButton,
+  EmptyState,
+  ErrorBanner,
+  LoadingState,
+} from '@/components/ui/console';
+
+const ICON = {
+  refresh: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M15.5 6.5A6 6 0 1 0 16 10" /><path d="M15.5 3v4h-4" /></svg>,
+};
 
 interface Channel {
   id: string;
@@ -220,18 +230,18 @@ export default function ChatPage() {
   const activeLabel = channels.find((c) => c.id === activeChannel)?.label ?? '';
 
   return (
-    <div className="h-full flex">
+    <div className="h-full flex text-text-secondary">
       {/* 좌측 채널 사이드바 */}
-      <aside className="w-56 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col">
-        <div className="px-4 py-4 border-b border-gray-100">
-          <h1 className="text-base font-bold text-gray-800">커뮤니케이션</h1>
-          <p className="text-xs text-gray-400 mt-0.5">채널 채팅</p>
+      <aside className="w-56 flex-shrink-0 bg-bg-surface border-r border-border-subtle flex flex-col">
+        <div className="px-4 py-4 border-b border-border-subtle">
+          <h1 className="text-base font-bold text-text-primary">커뮤니케이션</h1>
+          <p className="text-xs text-text-muted mt-0.5">채널 채팅</p>
         </div>
         <nav className="flex-1 overflow-y-auto p-2 space-y-1">
           {channelsError ? (
-            <p className="px-2 py-2 text-xs text-red-600">{channelsError}</p>
+            <p className="px-2 py-2 text-xs text-red-300">{channelsError}</p>
           ) : channels.length === 0 ? (
-            <p className="px-2 py-2 text-xs text-gray-400">채널을 불러오는 중...</p>
+            <p className="px-2 py-2 text-xs text-text-muted">채널을 불러오는 중...</p>
           ) : (
             channels.map((ch) => (
               <button
@@ -239,11 +249,11 @@ export default function ChatPage() {
                 onClick={() => setActiveChannel(ch.id)}
                 className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${
                   activeChannel === ch.id
-                    ? 'bg-indigo-50 text-indigo-700 font-medium'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                    ? 'bg-primary/10 text-accent-cyan font-medium'
+                    : 'text-text-secondary hover:bg-bg-surface-raised hover:text-text-primary'
                 }`}
               >
-                <span className="text-gray-400 mr-1.5">#</span>
+                <span className="text-text-muted mr-1.5">#</span>
                 {ch.label}
               </button>
             ))
@@ -254,52 +264,39 @@ export default function ChatPage() {
       {/* 우측 메시지 영역 */}
       <section className="flex-1 min-w-0 flex flex-col">
         {/* 상단 바 */}
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
-          <h2 className="text-sm font-semibold text-gray-800 truncate">
+        <div className="flex items-center justify-between px-4 py-3 bg-bg-surface border-b border-border-subtle">
+          <h2 className="text-sm font-semibold text-text-primary truncate">
             {activeChannel ? (
               <>
-                <span className="text-gray-400 mr-1">#</span>
+                <span className="text-text-muted mr-1">#</span>
                 {activeLabel}
               </>
             ) : (
               '채널을 선택하세요'
             )}
           </h2>
-          <button
+          <ToolbarButton
             onClick={() => activeChannel && loadMessages(activeChannel)}
             disabled={loading || !activeChannel}
             title="새로고침"
-            className="px-2.5 py-1.5 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            icon={ICON.refresh}
           >
-            🔄
-          </button>
+            새로고침
+          </ToolbarButton>
         </div>
 
         {/* 메시지 리스트 */}
         <div
           ref={listRef}
           onScroll={handleListScroll}
-          className="flex-1 overflow-y-auto p-4 bg-gray-100"
+          className="flex-1 overflow-y-auto p-4 bg-bg-base"
         >
           {error ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-              {error}
-              <button
-                onClick={() => activeChannel && loadMessages(activeChannel)}
-                className="ml-2 underline text-red-600"
-              >
-                재시도
-              </button>
-            </div>
+            <ErrorBanner message={error} onRetry={() => activeChannel && loadMessages(activeChannel)} />
           ) : loading ? (
-            <div className="flex items-center justify-center py-20 text-gray-400 text-sm">
-              메시지를 불러오는 중...
-            </div>
+            <LoadingState label="메시지를 불러오는 중…" />
           ) : messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
-              <span className="text-5xl">💬</span>
-              <p className="text-sm">아직 메시지가 없습니다. 첫 메시지를 보내보세요!</p>
-            </div>
+            <EmptyState icon="💬" title="아직 메시지가 없습니다" hint="첫 메시지를 보내 대화를 시작해 보세요!" />
           ) : (
             <div className="space-y-3">
               {messages.map((msg, i) => {
@@ -311,30 +308,30 @@ export default function ChatPage() {
                   <div key={msg.id}>
                     {showDateDivider && (
                       <div className="flex items-center justify-center my-4">
-                        <span className="text-xs text-gray-400 bg-gray-100 px-3">
+                        <span className="text-xs text-text-muted bg-bg-surface px-3">
                           — {date} —
                         </span>
                       </div>
                     )}
                     {isMine ? (
                       <div className="flex justify-end items-end gap-1.5">
-                        <span className="text-[10px] text-gray-400 flex-shrink-0">
+                        <span className="text-[10px] text-text-muted flex-shrink-0">
                           {formatTime(msg.created_at)}
                         </span>
-                        <div className="max-w-[70%] px-3.5 py-2 text-sm bg-indigo-600 text-white rounded-2xl rounded-br-sm whitespace-pre-wrap break-words">
+                        <div className="max-w-[70%] px-3.5 py-2 text-sm bg-primary text-white rounded-2xl rounded-br-sm whitespace-pre-wrap break-words">
                           {msg.content}
                         </div>
                       </div>
                     ) : (
                       <div className="flex flex-col items-start">
-                        <span className="text-xs text-gray-500 mb-0.5 ml-1">
+                        <span className="text-xs text-text-muted mb-0.5 ml-1">
                           {msg.user_name}
                         </span>
                         <div className="flex items-end gap-1.5 max-w-full">
-                          <div className="max-w-[70%] px-3.5 py-2 text-sm bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-bl-sm whitespace-pre-wrap break-words">
+                          <div className="max-w-[70%] px-3.5 py-2 text-sm bg-bg-surface border border-border-subtle text-text-primary rounded-2xl rounded-bl-sm whitespace-pre-wrap break-words">
                             {msg.content}
                           </div>
-                          <span className="text-[10px] text-gray-400 flex-shrink-0">
+                          <span className="text-[10px] text-text-muted flex-shrink-0">
                             {formatTime(msg.created_at)}
                           </span>
                         </div>
@@ -349,8 +346,8 @@ export default function ChatPage() {
         </div>
 
         {/* 하단 입력창 */}
-        <div className="bg-white border-t border-gray-200 p-3">
-          {sendError && <p className="text-xs text-red-600 mb-2">✗ {sendError}</p>}
+        <div className="bg-bg-surface border-t border-border-subtle p-3">
+          {sendError && <p className="text-xs text-red-300 mb-2">✗ {sendError}</p>}
           <div className="flex items-end gap-2">
             <textarea
               ref={textareaRef}
@@ -367,21 +364,19 @@ export default function ChatPage() {
                   ? '메시지를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)'
                   : '채널을 선택하세요'
               }
-              className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm resize-none overflow-y-auto focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-400"
+              className="flex-1 border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm resize-none overflow-y-auto focus:outline-none focus:ring-2 focus:ring-accent-cyan disabled:bg-bg-base disabled:text-text-muted"
               style={{ maxHeight: TEXTAREA_MAX_HEIGHT_PX }}
             />
-            <button
-              onClick={handleSend}
-              disabled={!canSend}
-              className="flex-shrink-0 px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-            >
-              {sending ? '전송 중...' : '전송'}
-            </button>
+            <div className="flex-shrink-0">
+              <ToolbarButton variant="primary" onClick={handleSend} disabled={!canSend}>
+                {sending ? '전송 중...' : '전송'}
+              </ToolbarButton>
+            </div>
           </div>
           <div className="flex justify-end mt-1">
             <span
               className={`text-xs ${
-                input.length > MAX_LENGTH ? 'text-red-500 font-medium' : 'text-gray-400'
+                input.length > MAX_LENGTH ? 'text-red-300 font-medium' : 'text-text-muted'
               }`}
             >
               {input.length}/{MAX_LENGTH}

@@ -518,9 +518,11 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
   const role = (me?.role ?? 'employee') as UserRole;
   const adminItems = ADMIN_ITEMS.filter((i) => i.roles.includes(role));
   const isOffice = pathname === '/office';
-  // D33: 몰입 모드 파생 — 타 라우트는 항상 펼침(오버레이 탐색 유지).
-  const railMode = isOffice && !navExpanded;
-  const showPanel = !isOffice || panelOpen;
+  // 몰입 모드 파생 — /office든 메뉴 라우트든 동일하게 미니 레일 + 플로팅 크롬(오피스 위에 가볍게 띄움).
+  // 사용자가 nav를 펼치면(navExpanded) 전 라우트에서 클래식 사이드바로 전환. 기본=몰입.
+  const railMode = !navExpanded;
+  // 프레즌스 패널은 전 라우트에서 온디맨드(핸들로 열기) — 메뉴 화면이 콘솔처럼 꽉 차 보이지 않게.
+  const showPanel = panelOpen;
   const overlayItem = isOffice
     ? undefined
     : [...NAV_ITEMS, ...ADMIN_ITEMS]
@@ -1453,7 +1455,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
           )}
 
           {/* D33: 우측 패널 접힘 시 가장자리 핸들 — 구성원 패널 열기(1b 웜 블랙) */}
-          {isOffice && !showPanel && (
+          {!showPanel && (
             <button
               type="button"
               onClick={() => setPanelOpen(true)}
@@ -1473,8 +1475,9 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
           {/* ── 메뉴 페이지 오버레이 창 (D29 셸 단일화) ──
               좌측 메뉴의 모든 페이지는 /office 셸 위 창으로 렌더 → 디자인 연속 + 뷰포트/실시간 연결 유지 */}
           {!isOffice && (
-            <div className="absolute inset-0 z-20 flex" style={{ background: 'rgba(8,13,26,0.55)', backdropFilter: 'blur(2px)' }}>
-              <div className="flex-1 m-3 md:m-5 rounded-xl border border-border-subtle overflow-hidden flex flex-col shadow-2xl" style={{ background: '#0E1626' }}>
+            <div className="absolute inset-0 z-20 flex" style={{ background: 'rgba(8,13,26,0.30)', backdropFilter: 'blur(1.5px)' }}>
+              {/* 창을 플로팅 미니 레일(좌)·상단 크롬 아래로 인셋 → 오피스가 프레임 주위로 보이게(가볍게 띄움) */}
+              <div className="flex-1 mt-[72px] ml-[76px] mr-4 mb-4 rounded-2xl border border-border-subtle overflow-hidden flex flex-col shadow-2xl" style={{ background: '#0E1626' }}>
                 <div className="h-11 flex-shrink-0 flex items-center justify-between px-4 border-b border-border-subtle" style={{ background: '#161F32' }}>
                   <span className="text-[13px] font-semibold text-text-primary">{overlayItem?.label ?? ''}</span>
                   <Link
@@ -1485,7 +1488,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                     <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
                   </Link>
                 </div>
-                <div className="flex-1 overflow-y-auto bg-gray-100">{children}</div>
+                <div className="flex-1 overflow-y-auto" style={{ background: '#0E1626' }}>{children}</div>
               </div>
             </div>
           )}

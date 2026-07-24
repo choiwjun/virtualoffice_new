@@ -2,6 +2,23 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { api, ApiError } from '@/lib/api';
+import {
+  PageHeader,
+  ToolbarButton,
+  SectionCard,
+  EmptyState,
+  ErrorBanner,
+  LoadingState,
+  CARD_SURFACE,
+} from '@/components/ui/console';
+
+const ICON = {
+  users: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="7.5" cy="6.5" r="2.8" /><path d="M2.5 16c0-2.8 2.2-4.5 5-4.5s5 1.7 5 4.5" /><path d="M13.5 4.3a2.6 2.6 0 0 1 0 4.9" /><path d="M14 11.8c2.1.4 3.5 1.9 3.5 4.2" /></svg>,
+  download: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M10 3v9" /><path d="M6.5 9.5 10 13l3.5-3.5" /><path d="M4 16h12" /></svg>,
+  refresh: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M15.5 6.5A6 6 0 1 0 16 10" /><path d="M15.5 3v4h-4" /></svg>,
+  list: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 6h12M4 10h12M4 14h8" /></svg>,
+  search: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="8.5" cy="8.5" r="5" /><path d="m13 13 3.5 3.5" /></svg>,
+};
 
 interface Employee {
   id: number;
@@ -35,13 +52,13 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const PRESENCE_LABELS: Record<string, { label: string; color: string }> = {
-  online: { label: '온라인', color: 'bg-green-100 text-green-700' },
-  working: { label: '업무중', color: 'bg-emerald-100 text-emerald-700' },
-  meeting: { label: '회의중', color: 'bg-blue-100 text-blue-700' },
-  focus: { label: '집중', color: 'bg-amber-100 text-amber-700' },
-  away: { label: '자리비움', color: 'bg-gray-100 text-gray-500' },
-  external: { label: '외근', color: 'bg-purple-100 text-purple-700' },
-  offline: { label: '오프라인', color: 'bg-gray-100 text-gray-400' },
+  online: { label: '온라인', color: 'bg-[rgba(34,197,94,0.16)] text-status-online' },
+  working: { label: '업무중', color: 'bg-[rgba(34,197,94,0.16)] text-status-online' },
+  meeting: { label: '회의중', color: 'bg-[rgba(56,189,248,0.15)] text-accent-cyan' },
+  focus: { label: '집중', color: 'bg-[rgba(245,158,11,0.16)] text-status-external' },
+  away: { label: '자리비움', color: 'bg-bg-surface-raised text-text-muted' },
+  external: { label: '외근', color: 'bg-[rgba(139,92,246,0.18)] text-status-focus' },
+  offline: { label: '오프라인', color: 'bg-bg-surface-raised text-text-muted' },
 };
 
 const PAGE_SIZE = 15;
@@ -146,40 +163,31 @@ export default function EmployeesPage() {
   }
 
   return (
-    <div className="p-6 h-full flex flex-col gap-4">
+    <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
       {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">직원명부</h1>
-          <p className="text-xs text-gray-400 mt-0.5">
-            🔒 ERP 동기화 데이터 — 읽기 전용
-            {lastSynced && <span className="ml-2">마지막 갱신: {lastSynced}</span>}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={exportCsv}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 text-gray-600 transition-colors"
-          >
-            📥 CSV
-          </button>
-          <button
-            onClick={fetchEmployees}
-            disabled={loading}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-          >
-            🔄 새로고침
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="직원명부"
+        subtitle={`🔒 ERP 동기화 데이터 — 읽기 전용${lastSynced ? ` · 마지막 갱신: ${lastSynced}` : ''}`}
+        icon={ICON.users}
+        actions={
+          <>
+            <ToolbarButton onClick={exportCsv} icon={ICON.download} title="현재 필터 결과를 CSV로 다운로드">
+              CSV
+            </ToolbarButton>
+            <ToolbarButton onClick={fetchEmployees} disabled={loading} icon={ICON.refresh} variant="primary">
+              새로고침
+            </ToolbarButton>
+          </>
+        }
+      />
 
       {/* Filter toolbar */}
-      <div className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 p-3">
+      <div className={`flex items-center gap-3 ${CARD_SURFACE} p-3`}>
         {/* Team filter */}
         <select
           value={teamFilter}
           onChange={(e) => setTeamFilter(e.target.value)}
-          className="border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
         >
           <option value="">전체 팀</option>
           {teams.map((id) => (
@@ -193,7 +201,7 @@ export default function EmployeesPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
         >
           <option value="">전체 상태</option>
           {Object.entries(PRESENCE_LABELS).map(([k, v]) => (
@@ -203,20 +211,20 @@ export default function EmployeesPage() {
 
         {/* Search */}
         <div className="flex-1 relative">
-          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
-            🔍
+          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted">
+            {ICON.search}
           </span>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="이름 또는 이메일 검색..."
-            className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-9 pr-3 py-1.5 border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
           />
         </div>
 
         {/* Result count */}
-        <span className="text-sm text-gray-500 whitespace-nowrap">
+        <span className="text-sm text-text-muted whitespace-nowrap">
           {filtered.length}명
         </span>
 
@@ -227,7 +235,7 @@ export default function EmployeesPage() {
               setTeamFilter('');
               setSearchQuery('');
             }}
-            className="text-sm text-indigo-600 hover:underline whitespace-nowrap"
+            className="text-sm text-accent-cyan hover:underline whitespace-nowrap"
           >
             필터 초기화
           </button>
@@ -235,115 +243,112 @@ export default function EmployeesPage() {
       </div>
 
       {/* Error */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-sm text-red-700">{error}</p>
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={fetchEmployees}
-              className="text-xs text-red-600 underline"
-            >
-              재시도
-            </button>
-          </div>
-        </div>
-      )}
+      {error && <ErrorBanner message={error} onRetry={fetchEmployees} />}
 
       {/* Content area */}
       <div className="flex-1 flex gap-4 overflow-hidden">
         {/* Table */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-lg border border-gray-200">
+        <SectionCard
+          title="직원 목록"
+          icon={ICON.list}
+          className="flex-1 overflow-hidden"
+          bodyClassName="p-0 flex-1 flex flex-col overflow-hidden"
+        >
           {loading ? (
-            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-              <span>데이터를 불러오는 중...</span>
+            <div className="flex-1 flex items-center justify-center">
+              <LoadingState />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 gap-2">
-              <span className="text-4xl">📭</span>
-              <p className="text-sm">조회 결과가 없습니다.</p>
-              {(teamFilter || searchQuery) && (
-                <button
-                  onClick={() => {
-                    setTeamFilter('');
-                    setSearchQuery('');
-                  }}
-                  className="text-sm text-indigo-600 underline"
-                >
-                  필터 초기화
-                </button>
-              )}
+            <div className="flex-1 flex items-center justify-center">
+              <EmptyState
+                icon="📭"
+                title="조회 결과가 없습니다"
+                action={
+                  (teamFilter || searchQuery) ? (
+                    <button
+                      onClick={() => {
+                        setTeamFilter('');
+                        setSearchQuery('');
+                      }}
+                      className="text-sm text-accent-cyan underline"
+                    >
+                      필터 초기화
+                    </button>
+                  ) : undefined
+                }
+              />
             </div>
           ) : (
             <>
               <div className="overflow-x-auto flex-1">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="border-b border-border-subtle">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
+                      <th className="px-4 py-2.5 text-left text-[11px] font-medium text-text-muted uppercase tracking-wide w-1/5">
                         이름
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
+                      <th className="px-4 py-2.5 text-left text-[11px] font-medium text-text-muted uppercase tracking-wide w-1/5">
                         팀
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                      <th className="px-4 py-2.5 text-left text-[11px] font-medium text-text-muted uppercase tracking-wide w-1/6">
                         직급
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                      <th className="px-4 py-2.5 text-left text-[11px] font-medium text-text-muted uppercase tracking-wide w-1/6">
                         좌석
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                      <th className="px-4 py-2.5 text-left text-[11px] font-medium text-text-muted uppercase tracking-wide w-1/6">
                         상태
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
+                      <th className="px-4 py-2.5 text-left text-[11px] font-medium text-text-muted uppercase tracking-wide w-1/5">
                         이메일
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                      <th className="px-4 py-2.5 text-left text-[11px] font-medium text-text-muted uppercase tracking-wide w-1/6">
                         역할
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                      <th className="px-4 py-2.5 text-left text-[11px] font-medium text-text-muted uppercase tracking-wide w-1/6">
                         근무형태
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-border-subtle">
                     {paginated.map((emp) => (
                       <tr
                         key={emp.id}
                         onClick={() => setSelectedEmployee(emp)}
-                        className={`cursor-pointer hover:bg-indigo-50 transition-colors ${
-                          selectedEmployee?.id === emp.id ? 'bg-indigo-50' : ''
+                        className={`cursor-pointer hover:bg-bg-surface-raised transition-colors ${
+                          selectedEmployee?.id === emp.id ? 'bg-primary/10' : ''
                         }`}
                       >
-                        <td className="px-4 py-3 font-medium text-gray-800">{emp.name}</td>
-                        <td className="px-4 py-3 text-gray-600">
+                        <td className="px-4 py-2.5 font-medium text-text-primary">{emp.name}</td>
+                        <td className="px-4 py-2.5 text-text-secondary">
                           {TEAM_LABELS[emp.erp_team_id] ?? `팀 ${emp.erp_team_id}`}
                         </td>
-                        <td className="px-4 py-3 text-gray-600">{emp.position ?? '—'}</td>
-                        <td className="px-4 py-3 text-gray-600 text-xs">{emp.seat_number ?? '—'}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-2.5 text-text-secondary">{emp.position ?? '—'}</td>
+                        <td className="px-4 py-2.5 text-text-secondary text-xs">{emp.seat_number ?? '—'}</td>
+                        <td className="px-4 py-2.5">
                           {emp.presence_status ? (
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${PRESENCE_LABELS[emp.presence_status]?.color ?? 'bg-gray-100 text-gray-500'}`}>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${PRESENCE_LABELS[emp.presence_status]?.color ?? 'bg-bg-surface-raised text-text-muted'}`}>
                               {PRESENCE_LABELS[emp.presence_status]?.label ?? emp.presence_status}
                             </span>
                           ) : (
-                            <span className="text-xs text-gray-400">오프라인</span>
+                            <span className="text-xs text-text-muted">오프라인</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">{emp.email}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-2.5 text-text-muted text-xs">{emp.email}</td>
+                        <td className="px-4 py-2.5">
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                               emp.role === 'admin' || emp.role === 'super_admin'
-                                ? 'bg-purple-100 text-purple-700'
+                                ? 'bg-[rgba(139,92,246,0.18)] text-status-focus'
                                 : emp.role === 'leader'
-                                  ? 'bg-blue-100 text-blue-700'
-                                  : 'bg-gray-100 text-gray-600'
+                                  ? 'bg-[rgba(56,189,248,0.15)] text-accent-cyan'
+                                  : 'bg-bg-surface-raised text-text-secondary'
                             }`}
                           >
                             {ROLE_LABELS[emp.role] ?? emp.role}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-gray-600 text-xs">
+                        <td className="px-4 py-2.5 text-text-secondary text-xs">
                           {emp.work_type ?? '—'}
                         </td>
                       </tr>
@@ -354,8 +359,8 @@ export default function EmployeesPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-xs text-gray-500">
+                <div className="flex-shrink-0 px-4 py-3 border-t border-border-subtle flex items-center justify-between">
+                  <span className="text-xs text-text-muted">
                     {(currentPage - 1) * PAGE_SIZE + 1}–
                     {Math.min(currentPage * PAGE_SIZE, filtered.length)} / {filtered.length}명
                   </span>
@@ -363,7 +368,7 @@ export default function EmployeesPage() {
                     <button
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                      className="px-2 py-1 text-xs border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-50"
+                      className="px-2 py-1 text-xs border border-border-subtle rounded disabled:opacity-40 hover:bg-bg-surface-raised"
                     >
                       이전
                     </button>
@@ -382,8 +387,8 @@ export default function EmployeesPage() {
                           onClick={() => setPage(pg)}
                           className={`px-2.5 py-1 text-xs rounded ${
                             pg === currentPage
-                              ? 'bg-indigo-600 text-white'
-                              : 'border border-gray-300 hover:bg-gray-50'
+                              ? 'bg-primary text-white'
+                              : 'border border-border-subtle hover:bg-bg-surface-raised'
                           }`}
                         >
                           {pg}
@@ -393,7 +398,7 @@ export default function EmployeesPage() {
                     <button
                       onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
-                      className="px-2 py-1 text-xs border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-50"
+                      className="px-2 py-1 text-xs border border-border-subtle rounded disabled:opacity-40 hover:bg-bg-surface-raised"
                     >
                       다음
                     </button>
@@ -402,16 +407,16 @@ export default function EmployeesPage() {
               )}
             </>
           )}
-        </div>
+        </SectionCard>
 
         {/* Detail panel */}
         {selectedEmployee && (
-          <div className="w-72 flex-shrink-0 bg-white rounded-lg border border-gray-200 overflow-y-auto animate-in slide-in-from-right-4 duration-200">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="font-semibold text-gray-800 text-sm">직원 상세</h2>
+          <div className={`w-72 flex-shrink-0 ${CARD_SURFACE} overflow-y-auto animate-in slide-in-from-right-4 duration-200`}>
+            <div className="p-4 border-b border-border-subtle flex items-center justify-between">
+              <h2 className="font-semibold text-text-primary text-sm">직원 상세</h2>
               <button
                 onClick={() => setSelectedEmployee(null)}
-                className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                className="text-text-muted hover:text-text-primary text-lg leading-none"
               >
                 ×
               </button>
@@ -420,45 +425,45 @@ export default function EmployeesPage() {
             <div className="p-4 space-y-4">
               {/* Avatar */}
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xl font-bold">
+                <div className="w-12 h-12 rounded-full bg-[rgba(59,91,254,0.2)] flex items-center justify-center text-accent-cyan text-xl font-bold">
                   {selectedEmployee.name.charAt(0)}
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-800">{selectedEmployee.name}</div>
-                  <div className="text-xs text-gray-500">{selectedEmployee.email}</div>
+                  <div className="font-semibold text-text-primary">{selectedEmployee.name}</div>
+                  <div className="text-xs text-text-muted">{selectedEmployee.email}</div>
                 </div>
               </div>
 
-              <div className="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1">
+              <div className="text-xs text-status-external bg-[rgba(245,158,11,0.16)] rounded px-2 py-1">
                 🔒 읽기 전용: ERP에서 자동 동기화됨
               </div>
 
               {/* Fields */}
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-gray-500">팀</dt>
-                  <dd className="text-gray-800 font-medium">
+                  <dt className="text-text-muted">팀</dt>
+                  <dd className="text-text-primary font-medium">
                     {TEAM_LABELS[selectedEmployee.erp_team_id] ??
                       `팀 ${selectedEmployee.erp_team_id}`}
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-gray-500">직급</dt>
-                  <dd className="text-gray-800 font-medium">
+                  <dt className="text-text-muted">직급</dt>
+                  <dd className="text-text-primary font-medium">
                     {selectedEmployee.position ?? '—'}
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-gray-500">역할</dt>
+                  <dt className="text-text-muted">역할</dt>
                   <dd>
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                         selectedEmployee.role === 'admin' ||
                         selectedEmployee.role === 'super_admin'
-                          ? 'bg-purple-100 text-purple-700'
+                          ? 'bg-[rgba(139,92,246,0.18)] text-status-focus'
                           : selectedEmployee.role === 'leader'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-gray-100 text-gray-600'
+                            ? 'bg-[rgba(56,189,248,0.15)] text-accent-cyan'
+                            : 'bg-bg-surface-raised text-text-secondary'
                       }`}
                     >
                       {ROLE_LABELS[selectedEmployee.role] ?? selectedEmployee.role}
@@ -466,17 +471,17 @@ export default function EmployeesPage() {
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-gray-500">근무형태</dt>
-                  <dd className="text-gray-800">{selectedEmployee.work_type ?? '—'}</dd>
+                  <dt className="text-text-muted">근무형태</dt>
+                  <dd className="text-text-primary">{selectedEmployee.work_type ?? '—'}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-gray-500">상태</dt>
+                  <dt className="text-text-muted">상태</dt>
                   <dd>
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                         selectedEmployee.is_active
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-red-100 text-red-700'
+                          ? 'bg-[rgba(34,197,94,0.16)] text-status-online'
+                          : 'bg-[rgba(239,68,68,0.12)] text-red-300'
                       }`}
                     >
                       {selectedEmployee.is_active ? '재직중' : '비활성'}
@@ -485,8 +490,8 @@ export default function EmployeesPage() {
                 </div>
                 {selectedEmployee.manager_id && (
                   <div className="flex justify-between">
-                    <dt className="text-gray-500">매니저 ID</dt>
-                    <dd className="text-gray-800">{selectedEmployee.manager_id}</dd>
+                    <dt className="text-text-muted">매니저 ID</dt>
+                    <dd className="text-text-primary">{selectedEmployee.manager_id}</dd>
                   </div>
                 )}
               </dl>

@@ -4,6 +4,24 @@ import { useEffect, useState, useCallback } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isLeaderOrAbove, type User } from '@/lib/auth';
 import { kstToday } from '@/lib/dates';
+import {
+  PageHeader,
+  ToolbarButton,
+  Segmented,
+  StatCard,
+  SectionCard,
+  EmptyState,
+  ErrorBanner,
+  LoadingState,
+} from '@/components/ui/console';
+
+const ICON = {
+  briefcase: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="3" y="6.5" width="14" height="9.5" rx="2" /><path d="M7 6.5V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5M3 11h14" /></svg>,
+  plus: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M10 4v12M4 10h12" /></svg>,
+  list: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 6h12M4 10h12M4 14h8" /></svg>,
+  clock: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="10" cy="10" r="7" /><path d="M10 6v4l2.8 1.8" /></svg>,
+  check: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="10" cy="10" r="7" /><path d="M6.8 10.2l2.2 2.2 4.2-4.6" /></svg>,
+};
 
 interface Trip {
   id: string;
@@ -39,11 +57,11 @@ const TABS: { value: StatusTab; label: string }[] = [
 ];
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  requested: { label: '신청', color: 'bg-amber-100 text-amber-700' },
-  approved: { label: '승인', color: 'bg-green-100 text-green-700' },
-  rejected: { label: '반려', color: 'bg-red-100 text-red-700' },
-  cancelled: { label: '취소', color: 'bg-gray-100 text-gray-600' },
-  completed: { label: '완료', color: 'bg-blue-100 text-blue-700' },
+  requested: { label: '신청', color: 'bg-[rgba(245,158,11,0.16)] text-status-external' },
+  approved: { label: '승인', color: 'bg-[rgba(34,197,94,0.16)] text-status-online' },
+  rejected: { label: '반려', color: 'bg-[rgba(239,68,68,0.12)] text-red-300' },
+  cancelled: { label: '취소', color: 'bg-bg-surface-raised text-text-secondary' },
+  completed: { label: '완료', color: 'bg-[rgba(56,189,248,0.15)] text-accent-cyan' },
 };
 
 interface TripFormData {
@@ -294,68 +312,64 @@ export default function TripPage() {
     }
   }
 
+  const counts = {
+    total: trips.length,
+    requested: trips.filter((t) => t.status === 'requested').length,
+    approved: trips.filter((t) => t.status === 'approved').length,
+    completed: trips.filter((t) => t.status === 'completed').length,
+  };
+
   return (
-    <div className="p-6 flex flex-col gap-4 h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-800">출장관리</h1>
-        <button
-          onClick={openCreateModal}
-          className="flex items-center gap-1 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors"
-        >
-          + 출장 신청
-        </button>
+    <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
+      <PageHeader
+        title="출장관리"
+        subtitle="출장을 신청하고 승인·완료 보고를 관리합니다"
+        icon={ICON.briefcase}
+        actions={
+          <ToolbarButton variant="primary" onClick={openCreateModal} icon={ICON.plus}>
+            출장 신청
+          </ToolbarButton>
+        }
+      />
+
+      {/* 요약 카드 */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <StatCard label="전체" value={counts.total} accent="#B4C0D3" icon={ICON.list} />
+        <StatCard label="신청" value={counts.requested} accent="#F59E0B" icon={ICON.clock} />
+        <StatCard label="승인" value={counts.approved} accent="#22C55E" icon={ICON.check} />
+        <StatCard label="완료" value={counts.completed} accent="#38BDF8" icon={ICON.briefcase} />
       </div>
 
       {/* Status tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
-        {TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setActiveTab(tab.value)}
-            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-              activeTab === tab.value
-                ? 'bg-white text-indigo-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        value={activeTab}
+        onChange={setActiveTab}
+        options={TABS.map((tab) => ({ value: tab.value, label: tab.label }))}
+      />
 
       {/* Error */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-          {error}
-          <button onClick={fetchData} className="ml-2 underline text-red-600">
-            재시도
-          </button>
-        </div>
-      )}
+      {error && <ErrorBanner message={error} onRetry={fetchData} />}
 
       {/* Trip table */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="flex items-center justify-center py-20 text-gray-400 text-sm">
-            데이터를 불러오는 중...
-          </div>
+          <LoadingState />
         ) : trips.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
-            <span className="text-5xl">🧳</span>
-            <p className="text-sm">등록된 출장이 없습니다.</p>
-            <button
-              onClick={openCreateModal}
-              className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors"
-            >
-              출장 신청하기
-            </button>
-          </div>
+          <EmptyState
+            icon="🧳"
+            title="등록된 출장이 없습니다"
+            hint="출장 신청 버튼으로 새 출장을 등록해 보세요."
+            action={
+              <ToolbarButton variant="primary" onClick={openCreateModal} icon={ICON.plus}>
+                출장 신청하기
+              </ToolbarButton>
+            }
+          />
         ) : (
-          <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
+          <SectionCard title="출장 목록" icon={ICON.briefcase} bodyClassName="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-xs text-gray-500">
+                <tr className="border-b border-border-subtle text-left text-xs text-text-muted">
                   <th className="px-4 py-3 font-medium">출장지</th>
                   <th className="px-4 py-3 font-medium">목적</th>
                   <th className="px-4 py-3 font-medium">기간</th>
@@ -369,29 +383,29 @@ export default function TripPage() {
                 {trips.map((trip) => {
                   const statusInfo = STATUS_LABELS[trip.status] ?? {
                     label: trip.status,
-                    color: 'bg-gray-100 text-gray-600',
+                    color: 'bg-bg-surface-raised text-text-secondary',
                   };
                   const isOwn = user != null && trip.user_id === user.id;
                   return (
                     <tr
                       key={trip.id}
-                      className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors"
+                      className="border-b border-border-subtle last:border-b-0 hover:bg-bg-surface-raised transition-colors"
                     >
-                      <td className="px-4 py-3 font-medium text-gray-800">{trip.destination}</td>
-                      <td className="px-4 py-3 text-gray-600 max-w-[16rem]">
+                      <td className="px-4 py-3 font-medium text-text-primary">{trip.destination}</td>
+                      <td className="px-4 py-3 text-text-secondary max-w-[16rem]">
                         <span className="block truncate" title={trip.purpose}>
                           {trip.purpose}
                         </span>
                         {trip.note && (
                           <span
-                            className="block truncate text-xs text-gray-400"
+                            className="block truncate text-xs text-text-muted"
                             title={trip.note}
                           >
                             비고: {trip.note}
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                      <td className="px-4 py-3 text-text-secondary whitespace-nowrap">
                         {trip.start_date} ~ {trip.end_date}
                       </td>
                       <td className="px-4 py-3">
@@ -402,11 +416,11 @@ export default function TripPage() {
                         </span>
                       </td>
                       {isManager && (
-                        <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                        <td className="px-4 py-3 text-text-secondary whitespace-nowrap">
                           {employees[trip.user_id] ?? `#${trip.user_id}`}
                         </td>
                       )}
-                      <td className="px-4 py-3 text-xs text-gray-500">
+                      <td className="px-4 py-3 text-xs text-text-muted">
                         {(trip.status === 'approved' ||
                           trip.status === 'rejected' ||
                           trip.status === 'completed') && (
@@ -416,7 +430,7 @@ export default function TripPage() {
                         )}
                         {trip.status === 'rejected' && trip.reject_reason && (
                           <span
-                            className="block truncate max-w-[12rem] text-red-500"
+                            className="block truncate max-w-[12rem] text-red-300"
                             title={trip.reject_reason}
                           >
                             사유: {trip.reject_reason}
@@ -432,13 +446,13 @@ export default function TripPage() {
                             <>
                               <button
                                 onClick={() => openEditModal(trip)}
-                                className="text-xs px-2 py-1 border border-gray-300 rounded text-gray-500 hover:bg-gray-50"
+                                className="text-xs px-2 py-1 border border-border-subtle rounded text-text-muted hover:bg-bg-surface-raised"
                               >
                                 수정
                               </button>
                               <button
                                 onClick={() => handleDelete(trip)}
-                                className="text-xs px-2 py-1 border border-red-200 rounded text-red-500 hover:bg-red-50"
+                                className="text-xs px-2 py-1 border border-[rgba(239,68,68,0.35)] rounded text-red-300 hover:bg-[rgba(239,68,68,0.12)]"
                               >
                                 삭제
                               </button>
@@ -448,7 +462,7 @@ export default function TripPage() {
                             (trip.status === 'requested' || trip.status === 'approved') && (
                               <button
                                 onClick={() => handleCancel(trip)}
-                                className="text-xs px-2 py-1 border border-gray-300 rounded text-gray-500 hover:bg-gray-50"
+                                className="text-xs px-2 py-1 border border-border-subtle rounded text-text-muted hover:bg-bg-surface-raised"
                               >
                                 취소
                               </button>
@@ -456,7 +470,7 @@ export default function TripPage() {
                           {isOwn && trip.status === 'approved' && (
                             <button
                               onClick={() => openCompleteModal(trip)}
-                              className="text-xs px-2 py-1 border border-blue-300 rounded text-blue-600 hover:bg-blue-50"
+                              className="text-xs px-2 py-1 border border-primary/50 rounded text-accent-cyan hover:bg-primary/10"
                             >
                               완료 보고
                             </button>
@@ -465,13 +479,13 @@ export default function TripPage() {
                             <>
                               <button
                                 onClick={() => handleApprove(trip)}
-                                className="text-xs px-2 py-1 border border-green-300 rounded text-green-600 hover:bg-green-50"
+                                className="text-xs px-2 py-1 border border-[rgba(34,197,94,0.4)] rounded text-status-online hover:bg-[rgba(34,197,94,0.12)]"
                               >
                                 승인
                               </button>
                               <button
                                 onClick={() => openRejectModal(trip)}
-                                className="text-xs px-2 py-1 border border-red-200 rounded text-red-500 hover:bg-red-50"
+                                className="text-xs px-2 py-1 border border-[rgba(239,68,68,0.35)] rounded text-red-300 hover:bg-[rgba(239,68,68,0.12)]"
                               >
                                 반려
                               </button>
@@ -480,7 +494,7 @@ export default function TripPage() {
                           {trip.status === 'completed' && (
                             <button
                               onClick={() => setViewTrip(trip)}
-                              className="text-xs px-2 py-1 border border-gray-300 rounded text-gray-500 hover:bg-gray-50"
+                              className="text-xs px-2 py-1 border border-border-subtle rounded text-text-muted hover:bg-bg-surface-raised"
                             >
                               보고 보기
                             </button>
@@ -492,21 +506,21 @@ export default function TripPage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </SectionCard>
         )}
       </div>
 
       {/* 신청/수정 모달 */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+              <h2 className="font-semibold text-text-primary">
                 {editTrip ? '출장 수정' : '출장 신청'}
               </h2>
               <button
                 onClick={() => setModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 text-xl"
+                className="text-text-muted hover:text-text-primary text-xl"
               >
                 ×
               </button>
@@ -514,49 +528,49 @@ export default function TripPage() {
 
             <form onSubmit={handleSave} className="px-6 py-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  출장지 <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-text-secondary mb-1">
+                  출장지 <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   value={form.destination}
                   onChange={(e) => setForm({ ...form, destination: e.target.value })}
                   required
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
                   placeholder="출장지를 입력하세요"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  목적 <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-text-secondary mb-1">
+                  목적 <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   value={form.purpose}
                   onChange={(e) => setForm({ ...form, purpose: e.target.value })}
                   required
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
                   placeholder="출장 목적을 입력하세요"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    시작일 <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                    시작일 <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="date"
                     value={form.start_date}
                     onChange={(e) => setForm({ ...form, start_date: e.target.value })}
                     required
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full border border-border-subtle bg-bg-base text-text-primary rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan [color-scheme:dark]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    종료일 <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                    종료일 <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="date"
@@ -564,36 +578,36 @@ export default function TripPage() {
                     onChange={(e) => setForm({ ...form, end_date: e.target.value })}
                     required
                     min={form.start_date || undefined}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full border border-border-subtle bg-bg-base text-text-primary rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan [color-scheme:dark]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">비고</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">비고</label>
                 <textarea
                   value={form.note}
                   onChange={(e) => setForm({ ...form, note: e.target.value })}
                   rows={2}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
                   placeholder="추가로 남길 내용 (선택)"
                 />
               </div>
 
-              {saveError && <p className="text-sm text-red-600">✗ {saveError}</p>}
+              {saveError && <p className="text-sm text-red-400">✗ {saveError}</p>}
 
-              <div className="flex gap-2 pt-2 border-t border-gray-100">
+              <div className="flex gap-2 pt-2 border-t border-border-subtle">
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 text-sm border border-border-subtle rounded-md text-text-secondary hover:bg-bg-surface-raised"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary-hover disabled:opacity-50"
                 >
                   {saving ? '저장 중...' : editTrip ? '저장' : '신청'}
                 </button>
@@ -605,42 +619,42 @@ export default function TripPage() {
 
       {/* 반려 모달 */}
       {rejectTrip && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-800">출장 반려</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+              <h2 className="font-semibold text-text-primary">출장 반려</h2>
               <button
                 onClick={() => setRejectTrip(null)}
-                className="text-gray-400 hover:text-gray-600 text-xl"
+                className="text-text-muted hover:text-text-primary text-xl"
               >
                 ×
               </button>
             </div>
 
             <form onSubmit={handleReject} className="px-6 py-4 space-y-4">
-              <p className="text-sm text-gray-600">
-                <span className="font-medium text-gray-800">{rejectTrip.destination}</span> (
+              <p className="text-sm text-text-secondary">
+                <span className="font-medium text-text-primary">{rejectTrip.destination}</span> (
                 {rejectTrip.start_date} ~ {rejectTrip.end_date}) 출장 신청을 반려합니다.
               </p>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">반려 사유</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">반려 사유</label>
                 <textarea
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   rows={3}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
                   placeholder="반려 사유를 입력하세요 (선택)"
                 />
               </div>
 
-              {rejectError && <p className="text-sm text-red-600">✗ {rejectError}</p>}
+              {rejectError && <p className="text-sm text-red-400">✗ {rejectError}</p>}
 
-              <div className="flex gap-2 pt-2 border-t border-gray-100">
+              <div className="flex gap-2 pt-2 border-t border-border-subtle">
                 <button
                   type="button"
                   onClick={() => setRejectTrip(null)}
-                  className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 text-sm border border-border-subtle rounded-md text-text-secondary hover:bg-bg-surface-raised"
                 >
                   취소
                 </button>
@@ -659,52 +673,52 @@ export default function TripPage() {
 
       {/* 완료 보고 모달 */}
       {completeTrip && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-800">출장 완료 보고</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+              <h2 className="font-semibold text-text-primary">출장 완료 보고</h2>
               <button
                 onClick={() => setCompleteTrip(null)}
-                className="text-gray-400 hover:text-gray-600 text-xl"
+                className="text-text-muted hover:text-text-primary text-xl"
               >
                 ×
               </button>
             </div>
 
             <form onSubmit={handleComplete} className="px-6 py-4 space-y-4">
-              <p className="text-sm text-gray-600">
-                <span className="font-medium text-gray-800">{completeTrip.destination}</span> (
+              <p className="text-sm text-text-secondary">
+                <span className="font-medium text-text-primary">{completeTrip.destination}</span> (
                 {completeTrip.start_date} ~ {completeTrip.end_date}) 출장 결과를 보고합니다.
               </p>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  결과 보고 <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-text-secondary mb-1">
+                  결과 보고 <span className="text-red-400">*</span>
                 </label>
                 <textarea
                   value={reportText}
                   onChange={(e) => setReportText(e.target.value)}
                   rows={5}
                   required
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
                   placeholder="출장 결과를 입력하세요"
                 />
               </div>
 
-              {completeError && <p className="text-sm text-red-600">✗ {completeError}</p>}
+              {completeError && <p className="text-sm text-red-400">✗ {completeError}</p>}
 
-              <div className="flex gap-2 pt-2 border-t border-gray-100">
+              <div className="flex gap-2 pt-2 border-t border-border-subtle">
                 <button
                   type="button"
                   onClick={() => setCompleteTrip(null)}
-                  className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 text-sm border border-border-subtle rounded-md text-text-secondary hover:bg-bg-surface-raised"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
                   disabled={completeSaving}
-                  className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary-hover disabled:opacity-50"
                 >
                   {completeSaving ? '제출 중...' : '완료 보고'}
                 </button>
@@ -716,45 +730,45 @@ export default function TripPage() {
 
       {/* 보고 보기 모달 (읽기 전용) */}
       {viewTrip && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-800">출장 결과 보고</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+              <h2 className="font-semibold text-text-primary">출장 결과 보고</h2>
               <button
                 onClick={() => setViewTrip(null)}
-                className="text-gray-400 hover:text-gray-600 text-xl"
+                className="text-text-muted hover:text-text-primary text-xl"
               >
                 ×
               </button>
             </div>
 
             <div className="px-6 py-4 space-y-3">
-              <div className="text-sm text-gray-600 space-y-1">
+              <div className="text-sm text-text-secondary space-y-1">
                 <p>
-                  <span className="text-gray-400 mr-2">출장지</span>
-                  <span className="font-medium text-gray-800">{viewTrip.destination}</span>
+                  <span className="text-text-muted mr-2">출장지</span>
+                  <span className="font-medium text-text-primary">{viewTrip.destination}</span>
                 </p>
                 <p>
-                  <span className="text-gray-400 mr-2">목적</span>
+                  <span className="text-text-muted mr-2">목적</span>
                   {viewTrip.purpose}
                 </p>
                 <p>
-                  <span className="text-gray-400 mr-2">기간</span>
+                  <span className="text-text-muted mr-2">기간</span>
                   {viewTrip.start_date} ~ {viewTrip.end_date}
                 </p>
               </div>
 
               <div>
-                <div className="text-sm font-medium text-gray-700 mb-1">결과 보고</div>
-                <div className="border border-gray-200 rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700 whitespace-pre-wrap">
+                <div className="text-sm font-medium text-text-secondary mb-1">결과 보고</div>
+                <div className="border border-border-subtle rounded-md bg-bg-base px-3 py-2 text-sm text-text-secondary whitespace-pre-wrap">
                   {viewTrip.report || '보고 내용이 없습니다.'}
                 </div>
               </div>
 
-              <div className="flex pt-2 border-t border-gray-100">
+              <div className="flex pt-2 border-t border-border-subtle">
                 <button
                   onClick={() => setViewTrip(null)}
-                  className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 text-sm border border-border-subtle rounded-md text-text-secondary hover:bg-bg-surface-raised"
                 >
                   닫기
                 </button>

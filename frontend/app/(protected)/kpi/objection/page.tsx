@@ -4,6 +4,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { KpiResult, metricLabel, formatScore, formatKst, OBJECTION_STATUS } from '@/lib/kpi';
+import {
+  PageHeader,
+  SectionCard,
+  EmptyState,
+  ErrorBanner,
+  LoadingState,
+} from '@/components/ui/console';
+
+const ICON = {
+  gavel: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M9 4l4 4-3 3-4-4z" /><path d="M11.5 6.5l3.5 3.5" /><path d="M7 9l-3.5 3.5a1.4 1.4 0 0 0 2 2L9 11" /><path d="M12 16h5" /></svg>,
+  list: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 6h12M4 10h12M4 14h8" /></svg>,
+};
 
 // 08 §3.3 제출 형식 — 백엔드 허용 카테고리 3종 (자유 한글 카테고리는 422)
 const CATEGORY_OPTIONS = [
@@ -61,9 +73,9 @@ function daysLeft(r: KpiResult): number {
 function DdayBadge({ r }: { r: KpiResult }) {
   const d = daysLeft(r);
   if (d <= 0) {
-    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">기한 만료</span>;
+    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-bg-surface-raised text-text-muted">기한 만료</span>;
   }
-  const cls = d <= 2 ? 'bg-red-100 text-red-700' : 'bg-indigo-100 text-indigo-700';
+  const cls = d <= 2 ? 'bg-[rgba(239,68,68,0.12)] text-red-300' : 'bg-[rgba(59,91,254,0.2)] text-[#93A9FF]';
   return <span className={`text-[10px] px-1.5 py-0.5 rounded ${cls}`}>D-{d}</span>;
 }
 
@@ -138,27 +150,27 @@ export default function KpiObjectionPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-xl font-bold text-gray-800 mb-1">KPI 이의신청</h1>
-      <p className="text-xs text-gray-400 mb-5">
-        본인 KPI에 대해 이의를 제기할 수 있습니다 — 평가 공개 후 7일 이내, 확정 전에만 접수됩니다.
-      </p>
+    <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
+      <PageHeader
+        title="KPI 이의신청"
+        subtitle="본인 KPI에 대해 이의를 제기할 수 있습니다 — 평가 공개 후 7일 이내, 확정 전에만 접수됩니다."
+        icon={ICON.gavel}
+      />
 
       {toast && (
-        <div className="mb-3 px-3 py-2 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">{toast}</div>
+        <div className="px-3 py-2 bg-[rgba(34,197,94,0.16)] border border-[rgba(34,197,94,0.4)] rounded-md text-sm text-status-online">{toast}</div>
       )}
 
+      {error && <ErrorBanner message={error} onRetry={fetchResults} />}
+
       {loading ? (
-        <div className="text-center py-20 text-gray-400 text-sm">불러오는 중...</div>
-      ) : error ? (
-        <div className="text-center py-20">
-          <p className="text-red-600 text-sm mb-2">{error}</p>
-          <button onClick={fetchResults} className="text-xs text-indigo-600 underline">재시도</button>
-        </div>
-      ) : results.length === 0 ? (
-        <div className="text-center py-20 text-gray-400 text-sm">이의신청 가능한 KPI 결과가 없습니다.</div>
+        <LoadingState />
+      ) : error ? null : results.length === 0 ? (
+        <SectionCard title="내 KPI 결과" icon={ICON.list}>
+          <EmptyState icon="⚖️" title="이의신청 가능한 KPI 결과가 없습니다." hint="평가가 공개되면 여기에 표시됩니다." compact />
+        </SectionCard>
       ) : (
-        <div className="space-y-2">
+        <SectionCard title="내 KPI 결과" icon={ICON.list} bodyClassName="p-4 space-y-2">
           {results.map((r) => {
             const obj = OBJECTION_STATUS[r.objection_status];
             const detail = r.objection_detail as ObjectionDetailAny | null;
@@ -167,20 +179,20 @@ export default function KpiObjectionPage() {
             const expired = daysLeft(r) <= 0;
             const eligible = r.objection_status === 'none' && !r.finalized_at && !expired;
             return (
-              <div key={r.id} className="bg-white border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between">
+              <div key={r.id} className="bg-bg-surface border border-border-subtle rounded-lg px-4 py-3 flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-gray-800">{metricLabel(r.metric)}</span>
-                    <span className="text-xs text-gray-400">{r.period_key}</span>
+                    <span className="font-medium text-text-primary">{metricLabel(r.metric)}</span>
+                    <span className="text-xs text-text-muted">{r.period_key}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded ${obj.color}`}>{obj.label}</span>
                     <DdayBadge r={r} />
                   </div>
-                  <div className="text-xs text-gray-500 mt-0.5">
+                  <div className="text-xs text-text-muted mt-0.5">
                     점수 {formatScore(r.final_score ?? r.value)} · 공개 {formatKst(r.admin_reviewed_at ?? r.created_at)}
-                    {r.finalized_at && <span className="text-green-600"> · 확정 {formatKst(r.finalized_at)}</span>}
+                    {r.finalized_at && <span className="text-status-online"> · 확정 {formatKst(r.finalized_at)}</span>}
                   </div>
                   {detailText && (
-                    <div className="text-xs text-gray-400 mt-1">
+                    <div className="text-xs text-text-muted mt-1">
                       내 사유{detailCategory ? ` [${CATEGORY_LABELS[detailCategory] ?? detailCategory}]` : ''}: {detailText}
                     </div>
                   )}
@@ -191,7 +203,7 @@ export default function KpiObjectionPage() {
                     setSaveError('');
                   }}
                   disabled={!eligible}
-                  className="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                  className="text-xs px-3 py-1.5 bg-primary text-white rounded-md hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                 >
                   {r.objection_status !== 'none'
                     ? '접수됨'
@@ -204,27 +216,27 @@ export default function KpiObjectionPage() {
               </div>
             );
           })}
-        </div>
+        </SectionCard>
       )}
 
       {target && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-800">이의신청 — {metricLabel(target.metric)}</h2>
-              <button onClick={() => setTarget(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+              <h2 className="font-semibold text-text-primary">이의신청 — {metricLabel(target.metric)}</h2>
+              <button onClick={() => setTarget(null)} className="text-text-muted hover:text-text-primary text-xl">×</button>
             </div>
             <div className="px-6 py-4 space-y-4">
-              <div className="flex items-center justify-between text-xs bg-gray-50 rounded-md px-3 py-2">
-                <span className="text-gray-500">이의 가능 기한 (공개 후 7일)</span>
+              <div className="flex items-center justify-between text-xs bg-bg-base rounded-md px-3 py-2">
+                <span className="text-text-muted">이의 가능 기한 (공개 후 7일)</span>
                 <DdayBadge r={target} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">카테고리</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">카테고리</label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as ObjectionCategory)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-border-subtle bg-bg-base text-text-primary rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
                 >
                   {CATEGORY_OPTIONS.map((c) => (
                     <option key={c.value} value={c.value}>{c.label}</option>
@@ -232,38 +244,38 @@ export default function KpiObjectionPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">이의 내용 (10자 이상)</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">이의 내용 (10자 이상)</label>
                 <textarea
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   rows={4}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
                   placeholder="점수에 이의를 제기하는 근거를 구체적으로 작성하세요."
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">증거 링크 (선택 · 한 줄에 하나)</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">증거 링크 (선택 · 한 줄에 하나)</label>
                 <textarea
                   value={evidence}
                   onChange={(e) => setEvidence(e.target.value)}
                   rows={2}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
                   placeholder={'https://...\nhttps://...'}
                 />
-                <p className="mt-1 text-xs text-gray-400">여러 줄 입력 시 각 줄이 별도 증거로 접수됩니다.</p>
+                <p className="mt-1 text-xs text-text-muted">여러 줄 입력 시 각 줄이 별도 증거로 접수됩니다.</p>
               </div>
-              {saveError && <p className="text-sm text-red-600">{saveError}</p>}
+              {saveError && <p className="text-sm text-red-300">{saveError}</p>}
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => setTarget(null)}
-                  className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 text-sm border border-border-subtle rounded-md text-text-secondary hover:bg-bg-surface-raised"
                 >
                   취소
                 </button>
                 <button
                   onClick={submit}
                   disabled={saving || text.trim().length < 10}
-                  className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary-hover disabled:opacity-50"
                 >
                   {saving ? '접수 중...' : '접수'}
                 </button>

@@ -5,10 +5,27 @@ import dynamic from 'next/dynamic';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isAdmin } from '@/lib/auth';
 import type { OrgEmployee } from '@/components/org/OrgChartFlow';
+import {
+  PageHeader,
+  ToolbarButton,
+  SectionCard,
+  EmptyState,
+  ErrorBanner,
+  LoadingState,
+} from '@/components/ui/console';
+
+const ICON = {
+  tree: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="7.5" y="2.5" width="5" height="4" rx="1" /><rect x="2.5" y="13.5" width="5" height="4" rx="1" /><rect x="12.5" y="13.5" width="5" height="4" rx="1" /><path d="M10 6.5v3M10 9.5H5v4M10 9.5h5v4" /></svg>,
+  plus: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M10 4v12M4 10h12" /></svg>,
+  check: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><circle cx="10" cy="10" r="7" /><path d="M6.8 10.2l2.2 2.2 4.2-4.6" /></svg>,
+  rocket: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M10 2c3 1.5 4.5 4 4.5 7l-2 4h-5l-2-4C5.5 6 7 3.5 10 2z" /><circle cx="10" cy="8" r="1.5" /><path d="M7.5 15l-2 3M12.5 15l2 3" /></svg>,
+  layers: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M10 3 3 6.5 10 10l7-3.5z" /><path d="M3 10.5 10 14l7-3.5M3 13.5 10 17l7-3.5" /></svg>,
+  lock: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><rect x="4" y="9" width="12" height="8" rx="2" /><path d="M7 9V6.5a3 3 0 0 1 6 0V9" /></svg>,
+};
 
 const OrgChartFlow = dynamic(() => import('@/components/org/OrgChartFlow'), {
   ssr: false,
-  loading: () => <div className="h-full flex items-center justify-center text-gray-400 text-sm">그래프 로딩...</div>,
+  loading: () => <div className="h-full flex items-center justify-center text-text-muted text-sm">그래프 로딩...</div>,
 });
 
 interface OrgGroup {
@@ -98,40 +115,40 @@ export default function OrgChartPage() {
 
   if (!allowed) {
     return (
-      <div className="p-6">
-        <div className="max-w-md mx-auto mt-20 text-center bg-white border border-gray-200 rounded-xl p-8">
-          <div className="text-3xl mb-2">🔒</div>
-          <p className="text-gray-700 font-medium">관리자 전용 화면</p>
-          <p className="text-sm text-gray-400 mt-1">조직도 편집은 관리자만 접근할 수 있습니다.</p>
+      <div className="p-6 text-text-secondary">
+        <div className="max-w-md mx-auto mt-20">
+          <SectionCard>
+            <EmptyState icon={ICON.lock} title="관리자 전용 화면" hint="조직도 편집은 관리자만 접근할 수 있습니다." />
+          </SectionCard>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="px-6 py-3 border-b border-gray-200 bg-white flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-gray-800">조직도 편집기</h1>
-          <p className="text-xs text-gray-400">
-            회사 → 팀(erp_team_id) → 구성원 계층 · 노드 드래그 가능 · 조직 그룹 {orgGroups.length}개
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => setShowCreate(true)} className="px-3 py-1.5 text-sm border border-indigo-300 text-indigo-600 rounded-md hover:bg-indigo-50">+ 조직 그룹</button>
-          <button onClick={validateOrg} disabled={busy === 'validate'} className="px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50">
-            {busy === 'validate' ? '검증 중...' : '검증'}
-          </button>
-          <button onClick={deployOrg} disabled={busy === 'deploy'} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50">
-            {busy === 'deploy' ? '배포 중...' : '배포'}
-          </button>
-        </div>
-      </div>
+    <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
+      <PageHeader
+        title="조직도 편집기"
+        subtitle={`회사 → 팀(erp_team_id) → 구성원 계층 · 노드 드래그 가능 · 조직 그룹 ${orgGroups.length}개`}
+        icon={ICON.tree}
+        actions={
+          <>
+            <ToolbarButton onClick={() => setShowCreate(true)} icon={ICON.plus}>조직 그룹</ToolbarButton>
+            <ToolbarButton onClick={validateOrg} disabled={busy === 'validate'} icon={ICON.check}>
+              {busy === 'validate' ? '검증 중...' : '검증'}
+            </ToolbarButton>
+            <ToolbarButton onClick={deployOrg} disabled={busy === 'deploy'} variant="primary" icon={ICON.rocket}>
+              {busy === 'deploy' ? '배포 중...' : '배포'}
+            </ToolbarButton>
+          </>
+        }
+      />
+
       {toast && (
-        <div className="mx-6 mt-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-md text-xs text-amber-700">{toast}</div>
+        <div className="px-3 py-2 bg-[rgba(245,158,11,0.16)] border border-[rgba(245,158,11,0.4)] rounded-xl text-xs text-status-external">{toast}</div>
       )}
       {banner && (
-        <div className={`mx-6 mt-3 px-3 py-2 rounded-md text-xs border ${banner.valid ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+        <div className={`px-3 py-2 rounded-xl text-xs border ${banner.valid ? 'bg-[rgba(34,197,94,0.16)] border-[rgba(34,197,94,0.4)] text-status-online' : 'bg-[rgba(239,68,68,0.12)] border-[rgba(239,68,68,0.3)] text-red-300'}`}>
           {banner.valid ? '✅ 검증 통과 — 순환참조·미매핑 오류 없음 (배포 가능)' : (
             <div>
               <div className="font-semibold mb-1">❌ 검증 실패 ({banner.errors.length}건)</div>
@@ -140,36 +157,40 @@ export default function OrgChartPage() {
           )}
         </div>
       )}
-      <div className="flex-1 min-h-0 flex gap-0">
+
+      <SectionCard title="조직 구조" icon={ICON.layers} className="flex-1 min-h-0" bodyClassName="flex-1 min-h-0 flex gap-0 p-0">
         {/* 조직 그룹 계층 패널 (GET /api/org-groups) */}
-        <aside className="w-56 flex-shrink-0 border-r border-gray-200 bg-white overflow-y-auto p-3">
-          <div className="text-xs font-semibold text-gray-500 mb-2">조직 그룹 (org_group)</div>
+        <aside className="w-56 flex-shrink-0 border-r border-border-subtle overflow-y-auto p-3">
+          <div className="text-xs font-semibold text-text-muted mb-2">조직 그룹 (org_group)</div>
           {orgGroups.length === 0 ? (
-            <p className="text-xs text-gray-400">등록된 조직 그룹이 없습니다. (팀 계층은 우측 그래프)</p>
+            <p className="text-xs text-text-muted">등록된 조직 그룹이 없습니다. (팀 계층은 우측 그래프)</p>
           ) : (
             <ul className="space-y-1">
               {orgGroups.map((g) => (
-                <li key={g.id} className="text-sm text-gray-700 flex items-center gap-1" style={{ paddingLeft: depthOf(g) * 12 }}>
+                <li key={g.id} className="text-sm text-text-secondary flex items-center gap-1" style={{ paddingLeft: depthOf(g) * 12 }}>
                   <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: g.color || '#c7d2fe' }} />
                   <span>{g.name}</span>
-                  <span className="text-[10px] text-gray-400">{TYPE_LABEL[g.type] ?? g.type}</span>
+                  <span className="text-[10px] text-text-muted">{TYPE_LABEL[g.type] ?? g.type}</span>
                 </li>
               ))}
             </ul>
           )}
         </aside>
-        <div className="flex-1 min-h-0 m-4 border border-gray-200 rounded-xl overflow-hidden bg-gray-50">
+        <div className="flex-1 min-h-0 m-4 border border-border-subtle rounded-xl overflow-hidden bg-bg-base">
           {loading ? (
-            <div className="h-full flex items-center justify-center text-gray-400 text-sm">불러오는 중...</div>
+            <LoadingState />
           ) : error ? (
-            <div className="h-full flex items-center justify-center text-red-600 text-sm">{error}</div>
+            <div className="h-full flex items-center justify-center p-6">
+              <ErrorBanner message={error} />
+            </div>
           ) : employees.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-gray-400 text-sm">조직 데이터가 없습니다.</div>
+            <EmptyState icon={ICON.tree} title="조직 데이터가 없습니다." />
           ) : (
             <OrgChartFlow employees={employees} />
           )}
         </div>
-      </div>
+      </SectionCard>
+
       {showCreate && (
         <CreateOrgGroupModal
           groups={orgGroups}
@@ -204,42 +225,42 @@ function CreateOrgGroupModal({ groups, onClose, onCreated }: { groups: { id: str
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-800">조직 그룹 생성</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="rounded-2xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+          <h2 className="font-semibold text-text-primary">조직 그룹 생성</h2>
+          <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl">×</button>
         </div>
         <div className="px-6 py-4 space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">이름 (필수)</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <label className="block text-sm font-medium text-text-secondary mb-1">이름 (필수)</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">유형</label>
-              <select value={type} onChange={(e) => setType(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <label className="block text-sm font-medium text-text-secondary mb-1">유형</label>
+              <select value={type} onChange={(e) => setType(e.target.value)} className="w-full border border-border-subtle bg-bg-base text-text-primary rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan">
                 <option value="division">본부</option>
                 <option value="department">부서</option>
                 <option value="part">파트</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">색상</label>
-              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-full h-9 border border-gray-300 rounded-md" />
+              <label className="block text-sm font-medium text-text-secondary mb-1">색상</label>
+              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-full h-9 border border-border-subtle bg-bg-base rounded-md" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">상위 그룹</label>
-            <select value={parentId} onChange={(e) => setParentId(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <label className="block text-sm font-medium text-text-secondary mb-1">상위 그룹</label>
+            <select value={parentId} onChange={(e) => setParentId(e.target.value)} className="w-full border border-border-subtle bg-bg-base text-text-primary rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan">
               <option value="">(최상위)</option>
               {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
           </div>
-          {err && <p className="text-sm text-red-600">{err}</p>}
+          {err && <p className="text-sm text-red-300">{err}</p>}
           <div className="flex gap-2 pt-1">
-            <button onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">취소</button>
-            <button onClick={save} disabled={saving} className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50">{saving ? '생성 중...' : '생성'}</button>
+            <button onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-border-subtle rounded-md text-text-secondary hover:bg-bg-surface-raised">취소</button>
+            <button onClick={save} disabled={saving} className="flex-1 px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary-hover disabled:opacity-50">{saving ? '생성 중...' : '생성'}</button>
           </div>
         </div>
       </div>

@@ -4,6 +4,22 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isAdmin } from '@/lib/auth';
 import { formatKst } from '@/lib/kpi';
+import {
+  PageHeader,
+  ToolbarButton,
+  SectionCard,
+  EmptyState,
+  ErrorBanner,
+  LoadingState,
+  CARD_SURFACE,
+} from '@/components/ui/console';
+
+const ICON = {
+  shield: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M10 2.5 4 5v4.2c0 3.6 2.4 6.4 6 8.3 3.6-1.9 6-4.7 6-8.3V5z" /><path d="M7.4 10.2 9.2 12l3.4-3.8" /></svg>,
+  refresh: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M15.5 6.5A6 6 0 1 0 16 10" /><path d="M15.5 3v4h-4" /></svg>,
+  list: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 6h12M4 10h12M4 14h8" /></svg>,
+  lock: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="4.5" y="9" width="11" height="7.5" rx="1.5" /><path d="M7 9V6.5a3 3 0 0 1 6 0V9" /></svg>,
+};
 
 interface AuditLog {
   id: string;
@@ -22,13 +38,13 @@ interface AuditListResponse {
 }
 
 const ACTION_COLOR: Record<string, string> = {
-  kpi_finalized: 'bg-green-100 text-green-700',
-  kpi_adjusted: 'bg-blue-100 text-blue-700',
-  kpi_objection_submitted: 'bg-amber-100 text-amber-700',
-  seat_assigned: 'bg-indigo-100 text-indigo-700',
-  seat_unassigned: 'bg-gray-100 text-gray-600',
-  meeting_created: 'bg-purple-100 text-purple-700',
-  office_layout_deployed: 'bg-teal-100 text-teal-700',
+  kpi_finalized: 'bg-[rgba(34,197,94,0.16)] text-status-online',
+  kpi_adjusted: 'bg-[rgba(56,189,248,0.15)] text-accent-cyan',
+  kpi_objection_submitted: 'bg-[rgba(245,158,11,0.16)] text-status-external',
+  seat_assigned: 'bg-[rgba(59,91,254,0.2)] text-[#93A9FF]',
+  seat_unassigned: 'bg-bg-surface-raised text-text-secondary',
+  meeting_created: 'bg-[rgba(139,92,246,0.18)] text-status-focus',
+  office_layout_deployed: 'bg-[rgba(56,189,248,0.15)] text-accent-cyan',
 };
 
 const PAGE = 30;
@@ -87,11 +103,13 @@ export default function AuditLogPage() {
 
   if (!allowed) {
     return (
-      <div className="p-6">
-        <div className="max-w-md mx-auto mt-20 text-center bg-white border border-gray-200 rounded-xl p-8">
-          <div className="text-3xl mb-2">🔒</div>
-          <p className="text-gray-700 font-medium">관리자 전용 화면</p>
-          <p className="text-sm text-gray-400 mt-1">감사 로그는 관리자만 접근할 수 있습니다.</p>
+      <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
+        <div className={`max-w-md mx-auto mt-20 w-full ${CARD_SURFACE} p-4`}>
+          <EmptyState
+            icon="🔒"
+            title="관리자 전용 화면"
+            hint="감사 로그는 관리자만 접근할 수 있습니다."
+          />
         </div>
       </div>
     );
@@ -101,12 +119,20 @@ export default function AuditLogPage() {
   const curPage = Math.floor(offset / PAGE) + 1;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-xl font-bold text-gray-800 mb-1">감사 로그</h1>
-      <p className="text-xs text-gray-400 mb-4">중요 엔티티 변경 이력 (좌석·회의·KPI·레이아웃) · D20-e 5년 보존</p>
+    <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
+      <PageHeader
+        title="감사 로그"
+        subtitle="중요 엔티티 변경 이력 (좌석·회의·KPI·레이아웃) · D20-e 5년 보존"
+        icon={ICON.shield}
+        actions={
+          <ToolbarButton onClick={fetchLogs} disabled={loading} icon={ICON.refresh}>
+            새로고침
+          </ToolbarButton>
+        }
+      />
 
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <select value={action} onChange={(e) => { setOffset(0); setAction(e.target.value); }} className="border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      <div className={`flex flex-wrap items-center gap-2 ${CARD_SURFACE} p-3`}>
+        <select value={action} onChange={(e) => { setOffset(0); setAction(e.target.value); }} className="border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan">
           <option value="">전체 액션</option>
           <option value="kpi_finalized">KPI 확정</option>
           <option value="kpi_adjusted">KPI 조정</option>
@@ -115,85 +141,88 @@ export default function AuditLogPage() {
           <option value="meeting_created">회의 생성</option>
           <option value="office_layout_deployed">레이아웃 배포</option>
         </select>
-        <select value={entityType} onChange={(e) => { setOffset(0); setEntityType(e.target.value); }} className="border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <select value={entityType} onChange={(e) => { setOffset(0); setEntityType(e.target.value); }} className="border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan">
           <option value="">전체 엔티티</option>
           <option value="kpi_result">kpi_result</option>
           <option value="seat">seat</option>
           <option value="meeting">meeting</option>
           <option value="office_layout">office_layout</option>
         </select>
-        <label className="flex items-center gap-1 text-xs text-gray-500">
+        <label className="flex items-center gap-1 text-xs text-text-muted">
           시작일
           <input
             type="date"
             value={startDate}
             onChange={(e) => { setOffset(0); setStartDate(e.target.value); }}
-            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan [color-scheme:dark]"
           />
         </label>
-        <label className="flex items-center gap-1 text-xs text-gray-500">
+        <label className="flex items-center gap-1 text-xs text-text-muted">
           종료일
           <input
             type="date"
             value={endDate}
             onChange={(e) => { setOffset(0); setEndDate(e.target.value); }}
-            className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan [color-scheme:dark]"
           />
         </label>
         {(startDate || endDate) && (
           <button
             onClick={() => { setOffset(0); setStartDate(''); setEndDate(''); }}
-            className="text-xs text-indigo-600 hover:underline"
+            className="text-xs text-accent-cyan hover:underline"
           >
             기간 초기화
           </button>
         )}
-        <button onClick={fetchLogs} disabled={loading} className="px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50">새로고침</button>
-        <span className="text-xs text-gray-400 ml-auto">총 {total}건</span>
+        <span className="text-xs text-text-muted ml-auto">총 {total}건</span>
       </div>
 
+      {error && <ErrorBanner message={error} onRetry={fetchLogs} />}
+
       {loading ? (
-        <div className="text-center py-16 text-gray-400 text-sm">불러오는 중...</div>
-      ) : error ? (
-        <div className="text-center py-16"><p className="text-red-600 text-sm mb-2">{error}</p><button onClick={fetchLogs} className="text-xs text-indigo-600 underline">재시도</button></div>
-      ) : items.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 text-sm">감사 로그가 없습니다.</div>
-      ) : (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 text-xs">
-              <tr>
-                <th className="text-left px-4 py-2.5 font-medium">시각 (KST)</th>
-                <th className="text-left px-4 py-2.5 font-medium">액션</th>
-                <th className="text-left px-4 py-2.5 font-medium">엔티티</th>
-                <th className="text-left px-4 py-2.5 font-medium">대상 ID</th>
-                <th className="text-left px-4 py-2.5 font-medium">행위자</th>
-                <th className="text-left px-4 py-2.5 font-medium">변경</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {items.map((log) => (
-                <tr key={log.id}>
-                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{formatKst(log.created_at)}</td>
-                  <td className="px-4 py-2"><span className={`text-[10px] px-1.5 py-0.5 rounded ${ACTION_COLOR[log.action] ?? 'bg-gray-100 text-gray-600'}`}>{log.action}</span></td>
-                  <td className="px-4 py-2 text-gray-600">{log.entity_type}</td>
-                  <td className="px-4 py-2 text-gray-400 font-mono text-xs">{log.entity_id.slice(0, 12)}</td>
-                  <td className="px-4 py-2 text-gray-600">{log.user_id ?? '시스템'}</td>
-                  <td className="px-4 py-2 text-gray-500 text-xs max-w-xs">
-                    <span className="block truncate" title={formatChange(log)}>{formatChange(log)}</span>
-                  </td>
+        <LoadingState label="불러오는 중…" />
+      ) : !error && items.length === 0 ? (
+        <SectionCard title="변경 이력" icon={ICON.list}>
+          <EmptyState icon={ICON.lock} title="감사 로그가 없습니다" hint="선택한 조건에 해당하는 변경 이력이 없습니다." compact />
+        </SectionCard>
+      ) : !error ? (
+        <SectionCard title="변경 이력" icon={ICON.list} bodyClassName="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-border-subtle text-text-muted text-[11px] uppercase tracking-wide">
+                <tr>
+                  <th className="text-left px-4 py-2.5 font-medium">시각 (KST)</th>
+                  <th className="text-left px-4 py-2.5 font-medium">액션</th>
+                  <th className="text-left px-4 py-2.5 font-medium">엔티티</th>
+                  <th className="text-left px-4 py-2.5 font-medium">대상 ID</th>
+                  <th className="text-left px-4 py-2.5 font-medium">행위자</th>
+                  <th className="text-left px-4 py-2.5 font-medium">변경</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody className="divide-y divide-border-subtle">
+                {items.map((log) => (
+                  <tr key={log.id} className="hover:bg-bg-surface-raised transition-colors">
+                    <td className="px-4 py-2.5 text-text-secondary whitespace-nowrap">{formatKst(log.created_at)}</td>
+                    <td className="px-4 py-2.5"><span className={`text-[10px] px-1.5 py-0.5 rounded ${ACTION_COLOR[log.action] ?? 'bg-bg-surface-raised text-text-secondary'}`}>{log.action}</span></td>
+                    <td className="px-4 py-2.5 text-text-secondary">{log.entity_type}</td>
+                    <td className="px-4 py-2.5 text-text-muted font-mono text-xs">{log.entity_id.slice(0, 12)}</td>
+                    <td className="px-4 py-2.5 text-text-secondary">{log.user_id ?? '시스템'}</td>
+                    <td className="px-4 py-2.5 text-text-muted text-xs max-w-xs">
+                      <span className="block truncate" title={formatChange(log)}>{formatChange(log)}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </SectionCard>
+      ) : null}
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-4 text-sm">
-          <button onClick={() => setOffset(Math.max(0, offset - PAGE))} disabled={curPage <= 1} className="px-2 py-1 border border-gray-300 rounded disabled:opacity-40">이전</button>
-          <span className="text-gray-500">{curPage} / {totalPages}</span>
-          <button onClick={() => setOffset(offset + PAGE)} disabled={curPage >= totalPages} className="px-2 py-1 border border-gray-300 rounded disabled:opacity-40">다음</button>
+        <div className="flex items-center justify-center gap-2 text-sm">
+          <button onClick={() => setOffset(Math.max(0, offset - PAGE))} disabled={curPage <= 1} className="px-2 py-1 border border-border-subtle rounded disabled:opacity-40">이전</button>
+          <span className="text-text-muted">{curPage} / {totalPages}</span>
+          <button onClick={() => setOffset(offset + PAGE)} disabled={curPage >= totalPages} className="px-2 py-1 border border-border-subtle rounded disabled:opacity-40">다음</button>
         </div>
       )}
     </div>

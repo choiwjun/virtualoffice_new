@@ -4,6 +4,22 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isAdmin } from '@/lib/auth';
 import { formatKst } from '@/lib/kpi';
+import {
+  PageHeader,
+  ToolbarButton,
+  SectionCard,
+  EmptyState,
+  ErrorBanner,
+  LoadingState,
+} from '@/components/ui/console';
+
+const ICON = {
+  megaphone: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 8v4l9 4V4z" /><path d="M4 8H3a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h1" /><path d="M16 8a3 3 0 0 1 0 4" /></svg>,
+  refresh: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M15.5 6.5A6 6 0 1 0 16 10" /><path d="M15.5 3v4h-4" /></svg>,
+  edit: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M13 4l3 3-8.5 8.5H4.5v-3z" /><path d="M11.5 5.5l3 3" /></svg>,
+  list: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 6h12M4 10h12M4 14h8" /></svg>,
+  lock: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><rect x="4" y="9" width="12" height="8" rx="2" /><path d="M7 9V6.5a3 3 0 0 1 6 0V9" /></svg>,
+};
 
 // 공지사항 관리 (14-virtual-office-spec §2.8, 04-data-model §2.7). 작성/수정/삭제=admin.
 interface Notice {
@@ -25,9 +41,9 @@ interface NoticeListResponse {
 
 // 분류 표시 메타 (04-data-model §2.7: system | notice | info)
 const CATEGORY_META: Record<string, { label: string; cls: string }> = {
-  system: { label: '시스템', cls: 'bg-red-100 text-red-700' },
-  notice: { label: '공지', cls: 'bg-indigo-100 text-indigo-700' },
-  info: { label: '안내', cls: 'bg-gray-100 text-gray-600' },
+  system: { label: '시스템', cls: 'bg-[rgba(239,68,68,0.12)] text-red-300' },
+  notice: { label: '공지', cls: 'bg-[rgba(59,91,254,0.2)] text-[#93A9FF]' },
+  info: { label: '안내', cls: 'bg-bg-surface text-text-secondary' },
 };
 
 function CategoryBadge({ category }: { category: string }) {
@@ -200,215 +216,226 @@ export default function AdminNoticesPage() {
 
   if (!allowed) {
     return (
-      <div className="p-6">
-        <div className="max-w-md mx-auto mt-20 text-center bg-white border border-gray-200 rounded-xl p-8">
-          <div className="text-3xl mb-2">🔒</div>
-          <p className="text-gray-700 font-medium">관리자 전용 화면</p>
-          <p className="text-sm text-gray-400 mt-1">공지 관리는 관리자만 접근할 수 있습니다.</p>
+      <div className="p-6 text-text-secondary">
+        <div className="max-w-md mx-auto mt-20">
+          <SectionCard>
+            <EmptyState icon={ICON.lock} title="관리자 전용 화면" hint="공지 관리는 관리자만 접근할 수 있습니다." />
+          </SectionCard>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-xl font-bold text-gray-800 mb-1">공지사항 관리</h1>
-      <p className="text-xs text-gray-400 mb-4">대시보드 우측 공지 패널에 노출됩니다 · 14-spec §2.8</p>
+    <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
+      <PageHeader
+        title="공지사항 관리"
+        subtitle="대시보드 우측 공지 패널에 노출됩니다 · 14-spec §2.8"
+        icon={ICON.megaphone}
+        actions={
+          <ToolbarButton onClick={fetchNotices} disabled={loading} icon={ICON.refresh}>
+            새로고침
+          </ToolbarButton>
+        }
+      />
 
-      {/* 작성 폼 */}
-      <form onSubmit={handleCreate} className="bg-white border border-gray-200 rounded-xl p-4 mb-6 space-y-3">
-        <div className="flex flex-wrap gap-3">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="공지 제목"
-            maxLength={255}
-            className="flex-1 min-w-[240px] border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="w-28 border border-gray-300 rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="notice">공지</option>
-            <option value="system">시스템</option>
-            <option value="info">안내</option>
-          </select>
-          <input
-            value={author}
-            onChange={(e) => setAuthor(e.target.value)}
-            placeholder="작성자 (예: 인사팀)"
-            maxLength={100}
-            className="w-44 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="본문 (선택)"
-          rows={2}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-4">
-            <label className="flex items-center gap-2 text-sm text-gray-600">
-              <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
-              상단 고정
-            </label>
-            <label className="flex items-center gap-2 text-sm text-gray-600" title="비우면 즉시 게시, 미래 시각을 지정하면 예약 게시됩니다.">
-              게시
+      <div className="flex-1 overflow-y-auto flex flex-col gap-5 pr-0.5">
+        {/* 작성 폼 */}
+        <SectionCard title="공지 작성" icon={ICON.edit}>
+          <form onSubmit={handleCreate} className="space-y-3">
+            <div className="flex flex-wrap gap-3">
               <input
-                type="datetime-local"
-                value={publishedAt}
-                onChange={(e) => setPublishedAt(e.target.value)}
-                className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="공지 제목"
+                maxLength={255}
+                className="flex-1 min-w-[240px] border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
               />
-              <span className="text-[10px] text-gray-400">비우면 즉시 · 미래=예약</span>
-            </label>
-            <label className="flex items-center gap-2 text-sm text-gray-600">
-              만료
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-28 border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
+              >
+                <option value="notice">공지</option>
+                <option value="system">시스템</option>
+                <option value="info">안내</option>
+              </select>
               <input
-                type="datetime-local"
-                value={expiresAt}
-                onChange={(e) => setExpiresAt(e.target.value)}
-                className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={author}
+                onChange={(e) => setAuthor(e.target.value)}
+                placeholder="작성자 (예: 인사팀)"
+                maxLength={100}
+                className="w-44 border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
               />
-            </label>
-          </div>
-          <div className="flex items-center gap-3">
-            {formError && <span className="text-xs text-red-600">{formError}</span>}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {submitting ? '등록 중...' : '공지 등록'}
-            </button>
-          </div>
-        </div>
-      </form>
+            </div>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="본문 (선택)"
+              rows={2}
+              className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
+            />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-4">
+                <label className="flex items-center gap-2 text-sm text-text-secondary">
+                  <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
+                  상단 고정
+                </label>
+                <label className="flex items-center gap-2 text-sm text-text-secondary" title="비우면 즉시 게시, 미래 시각을 지정하면 예약 게시됩니다.">
+                  게시
+                  <input
+                    type="datetime-local"
+                    value={publishedAt}
+                    onChange={(e) => setPublishedAt(e.target.value)}
+                    className="border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan [color-scheme:dark]"
+                  />
+                  <span className="text-[10px] text-text-muted">비우면 즉시 · 미래=예약</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm text-text-secondary">
+                  만료
+                  <input
+                    type="datetime-local"
+                    value={expiresAt}
+                    onChange={(e) => setExpiresAt(e.target.value)}
+                    className="border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan [color-scheme:dark]"
+                  />
+                </label>
+              </div>
+              <div className="flex items-center gap-3">
+                {formError && <span className="text-xs text-red-300">{formError}</span>}
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary-hover disabled:opacity-50"
+                >
+                  {submitting ? '등록 중...' : '공지 등록'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </SectionCard>
 
-      {/* 목록 */}
-      {loading ? (
-        <div className="text-center py-16 text-gray-400 text-sm">불러오는 중...</div>
-      ) : error ? (
-        <div className="text-center py-16">
-          <p className="text-red-600 text-sm mb-2">{error}</p>
-          <button onClick={fetchNotices} className="text-xs text-indigo-600 underline">재시도</button>
-        </div>
-      ) : items.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 text-sm">등록된 공지가 없습니다.</div>
-      ) : (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-500 text-xs">
-              <tr>
-                <th className="text-left px-4 py-2.5 font-medium w-8"></th>
-                <th className="text-left px-4 py-2.5 font-medium w-16">분류</th>
-                <th className="text-left px-4 py-2.5 font-medium">제목</th>
-                <th className="text-left px-4 py-2.5 font-medium w-28">작성자</th>
-                <th className="text-left px-4 py-2.5 font-medium w-40">게시 (KST)</th>
-                <th className="text-right px-4 py-2.5 font-medium w-28"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {items.map((n) => (
-                <tr key={n.id}>
-                  <td className="px-4 py-2">
-                    {n.pinned && <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">고정</span>}
-                  </td>
-                  <td className="px-4 py-2"><CategoryBadge category={n.category} /></td>
-                  <td className="px-4 py-2 text-gray-700">{n.title}</td>
-                  <td className="px-4 py-2 text-gray-500">{n.author}</td>
-                  <td className="px-4 py-2 text-gray-400 whitespace-nowrap">{formatKst(n.published_at ?? n.created_at)}</td>
-                  <td className="px-4 py-2 text-right whitespace-nowrap">
-                    <button onClick={() => openEdit(n)} className="text-xs text-indigo-600 hover:underline mr-3">수정</button>
-                    <button onClick={() => handleDelete(n.id)} className="text-xs text-red-600 hover:underline">삭제</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        {/* 목록 */}
+        {loading ? (
+          <LoadingState />
+        ) : error ? (
+          <ErrorBanner message={error} onRetry={fetchNotices} />
+        ) : (
+          <SectionCard title="공지 목록" icon={ICON.list} bodyClassName="p-0">
+            {items.length === 0 ? (
+              <EmptyState icon={ICON.megaphone} title="등록된 공지가 없습니다." hint="위 폼에서 새 공지를 등록하세요." compact />
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-bg-base text-text-muted text-xs">
+                  <tr>
+                    <th className="text-left px-4 py-2.5 font-medium w-8"></th>
+                    <th className="text-left px-4 py-2.5 font-medium w-16">분류</th>
+                    <th className="text-left px-4 py-2.5 font-medium">제목</th>
+                    <th className="text-left px-4 py-2.5 font-medium w-28">작성자</th>
+                    <th className="text-left px-4 py-2.5 font-medium w-40">게시 (KST)</th>
+                    <th className="text-right px-4 py-2.5 font-medium w-28"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-subtle">
+                  {items.map((n) => (
+                    <tr key={n.id}>
+                      <td className="px-4 py-2">
+                        {n.pinned && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(245,158,11,0.16)] text-status-external">고정</span>}
+                      </td>
+                      <td className="px-4 py-2"><CategoryBadge category={n.category} /></td>
+                      <td className="px-4 py-2 text-text-secondary">{n.title}</td>
+                      <td className="px-4 py-2 text-text-muted">{n.author}</td>
+                      <td className="px-4 py-2 text-text-muted whitespace-nowrap">{formatKst(n.published_at ?? n.created_at)}</td>
+                      <td className="px-4 py-2 text-right whitespace-nowrap">
+                        <button onClick={() => openEdit(n)} className="text-xs text-accent-cyan hover:underline mr-3">수정</button>
+                        <button onClick={() => handleDelete(n.id)} className="text-xs text-red-300 hover:underline">삭제</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </SectionCard>
+        )}
+      </div>
 
       {/* 수정 모달 */}
       {editTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-800">공지 수정</h2>
-              <button onClick={() => setEditTarget(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="rounded-2xl shadow-2xl w-full max-w-lg border border-border-subtle" style={{ background: '#161F32' }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+              <h2 className="font-semibold text-text-primary">공지 수정</h2>
+              <button onClick={() => setEditTarget(null)} className="text-text-muted hover:text-text-primary text-xl">×</button>
             </div>
             <div className="px-6 py-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">제목</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">제목</label>
                 <input
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
                   maxLength={255}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">본문</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">본문</label>
                 <textarea
                   value={editBody}
                   onChange={(e) => setEditBody(e.target.value)}
                   rows={3}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
                 />
               </div>
               <div className="flex flex-wrap items-center gap-4">
-                <label className="flex flex-col text-xs text-gray-500 gap-1">
+                <label className="flex flex-col text-xs text-text-muted gap-1">
                   분류
                   <select
                     value={editCategory}
                     onChange={(e) => setEditCategory(e.target.value)}
-                    className="border border-gray-300 rounded-md px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="border border-border-subtle bg-bg-base rounded-md px-2 py-1.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-cyan"
                   >
                     <option value="notice">공지</option>
                     <option value="system">시스템</option>
                     <option value="info">안내</option>
                   </select>
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-600 mt-4">
+                <label className="flex items-center gap-2 text-sm text-text-secondary mt-4">
                   <input type="checkbox" checked={editPinned} onChange={(e) => setEditPinned(e.target.checked)} />
                   상단 고정
                 </label>
               </div>
               <div className="flex flex-wrap gap-4">
-                <label className="flex flex-col text-xs text-gray-500 gap-1">
+                <label className="flex flex-col text-xs text-text-muted gap-1">
                   게시시각 (미래=예약 게시)
                   <input
                     type="datetime-local"
                     value={editPublishedAt}
                     onChange={(e) => setEditPublishedAt(e.target.value)}
-                    className="border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan [color-scheme:dark]"
                   />
                 </label>
-                <label className="flex flex-col text-xs text-gray-500 gap-1">
+                <label className="flex flex-col text-xs text-text-muted gap-1">
                   만료시각 (비우면 만료 없음)
                   <input
                     type="datetime-local"
                     value={editExpiresAt}
                     onChange={(e) => setEditExpiresAt(e.target.value)}
-                    className="border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan [color-scheme:dark]"
                   />
                 </label>
               </div>
-              {editError && <p className="text-sm text-red-600">{editError}</p>}
+              {editError && <p className="text-sm text-red-300">{editError}</p>}
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => setEditTarget(null)}
-                  className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 text-sm border border-border-subtle rounded-md text-text-secondary hover:bg-bg-surface-raised"
                 >
                   취소
                 </button>
                 <button
                   onClick={handleUpdate}
                   disabled={editSaving || !editTitle.trim()}
-                  className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                  className="flex-1 px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary-hover disabled:opacity-50"
                 >
                   {editSaving ? '저장 중...' : '저장'}
                 </button>

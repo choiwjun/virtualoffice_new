@@ -8,6 +8,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { getUser } from '@/lib/auth';
+import {
+  PageHeader,
+  ToolbarButton,
+  SectionCard,
+  LoadingState,
+} from '@/components/ui/console';
+
+const ICON = {
+  badge: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="10" cy="7" r="3.2" /><path d="M4.5 16c.6-2.6 2.8-4 5.5-4s4.9 1.4 5.5 4" /></svg>,
+  photo: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="3" y="4.5" width="14" height="11" rx="2" /><circle cx="8" cy="9" r="1.6" /><path d="M4 15l4-4 3 2.5 3-2.5 2 2" /></svg>,
+  palette: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M10 3a7 7 0 1 0 0 14c1 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.5-1.1-.3-.3-.5-.7-.5-1.1 0-.8.7-1.3 1.5-1.3H13a4 4 0 0 0 4-4c0-3.3-3.1-6-7-6z" /><circle cx="7" cy="8" r=".8" fill="currentColor" stroke="none" /><circle cx="10" cy="6.5" r=".8" fill="currentColor" stroke="none" /><circle cx="13" cy="8" r=".8" fill="currentColor" stroke="none" /></svg>,
+  tag: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 4h6l6 6-6 6-6-6z" /><circle cx="7" cy="7" r="1.1" /></svg>,
+  check: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 10.5l3.5 3.5L16 6" /></svg>,
+};
 
 interface Avatar {
   user_id: number;
@@ -104,7 +118,7 @@ function Swatch({
       aria-label={`색상 ${color}`}
       aria-pressed={selected}
       className={`w-8 h-8 rounded-full border-2 transition-transform ${
-        selected ? 'border-indigo-600 scale-110' : 'border-transparent hover:scale-105'
+        selected ? 'border-primary scale-110' : 'border-transparent hover:scale-105'
       }`}
       style={{ background: color }}
     />
@@ -205,39 +219,37 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-800">아바타 설정</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          가상 오피스에서 표시될 내 배지(프로필 사진·정체성 색)와 이름표를 설정합니다. (D35)
-        </p>
-      </div>
+    <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
+      <PageHeader
+        title="아바타 설정"
+        subtitle="가상 오피스에서 표시될 내 배지(프로필 사진·정체성 색)와 이름표를 설정합니다. (D35)"
+        icon={ICON.badge}
+      />
 
       {loading ? (
-        <div className="text-gray-400 text-sm">로딩 중...</div>
+        <LoadingState />
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 flex flex-col md:flex-row gap-8">
+        <div className="flex-1 overflow-y-auto flex flex-col lg:flex-row gap-5 pr-0.5">
           {/* 배지 미리보기 — /office 씬과 동일 규격 */}
-          <div className="flex flex-col items-center gap-3 flex-shrink-0">
-            <div className="rounded-lg bg-gray-50 border border-gray-200 p-5">
+          <SectionCard title="배지 미리보기" icon={ICON.badge} className="lg:w-64 flex-shrink-0" bodyClassName="p-5 flex flex-col items-center gap-3">
+            <div className="rounded-lg bg-bg-base border border-border-subtle p-5">
               <BadgePreview name={myName} accent={draft.top_color} photoSrc={mediaUrl(photoUrl)} />
             </div>
             {draft.show_nameplate && (
               <span
-                className="text-[11px] px-2 py-0.5 rounded-full bg-gray-800 text-white"
+                className="text-[11px] px-2 py-0.5 rounded-full bg-bg-surface-raised text-text-primary"
                 style={{ border: `1px solid ${draft.top_color}` }}
               >
                 {myName}
               </span>
             )}
-          </div>
+          </SectionCard>
 
           {/* 컨트롤 */}
-          <div className="flex-1 flex flex-col gap-5">
+          <div className="flex-1 flex flex-col gap-5 min-w-0">
             {/* 프로필 사진 */}
-            <div>
-              <div className="text-sm font-semibold text-gray-700 mb-2">프로필 사진</div>
-              <p className="text-xs text-gray-500 mb-2">
+            <SectionCard title="프로필 사진" icon={ICON.photo}>
+              <p className="text-xs text-text-muted mb-2">
                 씬 아바타·구성원 목록 배지에 표시됩니다. 없으면 이름 이니셜로 표시됩니다.
               </p>
               <div className="flex items-center gap-2">
@@ -251,62 +263,59 @@ export default function SettingsPage() {
                     if (f) uploadPhoto(f);
                   }}
                 />
-                <button
-                  type="button"
+                <ToolbarButton
+                  variant="primary"
                   onClick={() => fileRef.current?.click()}
                   disabled={photoBusy}
-                  className="px-3 py-1.5 rounded-md bg-gray-800 text-white text-xs font-medium hover:bg-gray-700 disabled:opacity-40 transition-colors"
+                  icon={ICON.photo}
                 >
                   {photoBusy ? '처리 중...' : photoUrl ? '사진 변경' : '사진 업로드'}
-                </button>
+                </ToolbarButton>
                 {photoUrl && (
-                  <button
-                    type="button"
-                    onClick={removePhoto}
-                    disabled={photoBusy}
-                    className="px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 text-xs font-medium hover:bg-gray-50 disabled:opacity-40 transition-colors"
-                  >
+                  <ToolbarButton onClick={removePhoto} disabled={photoBusy}>
                     사진 삭제
-                  </button>
+                  </ToolbarButton>
                 )}
               </div>
-            </div>
+            </SectionCard>
 
             {/* 정체성 색 */}
-            <div>
-              <div className="text-sm font-semibold text-gray-700 mb-2">정체성 색상</div>
-              <p className="text-xs text-gray-500 mb-2">배지 배경·이름표 테두리에 쓰이는 내 고유 색입니다.</p>
+            <SectionCard title="정체성 색상" icon={ICON.palette}>
+              <p className="text-xs text-text-muted mb-2">배지 배경·이름표 테두리에 쓰이는 내 고유 색입니다.</p>
               <div className="flex gap-2">
                 {IDENTITY_COLORS.map((c) => (
                   <Swatch key={c} color={c} selected={draft.top_color === c} onClick={() => setDraft((d) => ({ ...d, top_color: c }))} />
                 ))}
               </div>
-            </div>
+            </SectionCard>
 
-            {/* 이름표 */}
-            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={draft.show_nameplate}
-                onChange={(e) => setDraft((d) => ({ ...d, show_nameplate: e.target.checked }))}
-                className="accent-indigo-600"
-              />
-              이름표(이름/직급) 표시
-            </label>
+            {/* 이름표 + 저장 */}
+            <SectionCard title="표시" icon={ICON.tag}>
+              <label className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={draft.show_nameplate}
+                  onChange={(e) => setDraft((d) => ({ ...d, show_nameplate: e.target.checked }))}
+                  className="accent-primary"
+                />
+                이름표(이름/직급) 표시
+              </label>
 
-            {/* 저장 — 사진은 업로드/삭제 즉시 반영, 색·이름표만 저장 버튼 대상 */}
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={save}
-                disabled={saving || !dirty}
-                className="px-4 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                {saving ? '저장 중...' : '저장'}
-              </button>
-              {savedAt && !dirty && <span className="text-xs text-green-600">저장되었습니다.</span>}
-              {error && <span className="text-xs text-red-600">{error}</span>}
-            </div>
+              {/* 저장 — 사진은 업로드/삭제 즉시 반영, 색·이름표만 저장 버튼 대상 */}
+              <div className="flex items-center gap-3 pt-4 mt-1 border-t border-border-subtle">
+                <ToolbarButton
+                  variant="primary"
+                  type="submit"
+                  onClick={save}
+                  disabled={saving || !dirty}
+                  icon={ICON.check}
+                >
+                  {saving ? '저장 중...' : '저장'}
+                </ToolbarButton>
+                {savedAt && !dirty && <span className="text-xs text-status-online">저장되었습니다.</span>}
+                {error && <span className="text-xs text-red-300">{error}</span>}
+              </div>
+            </SectionCard>
           </div>
         </div>
       )}

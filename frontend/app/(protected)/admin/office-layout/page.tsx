@@ -6,6 +6,24 @@ import { api, ApiError } from '@/lib/api';
 import { getUser, isAdmin } from '@/lib/auth';
 import type { SeatBox, ShapeBox, Selection } from '@/components/office/SeatCanvas';
 import { buildOfficeLayout, DEFAULT_PX_PER_METER } from '@/lib/officeLayout';
+import {
+  PageHeader,
+  ToolbarButton,
+  SectionCard,
+  EmptyState,
+  LoadingState,
+} from '@/components/ui/console';
+
+const ICON = {
+  grid: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="3" y="3" width="14" height="14" rx="1.5" /><path d="M3 8h14M3 13h14M8 3v14M13 3v14" /></svg>,
+  seat: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M6 4v6h8V4" /><path d="M5 10h10l-1 6M6 16l-1-6" /></svg>,
+  save: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M4 4h9l3 3v9H4z" /><path d="M7 4v4h6" /><path d="M7 16v-4h6v4" /></svg>,
+  refresh: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M15.5 6.5A6 6 0 1 0 16 10" /><path d="M15.5 3v4h-4" /></svg>,
+  info: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="10" cy="10" r="7" /><path d="M10 9v4M10 6.5h.01" /></svg>,
+  layers: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M10 3l7 3.5-7 3.5-7-3.5z" /><path d="M3 10l7 3.5 7-3.5M3 13.5L10 17l7-3.5" /></svg>,
+  versions: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="6" cy="6" r="2" /><circle cx="6" cy="14" r="2" /><circle cx="14" cy="10" r="2" /><path d="M6 8v4M8 6h2a2 2 0 0 1 2 2M8 14h2a2 2 0 0 0 2-2" /></svg>,
+  lock: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="4.5" y="9" width="11" height="7" rx="1.5" /><path d="M7 9V7a3 3 0 0 1 6 0v2" /></svg>,
+};
 
 // 좌석 테이블 coords 정본 = 미터(top_left, D25) — seed_seats·뷰포트·buildOfficeLayout 공통.
 // 편집기 내부(SeatBox/pending)는 캔버스 픽셀이므로 seat 테이블 경계에서 픽셀↔미터 변환한다.
@@ -17,7 +35,7 @@ const pxToM = (px: number) => Math.round((px / PX_PER_M) * 1000) / 1000;
 
 const SeatCanvas = dynamic(() => import('@/components/office/SeatCanvas'), {
   ssr: false,
-  loading: () => <div className="h-full flex items-center justify-center text-gray-400 text-sm">캔버스 로딩...</div>,
+  loading: () => <div className="h-full flex items-center justify-center text-text-muted text-sm">캔버스 로딩...</div>,
 });
 
 interface ApiSeat {
@@ -327,76 +345,66 @@ export default function OfficeLayoutPage() {
 
   if (!allowed) {
     return (
-      <div className="p-6">
-        <div className="max-w-md mx-auto mt-20 text-center bg-white border border-gray-200 rounded-xl p-8">
-          <div className="text-3xl mb-2">🔒</div>
-          <p className="text-gray-700 font-medium">관리자 전용 화면</p>
-          <p className="text-sm text-gray-400 mt-1">좌석 배치 편집은 관리자만 접근할 수 있습니다.</p>
-        </div>
+      <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
+        <PageHeader title="좌석 배치 편집기" icon={ICON.grid} />
+        <SectionCard>
+          <EmptyState icon={ICON.lock} title="관리자 전용 화면" hint="좌석 배치 편집은 관리자만 접근할 수 있습니다." />
+        </SectionCard>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="px-6 py-3 border-b border-gray-200 bg-white flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-gray-800">좌석 배치 편집기</h1>
-          <p className="text-xs text-gray-400">
-            2D 평면도 (D11) · 드래그=이동 · 더블클릭=삭제 · 좌석 {seats.length}개{floorId ? '' : ' · 층 없음'}
+    <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
+      <PageHeader
+        title="좌석 배치 편집기"
+        subtitle={`2D 평면도 (D11) · 드래그=이동 · 더블클릭=삭제 · 좌석 ${seats.length}개${floorId ? '' : ' · 층 없음'}`}
+        icon={ICON.grid}
+        actions={
+          <>
             {pendingCount > 0 && (
-              <span className="text-amber-600"> · 저장 전 페이지를 벗어나면 변경이 사라집니다</span>
+              <>
+                <span className="text-xs px-2 py-1 bg-[rgba(245,158,11,0.16)] border border-[rgba(245,158,11,0.4)] text-status-external rounded-md whitespace-nowrap">
+                  저장되지 않은 변경 {pendingCount}건
+                </span>
+                <ToolbarButton variant="primary" onClick={saveAll} disabled={saving} icon={ICON.save}>
+                  {saving ? '저장 중...' : '모두 저장'}
+                </ToolbarButton>
+                <ToolbarButton onClick={discardChanges} disabled={saving}>
+                  변경 취소
+                </ToolbarButton>
+              </>
             )}
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {pendingCount > 0 && (
-            <>
-              <span className="text-xs px-2 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-md whitespace-nowrap">
-                저장되지 않은 변경 {pendingCount}건
-              </span>
-              <button
-                onClick={saveAll}
-                disabled={saving}
-                className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-40 whitespace-nowrap"
-              >
-                {saving ? '저장 중...' : '모두 저장'}
-              </button>
-              <button
-                onClick={discardChanges}
-                disabled={saving}
-                className="px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-40 whitespace-nowrap"
-              >
-                변경 취소
-              </button>
-            </>
-          )}
-          <button onClick={addSeat} disabled={!floorId} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-40">+ 좌석</button>
-          <button onClick={addRoom} className="px-3 py-1.5 text-sm border border-purple-300 text-purple-600 rounded-md hover:bg-purple-50">+ 방</button>
-          <button onClick={addZone} className="px-3 py-1.5 text-sm border border-blue-300 text-blue-600 rounded-md hover:bg-blue-50">+ 구역</button>
-          <button onClick={addWall} className="px-3 py-1.5 text-sm border border-amber-700 text-amber-800 rounded-md hover:bg-amber-50">+ 벽</button>
-          <button onClick={undo} disabled={histIdx === 0} className="px-2 py-1.5 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-40" title="실행취소">↶</button>
-          <button onClick={redo} disabled={histIdx >= history.length - 1} className="px-2 py-1.5 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-40" title="다시실행">↷</button>
-          <button
-            onClick={() => {
-              if (pendingCount > 0 && !window.confirm(`저장되지 않은 변경 ${pendingCount}건이 사라집니다. 새로고침할까요?`)) return;
-              load();
-            }}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50"
-          >새로고침</button>
-        </div>
-      </div>
-      {toast && <div className="mx-6 mt-3 px-3 py-2 bg-green-50 border border-green-200 rounded-md text-xs text-green-700">{toast}</div>}
-      <div className="flex-1 min-h-0 m-4 flex gap-3">
-        <div ref={wrapRef} className="flex-1 min-h-0 border border-gray-200 rounded-xl overflow-hidden bg-white relative">
+            <ToolbarButton variant="primary" onClick={addSeat} disabled={!floorId} icon={ICON.seat}>+ 좌석</ToolbarButton>
+            <ToolbarButton onClick={addRoom}>+ 방</ToolbarButton>
+            <ToolbarButton onClick={addZone}>+ 구역</ToolbarButton>
+            <ToolbarButton onClick={addWall}>+ 벽</ToolbarButton>
+            <ToolbarButton onClick={undo} disabled={histIdx === 0} title="실행취소">↶</ToolbarButton>
+            <ToolbarButton onClick={redo} disabled={histIdx >= history.length - 1} title="다시실행">↷</ToolbarButton>
+            <ToolbarButton
+              onClick={() => {
+                if (pendingCount > 0 && !window.confirm(`저장되지 않은 변경 ${pendingCount}건이 사라집니다. 새로고침할까요?`)) return;
+                load();
+              }}
+              icon={ICON.refresh}
+            >새로고침</ToolbarButton>
+          </>
+        }
+      />
+      {pendingCount > 0 && (
+        <p className="text-xs text-status-external -mt-2">저장 전 페이지를 벗어나면 변경이 사라집니다.</p>
+      )}
+      {toast && <div className="px-3 py-2 bg-[rgba(34,197,94,0.16)] border border-[rgba(34,197,94,0.4)] rounded-md text-xs text-status-online">{toast}</div>}
+      <div className="flex-1 min-h-0 flex gap-3">
+        <div ref={wrapRef} className="flex-1 min-h-0 border border-border-subtle rounded-2xl overflow-hidden bg-bg-surface relative">
           {loading ? (
-            <div className="h-full flex items-center justify-center text-gray-400 text-sm">불러오는 중...</div>
+            <LoadingState label="불러오는 중…" />
           ) : error ? (
-            <div className="h-full flex items-center justify-center text-red-600 text-sm">{error}</div>
+            <div className="h-full flex items-center justify-center text-red-300 text-sm">{error}</div>
           ) : (
             <>
               {seats.length + rooms.length + zones.length + walls.length === 0 && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 text-gray-400 text-sm">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 text-text-muted text-sm">
                   좌석/방/구역/벽 도구로 배치를 시작하세요.
                 </div>
               )}
@@ -418,54 +426,65 @@ export default function OfficeLayoutPage() {
         </div>
         {/* 속성 + 레이어 패널 */}
         <div className="w-60 flex-shrink-0 flex flex-col gap-3 overflow-y-auto">
-          <div className="border border-gray-200 rounded-xl bg-white p-3">
-            <div className="text-xs font-semibold text-gray-500 mb-2">속성</div>
+          <SectionCard title="속성" icon={ICON.info} bodyClassName="p-3">
             {(() => {
               const sh = selectedShape();
-              if (!selected) return <p className="text-xs text-gray-400">요소를 선택하세요.</p>;
-              if (selected.kind === 'seat') return <p className="text-xs text-gray-500">좌석 선택됨 (더블클릭=삭제)</p>;
-              if (!sh) return <p className="text-xs text-gray-400">—</p>;
+              if (!selected) return <p className="text-xs text-text-muted">요소를 선택하세요.</p>;
+              if (selected.kind === 'seat') return <p className="text-xs text-text-muted">좌석 선택됨 (더블클릭=삭제)</p>;
+              if (!sh) return <p className="text-xs text-text-muted">—</p>;
               return (
                 <div className="space-y-2">
-                  <div className="text-xs text-gray-500">{selected.kind === 'room' ? '방' : selected.kind === 'zone' ? '구역' : '벽'}</div>
-                  <input value={sh.label ?? ''} onChange={(e) => relabelSelected(e.target.value)} placeholder="이름" className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  <div className="text-[11px] text-gray-400">위치 {sh.x},{sh.y} · 크기 {sh.w}×{sh.h}</div>
-                  <button onClick={deleteSelected} className="w-full px-2 py-1 text-xs border border-red-300 text-red-600 rounded hover:bg-red-50">삭제</button>
+                  <div className="text-xs text-text-muted">{selected.kind === 'room' ? '방' : selected.kind === 'zone' ? '구역' : '벽'}</div>
+                  <input value={sh.label ?? ''} onChange={(e) => relabelSelected(e.target.value)} placeholder="이름" className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan" />
+                  <div className="text-[11px] text-text-muted">위치 {sh.x},{sh.y} · 크기 {sh.w}×{sh.h}</div>
+                  <button onClick={deleteSelected} className="w-full px-2 py-1 text-xs border border-[rgba(239,68,68,0.35)] text-red-300 rounded hover:bg-[rgba(239,68,68,0.12)]">삭제</button>
                 </div>
               );
             })()}
-          </div>
-          <div className="border border-gray-200 rounded-xl bg-white p-3">
-            <div className="text-xs font-semibold text-gray-500 mb-2">레이어 · 좌석 {seats.length} / 방 {rooms.length} / 구역 {zones.length} / 벽 {walls.length}</div>
+          </SectionCard>
+          <SectionCard
+            title={`레이어 · 좌석 ${seats.length} / 방 ${rooms.length} / 구역 ${zones.length} / 벽 ${walls.length}`}
+            icon={ICON.layers}
+            bodyClassName="p-3"
+          >
             <ul className="space-y-1 text-xs">
               {zones.map((z) => (
-                <li key={z.id} className={`flex items-center gap-1 cursor-pointer ${selected?.id === z.id ? 'text-indigo-600 font-medium' : 'text-gray-600'}`} onClick={() => setSelected({ kind: 'zone', id: z.id })}>
+                <li key={z.id} className={`flex items-center gap-1 cursor-pointer ${selected?.id === z.id ? 'text-accent-cyan font-medium' : 'text-text-secondary'}`} onClick={() => setSelected({ kind: 'zone', id: z.id })}>
                   <span className="w-2 h-2 rounded-sm" style={{ background: z.color ?? '#3498db' }} />{z.label}
                 </li>
               ))}
               {rooms.map((r) => (
-                <li key={r.id} className={`flex items-center gap-1 cursor-pointer ${selected?.id === r.id ? 'text-indigo-600 font-medium' : 'text-gray-600'}`} onClick={() => setSelected({ kind: 'room', id: r.id })}>
-                  <span className="w-2 h-2 rounded-sm bg-purple-400" />{r.label}
+                <li key={r.id} className={`flex items-center gap-1 cursor-pointer ${selected?.id === r.id ? 'text-accent-cyan font-medium' : 'text-text-secondary'}`} onClick={() => setSelected({ kind: 'room', id: r.id })}>
+                  <span className="w-2 h-2 rounded-sm bg-status-focus" />{r.label}
                 </li>
               ))}
             </ul>
-          </div>
+          </SectionCard>
         </div>
       </div>
       {/* 오피스 레이아웃 버전 (D12 검증·배포) */}
-      <div className="flex-shrink-0 mx-4 mb-4 border border-gray-200 rounded-xl bg-white p-3 max-h-52 overflow-y-auto">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-semibold text-gray-700">레이아웃 버전 (D12) · {layouts.length}개</span>
-          <button onClick={createDraft} disabled={!officeId} className="text-xs px-2 py-1 border border-indigo-300 text-indigo-600 rounded hover:bg-indigo-50 disabled:opacity-40">
+      <SectionCard
+        title={`레이아웃 버전 (D12) · ${layouts.length}개`}
+        icon={ICON.versions}
+        className="flex-shrink-0 max-h-52 overflow-y-auto"
+        bodyClassName="p-3"
+        action={
+          <ToolbarButton onClick={createDraft} disabled={!officeId}>
             현재 배치로 초안 생성
-          </button>
-        </div>
+          </ToolbarButton>
+        }
+      >
         {layouts.length === 0 ? (
-          <p className="text-xs text-gray-400">레이아웃 버전이 없습니다. 초안을 생성해 검증→배포하세요. (검증 ERROR 0건일 때만 배포 — D12)</p>
+          <EmptyState
+            icon={ICON.versions}
+            title="레이아웃 버전이 없습니다."
+            hint="초안을 생성해 검증→배포하세요. (검증 ERROR 0건일 때만 배포 — D12)"
+            compact
+          />
         ) : (
           <table className="w-full text-xs">
-            <thead className="text-gray-400"><tr><th className="text-left py-1">버전</th><th className="text-left py-1">상태</th><th className="text-right py-1">액션</th></tr></thead>
-            <tbody className="divide-y divide-gray-100">
+            <thead className="text-text-muted"><tr><th className="text-left py-1">버전</th><th className="text-left py-1">상태</th><th className="text-right py-1">액션</th></tr></thead>
+            <tbody className="divide-y divide-border-subtle">
               {(() => {
                 // 롤백 계약(백엔드): deployed → archived, 직전 archived(최고 버전) → deployed 복원
                 const hasDeployed = layouts.some((l) => l.status === 'deployed');
@@ -476,22 +495,22 @@ export default function OfficeLayoutPage() {
                     : null;
                 return layouts.map((l) => (
                   <tr key={l.id}>
-                    <td className="py-1.5 text-gray-700">v{l.version}</td>
+                    <td className="py-1.5 text-text-secondary">v{l.version}</td>
                     <td className="py-1.5">
-                      <span className={`px-1.5 py-0.5 rounded ${l.status === 'deployed' ? 'bg-green-100 text-green-700' : l.status === 'validated' ? 'bg-blue-100 text-blue-700' : l.status === 'archived' ? 'bg-gray-100 text-gray-500' : 'bg-amber-100 text-amber-700'}`}>{l.status}</span>
+                      <span className={`px-1.5 py-0.5 rounded ${l.status === 'deployed' ? 'bg-[rgba(34,197,94,0.16)] text-status-online' : l.status === 'validated' ? 'bg-[rgba(56,189,248,0.15)] text-accent-cyan' : l.status === 'archived' ? 'bg-bg-surface-raised text-text-muted' : 'bg-[rgba(245,158,11,0.16)] text-status-external'}`}>{l.status}</span>
                     </td>
                     <td className="py-1.5 text-right whitespace-nowrap">
                       {l.id === rollbackTargetId && (
                         <button
                           onClick={() => rollbackLayout(l.version)}
-                          className="px-2 py-0.5 border border-amber-400 text-amber-700 rounded hover:bg-amber-50 mr-1"
+                          className="px-2 py-0.5 border border-[rgba(245,158,11,0.4)] text-status-external rounded hover:bg-[rgba(245,158,11,0.12)] mr-1"
                           title="현재 배포본을 보관 처리하고 이 버전을 재배포합니다"
                         >
                           이 버전으로 롤백
                         </button>
                       )}
-                      <button onClick={() => validateLayout(l.id)} className="px-2 py-0.5 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 mr-1">검증</button>
-                      <button onClick={() => deployLayout(l.id)} disabled={l.status !== 'validated'} className="px-2 py-0.5 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-40">배포</button>
+                      <button onClick={() => validateLayout(l.id)} className="px-2 py-0.5 border border-border-subtle rounded text-text-secondary hover:bg-bg-surface-raised mr-1">검증</button>
+                      <button onClick={() => deployLayout(l.id)} disabled={l.status !== 'validated'} className="px-2 py-0.5 bg-primary text-white rounded hover:bg-primary-hover disabled:opacity-40">배포</button>
                     </td>
                   </tr>
                 ));
@@ -499,7 +518,7 @@ export default function OfficeLayoutPage() {
             </tbody>
           </table>
         )}
-      </div>
+      </SectionCard>
     </div>
   );
 }

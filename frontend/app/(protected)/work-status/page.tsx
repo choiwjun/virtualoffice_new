@@ -4,6 +4,30 @@ import { useEffect, useState, useCallback } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isLeaderOrAbove, type User } from '@/lib/auth';
 import { kstToday, kstDateString } from '@/lib/dates';
+import {
+  PageHeader,
+  ToolbarButton,
+  Segmented,
+  StatCard,
+  SectionCard,
+  EmptyState,
+  ErrorBanner,
+  LoadingState,
+  ProgressRow,
+} from '@/components/ui/console';
+
+const ICON = {
+  chart: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M3 3v14h14" /><path d="M7 12l3-3 2 2 4-5" /></svg>,
+  download: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M10 3v9" /><path d="M6.5 9.5 10 13l3.5-3.5" /><path d="M4 16h12" /></svg>,
+  refresh: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M15.5 6.5A6 6 0 1 0 16 10" /><path d="M15.5 3v4h-4" /></svg>,
+  trend: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M3 15l4-5 3 2 6-8" /><path d="M13 4h4v4" /></svg>,
+  pie: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="10" cy="10" r="7" /><path d="M10 10V3M10 10l6 3.2" /></svg>,
+  check: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="10" cy="10" r="7" /><path d="M6.8 10.2l2.2 2.2 4.2-4.6" /></svg>,
+  list: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 6h12M4 10h12M4 14h8" /></svg>,
+  play: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M7 5l8 5-8 5z" /></svg>,
+  percent: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M5 15L15 5" /><circle cx="6.5" cy="6.5" r="1.6" /><circle cx="13.5" cy="13.5" r="1.6" /></svg>,
+  clock: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="10" cy="10" r="7" /><path d="M10 6v4l2.8 1.8" /></svg>,
+};
 
 interface SummaryPeriod {
   period: string;
@@ -252,115 +276,64 @@ export default function WorkStatusPage() {
   const showAuthors = manager && scope === 'all';
 
   return (
-    <div className="p-6 flex flex-col gap-4 h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-800">업무현황</h1>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={exportCsv}
-            disabled={loading || periods.length === 0}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 text-gray-600"
-            title="현재 스코프·기간의 집계를 CSV로 다운로드"
-          >
-            ⬇ CSV 내보내기
-          </button>
-          <button
-            onClick={fetchData}
-            disabled={loading}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 text-gray-600"
-          >
-            🔄 새로고침
-          </button>
-        </div>
-      </div>
+    <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
+      <PageHeader
+        title="업무현황"
+        subtitle="완료·진행·회의 시간을 기간별로 집계합니다"
+        icon={ICON.chart}
+        actions={
+          <>
+            <ToolbarButton onClick={exportCsv} disabled={loading || periods.length === 0} icon={ICON.download} title="현재 스코프·기간의 집계를 CSV로 다운로드">
+              CSV 내보내기
+            </ToolbarButton>
+            <ToolbarButton onClick={fetchData} disabled={loading} icon={ICON.refresh}>
+              새로고침
+            </ToolbarButton>
+          </>
+        }
+      />
 
-      {/* Scope toggle (관리자 전용) + Period tabs */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-2.5 flex-wrap">
         {manager && (
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
-            {(Object.keys(SCOPE_LABELS) as Scope[]).map((s) => (
-              <button
-                key={s}
-                onClick={() => setScope(s)}
-                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  scope === s
-                    ? 'bg-white text-indigo-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                {SCOPE_LABELS[s]}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            value={scope}
+            onChange={setScope}
+            options={(Object.keys(SCOPE_LABELS) as Scope[]).map((s) => ({ value: s, label: SCOPE_LABELS[s] }))}
+          />
         )}
-
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
-          {(Object.keys(TAB_LABELS) as PeriodTab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                activeTab === tab
-                  ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              {TAB_LABELS[tab]}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          value={activeTab}
+          onChange={setActiveTab}
+          options={(Object.keys(TAB_LABELS) as PeriodTab[]).map((t) => ({ value: t, label: TAB_LABELS[t] }))}
+        />
       </div>
 
-      {/* Error */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-          {error}
-          <button onClick={fetchData} className="ml-2 underline text-red-600">
-            재시도
-          </button>
-        </div>
-      )}
+      {error && <ErrorBanner message={error} onRetry={fetchData} />}
 
       {loading ? (
-        <div className="flex items-center justify-center py-20 text-gray-400 text-sm">
-          데이터를 불러오는 중...
-        </div>
+        <LoadingState />
       ) : (
-        <div className="flex-1 overflow-y-auto flex flex-col gap-4">
+        <div className="flex-1 overflow-y-auto flex flex-col gap-5 pr-0.5">
           {/* 요약 카드 5개 */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-gray-800">{totals.total}</div>
-              <div className="text-xs text-gray-500 mt-1">전체 업무</div>
-            </div>
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-green-600">{totals.completed}</div>
-              <div className="text-xs text-gray-500 mt-1">완료</div>
-            </div>
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-blue-600">{totals.started}</div>
-              <div className="text-xs text-gray-500 mt-1">진행중</div>
-            </div>
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-indigo-600">{completionRate}%</div>
-              <div className="text-xs text-gray-500 mt-1">완료율</div>
-            </div>
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="text-2xl font-bold text-purple-600">
-                {totals.meeting > 0 ? formatMinutes(totals.meeting) : '0m'}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">회의 시간</div>
-            </div>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+            <StatCard label="전체 업무" value={totals.total} accent="#B4C0D3" icon={ICON.list} />
+            <StatCard label="완료" value={totals.completed} accent="#22C55E" icon={ICON.check} />
+            <StatCard label="진행중" value={totals.started} accent="#38BDF8" icon={ICON.play} />
+            <StatCard label="완료율" value={`${completionRate}%`} accent="#93A9FF" icon={ICON.percent} />
+            <StatCard
+              label="회의 시간"
+              value={totals.meeting > 0 ? formatMinutes(totals.meeting) : '0m'}
+              accent="#8B5CF6"
+              icon={ICON.clock}
+            />
           </div>
 
           {/* 일별 완료 추이 바 차트 */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">일별 완료 추이</h2>
+          <SectionCard title="일별 완료 추이" icon={ICON.trend}>
             {periods.length === 0 ? (
-              <div className="py-10 text-center text-sm text-gray-400">기간 내 데이터 없음</div>
+              <EmptyState icon="📈" title="기간 내 데이터가 없어요" hint="이 기간에 완료된 업무가 아직 없습니다." compact />
             ) : (
-              <div className="flex items-end gap-1 sm:gap-2">
+              <div className="flex items-end gap-1 sm:gap-2 pt-1">
                 {days.map((d) => {
                   const count = completedByDate[d] ?? 0;
                   const barPct =
@@ -371,133 +344,96 @@ export default function WorkStatusPage() {
                     <div key={d} className="flex-1 flex flex-col items-center min-w-0">
                       <div className="flex flex-col items-center justify-end h-32 w-full">
                         {count > 0 && (
-                          <span className="text-[10px] text-gray-500 leading-none mb-0.5">
+                          <span className="text-[10px] text-text-muted leading-none mb-0.5">
                             {count}
                           </span>
                         )}
                         {count > 0 ? (
                           <div
-                            className="w-full max-w-[28px] bg-indigo-500 rounded-t transition-all"
+                            className="w-full max-w-[28px] bg-primary rounded-t transition-all"
                             style={{ height: `${barPct}%` }}
                           />
                         ) : (
-                          <div className="w-full max-w-[28px] h-0.5 bg-gray-200 rounded" />
+                          <div className="w-full max-w-[28px] h-0.5 bg-bg-surface-raised rounded" />
                         )}
                       </div>
-                      <span className="mt-1 text-[10px] text-gray-400">{formatDayLabel(d)}</span>
+                      <span className="mt-1 text-[10px] text-text-muted">{formatDayLabel(d)}</span>
                     </div>
                   );
                 })}
               </div>
             )}
-          </div>
+          </SectionCard>
 
           {/* 카테고리 분포 — 건수/시간 이중 표시 (토글) */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-gray-700">카테고리 분포</h2>
-              <div className="flex gap-1 bg-gray-100 rounded-md p-0.5">
-                {(
-                  [
-                    ['count', '건수'],
-                    ['time', '시간'],
-                  ] as const
-                ).map(([m, label]) => (
-                  <button
-                    key={m}
-                    onClick={() => setCatMode(m)}
-                    className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                      catMode === m
-                        ? 'bg-white text-indigo-600 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
+          <SectionCard
+            title="카테고리 분포"
+            icon={ICON.pie}
+            action={
+              <Segmented
+                size="sm"
+                value={catMode}
+                onChange={setCatMode}
+                options={[
+                  { value: 'count', label: '건수' },
+                  { value: 'time', label: '시간' },
+                ]}
+              />
+            }
+          >
             {catMode === 'count' ? (
               categoryEntries.length === 0 ? (
-                <div className="py-6 text-center text-sm text-gray-400">기간 내 데이터 없음</div>
+                <EmptyState icon="🗂️" title="기간 내 데이터가 없어요" compact />
               ) : (
                 <div className="space-y-3">
                   {categoryEntries.map(([cat, count]) => {
                     const pct = categorySum > 0 ? Math.round((count / categorySum) * 100) : 0;
-                    return (
-                      <div key={cat}>
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <span className="font-medium text-gray-600">{cat}</span>
-                          <span className="text-gray-500">
-                            {count}건 · {pct}%
-                          </span>
-                        </div>
-                        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-indigo-500 transition-all"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
+                    return <ProgressRow key={cat} label={cat} meta={`${count}건 · ${pct}%`} pct={pct} accent="#3B5BFE" />;
                   })}
                 </div>
               )
             ) : categoryMinuteEntries.length === 0 ? (
-              <div className="py-6 text-center text-sm text-gray-400">
-                기간 내 시간 데이터 없음
-              </div>
+              <EmptyState icon="🗂️" title="기간 내 시간 데이터가 없어요" compact />
             ) : (
               <div className="space-y-3">
                 {categoryMinuteEntries.map(([cat, mins]) => {
-                  const pct =
-                    categoryMinuteSum > 0 ? Math.round((mins / categoryMinuteSum) * 100) : 0;
+                  const pct = categoryMinuteSum > 0 ? Math.round((mins / categoryMinuteSum) * 100) : 0;
                   return (
-                    <div key={cat}>
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="font-medium text-gray-600">{cat}</span>
-                        <span className="text-gray-500">
-                          {mins > 0 ? formatMinutes(mins) : '0m'} · {pct}%
-                        </span>
-                      </div>
-                      <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-emerald-500 transition-all"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
+                    <ProgressRow
+                      key={cat}
+                      label={cat}
+                      meta={`${mins > 0 ? formatMinutes(mins) : '0m'} · ${pct}%`}
+                      pct={pct}
+                      accent="#22C55E"
+                    />
                   );
                 })}
               </div>
             )}
-          </div>
+          </SectionCard>
 
           {/* 최근 완료 업무 */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">최근 완료 업무</h2>
+          <SectionCard title="최근 완료 업무" icon={ICON.check} bodyClassName="px-4 py-1">
             {recentCompleted.length === 0 ? (
-              <div className="py-6 text-center text-sm text-gray-400">
-                완료된 업무가 없습니다.
-              </div>
+              <EmptyState icon="✅" title="완료된 업무가 없습니다" hint="업무를 완료하면 여기에 표시됩니다." compact />
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-border-subtle">
                 {recentCompleted.map((log) => (
                   <div key={log.id} className="py-2.5 flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm text-gray-800 truncate">
+                        <span className="font-medium text-sm text-text-primary truncate">
                           {log.title}
                         </span>
                         {log.category && (
-                          <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                          <span className="text-xs px-2 py-0.5 bg-bg-surface-raised text-text-secondary rounded">
                             {log.category}
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+                      <div className="flex items-center gap-3 mt-0.5 text-xs text-text-muted">
                         {showAuthors && (
-                          <span className="text-gray-500">
+                          <span className="text-text-muted">
                             {employeeNames[log.user_id] ?? `user ${log.user_id}`}
                           </span>
                         )}
@@ -505,14 +441,14 @@ export default function WorkStatusPage() {
                         <span>소요 {formatMinutes(log.actual_minutes)}</span>
                       </div>
                     </div>
-                    <span className="text-xs px-2 py-0.5 rounded font-medium bg-green-100 text-green-700 flex-shrink-0">
+                    <span className="text-xs px-2 py-0.5 rounded font-medium bg-[rgba(34,197,94,0.16)] text-status-online flex-shrink-0">
                       완료
                     </span>
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </SectionCard>
         </div>
       )}
     </div>

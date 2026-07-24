@@ -4,6 +4,27 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isAdmin } from '@/lib/auth';
 import { formatKst } from '@/lib/kpi';
+import {
+  PageHeader,
+  ToolbarButton,
+  StatCard,
+  SectionCard,
+  EmptyState,
+} from '@/components/ui/console';
+
+const ICON = {
+  sync: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M15.5 6.5A6 6 0 1 0 16 10" /><path d="M15.5 3v4h-4" /></svg>,
+  refresh: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M15.5 6.5A6 6 0 1 0 16 10" /><path d="M15.5 3v4h-4" /></svg>,
+  play: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M7 5l8 5-8 5z" /></svg>,
+  runs: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 6h12M4 10h12M4 14h8" /></svg>,
+  alert: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M10 3 2.5 16.5h15z" /><path d="M10 8v3.5M10 14h.01" /></svg>,
+  check: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="10" cy="10" r="7" /><path d="M6.8 10.2l2.2 2.2 4.2-4.6" /></svg>,
+  clock: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="10" cy="10" r="7" /><path d="M10 6v4l2.8 1.8" /></svg>,
+  detail: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="3" y="4" width="14" height="12" rx="2" /><path d="M6 8h8M6 11h5" /></svg>,
+  push: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M10 3v9" /><path d="M6.5 6.5 10 3l3.5 3.5" /><path d="M4 16h12" /></svg>,
+  calendar: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="3" y="4" width="14" height="13" rx="2" /><path d="M3 8h14M7 3v3M13 3v3" /></svg>,
+  lock: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><rect x="4" y="9" width="12" height="8" rx="2" /><path d="M7 9V6.5a3 3 0 0 1 6 0V9" /></svg>,
+};
 
 interface SyncLog {
   id: string;
@@ -123,11 +144,11 @@ export default function SyncMonitoringPage() {
 
   if (!allowed) {
     return (
-      <div className="p-6">
-        <div className="max-w-md mx-auto mt-20 text-center bg-white border border-gray-200 rounded-xl p-8">
-          <div className="text-3xl mb-2">🔒</div>
-          <p className="text-gray-700 font-medium">관리자 전용 화면</p>
-          <p className="text-sm text-gray-400 mt-1">동기화 모니터링은 관리자만 접근할 수 있습니다.</p>
+      <div className="p-6 text-text-secondary">
+        <div className="max-w-md mx-auto mt-20">
+          <SectionCard>
+            <EmptyState icon={ICON.lock} title="관리자 전용 화면" hint="동기화 모니터링은 관리자만 접근할 수 있습니다." />
+          </SectionCard>
         </div>
       </div>
     );
@@ -136,162 +157,190 @@ export default function SyncMonitoringPage() {
   const last = status?.last_run ?? null;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">동기화 모니터링</h1>
-          <p className="text-xs text-gray-400">ERP → 플랫폼 사용자 동기화 로그 (erp_sync_log) 및 근태 read-through</p>
-        </div>
-        <button onClick={runSync} disabled={syncing} className="px-4 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50">
-          {syncing ? '동기화 중...' : '지금 동기화'}
-        </button>
-      </div>
-      {msg && <div className="px-3 py-2 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">{msg}</div>}
+    <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
+      <PageHeader
+        title="동기화 모니터링"
+        subtitle="ERP → 플랫폼 사용자 동기화 로그 (erp_sync_log) 및 근태 read-through"
+        icon={ICON.sync}
+        actions={
+          <>
+            <ToolbarButton onClick={loadStatus} disabled={loading} icon={ICON.refresh}>
+              새로고침
+            </ToolbarButton>
+            <ToolbarButton onClick={runSync} disabled={syncing} variant="primary" icon={ICON.play}>
+              {syncing ? '동기화 중...' : '지금 동기화'}
+            </ToolbarButton>
+          </>
+        }
+      />
 
-      {/* Status summary */}
-      <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: '총 실행', value: status?.total_runs ?? '—', color: 'text-gray-800' },
-          { label: '실패', value: status?.failure_count ?? '—', color: (status?.failure_count ?? 0) > 0 ? 'text-red-600' : 'text-gray-800' },
-          { label: '최근 결과', value: last ? (last.status === 'success' ? '성공' : '실패') : '—', color: last?.status === 'success' ? 'text-green-600' : 'text-gray-800' },
-          { label: '최근 실행(KST)', value: last ? formatKst(last.started_at) : '—', color: 'text-gray-600', small: true },
-        ].map((c) => (
-          <div key={c.label} className="bg-white border border-gray-200 rounded-xl p-3">
-            <div className="text-xs text-gray-400">{c.label}</div>
-            <div className={`mt-1 font-bold ${c.color} ${c.small ? 'text-xs' : 'text-2xl'}`}>{loading ? '…' : c.value}</div>
-          </div>
-        ))}
-      </section>
-
-      {/* Last run detail */}
-      {last && (
-        <section className="bg-white border border-gray-200 rounded-xl p-4">
-          <h2 className="font-semibold text-gray-700 text-sm mb-2">최근 동기화 결과</h2>
-          <div className="flex gap-6 text-sm">
-            <span className="text-green-600">생성 +{last.created}</span>
-            <span className="text-blue-600">갱신 {last.updated}</span>
-            <span className="text-amber-600">비활성화 {last.deactivated}</span>
-            <span className="text-gray-400">트리거 {last.trigger}</span>
-          </div>
-        </section>
+      {msg && (
+        <div className="px-3 py-2 bg-[rgba(34,197,94,0.16)] border border-[rgba(34,197,94,0.4)] rounded-xl text-sm text-status-online">{msg}</div>
       )}
 
-      {/* Failures */}
-      <section className="bg-white border border-gray-200 rounded-xl p-4">
-        <h2 className="font-semibold text-gray-700 text-sm mb-2">실패 이력 (erp_sync_log)</h2>
-        {loading ? (
-          <p className="text-xs text-gray-400">불러오는 중...</p>
-        ) : failures.length === 0 ? (
-          <p className="text-xs text-gray-400">실패 이력이 없습니다.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="text-xs text-gray-400">
-              <tr><th className="text-left py-1.5">시각 (KST)</th><th className="text-left py-1.5">트리거</th><th className="text-left py-1.5">오류</th></tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {failures.map((f) => (
-                <tr key={f.id}>
-                  <td className="py-2 text-gray-600">{formatKst(f.started_at)}</td>
-                  <td className="py-2 text-gray-500">{f.trigger}</td>
-                  <td className="py-2 text-red-600 text-xs">{f.error ?? '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
-
-      {/* EOD Push / KPI 배치 작업 상태 (job-status-table) */}
-      <section className="bg-white border border-gray-200 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-semibold text-gray-700 text-sm">전송 작업 상태 (daily_status_push)</h2>
-          <span className="text-xs text-gray-400">
-            {pushes.length}건 · 대기 {pushes.filter((p) => p.status === 'pending').length} · 완료 {pushes.filter((p) => p.status === 'sent').length} · 실패 {pushes.filter((p) => p.status === 'failed').length}
-          </span>
+      <div className="flex-1 overflow-y-auto flex flex-col gap-5 pr-0.5">
+        {/* Status summary */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+          <StatCard
+            label="총 실행"
+            value={loading ? '…' : (status?.total_runs ?? '—')}
+            accent="#93A9FF"
+            icon={ICON.runs}
+          />
+          <StatCard
+            label="실패"
+            value={loading ? '…' : (status?.failure_count ?? '—')}
+            accent={(status?.failure_count ?? 0) > 0 ? '#EF4444' : '#B4C0D3'}
+            icon={ICON.alert}
+          />
+          <StatCard
+            label="최근 결과"
+            value={loading ? '…' : (last ? (last.status === 'success' ? '성공' : '실패') : '—')}
+            accent={last?.status === 'success' ? '#22C55E' : '#B4C0D3'}
+            icon={ICON.check}
+          />
+          <StatCard
+            label="최근 실행(KST)"
+            value={loading ? '…' : (last ? formatKst(last.started_at) : '—')}
+            accent="#38BDF8"
+            icon={ICON.clock}
+          />
         </div>
-        {loading ? (
-          <p className="text-xs text-gray-400">불러오는 중...</p>
-        ) : pushes.length === 0 ? (
-          <p className="text-xs text-gray-400">전송 작업이 없습니다.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="text-xs text-gray-400">
-              <tr>
-                <th className="text-left py-1.5">날짜</th>
-                <th className="text-left py-1.5">대상</th>
-                <th className="text-left py-1.5">사용자</th>
-                <th className="text-center py-1.5">상태</th>
-                <th className="text-left py-1.5">오류</th>
-                <th className="text-right py-1.5">액션</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {pushes.map((p) => (
-                <tr key={p.id}>
-                  <td className="py-2 text-gray-600">{p.push_date}</td>
-                  <td className="py-2 text-gray-500 text-xs">{p.target === 'erp_kpi_results' ? 'KPI' : '일일리포트'}</td>
-                  <td className="py-2 text-gray-500">{p.user_id}</td>
-                  <td className="py-2 text-center">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${p.status === 'sent' ? 'bg-green-100 text-green-700' : p.status === 'failed' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>
-                      {p.status === 'sent' ? '완료' : p.status === 'failed' ? '실패' : '대기'}
-                    </span>
-                  </td>
-                  <td className="py-2 text-red-600 text-xs truncate max-w-xs">{p.error ?? '—'}</td>
-                  <td className="py-2 text-right">
-                    {p.status === 'failed' && (
-                      <button
-                        onClick={() => retryPush(p.id)}
-                        disabled={retrying === p.id}
-                        className="text-xs px-2 py-0.5 border border-indigo-300 text-indigo-600 rounded hover:bg-indigo-50 disabled:opacity-40"
-                      >
-                        {retrying === p.id ? '재시도 중...' : '재시도'}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
 
-      {/* Attendances read-through */}
-      <section className="bg-white border border-gray-200 rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <h2 className="font-semibold text-gray-700 text-sm">근태 read-through (ERP 원본)</h2>
-          <div className="flex items-center gap-2">
-            <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="border border-gray-300 rounded-md px-2 py-1 text-sm" />
-            <span className="text-gray-400 text-xs">~</span>
-            <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="border border-gray-300 rounded-md px-2 py-1 text-sm" />
-            <button onClick={loadAttendances} disabled={attLoading} className="px-3 py-1 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50">
-              {attLoading ? '조회 중...' : '조회'}
-            </button>
-          </div>
-        </div>
-        {attError && <p className="text-sm text-red-600 mb-2">{attError}</p>}
-        {!attLoaded ? (
-          <p className="text-xs text-gray-400">기간을 선택하고 조회하세요.</p>
-        ) : attendances.length === 0 ? (
-          <p className="text-xs text-gray-400">해당 기간 근태 기록이 없습니다.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="text-xs text-gray-400">
-              <tr><th className="text-left py-1.5">user</th><th className="text-left py-1.5">일자</th><th className="text-left py-1.5">출근</th><th className="text-left py-1.5">퇴근</th><th className="text-left py-1.5">근무형태</th></tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {attendances.map((a, i) => (
-                <tr key={i}>
-                  <td className="py-2 text-gray-700">user {a.user_id}</td>
-                  <td className="py-2 text-gray-600">{a.attendance_date}</td>
-                  <td className="py-2 text-gray-600">{a.check_in_at ? formatKst(a.check_in_at) : '—'}</td>
-                  <td className="py-2 text-gray-600">{a.check_out_at ? formatKst(a.check_out_at) : '—'}</td>
-                  <td className="py-2 text-gray-600">{a.work_type}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Last run detail */}
+        {last && (
+          <SectionCard title="최근 동기화 결과" icon={ICON.detail}>
+            <div className="flex gap-6 text-sm flex-wrap">
+              <span className="text-status-online">생성 +{last.created}</span>
+              <span className="text-accent-cyan">갱신 {last.updated}</span>
+              <span className="text-status-external">비활성화 {last.deactivated}</span>
+              <span className="text-text-muted">트리거 {last.trigger}</span>
+            </div>
+          </SectionCard>
         )}
-      </section>
+
+        {/* Failures */}
+        <SectionCard title="실패 이력 (erp_sync_log)" icon={ICON.alert} bodyClassName="p-0">
+          {loading ? (
+            <p className="text-xs text-text-muted px-4 py-4">불러오는 중...</p>
+          ) : failures.length === 0 ? (
+            <EmptyState icon={ICON.check} title="실패 이력이 없습니다." compact />
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="text-xs text-text-muted">
+                <tr><th className="text-left px-4 py-2">시각 (KST)</th><th className="text-left px-4 py-2">트리거</th><th className="text-left px-4 py-2">오류</th></tr>
+              </thead>
+              <tbody className="divide-y divide-border-subtle">
+                {failures.map((f) => (
+                  <tr key={f.id}>
+                    <td className="px-4 py-2 text-text-secondary">{formatKst(f.started_at)}</td>
+                    <td className="px-4 py-2 text-text-muted">{f.trigger}</td>
+                    <td className="px-4 py-2 text-red-300 text-xs">{f.error ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </SectionCard>
+
+        {/* EOD Push / KPI 배치 작업 상태 (job-status-table) */}
+        <SectionCard
+          title="전송 작업 상태 (daily_status_push)"
+          icon={ICON.push}
+          action={
+            <span className="text-xs text-text-muted">
+              {pushes.length}건 · 대기 {pushes.filter((p) => p.status === 'pending').length} · 완료 {pushes.filter((p) => p.status === 'sent').length} · 실패 {pushes.filter((p) => p.status === 'failed').length}
+            </span>
+          }
+          bodyClassName="p-0"
+        >
+          {loading ? (
+            <p className="text-xs text-text-muted px-4 py-4">불러오는 중...</p>
+          ) : pushes.length === 0 ? (
+            <EmptyState icon={ICON.push} title="전송 작업이 없습니다." compact />
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="text-xs text-text-muted">
+                <tr>
+                  <th className="text-left px-4 py-2">날짜</th>
+                  <th className="text-left px-4 py-2">대상</th>
+                  <th className="text-left px-4 py-2">사용자</th>
+                  <th className="text-center px-4 py-2">상태</th>
+                  <th className="text-left px-4 py-2">오류</th>
+                  <th className="text-right px-4 py-2">액션</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-subtle">
+                {pushes.map((p) => (
+                  <tr key={p.id}>
+                    <td className="px-4 py-2 text-text-secondary">{p.push_date}</td>
+                    <td className="px-4 py-2 text-text-muted text-xs">{p.target === 'erp_kpi_results' ? 'KPI' : '일일리포트'}</td>
+                    <td className="px-4 py-2 text-text-muted">{p.user_id}</td>
+                    <td className="px-4 py-2 text-center">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${p.status === 'sent' ? 'bg-[rgba(34,197,94,0.16)] text-status-online' : p.status === 'failed' ? 'bg-[rgba(239,68,68,0.12)] text-red-300' : 'bg-[rgba(245,158,11,0.16)] text-status-external'}`}>
+                        {p.status === 'sent' ? '완료' : p.status === 'failed' ? '실패' : '대기'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-red-300 text-xs truncate max-w-xs">{p.error ?? '—'}</td>
+                    <td className="px-4 py-2 text-right">
+                      {p.status === 'failed' && (
+                        <button
+                          onClick={() => retryPush(p.id)}
+                          disabled={retrying === p.id}
+                          className="text-xs px-2 py-0.5 border border-primary/50 text-accent-cyan rounded hover:bg-primary/10 disabled:opacity-40"
+                        >
+                          {retrying === p.id ? '재시도 중...' : '재시도'}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </SectionCard>
+
+        {/* Attendances read-through */}
+        <SectionCard
+          title="근태 read-through (ERP 원본)"
+          icon={ICON.calendar}
+          action={
+            <div className="flex items-center gap-2">
+              <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-2 py-1 text-sm [color-scheme:dark]" />
+              <span className="text-text-muted text-xs">~</span>
+              <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-2 py-1 text-sm [color-scheme:dark]" />
+              <button onClick={loadAttendances} disabled={attLoading} className="px-3 py-1 text-sm border border-border-subtle rounded-md text-text-secondary hover:bg-bg-surface-raised disabled:opacity-50">
+                {attLoading ? '조회 중...' : '조회'}
+              </button>
+            </div>
+          }
+          bodyClassName="p-0"
+        >
+          {attError && <p className="text-sm text-red-300 px-4 pt-3">{attError}</p>}
+          {!attLoaded ? (
+            <EmptyState icon={ICON.calendar} title="기간을 선택하고 조회하세요." compact />
+          ) : attendances.length === 0 ? (
+            <EmptyState icon={ICON.calendar} title="해당 기간 근태 기록이 없습니다." compact />
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="text-xs text-text-muted">
+                <tr><th className="text-left px-4 py-2">user</th><th className="text-left px-4 py-2">일자</th><th className="text-left px-4 py-2">출근</th><th className="text-left px-4 py-2">퇴근</th><th className="text-left px-4 py-2">근무형태</th></tr>
+              </thead>
+              <tbody className="divide-y divide-border-subtle">
+                {attendances.map((a, i) => (
+                  <tr key={i}>
+                    <td className="px-4 py-2 text-text-secondary">user {a.user_id}</td>
+                    <td className="px-4 py-2 text-text-secondary">{a.attendance_date}</td>
+                    <td className="px-4 py-2 text-text-secondary">{a.check_in_at ? formatKst(a.check_in_at) : '—'}</td>
+                    <td className="px-4 py-2 text-text-secondary">{a.check_out_at ? formatKst(a.check_out_at) : '—'}</td>
+                    <td className="px-4 py-2 text-text-secondary">{a.work_type}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </SectionCard>
+      </div>
     </div>
   );
 }

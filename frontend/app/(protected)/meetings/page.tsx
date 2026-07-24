@@ -4,6 +4,23 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isLeaderOrAbove } from '@/lib/auth';
 import { formatKst } from '@/lib/kpi';
+import {
+  PageHeader,
+  ToolbarButton,
+  Segmented,
+  SectionCard,
+  EmptyState,
+  ErrorBanner,
+  LoadingState,
+  CARD_SURFACE,
+} from '@/components/ui/console';
+
+const ICON = {
+  calendar: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="3" y="4.5" width="14" height="12.5" rx="2" /><path d="M3 8h14M7 3v3M13 3v3" /></svg>,
+  plus: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-full h-full"><path d="M10 4v12M4 10h12" /></svg>,
+  clipboard: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="5" y="4" width="10" height="13" rx="2" /><path d="M8 4V3h4v1M7.5 9h5M7.5 12h3" /></svg>,
+  list: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 6h12M4 10h12M4 14h8" /></svg>,
+};
 
 type MeetingStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -83,21 +100,21 @@ interface ActionItem {
 }
 
 const STATUS_LABEL: Record<string, { label: string; color: string; pulse?: boolean }> = {
-  scheduled: { label: '시작 전', color: 'bg-gray-100 text-gray-500' },
-  in_progress: { label: '진행중', color: 'bg-green-100 text-green-700', pulse: true },
-  completed: { label: '종료', color: 'bg-blue-100 text-blue-700' },
-  cancelled: { label: '취소', color: 'bg-red-100 text-red-600' },
+  scheduled: { label: '시작 전', color: 'bg-bg-surface text-text-muted' },
+  in_progress: { label: '진행중', color: 'bg-[rgba(34,197,94,0.16)] text-status-online', pulse: true },
+  completed: { label: '종료', color: 'bg-[rgba(56,189,248,0.15)] text-accent-cyan' },
+  cancelled: { label: '취소', color: 'bg-[rgba(239,68,68,0.12)] text-red-300' },
 };
 
 const AI_STATUS: Record<string, { label: string; dot: string; badge: string }> = {
-  completed: { label: '완료', dot: 'bg-green-500', badge: 'bg-green-100 text-green-700' },
-  in_progress: { label: '진행', dot: 'bg-blue-500', badge: 'bg-blue-100 text-blue-700' },
-  open: { label: '대기', dot: 'bg-gray-300', badge: 'bg-gray-100 text-gray-500' },
-  cancelled: { label: '취소', dot: 'bg-red-400', badge: 'bg-red-100 text-red-600' },
+  completed: { label: '완료', dot: 'bg-green-500', badge: 'bg-[rgba(34,197,94,0.16)] text-status-online' },
+  in_progress: { label: '진행', dot: 'bg-blue-500', badge: 'bg-[rgba(56,189,248,0.15)] text-accent-cyan' },
+  open: { label: '대기', dot: 'bg-gray-300', badge: 'bg-bg-surface text-text-muted' },
+  cancelled: { label: '취소', dot: 'bg-red-400', badge: 'bg-[rgba(239,68,68,0.12)] text-red-300' },
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const st = STATUS_LABEL[status] ?? { label: status, color: 'bg-gray-100 text-gray-500' };
+  const st = STATUS_LABEL[status] ?? { label: status, color: 'bg-bg-surface text-text-muted' };
   return (
     <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded ${st.color}`}>
       {st.pulse && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />}
@@ -107,15 +124,15 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 const INVITE_BADGE: Record<InviteStatus, { label: string; className: string }> = {
-  accepted: { label: '수락함', className: 'bg-green-100 text-green-700' },
-  declined: { label: '거절함', className: 'bg-red-100 text-red-600' },
-  invited: { label: '응답 대기', className: 'bg-amber-100 text-amber-700' },
+  accepted: { label: '수락함', className: 'bg-[rgba(34,197,94,0.16)] text-status-online' },
+  declined: { label: '거절함', className: 'bg-[rgba(239,68,68,0.12)] text-red-300' },
+  invited: { label: '응답 대기', className: 'bg-[rgba(245,158,11,0.16)] text-status-external' },
 };
 
 function InviteStatusIcon({ status }: { status: InviteStatus }) {
-  if (status === 'accepted') return <span className="text-green-600 font-bold" title="수락함">✓</span>;
-  if (status === 'declined') return <span className="text-red-500 font-bold" title="거절함">✕</span>;
-  return <span className="text-amber-500 font-bold" title="응답 대기">?</span>;
+  if (status === 'accepted') return <span className="text-status-online font-bold" title="수락함">✓</span>;
+  if (status === 'declined') return <span className="text-red-300 font-bold" title="거절함">✕</span>;
+  return <span className="text-status-external font-bold" title="응답 대기">?</span>;
 }
 
 type RangeTab = 'day' | 'week' | 'month';
@@ -384,118 +401,107 @@ export default function MeetingsPage() {
   const dashActive = dash.filter((d) => d.item.status !== 'cancelled');
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="text-xl font-bold text-gray-800">회의 / 회의록</h1>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => { const n = !showDash; setShowDash(n); if (n) loadDash(); }}
-            className="px-4 py-2 border border-gray-300 text-gray-600 text-sm font-medium rounded-md hover:bg-gray-50"
-          >
-            {showDash ? '액션 대시보드 닫기' : '액션 대시보드'}
-          </button>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700"
-          >
-            + 회의 예약
-          </button>
-        </div>
-      </div>
-      <div className="flex items-center justify-between mt-3 mb-4">
+    <div className="p-6 flex flex-col gap-5 h-full text-text-secondary max-w-6xl mx-auto w-full">
+      <PageHeader
+        title="회의 / 회의록"
+        subtitle="회의를 예약하고 회의록·액션 아이템을 관리합니다"
+        icon={ICON.calendar}
+        actions={
+          <>
+            <ToolbarButton onClick={() => { const n = !showDash; setShowDash(n); if (n) loadDash(); }} icon={ICON.list}>
+              {showDash ? '액션 대시보드 닫기' : '액션 대시보드'}
+            </ToolbarButton>
+            <ToolbarButton variant="primary" onClick={() => setShowCreate(true)} icon={ICON.plus}>
+              회의 예약
+            </ToolbarButton>
+          </>
+        }
+      />
+
+      <div className="flex items-center justify-between gap-2.5 flex-wrap">
         {viewMode === 'list' ? (
-          <div className="flex gap-1">
-            {(['day', 'week', 'month'] as RangeTab[]).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`px-3 py-1.5 text-sm rounded-md ${tab === t ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-              >
-                {t === 'day' ? '오늘' : t === 'week' ? '이번 주' : '이번 달'}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            value={tab}
+            onChange={setTab}
+            options={(['day', 'week', 'month'] as RangeTab[]).map((t) => ({
+              value: t,
+              label: t === 'day' ? '오늘' : t === 'week' ? '이번 주' : '이번 달',
+            }))}
+          />
         ) : (
           <div className="flex items-center gap-1">
             <button
               onClick={() => setCalMonth(({ y, m }) => { const d = new Date(y, m - 1, 1); return { y: d.getFullYear(), m: d.getMonth() }; })}
               aria-label="이전 달"
-              className="px-2.5 py-1.5 text-sm rounded-md bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+              className="px-2.5 py-1.5 text-sm rounded-md bg-bg-surface border border-border-subtle text-text-secondary hover:bg-bg-surface-raised"
             >
               ‹
             </button>
-            <span className="px-2 text-sm font-semibold text-gray-700 min-w-[104px] text-center">{calMonth.y}년 {calMonth.m + 1}월</span>
+            <span className="px-2 text-sm font-semibold text-text-secondary min-w-[104px] text-center">{calMonth.y}년 {calMonth.m + 1}월</span>
             <button
               onClick={() => setCalMonth(({ y, m }) => { const d = new Date(y, m + 1, 1); return { y: d.getFullYear(), m: d.getMonth() }; })}
               aria-label="다음 달"
-              className="px-2.5 py-1.5 text-sm rounded-md bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+              className="px-2.5 py-1.5 text-sm rounded-md bg-bg-surface border border-border-subtle text-text-secondary hover:bg-bg-surface-raised"
             >
               ›
             </button>
           </div>
         )}
-        <div className="flex rounded-md border border-gray-200 overflow-hidden">
-          {(['list', 'calendar'] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setViewMode(v)}
-              className={`px-3 py-1.5 text-sm ${viewMode === v ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-            >
-              {v === 'list' ? '목록' : '캘린더'}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          value={viewMode}
+          onChange={setViewMode}
+          options={(['list', 'calendar'] as const).map((v) => ({ value: v, label: v === 'list' ? '목록' : '캘린더' }))}
+        />
       </div>
 
       {showDash && (
-        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-gray-700">액션 아이템 대시보드</span>
-            <span className="text-xs text-gray-400">
+        <SectionCard
+          title="액션 아이템 대시보드"
+          icon={ICON.clipboard}
+          action={
+            <span className="text-xs text-text-muted">
               {dashActive.length}건 · 완료 {dashActive.filter((d) => d.item.status === 'completed').length} · 진행 {dashActive.filter((d) => d.item.status === 'in_progress').length} · 대기 {dashActive.filter((d) => d.item.status === 'open').length}
             </span>
-          </div>
+          }
+        >
           {dashLoading ? (
-            <p className="text-xs text-gray-400">불러오는 중...</p>
+            <p className="text-xs text-text-muted">불러오는 중...</p>
           ) : dash.length === 0 ? (
-            <p className="text-xs text-gray-400">이 기간의 액션 아이템이 없습니다.</p>
+            <EmptyState icon="📋" title="이 기간의 액션 아이템이 없습니다" compact />
           ) : (
             <div className="space-y-1">
               {dash.map(({ item, meeting }) => {
                 const st = AI_STATUS[item.status] ?? AI_STATUS.open;
                 return (
-                  <div key={item.id} className="flex items-center gap-2 text-sm border-b border-gray-50 last:border-0 py-1">
+                  <div key={item.id} className="flex items-center gap-2 text-sm border-b border-border-subtle last:border-0 py-1">
                     <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${st.dot}`} />
-                    <span className={`flex-1 truncate ${item.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{item.title}</span>
-                    <span className="text-xs text-gray-400 truncate">{meeting}</span>
-                    <span className="text-xs text-gray-400">~{item.due_date}</span>
+                    <span className={`flex-1 truncate ${item.status === 'cancelled' ? 'text-text-muted line-through' : 'text-text-primary'}`}>{item.title}</span>
+                    <span className="text-xs text-text-muted truncate">{meeting}</span>
+                    <span className="text-xs text-text-muted">~{item.due_date}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded ${st.badge}`}>{st.label}</span>
                   </div>
                 );
               })}
             </div>
           )}
-        </div>
+        </SectionCard>
       )}
 
-      {toast && <div className="mb-3 px-3 py-2 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">{toast}</div>}
+      {toast && <div className="px-3 py-2 bg-[rgba(34,197,94,0.16)] border border-[rgba(34,197,94,0.4)] rounded-md text-sm text-status-online">{toast}</div>}
 
       {loading ? (
-        <div className="text-center py-16 text-gray-400 text-sm">불러오는 중...</div>
+        <LoadingState label="불러오는 중…" />
       ) : error ? (
-        <div className="text-center py-16">
-          <p className="text-red-600 text-sm mb-2">{error}</p>
-          <button onClick={fetchMeetings} className="text-xs text-indigo-600 underline">재시도</button>
-        </div>
+        <ErrorBanner message={error} onRetry={fetchMeetings} />
       ) : viewMode === 'calendar' ? (
         <MonthCalendar year={calMonth.y} month={calMonth.m} meetings={meetings} onSelect={openDetail} />
       ) : meetings.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 text-sm">이 기간에 예약된 회의가 없습니다.</div>
+        <EmptyState icon="📅" title="이 기간에 예약된 회의가 없습니다" hint="회의 예약 버튼으로 새 회의를 만들어 보세요." />
       ) : (
-        <div className="space-y-5">
+        <SectionCard title="예약된 회의" icon={ICON.calendar} bodyClassName="p-4 space-y-5">
           {Object.entries(groups).map(([date, list]) => (
             <div key={date}>
-              <div className="text-xs font-semibold text-gray-400 mb-2">{date}</div>
+              <div className="text-xs font-semibold text-text-muted mb-2">{date}</div>
               <div className="space-y-2">
                 {list.map((m) => (
                   <div
@@ -504,24 +510,24 @@ export default function MeetingsPage() {
                     tabIndex={0}
                     onClick={() => openDetail(m)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openDetail(m); }}
-                    className="w-full text-left bg-white border border-gray-200 rounded-lg px-4 py-3 hover:border-indigo-300 transition-colors cursor-pointer"
+                    className="w-full text-left bg-bg-surface border border-border-subtle rounded-lg px-4 py-3 hover:border-primary/50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-800">{m.title}</span>
+                      <span className="font-medium text-text-primary">{m.title}</span>
                       <div className="flex items-center gap-2">
                         {myInvites[m.id] === 'invited' ? (
                           <span className="flex items-center gap-1">
                             <button
                               onClick={(e) => { e.stopPropagation(); respondInvite(m.id, 'accepted'); }}
                               disabled={respondBusy === m.id}
-                              className="text-[10px] px-2 py-0.5 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                              className="text-[10px] px-2 py-0.5 rounded bg-primary text-white hover:bg-primary-hover disabled:opacity-50"
                             >
                               수락
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); respondInvite(m.id, 'declined'); }}
                               disabled={respondBusy === m.id}
-                              className="text-[10px] px-2 py-0.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                              className="text-[10px] px-2 py-0.5 rounded border border-border-subtle text-text-secondary hover:bg-bg-surface-raised disabled:opacity-50"
                             >
                               거절
                             </button>
@@ -534,7 +540,7 @@ export default function MeetingsPage() {
                         {canManage(m) && m.status === 'scheduled' && (
                           <button
                             onClick={(e) => { e.stopPropagation(); transitionMeeting(m, 'start'); }}
-                            className="text-[10px] px-2 py-0.5 rounded border border-green-300 text-green-700 hover:bg-green-50"
+                            className="text-[10px] px-2 py-0.5 rounded border border-[rgba(34,197,94,0.4)] text-status-online hover:bg-[rgba(34,197,94,0.12)]"
                           >
                             회의 시작
                           </button>
@@ -542,7 +548,7 @@ export default function MeetingsPage() {
                         {canManage(m) && m.status === 'in_progress' && (
                           <button
                             onClick={(e) => { e.stopPropagation(); transitionMeeting(m, 'end'); }}
-                            className="text-[10px] px-2 py-0.5 rounded border border-blue-300 text-blue-700 hover:bg-blue-50"
+                            className="text-[10px] px-2 py-0.5 rounded border border-[rgba(56,189,248,0.4)] text-accent-cyan hover:bg-[rgba(56,189,248,0.12)]"
                           >
                             회의 종료
                           </button>
@@ -550,7 +556,7 @@ export default function MeetingsPage() {
                         <StatusBadge status={m.status} />
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500 mt-0.5">
+                    <div className="text-xs text-text-muted mt-0.5">
                       {new Date(m.scheduled_at).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit' })} · {m.duration_minutes ?? 60}분 · 참석 {m.participant_count ?? 0}명
                     </div>
                   </div>
@@ -558,57 +564,57 @@ export default function MeetingsPage() {
               </div>
             </div>
           ))}
-        </div>
+        </SectionCard>
       )}
 
       {selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setSelected(null)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setSelected(null)}>
+          <div className="rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }} onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <div className="flex items-center gap-2">
-                <h2 className="font-semibold text-gray-800">{selected.title}</h2>
+                <h2 className="font-semibold text-text-primary">{selected.title}</h2>
                 <StatusBadge status={selected.status} />
               </div>
               <div className="flex items-center gap-2">
                 {canManage(selected) && selected.status === 'scheduled' && (
-                  <button onClick={() => transitionMeeting(selected, 'start')} className="text-xs px-2 py-1 border border-green-300 text-green-700 rounded hover:bg-green-50">
+                  <button onClick={() => transitionMeeting(selected, 'start')} className="text-xs px-2 py-1 border border-[rgba(34,197,94,0.4)] text-status-online rounded hover:bg-[rgba(34,197,94,0.12)]">
                     회의 시작
                   </button>
                 )}
                 {canManage(selected) && selected.status === 'in_progress' && (
-                  <button onClick={() => transitionMeeting(selected, 'end')} className="text-xs px-2 py-1 border border-blue-300 text-blue-700 rounded hover:bg-blue-50">
+                  <button onClick={() => transitionMeeting(selected, 'end')} className="text-xs px-2 py-1 border border-[rgba(56,189,248,0.4)] text-accent-cyan rounded hover:bg-[rgba(56,189,248,0.12)]">
                     회의 종료
                   </button>
                 )}
                 {isLeaderOrAbove(me) && selected.status !== 'cancelled' && (
-                  <button onClick={cancelMeeting} className="text-xs px-2 py-1 border border-red-300 text-red-600 rounded hover:bg-red-50">
+                  <button onClick={cancelMeeting} className="text-xs px-2 py-1 border border-[rgba(239,68,68,0.35)] text-red-300 rounded hover:bg-[rgba(239,68,68,0.12)]">
                     회의 취소
                   </button>
                 )}
-                <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+                <button onClick={() => setSelected(null)} className="text-text-muted hover:text-text-primary text-xl">×</button>
               </div>
             </div>
             <div className="px-6 py-4 space-y-4 text-sm">
-              <div className="text-gray-500 text-xs">
+              <div className="text-text-muted text-xs">
                 {formatKst(selected.scheduled_at)} · {selected.duration_minutes ?? 60}분 · 참석 {selected.participant_count ?? 0}명 · 호스트 user {selected.host_user_id}
               </div>
-              {selected.description && <p className="text-gray-700">{selected.description}</p>}
+              {selected.description && <p className="text-text-secondary">{selected.description}</p>}
 
               {myParticipant?.invite_status === 'invited' && (
-                <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-indigo-800">이 회의에 초대되었습니다. 참석하시겠습니까?</span>
+                <div className="rounded-lg border border-[rgba(59,91,254,0.35)] bg-[rgba(59,91,254,0.15)] px-3 py-2 flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-[#93A9FF]">이 회의에 초대되었습니다. 참석하시겠습니까?</span>
                   <div className="flex shrink-0 items-center gap-1.5">
                     <button
                       onClick={() => respondInvite(selected.id, 'accepted')}
                       disabled={respondBusy === selected.id}
-                      className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                      className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-hover disabled:opacity-50"
                     >
                       수락
                     </button>
                     <button
                       onClick={() => respondInvite(selected.id, 'declined')}
                       disabled={respondBusy === selected.id}
-                      className="rounded-md border border-indigo-300 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                      className="rounded-md border border-primary/50 bg-bg-surface px-3 py-1.5 text-xs font-medium text-accent-cyan hover:bg-primary/10 disabled:opacity-50"
                     >
                       거절
                     </button>
@@ -616,26 +622,26 @@ export default function MeetingsPage() {
                 </div>
               )}
 
-              <div className={`rounded-lg border px-3 py-3 ${selectedConsent === 'granted' ? 'border-green-200 bg-green-50' : selectedConsent === 'declined' ? 'border-gray-200 bg-gray-50' : 'border-amber-200 bg-amber-50'}`}>
+              <div className={`rounded-lg border px-3 py-3 ${selectedConsent === 'granted' ? 'border-[rgba(34,197,94,0.4)] bg-[rgba(34,197,94,0.12)]' : selectedConsent === 'declined' ? 'border-border-subtle bg-bg-base' : 'border-[rgba(245,158,11,0.4)] bg-[rgba(245,158,11,0.12)]'}`}>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className={`text-sm font-medium ${selectedConsent === 'granted' ? 'text-green-800' : selectedConsent === 'declined' ? 'text-gray-700' : 'text-amber-800'}`}>
+                    <p className={`text-sm font-medium ${selectedConsent === 'granted' ? 'text-status-online' : selectedConsent === 'declined' ? 'text-text-secondary' : 'text-status-external'}`}>
                       {selectedConsent === 'granted'
                         ? '녹음/STT 동의됨'
                         : selectedConsent === 'declined'
                           ? '녹음/STT 거부됨 (회의 참여만)'
                           : '이 회의는 녹음/STT가 사용될 수 있습니다'}
                     </p>
-                    <p className={`mt-0.5 text-xs ${selectedConsent === 'granted' ? 'text-green-700' : selectedConsent === 'declined' ? 'text-gray-500' : 'text-amber-700'}`}>
+                    <p className={`mt-0.5 text-xs ${selectedConsent === 'granted' ? 'text-status-online' : selectedConsent === 'declined' ? 'text-text-muted' : 'text-status-external'}`}>
                       {selectedConsent === 'declined' ? '내 발화는 녹음/STT에 사용되지 않습니다' : '참석자 동의 후 초안 생성 가능'}
                     </p>
                   </div>
                   {selectedConsent === 'granted' ? (
-                    <span className="shrink-0 rounded-md bg-white px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-green-200">
+                    <span className="shrink-0 rounded-md bg-bg-surface px-2 py-1 text-xs font-medium text-status-online ring-1 ring-[rgba(34,197,94,0.4)]">
                       동의됨
                     </span>
                   ) : selectedConsent === 'declined' ? (
-                    <span className="shrink-0 rounded-md bg-white px-2 py-1 text-xs font-medium text-gray-500 ring-1 ring-gray-200">
+                    <span className="shrink-0 rounded-md bg-bg-surface px-2 py-1 text-xs font-medium text-text-muted ring-1 ring-border-subtle">
                       거부됨
                     </span>
                   ) : (
@@ -650,7 +656,7 @@ export default function MeetingsPage() {
                       <button
                         onClick={() => submitConsent(false)}
                         disabled={consentSaving}
-                        className="rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                        className="rounded-md border border-[rgba(245,158,11,0.4)] bg-bg-surface px-3 py-1.5 text-xs font-medium text-status-external hover:bg-[rgba(245,158,11,0.12)] disabled:opacity-50"
                       >
                         거부(참여만)
                       </button>
@@ -661,38 +667,38 @@ export default function MeetingsPage() {
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-gray-700">참석자 ({participants.length})</span>
+                  <span className="font-medium text-text-secondary">참석자 ({participants.length})</span>
                   <div className="flex items-center gap-1.5">
                     {canManage(selected) && (
-                      <button onClick={() => setShowInvite(true)} className="text-xs px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                      <button onClick={() => setShowInvite(true)} className="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-hover">
                         + 참석자 초대
                       </button>
                     )}
-                    <button onClick={join} className="text-xs px-2 py-1 border border-indigo-300 text-indigo-600 rounded hover:bg-indigo-50">
+                    <button onClick={join} className="text-xs px-2 py-1 border border-primary/50 text-accent-cyan rounded hover:bg-primary/10">
                       참석
                     </button>
                   </div>
                 </div>
                 {detailLoading ? (
-                  <p className="text-xs text-gray-400">불러오는 중...</p>
+                  <p className="text-xs text-text-muted">불러오는 중...</p>
                 ) : participants.length === 0 ? (
-                  <p className="text-xs text-gray-400">참석자 없음</p>
+                  <p className="text-xs text-text-muted">참석자 없음</p>
                 ) : (
                   <div className="space-y-1">
                     {participants.map((p) => (
                       <div key={p.id} className="flex items-center gap-1.5 text-xs">
                         <InviteStatusIcon status={p.invite_status} />
-                        <span className="text-gray-700">
+                        <span className="text-text-secondary">
                           {p.user_name || `user ${p.user_id}`}{p.user_id === me?.id ? ' (나)' : ''}
                         </span>
                         {p.role === 'organizer' && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">👑 주최</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(59,91,254,0.2)] text-[#93A9FF]">👑 주최</span>
                         )}
                         {p.role === 'presenter' && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">발표</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(56,189,248,0.15)] text-accent-cyan">발표</span>
                         )}
                         {p.joined_at && (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-green-600">
+                          <span className="inline-flex items-center gap-1 text-[10px] text-status-online">
                             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
                             입장함
                           </span>
@@ -705,29 +711,29 @@ export default function MeetingsPage() {
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-gray-700">회의록 ({minutes.length})</span>
-                  <button onClick={() => setShowMinute(true)} className="text-xs px-2 py-1 border border-indigo-300 text-indigo-600 rounded hover:bg-indigo-50">
+                  <span className="font-medium text-text-secondary">회의록 ({minutes.length})</span>
+                  <button onClick={() => setShowMinute(true)} className="text-xs px-2 py-1 border border-primary/50 text-accent-cyan rounded hover:bg-primary/10">
                     + 작성
                   </button>
                 </div>
                 {minutes.length === 0 ? (
-                  <p className="text-xs text-gray-400">작성된 회의록 없음</p>
+                  <p className="text-xs text-text-muted">작성된 회의록 없음</p>
                 ) : (
                   minutes.map((mn) => (
-                    <div key={mn.id} className="border border-gray-100 rounded-lg p-3 mb-2">
+                    <div key={mn.id} className="border border-border-subtle rounded-lg p-3 mb-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-gray-700 text-sm">{mn.title || '회의록'}</span>
+                        <span className="font-medium text-text-secondary text-sm">{mn.title || '회의록'}</span>
                         {mn.status === 'finalized' ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">확정</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[rgba(34,197,94,0.16)] text-status-online">확정</span>
                         ) : (
                           <span className="flex items-center gap-1">
-                            <button onClick={() => finalizeMinute(mn.id)} className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-600 text-white">확정</button>
-                            <button onClick={() => deleteMinute(mn.id)} className="text-[10px] px-1.5 py-0.5 rounded border border-red-300 text-red-600 hover:bg-red-50">삭제</button>
+                            <button onClick={() => finalizeMinute(mn.id)} className="text-[10px] px-1.5 py-0.5 rounded bg-primary text-white">확정</button>
+                            <button onClick={() => deleteMinute(mn.id)} className="text-[10px] px-1.5 py-0.5 rounded border border-[rgba(239,68,68,0.35)] text-red-300 hover:bg-[rgba(239,68,68,0.12)]">삭제</button>
                           </span>
                         )}
                       </div>
-                      {mn.summary && <p className="text-xs text-gray-600 mt-1">{mn.summary}</p>}
-                      <p className="text-xs text-gray-500 mt-1"><span className="text-gray-400">결정: </span>{mn.decisions}</p>
+                      {mn.summary && <p className="text-xs text-text-secondary mt-1">{mn.summary}</p>}
+                      <p className="text-xs text-text-muted mt-1"><span className="text-text-muted">결정: </span>{mn.decisions}</p>
                     </div>
                   ))
                 )}
@@ -735,15 +741,15 @@ export default function MeetingsPage() {
 
               {actionItems.length > 0 && (
                 <div>
-                  <span className="font-medium text-gray-700">액션 아이템 ({actionItems.length})</span>
+                  <span className="font-medium text-text-secondary">액션 아이템 ({actionItems.length})</span>
                   <div className="mt-1 space-y-1">
                     {actionItems.map((ai) => {
                       const st = AI_STATUS[ai.status] ?? AI_STATUS.open;
                       return (
-                        <div key={ai.id} className="text-xs text-gray-600 flex items-center gap-2">
+                        <div key={ai.id} className="text-xs text-text-secondary flex items-center gap-2">
                           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${st.dot}`} />
-                          <span className={`truncate ${ai.status === 'cancelled' ? 'text-gray-400 line-through' : ''}`}>{ai.title}</span>
-                          <span className="text-gray-400">· ~{ai.due_date} · user {ai.assignee_user_id}</span>
+                          <span className={`truncate ${ai.status === 'cancelled' ? 'text-text-muted line-through' : ''}`}>{ai.title}</span>
+                          <span className="text-text-muted">· ~{ai.due_date} · user {ai.assignee_user_id}</span>
                           <span className={`text-[10px] px-1.5 py-0.5 rounded ${st.badge}`}>{st.label}</span>
                         </div>
                       );
@@ -812,10 +818,10 @@ function MonthCalendar({
   const todayKey = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <div className="grid grid-cols-7 border-b border-gray-100">
+    <div className={`${CARD_SURFACE} overflow-hidden`}>
+      <div className="grid grid-cols-7 border-b border-border-subtle">
         {WEEKDAYS.map((w, i) => (
-          <div key={w} className={`py-1.5 text-center text-xs font-semibold ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-gray-400'}`}>
+          <div key={w} className={`py-1.5 text-center text-xs font-semibold ${i === 0 ? 'text-red-400' : i === 6 ? 'text-blue-400' : 'text-text-muted'}`}>
             {w}
           </div>
         ))}
@@ -827,12 +833,12 @@ function MonthCalendar({
           return (
             <div
               key={c.key}
-              className={`min-h-[84px] p-1 border-gray-100 ${i % 7 !== 0 ? 'border-l' : ''} ${i >= 7 ? 'border-t' : ''} ${c.inMonth ? 'bg-white' : 'bg-gray-50'}`}
+              className={`min-h-[84px] p-1 border-border-subtle ${i % 7 !== 0 ? 'border-l' : ''} ${i >= 7 ? 'border-t' : ''} ${c.inMonth ? 'bg-bg-surface' : 'bg-bg-base'}`}
             >
               <div className="flex justify-end">
                 <span
                   className={`text-[11px] w-5 h-5 flex items-center justify-center rounded-full ${
-                    c.key === todayKey ? 'bg-indigo-600 text-white font-semibold' : c.inMonth ? 'text-gray-600' : 'text-gray-300'
+                    c.key === todayKey ? 'bg-primary text-white font-semibold' : c.inMonth ? 'text-text-secondary' : 'text-text-muted'
                   }`}
                 >
                   {c.day}
@@ -840,7 +846,7 @@ function MonthCalendar({
               </div>
               <div className="mt-0.5 space-y-0.5">
                 {dayMeetings.slice(0, 2).map((m) => {
-                  const st = STATUS_LABEL[m.status] ?? { label: m.status, color: 'bg-gray-100 text-gray-500' };
+                  const st = STATUS_LABEL[m.status] ?? { label: m.status, color: 'bg-bg-surface text-text-muted' };
                   return (
                     <button
                       key={m.id}
@@ -852,7 +858,7 @@ function MonthCalendar({
                     </button>
                   );
                 })}
-                {extra > 0 && <div className="text-[10px] text-gray-400 px-1">+{extra}개 더보기</div>}
+                {extra > 0 && <div className="text-[10px] text-text-muted px-1">+{extra}개 더보기</div>}
               </div>
             </div>
           );
@@ -916,46 +922,46 @@ function InviteParticipantsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-800">참석자 초대</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
+      <div className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+          <h2 className="font-semibold text-text-primary">참석자 초대</h2>
+          <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl">×</button>
         </div>
         <div className="px-6 py-4 space-y-3">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="이름 검색"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
           />
           {loading ? (
-            <p className="text-xs text-gray-400 py-4 text-center">직원 목록 불러오는 중...</p>
+            <p className="text-xs text-text-muted py-4 text-center">직원 목록 불러오는 중...</p>
           ) : filtered.length === 0 ? (
-            <p className="text-xs text-gray-400 py-4 text-center">초대 가능한 직원이 없습니다.</p>
+            <p className="text-xs text-text-muted py-4 text-center">초대 가능한 직원이 없습니다.</p>
           ) : (
-            <div className="max-h-64 overflow-y-auto border border-gray-100 rounded-md divide-y divide-gray-50">
+            <div className="max-h-64 overflow-y-auto border border-border-subtle rounded-md divide-y divide-border-subtle">
               {filtered.map((e) => (
-                <label key={e.id} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                <label key={e.id} className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:bg-bg-surface-raised cursor-pointer">
                   <input
                     type="checkbox"
                     checked={checked.includes(e.id)}
                     onChange={() => toggle(e.id)}
-                    className="accent-indigo-600"
+                    className="accent-primary"
                   />
                   <span className="flex-1">{e.name}</span>
-                  {e.position && <span className="text-xs text-gray-400">{e.position}</span>}
+                  {e.position && <span className="text-xs text-text-muted">{e.position}</span>}
                 </label>
               ))}
             </div>
           )}
-          {err && <p className="text-sm text-red-600">{err}</p>}
+          {err && <p className="text-sm text-red-300">{err}</p>}
           <div className="flex gap-2 pt-1">
-            <button onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">취소</button>
+            <button onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-border-subtle rounded-md text-text-secondary hover:bg-bg-surface-raised">취소</button>
             <button
               onClick={invite}
               disabled={saving || checked.length === 0}
-              className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+              className="flex-1 px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary-hover disabled:opacity-50"
             >
               {saving ? '초대 중...' : `초대 (${checked.length})`}
             </button>
@@ -1019,28 +1025,28 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-800">회의 예약</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+          <h2 className="font-semibold text-text-primary">회의 예약</h2>
+          <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl">×</button>
         </div>
         <div className="px-6 py-4 space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">제목</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <label className="block text-sm font-medium text-text-secondary mb-1">제목</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">회의실</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1">회의실</label>
             {roomsLoading ? (
-              <p className="text-xs text-gray-400 py-2">회의실 목록 불러오는 중...</p>
+              <p className="text-xs text-text-muted py-2">회의실 목록 불러오는 중...</p>
             ) : rooms.length === 0 ? (
-              <p className="text-xs text-gray-400 py-2">등록된 회의실이 없습니다</p>
+              <p className="text-xs text-text-muted py-2">등록된 회의실이 없습니다</p>
             ) : (
               <select
                 value={roomId}
                 onChange={(e) => setRoomId(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-border-subtle bg-bg-base text-text-primary rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
               >
                 {rooms.map((r) => (
                   <option key={r.id} value={r.id}>{r.name} (정원 {r.capacity}명)</option>
@@ -1050,15 +1056,15 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">시간</label>
-              <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <label className="block text-sm font-medium text-text-secondary mb-1">시간</label>
+              <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="w-full border border-border-subtle bg-bg-base text-text-primary rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan [color-scheme:dark]" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">소요시간</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">소요시간</label>
               <select
                 value={duration}
                 onChange={(e) => setDuration(Number(e.target.value))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-border-subtle bg-bg-base text-text-primary rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
               >
                 {DURATION_OPTIONS.map((d) => (
                   <option key={d} value={d}>{d}분</option>
@@ -1067,13 +1073,13 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">설명 (선택)</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <label className="block text-sm font-medium text-text-secondary mb-1">설명 (선택)</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan" />
           </div>
-          {err && <p className="text-sm text-red-600">{err}</p>}
+          {err && <p className="text-sm text-red-300">{err}</p>}
           <div className="flex gap-2 pt-1">
-            <button onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">취소</button>
-            <button onClick={save} disabled={saving || roomsLoading || rooms.length === 0} className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50">{saving ? '예약 중...' : '예약'}</button>
+            <button onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-border-subtle rounded-md text-text-secondary hover:bg-bg-surface-raised">취소</button>
+            <button onClick={save} disabled={saving || roomsLoading || rooms.length === 0} className="flex-1 px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary-hover disabled:opacity-50">{saving ? '예약 중...' : '예약'}</button>
           </div>
         </div>
       </div>
@@ -1126,49 +1132,49 @@ function CreateMinuteModal({ meetingId, onClose, onCreated }: { meetingId: strin
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-800">회의록 작성</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
+          <h2 className="font-semibold text-text-primary">회의록 작성</h2>
+          <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl">×</button>
         </div>
         <div className="px-6 py-4 space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">제목 (선택)</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <label className="block text-sm font-medium text-text-secondary mb-1">제목 (선택)</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">요약</label>
-            <textarea value={summary} onChange={(e) => setSummary(e.target.value)} rows={2} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <label className="block text-sm font-medium text-text-secondary mb-1">요약</label>
+            <textarea value={summary} onChange={(e) => setSummary(e.target.value)} rows={2} className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">결정 사항 (필수)</label>
-            <textarea value={decisions} onChange={(e) => setDecisions(e.target.value)} rows={3} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <label className="block text-sm font-medium text-text-secondary mb-1">결정 사항 (필수)</label>
+            <textarea value={decisions} onChange={(e) => setDecisions(e.target.value)} rows={3} className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">노트</label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <label className="block text-sm font-medium text-text-secondary mb-1">노트</label>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan" />
           </div>
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-sm font-medium text-gray-700">액션 아이템</label>
-              <button type="button" onClick={addItem} className="text-xs text-indigo-600 hover:underline">+ 추가</button>
+              <label className="text-sm font-medium text-text-secondary">액션 아이템</label>
+              <button type="button" onClick={addItem} className="text-xs text-accent-cyan hover:underline">+ 추가</button>
             </div>
-            {items.length === 0 && <p className="text-xs text-gray-400">액션 아이템 없음</p>}
+            {items.length === 0 && <p className="text-xs text-text-muted">액션 아이템 없음</p>}
             <div className="space-y-2">
               {items.map((it, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <input value={it.title} onChange={(e) => setItem(i, { title: e.target.value })} placeholder="할 일" className="flex-1 border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  <input type="date" value={it.due_date} onChange={(e) => setItem(i, { due_date: e.target.value })} className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  <button type="button" onClick={() => removeItem(i)} className="text-gray-400 hover:text-red-500 text-sm">×</button>
+                  <input value={it.title} onChange={(e) => setItem(i, { title: e.target.value })} placeholder="할 일" className="flex-1 border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan" />
+                  <input type="date" value={it.due_date} onChange={(e) => setItem(i, { due_date: e.target.value })} className="border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan [color-scheme:dark]" />
+                  <button type="button" onClick={() => removeItem(i)} className="text-text-muted hover:text-red-300 text-sm">×</button>
                 </div>
               ))}
             </div>
           </div>
-          {err && <p className="text-sm text-red-600">{err}</p>}
+          {err && <p className="text-sm text-red-300">{err}</p>}
           <div className="flex gap-2 pt-1">
-            <button onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50">취소</button>
-            <button onClick={save} disabled={saving} className="flex-1 px-4 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50">{saving ? '저장 중...' : '작성'}</button>
+            <button onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-border-subtle rounded-md text-text-secondary hover:bg-bg-surface-raised">취소</button>
+            <button onClick={save} disabled={saving} className="flex-1 px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary-hover disabled:opacity-50">{saving ? '저장 중...' : '작성'}</button>
           </div>
         </div>
       </div>
