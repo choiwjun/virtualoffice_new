@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getToken } from '@/lib/auth';
 import OfficeShell from '@/components/OfficeShell';
+import { FeedbackProvider } from '@/components/ui/feedback';
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -28,5 +29,9 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
 
   // D29 셸 단일화: 모든 (protected) 라우트가 하나의 오피스 셸 안에서 렌더.
   // 메뉴 페이지는 셸 위 오버레이 창(children) → 라우트 이동에도 뷰포트·실시간 연결·디자인 유지.
-  return <OfficeShell>{children}</OfficeShell>;
+  return (
+    <FeedbackProvider>
+      <OfficeShell>{children}</OfficeShell>
+    </FeedbackProvider>
+  );
 }

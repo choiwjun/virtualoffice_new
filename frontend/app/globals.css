@@ -33,3 +33,20 @@
 @media (prefers-reduced-motion: reduce) {
   .vo-anim-walk, .vo-anim-idle, .vo-anim-sit, .vo-anim-typing { animation: none; }
 }
+
+/* ── 모달·토스트 등장 모션 (감사 23 A9) — 정적 "값싼" 인상 제거 ── */
+@keyframes vo-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes vo-pop-in {
+  from { opacity: 0; transform: translateY(6px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes vo-toast-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.vo-modal-backdrop { animation: vo-fade-in .14s ease-out; }
+.vo-modal-panel    { animation: vo-pop-in .16s cubic-bezier(.16,1,.3,1); }
+.vo-toast-in       { animation: vo-toast-in .18s cubic-bezier(.16,1,.3,1); }
+@media (prefers-reduced-motion: reduce) {
+  .vo-modal-backdrop, .vo-modal-panel, .vo-toast-in { animation: none; }
+}
