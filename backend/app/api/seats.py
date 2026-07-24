@@ -23,7 +23,14 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import ADMIN_ROLES, CurrentUser, get_current_user, require_role
+from app.core.deps import (
+    ADMIN_ROLES,
+    CurrentUser,
+    assert_same_company,
+    company_scope,
+    get_current_user,
+    require_role,
+)
 from app.db import get_db
 from app.models.tables import Floor, Seat, SeatAssignmentHistory, SeatStatus, SeatType
 from app.services.audit import record_audit
@@ -66,10 +73,11 @@ class SeatAssignmentOut(BaseModel):
 async def list_seats(
     floor_id: Optional[str] = Query(None, description="층 UUID — 미지정 시 전체"),
     current_user: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
     db: AsyncSession = Depends(get_db),
 ) -> list[SeatOut]:
-    """GET /api/seats — 층별 좌석 목록 (D10). HG-SEC: 인증 필수(사내 좌석 배치 비공개)."""
-    q = select(Seat)
+    """GET /api/seats — 층별 좌석 목록 (D10, 테넌트 스코프). HG-SEC: 인증 필수(사내 좌석 배치 비공개)."""
+    q = select(Seat).where(Seat.company_id == cid)
     if floor_id is not None:
         try:
             fid = UUID(floor_id)
@@ -104,15 +112,17 @@ async def list_seats(
 async def assign_seat(
     body: AssignRequest,
     current_user: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
     db: AsyncSession = Depends(get_db),
 ) -> SeatAssignmentOut:
     """
-    POST /api/seat-assignments — 좌석 점유 (D10, §3.11).
+    POST /api/seat-assignments — 좌석 점유 (D10, §3.11, 테넌트 스코프).
 
     - 대상 좌석이 AVAILABLE(비어있음)이어야 함.
     - fixed 좌석이고 이미 다른 사람이 배정됐으면 409.
     - 이미 OCCUPIED면 409.
     - history INSERT(assigned_at UTC).
+    - 타사 좌석은 404(존재 은닉, 22 T0-1 IDOR 차단).
     """
     try:
         seat_uuid = UUID(body.seat_id)
@@ -129,6 +139,7 @@ async def assign_seat(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="seat_not_found",
         )
+    assert_same_company(current_user, seat.company_id)
 
     target_user_id = body.user_id if body.user_id is not None else current_user.user_id
 
@@ -205,6 +216,7 @@ async def release_seat(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="seat_not_found",
         )
+    assert_same_company(current_user, seat.company_id)
 
     if seat.status != SeatStatus.OCCUPIED:
         raise HTTPException(
@@ -278,6 +290,7 @@ async def reassign_seat(
     seat = (await db.execute(select(Seat).where(Seat.id == seat_uuid))).scalar_one_or_none()
     if seat is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="seat_not_found")
+    assert_same_company(current_user, seat.company_id)
     if seat.status == SeatStatus.DISABLED:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="seat_disabled")
 
@@ -354,8 +367,9 @@ async def create_seat(
     body: SeatCreate,
     db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(require_role(*_ADMIN)),
+    cid: int = Depends(company_scope),
 ) -> SeatOut:
-    """POST /api/seats — 좌석 생성 (관리자). D10: 배정정보 미포함."""
+    """POST /api/seats — 좌석 생성 (관리자). D10: 배정정보 미포함. company_id=호출자 테넌트."""
     try:
         fid = UUID(body.floor_id)
     except ValueError:
@@ -365,7 +379,7 @@ async def create_seat(
     except ValueError:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="invalid seat type")
     seat_status = SeatStatus(body.status) if body.status else SeatStatus.AVAILABLE
-    seat = Seat(floor_id=fid, type=seat_type, coords=body.coords, seat_number=body.seat_number, status=seat_status)
+    seat = Seat(company_id=cid, floor_id=fid, type=seat_type, coords=body.coords, seat_number=body.seat_number, status=seat_status)
     db.add(seat)
     await db.flush()
     await db.commit()
@@ -374,7 +388,8 @@ async def create_seat(
     return _seat_out(seat)
 
 
-async def _get_seat_or_404(seat_id: str, db: AsyncSession) -> Seat:
+async def _get_seat_or_404(seat_id: str, db: AsyncSession, user: CurrentUser) -> Seat:
+    """seat 단건 로드 + 테넌트 스코프 검사 (Phase 1b · 22 T0-1). 타사 좌석은 404(존재 은닉)."""
     try:
         sid = UUID(seat_id)
     except ValueError:
@@ -382,6 +397,7 @@ async def _get_seat_or_404(seat_id: str, db: AsyncSession) -> Seat:
     seat = (await db.execute(select(Seat).where(Seat.id == sid))).scalar_one_or_none()
     if seat is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="seat_not_found")
+    assert_same_company(user, seat.company_id)
     return seat
 
 
@@ -393,7 +409,7 @@ async def update_seat(
     user: CurrentUser = Depends(require_role(*_ADMIN)),
 ) -> SeatOut:
     """PUT /api/seats/{seat_id} — 좌석 수정 (관리자). 좌표 드래그 저장 포함."""
-    seat = await _get_seat_or_404(seat_id, db)
+    seat = await _get_seat_or_404(seat_id, db, user)
     if body.type is not None:
         try:
             seat.type = SeatType(body.type)
@@ -422,7 +438,7 @@ async def delete_seat(
     user: CurrentUser = Depends(require_role(*_ADMIN)),
 ) -> SeatOut:
     """DELETE /api/seats/{seat_id} — 좌석 비활성화 (soft, status=disabled). 배정 해제."""
-    seat = await _get_seat_or_404(seat_id, db)
+    seat = await _get_seat_or_404(seat_id, db, user)
     seat.status = SeatStatus.DISABLED
     seat.assigned_user_id = None
     seat.updated_at = datetime.now(timezone.utc)

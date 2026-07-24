@@ -29,7 +29,14 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.core.deps import MANAGER_ROLES, CurrentUser, get_current_user, require_role
+from app.core.deps import (
+    MANAGER_ROLES,
+    CurrentUser,
+    assert_same_company,
+    company_scope,
+    get_current_user,
+    require_role,
+)
 from app.db import get_db
 from app.models.tables import (
     ErpUser,
@@ -197,8 +204,12 @@ def _participant_out(p: MeetingParticipant, user_name: Optional[str] = None) -> 
 
 
 async def _get_meeting_or_404(
-    meeting_id: str, db: AsyncSession
+    meeting_id: str, db: AsyncSession, user: CurrentUser
 ) -> Meeting:
+    """meeting 단건 로드 + 테넌트 스코프 검사 (Phase 1b · 22 T0-1 IDOR 차단).
+
+    타사 회의는 assert_same_company가 404(존재 은닉)로 막는다.
+    """
     try:
         mid = UUID(meeting_id)
     except ValueError:
@@ -213,6 +224,7 @@ async def _get_meeting_or_404(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="meeting_not_found",
         )
+    assert_same_company(user, meeting.company_id)
     return meeting
 
 
@@ -229,9 +241,10 @@ async def _get_meeting_or_404(
 async def create_meeting(
     body: MeetingCreate,
     current_user: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
     db: AsyncSession = Depends(get_db),
 ) -> MeetingOut:
-    """POST /api/meetings — 회의 예약 (D23: room 시간겹침 409)."""
+    """POST /api/meetings — 회의 예약 (D23: room 시간겹침 409). company_id=호출자 테넌트."""
     try:
         room_uuid = UUID(body.room_id)
     except ValueError:
@@ -259,6 +272,7 @@ async def create_meeting(
     now = datetime.now(timezone.utc)
     meeting = Meeting(
         id=uuid4(),
+        company_id=cid,  # 클라이언트 미신뢰 — 호출자 테넌트로 강제 (Phase 1b · 22 T0-1)
         room_id=room_uuid,
         title=body.title,
         description=body.description,
@@ -312,10 +326,11 @@ async def list_meetings(
     status_filter: Optional[str] = Query(None, alias="status", description="scheduled|in_progress|completed|cancelled"),
     limit: int = Query(200, ge=1, le=500),
     current_user: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
     db: AsyncSession = Depends(get_db),
 ) -> list[MeetingOut]:
-    """GET /api/meetings — 회의 목록 (scheduled_at 범위·status 필터, participant_count 포함)."""
-    q = select(Meeting)
+    """GET /api/meetings — 회의 목록 (테넌트 스코프 + scheduled_at 범위·status 필터, participant_count 포함)."""
+    q = select(Meeting).where(Meeting.company_id == cid)
     if scheduled_from:
         try:
             dt_from = datetime.fromisoformat(scheduled_from.replace("Z", "+00:00"))
@@ -358,7 +373,7 @@ async def get_meeting(
     db: AsyncSession = Depends(get_db),
 ) -> MeetingOut:
     """GET /api/meetings/{meeting_id} — 회의 상세."""
-    meeting = await _get_meeting_or_404(meeting_id, db)
+    meeting = await _get_meeting_or_404(meeting_id, db, current_user)
     counts = await _participant_counts(db, [meeting.id])
     return _meeting_out(meeting, counts.get(meeting.id, 0))
 
@@ -370,7 +385,7 @@ async def start_meeting(
     db: AsyncSession = Depends(get_db),
 ) -> MeetingOut:
     """POST /api/meetings/{id}/start — scheduled → in_progress (호스트 또는 관리자, 06 §3.5.1)."""
-    meeting = await _get_meeting_or_404(meeting_id, db)
+    meeting = await _get_meeting_or_404(meeting_id, db, current_user)
     if meeting.host_user_id != current_user.user_id and current_user.role not in _MTG_ADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="host_or_admin_required")
     if meeting.status != MeetingStatus.SCHEDULED:
@@ -395,7 +410,7 @@ async def end_meeting(
     db: AsyncSession = Depends(get_db),
 ) -> MeetingOut:
     """POST /api/meetings/{id}/end — in_progress → completed (호스트 또는 관리자)."""
-    meeting = await _get_meeting_or_404(meeting_id, db)
+    meeting = await _get_meeting_or_404(meeting_id, db, current_user)
     if meeting.host_user_id != current_user.user_id and current_user.role not in _MTG_ADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="host_or_admin_required")
     if meeting.status != MeetingStatus.IN_PROGRESS:
@@ -441,7 +456,7 @@ async def join_meeting(
 
     06 §5.2: 취소/종료된 회의 입장 409, 방 정원 초과 409.
     """
-    meeting = await _get_meeting_or_404(meeting_id, db)
+    meeting = await _get_meeting_or_404(meeting_id, db, current_user)
 
     if meeting.status in (MeetingStatus.CANCELLED, MeetingStatus.COMPLETED):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="meeting_not_joinable")
@@ -508,7 +523,7 @@ async def leave_meeting(
     db: AsyncSession = Depends(get_db),
 ) -> MeetingParticipantOut:
     """POST /api/meetings/{meeting_id}/leave — 퇴장 (left_at 기록, 06 §3.5 Data Req)."""
-    meeting = await _get_meeting_or_404(meeting_id, db)
+    meeting = await _get_meeting_or_404(meeting_id, db, current_user)
     q = await db.execute(
         select(MeetingParticipant).where(
             and_(
@@ -545,7 +560,7 @@ async def meeting_livekit_token(
     정본 경로(WA 제거로 신설, 구 /api/wa/livekit-token 대체). 참석 등록(join)된 사용자만 발급.
     서버가 발급 주체 → 클라이언트가 room_name/identity를 위조할 수 없다.
     """
-    meeting = await _get_meeting_or_404(meeting_id, db)
+    meeting = await _get_meeting_or_404(meeting_id, db, current_user)
 
     q = await db.execute(
         select(MeetingParticipant).where(
@@ -587,7 +602,7 @@ async def list_participants(
     db: AsyncSession = Depends(get_db),
 ) -> list[MeetingParticipantOut]:
     """GET /api/meetings/{meeting_id}/participants — 참석자 목록 (이름·응답 상태 포함)."""
-    meeting = await _get_meeting_or_404(meeting_id, db)
+    meeting = await _get_meeting_or_404(meeting_id, db, current_user)
     rows = (
         await db.execute(
             select(MeetingParticipant, ErpUser.name)
@@ -618,7 +633,7 @@ async def invite_participants(
 
     이미 등록된 사용자는 스킵(멱등). invite_status=invited로 생성.
     """
-    meeting = await _get_meeting_or_404(meeting_id, db)
+    meeting = await _get_meeting_or_404(meeting_id, db, current_user)
     if meeting.host_user_id != current_user.user_id and current_user.role not in _MTG_ADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="host_or_admin_required")
     if meeting.status in (MeetingStatus.CANCELLED, MeetingStatus.COMPLETED):
@@ -687,7 +702,7 @@ async def respond_to_invite(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="status must be 'accepted' or 'declined'",
         )
-    meeting = await _get_meeting_or_404(meeting_id, db)
+    meeting = await _get_meeting_or_404(meeting_id, db, current_user)
     participant = (
         await db.execute(
             select(MeetingParticipant).where(
@@ -727,10 +742,10 @@ async def update_meeting(
     meeting_id: str,
     body: MeetingUpdate,
     db: AsyncSession = Depends(get_db),
-    user: CurrentUser = Depends(require_role(*_MTG_ADMIN)),
+    current_user: CurrentUser = Depends(require_role(*_MTG_ADMIN)),
 ) -> MeetingOut:
     """PUT /api/meetings/{id} — 회의 수정 (D23 시간겹침 재검증, 취소된 회의 제외·자기 자신 제외)."""
-    meeting = await _get_meeting_or_404(meeting_id, db)
+    meeting = await _get_meeting_or_404(meeting_id, db, current_user)
     if meeting.status == MeetingStatus.CANCELLED:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="meeting_cancelled")
 
@@ -759,7 +774,7 @@ async def update_meeting(
     meeting.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(meeting)
-    await record_audit(db, user_id=user.user_id, action="meeting_updated", entity_type="meeting", entity_id=str(meeting.id), new_value={"title": meeting.title, "scheduled_at": meeting.scheduled_at.isoformat()})
+    await record_audit(db, user_id=current_user.user_id, action="meeting_updated", entity_type="meeting", entity_id=str(meeting.id), new_value={"title": meeting.title, "scheduled_at": meeting.scheduled_at.isoformat()})
     return _meeting_out(meeting)
 
 
@@ -767,13 +782,13 @@ async def update_meeting(
 async def cancel_meeting(
     meeting_id: str,
     db: AsyncSession = Depends(get_db),
-    user: CurrentUser = Depends(require_role(*_MTG_ADMIN)),
+    current_user: CurrentUser = Depends(require_role(*_MTG_ADMIN)),
 ) -> MeetingOut:
     """DELETE /api/meetings/{id} — 회의 취소 (soft, status=cancelled)."""
-    meeting = await _get_meeting_or_404(meeting_id, db)
+    meeting = await _get_meeting_or_404(meeting_id, db, current_user)
     meeting.status = MeetingStatus.CANCELLED
     meeting.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(meeting)
-    await record_audit(db, user_id=user.user_id, action="meeting_cancelled", entity_type="meeting", entity_id=str(meeting.id))
+    await record_audit(db, user_id=current_user.user_id, action="meeting_cancelled", entity_type="meeting", entity_id=str(meeting.id))
     return _meeting_out(meeting)

@@ -620,6 +620,15 @@ class Seat(Base, TimestampMixin):
     __tablename__ = "seat"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("company.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+        server_default=text("1"),
+        default=DEFAULT_COMPANY_ID,
+    )
+    """멀티테넌트 스코프 (Phase 1b · 22 T0-1 IDOR 차단 + T1-3 인덱싱). floor→office.company_id 비정규화. 기존 데이터=1."""
     floor_id: Mapped[UUID] = mapped_column(
         ForeignKey("floor.id", ondelete="RESTRICT"),
         nullable=False,
@@ -865,6 +874,15 @@ class Meeting(Base, TimestampMixin):
     __tablename__ = "meeting"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("company.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+        server_default=text("1"),
+        default=DEFAULT_COMPANY_ID,
+    )
+    """멀티테넌트 스코프 (Phase 1b · 22 T0-1 IDOR 차단 + T1-3 인덱싱). room→office.company_id 비정규화. 기존 데이터=1."""
     room_id: Mapped[UUID] = mapped_column(
         ForeignKey("room.id", ondelete="RESTRICT"),
         nullable=False,

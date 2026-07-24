@@ -27,7 +27,13 @@ from pydantic import BaseModel
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import MANAGER_ROLES, CurrentUser, get_current_user
+from app.core.deps import (
+    MANAGER_ROLES,
+    CurrentUser,
+    assert_same_company,
+    company_scope,
+    get_current_user,
+)
 from app.db import get_db
 from app.models.tables import (
     ActionItem,
@@ -163,8 +169,13 @@ def _action_item_out(a: ActionItem) -> ActionItemOut:
 
 
 async def _get_minute_or_404(
-    minute_id: str, db: AsyncSession
+    minute_id: str, db: AsyncSession, user: CurrentUser
 ) -> MeetingMinute:
+    """회의록 단건 로드 + 부모 meeting을 통한 테넌트 스코프 검사 (Phase 1b · 22 T0-1).
+
+    회의록엔 company_id가 없으므로 부모 meeting.company_id로 스코프를 판정한다.
+    타사 회의의 회의록은 404(존재 은닉).
+    """
     try:
         mid = UUID(minute_id)
     except ValueError:
@@ -172,13 +183,20 @@ async def _get_minute_or_404(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="invalid minute_id",
         )
-    result = await db.execute(select(MeetingMinute).where(MeetingMinute.id == mid))
-    minute = result.scalar_one_or_none()
-    if minute is None:
+    row = (
+        await db.execute(
+            select(MeetingMinute, Meeting.company_id)
+            .join(Meeting, MeetingMinute.meeting_id == Meeting.id)
+            .where(MeetingMinute.id == mid)
+        )
+    ).first()
+    if row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="minute_not_found",
         )
+    minute, company_id = row
+    assert_same_company(user, company_id)
     return minute
 
 
@@ -195,9 +213,10 @@ async def _get_minute_or_404(
 async def create_minute(
     body: MeetingMinuteCreate,
     current_user: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
     db: AsyncSession = Depends(get_db),
 ) -> MeetingMinuteOut:
-    """POST /api/meeting-minutes — 회의록 생성 (created_by=current_user)."""
+    """POST /api/meeting-minutes — 회의록 생성 (created_by=current_user, 테넌트 스코프)."""
     try:
         meeting_uuid = UUID(body.meeting_id)
     except ValueError:
@@ -206,15 +225,17 @@ async def create_minute(
             detail="invalid meeting_id",
         )
 
-    # meeting 존재 확인
+    # meeting 존재 확인 + 테넌트 스코프 (타사 회의에 회의록 생성 불가 → 404)
     meeting_result = await db.execute(
         select(Meeting).where(Meeting.id == meeting_uuid)
     )
-    if meeting_result.scalar_one_or_none() is None:
+    meeting = meeting_result.scalar_one_or_none()
+    if meeting is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="meeting_not_found",
         )
+    assert_same_company(current_user, meeting.company_id)
 
     # 동일 meeting의 회의록 중복 확인 (UNIQUE meeting_id)
     dup_result = await db.execute(
@@ -248,10 +269,16 @@ async def create_minute(
 async def list_minutes(
     meeting_id: Optional[str] = Query(None, description="meeting UUID 필터"),
     current_user: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
     db: AsyncSession = Depends(get_db),
 ) -> list[MeetingMinuteOut]:
-    """GET /api/meeting-minutes — 회의록 목록 (meeting_id 필터)."""
-    q = select(MeetingMinute)
+    """GET /api/meeting-minutes — 회의록 목록 (테넌트 스코프 + meeting_id 필터)."""
+    # 부모 meeting.company_id로 스코프 (회의록엔 company_id 없음 — join으로 격리)
+    q = (
+        select(MeetingMinute)
+        .join(Meeting, MeetingMinute.meeting_id == Meeting.id)
+        .where(Meeting.company_id == cid)
+    )
     if meeting_id:
         try:
             meeting_uuid = UUID(meeting_id)
@@ -274,7 +301,7 @@ async def get_minute(
     db: AsyncSession = Depends(get_db),
 ) -> MeetingMinuteOut:
     """GET /api/meeting-minutes/{minute_id} — 회의록 상세."""
-    minute = await _get_minute_or_404(minute_id, db)
+    minute = await _get_minute_or_404(minute_id, db, current_user)
     return _minute_out(minute)
 
 
@@ -286,7 +313,7 @@ async def patch_minute(
     db: AsyncSession = Depends(get_db),
 ) -> MeetingMinuteOut:
     """PATCH /api/meeting-minutes/{minute_id} — 회의록 수정 (draft 상태에서만)."""
-    minute = await _get_minute_or_404(minute_id, db)
+    minute = await _get_minute_or_404(minute_id, db, current_user)
 
     if minute.status == MeetingMinuteStatus.FINALIZED:
         raise HTTPException(
@@ -332,7 +359,7 @@ async def delete_minute(
     draft만 삭제 가능(확정본은 평가·의사결정 근거로 보존, 409 — D18 준용).
     기록자 또는 관리자만.
     """
-    minute = await _get_minute_or_404(minute_id, db)
+    minute = await _get_minute_or_404(minute_id, db, current_user)
 
     if minute.status == MeetingMinuteStatus.FINALIZED:
         raise HTTPException(
@@ -362,7 +389,7 @@ async def finalize_minute(
     db: AsyncSession = Depends(get_db),
 ) -> MeetingMinuteOut:
     """POST /api/meeting-minutes/{minute_id}/finalize — 확정 (draft→finalized)."""
-    minute = await _get_minute_or_404(minute_id, db)
+    minute = await _get_minute_or_404(minute_id, db, current_user)
 
     if minute.status == MeetingMinuteStatus.FINALIZED:
         raise HTTPException(
@@ -400,7 +427,7 @@ async def generate_ai_summary(
     ai_draft_enabled+키면 Claude, 아니면 결정론적 mock(외부의존 없이 동작).
     ai_summary 필드에 저장하며 재호출 시 덮어쓴다(멱등적 재생성).
     """
-    minute = await _get_minute_or_404(minute_id, db)
+    minute = await _get_minute_or_404(minute_id, db, current_user)
     minute.ai_summary = await generate_meeting_summary(
         decisions=minute.decisions,
         summary=minute.summary,
@@ -419,7 +446,7 @@ async def generate_ai_summary(
 )
 async def stt_draft(
     minute_id: str,
-    _current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """
@@ -427,7 +454,7 @@ async def stt_draft(
 
     Not Implemented: D5(STT 스파이크 선행 필요). Phase 2+ 후속 구현 예정.
     """
-    minute = await _get_minute_or_404(minute_id, db)
+    minute = await _get_minute_or_404(minute_id, db, current_user)
     participants_result = await db.execute(
         select(MeetingParticipant.user_id).where(
             MeetingParticipant.meeting_id == minute.meeting_id
@@ -475,7 +502,7 @@ async def create_action_item(
     db: AsyncSession = Depends(get_db),
 ) -> ActionItemOut:
     """POST /api/meeting-minutes/{minute_id}/action-items — 액션아이템 생성."""
-    minute = await _get_minute_or_404(minute_id, db)
+    minute = await _get_minute_or_404(minute_id, db, current_user)
 
     # due_date 파싱
     from datetime import date as date_type
@@ -523,7 +550,7 @@ async def list_action_items(
     db: AsyncSession = Depends(get_db),
 ) -> list[ActionItemOut]:
     """GET /api/meeting-minutes/{minute_id}/action-items — 액션아이템 목록."""
-    minute = await _get_minute_or_404(minute_id, db)
+    minute = await _get_minute_or_404(minute_id, db, current_user)
     result = await db.execute(
         select(ActionItem)
         .where(ActionItem.meeting_id == minute.meeting_id)
@@ -545,7 +572,7 @@ async def patch_action_item(
     db: AsyncSession = Depends(get_db),
 ) -> ActionItemOut:
     """PATCH /api/meeting-minutes/{minute_id}/action-items/{item_id} — 액션아이템 수정."""
-    minute = await _get_minute_or_404(minute_id, db)
+    minute = await _get_minute_or_404(minute_id, db, current_user)
 
     try:
         iid = UUID(item_id)
