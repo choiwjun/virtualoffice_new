@@ -14,6 +14,7 @@ import {
   LoadingState,
   CARD_SURFACE,
 } from '@/components/ui/console';
+import { useToast, useConfirm } from '@/components/ui/feedback';
 
 const ICON = {
   calendar: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="3" y="4.5" width="14" height="12.5" rx="2" /><path d="M3 8h14M7 3v3M13 3v3" /></svg>,
@@ -170,6 +171,8 @@ function kstDateKey(iso: string): string {
 
 export default function MeetingsPage() {
   const me = getUser();
+  const notify = useToast(); // 전역 토스트(감사 23 C4). 아래 [toast, setToast]는 기존 인라인 flash — 별개.
+  const confirm = useConfirm();
   const [tab, setTab] = useState<RangeTab>('week');
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [calMonth, setCalMonth] = useState(() => {
@@ -276,7 +279,7 @@ export default function MeetingsPage() {
       flash(status === 'accepted' ? '초대를 수락했습니다.' : '초대를 거절했습니다.');
       if (status === 'accepted') fetchMeetings();
     } catch (err) {
-      window.alert(err instanceof ApiError ? err.message : '서버 연결 오류');
+      notify.error(err instanceof ApiError ? err.message : '서버 연결 오류');
     } finally {
       setRespondBusy('');
     }
@@ -321,7 +324,7 @@ export default function MeetingsPage() {
       fetchMeetings();
       flash(action === 'start' ? '회의가 시작되었습니다.' : '회의가 종료되었습니다.');
     } catch (err) {
-      window.alert(err instanceof ApiError ? err.message : '서버 연결 오류');
+      notify.error(err instanceof ApiError ? err.message : '서버 연결 오류');
     }
   }, [fetchMeetings]);
 
@@ -356,7 +359,7 @@ export default function MeetingsPage() {
 
   async function cancelMeeting() {
     if (!selected) return;
-    if (!window.confirm(`"${selected.title}" 회의를 취소하시겠습니까?`)) return;
+    if (!(await confirm({ message: `"${selected.title}" 회의를 취소하시겠습니까?`, danger: true }))) return;
     try {
       await api.delete(`/api/meetings/${selected.id}`);
       setSelected(null);
@@ -378,14 +381,14 @@ export default function MeetingsPage() {
   }
 
   async function deleteMinute(id: string) {
-    if (!window.confirm('이 회의록(초안)을 삭제하시겠습니까?')) return;
+    if (!(await confirm({ message: '이 회의록(초안)을 삭제하시겠습니까?', danger: true }))) return;
     try {
       await api.delete(`/api/meeting-minutes/${id}`);
       setMinutes((prev) => prev.filter((x) => x.id !== id));
       if (minutes.length > 0 && minutes[0].id === id) setActionItems([]);
       flash('회의록이 삭제되었습니다.');
     } catch (err) {
-      window.alert(err instanceof ApiError ? err.message : '서버 연결 오류');
+      notify.error(err instanceof ApiError ? err.message : '서버 연결 오류');
     }
   }
 
@@ -569,7 +572,7 @@ export default function MeetingsPage() {
 
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setSelected(null)}>
-          <div className="rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }} onClick={(e) => e.stopPropagation()}>
+          <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <div className="flex items-center gap-2">
                 <h2 className="font-semibold text-text-primary">{selected.title}</h2>
@@ -591,7 +594,7 @@ export default function MeetingsPage() {
                     회의 취소
                   </button>
                 )}
-                <button onClick={() => setSelected(null)} className="text-text-muted hover:text-text-primary text-xl">×</button>
+                <button onClick={() => setSelected(null)} aria-label="닫기" className="text-text-muted hover:text-text-primary text-xl">×</button>
               </div>
             </div>
             <div className="px-6 py-4 space-y-4 text-sm">
@@ -923,10 +926,10 @@ function InviteParticipantsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }} onClick={(e) => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <h2 className="font-semibold text-text-primary">참석자 초대</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl">×</button>
+          <button onClick={onClose} aria-label="닫기" className="text-text-muted hover:text-text-primary text-xl">×</button>
         </div>
         <div className="px-6 py-4 space-y-3">
           <input
@@ -1026,10 +1029,10 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
+      <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <h2 className="font-semibold text-text-primary">회의 예약</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl">×</button>
+          <button onClick={onClose} aria-label="닫기" className="text-text-muted hover:text-text-primary text-xl">×</button>
         </div>
         <div className="px-6 py-4 space-y-3">
           <div>
@@ -1133,10 +1136,10 @@ function CreateMinuteModal({ meetingId, onClose, onCreated }: { meetingId: strin
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
+      <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <h2 className="font-semibold text-text-primary">회의록 작성</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl">×</button>
+          <button onClick={onClose} aria-label="닫기" className="text-text-muted hover:text-text-primary text-xl">×</button>
         </div>
         <div className="px-6 py-4 space-y-3">
           <div>
@@ -1166,7 +1169,7 @@ function CreateMinuteModal({ meetingId, onClose, onCreated }: { meetingId: strin
                 <div key={i} className="flex items-center gap-2">
                   <input value={it.title} onChange={(e) => setItem(i, { title: e.target.value })} placeholder="할 일" className="flex-1 border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan" />
                   <input type="date" value={it.due_date} onChange={(e) => setItem(i, { due_date: e.target.value })} className="border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan [color-scheme:dark]" />
-                  <button type="button" onClick={() => removeItem(i)} className="text-text-muted hover:text-red-300 text-sm">×</button>
+                  <button type="button" onClick={() => removeItem(i)} aria-label="액션 아이템 삭제" className="text-text-muted hover:text-red-300 text-sm">×</button>
                 </div>
               ))}
             </div>

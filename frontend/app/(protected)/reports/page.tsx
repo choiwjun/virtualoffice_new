@@ -13,6 +13,7 @@ import {
   LoadingState,
   CARD_SURFACE,
 } from '@/components/ui/console';
+import { useToast, useConfirm } from '@/components/ui/feedback';
 
 const ICON = {
   doc: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M5 3h7l3 3v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" /><path d="M12 3v3h3M7 11h6M7 14h4" /></svg>,
@@ -87,6 +88,8 @@ function formatDateTime(value: string | null): string {
 }
 
 export default function ReportsPage() {
+  const toast = useToast();
+  const confirm = useConfirm();
   const [user, setUser] = useState<User | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -197,7 +200,9 @@ export default function ReportsPage() {
     }
     if (
       targetStatus === 'submitted' &&
-      !confirm('보고서를 제출하시겠습니까? 제출 후에는 수정할 수 없습니다.')
+      !(await confirm({
+        message: '보고서를 제출하시겠습니까? 제출 후에는 수정할 수 없습니다.',
+      }))
     ) {
       return;
     }
@@ -224,6 +229,7 @@ export default function ReportsPage() {
         });
       }
       setModalOpen(false);
+      toast.success(targetStatus === 'submitted' ? '보고서를 제출했습니다.' : '보고서를 저장했습니다.');
       fetchData();
     } catch (err) {
       if (err instanceof ApiError) {
@@ -237,23 +243,29 @@ export default function ReportsPage() {
   }
 
   async function handleSubmit(report: Report) {
-    if (!confirm(`"${report.title}" 보고서를 제출하시겠습니까? 제출 후에는 수정할 수 없습니다.`))
+    if (
+      !(await confirm({
+        message: `"${report.title}" 보고서를 제출하시겠습니까? 제출 후에는 수정할 수 없습니다.`,
+      }))
+    )
       return;
     try {
       await api.patch(`/api/reports/${report.id}`, { status: 'submitted' });
+      toast.success('보고서를 제출했습니다.');
       fetchData();
     } catch (err) {
-      alert(err instanceof ApiError ? `제출 실패: ${err.message}` : '제출 중 오류가 발생했습니다.');
+      toast.error(err instanceof ApiError ? `제출 실패: ${err.message}` : '제출 중 오류가 발생했습니다.');
     }
   }
 
   async function handleDelete(report: Report) {
-    if (!confirm(`"${report.title}" 보고서를 삭제하시겠습니까?`)) return;
+    if (!(await confirm({ message: `"${report.title}" 보고서를 삭제하시겠습니까?`, danger: true }))) return;
     try {
       await api.delete(`/api/reports/${report.id}`);
+      toast.success('보고서를 삭제했습니다.');
       fetchData();
     } catch (err) {
-      alert(err instanceof ApiError ? `삭제 실패: ${err.message}` : '삭제 중 오류가 발생했습니다.');
+      toast.error(err instanceof ApiError ? `삭제 실패: ${err.message}` : '삭제 중 오류가 발생했습니다.');
     }
   }
 
@@ -403,13 +415,14 @@ export default function ReportsPage() {
       {/* Create/Edit Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
+          <div role="dialog" aria-modal="true" className="rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <h2 className="font-semibold text-text-primary">
                 {editReport ? '보고서 수정' : '보고서 작성'}
               </h2>
               <button
                 onClick={() => setModalOpen(false)}
+                aria-label="닫기"
                 className="text-text-muted hover:text-text-primary text-xl"
               >
                 ×
@@ -514,11 +527,12 @@ export default function ReportsPage() {
       {/* Read-only View Modal */}
       {viewReport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
+          <div role="dialog" aria-modal="true" className="rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <h2 className="font-semibold text-text-primary">보고서 보기</h2>
               <button
                 onClick={() => setViewReport(null)}
+                aria-label="닫기"
                 className="text-text-muted hover:text-text-primary text-xl"
               >
                 ×

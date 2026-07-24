@@ -15,6 +15,7 @@ import {
   ProgressRow,
   CARD_SURFACE,
 } from '@/components/ui/console';
+import { useToast, useConfirm } from '@/components/ui/feedback';
 
 const ICON = {
   log: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M6 3h8a2 2 0 0 1 2 2v12l-3-2-3 2-3-2-3 2V5a2 2 0 0 1 2-2z" /><path d="M7 7h6M7 10h6" /></svg>,
@@ -149,6 +150,8 @@ function linesToList(text: string): string[] | null {
 }
 
 export default function WorkLogPage() {
+  const toast = useToast();
+  const confirm = useConfirm();
   const [activeTab, setActiveTab] = useState<DateTab>('today');
   const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
   const [summary, setSummary] = useState<SummaryPeriod | null>(null);
@@ -202,6 +205,7 @@ export default function WorkLogPage() {
         });
       }
       fetchData();
+      toast.success(`어제 업무 ${prev.length}건을 복사했습니다.`);
     } catch (err) {
       setError(err instanceof ApiError ? `복사 실패 (${err.status})` : '복사 오류');
     }
@@ -301,6 +305,7 @@ export default function WorkLogPage() {
       }
       setModalOpen(false);
       fetchData();
+      toast.success(editLog ? '업무가 수정되었습니다.' : '업무가 추가되었습니다.');
     } catch (err) {
       if (err instanceof ApiError) {
         setSaveError(`저장 실패: ${err.message}`);
@@ -313,12 +318,13 @@ export default function WorkLogPage() {
   }
 
   async function handleDelete(log: WorkLog) {
-    if (!confirm(`"${log.title}" 업무를 삭제하시겠습니까?`)) return;
+    if (!(await confirm({ message: `"${log.title}" 업무를 삭제하시겠습니까?`, danger: true }))) return;
     try {
       await api.delete(`/api/work-logs/${log.id}`);
       fetchData();
+      toast.success('업무가 삭제되었습니다.');
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : '삭제 오류');
+      toast.error(err instanceof ApiError ? err.message : '삭제 오류');
     }
   }
 
@@ -327,8 +333,9 @@ export default function WorkLogPage() {
     try {
       await api.patch(`/api/work-logs/${log.id}`, { status: nextStatus });
       fetchData();
+      toast.success(nextStatus === 'completed' ? '업무를 완료 처리했습니다.' : '업무를 다시 진행중으로 변경했습니다.');
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : '상태 변경 오류');
+      toast.error(err instanceof ApiError ? err.message : '상태 변경 오류');
     }
   }
 
@@ -605,13 +612,14 @@ export default function WorkLogPage() {
       {/* Create/Edit Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
+          <div role="dialog" aria-modal="true" className="rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <h2 className="font-semibold text-text-primary">
                 {editLog ? '업무 수정' : '업무 추가'}
               </h2>
               <button
                 onClick={() => setModalOpen(false)}
+                aria-label="닫기"
                 className="text-text-muted hover:text-text-primary text-xl"
               >
                 ×

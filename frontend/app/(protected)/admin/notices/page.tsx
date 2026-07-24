@@ -12,6 +12,7 @@ import {
   ErrorBanner,
   LoadingState,
 } from '@/components/ui/console';
+import { useToast, useConfirm } from '@/components/ui/feedback';
 
 const ICON = {
   megaphone: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 8v4l9 4V4z" /><path d="M4 8H3a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h1" /><path d="M16 8a3 3 0 0 1 0 4" /></svg>,
@@ -80,6 +81,8 @@ function toLocalInput(iso: string | null): string {
 export default function AdminNoticesPage() {
   const me = getUser();
   const allowed = isAdmin(me);
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const [items, setItems] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -153,13 +156,14 @@ export default function AdminNoticesPage() {
         setPublishedAt('');
         setExpiresAt('');
         await fetchNotices();
+        toast.success('공지가 등록되었습니다.');
       } catch (err) {
         setFormError(errMsg(err, '등록 실패'));
       } finally {
         setSubmitting(false);
       }
     },
-    [title, author, body, category, pinned, publishedAt, expiresAt, fetchNotices],
+    [title, author, body, category, pinned, publishedAt, expiresAt, fetchNotices, toast],
   );
 
   const openEdit = useCallback((n: Notice) => {
@@ -194,24 +198,26 @@ export default function AdminNoticesPage() {
       });
       setEditTarget(null);
       await fetchNotices();
+      toast.success('공지가 수정되었습니다.');
     } catch (err) {
       setEditError(errMsg(err, '수정 실패'));
     } finally {
       setEditSaving(false);
     }
-  }, [editTarget, editTitle, editBody, editCategory, editPinned, editPublishedAt, editExpiresAt, fetchNotices]);
+  }, [editTarget, editTitle, editBody, editCategory, editPinned, editPublishedAt, editExpiresAt, fetchNotices, toast]);
 
   const handleDelete = useCallback(
     async (id: string) => {
-      if (!confirm('이 공지를 삭제할까요?')) return;
+      if (!(await confirm({ message: '이 공지를 삭제할까요?', danger: true }))) return;
       try {
         await api.delete(`/api/notices/${id}`);
         await fetchNotices();
+        toast.success('공지가 삭제되었습니다.');
       } catch (err) {
-        alert(errMsg(err, '삭제 실패'));
+        toast.error(errMsg(err, '삭제 실패'));
       }
     },
-    [fetchNotices],
+    [fetchNotices, confirm, toast],
   );
 
   if (!allowed) {
@@ -362,10 +368,10 @@ export default function AdminNoticesPage() {
       {/* 수정 모달 */}
       {editTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="rounded-2xl shadow-2xl w-full max-w-lg border border-border-subtle" style={{ background: '#161F32' }}>
+          <div role="dialog" aria-modal="true" aria-label="공지 수정" className="rounded-2xl shadow-2xl w-full max-w-lg border border-border-subtle" style={{ background: '#161F32' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <h2 className="font-semibold text-text-primary">공지 수정</h2>
-              <button onClick={() => setEditTarget(null)} className="text-text-muted hover:text-text-primary text-xl">×</button>
+              <button onClick={() => setEditTarget(null)} aria-label="닫기" className="text-text-muted hover:text-text-primary text-xl">×</button>
             </div>
             <div className="px-6 py-4 space-y-4">
               <div>

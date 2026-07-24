@@ -12,6 +12,7 @@ import {
   ErrorBanner,
   LoadingState,
 } from '@/components/ui/console';
+import { Modal } from '@/components/ui/Modal';
 
 const ICON = {
   gavel: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M9 4l4 4-3 3-4-4z" /><path d="M11.5 6.5l3.5 3.5" /><path d="M7 9l-3.5 3.5a1.4 1.4 0 0 0 2 2L9 11" /><path d="M12 16h5" /></svg>,
@@ -38,6 +39,12 @@ export default function AdminObjectionsPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
   const [toast, setToast] = useState('');
+
+  // 이의 처리(resolve) 재조정 점수 입력 모달 — window.prompt 대체 (±10% 검증 유지)
+  const [resolveTarget, setResolveTarget] = useState<ObjectionRow | null>(null);
+  const [resolveScore, setResolveScore] = useState('');
+  const [resolveNote, setResolveNote] = useState('');
+  const [resolveError, setResolveError] = useState('');
 
   const flash = (m: string) => {
     setToast(m);
@@ -78,26 +85,24 @@ export default function AdminObjectionsPage() {
     fetchObjections();
   }, [fetchObjections]);
 
-  async function review(r: ObjectionRow, action: 'advance' | 'resolve') {
-    let revised: number | null = null;
-    let note = '';
+  // 검토 시작(advance)은 즉시, 이의 처리(resolve)는 재조정 점수 입력 모달을 연다 (window.prompt 대체)
+  function review(r: ObjectionRow, action: 'advance' | 'resolve') {
     if (action === 'resolve') {
-      // ±10% 한도(08 §3.2)는 백엔드에서도 강제되지만 입력 단계에서 안내·검증
-      const base = r.value;
-      const lo = Math.min(base * 0.9, base * 1.1);
-      const hi = Math.max(base * 0.9, base * 1.1);
-      const raw = window.prompt(
-        `재조정 최종 점수 (원점수 ${formatScore(base)}의 ±10%: ${formatScore(lo)}~${formatScore(hi)}, 변경 없으면 비워두고 확인)\n※ 처리 완료 시 final_score가 확정됩니다`,
-        '',
-      );
-      if (raw === null) return;
-      if (raw.trim() !== '') {
-        revised = Number(raw);
-        if (Number.isNaN(revised)) return flash('숫자를 입력하세요');
-        if (revised < lo || revised > hi) return flash(`조정 점수는 원점수 ±10%(${formatScore(lo)}~${formatScore(hi)}) 이내여야 합니다`);
-      }
-      note = window.prompt('처리 메모 (선택)') || '';
+      setResolveTarget(r);
+      setResolveScore('');
+      setResolveNote('');
+      setResolveError('');
+      return;
     }
+    void submitReview(r, action);
+  }
+
+  async function submitReview(
+    r: ObjectionRow,
+    action: 'advance' | 'resolve',
+    revised: number | null = null,
+    note = '',
+  ) {
     setBusy(r.id);
     try {
       const body: Record<string, unknown> = { action };
@@ -111,6 +116,31 @@ export default function AdminObjectionsPage() {
     } finally {
       setBusy('');
     }
+  }
+
+  // 이의 처리 모달 제출 — 원점수 ±10% 검증 유지 후 resolve API 호출
+  async function submitResolve() {
+    const r = resolveTarget;
+    if (!r) return;
+    let revised: number | null = null;
+    const raw = resolveScore.trim();
+    if (raw !== '') {
+      // ±10% 한도(08 §3.2)는 백엔드에서도 강제되지만 입력 단계에서 안내·검증
+      const base = r.value;
+      const lo = Math.min(base * 0.9, base * 1.1);
+      const hi = Math.max(base * 0.9, base * 1.1);
+      revised = Number(raw);
+      if (Number.isNaN(revised)) {
+        setResolveError('숫자를 입력하세요');
+        return;
+      }
+      if (revised < lo || revised > hi) {
+        setResolveError(`조정 점수는 원점수 ±10%(${formatScore(lo)}~${formatScore(hi)}) 이내여야 합니다`);
+        return;
+      }
+    }
+    setResolveTarget(null);
+    await submitReview(r, 'resolve', revised, resolveNote.trim());
   }
 
   // 신/구 objection_detail 포맷 호환 (구: category/text/evidence 문자열, 신: objection_category/objection_text/evidence 배열)
@@ -215,6 +245,76 @@ export default function AdminObjectionsPage() {
           })}
         </SectionCard>
       )}
+
+      {/* 이의 처리(resolve) 재조정 점수 입력 모달 — window.prompt 대체, ±10% 검증 유지 */}
+      {resolveTarget && (() => {
+        const base = resolveTarget.value;
+        const lo = Math.min(base * 0.9, base * 1.1);
+        const hi = Math.max(base * 0.9, base * 1.1);
+        return (
+          <Modal
+            open
+            onClose={() => setResolveTarget(null)}
+            title={`이의 처리 — ${metricLabel(resolveTarget.metric)}`}
+            size="sm"
+            footer={
+              <>
+                <button
+                  type="button"
+                  onClick={() => setResolveTarget(null)}
+                  className="px-3.5 py-1.5 rounded-lg text-[13px] font-medium text-text-secondary border border-border-subtle hover:bg-white/5 transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={submitResolve}
+                  disabled={busy === resolveTarget.id}
+                  className="px-3.5 py-1.5 rounded-lg text-[13px] font-semibold text-white bg-primary hover:bg-primary-hover disabled:opacity-50 transition-colors"
+                >
+                  처리 완료
+                </button>
+              </>
+            }
+          >
+            <div className="space-y-3">
+              <p className="text-xs text-text-muted">
+                처리 완료 시 final_score가 확정됩니다. 재조정 점수는 원점수 ±10% 이내여야 합니다.
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">재조정 최종 점수 (선택)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min={lo}
+                  max={hi}
+                  value={resolveScore}
+                  onChange={(e) => {
+                    setResolveScore(e.target.value);
+                    setResolveError('');
+                  }}
+                  placeholder="변경 없으면 비워두세요"
+                  className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
+                />
+                <p className="mt-1 text-xs text-text-muted">
+                  원점수 {formatScore(base)} · 허용 범위 {formatScore(lo)} ~ {formatScore(hi)} (±10%)
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">처리 메모 (선택)</label>
+                <textarea
+                  value={resolveNote}
+                  onChange={(e) => setResolveNote(e.target.value)}
+                  rows={3}
+                  placeholder="처리 결과 메모 (선택)"
+                  className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
+                />
+              </div>
+              {resolveError && <p className="text-sm text-red-300">{resolveError}</p>}
+            </div>
+          </Modal>
+        );
+      })()}
     </div>
   );
 }

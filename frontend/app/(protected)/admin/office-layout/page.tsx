@@ -13,6 +13,7 @@ import {
   EmptyState,
   LoadingState,
 } from '@/components/ui/console';
+import { useConfirm } from '@/components/ui/feedback';
 
 const ICON = {
   grid: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="3" y="3" width="14" height="14" rx="1.5" /><path d="M3 8h14M3 13h14M8 3v14M13 3v14" /></svg>,
@@ -71,6 +72,7 @@ function toBox(s: ApiSeat, i: number): SeatBox {
 export default function OfficeLayoutPage() {
   const me = getUser();
   const allowed = isAdmin(me);
+  const confirm = useConfirm();
   const [seats, setSeats] = useState<SeatBox[]>([]);
   const [floorId, setFloorId] = useState<string | null>(null);
   const [floorName, setFloorName] = useState<string | null>(null);
@@ -224,8 +226,8 @@ export default function OfficeLayoutPage() {
   };
 
   // 좌석 삭제 — 더블클릭. 임시 좌석은 버퍼에서 제거, 기존 좌석은 삭제 대기
-  const removeSeat = (id: string) => {
-    if (!window.confirm('이 좌석을 비활성화(삭제)하시겠습니까? [모두 저장] 시 반영됩니다.')) return;
+  const removeSeat = async (id: string) => {
+    if (!(await confirm({ message: '이 좌석을 비활성화(삭제)하시겠습니까? [모두 저장] 시 반영됩니다.', danger: true }))) return;
     setSeats((prev) => prev.filter((s) => s.id !== id));
     if (id.startsWith('temp-')) {
       setPendingCreates((prev) => prev.filter((c) => c.tempId !== id));
@@ -278,8 +280,8 @@ export default function OfficeLayoutPage() {
   };
 
   // [변경 취소] — 저장 대기 변경을 버리고 서버 상태로 재로드
-  const discardChanges = () => {
-    if (!window.confirm(`저장되지 않은 변경 ${pendingCount}건을 취소하고 다시 불러올까요?`)) return;
+  const discardChanges = async () => {
+    if (!(await confirm({ message: `저장되지 않은 변경 ${pendingCount}건을 취소하고 다시 불러올까요?`, danger: true }))) return;
     load();
   };
 
@@ -333,7 +335,7 @@ export default function OfficeLayoutPage() {
   const rollbackLayout = async (targetVersion: number) => {
     const deployed = layouts.find((l) => l.status === 'deployed');
     if (!deployed) { flash('배포된 버전이 없어 롤백할 수 없습니다.'); return; }
-    if (!window.confirm(`v${targetVersion}(으)로 롤백하시겠습니까?\n현재 배포본 v${deployed.version}은 보관(archived) 처리됩니다.`)) return;
+    if (!(await confirm({ message: `v${targetVersion}(으)로 롤백하시겠습니까? 현재 배포본 v${deployed.version}은 보관(archived) 처리됩니다.`, danger: true }))) return;
     try {
       const restored = await api.post<LayoutRow>(`/api/office-layouts/${deployed.id}/rollback`, {});
       flash(`롤백 완료 — v${restored.version} 재배포됨`);
@@ -382,8 +384,8 @@ export default function OfficeLayoutPage() {
             <ToolbarButton onClick={undo} disabled={histIdx === 0} title="실행취소">↶</ToolbarButton>
             <ToolbarButton onClick={redo} disabled={histIdx >= history.length - 1} title="다시실행">↷</ToolbarButton>
             <ToolbarButton
-              onClick={() => {
-                if (pendingCount > 0 && !window.confirm(`저장되지 않은 변경 ${pendingCount}건이 사라집니다. 새로고침할까요?`)) return;
+              onClick={async () => {
+                if (pendingCount > 0 && !(await confirm({ message: `저장되지 않은 변경 ${pendingCount}건이 사라집니다. 새로고침할까요?`, danger: true }))) return;
                 load();
               }}
               icon={ICON.refresh}

@@ -14,6 +14,7 @@ import {
   ErrorBanner,
   LoadingState,
 } from '@/components/ui/console';
+import { useToast, useConfirm } from '@/components/ui/feedback';
 
 const ICON = {
   briefcase: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="3" y="6.5" width="14" height="9.5" rx="2" /><path d="M7 6.5V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5M3 11h14" /></svg>,
@@ -86,6 +87,8 @@ function formatDateTime(s: string | null): string {
 }
 
 export default function TripPage() {
+  const toast = useToast();
+  const confirm = useConfirm();
   const [user, setUser] = useState<User | null>(null);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [employees, setEmployees] = useState<Record<number, string>>({});
@@ -208,6 +211,7 @@ export default function TripPage() {
         await api.post('/api/trips', payload);
       }
       setModalOpen(false);
+      toast.success(editTrip ? '출장 신청을 저장했습니다.' : '출장을 신청했습니다.');
       fetchData();
     } catch (err) {
       if (err instanceof ApiError) {
@@ -221,32 +225,35 @@ export default function TripPage() {
   }
 
   async function handleDelete(trip: Trip) {
-    if (!confirm(`"${trip.destination}" 출장 신청을 삭제하시겠습니까?`)) return;
+    if (!(await confirm({ message: `"${trip.destination}" 출장 신청을 삭제하시겠습니까?`, danger: true }))) return;
     try {
       await api.delete(`/api/trips/${trip.id}`);
+      toast.success('출장 신청을 삭제했습니다.');
       fetchData();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : '삭제 중 오류가 발생했습니다.');
+      toast.error(err instanceof ApiError ? err.message : '삭제 중 오류가 발생했습니다.');
     }
   }
 
   async function handleCancel(trip: Trip) {
-    if (!confirm(`"${trip.destination}" 출장을 취소하시겠습니까?`)) return;
+    if (!(await confirm({ message: `"${trip.destination}" 출장을 취소하시겠습니까?`, danger: true }))) return;
     try {
       await api.patch(`/api/trips/${trip.id}`, { status: 'cancelled' });
+      toast.success('출장을 취소했습니다.');
       fetchData();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : '취소 중 오류가 발생했습니다.');
+      toast.error(err instanceof ApiError ? err.message : '취소 중 오류가 발생했습니다.');
     }
   }
 
   async function handleApprove(trip: Trip) {
-    if (!confirm(`"${trip.destination}" 출장을 승인하시겠습니까?`)) return;
+    if (!(await confirm({ message: `"${trip.destination}" 출장을 승인하시겠습니까?` }))) return;
     try {
       await api.patch(`/api/trips/${trip.id}`, { status: 'approved' });
+      toast.success('출장을 승인했습니다.');
       fetchData();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : '승인 중 오류가 발생했습니다.');
+      toast.error(err instanceof ApiError ? err.message : '승인 중 오류가 발생했습니다.');
     }
   }
 
@@ -267,6 +274,7 @@ export default function TripPage() {
         reject_reason: rejectReason || null,
       });
       setRejectTrip(null);
+      toast.success('출장을 반려했습니다.');
       fetchData();
     } catch (err) {
       if (err instanceof ApiError) {
@@ -300,6 +308,7 @@ export default function TripPage() {
         report: reportText.trim(),
       });
       setCompleteTrip(null);
+      toast.success('완료 보고를 제출했습니다.');
       fetchData();
     } catch (err) {
       if (err instanceof ApiError) {
@@ -513,13 +522,14 @@ export default function TripPage() {
       {/* 신청/수정 모달 */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
+          <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <h2 className="font-semibold text-text-primary">
                 {editTrip ? '출장 수정' : '출장 신청'}
               </h2>
               <button
                 onClick={() => setModalOpen(false)}
+                aria-label="닫기"
                 className="text-text-muted hover:text-text-primary text-xl"
               >
                 ×
@@ -620,11 +630,12 @@ export default function TripPage() {
       {/* 반려 모달 */}
       {rejectTrip && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
+          <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <h2 className="font-semibold text-text-primary">출장 반려</h2>
               <button
                 onClick={() => setRejectTrip(null)}
+                aria-label="닫기"
                 className="text-text-muted hover:text-text-primary text-xl"
               >
                 ×
@@ -674,11 +685,12 @@ export default function TripPage() {
       {/* 완료 보고 모달 */}
       {completeTrip && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
+          <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <h2 className="font-semibold text-text-primary">출장 완료 보고</h2>
               <button
                 onClick={() => setCompleteTrip(null)}
+                aria-label="닫기"
                 className="text-text-muted hover:text-text-primary text-xl"
               >
                 ×
@@ -731,11 +743,12 @@ export default function TripPage() {
       {/* 보고 보기 모달 (읽기 전용) */}
       {viewTrip && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
+          <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <h2 className="font-semibold text-text-primary">출장 결과 보고</h2>
               <button
                 onClick={() => setViewTrip(null)}
+                aria-label="닫기"
                 className="text-text-muted hover:text-text-primary text-xl"
               >
                 ×

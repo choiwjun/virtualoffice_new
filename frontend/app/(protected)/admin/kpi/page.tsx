@@ -23,6 +23,7 @@ import {
   LoadingState,
   CARD_SURFACE,
 } from '@/components/ui/console';
+import { useConfirm } from '@/components/ui/feedback';
 
 const ICON = {
   gauge: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 15a6 6 0 1 1 12 0" /><path d="M10 15l3.5-4" /></svg>,
@@ -157,10 +158,10 @@ function ScoreNoteModal(p: ScoreNoteModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
+      <div role="dialog" aria-modal="true" aria-label={p.title} className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <h2 className="font-semibold text-text-primary">{p.title}</h2>
-          <button onClick={p.onClose} className="text-text-muted hover:text-text-primary text-xl">×</button>
+          <button onClick={p.onClose} aria-label="닫기" className="text-text-muted hover:text-text-primary text-xl">×</button>
         </div>
         <div className="px-6 py-4 space-y-4 max-h-[80vh] overflow-y-auto">
           {p.description && <p className="text-xs text-text-muted">{p.description}</p>}
@@ -232,6 +233,7 @@ function ScoreNoteModal(p: ScoreNoteModalProps) {
 export default function AdminKpiPage() {
   const me = getUser();
   const allowed = isLeaderOrAbove(me);
+  const confirm = useConfirm();
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [targetId, setTargetId] = useState<number | null>(me?.id ?? null);
@@ -388,7 +390,7 @@ export default function AdminKpiPage() {
 
   // 이의 검토 시작 (submitted → reviewing)
   async function advanceObjection(r: KpiResult) {
-    if (!window.confirm(`[${metricLabel(r.metric)}] 이의신청 검토를 시작하시겠습니까? (submitted → reviewing)`)) return;
+    if (!(await confirm({ message: `[${metricLabel(r.metric)}] 이의신청 검토를 시작하시겠습니까? (submitted → reviewing)` }))) return;
     setBusy(r.id);
     try {
       const updated = await api.post<KpiResult>(`/api/kpi-results/${r.id}/objections/review`, { action: 'advance' });
@@ -433,7 +435,7 @@ export default function AdminKpiPage() {
   }
 
   async function finalize(r: KpiResult) {
-    if (!window.confirm(`[${metricLabel(r.metric)}] 확정하시겠습니까? 확정 후에는 이의신청을 접수할 수 없습니다.`)) return;
+    if (!(await confirm({ message: `[${metricLabel(r.metric)}] 확정하시겠습니까? 확정 후에는 이의신청을 접수할 수 없습니다.`, danger: true }))) return;
     setBusy(r.id);
     try {
       const updated = await api.post<KpiResult>(`/api/kpi-results/${r.id}/finalize`, {});
