@@ -88,7 +88,7 @@ function LoginForm() {
               disabled={loading}
               autoComplete="email"
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50"
-              placeholder="alice@virtualoffice.local"
+              placeholder="you@company.com"
             />
           </div>
 

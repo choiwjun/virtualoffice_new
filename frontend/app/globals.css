@@ -17,9 +17,19 @@
   50%      { transform: translateY(-1.5px) scale(1.004); }
 }
 .vo-motion { transform-origin: 50% 100%; }
-/* v2 캐릭터: 바운스·기울임이 프레임에 구워져 있음 — CSS 모션을 겹치면
-   주기(0.8s vs 프레임 반주기 0.4s) 간섭으로 떨림처럼 보인다. */
-.vo-anim-walk { animation: none; }
-.vo-anim-idle { animation: none; }
-.vo-anim-sit { animation: none; }
-.vo-anim-typing { animation: none; }
+/* D35-c 이후 아바타 = 사진 배지(프레임 스프라이트 전소거) → 프레임에 구운 반동이 없으므로
+   CSS 모션을 겹쳐도 간섭이 없다(구 v2 캐릭터에서 animation:none 이던 이유가 소멸).
+   상태별 걸음 반동·호흡·타이핑 미동으로 아바타를 "살아있게" 한다(감사 23 B1). */
+@keyframes vo-typing-tap {
+  0%, 100% { transform: translateY(0)    rotate(-0.4deg); }
+  50%      { transform: translateY(-1px) rotate(0.4deg); }
+}
+.vo-anim-walk   { animation: vo-walk-bob    0.8s  ease-in-out infinite; }
+.vo-anim-idle   { animation: vo-idle-breath 3.4s  ease-in-out infinite; }
+.vo-anim-sit    { animation: vo-idle-breath 4.4s  ease-in-out infinite; }
+.vo-anim-typing { animation: vo-typing-tap  0.52s ease-in-out infinite; }
+
+/* 접근성 — 모션 최소화 선호 시 전부 정지(감사 23 A9). */
+@media (prefers-reduced-motion: reduce) {
+  .vo-anim-walk, .vo-anim-idle, .vo-anim-sit, .vo-anim-typing { animation: none; }
+}
