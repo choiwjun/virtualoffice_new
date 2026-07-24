@@ -22,7 +22,12 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import ADMIN_ROLES as _DEPS_ADMIN_ROLES, CurrentUser, get_current_user
+from app.core.deps import (
+    ADMIN_ROLES as _DEPS_ADMIN_ROLES,
+    CurrentUser,
+    company_scope,
+    get_current_user,
+)
 from app.db import get_db
 from app.models.tables import ChatMessage, ErpUser
 
@@ -129,15 +134,16 @@ async def list_messages(
     after: Optional[str] = Query(None, description="이 ISO 시각 이후 메시지만 (폴링 커서)"),
     limit: int = Query(50, ge=1, le=200),
     current_user: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
     db: AsyncSession = Depends(get_db),
 ) -> list[MessageOut]:
-    """GET /api/chat/messages — 최신 limit개(시간 오름차순). after 지정 시 증분 조회."""
+    """GET /api/chat/messages — 최신 limit개(시간 오름차순, 테넌트 스코프). after 지정 시 증분 조회."""
     _check_channel_access(current_user, channel)
 
     q = (
         select(ChatMessage, ErpUser)
         .outerjoin(ErpUser, ChatMessage.user_id == ErpUser.id)
-        .where(ChatMessage.channel == channel)
+        .where(ChatMessage.company_id == cid, ChatMessage.channel == channel)
     )
 
     if after:
@@ -166,9 +172,10 @@ async def list_messages(
 async def create_message(
     body: MessageCreate,
     current_user: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
     db: AsyncSession = Depends(get_db),
 ) -> MessageOut:
-    """POST /api/chat/messages — 채널에 메시지 전송 (본인 명의)."""
+    """POST /api/chat/messages — 채널에 메시지 전송 (본인 명의). company_id=호출자 테넌트."""
     _check_channel_access(current_user, body.channel)
     content = body.content.strip()
     if not content:
@@ -176,6 +183,7 @@ async def create_message(
 
     msg = ChatMessage(
         id=uuid4(),
+        company_id=cid,
         channel=body.channel,
         user_id=current_user.user_id,
         content=content,

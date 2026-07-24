@@ -28,7 +28,13 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import MANAGER_ROLES, CurrentUser, get_current_user
+from app.core.deps import (
+    MANAGER_ROLES,
+    CurrentUser,
+    assert_same_company,
+    company_scope,
+    get_current_user,
+)
 from app.db import get_db
 from app.models.tables import Meeting, MeetingParticipant, WorkLog, WorkLogStatus
 
@@ -128,7 +134,7 @@ class WorkLogOut(BaseModel):
 # 내부 헬퍼
 # ---------------------------------------------------------------------------
 
-async def _get_or_404(db: AsyncSession, work_log_id: str) -> WorkLog:
+async def _get_or_404(db: AsyncSession, work_log_id: str, user: CurrentUser) -> WorkLog:
     try:
         uid = UUID(work_log_id)
     except ValueError:
@@ -143,6 +149,8 @@ async def _get_or_404(db: AsyncSession, work_log_id: str) -> WorkLog:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="work_log_not_found",
         )
+    # 타사 로그는 404(존재 은닉, Phase 1c · 22 T0-1 IDOR 차단)
+    assert_same_company(user, wl.company_id)
     return wl
 
 
@@ -191,6 +199,7 @@ def _period_key(d: date, period_type: str) -> str:
 async def create_work_log(
     body: WorkLogCreate,
     current_user: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
     db: AsyncSession = Depends(get_db),
 ) -> WorkLogOut:
     """POST /api/work-logs — 업무 로그 생성.
@@ -198,6 +207,7 @@ async def create_work_log(
     - user_id 미지정: 현재 사용자 소유.
     - user_id 타인 지정: 관리자(admin/leader)만 허용.
     - status=completed로 생성 시 completed_at 자동 기록 (D14-a).
+    - company_id는 호출자 테넌트로 강제(클라이언트 미신뢰, Phase 1c · 22 T0-1).
     """
     # 대상 사용자 결정
     if body.user_id is not None and body.user_id != current_user.user_id:
@@ -214,6 +224,7 @@ async def create_work_log(
     completed_at: Optional[datetime] = now if body.status == WorkLogStatus.COMPLETED else None
 
     wl = WorkLog(
+        company_id=cid,
         user_id=target_uid,
         work_date=body.work_date,
         category=body.category,
@@ -248,9 +259,10 @@ async def get_work_log_summary(
     end_date: Optional[date] = Query(None, description="조회 종료일 (YYYY-MM-DD)"),
     user_id: Optional[int] = Query(None, description="관리자만 타인 조회 가능"),
     current_user: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    """GET /api/work-logs/summary — 기간 daily/weekly/monthly/yearly + 카테고리 분포 집계."""
+    """GET /api/work-logs/summary — 기간 daily/weekly/monthly/yearly + 카테고리 분포 집계 (테넌트 스코프)."""
     if period_type not in ("daily", "weekly", "monthly", "yearly"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -265,7 +277,7 @@ async def get_work_log_summary(
     else:
         target_uid = user_id  # None이면 전체 사용자
 
-    q = select(WorkLog)
+    q = select(WorkLog).where(WorkLog.company_id == cid)
     if target_uid is not None:
         q = q.where(WorkLog.user_id == target_uid)
     if start_date:
@@ -312,7 +324,11 @@ async def get_work_log_summary(
     mq = (
         select(MeetingParticipant)
         .join(Meeting, MeetingParticipant.meeting_id == Meeting.id)
-        .where(MeetingParticipant.joined_at.isnot(None), MeetingParticipant.left_at.isnot(None))
+        .where(
+            Meeting.company_id == cid,  # 테넌트 스코프 — 타사 회의 참석시간 누출 차단
+            MeetingParticipant.joined_at.isnot(None),
+            MeetingParticipant.left_at.isnot(None),
+        )
     )
     if target_uid is not None:
         mq = mq.where(MeetingParticipant.user_id == target_uid)
@@ -358,12 +374,13 @@ async def list_work_logs(
     status_filter: Optional[str] = Query(None, alias="status", description="started | completed"),
     user_id: Optional[int] = Query(None, description="관리자만 타인 조회 가능"),
     current_user: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
     db: AsyncSession = Depends(get_db),
 ) -> list[WorkLogOut]:
-    """GET /api/work-logs — 업무 로그 목록.
+    """GET /api/work-logs — 업무 로그 목록 (테넌트 스코프).
 
     - 비관리자: 본인 로그만 조회 (user_id 파라미터 무시하거나 본인만 허용).
-    - 관리자(admin/leader): user_id 지정 시 해당 사용자, 미지정 시 전체.
+    - 관리자(admin/leader): user_id 지정 시 해당 사용자, 미지정 시 전체(자사 한정).
     """
     if current_user.role not in ADMIN_ROLES:
         if user_id is not None and user_id != current_user.user_id:
@@ -372,7 +389,7 @@ async def list_work_logs(
     else:
         target_uid = user_id  # None → 전체
 
-    q = select(WorkLog)
+    q = select(WorkLog).where(WorkLog.company_id == cid)
     if target_uid is not None:
         q = q.where(WorkLog.user_id == target_uid)
     if start_date:
@@ -408,7 +425,7 @@ async def get_work_log(
     db: AsyncSession = Depends(get_db),
 ) -> WorkLogOut:
     """GET /api/work-logs/{id} — 단건 조회 (본인 또는 관리자)."""
-    wl = await _get_or_404(db, work_log_id)
+    wl = await _get_or_404(db, work_log_id, current_user)
     _check_read_permission(current_user, wl)
     return WorkLogOut.from_orm(wl)
 
@@ -429,7 +446,7 @@ async def update_work_log(
     - completed 전이 시 completed_at 자동 기록 (D14-a).
     - started로 역전환 시 completed_at 초기화.
     """
-    wl = await _get_or_404(db, work_log_id)
+    wl = await _get_or_404(db, work_log_id, current_user)
     _check_own_or_admin(current_user, wl)
 
     update_data = body.model_dump(exclude_unset=True)
@@ -471,7 +488,7 @@ async def delete_work_log(
       근거이며 D18(평가 근거 영구 보존) 원칙상 제거할 수 없음.
     - 권한: 본인 또는 관리자(admin/leader). 관리자도 완료 로그 삭제 불가.
     """
-    wl = await _get_or_404(db, work_log_id)
+    wl = await _get_or_404(db, work_log_id, current_user)
     _check_own_or_admin(current_user, wl)
 
     if wl.status == WorkLogStatus.COMPLETED:

@@ -37,7 +37,14 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import ADMIN_ROLES, MANAGER_ROLES, CurrentUser, get_current_user
+from app.core.deps import (
+    ADMIN_ROLES,
+    MANAGER_ROLES,
+    CurrentUser,
+    assert_same_company,
+    company_scope,
+    get_current_user,
+)
 from app.db import get_db
 from app.models.tables import (
     DailyStatusPush,
@@ -166,7 +173,7 @@ class ObjectionReviewRequest(BaseModel):
 # 헬퍼
 # ──────────────────────────────────────────────────────────────────────────────
 
-async def _get_result_or_404(db: AsyncSession, result_id: str) -> KpiResult:
+async def _get_result_or_404(db: AsyncSession, result_id: str, user: CurrentUser) -> KpiResult:
     try:
         uid = UUID(result_id)
     except ValueError:
@@ -174,6 +181,8 @@ async def _get_result_or_404(db: AsyncSession, result_id: str) -> KpiResult:
     r = await db.get(KpiResult, uid)
     if r is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not_found")
+    # 타사 평가 결과는 404(존재 은닉, Phase 1c · 22 T0-1 IDOR 차단)
+    assert_same_company(user, r.company_id)
     return r
 
 
@@ -327,11 +336,12 @@ async def list_kpi_results(
     metric: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
 ) -> list[KpiResultOut]:
     """
-    GET /api/kpi-results — D16 라우팅:
+    GET /api/kpi-results — D16 라우팅 (테넌트 스코프):
       - 본인: 자신의 kpi_result만 조회
-      - admin/super_admin: user_id 파라미터로 타인 조회 가능
+      - admin/super_admin: user_id 파라미터로 타인 조회 가능(자사 한정)
       - leader: 자기 팀 소속만 타인 조회 가능 (06 §3.10)
     """
     if user.role in _MANAGER_ROLES:
@@ -343,7 +353,11 @@ async def list_kpi_results(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="forbidden")
         target_user_id = user.user_id
 
-    stmt = select(KpiResult).where(KpiResult.user_id == target_user_id)
+    # 테넌트 스코프 필터 — 타사 롤업 누출 차단 (Phase 1c · 22 T0-1)
+    stmt = select(KpiResult).where(
+        KpiResult.company_id == cid,
+        KpiResult.user_id == target_user_id,
+    )
     if period_type:
         stmt = stmt.where(KpiResult.period_type == period_type)
     if period_key:
@@ -362,7 +376,7 @@ async def get_kpi_result(
     user: CurrentUser = Depends(get_current_user),
 ) -> KpiResultOut:
     """GET /api/kpi-results/{id} — 단건 조회 (본인 또는 관리자, leader=팀 한정)."""
-    r = await _get_result_or_404(db, result_id)
+    r = await _get_result_or_404(db, result_id, user)
     if r.user_id != user.user_id:
         _check_manager(user)
         await _check_team_scope(db, user, r.user_id, result=r)
@@ -384,7 +398,7 @@ async def adjust_kpi_result(
     - admin_adjusted_score 설정. 미조정 시 NULL → value가 유효.
     """
     _check_manager(user)
-    r = await _get_result_or_404(db, result_id)
+    r = await _get_result_or_404(db, result_id, user)
     await _check_team_scope(db, user, r.user_id, result=r)
 
     if r.finalized_at is not None:
@@ -440,7 +454,7 @@ async def finalize_kpi_result(
     - 이의신청 진행 중(submitted/reviewing)이면 409 — resolve로만 확정 가능 (08 §3.3)
     """
     _check_admin_only(user)
-    r = await _get_result_or_404(db, result_id)
+    r = await _get_result_or_404(db, result_id, user)
 
     if r.finalized_at is not None:
         raise HTTPException(
@@ -488,7 +502,7 @@ async def submit_objection(
     - 공개(admin_reviewed_at ?? created_at) 후 7일 내, **확정 전**에만 접수
     - objection_status = none → submitted
     """
-    r = await _get_result_or_404(db, result_id)
+    r = await _get_result_or_404(db, result_id, user)
 
     # 본인 확인
     if r.user_id != user.user_id:
@@ -569,7 +583,7 @@ async def review_objection(
     resolve가 final_score·finalized_at 확정을 수행하므로 leader 허용 시 확정 우회 경로가 됨).
     """
     _check_admin_only(user)
-    r = await _get_result_or_404(db, result_id)
+    r = await _get_result_or_404(db, result_id, user)
 
     now = datetime.now(timezone.utc)
     obj_status = r.objection_status
@@ -665,7 +679,7 @@ async def get_objection(
     user: CurrentUser = Depends(get_current_user),
 ) -> ObjectionOut:
     """이의신청 내역 조회 (본인 또는 관리자, leader=팀 한정). 없으면 objection_status=none."""
-    r = await _get_result_or_404(db, result_id)
+    r = await _get_result_or_404(db, result_id, user)
     if r.user_id != user.user_id:
         _check_manager(user)
         await _check_team_scope(db, user, r.user_id)

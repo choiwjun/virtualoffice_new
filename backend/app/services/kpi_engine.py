@@ -464,6 +464,12 @@ async def compute_and_upsert_kpi(
 
     metrics = await compute_kpi(db, user_id, period_type, period_key)
 
+    # 테넌트 스코프: 대상 사용자의 회사로 비정규화 (Phase 1c · 22 T0-1). 미존재 시 기본 테넌트(1).
+    from app.models.tables import DEFAULT_COMPANY_ID
+
+    target_user = await db.get(ErpUser, user_id)
+    target_company_id = target_user.company_id if target_user is not None else DEFAULT_COMPANY_ID
+
     results: list[KpiResult] = []
     for metric_name, value in metrics.items():
         # SQLite/PostgreSQL 모두: SELECT → UPDATE/INSERT
@@ -483,6 +489,7 @@ async def compute_and_upsert_kpi(
             results.append(existing)
         else:
             row = KpiResult(
+                company_id=target_company_id,
                 user_id=user_id,
                 period_type=period_type,
                 period_key=period_key,
@@ -698,19 +705,24 @@ async def compute_team_percentile(
     if team_id is None:
         return None
 
+    # 테넌트 스코프: 벤치마크 롤업은 대상 사용자와 동일 회사로 제한 (Phase 1c · 22 T0-1).
+    target_user = await db.get(ErpUser, user_id)
+    scope_company_id = target_user.company_id if target_user is not None else None
+
     async def _pool(team_ids: set[int]) -> dict[int, float]:
         members = await _members_for_period(db, team_ids, start_dt, end_dt)
         if not members:
             return {}
+        conds = [
+            KpiResult.user_id.in_(members),
+            KpiResult.period_type == pt,
+            KpiResult.period_key == period_key,
+            KpiResult.metric == "quarterly_total",
+        ]
+        if scope_company_id is not None:
+            conds.append(KpiResult.company_id == scope_company_id)
         rows = (
-            await db.execute(
-                select(KpiResult.user_id, KpiResult.value).where(
-                    KpiResult.user_id.in_(members),
-                    KpiResult.period_type == pt,
-                    KpiResult.period_key == period_key,
-                    KpiResult.metric == "quarterly_total",
-                )
-            )
+            await db.execute(select(KpiResult.user_id, KpiResult.value).where(*conds))
         ).all()
         return {uid: float(v) for uid, v in rows}
 

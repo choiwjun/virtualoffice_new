@@ -23,7 +23,13 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import MANAGER_ROLES, CurrentUser, get_current_user
+from app.core.deps import (
+    MANAGER_ROLES,
+    CurrentUser,
+    assert_same_company,
+    company_scope,
+    get_current_user,
+)
 from app.db import get_db
 from app.models.tables import Report, ReportStatus, ReportType
 
@@ -84,7 +90,7 @@ class ReportOut(BaseModel):
 # 내부 헬퍼
 # ---------------------------------------------------------------------------
 
-async def _get_or_404(db: AsyncSession, report_id: str) -> Report:
+async def _get_or_404(db: AsyncSession, report_id: str, user: CurrentUser) -> Report:
     try:
         uid = UUID(report_id)
     except ValueError:
@@ -93,6 +99,8 @@ async def _get_or_404(db: AsyncSession, report_id: str) -> Report:
     rp = result.scalar_one_or_none()
     if rp is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="report_not_found")
+    # 타사 보고서는 404(존재 은닉, Phase 1c · 22 T0-1 IDOR 차단)
+    assert_same_company(user, rp.company_id)
     return rp
 
 
@@ -114,11 +122,13 @@ def _check_read_permission(current_user: CurrentUser, rp: Report) -> None:
 async def create_report(
     body: ReportCreate,
     current_user: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
     db: AsyncSession = Depends(get_db),
 ) -> ReportOut:
-    """POST /api/reports — 본인 명의 보고서 작성. status=submitted면 즉시 제출."""
+    """POST /api/reports — 본인 명의 보고서 작성. status=submitted면 즉시 제출. company_id=호출자 테넌트."""
     now = datetime.now(timezone.utc)
     rp = Report(
+        company_id=cid,
         user_id=current_user.user_id,
         report_type=body.report_type,
         report_date=body.report_date,
@@ -146,9 +156,10 @@ async def list_reports(
     end_date: Optional[date] = Query(None, description="report_date 끝"),
     user_id: Optional[int] = Query(None, description="관리자만 타인 조회 가능"),
     current_user: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
     db: AsyncSession = Depends(get_db),
 ) -> list[ReportOut]:
-    """GET /api/reports — 비관리자는 본인 것만, 관리자는 전체(user_id 필터 가능)."""
+    """GET /api/reports — 비관리자는 본인 것만, 관리자는 전체(user_id 필터 가능). 테넌트 스코프."""
     if current_user.role not in ADMIN_ROLES:
         if user_id is not None and user_id != current_user.user_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="insufficient_permissions")
@@ -156,7 +167,7 @@ async def list_reports(
     else:
         target_uid = user_id
 
-    q = select(Report)
+    q = select(Report).where(Report.company_id == cid)
     if target_uid is not None:
         q = q.where(Report.user_id == target_uid)
     if report_type:
@@ -197,7 +208,7 @@ async def get_report(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ReportOut:
-    rp = await _get_or_404(db, report_id)
+    rp = await _get_or_404(db, report_id, current_user)
     _check_read_permission(current_user, rp)
     return ReportOut.from_orm_report(rp)
 
@@ -217,7 +228,7 @@ async def update_report(
 
     submitted 보고서 수정/역전이 시도는 409.
     """
-    rp = await _get_or_404(db, report_id)
+    rp = await _get_or_404(db, report_id, current_user)
     if rp.user_id != current_user.user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="only_owner_can_edit")
 
@@ -252,7 +263,7 @@ async def delete_report(
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """DELETE /api/reports/{id} — 본인의 draft만 삭제 가능. 제출본은 보존 (409)."""
-    rp = await _get_or_404(db, report_id)
+    rp = await _get_or_404(db, report_id, current_user)
     if rp.user_id != current_user.user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="only_owner_can_delete")
     if rp.status == ReportStatus.SUBMITTED:

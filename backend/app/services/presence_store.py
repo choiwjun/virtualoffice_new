@@ -19,7 +19,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.tables import Presence, PresenceStatus
+from app.models.tables import DEFAULT_COMPANY_ID, ErpUser, Presence, PresenceStatus
 
 
 # ---------------------------------------------------------------------------
@@ -88,6 +88,11 @@ async def upsert_presence(
     """
     now = datetime.now(timezone.utc)
 
+    # 테넌트 스코프: 내부 write 경로는 JWT가 아니라 user_id를 신뢰 → 그 user의 회사로 파생
+    # (company_scope 의존성을 강제하지 않는다, Phase 1c · 22 T0-1). 미존재 시 기본 테넌트(1).
+    erp_user = await db.get(ErpUser, user_id)
+    derived_company_id = erp_user.company_id if erp_user is not None else DEFAULT_COMPANY_ID
+
     result = await db.execute(
         select(Presence).where(Presence.user_id == user_id)
     )
@@ -96,6 +101,7 @@ async def upsert_presence(
     if existing is None:
         presence = Presence(
             user_id=user_id,
+            company_id=derived_company_id,
             status=status,
             office_id=office_id,
             floor_id=floor_id,
@@ -109,6 +115,7 @@ async def upsert_presence(
         await db.flush()
         record = presence
     else:
+        existing.company_id = derived_company_id
         existing.status = status
         existing.last_activity_at = now
         existing.updated_at = now

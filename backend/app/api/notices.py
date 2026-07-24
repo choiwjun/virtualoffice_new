@@ -18,7 +18,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import or_, select
 
-from app.core.deps import CurrentUser, get_current_user, require_role
+from app.core.deps import (
+    CurrentUser,
+    assert_same_company,
+    company_scope,
+    get_current_user,
+    require_role,
+)
 from app.db import get_db
 from app.models.tables import Notice, NoticeCategory
 from app.services.audit import record_audit
@@ -78,13 +84,15 @@ def _out(n: Notice) -> NoticeOut:
 async def list_notices(
     limit: int = Query(20, ge=1, le=100),
     db=Depends(get_db),
+    cid: int = Depends(company_scope),
     _: CurrentUser = Depends(get_current_user),
 ) -> NoticeListOut:
-    """활성·게시·미만료 공지 목록. pinned 상단 고정 후 게시 최신순."""
+    """활성·게시·미만료 공지 목록 (테넌트 스코프). pinned 상단 고정 후 게시 최신순."""
     now = datetime.now(timezone.utc)
     stmt = (
         select(Notice)
         .where(
+            Notice.company_id == cid,
             Notice.is_active.is_(True),
             Notice.published_at <= now,
             or_(Notice.expires_at.is_(None), Notice.expires_at > now),
@@ -102,13 +110,15 @@ async def create_notice(
     payload: NoticeCreate,
     db=Depends(get_db),
     user: CurrentUser = Depends(require_role("admin", "super_admin")),
+    cid: int = Depends(company_scope),
 ) -> NoticeOut:
-    """공지 작성 (admin)."""
+    """공지 작성 (admin). company_id=작성자 테넌트(클라이언트 미신뢰, Phase 1c · 22 T0-1)."""
     if payload.expires_at is not None:
         published = payload.published_at or datetime.now(timezone.utc)
         if payload.expires_at <= published:
             raise HTTPException(status_code=422, detail="expires_at_before_published_at")
     notice = Notice(
+        company_id=cid,
         title=payload.title,
         body=payload.body,
         author=payload.author,
@@ -152,6 +162,8 @@ async def update_notice(
     ).scalar_one_or_none()
     if notice is None or not notice.is_active:
         raise HTTPException(status_code=404, detail="notice_not_found")
+    # 타사 공지는 404(존재 은닉, Phase 1c · 22 T0-1 IDOR 차단)
+    assert_same_company(user, notice.company_id)
 
     old_value = {"title": notice.title, "pinned": notice.pinned}
     update_data = payload.model_dump(exclude_unset=True)
@@ -184,6 +196,8 @@ async def delete_notice(
     ).scalar_one_or_none()
     if notice is None or not notice.is_active:
         raise HTTPException(status_code=404, detail="notice_not_found")
+    # 타사 공지는 404(존재 은닉, Phase 1c · 22 T0-1 IDOR 차단)
+    assert_same_company(user, notice.company_id)
     notice.is_active = False
     await db.commit()
     await record_audit(

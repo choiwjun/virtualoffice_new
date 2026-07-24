@@ -810,6 +810,15 @@ class Presence(Base):
         primary_key=True
     )
     """ERP user.id (PK)"""
+    company_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("company.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+        server_default=text("1"),
+        default=DEFAULT_COMPANY_ID,
+    )
+    """멀티테넌트 스코프 (Phase 1c · 22 T0-1 IDOR 차단 + T1-3 인덱싱). user→erp_user.company_id 비정규화. 내부 write는 user로부터 파생. 기존 데이터=1."""
     office_id: Mapped[Optional[UUID]] = mapped_column(
         ForeignKey("office.id", ondelete="RESTRICT"),
         nullable=True,
@@ -1180,6 +1189,15 @@ class WorkLog(Base, TimestampMixin):
     __tablename__ = "work_log"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("company.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+        server_default=text("1"),
+        default=DEFAULT_COMPANY_ID,
+    )
+    """멀티테넌트 스코프 (Phase 1c · 22 T0-1 IDOR 차단 + T1-3 인덱싱). user→erp_user.company_id 비정규화. 기존 데이터=1."""
     user_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("erp_user.id", ondelete="RESTRICT"),
@@ -1252,6 +1270,15 @@ class KpiResult(Base, TimestampMixin):
     __tablename__ = "kpi_result"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("company.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+        server_default=text("1"),
+        default=DEFAULT_COMPANY_ID,
+    )
+    """멀티테넌트 스코프 (Phase 1c · 22 T0-1 IDOR 차단 + T1-3 인덱싱). user→erp_user.company_id 비정규화. 기존 데이터=1."""
     user_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("erp_user.id", ondelete="RESTRICT"),
@@ -1590,6 +1617,15 @@ class Notice(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "notice"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("company.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+        server_default=text("1"),
+        default=DEFAULT_COMPANY_ID,
+    )
+    """멀티테넌트 스코프 (Phase 1c · 22 T0-1 IDOR 차단 + T1-3 인덱싱). author는 plain String이라 작성자 company_scope로 설정. 기존 데이터=1."""
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     body: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     """본문 (마크다운 상세 열람용)"""
@@ -1787,6 +1823,15 @@ class Report(Base, TimestampMixin):
     __tablename__ = "report"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("company.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+        server_default=text("1"),
+        default=DEFAULT_COMPANY_ID,
+    )
+    """멀티테넌트 스코프 (Phase 1c · 22 T0-1 IDOR 차단 + T1-3 인덱싱). user→erp_user.company_id 비정규화. 기존 데이터=1."""
     user_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("erp_user.id", ondelete="RESTRICT"),
@@ -1830,6 +1875,15 @@ class ChatMessage(Base):
     __tablename__ = "chat_message"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("company.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+        server_default=text("1"),
+        default=DEFAULT_COMPANY_ID,
+    )
+    """멀티테넌트 스코프 (Phase 1c · 22 T0-1 IDOR 차단 + T1-3 인덱싱). user→erp_user.company_id 비정규화. 기존 데이터=1."""
     channel: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     user_id: Mapped[int] = mapped_column(
         BigInteger,
