@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>23 — 프론트·디자인·에셋·UX·온보딩 상용화 갭 감사 (2026-07-24)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">23 — 프론트·디자인·에셋·UX·온보딩 상용화 갭 감사 (2026-07-24)</div><div class="sub">23-frontend-design-asset-commercialization-audit.md</div><a class="lvl1" href="#23--프론트·디자인·에셋·ux·온보딩-상용화-갭-감사-2026-07-24">23 — 프론트·디자인·에셋·UX·온보딩 상용화 갭 감사 (2026-07-24)</a><a class="lvl2" href="#0-한-줄-결론">0. 한 줄 결론</a><a class="lvl3" href="#축별-판정-요약">축별 판정 요약</a><a class="lvl2" href="#1-통합-우선순위-로드맵-축-교차-·-영향×규모">1. 통합 우선순위 로드맵 (축 교차 · 영향×규모)</a><a class="lvl3" href="#tier-f0--판매-데모가-성립하려면-즉효·가시적-대부분-sm">Tier F0 — 판매 데모가 성립하려면 (즉효·가시적, 대부분 S~M)</a><a class="lvl3" href="#tier-f1--제품이-되려면-온보딩·멀티브랜드-축--22-t0와-맞물림-l-중심">Tier F1 — 제품이 되려면 (온보딩·멀티브랜드 축 — 22 T0와 맞물림, L 중심)</a><a class="lvl3" href="#tier-f2--엔터프라이즈-판매-관문-조달·계약-체크리스트-sl">Tier F2 — 엔터프라이즈 판매 관문 (조달·계약 체크리스트, S~L)</a><a class="lvl3" href="#tier-f3--프리미엄-체감·확장성-부채-상환·차별화-sl">Tier F3 — 프리미엄 체감·확장성 (부채 상환·차별화, S~L)</a><a class="lvl2" href="#2-가장-값싼-즉효-5건-·-가장-큰-레버-3건">2. 가장 값싼 즉효 5건 · 가장 큰 레버 3건</a><a class="lvl2" href="#a-디자인-시스템--콘솔-ui">A. 디자인 시스템  콘솔 UI</a><a class="lvl2" href="#b-가상오피스-씬--에셋-고도화-⭐">B. 가상오피스 씬  에셋 고도화 ⭐</a><a class="lvl3" href="#에셋-파이프라인-고도화-경로">에셋 파이프라인 고도화 경로</a><a class="lvl2" href="#c-프론트-ux-견고성--완성도">C. 프론트 UX 견고성  완성도</a><a class="lvl2" href="#d-프론트-성능--아키텍처">D. 프론트 성능  아키텍처</a><a class="lvl2" href="#e-상용-진입면--온보딩셀프서비스">E. 상용 진입면  온보딩/셀프서비스</a><a class="lvl3" href="#바이어-여정-매핑">바이어 여정 매핑</a><a class="lvl2" href="#부록--감사-시점-라이브-스택-상태-2026-07-24">부록 — 감사 시점 라이브 스택 상태 (2026-07-24)</a></nav>
+<main><h1 id="23--프론트·디자인·에셋·ux·온보딩-상용화-갭-감사-2026-07-24">23 — 프론트·디자인·에셋·UX·온보딩 상용화 갭 감사 (2026-07-24)</h1>
+<blockquote>5축 병렬 코드 감사(디자인 시스템 · 가상오피스 씬/에셋 · 프론트 UX 견고성 · 프론트 성능/아키텍처 · 상용 진입면/온보딩). 모든 항목 <code>file:line</code> 근거.
+<strong>자매 문서</strong>: <a href="22-commercialization-gap-audit.md"><code>22-commercialization-gap-audit.md</code></a> = <strong>백엔드/멀티테넌시/보안/확장성/운영/컴플라이언스</strong>. 본 문서 23 = <strong>클라이언트·비주얼·제품 진입면</strong>. 둘이 합쳐 상용화 전체 그림을 이룬다. 겹치는 항목은 상호 참조(예: D1 = 22-doc T1-13).</blockquote>
+<hr>
+<h2 id="0-한-줄-결론">0. 한 줄 결론</h2>
+<p><strong>엔지니어링 코어(기능·데이터·보안)는 22-doc대로 성숙하지만, &quot;사서 쓰는 제품&quot;의 겉면 — 상용 진입면(가입·온보딩·데모)·비주얼 생동감(아바타 모션)·디자인 시스템 단일성·멀티브랜드/다국어 — 이 통째로 비어 있다.</strong> 지금은 <em>잘 만든 사내 도구의 프로토타입 UI</em>다. 22-doc의 멀티테넌시(T0-1)와 본 문서의 진입면(E2~E4)·화이트라벨(A7+E5)이 <strong>같은 축</strong>으로 맞물려 있어, 이 둘을 함께 세우는 것이 &quot;도구 → 제품&quot; 전환의 본체다.</p>
+<h3 id="축별-판정-요약">축별 판정 요약</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>축</th>
+<th>현재 수준</th>
+<th>상용 바까지 핵심 결격</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>A. 디자인 시스템</strong></td>
+<td>스타일가이드 있는 프로토타입</td>
+<td>토큰 이원화(쿨블루 vs 웜블랙 <code>T1B</code>)·<strong>웹폰트 미로딩</strong>·모달/버튼/인풋 프리미티브 부재·<strong>CSS 변수 0(화이트라벨 불가)</strong></td>
+</tr>
+<tr>
+<td><strong>B. 씬 &amp; 에셋</strong> ⭐</td>
+<td>잘 만든 절차적 탑다운 플레이트</td>
+<td>**아바타 모션 전멸(<code>animation:none</code>)**·가짜 SE 그림자·순수 탑다운 평면성·룸/브랜딩이 코드로만 확장</td>
+</tr>
+<tr>
+<td><strong>C. UX 견고성</strong></td>
+<td>페칭 계층은 상용급, 겉은 미달</td>
+<td>native <code>alert/confirm/prompt</code> 산발·**i18n 전무(한국어 1,695건 락인)<strong>·</strong>ARIA 4건(WCAG 즉시 탈락)**·모바일 반응형 부재</td>
+</tr>
+<tr>
+<td><strong>D. 성능/아키텍처</strong></td>
+<td>실시간 코어 설계는 견고</td>
+<td><strong>뷰포트 전 라우트 상시 마운트</strong>(=22 T1-13)·<code>livekit</code> 상주 정적 임포트·RSC 0개·프레임당 힙 할당</td>
+</tr>
+<tr>
+<td><strong>E. 진입면/온보딩</strong></td>
+<td>앉은 뒤 셀프구성은 깊음, 앞단 0</td>
+<td><strong>랜딩·가입·초대·유저생성·브랜딩·데모시드·비번찾기 전무</strong> — 바이어 여정이 시작조차 불가</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2 id="1-통합-우선순위-로드맵-축-교차-·-영향×규모">1. 통합 우선순위 로드맵 (축 교차 · 영향×규모)</h2>
+<blockquote>22-doc의 Tier 0~3(백엔드)와 <strong>병렬 트랙</strong>. 접두어 F=프론트/제품면.</blockquote>
+<h3 id="tier-f0--판매-데모가-성립하려면-즉효·가시적-대부분-sm">Tier F0 — 판매 데모가 성립하려면 (즉효·가시적, 대부분 S~M)</h3>
+<p>데모 URL 하나로 제품 강점을 보여줄 수 있게 만드는, 가성비 최상 묶음.</p>
+<ol>
+<li><strong>B1 아바타 모션 부활</strong> (S) — 지금 아바타는 좌표만 미끄러지는 무생물. 죽은 키프레임을 실제 연결하는 것만으로 &quot;살아있는 공간&quot; 인상. <strong>가장 값싼 최대 임팩트.</strong></li>
+<li><strong>E8 리치 데모 시드 1커맨드</strong> (M) — &quot;빈 사무실+3명&quot;을 &quot;북적이는 가상회사(20+명·조직·공지·KPI·회의)&quot;로. 세일즈 데모 성립 전제.</li>
+<li><strong>A2 웹폰트 실제 로딩</strong> (S) — Pretendard/Inter 선언만 하고 미로딩 → OS 기본폰트 렌더. 스크린샷/데모 품질 즉시 상승.</li>
+<li><strong>D1 뷰포트 <code>/office</code> 전용 마운트</strong> (M) — 유휴 유저의 Colyseus 슬롯·CPU·5인터벌·6 fetch 점유 제거(=22 T1-13). 안정·성능·동접 천장 동시 개선.</li>
+<li><strong>E1 공개 랜딩/데모 라우트</strong> (M) — 지금 <code>/</code>는 곧장 <code>/office</code>. 바이어가 제품을 발견·평가할 입구 신설.</li>
+</ol>
+<h3 id="tier-f1--제품이-되려면-온보딩·멀티브랜드-축--22-t0와-맞물림-l-중심">Tier F1 — &quot;제품&quot;이 되려면 (온보딩·멀티브랜드 축 — 22 T0와 맞물림, L 중심)</h3>
+<ol start="6">
+<li><strong>E2+E3+E4 셀프서브 온보딩 축</strong> (L) — 가입→유저 생성→팀 초대. 없으면 깊은 admin 구성(좌석·조직도)이 전부 死자산. <strong>22-doc T0-1(멀티테넌시)·T0-4(SaaS 계층) 위에 얹힘.</strong></li>
+<li><strong>화이트라벨 = A7+A1 (CSS 변수 토큰) + E5 (브랜딩 UI) + 백엔드 Company 브랜딩 필드</strong> (L) — 테넌트 브랜드 교체를 &quot;변수 1세트 플립&quot;으로. 프론트 CSS 변수화와 백엔드 Company가 함께 필요한 단일 워크스트림.</li>
+<li><strong>E6 첫실행 셋업 체크리스트 + 최초 투어</strong> (M) — 새 admin의 첫 5분을 성공 경험으로.</li>
+</ol>
+<h3 id="tier-f2--엔터프라이즈-판매-관문-조달·계약-체크리스트-sl">Tier F2 — 엔터프라이즈 판매 관문 (조달·계약 체크리스트, S~L)</h3>
+<ol start="9">
+<li><strong>C1 i18n 카탈로그</strong> (L) — B2B 재판매 전제인데 한국어 1개 로케일 락인. 추출비용이 기능마다 선형 증가 → 조기 착수.</li>
+<li><strong>C4+C2+C3 토스트·다이얼로그 인프라 통합</strong> (M) — native <code>alert/confirm/prompt</code> 치환, <code>aria-live</code> 확보. 이미 <code>ScoreNoteModal</code> 모범 사례 존재.</li>
+<li><strong>C7~C10 + A11 접근성 베이스라인</strong> (M) — 모달 dialog role·포커스 트랩, 아이콘/닫기 <code>aria-label</code>, input <code>htmlFor</code>, 차트 <code>role=img</code>, muted 대비 4.5:1. 대부분 기계적, WCAG 관문 통과.</li>
+<li><strong>E11 동의/약관 게이트 + E7/E9 계정 셀프서비스(비번변경·찾기·알림)</strong> (S~M) — 백엔드 consent 테이블은 이미 존재(22 C1과 연결).</li>
+</ol>
+<h3 id="tier-f3--프리미엄-체감·확장성-부채-상환·차별화-sl">Tier F3 — 프리미엄 체감·확장성 (부채 상환·차별화, S~L)</h3>
+<ol start="13">
+<li><strong>A4+A5 핵심 프리미티브(Modal·Button·Input) 추출</strong> (L) — 12파일 복붙 <code>#161F32</code> 모달·손복사 버튼 흡수.</li>
+<li><strong>B6+B9+B11+B13 에셋 절차++ 데이터화</strong> (M) — 가구 레이어 캐시(테마 재렌더 프리즈 제거)·룸/재질/존 팔레트 데이터화(브랜딩 다양성).</li>
+<li><strong>A9+A10 모션·아이콘 정제</strong> (M) — 모달/팝오버/스켈레톤 트랜지션 + 이모지→단일 SVG 아이콘셋.</li>
+<li><strong>D4+D5+D7 번들·RSC 위생</strong> (S~L) — <code>livekit</code> 지연 로드, RSC 전환, <code>next/image</code>·<code>next/font</code>.</li>
+<li><strong>A8+A12+D9 셸 분해·카드 단일화</strong> (L) — 1837줄 <code>OfficeShell</code> 이중 렌더 브랜치 제거·하위 컴포넌트화.</li>
+</ol>
+<hr>
+<h2 id="2-가장-값싼-즉효-5건-·-가장-큰-레버-3건">2. 가장 값싼 즉효 5건 · 가장 큰 레버 3건</h2>
+<p><strong>오늘 착수 가능한 값싼 즉효(전부 S~M, 가시효과 큼):</strong>
+<code>B1</code>(아바타 모션) · <code>A2</code>(폰트 로딩) · <code>E8</code>(데모 시드) · <code>D1</code>(뷰포트 게이팅) · <code>E13</code>(prod 로그인에서 데모 자격 제거).</p>
+<p><strong>가장 큰 레버(없으면 상용화 자체가 막힘):</strong></p>
+<ul>
+<li><strong>온보딩 앞단 E2+E3+E4</strong> — 사람을 못 넣으면 모든 기능이 무의미.</li>
+<li><strong>화이트라벨 A7+A1+E5(+백엔드 Company)</strong> — B2B 멀티브랜드 판매의 핵심 셀링포인트, 지금은 hex가 수십 파일에 박혀 불가.</li>
+<li><strong>i18n C1</strong> — 재판매·다국가 배포의 사업적 상한선.</li>
+</ul>
+<hr>
+<h2 id="a-디자인-시스템--콘솔-ui">A. 디자인 시스템 &amp; 콘솔 UI</h2>
+<p><strong>판정:</strong> &quot;일관된 다크 콘솔 형태는 갖췄으나 토큰이 둘(쿨블루 Tailwind vs 웜블랙+머스터드 <code>T1B</code>)로 분열되고 값이 페이지마다 하드코딩된 &#39;스타일가이드 있는 프로토타입&#39;.&quot; Linear/Vercel 바(단일 토큰 소스 + CSS 변수 + 재사용 프리미티브 + 상태·모션 완비)에 미달. 특히 폰트 미로딩·모달/버튼/인풋 프리미티브 부재·화이트라벨 불가 3가지가 상용 결격에 가깝다.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>ID</th>
+<th>발견 (file:line)</th>
+<th>상용화 영향</th>
+<th>고도화 액션</th>
+<th>규모</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>A1</strong></td>
+<td>토큰 소스 이원화. Tailwind 쿨블루(<code>tailwind.config.js:13,18</code>) vs <code>OfficeShell.tsx:369-387</code> 웜블랙 <code>T1B</code>(mustard <code>#E3B23C</code>). 셸=머스터드, 오버레이 페이지=블루</td>
+<td>제품 정체성 붕괴(색온도 불일치) → 데모 첫 지적</td>
+<td>단일 팔레트 결정 후 <code>T1B</code>를 토큰/CSS 변수로 흡수</td>
+<td>L</td>
+</tr>
+<tr>
+<td><strong>A2</strong></td>
+<td>웹폰트 미로딩. <code>tailwind.config.js:35</code> <code>font-sans:[Pretendard,Inter]</code> 선언뿐, <code>layout.tsx</code>에 <code>next/font</code> 없음·<code>globals.css</code>에 <code>@font-face</code> 0 → OS 기본폰트 렌더</td>
+<td>의도 타이포 미표시, 플랫폼별 자간·굵기 편차 → 스샷/데모 품질 불안정</td>
+<td><code>next/font/local</code>(Pretendard)+Inter, body 바인딩, <code>font-display:swap</code></td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>A3</strong></td>
+<td>타입 스케일 부재 — <code>text-[Npx]</code> 208건(<code>console.tsx:44</code> 22px, OfficeShell만 90건), 12/12.5/13/13.5px 난립</td>
+<td>리듬·정렬 불일치, 유지보수 불가</td>
+<td><code>fontSize</code> 토큰 6~7단계로 수렴+라인하이트</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>A4</strong></td>
+<td>Modal 프리미티브 부재 — <code>#161F32</code> 모달 표면이 12파일 복붙(reports·meetings·trip·work-log·admin/*), 포커스트랩·ESC·스크롤락 매번 재작성</td>
+<td>접근성 누락·12곳 수정 부채, 폼 UX 최저선 미달</td>
+<td><code>&lt;Modal&gt;</code> 1개 신설(백드롭·포커스트랩·ESC 내장), 전면 교체</td>
+<td>L</td>
+</tr>
+<tr>
+<td><strong>A5</strong></td>
+<td>Button/Input 프리미티브 부재 — 액션 버튼·인풋이 페이지 인라인 className 손복사(<code>reports.tsx:369-392,429-470</code>)</td>
+<td>primary/danger/ghost·인풋 상태가 페이지마다 상이, 재발명 복리</td>
+<td><code>Button</code>(variant×size)·<code>Input/Select/Textarea</code> 추출</td>
+<td>L</td>
+</tr>
+<tr>
+<td><strong>A6</strong></td>
+<td>인라인 알파색 난립 — raw <code>rgba()</code> 91건·<code>#</code>hex 50건, 상태 틴트가 시맨틱 토큰 없이 매번 계산(<code>0.15/0.16/0.12</code> 혼재)</td>
+<td>상태색 불일치, 다크 대비 보정·감사 불가</td>
+<td>success/warn/danger/info <code>bg/fg/tint</code> 시맨틱 토큰</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>A7</strong></td>
+<td>화이트라벨 불가 — <code>globals.css</code> 색 변수 0, 색이 Tailwind hex+인라인 <code>style</code> hex로 박힘(<code>OfficeShell.tsx:1020,1085,…</code>)</td>
+<td>테넌트 브랜드 교체가 수십 파일 hex 치환 → 멀티브랜드 판매 핵심 미지원</td>
+<td><code>:root</code> CSS 변수 레이어, Tailwind가 <code>var()</code> 참조, 인라인 hex 제거</td>
+<td>L</td>
+</tr>
+<tr>
+<td><strong>A8</strong></td>
+<td>셸 크롬 이중 렌더 — 알림·프로필·패널·필터탭이 <code>railMode</code> 웜 vs 비-rail 쿨 브랜치로 각각 전체 재구현(<code>OfficeShell.tsx:1665-1730</code>). 1837줄 단일 파일</td>
+<td>모든 셸 변경 2회·둘이 어긋남, 리뷰 난이도</td>
+<td>A1 후 분기 제거, Rail/TopBar/PresencePanel/Palette 분해</td>
+<td>L</td>
+</tr>
+<tr>
+<td><strong>A9</strong></td>
+<td>모션 거의 없음 — 대부분 <code>transition-colors</code>뿐, <code>globals.css:22-25</code> 아바타 애니 전면 비활성, 모달/드롭다운/스켈레톤 전환 부재</td>
+<td>정적·&quot;값싼&quot; 느낌, 프리미엄 인상 결정타</td>
+<td>motion 토큰(duration/easing), fade/scale, 스켈레톤(reduced-motion 존중)</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>A10</strong></td>
+<td>아이콘 이원화 — 콘텐츠 페이지는 이모지(<code>reports.tsx:303</code> 📄), 셸은 SVG 스트로크. 굵기·격자 불일치</td>
+<td>이모지 OS별 렌더 제각각, 다크 콘솔에서 이질</td>
+<td>단일 아이콘셋(stroke 1.7, 20-grid), 이모지 전량 교체</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>A11</strong></td>
+<td>저대비 텍스트 — <code>text-muted:#7A899E</code>가 <code>surface:#161F32</code> 위 <del>4.0:1(소형 4.5:1 미달), 부제·메타가 이 색+10</del>12px</td>
+<td>접근성 미준수(조달 감점)·가독성 저하</td>
+<td>muted 대비 4.5:1↑ 또는 12px+, 대비 회귀 테스트</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>A12</strong></td>
+<td>카드 이원화 — 구 <code>Card.tsx</code>(rounded-card 14px) vs <code>console.tsx</code> <code>SectionCard</code>(rounded-2xl 16px) 공존, <code>OfficeShell.tsx:1501,1534,1567</code>은 구 Card</td>
+<td>카드 두 종 혼용 → &quot;미완성&quot; 인상</td>
+<td>console 계열로 단일화, 구 Card 폐기/위임</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>A13</strong></td>
+<td>하드코딩 SVG 색 — <code>KpiGauge.tsx:36,45,58,71</code>·<code>MeetingStage.tsx:107,131</code> 토큰 미참조 원오프 색</td>
+<td>테마 변경 시 이 컴포넌트만 옛 색 → 화이트라벨 구멍</td>
+<td>SVG 색 <code>currentColor</code>/CSS 변수화</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>A14</strong></td>
+<td>간격 비정형 — <code>p-4/py-2.5/px-3.5/py-1.5</code> 하프스텝 혼용, <code>mt-[72px] ml-[76px]</code> 임의 오프셋</td>
+<td>정렬 미세 어긋남, 밀도 모드 불가</td>
+<td>spacing 4px 그리드 정규화</td>
+<td>M</td>
+</tr>
+</tbody></table></div>
+<p><strong>Top-3:</strong> ① 단일 토큰 소스+CSS 변수화(A1+A7+A3) — 브랜드 분열·화이트라벨·타입 무규율 동시 해소. ② 프리미티브 추출 Modal·Button·Input(A4+A5). ③ 폰트 로딩+모션·아이콘 정제(A2+A9+A10) — 데모/스샷 품질 즉시 상승.</p>
+<hr>
+<h2 id="b-가상오피스-씬--에셋-고도화-⭐">B. 가상오피스 씬 &amp; 에셋 고도화 ⭐</h2>
+<p><strong>판정:</strong> 100% 절차적 캔버스(외부 아트 0장) 탑다운 플레이트로, 정지 이미지로는 Gather(픽셀)보다 위·oVice 문턱 바로 아래의 &quot;잘 만든 벡터 일러스트&quot; 인상. 그러나 (1) <strong>아바타 모션 완전 사망</strong>(<code>vo-anim-*</code> 전부 <code>animation:none</code>, <code>globals.css:22-25</code>), (2) 룸/브랜딩이 코드로만 확장, (3) 원근·그림자가 가짜 SE 오프셋 → 줌·야간에서 평면성 노출. 실사용의 움직임·확장성·조명 깊이에서 Kumospace/Teamflow 바에 뚜렷이 미달.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>ID</th>
+<th>발견 (file:line)</th>
+<th>경쟁사 대비 갭</th>
+<th>고도화 액션</th>
+<th>규모</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>B1</strong></td>
+<td>아바타 모션 전멸 — <code>.vo-anim-walk/idle/sit/typing{animation:none}</code>(<code>globals.css:22-25</code>). <code>vo-walk-bob</code>·<code>vo-idle-breath</code> 키프레임 정의만·미적용. rAF는 상태 계산하나(<code>OfficeViewport2D.tsx:906-919</code>) 클래스만 교체</td>
+<td>경쟁사는 걷기/bob/breathe로 &quot;살아있음&quot;. 여기 아바타는 미끄러지는 유리판 배지, 정지 시 완전 무생물</td>
+<td>키프레임 실제 연결(walk=bob·idle=breathe·typing=미세흔들), 발밑 링 펄스로 걸음 리듬</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>B2</strong></td>
+<td>순수 절차 캔버스, 외부아트 0(<code>SceneV3Layer.tsx:22</code> <code>horizon-scene-v3.js</code>만). <code>office2d/modules</code>(WebP 33)·<code>spike-kenney</code>·<code>spike-vector</code>는 폐기 스파이크</td>
+<td>oVice/Kumospace는 공간마다 고유 일러스트/렌더 플레이트. 절차는 방 1종·톤 1종에 갇힘</td>
+<td>파이프라인 결정(아래) — 절차++ 유지 시 룸 프리셋 데이터화</td>
+<td>L</td>
+</tr>
+<tr>
+<td><strong>B3</strong></td>
+<td>그림자 = 고정 SE 오프셋 스프라이트(<code>horizon-scene-v3.js:65-98</code>, 96px 1회 굽고 stretch, lift로 오프셋만) — 진짜 높이/AO 없음</td>
+<td>Teamflow/Kumospace는 소프트 AO+접지 그림자로 &quot;얹힘&quot;. 여기선 동일방향 복제 그림자가 줌 시 스탬프처럼 반복</td>
+<td>물체별 크기비례 컨택트 섀도우, 벽 AO(<code>:1123-1134</code>)를 가구에도 확장</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>B4</strong></td>
+<td>조명 = grade 오버레이+<code>lights[]</code> screen 블렌드(<code>:1385-1412</code>). 광원이 그림자 안 던짐, <code>daylightPools</code>(<code>:1138-1152</code>)는 고정 사다리꼴</td>
+<td>상용은 광원→방향 그림자·창문 빛기둥. 여기 광원은 정적 radial</td>
+<td>광원-그림자 방향 연동, 창 빛기둥 시간대별 각도</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>B5</strong></td>
+<td>해상도 백킹 1920×scale, 상한 2.5(<code>SceneV3Layer.tsx:72,100</code>), 방 포커스 renderScale=2 → 최대 3840px</td>
+<td>재렌더하면 선명하나 딥줌·4K에서 스트로크 하한(<code>Math.max(0.7,…)</code>) 뭉갬</td>
+<td>딥줌 시 부분 타일만 고해상, 또는 SVG 하이브리드로 텍스트/선 분리</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>B6</strong></td>
+<td>전체 재렌더 — theme/zoom마다 <code>renderScene</code> 전량(<code>SceneV3Layer.tsx:90-116</code>). floor만 캐시(<code>:1423-1448</code>), <strong>furniture·foreground·grade는 매번 재그림</strong></td>
+<td>테마 토글마다 수천 path 재드로우 → 수백ms 프리즈(주석도 &quot;웜 ~300ms&quot; 인정)</td>
+<td>가구 레이어도 오프스크린 캐시, grade만 재적용(또는 테마를 CSS 필터로)</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>B7</strong></td>
+<td>아바타 = 사진배지/이니셜 라운드사각(`OfficeViewport2D.tsx:1347-1388), 몸통·방향 없음</td>
+<td>oVice/Gather는 전신/상반신으로 방향·활동 표현. 배지는 정면 1장</td>
+<td>배지 유지+방향 인디케이터(화살/그림자 늘임), 말하기 링, 활동 아이콘</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>B8</strong></td>
+<td>프레즌스 = 점 1개(상태점 <code>:1376-1387</code>)만. speaking/활동 미표시. typing 상태 계산되나(`office2d.ts:129) 시각출력 0</td>
+<td>상용은 speaking 펄스·화면공유·타이핑 배지·방해금지</td>
+<td>speaking 링(음성 이벤트), typing 시 배지 애니, 상태 아이콘</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>B9</strong></td>
+<td>가구 ~35종(<code>ASSET_CATALOG:1466-1499</code>)이나 단일 톱다운 실루엣·색 변형만(회의체어=태스크체어 색만, <code>:486</code>). 팔레트 <code>KINDDOT/GREENS</code> 하드코딩(<code>:14-16</code>)</td>
+<td>Kumospace/Teamflow는 룸 테마별 가구 세트 변주. 여기 오피스는 늘 같은 톤</td>
+<td>룸별 팔레트·가구 스킨 데이터화, 브랜드 컬러 주입점</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>B10</strong></td>
+<td>레이아웃 코드 파생(<code>office2dToV3.ts:79-201</code> 하드코딩, 벤치 3개 고정). 배포 레이아웃은 별도 저품질 SVG 경로(<code>OfficeViewport2D.tsx:1045-1087</code>)</td>
+<td>상용은 드래그 에디터로 무한 구성. 배포 시 조악한 SVG 색면으로 급락</td>
+<td>배포 레이아웃도 V3 렌더러로 통합(SVG 폐기), 편집기→V3 스키마 브리지</td>
+<td>L</td>
+</tr>
+<tr>
+<td><strong>B11</strong></td>
+<td>재질 절차텍스처(woodFloor <code>:101-145</code>, tile <code>:155</code>, carpet <code>:168</code>) 좋으나 각 1종 고정·시드만 다름(나무바닥 늘 <code>#CB9760</code>)</td>
+<td>상용은 콘크리트/우드/폴리싱/러그 다양+반사</td>
+<td>바닥/벽 재질 프리셋 팔레트화(우드/스톤 3~4종)</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>B12</strong></td>
+<td>원근 = 순수 탑다운. 가구는 하늘뷰 실루엣, 아바타는 정면뷰 → 시점 불일치</td>
+<td>oVice/Kumospace는 경 3/4 아이소로 측면 보여 공간감↑. 순수 탑다운은 &quot;지도&quot;처럼 읽혀 몰입 낮음</td>
+<td>경 아이소(15~20°)는 L 재작업 — 단기는 가구 측면 하이라이트로 볼륨 암시</td>
+<td>L</td>
+</tr>
+<tr>
+<td><strong>B13</strong></td>
+<td>빈 공간 — work존 벤치3(10석)로 넓은 바닥 노출, 존 색면조차 캔버스 미드로(<code>office2dToV3.ts:94-95</code> label=&#39;&#39;)</td>
+<td>상용은 파티션·러그·조명으로 밀도 관리. 여기 대공간 휑함</td>
+<td>존 바닥 색조 차별화, 파티션·러그 밀도↑</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>B14</strong></td>
+<td>z-깊이 정렬이 <code>y*10000+150</code> 수동 바이어스(<code>OfficeViewport2D.tsx:931</code>), 좌석 0.45m 수동 상향(<code>:1175</code>)</td>
+<td>상용은 아바타-가구 오클루전 자연스러움. 하드코딩이라 앞뒤 겹침 엣지케이스서 깨질 여지</td>
+<td>baseline y 단일 규칙으로 통일(가구도 정렬 대상 편입)</td>
+<td>S</td>
+</tr>
+</tbody></table></div>
+<h3 id="에셋-파이프라인-고도화-경로">에셋 파이프라인 고도화 경로</h3>
+<p>병목은 <strong>아트 스킬이 아니라 절차 렌더러의 표현 상한 + 모션 부재</strong>.</p>
+<ul>
+<li><strong>옵션 1 — 절차++ (현 렌더러 심화·데이터화) 〔권장 1순위, 즉시〕</strong>: 룸/가구/재질을 프리셋 데이터화(B9/B11/B13) + 아바타 모션 부활(B1/B7/B8) + 가구 레이어 캐시(B6). 장점: 외부아트 0·무한 벡터 선명·1인 최적·코드자산 방대(1564줄). 단점: 순수 탑다운 평면성(B12)·가짜 그림자(B3) 근본 해소 불가(&quot;잘 만든 지도&quot; 천장). <strong>투입 대비 효과 최고.</strong></li>
+<li><strong>옵션 2 — 렌더-플레이트 하이브리드 〔차순위·플래그십 룸 한정〕</strong>: 배경(바닥/벽/조명)만 Blender/AI로 1회 고품질 렌더 플레이트, 가구·아바타는 캔버스 합성. 시간대 3장 프리렌더. 장점: 공간 몰입 상용 바 도달·런타임 0. 단점: 방마다 재제작(확장성↓, 옵션1과 상충)·편집기 정합 난이도·[[photoreal-web-render-strategy]] 유실 이력. <strong>방 1~3종 고정 초기엔 유효, 다중 브랜딩엔 부적합.</strong></li>
+<li><strong>옵션 3 — 스프라이트/3D 〔기각〕</strong>: 스프라이트는 D30 리셋으로 폐기, 3D는 [[stylized-realtime-r3f-pivot]]에서 2026-07-12 사용자 지시로 전면 제거 → 되돌리면 명시적 결정 위반.</li>
+</ul>
+<p><strong>최종 권고:</strong> 옵션1을 메인으로 <strong>B1(모션, S 최우선) → B6(가구 캐시) → B9/B11/B13(데이터화)</strong> 순. 몰입 필요한 플래그십 데모 룸에 한해 옵션2 배경 플레이트를 선택적 오버레이로 실험.</p>
+<hr>
+<h2 id="c-프론트-ux-견고성--완성도">C. 프론트 UX 견고성 &amp; 완성도</h2>
+<p><strong>판정:</strong> 데이터 페칭 계층은 상용급 — <code>console.tsx</code> 공용 킷(<code>LoadingState</code>/<code>ErrorBanner</code>+재시도/<code>EmptyState</code>)이 거의 전 페이지에 일관 적용, 로그인·모달 폼은 제출 중 비활성화·검증·성공 피드백 완비. 그러나 (1) 파괴적/에러 피드백이 native <code>alert/confirm/prompt</code>로 흩어지고, (2) <strong>i18n 전무 → 한국어 1,695건 하드코딩 락인</strong>, (3) <strong>접근성(ARIA/시맨틱)·모바일 반응형 사실상 부재</strong> → 엔터프라이즈 조달·다국가 판매 미달.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>ID</th>
+<th>발견 (file:line)</th>
+<th>상용화 영향</th>
+<th>고도화 액션</th>
+<th>규모</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>C1</strong></td>
+<td>i18n 계층 전무 — 의존성 0, <code>layout.tsx:15</code> <code>lang=&quot;ko&quot;</code> 하드코딩, 한국어 1,695건/35파일, <code>apiErrors.ts:2-23</code>도 한국어 상수</td>
+<td>B2B 재판매 전제인데 1로케일 완전 락인</td>
+<td>next-intl 카탈로그 추출+<code>t()</code> 래핑+<code>lang</code> 동적화</td>
+<td>L</td>
+</tr>
+<tr>
+<td><strong>C2</strong></td>
+<td>파괴적 확인·에러가 native 다이얼로그 — <code>meetings:279…</code>, <code>trip:224-249</code>, <code>reports:200…</code>, <code>work-log:316…</code>, <code>notices</code>, <code>admin/kpi</code>, <code>office-layout</code></td>
+<td>비동기·스타일·스크린리더·모바일 취약 → 프리미엄 UX 파탄</td>
+<td>공용 <code>ConfirmDialog</code>+토스트 프로바이더, 전 호출부 치환(<code>ScoreNoteModal</code>이 모델)</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>C3</strong></td>
+<td><code>window.prompt()</code>로 점수입력 — <code>admin/kpi/objections:89-99</code> 이의 재검토 점수 프롬프트 2연타</td>
+<td>관리자 핵심 워크플로우가 조악(검증·취소 없음)</td>
+<td>동일 페이지 참조하는 <code>ScoreNoteModal</code>(<code>kpi:123-230</code>) 재사용</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>C4</strong></td>
+<td>전역 토스트 부재 — 페이지별 임시 <code>flash()</code>+<code>OfficeViewport2D:359</code> 로컬 <code>showToast</code>, <code>aria-live</code> 없음</td>
+<td>피드백 패턴 제각각, 성공 확인 산발</td>
+<td><code>ToastProvider</code>(role=status, aria-live=polite) 통합</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>C5</strong></td>
+<td>에러 무음 삼킴 — <code>admin/sync:95</code> <code>catch{}</code>(배너 없음), <code>chat:152</code> 폴링 실패 무음, 다수 <code>.catch(()=&gt;[])</code></td>
+<td>서버 오류가 &quot;빈 화면&quot;으로 위장 → 장애를 데이터없음으로 오인</td>
+<td>sync에 ErrorBanner, 폴링 N회 실패 후 배너</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>C6</strong></td>
+<td>모바일 반응형 부재 — <code>OfficeShell</code> 반응형 유틸 2개(둘 다 &quot;숨김&quot;만), 사이드바 <code>w-60</code>+캔버스 고정, 드로어 전환 없음</td>
+<td>태블릿 이하 사용 불가 → 모바일 고객 배제</td>
+<td>사이드바 오프캔버스 드로어, 뷰포트 터치 팬/줌, 브레이크포인트 스택</td>
+<td>L</td>
+</tr>
+<tr>
+<td><strong>C7</strong></td>
+<td>ARIA 부재 — 전 프론트 <code>role=dialog/img/table</code>+<code>scope</code>+<code>aria-live</code> 합 4건. 모달에 dialog role·포커스트랩 없음, 테이블 <code>th scope</code> 없음</td>
+<td>스크린리더로 모달·표 탐색 불가 → WCAG 조달 즉시 탈락</td>
+<td>모달 dialog role+트랩+ESC, 표 시맨틱 thead/th scope</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>C8</strong></td>
+<td>닫기·아이콘 라벨 누락 — 모달 <code>×</code> <code>aria-label</code> 없음, SVG 119개 중 <code>aria-hidden</code> 12(전부 scene/shell), 콘텐츠 0</td>
+<td>스크린리더가 무의미 요소 낭독, 보조기술 조작 불가</td>
+<td>아이콘 버튼 <code>aria-label</code>, 장식 SVG <code>aria-hidden</code> 일괄</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>C9</strong></td>
+<td>일부 폼 라벨 미연결 — 로그인은 모범이나 <code>settings:294</code> 체크박스·<code>meetings:1040,1059</code>·<code>trip:531</code> <code>htmlFor</code> 없음</td>
+<td>라벨 클릭·스크린리더 연결 실패</td>
+<td>전 input <code>id</code>+<code>htmlFor</code>(로그인 패턴 확산)</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>C10</strong></td>
+<td>차트·게이지 대체표현 없음 — <code>work-status</code> 막대/파이·<code>kpi:90-110</code> 트렌드·<code>KpiGauge</code> 순수 시각(<code>role=img</code>·데이터표 없음)</td>
+<td>색·형태 의존 → 색맹·스크린리더에 KPI 전달 실패</td>
+<td>차트 <code>role=img</code>+요약 라벨 또는 숨김 데이터표</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>C11</strong></td>
+<td>로그인 remember-me·비번찾기 부재. 단 세션만료 복귀는 우수(<code>api.ts:41-52</code> 401→<code>?expired&amp;returnTo</code>, 오픈리다이렉트 방어)</td>
+<td>셀프 비번재설정 없으면 admin 수동개입</td>
+<td>forgot-password 플로우+&quot;로그인 유지&quot;</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>C12</strong></td>
+<td>채팅 낙관 append 롤백 불완전+4초 폴링(<code>chat:32,206-216</code>)</td>
+<td>&quot;실시간&quot; 채팅이 4초 지연+실패 시 유령 메시지</td>
+<td>실패 시 낙관항목 제거/재시도 배지, 장기 WS 승격</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>C13</strong></td>
+<td>로딩=스피너/텍스트(스켈레톤 아님), <code>admin/sync:225</code> 평문 &quot;불러오는 중&quot;</td>
+<td>로딩→콘텐츠 점프(CLS), 프리미엄 체감 저하</td>
+<td>목록/표 스켈레톤, sync는 <code>LoadingState</code> 통일</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>C14</strong></td>
+<td>CSV 내보내기·설정저장 무음 성공(<code>work-status:233-268</code>, <code>kpi:104</code>)</td>
+<td>완료 여부 불확실 → 재클릭·불안</td>
+<td>C4 토스트로 &quot;내보냄/저장됨&quot; 확인</td>
+<td>S</td>
+</tr>
+</tbody></table></div>
+<p><strong>Top-3:</strong> ① C4+C2+C3 토스트·다이얼로그 통합(12페이지 일관성·모바일·a11y 동시). ② C1 i18n(사업적 상한선, 조기 착수로 복리손실 차단). ③ C7~C10 접근성 베이스라인(대부분 기계적, WCAG 관문).
+<strong>긍정 기반(유지):</strong> <code>console.tsx</code> 킷 3종 일관 적용, 로그인 폼·세션만료 복귀, 모달 폼 제출 중 비활성화·검증은 상용 수준.</p>
+<hr>
+<h2 id="d-프론트-성능--아키텍처">D. 프론트 성능 &amp; 아키텍처</h2>
+<p><strong>판정:</strong> 실시간 뷰포트(Colyseus WS + rAF + 5인터벌)를 <code>(protected)/layout.tsx</code>의 셸에 <strong>상주 마운트</strong>하여 KPI·보고서·설정 등 모든 라우트에서도 무조건 가동 — 유휴 유저가 실시간 슬롯·저사양 CPU/배터리를 상시 잠식하는 구조적 결함이 최대 리스크(=22 T1-13). 앱 전체가 사실상 클라 렌더(RSC 0), <code>next/image</code>·<code>next/font</code> 미사용, <code>livekit-client</code>가 상주 셸에 정적 임포트 → 초기 번들·로드도 미달.</p>
+<div class="table-wrap"><table><thead><tr>
+<th>ID</th>
+<th>발견 (file:line)</th>
+<th>영향</th>
+<th>고도화 액션</th>
+<th>규모</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>D1</strong></td>
+<td>뷰포트 전 라우트 상주 — <code>&lt;OfficeViewport2D&gt;</code>가 <code>isOffice</code> 게이트 없이 렌더(<code>OfficeShell.tsx:1205</code>), <code>useOfficeRoom(true,…)</code> enabled 하드코딩(<code>OfficeViewport2D.tsx:211</code>)</td>
+<td><strong>크리티컬.</strong> 모든 메뉴 유저가 Colyseus 슬롯(<code>maxClients=100</code>)+rAF+5인터벌 점유 → 22 T0-3 동접천장(~150-250) 잠식·배터리</td>
+<td><code>/office</code>에서만 마운트·<code>enabled={isOffice}</code>. cleanup은 이미 <code>leave()</code> 호출 → 게이트만 추가</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>D2</strong></td>
+<td>rAF 탭 가시성 게이팅 없음(<code>OfficeViewport2D.tsx:827-944</code>), <code>document.hidden</code>은 chat 폴링만 체크</td>
+<td>포그라운드 유휴서도 매 프레임 아바타 순회·DOM 쓰기 지속</td>
+<td>유휴 시 rAF 정지·이벤트 재기동, 최소 <code>document.hidden</code> skip</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>D3</strong></td>
+<td>상주 뷰포트 5개 <code>setInterval</code> — 좌석/구조 60s, 회의근접 600ms(<code>:689</code>), 미니맵 dots 300ms(<code>:712</code>), 테마 60s</td>
+<td>300/600ms가 유휴 전원서 상시 setState+폴링 → 리렌더·서버부하</td>
+<td>D1 게이팅으로 대부분 해소, dots는 미니맵 열림 시만</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>D4</strong></td>
+<td><code>livekit-client</code> 상주 셸 <strong>정적</strong> 임포트(<code>OfficeShell.tsx:21</code>) — 대형 WebRTC 의존성</td>
+<td>회의는 조건부인데 SFU 클라가 모든 라우트 메인 번들</td>
+<td>회의 진입 시 <code>import(&#39;livekit-client&#39;)</code> 지연+MediaBar/Stage <code>dynamic()</code></td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>D5</strong></td>
+<td>RSC 기회 전무 — 49파일 중 36 <code>&#39;use client&#39;</code>, 20 page 전부 client, <code>(protected)/layout.tsx:1</code>부터 client</td>
+<td>서버 페칭·스트리밍 SSR 불가 → 목록이 클라 fetch 워터폴</td>
+<td>읽기 페이지 RSC+서버 fetch, 인증 게이트 미들웨어로</td>
+<td>L</td>
+</tr>
+<tr>
+<td><strong>D6</strong></td>
+<td>클라 fetch 워터폴 — 셸이 마운트 후 6 API 병렬(<code>:770-778</code>), 상주라 설정·감사 페이지서도 매번</td>
+<td>라우트 무관 대시보드 데이터 재요청 → TTI 지연</td>
+<td><code>/office</code>서만 트리거(D1 결합) 또는 RSC 프리페치</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>D7</strong></td>
+<td><code>next/image</code> 0·원시 <code>&lt;img&gt;</code> 4·<code>next/font</code> 0, <code>next.config.js</code> 최적화 설정 없음</td>
+<td>이미지 리사이즈/lazy/AVIF·폰트 최적화 미적용 → 대역폭·CLS</td>
+<td><code>next/image</code>(또는 lazy+명시크기)+<code>next/font</code>, 아바타 썸네일 규격화</td>
+<td>S~M</td>
+</tr>
+<tr>
+<td><strong>D8</strong></td>
+<td>줌 시 캔버스 전량 재렌더 — renderScale=2 → 3840×2162 전체 재그림(<code>SceneV3Layer.tsx:100-107</code>), 테마도 동일</td>
+<td>저사양서 ⌘K 포커스·시간대 전환 스파이크, 3840폭 ~33MB</td>
+<td>오프스크린 캐시·타일링 또는 CSS 확대+선택적 고해상 패치</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>D9</strong></td>
+<td><code>OfficeShell</code> ~1837줄 단일 client — LiveKit·검색·팔레트·6데이터셋 자체 useState, 상주라 children 전환 시 리렌더 루트</td>
+<td>상태 변경마다 대형 트리 리렌더, 메모이제이션 일부만</td>
+<td>뷰포트/패널/크롬 분리+상태 지역화, 또는 셸 <code>/office</code> 전용화</td>
+<td>L</td>
+</tr>
+<tr>
+<td><strong>D10</strong></td>
+<td>(긍정) 아바타 위치는 rAF가 <code>playersRef</code> mutable Map으로 20Hz setState 회피(<code>OfficeViewport2D.tsx:860-934</code>)</td>
+<td>20Hz 리렌더 폭발 구조적 차단 — 상용 수준 설계</td>
+<td>유지, D1 게이팅만</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>D11</strong></td>
+<td>(긍정) WS/타이머/리스너 cleanup 견고(<code>realtime.ts:342-348</code> leave+timer clear, rAF cancel, LiveKit off)</td>
+<td>명시적 누수 미발견</td>
+<td>유지</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>D12</strong></td>
+<td>rAF 내 프레임당 힙 할당 — <code>{...target}</code>(<code>:875</code>)·<code>{...v.disp}</code>(<code>:920</code>)·<code>metersToNorm</code>(`:923) 새 객체</td>
+<td>100명×~240fps(사용자 실측 233Hz)서 초당 수만 임시객체 → GC 지터</td>
+<td>재사용 버퍼(in-place)로 per-frame 할당 제거</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>D13</strong></td>
+<td>(대체로 긍정) 씬 렌더러 런타임 script 지연로드(<code>SceneV3Layer.tsx:59-64</code>)는 좋음. 단 실패 시 조용히 빈 캔버스</td>
+<td>번들 분리 적절, 실패 무음은 관측성 갭</td>
+<td>유지+로드 실패 텔레메트리</td>
+<td>—</td>
+</tr>
+</tbody></table></div>
+<p><strong>Top-3:</strong> ① D1 뷰포트 <code>/office</code> 전용 마운트(단일 게이트로 슬롯·CPU·인터벌·워터폴 동시 제거, 22 T1-13 정본 픽스). ② D5/D6 클라 트리 축소+RSC. ③ D4/D7 번들·이미지·폰트 위생.</p>
+<hr>
+<h2 id="e-상용-진입면--온보딩셀프서비스">E. 상용 진입면 &amp; 온보딩/셀프서비스</h2>
+<p><strong>판정:</strong> <strong>상용 진입면이 통째로 없다</strong> — 마케팅/가격·회원가입·셀프서브 트라이얼·신규 고객사 프로비저닝 0, <code>/</code>는 곧장 <code>/office</code> 리다이렉트, 로그인이 유일 입구(가입·비번찾기 링크조차 없음). 반면 <strong>기존 admin이 앉은 뒤 공간 셀프구성(좌석·조직도·공지)은 놀랄 만큼 깊다</strong>. 문제는 그 앞단(가입→유저 채우기→브랜딩→초대→구성원 온보딩)이 전부 개발자/DB 시드 의존이라 바이어 여정이 시작조차 불가.</p>
+<h3 id="바이어-여정-매핑">바이어 여정 매핑</h3>
+<div class="table-wrap"><table><thead><tr>
+<th>단계</th>
+<th>상태</th>
+<th>근거</th>
+</tr>
+</thead><tbody><tr>
+<td>① 랜딩/가격/소개</td>
+<td><strong>absent</strong></td>
+<td><code>app/page.tsx:4</code> <code>redirect(&#39;/office&#39;)</code>, 공개 라우트 0</td>
+</tr>
+<tr>
+<td>② 셀프 가입/고객사 개설</td>
+<td><strong>absent</strong></td>
+<td><code>/signup·/register</code> 없음, <code>auth.py</code> register 라우트 0</td>
+</tr>
+<tr>
+<td>③ 로그인</td>
+<td><strong>present</strong></td>
+<td><code>login/page.tsx</code> 이메일+비번만, 가입·비번찾기·SSO 없음</td>
+</tr>
+<tr>
+<td>④ 빈 회사 첫인상</td>
+<td><strong>absent(가이드)</strong></td>
+<td><code>office/page.tsx</code> <code>return null</code>, 웰컴·체크리스트·투어 0</td>
+</tr>
+<tr>
+<td>⑤ 유저 채우기</td>
+<td><strong>absent</strong></td>
+<td><code>employees</code> 읽기전용 ERP sync(<code>:170,438</code>), 유저 생성 API 0</td>
+</tr>
+<tr>
+<td>⑥ 역할/좌석/레이아웃</td>
+<td><strong>present(깊음)</strong></td>
+<td><code>office-layout</code> 드래그+버전 검증/배포/롤백, <code>org-chart</code></td>
+</tr>
+<tr>
+<td>⑦ 브랜딩/화이트라벨</td>
+<td><strong>absent</strong></td>
+<td>&quot;VirtualOffice&quot;·🏢 하드코딩(<code>login:62</code>,<code>OfficeShell:1145</code>), Company 브랜딩 필드 0</td>
+</tr>
+<tr>
+<td>⑧ 팀 초대</td>
+<td><strong>absent</strong></td>
+<td>유저/테넌트 초대 UI·API 없음(회의 초대만)</td>
+</tr>
+<tr>
+<td>⑨ 최종사용자 설정</td>
+<td><strong>partial(얇음)</strong></td>
+<td><code>settings</code> 아바타 배지 전용, 비번·이메일·알림 0</td>
+</tr>
+<tr>
+<td>⑩ 데모 시연</td>
+<td><strong>partial(파편)</strong></td>
+<td>seed 2개(유저3·좌석8), 공지·KPI·회의·조직 seed 0</td>
+</tr>
+<tr>
+<td>⑪ 계정 라이프사이클</td>
+<td><strong>absent</strong></td>
+<td>유저 CRUD·비번리셋·사용량 대시보드 0</td>
+</tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr>
+<th>ID</th>
+<th>발견</th>
+<th>상용화 영향</th>
+<th>고도화 액션</th>
+<th>규모</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>E1</strong></td>
+<td>공개 진입면 전무(<code>page.tsx:4</code> <code>/office</code> 리다이렉트)</td>
+<td>바이어 발견·평가 입구 없음, 데모 URL 못 줌</td>
+<td>공개 <code>/</code>·<code>/pricing</code>·<code>/demo</code> 마케팅 라우트</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>E2</strong></td>
+<td>셀프서브 가입/트라이얼 0(<code>auth.py</code> register 0)</td>
+<td>PLG 불가, 모든 신규가 수동 온보딩 = 확장 불가</td>
+<td>가입 라우트+테넌트 프로비저닝 API(회사→첫 admin)</td>
+<td>L</td>
+</tr>
+<tr>
+<td><strong>E3</strong></td>
+<td>admin이 유저 못 만듦(<code>employees:170</code> 읽기전용, 생성 API 0)</td>
+<td>ERP 없는 고객사는 사람 못 채움 → 사용 시작 불가</td>
+<td>admin 유저 CRUD UI+API, ERP有 sync·無 수동 이중경로</td>
+<td>L</td>
+</tr>
+<tr>
+<td><strong>E4</strong></td>
+<td>팀 초대 흐름 0(회의초대만)</td>
+<td>협업 제품인데 팀을 못 데려옴</td>
+<td>이메일 초대(토큰)→최초 비번설정 온보딩</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>E5</strong></td>
+<td>브랜딩 0(&quot;VirtualOffice&quot; 하드코딩, Company 필드 0)</td>
+<td>B2B 자사 브랜드 필수, &quot;남의 제품&quot; 인상</td>
+<td>admin 브랜딩 탭(로고·색·회사명)→셸/로그인 주입(+백엔드 Company)</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>E6</strong></td>
+<td>첫실행 가이드 0(웰컴/체크리스트/투어 없음)</td>
+<td>새 admin &quot;이제 뭘?&quot; 방치 → 활성화율 급락</td>
+<td>3단계 셋업 체크리스트 위젯+최초 1회 투어</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>E7</strong></td>
+<td>최종사용자 설정 얇음(아바타 전용)</td>
+<td>자기 계정도 관리 못함 → 지원티켓</td>
+<td>설정 &quot;계정&quot; 탭(비번·이메일·알림·세션)</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>E8</strong></td>
+<td>리치 데모 데이터 부재(seed 유저3·좌석8, 나머지 0)</td>
+<td>데모가 &quot;빈 사무실+3명&quot;으로 초라, 강점 死</td>
+<td><code>seed_demo.py</code> 1커맨드로 20+명·조직·공지·KPI·회의</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>E9</strong></td>
+<td>비번 찾기/변경 0(링크·엔드포인트 없음)</td>
+<td>분실 시 admin 개입/DB 조작</td>
+<td>forgot-password(이메일 토큰)+설정 내 변경</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>E10</strong></td>
+<td>계정/사용량 가시성 0(<code>audit</code>는 이벤트뷰어)</td>
+<td>좌석수·활성유저·구독 못 봄 → 갱신·업셀 근거 부재</td>
+<td>admin &quot;계정·사용량&quot; 페이지</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>E11</strong></td>
+<td>동의/약관/개인정보 UI 0</td>
+<td>GDPR/개인정보 미충족 → 조달 차단(백엔드 consent 테이블은 존재)</td>
+<td>최초 동의 게이트+설정 내 동의 관리</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>E12</strong></td>
+<td>ERP 하드결합 인상(<code>employees:438</code> &quot;🔒 ERP 자동동기화&quot; 전면, 실은 Mock으로 standalone 가능)</td>
+<td>&quot;우리 ERP 붙여야?&quot; 오해 → 진입장벽</td>
+<td>&quot;ERP 연동(선택)&quot; vs &quot;직접 관리&quot; 모드 명시</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>E13</strong></td>
+<td>하드코딩 데모 자격 노출(<code>login:91</code> alice, <code>seed_dev:103</code> password123)</td>
+<td>상용 로그인에 내부 계정 노출 → 신뢰 저하</td>
+<td>환경별 placeholder 분리(prod=중립)</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>E14</strong></td>
+<td>인앱 도움말 0(native <code>title=</code>만)</td>
+<td>셀프러닝 불가 → 모든 질문이 사람에게</td>
+<td>페이지별 &quot;?&quot; 헬프+문서 링크, 빈상태 CTA 가이드</td>
+<td>M</td>
+</tr>
+</tbody></table></div>
+<p><strong>Top-3:</strong> ① E2+E3+E4 셀프서브 온보딩 축(가입→유저생성→초대) — 사람을 못 넣으면 깊은 admin 구성이 死자산, 22 T0-1/T0-4와 맞물림. ② E8 리치 데모 시드(코드 최소·효과 최대). ③ E5 브랜딩+E6 첫실행 체크리스트(저비용, 활성화·전환 직결).
+<strong>긍정 기반(유지):</strong> <code>office-layout</code>(좌석·방·구역·벽+버전 검증/배포/롤백)·<code>org-chart</code>·<code>notices</code> CRUD는 이미 깊음 — 온보딩 앞단만 채우면 이 깊이가 곧 셀프서비스 가치로 전환.</p>
+<hr>
+<h2 id="부록--감사-시점-라이브-스택-상태-2026-07-24">부록 — 감사 시점 라이브 스택 상태 (2026-07-24)</h2>
+<ul>
+<li>프론트 <code>:3000</code>(Next 14, Ready 5s) · 백엔드 <code>:8000</code>(uvicorn, <code>/api/auth/login</code> 200·alice 토큰) · 실시간 <code>:2567</code>(Colyseus, <code>SCENE_FLOOR=v3</code>).</li>
+<li>문서 드리프트: <code>frontend/.env.local</code>·런북 주석이 로그인 경로를 <code>/auth/login</code>으로 표기하나 실제는 <strong><code>/api/auth/login</code></strong>(라우터 전체 <code>/api/*</code> prefix). → 22-doc/런북 정정 대상.</li>
+</ul>
+<blockquote><strong>다음 단계 권장:</strong> 본 문서의 Tier F0(즉효 5건)부터 착수하되, 22-doc T0-1(멀티테넌시)과 본 문서 F1(온보딩·화이트라벨)을 <strong>하나의 백엔드+프론트 결합 워크스트림</strong>으로 묶어 스펙화(→ <code>/tasks-generator</code> 또는 개별 스펙 문서). 데모·세일즈가 급하면 F0 우선, &quot;제품화&quot;가 목표면 F1 선행.</blockquote>
+<div class="meta-foot">원본: <code>23-frontend-design-asset-commercialization-audit.md</code> · 자동 생성 2026-07-24 · md-to-html</div>
+</main>
+</div>
+
+</body></html>

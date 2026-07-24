@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>24 — 온보딩 + 화이트라벨 워크스트림 구현 SPEC (2026-07-24)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">24 — 온보딩 + 화이트라벨 워크스트림 구현 SPEC (2026-07-24)</div><div class="sub">24-onboarding-whitelabel-workstream-spec.md</div><a class="lvl1" href="#24--온보딩--화이트라벨-워크스트림-구현-spec-2026-07-24">24 — 온보딩 + 화이트라벨 워크스트림 구현 SPEC (2026-07-24)</a><a class="lvl2" href="#0-선행-의존성-read-first--모든-것이-phase-1에-매달린다">0. 선행 의존성 (READ FIRST — 모든 것이 Phase 1에 매달린다)</a><a class="lvl2" href="#페이즈-개요-·-시퀀싱-·-공수">페이즈 개요 · 시퀀싱 · 공수</a><a class="lvl2" href="#phase-1--정체성에-company_id-삽입-〔22-t0-1-·-공수-l-·-blocker〕">Phase 1 — 정체성에 company_id 삽입 〔22 T0-1 · 공수 L · BLOCKER〕</a><a class="lvl3" href="#목표">목표</a><a class="lvl3" href="#데이터모델-변경-backendappmodelstablespy--alembic">데이터모델 변경 (backend/app/models/tables.py + Alembic)</a><a class="lvl3" href="#api-계약-인증-정체성-변경--시그니처가-핵심">API 계약 (인증 정체성 변경 — 시그니처가 핵심)</a><a class="lvl3" href="#프론트-화면">프론트 화면</a><a class="lvl3" href="#마이그레이션·롤아웃-주의">마이그레이션·롤아웃 주의</a><a class="lvl3" href="#완료-기준-게이트">완료 기준 (게이트)</a><a class="lvl2" href="#phase-2--테넌트-프로비저닝--셀프서브-가입-〔23-e2-·-공수-l〕">Phase 2 — 테넌트 프로비저닝 + 셀프서브 가입 〔23 E2 · 공수 L〕</a><a class="lvl3" href="#목표-1">목표</a><a class="lvl3" href="#데이터모델-변경">데이터모델 변경</a><a class="lvl3" href="#api-계약-backendappapisignuppy--신규-라우터-prefixapi-미인증-공개">API 계약 (backend/app/api/signup.py — 신규 라우터, prefix=/api, 미인증 공개)</a><a class="lvl3" href="#프론트-화면-23-e1-공개-진입면과-결합">프론트 화면 (23 E1 공개 진입면과 결합)</a><a class="lvl3" href="#마이그레이션·롤아웃-주의-1">마이그레이션·롤아웃 주의</a><a class="lvl3" href="#완료-기준-게이트-1">완료 기준 (게이트)</a><a class="lvl2" href="#phase-3--admin-유저-crud--팀-초대-〔23-e3-·-e4-·-공수-l〕">Phase 3 — admin 유저 CRUD + 팀 초대 〔23 E3 · E4 · 공수 L〕</a><a class="lvl3" href="#목표-2">목표</a><a class="lvl3" href="#데이터모델-변경-1">데이터모델 변경</a><a class="lvl3" href="#api-계약-backendappapiemployeespy-확장-or-신규-admin_userspy-require_roleadmin">API 계약 (backend/app/api/employees.py 확장 or 신규 admin_users.py, require_role(admin))</a><a class="lvl3" href="#프론트-화면-1">프론트 화면</a><a class="lvl3" href="#마이그레이션·롤아웃-주의-2">마이그레이션·롤아웃 주의</a><a class="lvl3" href="#완료-기준-게이트-2">완료 기준 (게이트)</a><a class="lvl2" href="#phase-4--화이트라벨-company-브랜딩--css-변수-토큰-〔23-e5-·-a7-·-a1-·-a13-·-공수-m〕">Phase 4 — 화이트라벨 (Company 브랜딩 + CSS 변수 토큰) 〔23 E5 · A7 · A1 · A13 · 공수 M〕</a><a class="lvl3" href="#목표-3">목표</a><a class="lvl3" href="#데이터모델-변경-2">데이터모델 변경</a><a class="lvl3" href="#api-계약-backendappapibrandingpy--신규">API 계약 (backend/app/api/branding.py — 신규)</a><a class="lvl3" href="#프론트-화면-css-변수화--a7a1의-핵심">프론트 화면 (CSS 변수화 = A7/A1의 핵심)</a><a class="lvl3" href="#마이그레이션·롤아웃-주의-3">마이그레이션·롤아웃 주의</a><a class="lvl3" href="#완료-기준-게이트-3">완료 기준 (게이트)</a><a class="lvl2" href="#phase-5--첫실행-온보딩-체크리스트--최초-투어-〔23-e6-·-공수-m〕">Phase 5 — 첫실행 온보딩 체크리스트 + 최초 투어 〔23 E6 · 공수 M〕</a><a class="lvl3" href="#목표-4">목표</a><a class="lvl3" href="#데이터모델-변경-3">데이터모델 변경</a><a class="lvl3" href="#api-계약-backendappapionboardingpy--신규">API 계약 (backend/app/api/onboarding.py — 신규)</a><a class="lvl3" href="#프론트-화면-2">프론트 화면</a><a class="lvl3" href="#마이그레이션·롤아웃-주의-4">마이그레이션·롤아웃 주의</a><a class="lvl3" href="#완료-기준-게이트-4">완료 기준 (게이트)</a><a class="lvl2" href="#phase-6--비번-찾기변경--계정-설정-〔23-e9-·-e7-·-c11-·-공수-m〕">Phase 6 — 비번 찾기/변경 + 계정 설정 〔23 E9 · E7 · C11 · 공수 M〕</a><a class="lvl3" href="#목표-5">목표</a><a class="lvl3" href="#데이터모델-변경-62--토큰-서브시스템-phase-3보다-먼저-착수">데이터모델 변경 (6.2 — 토큰 서브시스템, Phase 3보다 먼저 착수)</a><a class="lvl3" href="#api-계약-backendappapiauthpy-확장">API 계약 (backend/app/api/auth.py 확장)</a><a class="lvl3" href="#프론트-화면-3">프론트 화면</a><a class="lvl3" href="#마이그레이션·롤아웃-주의-5">마이그레이션·롤아웃 주의</a><a class="lvl3" href="#완료-기준-게이트-5">완료 기준 (게이트)</a><a class="lvl2" href="#부록-a--신규변경-파일-매니페스트-빌더-착수용">부록 A — 신규/변경 파일 매니페스트 (빌더 착수용)</a><a class="lvl2" href="#부록-b--2223-doc-매핑-표">부록 B — 22/23 doc 매핑 표</a></nav>
+<main><h1 id="24--온보딩--화이트라벨-워크스트림-구현-spec-2026-07-24">24 — 온보딩 + 화이트라벨 워크스트림 구현 SPEC (2026-07-24)</h1>
+<blockquote><strong>정본 위치</strong>: <code>docs/planning/24-onboarding-whitelabel-workstream-spec.md</code>
+<strong>부모 감사</strong>: <a href="22-commercialization-gap-audit.md"><code>22-commercialization-gap-audit.md</code></a>(백엔드/멀티테넌시/SaaS 계층) · <a href="23-frontend-design-asset-commercialization-audit.md"><code>23-frontend-design-asset-commercialization-audit.md</code></a>(프론트/진입면/화이트라벨)
+<strong>이 문서의 범위</strong>: 22-doc의 <strong>T0-1(멀티테넌시)·T0-4(SaaS 계층)</strong> 위에, 23-doc의 <strong>E2·E3·E4(온보딩 축)·E5(브랜딩)·E6(첫실행)·E9/E7(계정 셀프서비스)·A7/A1(CSS 변수 화이트라벨)</strong> 를 얹는 <strong>&quot;도구 → 제품&quot; 전환의 단일 백엔드+프론트 결합 워크스트림</strong>.
+<strong>이 문서가 아닌 것</strong>: 과금/구독/미터링(T0-4 나머지)·SSO/SAML/OIDC/SCIM·i18n(23 C1)·실시간 스케일(T0-3)·컴플라이언스 팩(22 Tier 2)은 <strong>별도 워크스트림</strong>. 단, 여기서 세우는 <code>company_id</code> 정체성이 그 전부의 선행 토대다.
+<strong>한 줄 결론</strong>: 지금은 <code>company_id</code>가 3개 테이블(<code>ErpUser</code>·<code>OrgGroup</code>·<code>Office</code>)에만 <strong>FK 없는 맨 INTEGER</strong>로 박혀 있고, JWT·<code>CurrentUser</code>는 이를 실어 나르지 않으며, <code>company_id=1</code>이 하드코딩(<code>erp.py:27</code>)돼 있다. <strong>정체성에 <code>company_id</code>를 심고(Phase 1) → 그 위에 프로비저닝·유저관리·화이트라벨·첫실행·계정을 얹는다(Phase 2~6).</strong></blockquote>
+<hr>
+<h2 id="0-선행-의존성-read-first--모든-것이-phase-1에-매달린다">0. 선행 의존성 (READ FIRST — 모든 것이 Phase 1에 매달린다)</h2>
+<p><strong>Phase 1(company_id 정체성)은 이 워크스트림 전체의 하드 블로커다.</strong> 나머지 5개 페이즈는 전부 &quot;인증 주체가 자기 회사를 안다&quot;는 전제 위에서만 성립한다.</p>
+<pre class="code"><code>                    ┌─────────────────────────────────────────────┐
+                    │  Phase 1 — company_id 정체성 (BLOCKER, L)    │
+                    │  Company 테이블 · JWT/CurrentUser.company_id  │
+                    │  · 쿼리 스코프 강제(deps) · Alembic 마이그레이션 │
+                    └───────────────┬─────────────────────────────┘
+                                    │ (모든 페이즈가 company_id·CurrentUser·Company를 소비)
+      ┌──────────────┬─────────────┼──────────────┬───────────────┐
+      ▼              ▼             ▼              ▼               ▼
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   ┌──────────┐
+│ Phase 2  │  │ Phase 3  │  │ Phase 4  │  │ Phase 5  │   │ Phase 6  │
+│ 프로비저닝  │─▶│ 유저 CRUD │  │ 화이트라벨 │  │ 첫실행    │   │ 비번찾기  │
+│ +셀프가입  │  │ +팀 초대  │  │ (E5+A7)  │  │ 체크리스트 │   │ +계정탭   │
+│ (E2, L)  │  │ (E3/E4,L)│  │ (E5,M)   │  │ (E6, M)  │   │ (E9/E7,M)│
+└──────────┘  └────┬─────┘  └──────────┘  └────┬─────┘   └──────────┘
+                   │  (초대 토큰 흐름 = Phase 6 비번설정 인프라 공유)       │
+                   └───────────────────────────────────────────────────┘</code></pre>
+<p><strong>의존 규칙</strong>:</p>
+<ul>
+<li><strong>Phase 2 ⟶ Phase 3</strong>: 프로비저닝이 &quot;첫 admin&quot;을 만들어야 그 admin이 유저를 CRUD·초대한다. Phase 3의 초대 온보딩(비번설정)은 Phase 6의 토큰·비번설정 인프라와 <strong>동일 코드</strong>를 공유하므로, Phase 6의 토큰 서브시스템(§7.2)을 Phase 3와 함께 앞당겨 구현한다.</li>
+<li><strong>Phase 4(화이트라벨)</strong> 는 Phase 1의 <code>Company</code> 테이블에 브랜딩 컬럼을 추가하는 것이므로 Phase 1 직후 병렬 착수 가능. 단 프론트 주입점(로그인/셸)은 Phase 2의 공개 라우트가 있어야 완성도가 산다.</li>
+<li><strong>Phase 5·6</strong> 은 Phase 1~3 위에서 독립. 병렬 가능.</li>
+<li><strong>왜 company_id가 전제인가</strong>: 프로비저닝은 &quot;새 회사 row 생성 + company_id 발급&quot;, 유저 CRUD·초대는 &quot;내 company_id 스코프 내에서만&quot;, 화이트라벨은 &quot;company_id별 브랜딩 1세트&quot;, 첫실행 상태는 &quot;company_id에 저장&quot;, 비번찾기 토큰은 &quot;company_id 스코프 유저&quot;에 매인다. <code>company_id</code> 없이는 두 번째 회사가 첫 회사의 데이터를 본다(22 T0-1의 IDOR).</li>
+</ul>
+<p><strong>감사 근거(현 상태)</strong>:</p>
+<ul>
+<li><code>company_id</code>는 <code>ErpUser</code>(<code>tables.py:260</code>)·<code>OrgGroup</code>(<code>:342</code>)·<code>Office</code>(<code>:420</code>)에만 존재. <strong>FK 없음</strong>(<code>Integer</code>, 참조 무결성 미보장), <code>Company</code> 테이블 부재.</li>
+<li><code>WorkLog</code>·<code>KpiResult</code>·<code>Report</code>·<code>ChatMessage</code>·<code>Presence</code>·<code>Meeting</code>·<code>Seat</code>·<code>Notice</code>·<code>AuditLog</code> 등 <strong>fact/운영 테이블 전부 <code>company_id</code> 없음</strong> → 회사 스코프 쿼리·인덱스 불가(22 T1-3).</li>
+<li>JWT 클레임: <code>sub·email·role·team_id</code>만(<code>auth.py:105-113</code>). <code>CurrentUser</code>: <code>user_id·email·role·team_id</code>만(<code>deps.py:26-32</code>) → <strong>company_id 미탑재</strong>.</li>
+<li><code>erp.py:27</code> <code>DEFAULT_COMPANY_ID = 1</code> 하드코딩, <code>:9</code> 주석 &quot;멀티테넌트는 완성 이후(Won&#39;t)&quot;.</li>
+</ul>
+<hr>
+<h2 id="페이즈-개요-·-시퀀싱-·-공수">페이즈 개요 · 시퀀싱 · 공수</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>#</th>
+<th>페이즈</th>
+<th>해소 감사 ID</th>
+<th>공수</th>
+<th>선행</th>
+<th>병렬 가능</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>1</strong></td>
+<td>company_id 정체성 삽입</td>
+<td>22 T0-1 · (부분) T1-3</td>
+<td><strong>L</strong></td>
+<td>—</td>
+<td>(없음, 최우선)</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>테넌트 프로비저닝 + 셀프서브 가입</td>
+<td>23 E2 · 22 T0-4(온보딩)</td>
+<td><strong>L</strong></td>
+<td>1</td>
+<td>4와 병렬</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>admin 유저 CRUD + 팀 초대</td>
+<td>23 E3 · E4</td>
+<td><strong>L</strong></td>
+<td>1, 2, (6.2 토큰)</td>
+<td>4와 병렬</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>화이트라벨 (Company 브랜딩 + CSS 변수)</td>
+<td>23 E5 · A7 · A1 · A13</td>
+<td><strong>M</strong></td>
+<td>1</td>
+<td>2·3과 병렬</td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td>첫실행 온보딩 체크리스트 + 투어</td>
+<td>23 E6</td>
+<td><strong>M</strong></td>
+<td>1, 2, 3</td>
+<td>6과 병렬</td>
+</tr>
+<tr>
+<td><strong>6</strong></td>
+<td>비번 찾기/변경 + 계정 설정</td>
+<td>23 E9 · E7 · C11</td>
+<td><strong>M</strong></td>
+<td>1</td>
+<td>5와 병렬</td>
+</tr>
+</tbody></table></div>
+<p><strong>권장 시퀀싱(직렬/병렬)</strong>:</p>
+<ol>
+<li><strong>Phase 1 단독 선행</strong>(BLOCKER). 여기서 마이그레이션 규율(22 T0-2)까지 확립.</li>
+<li><strong>Phase 1 완료 후</strong>: <code>[Phase 2 + Phase 4]</code> 병렬 착수(프로비저닝 팀 / 화이트라벨 팀). <strong>Phase 6.2 토큰 서브시스템</strong>을 이 시점에 함께 착수(Phase 3 초대가 소비).</li>
+<li><strong>Phase 2 완료 후</strong>: <code>Phase 3</code>(유저 CRUD·초대) 착수 — 6.2 토큰 인프라 재사용.</li>
+<li><strong>Phase 3 완료 후</strong>: <code>[Phase 5 + Phase 6.1]</code> 병렬(첫실행 / 비번찾기·계정탭).</li>
+<li>총 임계경로: <strong>1 → 2 → 3 → 5</strong>. 4·6은 곁가지로 흡수.</li>
+</ol>
+<hr>
+<h2 id="phase-1--정체성에-company_id-삽입-〔22-t0-1-·-공수-l-·-blocker〕">Phase 1 — 정체성에 company_id 삽입 〔22 T0-1 · 공수 L · BLOCKER〕</h2>
+<h3 id="목표">목표</h3>
+<p><code>Company</code> 엔티티를 신설하고, <strong>인증 주체(JWT·<code>CurrentUser</code>)가 자기 <code>company_id</code>를 실어 나르게</strong> 한 뒤, <strong>모든 테넌트 스코프 쿼리를 의존성으로 강제</strong>한다. <code>company_id=1</code> 하드코딩을 제거한다. 이 페이즈가 끝나면 &quot;두 번째 회사&quot;를 안전하게 받을 수 있는 최소선이 선다.</p>
+<h3 id="데이터모델-변경-backendappmodelstablespy--alembic">데이터모델 변경 (<code>backend/app/models/tables.py</code> + Alembic)</h3>
+<p><strong>1-1. <code>Company</code> 테이블 신설</strong> (모든 <code>company_id</code>의 참조 대상 = 단일 정본):</p>
+<pre class="code"><code>class CompanyPlan(str, Enum):          # T0-4 과금은 별도 워크스트림이나 컬럼은 미리 심음
+    TRIAL = &quot;trial&quot;
+    STANDARD = &quot;standard&quot;
+    ENTERPRISE = &quot;enterprise&quot;
+
+class CompanyStatus(str, Enum):
+    ACTIVE = &quot;active&quot;
+    SUSPENDED = &quot;suspended&quot;            # 미납/정지
+    DELETED = &quot;deleted&quot;               # soft
+
+class Company(Base, TimestampMixin):
+    __tablename__ = &quot;company&quot;
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)          # 표시 회사명
+    slug: Mapped[str] = mapped_column(String(63), nullable=False)           # URL/서브도메인 키 (소문자·하이픈)
+    status: Mapped[CompanyStatus] = mapped_column(SQLEnum(CompanyStatus), nullable=False, default=CompanyStatus.ACTIVE, index=True)
+    plan: Mapped[CompanyPlan] = mapped_column(SQLEnum(CompanyPlan), nullable=False, default=CompanyPlan.TRIAL)
+    trial_ends_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    seat_limit: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)   # None=무제한(내부/엔터프라이즈)
+    # ── Phase 4 화이트라벨 필드 (여기 미리 선언, Phase 4에서 UI/주입 채움) ──
+    brand_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)   # 셸/로그인 표시명 (None → name)
+    logo_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)    # /media/branding/{company_id}/logo.*
+    primary_color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)  # #RRGGBB
+    accent_color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)
+    __table_args__ = (
+        UniqueConstraint(&quot;slug&quot;, name=&quot;uq_company_slug&quot;),
+        CheckConstraint(&quot;primary_color IS NULL OR primary_color ~ '^#[0-9A-Fa-f]{6}$'&quot;, name=&quot;ck_company_primary_hex&quot;),  # postgresql만; sqlite는 앱 검증
+    )</code></pre>
+<p><strong>1-2. <code>company_id</code> FK 전수 부착 + 백필</strong>. 기존 3개(<code>ErpUser</code>·<code>OrgGroup</code>·<code>Office</code>)는 <code>Integer</code> → <code>ForeignKey(&quot;company.id&quot;)</code> 로 승격. <strong>누락 테이블에 <code>company_id</code> 추가</strong>(22 T1-3 동반 해소):</p>
+<div class="table-wrap"><table><thead><tr>
+<th>테이블</th>
+<th>현재</th>
+<th>조치</th>
+</tr>
+</thead><tbody><tr>
+<td><code>ErpUser</code>·<code>OrgGroup</code>·<code>Office</code></td>
+<td><code>Integer</code> (FK 없음)</td>
+<td><code>ForeignKey(&quot;company.id&quot;, ondelete=&quot;RESTRICT&quot;)</code> 로 승격</td>
+</tr>
+<tr>
+<td><code>WorkLog</code>·<code>KpiResult</code>·<code>Report</code>·<code>Meeting</code>·<code>Seat</code>·<code>Notice</code>·<code>ChatMessage</code>·<code>Presence</code>·<code>BusinessTrip</code>·<code>AuditLog</code>·<code>DailyStatusPush</code>·<code>MeetingMinute</code>·<code>ActionItem</code>·<code>Asset</code>·<code>UserAvatar</code>·<code>UserIntegration</code>·<code>ErpSyncLog</code></td>
+<td><strong>없음</strong></td>
+<td><code>company_id: Mapped[int] = mapped_column(ForeignKey(&quot;company.id&quot;, ondelete=&quot;RESTRICT&quot;), nullable=False, index=True)</code> 추가. 자식 테이블(<code>Floor</code>·<code>Room</code>·<code>Seat*History</code>·<code>MeetingParticipant</code> 등)은 부모 FK로 스코프 유도 가능하나, <strong>직접 쿼리되는 fact 테이블은 반드시 자체 <code>company_id</code></strong> (풀스캔 방지)</td>
+</tr>
+<tr>
+<td>복합 인덱스</td>
+<td>—</td>
+<td>기간 롤업 대상(<code>WorkLog</code>·<code>KpiResult</code>·<code>Report</code>·<code>Presence</code>)에 <code>Index(&quot;idx_{t}_company_date&quot;, &quot;company_id&quot;, &quot;{date컬럼}&quot;)</code> (22 T1-3)</td>
+</tr>
+</tbody></table></div>
+<p><strong>1-3. 마이그레이션(Alembic) — 3-스텝 백필 전략</strong> (22 T0-2 규율 확립 동반):</p>
+<ul>
+<li>현재 <code>alembic/</code>은 골격, 운영 스키마는 <code>create_all()</code> + <code>AUTO_CREATE_TABLES=true</code>(<code>main.py:23-27</code>, <code>config.py:34</code>) → <strong>스키마 드리프트 확정 상태</strong>. 이 페이즈에서 Alembic을 정본화한다.</li>
+<li><strong>Step A (additive)</strong>: <code>company</code> 테이블 create + 기존 <code>id=1</code> 시드 row(<code>INSERT INTO company (id, name, slug, status, plan) VALUES (1, &#39;기본 회사&#39;, &#39;default&#39;, &#39;active&#39;, &#39;enterprise&#39;)</code>). 신규 <code>company_id</code> 컬럼은 <strong>먼저 <code>nullable=True</code></strong> 로 추가.</li>
+<li><strong>Step B (backfill)</strong>: 모든 신규 <code>company_id</code>를 <code>1</code> 로 UPDATE (기존 단일 테넌트 데이터 = default company). <code>Integer</code> 3개는 FK 제약을 나중에 붙임.</li>
+<li><strong>Step C (constrain)</strong>: <code>company_id</code> → <code>NOT NULL</code> + FK 제약 + 인덱스. <code>ErpUser</code>의 <code>uq_erp_user_company_email</code>(<code>tables.py:319</code>)은 이미 존재 — 유지.</li>
+<li><strong>롤아웃 가드</strong>: 배포 파이프라인에 <code>alembic upgrade head</code> 단계 삽입, <strong><code>AUTO_CREATE_TABLES</code> 를 staging/prod에서 강제 false</strong>(<code>config.py:34</code> 기본 false 유지 + <code>assert_production_safe</code>에 auto_create 금지 체크 추가 권장).</li>
+</ul>
+<h3 id="api-계약-인증-정체성-변경--시그니처가-핵심">API 계약 (인증 정체성 변경 — 시그니처가 핵심)</h3>
+<p><strong>1-4. JWT 클레임에 <code>company_id</code> 추가</strong> (<code>auth.py:_build_token</code>):</p>
+<pre class="code"><code>create_access_token({
+    &quot;sub&quot;: str(user.id), &quot;email&quot;: user.email, &quot;role&quot;: user.role.value,
+    &quot;team_id&quot;: user.erp_team_id,
+    &quot;company_id&quot;: user.company_id,          # ← 신규 클레임
+}, expires_delta=...)</code></pre>
+<p><strong>1-5. <code>CurrentUser</code>에 <code>company_id</code> 필드</strong> (<code>deps.py</code>):</p>
+<pre class="code"><code>@dataclass
+class CurrentUser:
+    user_id: int
+    company_id: int                          # ← 신규 (필수)
+    email: Optional[str]
+    role: str
+    team_id: Optional[int] = None
+
+async def get_current_user(token=Depends(oauth2_scheme)) -&gt; CurrentUser:
+    payload = decode_access_token(token)
+    sub, role = payload.get(&quot;sub&quot;), payload.get(&quot;role&quot;)
+    company_id = payload.get(&quot;company_id&quot;)
+    if sub is None or role is None or company_id is None:   # 구 토큰(company_id 없음) → 401 재로그인
+        raise credentials_exc
+    return CurrentUser(user_id=int(sub), company_id=int(company_id),
+                       email=payload.get(&quot;email&quot;), role=role, team_id=payload.get(&quot;team_id&quot;))</code></pre>
+<p><strong>1-6. 스코프 강제 의존성</strong> (<code>deps.py</code> — 신규, 모든 라우터가 소비할 단일 정본):</p>
+<pre class="code"><code>def company_scope() -&gt; Callable:
+    &quot;&quot;&quot;CurrentUser.company_id 를 반환하는 얇은 의존성. 라우터는 이 값으로 .where(Model.company_id == cid) 강제.&quot;&quot;&quot;
+    async def _dep(user: CurrentUser = Depends(get_current_user)) -&gt; int:
+        return user.company_id
+    return _dep
+
+def assert_same_company(user: CurrentUser, obj_company_id: int) -&gt; None:
+    &quot;&quot;&quot;단건 조회 시 obj의 company_id ≠ user.company_id 면 404(존재 은닉). IDOR(22 T0-1) 차단.&quot;&quot;&quot;
+    if obj_company_id != user.company_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=&quot;not_found&quot;)</code></pre>
+<p><strong>1-7. 라우터 전수 스코프 적용</strong> (기계적·전 라우터):</p>
+<ul>
+<li>목록 쿼리: <code>.where(Model.company_id == cid)</code> 를 <strong>모든</strong> <code>select(Model)</code> 에 강제(<code>work_logs</code>·<code>reports</code>·<code>kpi</code>·<code>meetings</code>·<code>seats</code>·<code>notices</code>·<code>office_layouts</code>·<code>chat</code>·<code>trips</code>·<code>presence</code>).</li>
+<li>단건 조회: <code>assert_same_company(user, row.company_id)</code> 로 UUID 추측 IDOR 차단(22 T0-1의 meetings·seats 직접 열람/변조).</li>
+<li><code>erp.py</code> <code>DEFAULT_COMPANY_ID = 1</code> 삭제 → <code>cid = Depends(company_scope())</code> 로 치환(<code>:78·:119·:140·:224</code>).</li>
+<li>쓰기(INSERT): 신규 row 생성 시 <code>company_id=cid</code> 자동 주입(클라이언트 입력 금지 — 위조 방지).</li>
+<li><strong>실시간 경계(참고, 이 워크스트림 밖이나 명시)</strong>: <code>realtime/</code>는 클라이언트가 주장한 room/company를 토큰 검증 없이 신뢰(22 T0-1·T1-10). 최소한 join 시 JWT <code>company_id</code> 클레임과 요청 room의 company 일치 검증을 후속 트랙에 남긴다.</li>
+</ul>
+<h3 id="프론트-화면">프론트 화면</h3>
+<ul>
+<li><code>lib/auth.ts</code>: 로그인 응답의 토큰을 그대로 저장하므로 프론트 코드 변경은 <strong>없음</strong>(company_id는 서버가 클레임에 넣음). 단 <code>/api/auth/me</code> 응답 <code>UserInfo</code>에 <code>company_id</code> 추가 노출(Phase 4 브랜딩 fetch·Phase 5 첫실행 상태 조회가 소비).</li>
+</ul>
+<h3 id="마이그레이션·롤아웃-주의">마이그레이션·롤아웃 주의</h3>
+<ul>
+<li><strong>구 토큰 무효화</strong>: <code>company_id</code> 클레임 없는 기존 발급 토큰은 1-5에서 401 → 전원 재로그인. 무중단이 필요하면 배포 전 공지 or 만료(24h) 후 자연 소멸 대기.</li>
+<li><strong>RESTRICT 선택 이유</strong>: 회사 삭제 시 fact가 캐스케이드 삭제되면 감사·평가 영구성(D18) 위반. 회사 삭제는 <code>status=deleted</code> soft만 허용.</li>
+<li><strong>인덱스 백필 부하</strong>: Step C의 대형 테이블 인덱스 생성은 <code>CREATE INDEX CONCURRENTLY</code>(postgres) 고려.</li>
+</ul>
+<h3 id="완료-기준-게이트">완료 기준 (게이트)</h3>
+<ul>
+<li class="task"><input type="checkbox" disabled> <code>Company</code> 테이블 존재 + <code>id=1</code> default 시드 + <code>slug</code> 유니크.</li>
+<li class="task"><input type="checkbox" disabled> fact 테이블 전부 <code>company_id NOT NULL</code> + FK + <code>(company_id, date)</code> 인덱스(대상 4종).</li>
+<li class="task"><input type="checkbox" disabled> JWT 디코드 시 <code>company_id</code> 클레임 존재, <code>CurrentUser.company_id</code> 채워짐.</li>
+<li class="task"><input type="checkbox" disabled> <strong>교차 테넌트 IDOR 테스트</strong>: company A 유저 토큰으로 company B의 meeting/seat/report UUID 조회 → <strong>404</strong>(라우터 전수). 이 테스트가 회귀 스위트에 상주.</li>
+<li class="task"><input type="checkbox" disabled> <code>grep DEFAULT_COMPANY_ID</code> → 0건.</li>
+<li class="task"><input type="checkbox" disabled> <code>alembic upgrade head</code> 로 클린 DB 재현 가능, <code>AUTO_CREATE_TABLES</code> prod 미사용.</li>
+<li class="task"><input type="checkbox" disabled> 백엔드 pytest green(기존 264+ pass 유지) + 신규 스코프 테스트.</li>
+</ul>
+<hr>
+<h2 id="phase-2--테넌트-프로비저닝--셀프서브-가입-〔23-e2-·-공수-l〕">Phase 2 — 테넌트 프로비저닝 + 셀프서브 가입 〔23 E2 · 공수 L〕</h2>
+<h3 id="목표-1">목표</h3>
+<p>&quot;회사 개설 → 첫 admin 발급&quot; 흐름을 코드로 자동화한다(현재 전부 수동 DB 시드). 셀프서브 트라이얼 계정을 <strong>즉시 발급</strong>(즉시 로그인 가능)한다. PLG 진입로를 연다.</p>
+<h3 id="데이터모델-변경">데이터모델 변경</h3>
+<ul>
+<li>Phase 1의 <code>Company</code>(status/plan/trial_ends_at/seat_limit) 재사용, 신규 테이블 없음.</li>
+<li>첫 admin은 <code>ErpUser</code>(role=<code>super_admin</code>, <code>company_id</code>=신규회사, <code>password_hash</code> 설정)로 생성. <code>ErpUser.id</code>는 현재 <code>BigInteger PK</code>(ERP 조인키). ERP 없이 자체 생성하는 유저는 <strong>음수 or 예약 시퀀스 대역</strong>을 쓰거나(ERP id와 충돌 방지), <code>ErpUser</code>에 <code>source: Mapped[str]</code>(<code>erp</code>|<code>native</code>) 컬럼을 추가해 native 유저를 별도 시퀀스로 발급(Phase 3와 공유하는 결정 — §3 참조).</li>
+</ul>
+<h3 id="api-계약-backendappapisignuppy--신규-라우터-prefixapi-미인증-공개">API 계약 (<code>backend/app/api/signup.py</code> — 신규 라우터, <code>prefix=&quot;/api&quot;</code>, <strong>미인증 공개</strong>)</h3>
+<pre class="code"><code>POST /api/signup                          # 셀프서브 회사 개설 + 첫 admin (공개, rate-limited)
+  body: { company_name: str, slug: str, admin_email: EmailStr,
+          admin_name: str, admin_password: str, plan: &quot;trial&quot; = &quot;trial&quot; }
+  201 → { company_id: int, access_token: str, expires_in: int, user: UserInfo }
+  409 → slug/email 중복 | 422 → 약한 비번(≥10자 정책)
+  # 트랜잭션: Company insert → 첫 admin ErpUser(super_admin) insert →
+  #           기본 Office/Floor 1개 시드(office-layout 편집기 진입 가능하게) →
+  #           trial이면 trial_ends_at = now + 14d, seat_limit=10 →
+  #           즉시 JWT 발급(로그인 스텝 생략, 즉시 /office 진입)
+
+POST /api/signup/check-slug               # 실시간 slug 가용성 (공개)
+  body: { slug: str } → { available: bool, normalized: str }</code></pre>
+<ul>
+<li><strong>레이트리밋</strong>: <code>LoginRateLimitMiddleware</code>(<code>main.py:57</code>) 패턴 재사용 or IP당 회사개설 N/hour. 남용 방지.</li>
+<li><strong>트라이얼 즉시발급</strong>: <code>plan=&quot;trial&quot;</code> 이면 이메일 검증 스텝 없이 즉시 토큰(마찰 최소). 이메일 검증은 후속(가입 후 배너로 &quot;이메일 확인&quot; 유도). 정식 전환 시 검증 강제.</li>
+<li><strong>가입 이벤트 감사</strong>: <code>AuditLog</code>에 <code>company.created</code>·<code>user.created(super_admin)</code> 기록.</li>
+</ul>
+<h3 id="프론트-화면-23-e1-공개-진입면과-결합">프론트 화면 (23 E1 공개 진입면과 결합)</h3>
+<ul>
+<li><strong><code>app/signup/page.tsx</code></strong> (신규, 공개): 회사명·slug(실시간 체크)·admin 이메일/이름/비번 → <code>POST /api/signup</code> → 토큰 저장 → <code>/office</code> (또는 Phase 5 첫실행 체크리스트로).</li>
+<li><strong><code>app/page.tsx</code></strong>: 현재 <code>redirect(&#39;/office&#39;)</code>(<code>page.tsx:4</code>). 공개 랜딩/CTA로 교체(또는 최소 로그인/가입 분기). 이 워크스트림에선 <strong>가입 CTA·로그인 링크가 있는 최소 진입 페이지</strong>까지만 필수(마케팅 랜딩 E1 풀버전은 별도).</li>
+<li><strong><code>app/login/page.tsx</code></strong>: &quot;회원가입&quot; 링크 추가(<code>login/page.tsx:65</code> 부제 하단). placeholder <code>alice@virtualoffice.local</code>(<code>:91</code>)는 Phase 6/E13 정리 대상이나 여기서 중립화 겸수.</li>
+</ul>
+<h3 id="마이그레이션·롤아웃-주의-1">마이그레이션·롤아웃 주의</h3>
+<ul>
+<li><strong>native 유저 id 충돌</strong>: ERP 동기화가 켜진 회사에서 native 유저 id가 미래 ERP id와 충돌하면 대사(reconcile)가 깨진다. §3의 <code>source</code> 컬럼 + native 전용 시퀀스(예: <code>&gt;= 1_000_000_000</code> 대역 or 별도 시퀀스)로 격리. <strong>Phase 2·3 착수 전 이 결정을 확정</strong>.</li>
+<li><strong>slug 정규화</strong>: 소문자·영숫자·하이픈만, 예약어(<code>admin</code>·<code>api</code>·<code>www</code>) 블랙리스트.</li>
+<li><strong>seat_limit 게이트</strong>: 트라이얼 10석 초과 유저 생성 시 Phase 3에서 402/409(업그레이드 유도). 과금 연결은 별도지만 카운트 게이트는 여기서.</li>
+</ul>
+<h3 id="완료-기준-게이트-1">완료 기준 (게이트)</h3>
+<ul>
+<li class="task"><input type="checkbox" disabled> <code>POST /api/signup</code> 로 새 회사+admin 생성, 반환 토큰으로 즉시 <code>/api/auth/me</code> 200 + 올바른 <code>company_id</code>.</li>
+<li class="task"><input type="checkbox" disabled> 신규 회사의 admin이 <strong>오직 자기 회사만</strong> 조회(Phase 1 스코프와 결합 테스트).</li>
+<li class="task"><input type="checkbox" disabled> slug 중복 409, 약한 비번 422, 실시간 slug 체크 동작.</li>
+<li class="task"><input type="checkbox" disabled> 가입 직후 기본 Office/Floor 존재 → office-layout 편집기 진입 가능.</li>
+<li class="task"><input type="checkbox" disabled> 트라이얼 <code>trial_ends_at</code>·<code>seat_limit</code> 설정 확인.</li>
+</ul>
+<hr>
+<h2 id="phase-3--admin-유저-crud--팀-초대-〔23-e3-·-e4-·-공수-l〕">Phase 3 — admin 유저 CRUD + 팀 초대 〔23 E3 · E4 · 공수 L〕</h2>
+<h3 id="목표-2">목표</h3>
+<p>회사 admin이 <strong>자기 회사 유저를 생성·비활성·역할변경</strong>하고, <strong>이메일 토큰 초대 → 최초 비번설정 온보딩</strong>으로 팀을 데려온다. <strong>ERP有 = sync(읽기전용) / ERP無 = 수동 CRUD</strong> 이중 경로를 명시 분리(현재 <code>employees</code>는 읽기전용 ERP sync만, 생성 API 0 — 23 E3).</p>
+<h3 id="데이터모델-변경-1">데이터모델 변경</h3>
+<ul>
+<li><strong><code>ErpUser</code>에 <code>source</code> 컬럼</strong>(§2와 공유 결정): <code>Mapped[str]</code>(<code>erp</code>|<code>native</code>, default per context). ERP sync는 <code>source=&#39;erp&#39;</code> 만 대사 대상으로 삼아 native 유저를 <strong>덮어쓰거나 비활성화하지 않음</strong>(ERP 하드삭제 감지 로직이 native를 오탐하지 않게). <code>erp/sync.py</code>의 대사 쿼리에 <code>.where(ErpUser.source == &#39;erp&#39;)</code> 추가.</li>
+<li><strong><code>Invitation</code> 테이블 신설</strong>(초대 토큰 — Phase 6.2 토큰 인프라와 스키마 공유 or 통합 <code>AuthToken</code> 테이블):</li>
+</ul>
+<pre class="code"><code>class InvitationStatus(str, Enum):
+    PENDING = &quot;pending&quot;; ACCEPTED = &quot;accepted&quot;; EXPIRED = &quot;expired&quot;; REVOKED = &quot;revoked&quot;
+
+class Invitation(Base, TimestampMixin):
+    __tablename__ = &quot;invitation&quot;
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[int] = mapped_column(ForeignKey(&quot;company.id&quot;, ondelete=&quot;CASCADE&quot;), nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[ErpRole] = mapped_column(SQLEnum(ErpRole), nullable=False, default=ErpRole.EMPLOYEE)
+    erp_team_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)   # 초대 시 팀 지정(선택)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True) # sha256(token) — 평문 미저장
+    status: Mapped[InvitationStatus] = mapped_column(SQLEnum(InvitationStatus), nullable=False, default=InvitationStatus.PENDING, index=True)
+    invited_by: Mapped[int] = mapped_column(BigInteger, ForeignKey(&quot;erp_user.id&quot;, ondelete=&quot;SET NULL&quot;), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)   # now + 7d
+    accepted_user_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    __table_args__ = (Index(&quot;idx_invitation_company_status&quot;, &quot;company_id&quot;, &quot;status&quot;),
+                      Index(&quot;idx_invitation_token&quot;, &quot;token_hash&quot;))</code></pre>
+<h3 id="api-계약-backendappapiemployeespy-확장-or-신규-admin_userspy-require_roleadmin">API 계약 (<code>backend/app/api/employees.py</code> 확장 or 신규 <code>admin_users.py</code>, <code>require_role(&quot;admin&quot;)</code>)</h3>
+<pre class="code"><code># ── 유저 CRUD (수동 경로, ERP無) ──
+POST   /api/employees                     # 유저 직접 생성 (source='native')
+  body: { email, name, role, erp_team_id?, position?, send_invite: bool=false }
+  201 → EmployeeOut  |  409 email 중복  |  402/409 seat_limit 초과
+  # send_invite=true 면 Invitation 생성 + 이메일 발송(§3 초대 흐름), password_hash 미설정
+  # send_invite=false 면 password_hash None(로그인 불가) 상태로 디렉터리에만 등재
+PATCH  /api/employees/{id}                # 역할변경·직책·팀 이동 (native·erp 공통, 단 erp 필드는 sync가 정본)
+  body: { role?, erp_team_id?, position?, work_type? } → EmployeeOut
+DELETE /api/employees/{id}                # 비활성 (soft, is_active=false) — 물리삭제 금지(D18)
+  204  |  409 본인 super_admin 최후 1인 비활성 차단
+
+# ── 팀 초대 (E4) ──
+POST   /api/invitations                   # 이메일 초대 발송 (admin)
+  body: { email, role, erp_team_id? } → { id, email, status, expires_at }
+  # token 생성 → token_hash 저장 → 이메일에 /accept-invite?token=... 링크
+GET    /api/invitations                   # 대기중 초대 목록 (company 스코프)
+DELETE /api/invitations/{id}              # 초대 회수 (status=revoked)
+POST   /api/invitations/resend/{id}       # 재발송 (새 토큰·만료 갱신)
+
+# ── 초대 수락 (공개, 최초 비번설정 = Phase 6.2 인프라 공유) ──
+GET    /api/invitations/accept?token=...  # 토큰 검증 → { valid, company_name, email, role } (미인증 공개)
+POST   /api/invitations/accept            # 비번 설정 → ErpUser 생성/활성화 → 즉시 로그인 토큰
+  body: { token, password, name? }
+  200 → { access_token, expires_in, user }  |  410 만료/사용됨</code></pre>
+<ul>
+<li><strong>ERP有 vs ERP無 이중 경로(23 E3·E12)</strong>:<ul>
+<li><strong>ERP有</strong>: <code>POST /api/erp/sync</code>(<code>erp.py:129</code>) 가 정본. UI는 &quot;ERP 연동(읽기전용)&quot; 표기, native 생성 버튼은 비활성/경고.</li>
+<li><strong>ERP無</strong>(Mock reader): admin이 <code>POST /api/employees</code> 로 직접 생성 + 초대. UI에서 &quot;직접 관리&quot; 모드로 명시(E12 오해 해소).</li>
+<li><code>source</code> 컬럼으로 두 경로를 데이터에서 분리. sync는 <code>source=&#39;erp&#39;</code>만 건드림.</li>
+</ul>
+</li>
+<li><strong>이메일 발송</strong>: 발송 어댑터(<code>app/services/mailer.py</code> 신규) — 개발/미설정 시 콘솔 로그 폴백(초대 링크 출력), 운영은 SMTP/SES. <strong>미설정 시 조용한 no-op 금지</strong>(22 F4 교훈 — 발송 실패 시 초대 status를 pending 유지 + admin에게 배너).</li>
+<li><strong>seat_limit 게이트</strong>: 생성/수락 시 <code>active user count &gt;= company.seat_limit</code> → 409(업그레이드 유도, Phase 2 트라이얼과 연결).</li>
+</ul>
+<h3 id="프론트-화면-1">프론트 화면</h3>
+<ul>
+<li><strong><code>app/(protected)/admin/employees/page.tsx</code></strong>(현재 읽기전용 <code>employees:170·438</code> — 23 E3): &quot;유저 추가&quot; 버튼 → 생성 모달(이메일·이름·역할·팀, &quot;초대 발송&quot; 체크박스). 행 액션: 역할 드롭다운·비활성 토글. <strong>ERP有 회사는 편집 잠금 + &quot;ERP에서 관리됨&quot; 배지</strong>(E12).</li>
+<li><strong><code>app/(protected)/admin/employees/invitations</code> 섹션</strong>(or 탭): 대기 초대 목록·회수·재발송.</li>
+<li><strong><code>app/accept-invite/page.tsx</code></strong>(신규, 공개): 토큰 검증 → 이름·비번 설정 폼 → 즉시 로그인 → <code>/office</code>(+ Phase 5 첫실행). 만료 토큰은 &quot;관리자에게 재발송 요청&quot; 안내.</li>
+<li>파괴적 확인(비활성)은 native <code>confirm</code> 금지, 공용 <code>ConfirmDialog</code>(23 C2, <code>ScoreNoteModal</code> 모범) 사용 권장.</li>
+</ul>
+<h3 id="마이그레이션·롤아웃-주의-2">마이그레이션·롤아웃 주의</h3>
+<ul>
+<li><strong>native/erp id 대역 분리</strong>(§2 결정) — 이 페이즈의 하드 전제. 미결정 시 착수 금지.</li>
+<li><strong>토큰 보안</strong>: 초대·비번설정 토큰은 <strong>평문 미저장</strong>(sha256 해시), 단회성(수락 시 status 전이), 만료 7d, 회수 가능.</li>
+<li><strong>최후 admin 보호</strong>: 마지막 <code>super_admin</code> 비활성/역할강등 차단(자기 회사 잠금 방지).</li>
+</ul>
+<h3 id="완료-기준-게이트-2">완료 기준 (게이트)</h3>
+<ul>
+<li class="task"><input type="checkbox" disabled> admin이 native 유저 생성 → 초대 발송 → 수락 링크로 비번설정 → 로그인 성공(E2E).</li>
+<li class="task"><input type="checkbox" disabled> 생성/수정/비활성이 <strong>자기 company_id 스코프</strong>에서만(교차 테넌트 403/404).</li>
+<li class="task"><input type="checkbox" disabled> ERP sync가 native 유저를 비활성화·덮어쓰지 않음(<code>source</code> 격리 테스트).</li>
+<li class="task"><input type="checkbox" disabled> seat_limit 초과 생성 409.</li>
+<li class="task"><input type="checkbox" disabled> 초대 토큰: 만료·재사용·회수 각각 410/차단. 평문 토큰 DB 미저장 확인.</li>
+<li class="task"><input type="checkbox" disabled> 최후 super_admin 비활성 409.</li>
+</ul>
+<hr>
+<h2 id="phase-4--화이트라벨-company-브랜딩--css-변수-토큰-〔23-e5-·-a7-·-a1-·-a13-·-공수-m〕">Phase 4 — 화이트라벨 (Company 브랜딩 + CSS 변수 토큰) 〔23 E5 · A7 · A1 · A13 · 공수 M〕</h2>
+<h3 id="목표-3">목표</h3>
+<p>테넌트 브랜드 교체를 <strong>&quot;CSS 변수 1세트 플립&quot;</strong> 으로 만든다. 백엔드 <code>Company</code> 브랜딩 필드(Phase 1에서 선언) + 프론트 <code>:root --color-*</code> 변수 레이어 + admin 브랜딩 UI + 셸/로그인 주입점. &quot;VirtualOffice&quot; 하드코딩(<code>login:63</code>·<code>OfficeShell:1145</code>)과 hex 산재(<code>tailwind.config.js</code>·인라인 <code>style</code>)를 걷어낸다.</p>
+<h3 id="데이터모델-변경-2">데이터모델 변경</h3>
+<ul>
+<li>Phase 1의 <code>Company.brand_name·logo_url·primary_color·accent_color</code> 재사용. 로고 업로드 저장: <code>media_root/branding/{company_id}/logo.{ext}</code> → <code>/media/branding/...</code>(기존 <code>/media</code> 마운트 <code>main.py:66</code> 재사용). 매직바이트 검증(Pillow, 22 T1-12 교훈) + nosniff.</li>
+</ul>
+<h3 id="api-계약-backendappapibrandingpy--신규">API 계약 (<code>backend/app/api/branding.py</code> — 신규)</h3>
+<pre class="code"><code>GET  /api/branding                        # 현재 회사 브랜딩 (인증 유저 — 셸/설정이 소비)
+  → { brand_name, logo_url, primary_color, accent_color, company_name }
+GET  /api/branding/public?slug=...        # 로그인 화면용 (미인증 공개, slug로 회사 브랜딩 pre-fetch)
+  → { brand_name, logo_url, primary_color }   # 로그인 전 브랜드 표시
+PUT  /api/branding                        # 브랜딩 수정 (admin)
+  body: { brand_name?, primary_color?, accent_color? }  → 갱신된 브랜딩
+POST /api/branding/logo                   # 로고 업로드 (admin, multipart) → { logo_url }
+  # content_type만 신뢰 금지 → Pillow verify + 크기 상한</code></pre>
+<h3 id="프론트-화면-css-변수화--a7a1의-핵심">프론트 화면 (CSS 변수화 = A7/A1의 핵심)</h3>
+<p><strong>4-1. <code>:root</code> CSS 변수 레이어 신설</strong>(<code>globals.css</code> — 현재 색 변수 0, 23 A7):</p>
+<pre class="code"><code>:root {
+  --color-bg-base: #0E1626; --color-bg-surface: #161F32; --color-bg-surface-raised: #1E2940;
+  --color-border-subtle: #273350;
+  --color-primary: #3B5BFE; --color-primary-hover: #2F4BE0; --color-accent: #38BDF8;
+  --color-text-primary: #F1F5F9; --color-text-secondary: #B4C0D3; --color-text-muted: #7A899E;
+  /* 상태색은 시맨틱 고정(테넌트 override 안 함) */
+}</code></pre>
+<p><strong>4-2. Tailwind가 <code>var()</code> 참조</strong>(<code>tailwind.config.js:11-33</code> — 현재 hex 직접):</p>
+<pre class="code"><code>colors: {
+  'bg-base': 'var(--color-bg-base)', 'bg-surface': 'var(--color-bg-surface)',
+  primary: 'var(--color-primary)', 'primary-hover': 'var(--color-primary-hover)',
+  'accent-cyan': 'var(--color-accent)', 'text-primary': 'var(--color-text-primary)', /* … */
+}</code></pre>
+<ul>
+<li>클래스명 불변 → 페이지 코드 변경 없이 값만 변수화. <code>OfficeShell.tsx</code>의 인라인 <code>style={{ background: &#39;#161F32&#39; }}</code>(<code>:1140</code>)·<code>T1B</code> 웜블랙 하드코딩(23 A1)·<code>KpiGauge</code>/<code>MeetingStage</code> 원오프 SVG 색(23 A13)은 <code>var(--color-*)</code>/<code>currentColor</code>로 순차 치환(전량 아니어도 브랜드 영향 표면 우선).</li>
+</ul>
+<p><strong>4-3. 테넌트 override 주입</strong>(단일 진입점 — <code>(protected)/layout.tsx</code> or <code>OfficeShell</code> 마운트 시):</p>
+<pre class="code"><code>// 로그인 후: GET /api/branding → 응답 primary_color 있으면 document.documentElement.style.setProperty
+useEffect(() =&gt; {
+  fetch('/api/branding').then(r=&gt;r.json()).then(b =&gt; {
+    if (b.primary_color) document.documentElement.style.setProperty('--color-primary', b.primary_color);
+    if (b.accent_color)  document.documentElement.style.setProperty('--color-accent', b.accent_color);
+  });
+}, []);</code></pre>
+<ul>
+<li><strong>테넌트 override = 변수 1세트</strong>(<code>--color-primary</code>·<code>--color-accent</code>만 override, 나머지 다크 서피스는 고정 → 대비 붕괴 방지). FOUC 방지: 초기값은 <code>:root</code> 기본 → fetch 후 덮어쓰기(깜빡임 최소, 또는 SSR/쿠키 프리로드는 후속).</li>
+</ul>
+<p><strong>4-4. 브랜드명·로고 주입점</strong>:</p>
+<ul>
+<li><code>login/page.tsx:62-63</code>(🏢·&quot;VirtualOffice&quot;) → <code>GET /api/branding/public?slug</code> 로 <code>brand_name</code>·<code>logo_url</code> 렌더(slug는 서브도메인/쿼리에서). 없으면 중립 기본.</li>
+<li><code>OfficeShell.tsx:1145-1146</code>(&quot;VirtualOffice&quot;/&quot;가상 오피스&quot;) → 브랜딩 컨텍스트의 <code>brand_name</code>.</li>
+<li><strong>admin 브랜딩 UI</strong>: <code>app/(protected)/admin/branding/page.tsx</code>(신규) — 회사명·primary/accent 컬러피커·로고 업로드 + 라이브 프리뷰.</li>
+</ul>
+<h3 id="마이그레이션·롤아웃-주의-3">마이그레이션·롤아웃 주의</h3>
+<ul>
+<li><strong>대비 안전</strong>: 테넌트가 primary를 밝은 색으로 바꿔도 텍스트/서피스는 고정이라 WCAG 대비(23 A11) 유지. primary는 버튼/액센트에만 → 위험 최소.</li>
+<li><strong>hex 산재 전량 치환은 L</strong>(23 A7 원 규모). 이 페이즈는 <strong>브랜드 체감 표면(로고·회사명·primary 버튼·액센트)</strong> 우선, 잔여 hex는 부채로 명시(23 A8/A13와 함께 후속).</li>
+<li><strong>로고 보안</strong>: 22 T1-12(매직바이트·nosniff) 준수, 회사 네임스페이스 경로로 열거 방지.</li>
+</ul>
+<h3 id="완료-기준-게이트-3">완료 기준 (게이트)</h3>
+<ul>
+<li class="task"><input type="checkbox" disabled> <code>:root --color-*</code> 존재, Tailwind가 <code>var()</code> 참조, 기존 화면 시각 회귀 없음.</li>
+<li class="task"><input type="checkbox" disabled> admin이 primary 색·회사명·로고 변경 → 셸/로그인에 즉시 반영(재로그인 불필요).</li>
+<li class="task"><input type="checkbox" disabled> 두 회사가 서로 다른 브랜드로 동시 표시(테넌트 격리).</li>
+<li class="task"><input type="checkbox" disabled> 로고 업로드 매직바이트 검증 + <code>/media/branding/{company_id}/</code> 네임스페이스.</li>
+<li class="task"><input type="checkbox" disabled> <code>grep &quot;VirtualOffice&quot;</code> 하드코딩 → 브랜딩 컨텍스트 경유로 대체(로그인·셸).</li>
+</ul>
+<hr>
+<h2 id="phase-5--첫실행-온보딩-체크리스트--최초-투어-〔23-e6-·-공수-m〕">Phase 5 — 첫실행 온보딩 체크리스트 + 최초 투어 〔23 E6 · 공수 M〕</h2>
+<h3 id="목표-4">목표</h3>
+<p>새 admin의 첫 5분을 성공 경험으로. <strong>3단계 셋업 체크리스트 위젯(좌석 배치 → 공지 작성 → 팀 초대)</strong> + <strong>최초 1회 제품 투어</strong>. 완료 상태를 회사 단위로 저장.</p>
+<h3 id="데이터모델-변경-3">데이터모델 변경</h3>
+<ul>
+<li><strong>회사 단위 온보딩 상태</strong>: <code>Company</code>에 <code>onboarding_state: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)</code> 추가(경량, 별도 테이블 불필요). 예: <code>{ &quot;seat_placed&quot;: true, &quot;notice_posted&quot;: false, &quot;team_invited&quot;: false, &quot;dismissed&quot;: false, &quot;tour_done_users&quot;: [12,15] }</code>.</li>
+<li><strong>투어 완료(유저 단위)</strong>: 유저별 &quot;투어 봤음&quot;은 회사 상태의 <code>tour_done_users</code> 배열 or <code>UserAvatar</code>/settings에 <code>tour_completed: bool</code>. 유저 단위가 자연스러우면 <code>ErpUser</code>에 <code>onboarding_flags: Mapped[Optional[dict]]</code> 경량 컬럼. <strong>결정: 체크리스트=회사 단위(admin 공유), 투어=유저 단위.</strong></li>
+</ul>
+<h3 id="api-계약-backendappapionboardingpy--신규">API 계약 (<code>backend/app/api/onboarding.py</code> — 신규)</h3>
+<pre class="code"><code>GET  /api/onboarding                       # 첫실행 상태 (인증 유저)
+  → { checklist: { seat_placed, notice_posted, team_invited }, dismissed, tour_done: bool }
+  # checklist 항목은 실측 파생 권장: seat 배치수&gt;0 / notice 존재 / invitation 발송 존재 →
+  #   저장 플래그보다 실제 데이터 조회로 진위 판단(스테일 방지). dismissed·tour_done만 저장.
+PATCH /api/onboarding                       # dismiss·tour 완료 마킹
+  body: { dismissed?: bool, tour_done?: bool }  → 갱신 상태</code></pre>
+<ul>
+<li><strong>checklist 진위 = 실측 파생</strong> 권장: <code>seat_placed = (deployed layout에 좌석 배치 존재)</code>, <code>notice_posted = (company notice count &gt; 0)</code>, <code>team_invited = (invitation or native user count &gt; 1)</code>. 저장 플래그만 믿으면 스테일. <code>dismissed</code>·<code>tour_done</code>만 명시 저장.</li>
+</ul>
+<h3 id="프론트-화면-2">프론트 화면</h3>
+<ul>
+<li><strong>첫실행 체크리스트 위젯</strong>: <code>/office</code> 진입 시(또는 대시보드) admin에게 3단계 카드. 각 항목 미완이면 CTA(→ <code>/admin/office-layout</code> / <code>/admin/notices</code> / <code>/admin/employees</code> 초대). 전부 완료 or dismiss 시 숨김. 상태: <code>GET /api/onboarding</code>.<ul>
+<li>좌석 배치 = office-layout 편집기(이미 깊음, 23 E 판정 &quot;present 깊음&quot;)로 유도.</li>
+<li>공지 = notices CRUD(present)로 유도.</li>
+<li>팀 초대 = Phase 3 초대 흐름으로 유도.</li>
+</ul>
+</li>
+<li><strong>최초 1회 투어</strong>: 셸 핵심 4~5 지점 스포트라이트(가상오피스·⌘K 팔레트·프레즌스 패널·admin 메뉴). <code>tour_done</code> 유저 단위 저장, 1회만. 라이브러리 최소(자체 오버레이 or 경량 tour lib), reduced-motion 존중(23 A9).</li>
+<li>위치: <code>components/OnboardingChecklist.tsx</code>(신규), <code>OfficeShell</code> 마운트 시 조건부.</li>
+</ul>
+<h3 id="마이그레이션·롤아웃-주의-4">마이그레이션·롤아웃 주의</h3>
+<ul>
+<li><strong>admin 전용 노출</strong>: 체크리스트는 admin/super_admin만(일반 유저에겐 무의미). 투어는 전원 1회.</li>
+<li><strong>기존 회사(default)</strong>: <code>onboarding_state</code> NULL → 이미 셋업된 회사는 &quot;실측 파생&quot;이 대부분 true → 체크리스트 자동 숨김(스테일 유도 없음).</li>
+</ul>
+<h3 id="완료-기준-게이트-4">완료 기준 (게이트)</h3>
+<ul>
+<li class="task"><input type="checkbox" disabled> 새 admin 첫 진입 시 3단계 체크리스트 표시, 각 CTA가 올바른 화면으로.</li>
+<li class="task"><input type="checkbox" disabled> 항목 완료 시 실측 파생으로 자동 체크(예: 좌석 배치 후 재방문 → seat_placed=true).</li>
+<li class="task"><input type="checkbox" disabled> dismiss·tour 완료가 회사/유저 단위로 영속(재로그인 후에도 유지).</li>
+<li class="task"><input type="checkbox" disabled> 이미 셋업된 default 회사는 체크리스트 미노출(스테일 없음).</li>
+</ul>
+<hr>
+<h2 id="phase-6--비번-찾기변경--계정-설정-〔23-e9-·-e7-·-c11-·-공수-m〕">Phase 6 — 비번 찾기/변경 + 계정 설정 〔23 E9 · E7 · C11 · 공수 M〕</h2>
+<h3 id="목표-5">목표</h3>
+<p><code>forgot-password</code> 토큰 흐름 + 설정 &quot;계정&quot; 탭(비번 변경·이메일 확인). <strong>Phase 3 초대와 토큰 인프라를 공유</strong>(6.2). 분실 시 admin/DB 개입 제거.</p>
+<h3 id="데이터모델-변경-62--토큰-서브시스템-phase-3보다-먼저-착수">데이터모델 변경 (6.2 — 토큰 서브시스템, Phase 3보다 먼저 착수)</h3>
+<ul>
+<li><strong><code>PasswordResetToken</code> 테이블</strong>(or 통합 <code>AuthToken</code>으로 Invitation과 공유):</li>
+</ul>
+<pre class="code"><code>class PasswordResetToken(Base):
+    __tablename__ = &quot;password_reset_token&quot;
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey(&quot;erp_user.id&quot;, ondelete=&quot;CASCADE&quot;), nullable=False, index=True)
+    company_id: Mapped[int] = mapped_column(ForeignKey(&quot;company.id&quot;, ondelete=&quot;CASCADE&quot;), nullable=False, index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)  # sha256, 평문 미저장
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)  # now + 1h
+    used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))</code></pre>
+<ul>
+<li><strong>결정 권장</strong>: <code>Invitation</code>·<code>PasswordResetToken</code> 를 공통 <code>token_hash</code>/<code>expires_at</code>/<code>used_at</code> 패턴으로 통일(같은 mailer·같은 검증 헬퍼 <code>app/services/tokens.py</code>). 초대(=최초 비번설정)와 리셋(=재설정)은 동일 &quot;비번 설정&quot; 화면을 공유.</li>
+</ul>
+<h3 id="api-계약-backendappapiauthpy-확장">API 계약 (<code>backend/app/api/auth.py</code> 확장)</h3>
+<pre class="code"><code>POST /api/auth/forgot-password             # 공개. 이메일 → 리셋 토큰 발송
+  body: { email }  → 200 항상 (유저 존재 여부 미노출 — 열거 방지, 22 T1-11 정신)
+  # 유저 존재 시에만 실제 발송, 응답은 항상 동일. rate-limited.
+POST /api/auth/reset-password              # 공개. 토큰 + 새 비번
+  body: { token, password }  → 200 { ok }  |  410 만료/사용됨  |  422 약한 비번
+GET  /api/auth/reset-password?token=...    # 토큰 유효성 사전 확인 → { valid }
+POST /api/auth/change-password             # 인증. 현재 비번 + 새 비번
+  body: { current_password, new_password }  → 200  |  401 현재 비번 불일치</code></pre>
+<ul>
+<li><strong>비번 정책</strong>: ≥10자(가입·초대·리셋·변경 공통 상수). bcrypt 재사용(<code>security.py:hash_password</code>).</li>
+<li><strong>열거 방지</strong>: <code>forgot-password</code>는 유저 유무와 무관하게 200 + 동일 지연(22 T1-11의 타이밍 열거 정신 준수).</li>
+</ul>
+<h3 id="프론트-화면-3">프론트 화면</h3>
+<ul>
+<li><strong><code>app/forgot-password/page.tsx</code></strong>(공개): 이메일 입력 → &quot;메일 발송됨&quot; 안내(항상 동일 문구).</li>
+<li><strong><code>app/reset-password/page.tsx</code></strong>(공개): 토큰(쿼리) 검증 → 새 비번 설정 → 로그인 유도. <strong>초대 수락(Phase 3)과 동일 컴포넌트 재사용</strong>.</li>
+<li><strong><code>login/page.tsx</code></strong>: &quot;비밀번호를 잊으셨나요?&quot; 링크(현재 없음 — 23 C11) + &quot;로그인 유지&quot;(remember-me, 선택).</li>
+<li><strong>설정 &quot;계정&quot; 탭</strong>: <code>app/(protected)/settings/page.tsx</code>(현재 아바타 전용 — 23 E7) 에 &quot;계정&quot; 탭 추가 → 비번 변경 폼(<code>change-password</code>)·이메일 표시·(선택) 세션/알림. Phase 4 브랜딩 탭과 admin 설정 구조 정합.</li>
+</ul>
+<h3 id="마이그레이션·롤아웃-주의-5">마이그레이션·롤아웃 주의</h3>
+<ul>
+<li><strong>토큰 단회성·해시저장</strong>(Phase 3와 동일 규율): 평문 미저장, 사용 시 <code>used_at</code>, 만료 1h(리셋)/7d(초대).</li>
+<li><strong>company_id 스코프</strong>: 리셋 토큰은 유저의 company_id를 담아 발급 → 리셋 후 발급 토큰에 올바른 company_id(Phase 1).</li>
+<li><strong>레이트리밋</strong>: <code>forgot-password</code>·<code>reset</code> 남용 방지(IP·이메일 기준).</li>
+</ul>
+<h3 id="완료-기준-게이트-5">완료 기준 (게이트)</h3>
+<ul>
+<li class="task"><input type="checkbox" disabled> forgot → 메일(개발=콘솔) 토큰 → reset → 새 비번 로그인 성공(E2E).</li>
+<li class="task"><input type="checkbox" disabled> 로그인 화면 &quot;비번 찾기&quot; 링크 동작.</li>
+<li class="task"><input type="checkbox" disabled> 설정 &quot;계정&quot; 탭에서 현재 비번 확인 후 변경 성공, 오답 401.</li>
+<li class="task"><input type="checkbox" disabled> <code>forgot-password</code> 응답이 유저 유무를 노출하지 않음(항상 200 동일).</li>
+<li class="task"><input type="checkbox" disabled> 토큰 만료/재사용 410, 평문 토큰 DB 미저장.</li>
+</ul>
+<hr>
+<h2 id="부록-a--신규변경-파일-매니페스트-빌더-착수용">부록 A — 신규/변경 파일 매니페스트 (빌더 착수용)</h2>
+<p><strong>백엔드</strong>:</p>
+<ul>
+<li><code>models/tables.py</code>: <code>Company</code>·<code>Invitation</code>·<code>PasswordResetToken</code> 추가, <code>company_id</code> FK 전수 부착, <code>ErpUser.source</code>·<code>Company.onboarding_state</code> 컬럼.</li>
+<li><code>alembic/versions/*</code>: Phase 1 3-스텝 마이그레이션(A/B/C), 이후 페이즈별 additive.</li>
+<li><code>core/deps.py</code>: <code>CurrentUser.company_id</code>, <code>get_current_user</code>, <code>company_scope()</code>, <code>assert_same_company()</code>.</li>
+<li><code>api/auth.py</code>: <code>_build_token</code> company_id 클레임, forgot/reset/change-password.</li>
+<li><code>api/signup.py</code>(신규)·<code>api/branding.py</code>(신규)·<code>api/onboarding.py</code>(신규)·<code>api/employees.py</code>(확장: CRUD)·<code>api/invitations.py</code>(신규).</li>
+<li><code>services/mailer.py</code>(신규, 콘솔 폴백)·<code>services/tokens.py</code>(신규, sha256 토큰 헬퍼).</li>
+<li><code>main.py</code>: 신규 라우터 등록, <code>AUTO_CREATE_TABLES</code> prod 가드.</li>
+<li>라우터 전수(<code>work_logs</code>·<code>reports</code>·<code>kpi</code>·<code>meetings</code>·<code>seats</code>·<code>notices</code>·<code>chat</code>·<code>trips</code>·<code>presence</code>·<code>office_layouts</code>·<code>erp</code>): company 스코프 <code>.where</code> 삽입.</li>
+</ul>
+<p><strong>프론트</strong>:</p>
+<ul>
+<li><code>app/page.tsx</code>(공개 진입)·<code>app/signup/</code>·<code>app/accept-invite/</code>·<code>app/forgot-password/</code>·<code>app/reset-password/</code>(신규 공개 라우트).</li>
+<li><code>app/globals.css</code>(<code>:root --color-*</code>)·<code>tailwind.config.js</code>(<code>var()</code> 참조).</li>
+<li><code>components/OnboardingChecklist.tsx</code>(신규)·브랜딩 컨텍스트/훅.</li>
+<li><code>app/(protected)/admin/branding/page.tsx</code>(신규)·<code>admin/employees/page.tsx</code>(CRUD·초대)·<code>settings/page.tsx</code>(&quot;계정&quot; 탭).</li>
+<li><code>app/login/page.tsx</code>(브랜딩 주입·가입/비번찾기 링크)·<code>components/OfficeShell.tsx</code>(브랜드명 주입점).</li>
+</ul>
+<h2 id="부록-b--2223-doc-매핑-표">부록 B — 22/23 doc 매핑 표</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>이 문서 페이즈</th>
+<th>해소하는 22-doc ID</th>
+<th>해소하는 23-doc ID</th>
+<th>남는 것(별도 워크스트림)</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>P1 company_id 정체성</strong></td>
+<td><strong>T0-1</strong>(멀티테넌시 전체) · <strong>T1-3</strong>(부분: fact 테이블 company_id·인덱스) · <strong>T0-2</strong>(마이그레이션 규율 확립)</td>
+<td>(기반 — E2~E9 전부의 전제)</td>
+<td>T0-3(실시간 스케일) · 실시간 room=company 토큰검증(T0-1·T1-10 잔여)</td>
+</tr>
+<tr>
+<td><strong>P2 프로비저닝 + 셀프가입</strong></td>
+<td><strong>T0-4</strong>(셀프서브 온보딩 부분)</td>
+<td><strong>E2</strong>(셀프서브 가입/트라이얼) · E1(부분: 공개 진입) · E13(부분)</td>
+<td>T0-4 과금/구독/미터링/Stripe · SSO/SAML/OIDC/SCIM · E1 마케팅 랜딩 풀버전</td>
+</tr>
+<tr>
+<td><strong>P3 유저 CRUD + 초대</strong></td>
+<td>T0-4(테넌트 셀프 관리 부분)</td>
+<td><strong>E3</strong>(admin 유저 CRUD) · <strong>E4</strong>(팀 초대) · E12(ERP有/無 모드 명시)</td>
+<td>SCIM 자동 프로비저닝 · E10(사용량 대시보드)</td>
+</tr>
+<tr>
+<td><strong>P4 화이트라벨</strong></td>
+<td>T0-4(테넌트 브랜딩)</td>
+<td><strong>E5</strong>(브랜딩 UI) · <strong>A7</strong>(CSS 변수 화이트라벨) · <strong>A1</strong>(부분: 토큰 변수화) · A13(부분: SVG 색)</td>
+<td>A1 전량 hex 치환·A8 셸 분해(부채) · i18n(C1)</td>
+</tr>
+<tr>
+<td><strong>P5 첫실행 온보딩</strong></td>
+<td>—</td>
+<td><strong>E6</strong>(체크리스트+투어)</td>
+<td>E14(인앱 헬프) · E8(리치 데모 시드)</td>
+</tr>
+<tr>
+<td><strong>P6 비번찾기 + 계정</strong></td>
+<td>—</td>
+<td><strong>E9</strong>(비번찾기/변경) · <strong>E7</strong>(계정 설정 탭) · C11(부분: forgot·remember-me)</td>
+<td>E11(동의/약관 게이트 — 22 C1 컴플라이언스 팩)</td>
+</tr>
+</tbody></table></div>
+<blockquote><strong>다음 단계</strong>: 본 SPEC을 <code>/tasks-generator</code>에 투입 → Phase 1을 단독 임계경로로 두고 06-tasks.md 생성. Phase 1의 교차 테넌트 IDOR 테스트를 08-derived-gates.md의 최우선 게이트로 승격 권장.</blockquote>
+<div class="meta-foot">원본: <code>24-onboarding-whitelabel-workstream-spec.md</code> · 자동 생성 2026-07-24 · md-to-html</div>
+</main>
+</div>
+
+</body></html>
