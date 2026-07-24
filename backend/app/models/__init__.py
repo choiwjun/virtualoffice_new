@@ -2,6 +2,9 @@
 
 from app.models.tables import (
     Base,
+    # ── 테넌시 (Phase 1a) ──
+    Company,
+    DEFAULT_COMPANY_ID,
     # ── ERP 미러 / 조직 ──
     ErpUser,
     OrgGroup,
@@ -36,6 +39,8 @@ from app.models.tables import (
 
 __all__ = [
     "Base",
+    "Company",
+    "DEFAULT_COMPANY_ID",
     "ErpUser",
     "OrgGroup",
     "TeamZone",

@@ -239,6 +239,40 @@ class AssetType(str, Enum):
 
 
 # ============================================================================
+# 0. 테넌시 정체성 (Phase 1a — 22 T0-1 · 24-spec Phase 1)
+# ============================================================================
+
+# 모든 company_id의 기본 테넌트. 기존 단일 조직 데이터 = 이 회사(id=1).
+# (직접 하드코딩 대신 이 상수를 참조 — 백필·시드·기본 스코프의 단일 정본.)
+DEFAULT_COMPANY_ID = 1
+
+
+class Company(Base, TimestampMixin):
+    """테넌트(회사) — 모든 company_id의 참조 대상 = 단일 정본 (24-spec Phase 1, 22 T0-1).
+
+    Phase 1a는 정체성 토대만: id·name·slug(유니크) + 브랜딩 플레이스홀더(logo_url·
+    primary_color). 과금 플랜/상태·화이트라벨 UI 주입은 후속 페이즈(4~6).
+    기존 단일 조직 데이터는 id=1('기본 회사', slug='default')로 백필된다.
+    """
+    __tablename__ = "company"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    """표시 회사명"""
+    slug: Mapped[str] = mapped_column(String(63), nullable=False)
+    """URL/서브도메인 키 (소문자·영숫자·하이픈). 유니크."""
+    # ── 화이트라벨 플레이스홀더 (Phase 4에서 UI/주입 채움) ──
+    logo_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    """/media/branding/{company_id}/logo.* — NULL이면 기본 로고."""
+    primary_color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)
+    """#RRGGBB — NULL이면 기본 테마."""
+
+    __table_args__ = (
+        UniqueConstraint("slug", name="uq_company_slug"),
+    )
+
+
+# ============================================================================
 # A. ERP 미러 계층 (1개)
 # ============================================================================
 
@@ -257,8 +291,15 @@ class ErpUser(Base, TimestampMixin, SoftDeleteMixin):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     """ERP users.id (조인 키)"""
 
-    company_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    """사내 회사 ID (멀티테넌트 스코프)"""
+    company_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("company.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+        server_default=text("1"),
+        default=DEFAULT_COMPANY_ID,
+    )
+    """사내 회사 ID (멀티테넌트 스코프 — company.id FK, RESTRICT). 기존 데이터는 1."""
 
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     """이메일 (ERP와 동일)"""

@@ -12,6 +12,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
 from app.core.security import decode_access_token
+from app.models.tables import DEFAULT_COMPANY_ID
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=True)
 
@@ -27,8 +28,9 @@ class CurrentUser:
     """토큰에서 복원한 인증 주체 (DB 조회 없이 클레임 기반)."""
 
     user_id: int
-    email: Optional[str]
     role: str
+    company_id: int = DEFAULT_COMPANY_ID  # Phase 1a: 테넌트 스코프 (22 T0-1)
+    email: Optional[str] = None
     team_id: Optional[int] = None
 
 
@@ -48,12 +50,37 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
     if sub is None or role is None:
         raise credentials_exc
 
+    # 구 토큰(company_id 클레임 없음)은 기본 테넌트(1)로 매핑 — 하위호환(비파괴).
+    # 신규 로그인 토큰은 auth._build_token이 실제 company_id를 넣는다.
+    company_id = payload.get("company_id")
     return CurrentUser(
         user_id=int(sub),
-        email=payload.get("email"),
         role=role,
+        company_id=int(company_id) if company_id is not None else DEFAULT_COMPANY_ID,
+        email=payload.get("email"),
         team_id=payload.get("team_id"),
     )
+
+
+async def company_scope(user: "CurrentUser" = Depends(get_current_user)) -> int:
+    """호출자의 company_id를 반환하는 얇은 의존성 (Phase 1b 쿼리 스코프의 단일 정본).
+
+    라우터는 이 값으로 `.where(Model.company_id == cid)`를 강제한다.
+    사용 예: `cid: int = Depends(company_scope)`.
+    """
+    return user.company_id
+
+
+def assert_same_company(user: "CurrentUser", obj_company_id: int) -> None:
+    """단건 조회 시 obj의 company_id ≠ user.company_id 면 404(존재 은닉). IDOR(22 T0-1) 차단.
+
+    Phase 1b에서 라우터 단건 조회에 삽입될 헬퍼 — 여기서 정본으로 노출한다.
+    """
+    if obj_company_id != user.company_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="not_found",
+        )
 
 
 def require_role(*allowed_roles: str):

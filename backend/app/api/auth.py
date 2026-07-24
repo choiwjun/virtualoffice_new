@@ -80,6 +80,7 @@ class UserInfo(BaseModel):
     name: str
     role: str
     team_id: Optional[int] = None
+    company_id: int  # Phase 1a: 테넌트 스코프 (22 T0-1) — 프론트 브랜딩/첫실행 fetch가 소비
 
 
 class TokenResponse(BaseModel):
@@ -108,6 +109,7 @@ def _build_token(user: ErpUser) -> tuple[str, int]:
             "email": user.email,
             "role": user.role.value,
             "team_id": user.erp_team_id,
+            "company_id": user.company_id,  # Phase 1a: 테넌트 스코프 클레임 (22 T0-1)
         },
         expires_delta=timedelta(hours=expires_hours),
     )
@@ -121,6 +123,7 @@ def _user_info(user: ErpUser) -> UserInfo:
         name=user.name,
         role=user.role.value,
         team_id=user.erp_team_id,
+        company_id=user.company_id,
     )
 
 

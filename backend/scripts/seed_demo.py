@@ -44,6 +44,7 @@ from app.models.tables import (  # noqa: E402
     Base,
     BusinessTrip,
     ChatMessage,
+    Company,
     ErpRole,
     ErpUser,
     Floor,
@@ -211,6 +212,14 @@ def _current_quarter_key(d: date) -> str:
 
 async def seed(session: AsyncSession) -> dict[str, int]:
     counts: dict[str, int] = {}
+
+    # ── 기본 회사(id=1) 보장 — Phase 1a 유저/오피스 FK 부모 (멱등) ──
+    company = (
+        await session.execute(select(Company).where(Company.id == COMPANY_ID))
+    ).scalar_one_or_none()
+    if company is None:
+        session.add(Company(id=COMPANY_ID, name="기본 회사", slug="default"))
+        await session.flush()
 
     # ── 직원 ──────────────────────────────────────────────
     pw_hash = hash_password("password123")

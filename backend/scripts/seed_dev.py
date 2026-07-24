@@ -25,7 +25,13 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import StaticPool  # noqa: E402
 
 from app.core.security import hash_password  # noqa: E402
-from app.models.tables import Base, ErpRole, ErpUser  # noqa: E402
+from app.models.tables import (  # noqa: E402
+    Base,
+    Company,
+    DEFAULT_COMPANY_ID,
+    ErpRole,
+    ErpUser,
+)
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 
@@ -72,6 +78,15 @@ SEED_USERS = [
 
 
 async def seed(session: AsyncSession) -> None:
+    # Phase 1a: 유저 FK 부모가 되는 기본 회사(id=1) 보장 (멱등).
+    existing_company = await session.execute(
+        select(Company).where(Company.id == DEFAULT_COMPANY_ID)
+    )
+    if existing_company.scalar_one_or_none() is None:
+        session.add(Company(id=DEFAULT_COMPANY_ID, name="기본 회사", slug="default"))
+        await session.flush()
+        print(f"  [NEW]  company id={DEFAULT_COMPANY_ID} (기본 회사)")
+
     created = 0
     updated = 0
 

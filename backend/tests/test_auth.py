@@ -157,6 +157,49 @@ async def test_me_with_valid_token(async_client, seed_users):
     assert body["id"] == 1001
 
 
+# ── Phase 1a: company_id 정체성 (22 T0-1 · 24-spec Phase 1) ──────────────────
+
+async def test_login_token_carries_company_id_claim(async_client, seed_users):
+    """로그인 JWT 클레임에 company_id=1이 실린다(테넌트 스코프 토대)."""
+    from app.core.security import decode_access_token
+
+    resp = await async_client.post(
+        "/api/auth/login",
+        json={"email": "alice@virtualoffice.local", "password": "password123"},
+    )
+    assert resp.status_code == 200, resp.text
+    token = resp.json()["access_token"]
+    claims = decode_access_token(token)
+    assert claims["company_id"] == 1
+    # /me 응답에도 노출(프론트 브랜딩/첫실행 fetch가 소비)
+    assert resp.json()["user"]["company_id"] == 1
+
+
+async def test_current_user_dependency_resolves_company_id(async_client, seed_users):
+    """get_current_user가 CurrentUser.company_id를 채우고 /me가 이를 반환한다."""
+    resp = await async_client.post(
+        "/api/auth/login",
+        json={"email": "alice@virtualoffice.local", "password": "password123"},
+    )
+    token = resp.json()["access_token"]
+    me = await async_client.get(
+        "/api/auth/me", headers={"Authorization": f"Bearer {token}"}
+    )
+    assert me.status_code == 200
+    assert me.json()["company_id"] == 1
+
+
+async def test_current_user_legacy_token_defaults_company_id():
+    """구 토큰(company_id 클레임 없음)은 기본 테넌트 1로 매핑(비파괴 하위호환)."""
+    from app.core.deps import get_current_user
+    from app.core.security import create_access_token
+
+    legacy = create_access_token({"sub": "1001", "role": "admin"})
+    user = await get_current_user(legacy)
+    assert user.company_id == 1
+    assert user.user_id == 1001
+
+
 async def test_me_without_token_returns_401(async_client, seed_users):
     """토큰 없음 → 401."""
     resp = await async_client.get("/api/auth/me")
