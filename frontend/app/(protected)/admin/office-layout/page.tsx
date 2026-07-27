@@ -61,6 +61,12 @@ interface Floor {
   level: number;
   name: string | null;
 }
+/** 주인 후보 — 자리 주인 고르기 목록에 쓰는 최소 필드만 본다. */
+interface Employee {
+  id: number;
+  name: string;
+  position: string | null;
+}
 interface LayoutRow {
   id: string;
   version: number;
@@ -135,6 +141,11 @@ export default function OfficeLayoutPage() {
   const [floorLevel, setFloorLevel] = useState<number | null>(null);
   const [officeId, setOfficeId] = useState<string | null>(null);
   const [layouts, setLayouts] = useState<LayoutRow[]>([]);
+  // 자리 주인 = seat.assigned_user_id. 배정은 DB 소유(D10)라 레이아웃 반영과 무관하게 즉시 적용되므로
+  // 좌표처럼 저장 대기 버퍼에 넣지 않고 별도 맵으로 들고 있다가 서버 응답으로 갱신한다.
+  const [owners, setOwners] = useState<Record<string, number | null>>({});
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [assigning, setAssigning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   // 안내와 실패를 같은 초록 배너로 띄우면 실패가 성공처럼 읽힌다.
@@ -275,17 +286,22 @@ export default function OfficeLayoutPage() {
     setLoading(true);
     setError('');
     try {
-      const [floors, apiSeats, lays] = await Promise.all([
+      const [floors, apiSeats, lays, emps] = await Promise.all([
         api.get<Floor[]>('/api/floors').catch(() => [] as Floor[]),
         api.get<ApiSeat[]>('/api/seats'),
         api.get<LayoutRow[]>('/api/office-layouts').catch(() => [] as LayoutRow[]),
+        // 주인 고르기 목록. 실패해도 자리 편집 자체는 계속 되어야 하므로 빈 목록으로 떨어뜨린다.
+        api.get<Employee[]>('/api/employees').catch(() => [] as Employee[]),
       ]);
       setFloorId(floors[0]?.id ?? null);
       setFloorName(floors[0]?.name ?? null);
       setFloorLevel(floors[0]?.level ?? null);
       setOfficeId(floors[0]?.office_id ?? null);
       setLayouts(lays);
-      setSeats(apiSeats.filter((s) => s.status !== 'disabled').map(toBox));
+      setEmployees(emps);
+      const live = apiSeats.filter((s) => s.status !== 'disabled');
+      setSeats(live.map(toBox));
+      setOwners(Object.fromEntries(live.map((s) => [s.id, s.assigned_user_id])));
       // 재로드 시 저장 대기 버퍼 초기화 (서버 상태와 동기화)
       setPendingMoves({});
       setPendingCreates([]);
@@ -360,6 +376,7 @@ export default function OfficeLayoutPage() {
     const seatNumber = `A-${String(n).padStart(2, '0')}`;
     const tempId = `temp-${Date.now()}-${n}`;
     setSeats((prev) => [...prev, { id: tempId, label: seatNumber, x: coords.x, y: coords.y, status: 'available', type: 'free' }]);
+    setOwners((prev) => ({ ...prev, [tempId]: null }));
     setPendingCreates((prev) => [...prev, { tempId, seat_number: seatNumber, coords }]);
     setSelected({ kind: 'seat', id: tempId });
     flash(`${seatNumber} 자리를 놓았습니다. 원하는 곳으로 끌어다 놓고 [저장]하세요.`);
@@ -373,6 +390,11 @@ export default function OfficeLayoutPage() {
       danger: true,
     }))) return;
     setSeats((prev) => prev.filter((s) => s.id !== id));
+    setOwners((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
     if (id.startsWith('temp-')) {
       setPendingCreates((prev) => prev.filter((c) => c.tempId !== id));
     } else {
@@ -386,6 +408,75 @@ export default function OfficeLayoutPage() {
     }
     setSelected(null);
     flash(`${label} 자리를 지웠습니다. [저장]을 눌러야 적용됩니다.`);
+  };
+
+  // ── 자리 주인 (D10: 배정은 DB 소유 — 레이아웃 반영 없이 곧바로 적용된다) ──
+  const employeeName = (uid: number | null | undefined) =>
+    uid == null ? null : employees.find((e) => e.id === uid)?.name ?? `사원 ${uid}`;
+  /** 이 사원이 지금 앉아 있는 자리 (자기 자신 제외) — 옮기면 그 자리가 빈다는 걸 미리 알려주기 위한 것. */
+  const seatOfUser = (uid: number, exceptSeatId: string) =>
+    seats.find((s) => s.id !== exceptSeatId && owners[s.id] === uid) ?? null;
+
+  /**
+   * 자리 주인을 정하거나(userId) 없앤다(null).
+   * 좌표와 달리 저장 대기 버퍼를 거치지 않는다 — 배정은 레이아웃 반영과 무관하고(D10),
+   * 두 경로를 섞으면 "저장 안 했는데 반영된 것"과 "저장했는데 안 된 것"이 한 화면에 공존한다.
+   */
+  const setSeatOwner = async (seatId: string, userId: number | null) => {
+    if (assigning) return;
+    const seat = seats.find((s) => s.id === seatId);
+    if (!seat) return;
+    if (seatId.startsWith('temp-')) {
+      warn('먼저 [저장]으로 자리를 만든 뒤에 주인을 정할 수 있습니다.');
+      return;
+    }
+    if ((owners[seatId] ?? null) === userId) return;
+
+    // 한 사람 = 한 자리. 서버가 이전 자리를 비우므로, 그 사실을 누르기 전에 알린다.
+    if (userId !== null) {
+      const held = seatOfUser(userId, seatId);
+      if (held && !(await confirm({
+        message: `${employeeName(userId)}님은 지금 ${held.label} 자리에 있습니다. ${seat.label}(으)로 옮기면 ${held.label}은 빈 자리가 됩니다. 계속할까요?`,
+      }))) return;
+    }
+
+    setAssigning(true);
+    try {
+      await api.put(`/api/seat-assignments/${seatId}`, { user_id: userId });
+      setOwners((prev) => {
+        const next = { ...prev };
+        // 서버가 비운 이전 자리를 화면에서도 비운다 (재로드 없이 두면 두 자리에 같은 사람이 보인다).
+        if (userId !== null) {
+          for (const [sid, uid] of Object.entries(prev)) {
+            if (sid !== seatId && uid === userId) next[sid] = null;
+          }
+        }
+        next[seatId] = userId;
+        return next;
+      });
+      setSeats((prev) =>
+        prev.map((s) => {
+          if (s.id === seatId) return { ...s, status: userId === null ? 'available' : 'occupied' };
+          if (userId !== null && owners[s.id] === userId) return { ...s, status: 'available' };
+          return s;
+        }),
+      );
+      flash(
+        userId === null
+          ? `${seat.label} 자리의 주인을 없앴습니다. 가상사무실에 바로 반영됩니다.`
+          : `${seat.label} 자리를 ${employeeName(userId)}님 자리로 정했습니다. 가상사무실에 바로 반영됩니다.`,
+      );
+    } catch (e) {
+      warn(
+        e instanceof ApiError && e.status === 404
+          ? '그 사원을 찾을 수 없습니다. 목록을 새로 고친 뒤 다시 시도해 보세요.'
+          : e instanceof ApiError
+            ? `주인을 바꾸지 못했습니다 (${e.message}).`
+            : '주인을 바꾸는 중 문제가 생겼습니다.',
+      );
+    } finally {
+      setAssigning(false);
+    }
   };
 
   // [모두 저장] — 삭제 → 이동 → 생성 순으로 순차 API 적용. 실패 시 중단, 남은 변경은 버퍼에 유지
@@ -414,6 +505,16 @@ export default function OfficeLayoutPage() {
           seat_number: c.seat_number,
         });
         setSeats((prev) => prev.map((s, i) => (s.id === c.tempId ? toBox(created, i) : s)));
+        // 임시 id → 서버 id로 갈아끼운다. 안 그러면 저장 직후 그 자리에 주인을 못 정한다(임시 id로 남음).
+        setOwners((prev) => {
+          const next = { ...prev };
+          delete next[c.tempId];
+          next[created.id] = created.assigned_user_id;
+          return next;
+        });
+        if (selected?.kind === 'seat' && selected.id === c.tempId) {
+          setSelected({ kind: 'seat', id: created.id });
+        }
         setPendingCreates((prev) => prev.filter((x) => x.tempId !== c.tempId));
       }
       flash('저장했습니다. 가상사무실에 바로 반영됩니다.');
@@ -753,6 +854,8 @@ export default function OfficeLayoutPage() {
               if (selected.kind === 'seat') {
                 const seat = seats.find((s) => s.id === selected.id);
                 if (!seat) return <p className="text-xs text-text-muted">—</p>;
+                const ownerId = owners[seat.id] ?? null;
+                const unsaved = seat.id.startsWith('temp-');
                 return (
                   <div className="space-y-2.5">
                     <div>
@@ -764,6 +867,49 @@ export default function OfficeLayoutPage() {
                     <div className="text-[11.5px] text-text-muted">
                       사무실 왼쪽 위에서 가로 {pxToM(seat.x).toFixed(1)}m, 세로 {pxToM(seat.y).toFixed(1)}m
                     </div>
+
+                    {/* 자리 주인 — 좌표와 달리 고르는 즉시 반영된다(D10). 그래서 [저장] 안내를 붙이지 않는다. */}
+                    <div className="pt-2.5 border-t border-border-subtle space-y-1.5">
+                      <label htmlFor="seat-owner" className="block text-[11.5px] font-medium text-text-secondary">
+                        이 자리의 주인
+                      </label>
+                      <select
+                        id="seat-owner"
+                        value={ownerId ?? ''}
+                        disabled={unsaved || assigning}
+                        onChange={(e) => setSeatOwner(seat.id, e.target.value === '' ? null : Number(e.target.value))}
+                        className="w-full border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <option value="">주인 없음 (누구나 앉는 자리)</option>
+                        {employees.map((emp) => {
+                          const held = seatOfUser(emp.id, seat.id);
+                          return (
+                            <option key={emp.id} value={emp.id}>
+                              {emp.name}
+                              {emp.position ? ` · ${emp.position}` : ''}
+                              {held ? ` (지금 ${held.label})` : ''}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      {/* 못 고르는 이유는 반드시 화면에 쓴다 (D37-b). */}
+                      {unsaved ? (
+                        <p className="text-[11px] leading-relaxed text-text-muted">
+                          아직 저장 전인 자리입니다. [저장]을 누른 뒤에 주인을 정할 수 있습니다.
+                        </p>
+                      ) : employees.length === 0 ? (
+                        <p className="text-[11px] leading-relaxed text-text-muted">
+                          등록된 직원이 없어 주인을 정할 수 없습니다. [직원 관리]에서 먼저 추가하세요.
+                        </p>
+                      ) : (
+                        <p className="text-[11px] leading-relaxed text-text-muted">
+                          {ownerId !== null
+                            ? `${employeeName(ownerId)}님의 자리입니다. 고르는 즉시 반영됩니다.`
+                            : '고르는 즉시 반영됩니다. [저장]을 따로 누르지 않아도 됩니다.'}
+                        </p>
+                      )}
+                    </div>
+
                     <button
                       onClick={() => removeSeat(seat.id)}
                       className="w-full px-2 py-1.5 text-xs border border-[rgba(239,68,68,0.35)] text-red-300 rounded-md hover:bg-[rgba(239,68,68,0.12)]"
@@ -804,6 +950,8 @@ export default function OfficeLayoutPage() {
             <dl className="space-y-1.5 text-[12.5px]">
               {[
                 ['자리', seats.length],
+                // 주인 지정이 몇 자리까지 됐는지 — 자리마다 눌러 보지 않고도 진행 상황이 보이게.
+                ['주인 있는 자리', seats.filter((s) => owners[s.id] != null).length],
                 ['방', rooms.length],
                 ['구역', zones.length],
                 ['벽', walls.length],

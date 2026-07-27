@@ -3,6 +3,7 @@
 
 GET  /api/seats                         — 층별 좌석 목록
 POST /api/seat-assignments              — 좌석 점유 (D10, §3.11)
+PUT  /api/seat-assignments/{seat_id}    — 자리 주인 지정/해제 (관리자, user_id=null → 해제)
 POST /api/seat-assignments/{seat_id}/release — 좌석 반납
 
 D10: 좌석 배정은 DB가 소유(layout JSON 불포함). 배정 변경 시 레이아웃 재배포 불필요.
@@ -32,7 +33,14 @@ from app.core.deps import (
     require_role,
 )
 from app.db import get_db
-from app.models.tables import Floor, Seat, SeatAssignmentHistory, SeatStatus, SeatType
+from app.models.tables import (
+    ErpUser,
+    Floor,
+    Seat,
+    SeatAssignmentHistory,
+    SeatStatus,
+    SeatType,
+)
 from app.services.audit import record_audit
 
 router = APIRouter(prefix="/api", tags=["seats"])
@@ -60,7 +68,8 @@ class AssignRequest(BaseModel):
 
 class SeatAssignmentOut(BaseModel):
     seat_id: str
-    user_id: int
+    user_id: Optional[int] = None
+    """None = 주인 없는 자리 (PUT /seat-assignments/{id} 에 user_id=null 로 해제한 결과)."""
     assigned_at: str
     status: str
 
@@ -268,8 +277,26 @@ async def release_seat(
 _ADMIN = ADMIN_ROLES
 
 class ReassignRequest(BaseModel):
-    user_id: int
+    # None = 주인 없애기. 관리자 배정/해제를 한 엔드포인트로 묶어 부분 실패를 없앤다
+    # (좌표 저장 + 배정을 프론트에서 2회 호출로 엮으면 "배정됐는데 밤사이 사라지는" 상태가 생긴다).
+    user_id: Optional[int] = None
     reason: Optional[str] = None
+
+
+async def _close_open_history(db: AsyncSession, seat_uuid: UUID, now: datetime) -> None:
+    """해당 좌석의 열린 배정 이력(unassigned_at IS NULL)을 닫는다.
+
+    `uk_current_seat`(부분 unique)가 좌석당 열린 이력을 1건으로 강제하므로,
+    새 이력을 넣기 전에 반드시 먼저 닫아야 한다.
+    """
+    prev = (await db.execute(
+        select(SeatAssignmentHistory)
+        .where(SeatAssignmentHistory.seat_id == seat_uuid, SeatAssignmentHistory.unassigned_at.is_(None))
+        .order_by(SeatAssignmentHistory.assigned_at.desc())
+        .limit(1)
+    )).scalar_one_or_none()
+    if prev is not None:
+        prev.unassigned_at = now
 
 
 @router.put("/seat-assignments/{seat_id}", response_model=SeatAssignmentOut)
@@ -279,9 +306,15 @@ async def reassign_seat(
     current_user: CurrentUser = Depends(require_role(*_ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> SeatAssignmentOut:
-    """PUT /api/seat-assignments/{seat_id} — 배정 수정(관리자): 좌석을 다른 사원에게 재배정.
+    """PUT /api/seat-assignments/{seat_id} — 자리 주인 지정/해제 (관리자).
 
-    현재 열린 history를 닫고(unassigned_at) 새 배정 history를 연다. seat.assigned_user_id 갱신.
+    - `user_id` = 사원 → 그 사원을 이 자리 주인으로. 열린 history를 닫고 새 history를 연다.
+    - `user_id` = null → **주인 없애기**. history만 닫고 새로 열지 않는다
+      (`seat_assignment_history.user_id`가 NOT NULL이라 "주인 없음" 이력은 애초에 표현할 수 없다).
+    - 대상 사원은 **같은 회사의 활성 사원**이어야 한다. 아니면 404(존재 은닉, 22 T0-1).
+    - 이미 같은 사원이면 아무것도 바꾸지 않는다 — 편집기에서 저장을 반복해도 이력이 불어나지 않게.
+    - 그 사원이 **다른 자리**를 갖고 있으면 그 자리를 비운다(한 사람 = 한 자리).
+      `employees.seat_number`가 단수라 두 자리를 허용하면 어느 쪽이 보일지가 순서에 좌우된다.
     """
     try:
         seat_uuid = UUID(seat_id)
@@ -295,22 +328,78 @@ async def reassign_seat(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="seat_disabled")
 
     now = datetime.now(timezone.utc)
-    # 기존 열린 history 닫기
-    prev = (await db.execute(
-        select(SeatAssignmentHistory)
-        .where(SeatAssignmentHistory.seat_id == seat_uuid, SeatAssignmentHistory.unassigned_at.is_(None))
-        .order_by(SeatAssignmentHistory.assigned_at.desc())
-        .limit(1)
-    )).scalar_one_or_none()
-    if prev is not None:
-        prev.unassigned_at = now
+    prev_user_id = seat.assigned_user_id
 
+    # ── 주인 없애기 ────────────────────────────────────────────────────
+    if body.user_id is None:
+        if prev_user_id is None:
+            # 이미 빈 자리 — 성공으로 답한다(멱등). 편집기의 [주인 없애기]가 두 번 눌려도 실패하지 않게.
+            return SeatAssignmentOut(
+                seat_id=str(seat.id), user_id=None, assigned_at=now.isoformat(), status=seat.status.value,
+            )
+        await _close_open_history(db, seat_uuid, now)
+        seat.assigned_user_id = None
+        seat.status = SeatStatus.AVAILABLE
+        await record_audit(
+            db, company_id=current_user.company_id, user_id=current_user.user_id,
+            action="seat_unassigned", entity_type="seat", entity_id=str(seat.id),
+            old_value={"assigned_user_id": prev_user_id},
+            new_value={"assigned_user_id": None, "reason": body.reason},
+        )
+        await db.flush()
+        await db.commit()
+        return SeatAssignmentOut(
+            seat_id=str(seat.id), user_id=None, assigned_at=now.isoformat(), status=seat.status.value,
+        )
+
+    # ── 주인 지정 ──────────────────────────────────────────────────────
+    # 타사·퇴사 사원에게 자리를 넘기면 그 자리는 아무도 쓸 수 없는 유령 자리가 된다.
+    target = (await db.execute(
+        select(ErpUser).where(
+            ErpUser.id == body.user_id,
+            ErpUser.company_id == seat.company_id,
+            ErpUser.is_active.is_(True),
+        )
+    )).scalar_one_or_none()
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="user_not_found")
+
+    if prev_user_id == body.user_id:
+        # 변화 없음 — 이력·감사 로그를 남기지 않는다.
+        return SeatAssignmentOut(
+            seat_id=str(seat.id), user_id=body.user_id, assigned_at=now.isoformat(), status=seat.status.value,
+        )
+
+    # 한 사람 = 한 자리: 이 사원이 갖고 있던 다른 자리를 먼저 비운다.
+    vacated = (await db.execute(
+        select(Seat).where(
+            Seat.assigned_user_id == body.user_id,
+            Seat.company_id == seat.company_id,
+            Seat.id != seat_uuid,
+        )
+    )).scalars().all()
+    for other in vacated:
+        await _close_open_history(db, other.id, now)
+        other.assigned_user_id = None
+        other.status = SeatStatus.AVAILABLE
+
+    await _close_open_history(db, seat_uuid, now)
     seat.assigned_user_id = body.user_id
     seat.status = SeatStatus.OCCUPIED
     db.add(SeatAssignmentHistory(
         seat_id=seat_uuid, user_id=body.user_id, assigned_at=now,
         assigned_by=current_user.user_id, reason=body.reason or "reassigned",
     ))
+    await record_audit(
+        db, company_id=current_user.company_id, user_id=current_user.user_id,
+        action="seat_assigned", entity_type="seat", entity_id=str(seat.id),
+        old_value={"assigned_user_id": prev_user_id},
+        new_value={
+            "assigned_user_id": body.user_id,
+            "reason": body.reason,
+            "vacated_seat_ids": [str(s.id) for s in vacated],
+        },
+    )
     await db.flush()
     await db.commit()
     return SeatAssignmentOut(
@@ -471,10 +560,20 @@ async def list_seat_assignments(
     limit: int = Query(100, le=500, description="최대 결과 수"),
     db=Depends(get_db),
     _: CurrentUser = Depends(require_role(*_ADMIN)),
+    cid: int = Depends(company_scope),
 ) -> list[SeatAssignmentHistoryOut]:
-    """GET /api/seat-assignments — 좌석 배정 이력 조회 (관리자, management-api)."""
-    query = select(SeatAssignmentHistory).order_by(SeatAssignmentHistory.assigned_at.desc())
-    
+    """GET /api/seat-assignments — 좌석 배정 이력 조회 (관리자, management-api).
+
+    seat_assignment_history에는 company_id가 없다 → 부모(seat) 경유로 스코프한다(22 T0-1 레시피 4).
+    스코프가 없으면 어느 회사 관리자든 남의 회사 좌석 이력을 통째로 읽는다.
+    """
+    query = (
+        select(SeatAssignmentHistory)
+        .join(Seat, Seat.id == SeatAssignmentHistory.seat_id)
+        .where(Seat.company_id == cid)
+        .order_by(SeatAssignmentHistory.assigned_at.desc())
+    )
+
     if seat_id:
         try:
             query = query.where(SeatAssignmentHistory.seat_id == UUID(seat_id))
