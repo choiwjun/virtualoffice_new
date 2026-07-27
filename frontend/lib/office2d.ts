@@ -34,6 +34,49 @@ export function metersToNorm(p: Vec2): Vec2 {
   return { x: p.x / SCENE_W_M, y: p.y / SCENE_H_M };
 }
 
+/** 배포 레이아웃(자체 미터 공간) → 스테이지 정규 사상 계수. */
+export interface LayoutFit {
+  /** 미터당 정규 x·y 배율. */
+  sx: number;
+  sy: number;
+  /** 중앙 정렬 여백(레터박스). */
+  ox: number;
+  oy: number;
+}
+
+/**
+ * 배포된 편집기 레이아웃을 스테이지에 비율 유지로 맞춘다(레터박스).
+ *
+ * **씬 상수로 나누면 안 되는 이유**: 레이아웃의 `dimensions`는 콘텐츠 외곽+2m로 파생돼(D37)
+ * 씬 박스(20 × 11.256m)와 아무 관계가 없다. `metersToNorm`을 쓰면 씬보다 큰 레이아웃이
+ * 정규 좌표 1을 넘겨 스테이지의 `overflow-hidden`에 **통째로 잘린다** — 방·벽·구역이
+ * 조용히 사라지고, 방 라벨(방 카드를 여는 유일한 클릭 대상)도 화면 밖으로 나간다.
+ * 실측: 23.8 × 18.5m 배포본의 방이 전부 정규 y 1.20~1.47로 밀려 클릭이 무반응이었다.
+ *
+ * 정규 좌표는 스테이지 박스(가로:세로 = `PLATE_W`:`PLATE_H`)의 분수다. 그래서 실제 비율을
+ * 지키려면 세로 배율이 가로의 `A = PLATE_W/PLATE_H` 배여야 한다(같은 1m가 화면에서 같은
+ * 픽셀이 되도록). 안 그러면 정사각 회의실이 눌린 직사각형으로 그려진다.
+ *
+ * 씬과 같은 크기(20 × 11.256)를 넣으면 `metersToNorm`과 **수치까지 동일**하다 —
+ * 씬 박스 안에 그려진 기존 배포본은 렌더 결과가 바이트 단위로 불변이다(회귀 0).
+ */
+export function fitLayoutToStage(widthM: number, heightM: number): LayoutFit {
+  const aspect = PLATE_W / PLATE_H;
+  if (!Number.isFinite(widthM) || !Number.isFinite(heightM) || widthM <= 0 || heightM <= 0) {
+    // dimensions 없음·손상 → 씬 기준 폴백(기존 동작). 좌표가 NaN이 되어 방이 사라지는 것보다,
+    // 씬 좌표로 그려 보고 어긋남을 눈으로 보는 편이 진단 가능하다.
+    return { sx: 1 / SCENE_W_M, sy: 1 / SCENE_H_M, ox: 0, oy: 0 };
+  }
+  const sx = Math.min(1 / widthM, 1 / (heightM * aspect));
+  const sy = sx * aspect;
+  return { sx, sy, ox: (1 - widthM * sx) / 2, oy: (1 - heightM * sy) / 2 };
+}
+
+/** 배포 레이아웃 미터 좌표 → 스테이지 정규(0~1). */
+export function layoutToNorm(p: Vec2, fit: LayoutFit): Vec2 {
+  return { x: fit.ox + p.x * fit.sx, y: fit.oy + p.y * fit.sy };
+}
+
 /** 보행 가능 폴리곤(정규 좌표) — HORIZON_OPEN_PLAN walkArea. */
 export const WALK_AREA: Vec2[] = [
   { x: 0.4085, y: 0.1762 },

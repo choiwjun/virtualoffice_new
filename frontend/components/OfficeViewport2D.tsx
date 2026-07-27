@@ -31,7 +31,9 @@ import {
   themeForHour,
   clampToWalkable,
   findPath,
+  fitLayoutToStage,
   isWalkable,
+  layoutToNorm,
   nearestWalkableM,
   metersToNorm,
   normToMeters,
@@ -373,25 +375,43 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
 
   // ── 배포 레이아웃 구조(방/벽/구역) — 있으면 편집기 배치를 벡터로 반영, 없으면 데모 씬 ──────
   const [structure, setStructure] = useState<FloorStructure | null>(null);
-  const dynRooms = useMemo<SceneRoom[]>(
-    () => (structure ? structure.rooms.map((r) => ({ id: r.id, label: r.label, polygon: rectToNormPoly(r.x, r.y, r.w, r.h) })) : []),
+  /** 배포 레이아웃은 자기 dimensions가 미터 공간이다 — 씬 상수로 나누면 스테이지 밖으로 잘린다. */
+  const layoutFit = useMemo(
+    () => fitLayoutToStage(structure?.dimensions?.width_m ?? 0, structure?.dimensions?.height_m ?? 0),
     [structure],
+  );
+  const fitRectPoly = useCallback(
+    (x: number, y: number, w: number, h: number): Vec2[] => [
+      layoutToNorm({ x, y }, layoutFit),
+      layoutToNorm({ x: x + w, y }, layoutFit),
+      layoutToNorm({ x: x + w, y: y + h }, layoutFit),
+      layoutToNorm({ x, y: y + h }, layoutFit),
+    ],
+    [layoutFit],
+  );
+  const dynRooms = useMemo<SceneRoom[]>(
+    () => (structure ? structure.rooms.map((r) => ({ id: r.id, label: r.label, polygon: fitRectPoly(r.x, r.y, r.w, r.h) })) : []),
+    [structure, fitRectPoly],
   );
   const dynObstacles = useMemo<Vec2[][]>(
-    () => (structure ? structure.walls.map((w) => rectToNormPoly(w.x, w.y, w.w, w.h)) : []),
-    [structure],
+    () => (structure ? structure.walls.map((w) => fitRectPoly(w.x, w.y, w.w, w.h)) : []),
+    [structure, fitRectPoly],
   );
   const dynZones = useMemo(
-    () => (structure ? structure.zones.map((z) => ({ id: z.id, label: z.label, color: z.color, poly: z.polygon.map((p) => metersToNorm(p)) })) : []),
-    [structure],
+    () => (structure ? structure.zones.map((z) => ({ id: z.id, label: z.label, color: z.color, poly: z.polygon.map((p) => layoutToNorm(p, layoutFit)) })) : []),
+    [structure, layoutFit],
   );
   const useDeployed = structure != null;
-  // V3 방(축정렬 미터 사각) → 좌석과 동일 metersToNorm 폴리곤. 배포>V3 우선순위.
+  // V3 방(축정렬 미터 사각) → 좌석과 동일 metersToNorm 폴리곤.
   const v3Rooms = useMemo<SceneRoom[]>(
     () => V3_ROOMS.map((r) => ({ id: r.id, label: r.label, polygon: rectToNormPoly(r.x, r.y, r.w, r.h) })),
     [],
   );
-  const activeRooms = useDeployed ? dynRooms : v3Rooms;
+  // 방 상호작용(라벨·글로우·포커스 줌·클릭 히트테스트)은 **화면에 그려진 씬**에서 온다.
+  // 30e21bb로 V3 씬은 배포 여부와 무관하게 항상 렌더되는데 여기만 배포본으로 갈아치우고 있어,
+  // 배포하면 눈에 보이는 방들의 클릭 대상이 통째로 사라졌다(배포본 방은 씬에 그려지지도 않는다).
+  // 배포 레이아웃은 씬 위에 얹는 **도면 오버레이**다 — 아래 SVG가 dynRooms로 따로 그린다.
+  const activeRooms = v3Rooms;
   // rAF/interval 콜백에서 최신 방 목록 참조(의존성 없이).
   const roomsRef = useRef<SceneRoom[]>([]);
   roomsRef.current = activeRooms;
@@ -401,16 +421,13 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
   //  · V3: 축정렬 room 사각 − v3 가구 장애물(officeV3). realtime SCENE_FLOOR=v3와 정합.
   //    이동 불변식 상수는 불변.
   useEffect(() => {
-    if (structure?.dimensions) {
-      setActiveFloorGeometry({
-        walkArea: rectToNormPoly(0, 0, structure.dimensions.width_m, structure.dimensions.height_m),
-        obstacles: dynObstacles,
-      });
-    } else {
-      setActiveFloorGeometry({ walkArea: V3_WALK_AREA, obstacles: V3_OBSTACLES });
-    }
+    // 이동·충돌은 **화면에 그려진 씬**(V3)을 따른다 — 배포 레이아웃은 자기 미터 공간이라
+    // 씬과 같은 좌표로 취급하면 의미가 어긋난다(현 배포본은 23.8×18.5m, 씬은 20×11.256m).
+    // 이전에는 보행영역만 배포본 크기로 잡아 정규 y가 1.6까지 벌어졌고, 아바타가 스테이지
+    // 아래 빈 공간까지 걸어 나갈 수 있었다. 배포 도면은 위에 겹쳐 보여 주기만 한다.
+    setActiveFloorGeometry({ walkArea: V3_WALK_AREA, obstacles: V3_OBSTACLES });
     return () => setActiveFloorGeometry(null);
-  }, [structure, dynObstacles]);
+  }, []);
 
   // 짧은 안내 토스트(사용 중 좌석, API 오류 등).
   const [toast, setToast] = useState<string | null>(null);
@@ -1270,7 +1287,9 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
                   strokeDasharray="0.012 0.008"
                 />
               ))}
-              {activeRooms.map((r) => (
+              {/* 도면의 방은 **배포본**(dynRooms)이다 — 씬의 방(activeRooms)과 다른 것이며,
+                  섞으면 오버레이가 자기가 아닌 걸 그린다. */}
+              {dynRooms.map((r) => (
                 <polygon
                   key={r.id}
                   points={r.polygon.map((v) => `${v.x},${v.y}`).join(' ')}
@@ -1292,6 +1311,20 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
                 />
               ))}
             </svg>
+            {/* 도면 방 이름 — 이름 없는 외곽선은 도면으로 읽히지 않는다(30e21bb). 씬의 방 라벨과
+                구분되게 흐린 보라 텍스트이고, 클릭 대상이 아니다(상호작용은 씬의 방이 담당). */}
+            {dynRooms.map((r) => {
+              const c = polygonCentroid(r.polygon);
+              return (
+                <div
+                  key={r.id}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded text-[9px] font-semibold pointer-events-none whitespace-nowrap"
+                  style={{ left: `${c.x * 100}%`, top: `${c.y * 100}%`, background: 'rgba(24,16,46,.72)', color: '#cbb8ff', zIndex: 5 }}
+                >
+                  {r.label}
+                </div>
+              );
+            })}
             <div
               className="absolute left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[11px] font-semibold"
               style={{ top: 10, background: 'rgba(7,16,29,.85)', color: '#9fd0a8', border: '1px solid rgba(120,200,150,.35)', zIndex: 5 }}
@@ -1319,11 +1352,12 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
           />
         )}
 
-        {/* 방 라벨 (overlay-tokens.roomLabel) — D33(P0-5): 씬 모드에선 선택(글로우) 시에만 표시(몰입).
-            배포 모드는 상시 표시 — 씬 위에 얹힌 방 외곽선이 어느 방인지 알 수 없으면 도면이 무의미하다. */}
+        {/* 씬의 방 라벨 (overlay-tokens.roomLabel) — D33(P0-5): 선택(글로우) 시에만 표시(몰입).
+            배포 여부와 무관하다 — 배포 도면은 위에서 자기 라벨을 따로 그린다. 여기서 useDeployed를
+            보면 남의 도면을 배포했다는 이유로 씬 방 이름 7개가 상시 노출된다. */}
         {activeRooms.map((room) => {
           const c = polygonCentroid(room.polygon);
-          const visible = useDeployed || glowRoom === room.id;
+          const visible = glowRoom === room.id;
           return (
             <button
               key={room.id}

@@ -4,6 +4,10 @@ import {
   SPAWNS,
   SCENE_W_M,
   SCENE_H_M,
+  PLATE_W,
+  PLATE_H,
+  fitLayoutToStage,
+  layoutToNorm,
   normToMeters,
   metersToNorm,
   findPath,
@@ -27,6 +31,68 @@ describe('coordinate transforms', () => {
     const m = normToMeters({ x: 1, y: 1 });
     expect(m.x).toBeCloseTo(SCENE_W_M, 6);
     expect(m.y).toBeCloseTo(SCENE_H_M, 6);
+  });
+});
+
+describe('배포 레이아웃 → 스테이지 사상 (fitLayoutToStage)', () => {
+  // 레이아웃의 dimensions는 콘텐츠 외곽+2m로 파생돼(D37) 씬 박스와 아무 관계가 없다.
+  // 씬 상수(metersToNorm)로 나누면 큰 레이아웃이 통째로 스테이지 밖으로 나가 조용히 사라진다.
+  const DEMO = { w: 23.8, h: 18.5 }; // HORIZON 판교 HQ 배포본(v4)
+
+  it('씬 박스와 같은 크기면 metersToNorm과 완전히 동일하다 (기존 배포본 회귀 0)', () => {
+    const fit = fitLayoutToStage(SCENE_W_M, SCENE_H_M);
+    for (const p of [{ x: 0, y: 0 }, { x: 7.3, y: 4.1 }, { x: SCENE_W_M, y: SCENE_H_M }]) {
+      const got = layoutToNorm(p, fit);
+      const want = metersToNorm(p);
+      expect(got.x).toBeCloseTo(want.x, 9);
+      expect(got.y).toBeCloseTo(want.y, 9);
+    }
+  });
+
+  it('씬보다 큰 레이아웃도 네 귀퉁이가 전부 0~1 안에 들어온다', () => {
+    const fit = fitLayoutToStage(DEMO.w, DEMO.h);
+    for (const p of [{ x: 0, y: 0 }, { x: DEMO.w, y: 0 }, { x: 0, y: DEMO.h }, { x: DEMO.w, y: DEMO.h }]) {
+      const n = layoutToNorm(p, fit);
+      expect(n.x).toBeGreaterThanOrEqual(0);
+      expect(n.x).toBeLessThanOrEqual(1);
+      expect(n.y).toBeGreaterThanOrEqual(0);
+      expect(n.y).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('대회의실(y 13.5~16.5m)이 스테이지 안에 들어온다 — 무반응 클릭의 원인', () => {
+    const fit = fitLayoutToStage(DEMO.w, DEMO.h);
+    // 회귀 기준: 기존 metersToNorm은 y를 1.33으로 밀어내 overflow-hidden에 잘렸다.
+    expect(metersToNorm({ x: 4.5, y: 15.0 }).y).toBeGreaterThan(1);
+    const c = layoutToNorm({ x: 4.5, y: 15.0 }, fit);
+    expect(c.y).toBeLessThan(1);
+    expect(c.y).toBeGreaterThan(0);
+  });
+
+  it('실제 비율을 지킨다 — 정사각 방은 화면에서도 정사각', () => {
+    const fit = fitLayoutToStage(DEMO.w, DEMO.h);
+    const a = layoutToNorm({ x: 5, y: 5 }, fit);
+    const b = layoutToNorm({ x: 8, y: 8 }, fit); // 3m × 3m
+    // 정규 좌표는 스테이지 박스의 분수 → 픽셀 비교는 종횡비를 곱해야 한다.
+    const wPx = (b.x - a.x) * PLATE_W;
+    const hPx = (b.y - a.y) * PLATE_H;
+    expect(wPx).toBeCloseTo(hPx, 6);
+  });
+
+  it('여백은 양쪽으로 균등 — 레이아웃이 스테이지 중앙에 온다', () => {
+    const fit = fitLayoutToStage(DEMO.w, DEMO.h);
+    const lt = layoutToNorm({ x: 0, y: 0 }, fit);
+    const rb = layoutToNorm({ x: DEMO.w, y: DEMO.h }, fit);
+    expect(lt.x).toBeCloseTo(1 - rb.x, 9);
+    expect(lt.y).toBeCloseTo(1 - rb.y, 9);
+  });
+
+  it('dimensions가 없거나 0이어도 터지지 않고 씬 기준으로 폴백한다', () => {
+    for (const bad of [{ w: 0, h: 0 }, { w: -1, h: 10 }, { w: Number.NaN, h: 5 }]) {
+      const n = layoutToNorm({ x: 10, y: 5 }, fitLayoutToStage(bad.w, bad.h));
+      expect(Number.isFinite(n.x)).toBe(true);
+      expect(Number.isFinite(n.y)).toBe(true);
+    }
   });
 });
 
