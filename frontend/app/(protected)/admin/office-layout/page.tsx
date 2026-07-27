@@ -323,10 +323,26 @@ export default function OfficeLayoutPage() {
   const deployLayout = async (id: string) => {
     try {
       await api.post(`/api/office-layouts/${id}/deploy`, {});
-      flash('배포 완료');
+      // 배포하면 뷰포트가 기본 씬 대신 이 레이아웃 지오메트리를 그린다 — 눌러 보고서야 아는
+      // 변화라 미리 알린다.
+      flash('배포 완료 — 가상사무실이 이 배치대로 렌더됩니다(해제하면 기본 씬 복귀)');
       refreshLayouts();
     } catch (e) {
       flash(e instanceof ApiError ? (e.status === 409 ? '검증(validated) 후에만 배포 가능 (D12)' : `배포 실패 (${e.status})`) : '오류');
+    }
+  };
+
+  /** 배포 해제 — 배포본을 내려 기본 씬으로 되돌린다. rollback과 달리 이전 버전이 필요 없다. */
+  const undeployLayout = async (id: string, version: number) => {
+    if (!(await confirm({
+      message: `v${version} 배포를 해제할까요? 가상사무실이 기본 씬으로 돌아갑니다. 좌석 위치는 그대로 유지되며, 이 버전은 validated로 남아 언제든 다시 배포할 수 있습니다.`,
+    }))) return;
+    try {
+      await api.post(`/api/office-layouts/${id}/undeploy`, {});
+      flash('배포 해제됨 — 기본 씬으로 복귀');
+      refreshLayouts();
+    } catch (e) {
+      flash(e instanceof ApiError ? `해제 실패: ${e.message}` : '오류');
     }
   };
 
@@ -511,8 +527,32 @@ export default function OfficeLayoutPage() {
                           이 버전으로 롤백
                         </button>
                       )}
+                      {l.status === 'deployed' && (
+                        <button
+                          onClick={() => undeployLayout(l.id, l.version)}
+                          className="px-2 py-0.5 border border-border-subtle text-text-secondary rounded hover:bg-bg-surface-raised mr-1"
+                          title="배포를 해제해 가상사무실을 기본 씬으로 되돌립니다"
+                        >
+                          배포 해제
+                        </button>
+                      )}
                       <button onClick={() => validateLayout(l.id)} className="px-2 py-0.5 border border-border-subtle rounded text-text-secondary hover:bg-bg-surface-raised mr-1">검증</button>
-                      <button onClick={() => deployLayout(l.id)} disabled={l.status !== 'validated'} className="px-2 py-0.5 bg-primary text-white rounded hover:bg-primary-hover disabled:opacity-40">배포</button>
+                      <button
+                        onClick={() => deployLayout(l.id)}
+                        disabled={l.status !== 'validated'}
+                        // 비활성 버튼은 눌러도 아무 일이 없어 "반영했는데 안 된다"로 오해된다 —
+                        // 왜 못 누르는지 툴팁으로 알린다(D12: 검증 통과가 선행).
+                        title={
+                          l.status === 'validated'
+                            ? '이 버전을 가상사무실에 반영합니다'
+                            : l.status === 'deployed'
+                              ? '이미 배포된 버전입니다'
+                              : '먼저 검증을 통과해야 배포할 수 있습니다 (D12)'
+                        }
+                        className="px-2 py-0.5 bg-primary text-white rounded hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        배포
+                      </button>
                     </td>
                   </tr>
                 ));

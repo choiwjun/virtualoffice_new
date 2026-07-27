@@ -262,6 +262,40 @@ async def deploy_layout(
     return _out(layout)
 
 
+@router.post("/{layout_id}/undeploy", response_model=LayoutOut)
+async def undeploy_layout(
+    layout_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_role(*_ADMIN)),
+) -> LayoutOut:
+    """POST /api/office-layouts/{id}/undeploy — 배포 해제. deployed→validated.
+
+    rollback은 **직전 archived 버전으로 교체**하는 동작이라 이전 버전이 없으면 막힌다
+    (no_previous_version). 그래서 첫 배포는 되돌릴 방법이 없었다 — 한 번 배포하면
+    뷰포트가 영구히 배포 지오메트리 모드로 넘어가고 기본 씬으로 못 돌아온다.
+
+    이 엔드포인트는 교체가 아니라 **해제**다: 배포본을 내려 배포 상태를 비우고, 레이아웃은
+    validated로 되돌려 언제든 다시 배포할 수 있게 남긴다(archived로 묻으면 재배포에
+    새 초안이 필요해진다).
+    """
+    layout = await _get_or_404(layout_id, db)
+    cur = layout.status.value if hasattr(layout.status, "value") else layout.status
+    if cur != "deployed":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="only_deployed_can_undeploy")
+    now = datetime.now(timezone.utc)
+    layout.status = OfficeLayoutStatus.VALIDATED
+    layout.deployed_at = None
+    layout.updated_at = now
+    await db.commit()
+    await db.refresh(layout)
+    await record_audit(
+        db, company_id=user.company_id, user_id=user.user_id, action="office_layout_undeployed",
+        entity_type="office_layout", entity_id=str(layout.id),
+        old_value={"status": "deployed"}, new_value={"status": "validated", "version": layout.version},
+    )
+    return _out(layout)
+
+
 @router.post("/{layout_id}/rollback", response_model=LayoutOut)
 async def rollback_layout(
     layout_id: str,

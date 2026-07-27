@@ -70,6 +70,66 @@ async def test_layout_deploy_and_rollback(async_client: AsyncClient, admin_auth_
 
 
 @pytest.mark.asyncio
+async def test_first_deploy_cannot_rollback(async_client: AsyncClient, admin_auth_headers, db_session: AsyncSession):
+    """rollback은 '직전 버전으로 교체'라 첫 배포에는 쓸 수 없다 — undeploy가 필요한 이유."""
+    fl = uuid4()
+    v1 = OfficeLayout(office_id=OFFICE_ID, floor_id=fl, version=1, status=OfficeLayoutStatus.VALIDATED, json=MINIMAL_LAYOUT)
+    db_session.add(v1)
+    await db_session.flush()
+    await async_client.post(f"/api/office-layouts/{v1.id}/deploy", headers=admin_auth_headers)
+
+    rb = await async_client.post(f"/api/office-layouts/{v1.id}/rollback", headers=admin_auth_headers)
+    assert rb.status_code == 409, rb.text
+    assert rb.json()["detail"] == "no_previous_version"
+
+
+@pytest.mark.asyncio
+async def test_layout_undeploy(async_client: AsyncClient, admin_auth_headers, db_session: AsyncSession):
+    """배포 해제 — deployed→validated. 배포본이 비므로 뷰포트는 기본 씬으로 돌아간다."""
+    fl = uuid4()
+    v1 = OfficeLayout(office_id=OFFICE_ID, floor_id=fl, version=1, status=OfficeLayoutStatus.VALIDATED, json=MINIMAL_LAYOUT)
+    db_session.add(v1)
+    await db_session.flush()
+    d = await async_client.post(f"/api/office-layouts/{v1.id}/deploy", headers=admin_auth_headers)
+    assert d.status_code == 200 and d.json()["status"] == "deployed"
+
+    u = await async_client.post(f"/api/office-layouts/{v1.id}/undeploy", headers=admin_auth_headers)
+    assert u.status_code == 200, u.text
+    assert u.json()["status"] == "validated"
+    assert u.json()["deployed_at"] is None
+
+    # 배포본이 없으므로 구조 API가 deployed=false → 뷰포트가 기본(V3) 씬을 쓴다.
+    s = await async_client.get("/api/office-layouts/deployed/structure", headers=admin_auth_headers)
+    assert s.status_code == 200 and s.json()["deployed"] is False
+
+    # validated로 남았으니 새 초안 없이 즉시 재배포할 수 있다.
+    again = await async_client.post(f"/api/office-layouts/{v1.id}/deploy", headers=admin_auth_headers)
+    assert again.status_code == 200 and again.json()["status"] == "deployed"
+
+
+@pytest.mark.asyncio
+async def test_undeploy_requires_deployed(async_client: AsyncClient, admin_auth_headers, db_session: AsyncSession):
+    fl = uuid4()
+    v1 = OfficeLayout(office_id=OFFICE_ID, floor_id=fl, version=1, status=OfficeLayoutStatus.VALIDATED, json=MINIMAL_LAYOUT)
+    db_session.add(v1)
+    await db_session.flush()
+    u = await async_client.post(f"/api/office-layouts/{v1.id}/undeploy", headers=admin_auth_headers)
+    assert u.status_code == 409, u.text
+    assert u.json()["detail"] == "only_deployed_can_undeploy"
+
+
+@pytest.mark.asyncio
+async def test_undeploy_requires_admin(async_client: AsyncClient, auth_headers, admin_auth_headers, db_session: AsyncSession):
+    fl = uuid4()
+    v1 = OfficeLayout(office_id=OFFICE_ID, floor_id=fl, version=1, status=OfficeLayoutStatus.VALIDATED, json=MINIMAL_LAYOUT)
+    db_session.add(v1)
+    await db_session.flush()
+    await async_client.post(f"/api/office-layouts/{v1.id}/deploy", headers=admin_auth_headers)
+    u = await async_client.post(f"/api/office-layouts/{v1.id}/undeploy", headers=auth_headers)
+    assert u.status_code == 403, u.text
+
+
+@pytest.mark.asyncio
 async def test_layout_rbac(async_client: AsyncClient, auth_headers):
     r = await async_client.post("/api/office-layouts", headers=auth_headers, json={"office_id": str(OFFICE_ID), "floor_id": str(FLOOR_ID), "json": MINIMAL_LAYOUT})
     assert r.status_code == 403, r.text
