@@ -612,7 +612,7 @@ export default function WorkLogPage() {
       {/* Create/Edit Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div role="dialog" aria-modal="true" className="rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
+          <div role="dialog" aria-modal="true" className="rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <h2 className="font-semibold text-text-primary">
                 {editLog ? '업무 수정' : '업무 추가'}

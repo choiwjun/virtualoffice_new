@@ -18,6 +18,7 @@ from app.models.tables import AuditLog
 async def record_audit(
     db: AsyncSession,
     *,
+    company_id: int,
     user_id: Optional[int],
     action: str,
     entity_type: str,
@@ -27,10 +28,16 @@ async def record_audit(
     ip_address: Optional[str] = None,
     user_agent: Optional[str] = None,
 ) -> None:
-    """감사 로그 1건 적재. 실패해도 주 작업을 롤백시키지 않도록 예외를 삼킨다."""
+    """감사 로그 1건 적재. 실패해도 주 작업을 롤백시키지 않도록 예외를 삼킨다.
+
+    `company_id`는 필수 키워드다(Phase 1d). 호출자의 `CurrentUser.company_id`를 넘긴다 —
+    여기서 user_id로 역조회하면 매 기록마다 쿼리가 늘고 시스템 기록(user_id=None)은
+    회사를 알 수 없게 된다. 명시가 유일하게 정확한 방법이다.
+    """
     try:
         db.add(
             AuditLog(
+                company_id=company_id,
                 user_id=user_id,
                 action=action,
                 entity_type=entity_type,

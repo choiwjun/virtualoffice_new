@@ -1,9 +1,11 @@
 """직원·팀·조직 디렉터리 조회 API (management-api.yaml: /teams, /org-groups).
 
 - GET /api/teams       — erp_user.erp_team_id 집계(팀별 인원)
-- GET /api/org-groups  — org_group 계층(본부/부서/파트)
+- GET /api/org-groups  — org_group 계층(본부/부서/파트) + CRUD·검증·배포(admin)
 
-단일 조직(company_id=1) 전제. 인증 필요(전 역할 조회 허용).
+테넌트 스코프(Phase 1d · 22 T0-1): 모든 조회·변조가 호출자의 company_id에 갇힌다.
+이전에는 `DEFAULT_COMPANY_ID = 1` 하드코딩이라 신규 회사가 1번 회사의 팀·조직도를 봤고,
+org_group 단건 수정/삭제에는 소유 검사가 아예 없었다.
 """
 
 from __future__ import annotations
@@ -14,13 +16,18 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from app.core.deps import ADMIN_ROLES, CurrentUser, get_current_user, require_role
+from app.core.deps import (
+    ADMIN_ROLES,
+    CurrentUser,
+    assert_same_company,
+    company_scope,
+    get_current_user,
+    require_role,
+)
 from app.db import get_db
 from app.models.tables import ErpUser, OrgGroup, OrgGroupType
 
 router = APIRouter(prefix="/api", tags=["directory"])
-
-DEFAULT_COMPANY_ID = 1
 
 
 # ── 스키마 ────────────────────────────────────────────────
@@ -62,12 +69,13 @@ class OrgGroupListOut(BaseModel):
 async def list_teams(
     db=Depends(get_db),
     _: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
 ) -> TeamListOut:
     """팀 목록: 활성 erp_user를 erp_team_id로 집계. (전용 team 테이블 부재 → 파생)"""
     rows = (
         await db.execute(
             select(ErpUser)
-            .where(ErpUser.company_id == DEFAULT_COMPANY_ID, ErpUser.is_active.is_(True))
+            .where(ErpUser.company_id == cid, ErpUser.is_active.is_(True))
             .order_by(ErpUser.erp_team_id, ErpUser.id)
         )
     ).scalars().all()
@@ -98,10 +106,15 @@ async def list_teams(
 async def list_org_groups(
     db=Depends(get_db),
     _: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
 ) -> OrgGroupListOut:
     """조직 그룹 계층(parent_id). 프론트에서 트리 구성."""
     rows = (
-        await db.execute(select(OrgGroup).order_by(OrgGroup.sort_order, OrgGroup.name))
+        await db.execute(
+            select(OrgGroup)
+            .where(OrgGroup.company_id == cid)
+            .order_by(OrgGroup.sort_order, OrgGroup.name)
+        )
     ).scalars().all()
     items = [
         OrgGroupOut(
@@ -145,11 +158,6 @@ class OrgValidateOut(BaseModel):
     warnings: list[dict]
 
 
-def _company_id() -> int:
-    """단일 조직 전제 — erp_user.company_id와 동일한 INTEGER 스코프 (04 §2.2, QA 2026-07-13)."""
-    return DEFAULT_COMPANY_ID
-
-
 def _org_type(v: str) -> OrgGroupType:
     try:
         return OrgGroupType(v)
@@ -157,16 +165,36 @@ def _org_type(v: str) -> OrgGroupType:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_type")
 
 
+async def _load_scoped_group(db, user: CurrentUser, group_id: str) -> OrgGroup:
+    """단건 로드 + 테넌트 검사. 타사/미존재는 동일하게 404(존재 은닉, 22 T0-1)."""
+    try:
+        gid = _uuid.UUID(group_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_id")
+    g = (await db.execute(select(OrgGroup).where(OrgGroup.id == gid))).scalar_one_or_none()
+    if g is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="org_group_not_found")
+    assert_same_company(user, g.company_id)  # 변조 전에 검사
+    return g
+
+
 @router.post("/org-groups", response_model=OrgGroupOut, status_code=status.HTTP_201_CREATED)
-async def create_org_group(body: OrgGroupCreate, db=Depends(get_db), _: CurrentUser = Depends(require_role(*_ADMIN))) -> OrgGroupOut:
+async def create_org_group(
+    body: OrgGroupCreate,
+    db=Depends(get_db),
+    user: CurrentUser = Depends(require_role(*_ADMIN)),
+    cid: int = Depends(company_scope),
+) -> OrgGroupOut:
     parent = None
     if body.parent_id:
         try:
             parent = _uuid.UUID(body.parent_id)
         except ValueError:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_parent_id")
+        # 타사 그룹을 부모로 지정하면 조직도가 테넌트를 가로질러 이어진다.
+        await _load_scoped_group(db, user, str(parent))
     g = OrgGroup(
-        id=_uuid.uuid4(), company_id=_company_id(), name=body.name,
+        id=_uuid.uuid4(), company_id=cid, name=body.name,
         type=_org_type(body.type), parent_id=parent, color=body.color, sort_order=body.sort_order,
     )
     db.add(g)
@@ -176,14 +204,14 @@ async def create_org_group(body: OrgGroupCreate, db=Depends(get_db), _: CurrentU
 
 
 @router.put("/org-groups/{group_id}", response_model=OrgGroupOut)
-async def update_org_group(group_id: str, body: OrgGroupPatch, db=Depends(get_db), _: CurrentUser = Depends(require_role(*_ADMIN))) -> OrgGroupOut:
-    try:
-        gid = _uuid.UUID(group_id)
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_id")
-    g = (await db.execute(select(OrgGroup).where(OrgGroup.id == gid))).scalar_one_or_none()
-    if g is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="org_group_not_found")
+async def update_org_group(
+    group_id: str,
+    body: OrgGroupPatch,
+    db=Depends(get_db),
+    user: CurrentUser = Depends(require_role(*_ADMIN)),
+) -> OrgGroupOut:
+    g = await _load_scoped_group(db, user, group_id)
+    gid = g.id
     if body.name is not None:
         g.name = body.name
     if body.type is not None:
@@ -198,6 +226,7 @@ async def update_org_group(group_id: str, body: OrgGroupPatch, db=Depends(get_db
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_parent_id")
             if pid == gid:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="self_parent")
+            await _load_scoped_group(db, user, str(pid))  # 타사 그룹을 부모로 붙이지 못하게
             g.parent_id = pid
     if body.color is not None:
         g.color = body.color
@@ -209,23 +238,22 @@ async def update_org_group(group_id: str, body: OrgGroupPatch, db=Depends(get_db
 
 
 @router.delete("/org-groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_org_group(group_id: str, db=Depends(get_db), _: CurrentUser = Depends(require_role(*_ADMIN))) -> None:
-    try:
-        gid = _uuid.UUID(group_id)
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_id")
-    g = (await db.execute(select(OrgGroup).where(OrgGroup.id == gid))).scalar_one_or_none()
-    if g is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="org_group_not_found")
-    children = (await db.execute(select(OrgGroup).where(OrgGroup.parent_id == gid))).scalars().all()
+async def delete_org_group(
+    group_id: str,
+    db=Depends(get_db),
+    user: CurrentUser = Depends(require_role(*_ADMIN)),
+) -> None:
+    g = await _load_scoped_group(db, user, group_id)
+    children = (await db.execute(select(OrgGroup).where(OrgGroup.parent_id == g.id))).scalars().all()
     if children:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="has_children")
     await db.delete(g)
     await db.commit()
 
 
-async def _validate_org(db) -> OrgValidateOut:
-    groups = (await db.execute(select(OrgGroup))).scalars().all()
+async def _validate_org(db, cid: int) -> OrgValidateOut:
+    """자기 회사 조직도만 검증한다 — 전역 조회면 타사 순환/고아가 내 배포를 막는다."""
+    groups = (await db.execute(select(OrgGroup).where(OrgGroup.company_id == cid))).scalars().all()
     by_id = {g.id: g for g in groups}
     errors: list[dict] = []
     warnings: list[dict] = []
@@ -248,14 +276,22 @@ async def _validate_org(db) -> OrgValidateOut:
 
 
 @router.post("/org-groups/validate", response_model=OrgValidateOut)
-async def validate_org_groups(db=Depends(get_db), _: CurrentUser = Depends(require_role(*_ADMIN))) -> OrgValidateOut:
-    return await _validate_org(db)
+async def validate_org_groups(
+    db=Depends(get_db),
+    _: CurrentUser = Depends(require_role(*_ADMIN)),
+    cid: int = Depends(company_scope),
+) -> OrgValidateOut:
+    return await _validate_org(db, cid)
 
 
 @router.post("/org-groups/deploy", response_model=OrgValidateOut)
-async def deploy_org_groups(db=Depends(get_db), _: CurrentUser = Depends(require_role(*_ADMIN))) -> OrgValidateOut:
+async def deploy_org_groups(
+    db=Depends(get_db),
+    _: CurrentUser = Depends(require_role(*_ADMIN)),
+    cid: int = Depends(company_scope),
+) -> OrgValidateOut:
     """검증 통과 시 배포(현재는 검증 게이트만; ERROR 존재 시 409)."""
-    result = await _validate_org(db)
+    result = await _validate_org(db, cid)
     if not result.valid:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="validation_failed")
     return result

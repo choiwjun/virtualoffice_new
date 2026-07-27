@@ -14,6 +14,10 @@ import {
   SectionCard,
   LoadingState,
 } from '@/components/ui/console';
+import { Button } from '@/components/ui/Button';
+import { LabeledInput } from '@/components/ui/Field';
+
+const MIN_PASSWORD_LENGTH = 8; // 서버 tokens.MIN_PASSWORD_LENGTH와 동일
 
 const ICON = {
   badge: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="10" cy="7" r="3.2" /><path d="M4.5 16c.6-2.6 2.8-4 5.5-4s4.9 1.4 5.5 4" /></svg>,
@@ -21,6 +25,7 @@ const ICON = {
   palette: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M10 3a7 7 0 1 0 0 14c1 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.5-1.1-.3-.3-.5-.7-.5-1.1 0-.8.7-1.3 1.5-1.3H13a4 4 0 0 0 4-4c0-3.3-3.1-6-7-6z" /><circle cx="7" cy="8" r=".8" fill="currentColor" stroke="none" /><circle cx="10" cy="6.5" r=".8" fill="currentColor" stroke="none" /><circle cx="13" cy="8" r=".8" fill="currentColor" stroke="none" /></svg>,
   tag: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 4h6l6 6-6 6-6-6z" /><circle cx="7" cy="7" r="1.1" /></svg>,
   check: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M4 10.5l3.5 3.5L16 6" /></svg>,
+  key: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><circle cx="7" cy="10" r="3" /><path d="M10 10h7" /><path d="M14.5 10v2.5" /><path d="M17 10v3.5" /></svg>,
 };
 
 interface Avatar {
@@ -316,9 +321,107 @@ export default function SettingsPage() {
                 {error && <span className="text-xs text-red-300">{error}</span>}
               </div>
             </SectionCard>
+
+            {/* 계정 — 비밀번호 변경 (E4 / 23 E7·C11) */}
+            <AccountSection />
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+/** 계정 설정 — 본인 비밀번호 변경 (E4 · 23 E7). 분실 시 재설정은 관리자 발급 링크로 처리한다. */
+function AccountSection() {
+  const me = getUser();
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirmNext, setConfirmNext] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setErr('');
+    setMsg('');
+    if (next.length < MIN_PASSWORD_LENGTH) {
+      setErr(`새 비밀번호는 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다.`);
+      return;
+    }
+    if (next !== confirmNext) {
+      setErr('새 비밀번호가 일치하지 않습니다.');
+      return;
+    }
+    if (next === current) {
+      setErr('현재 비밀번호와 다른 값을 입력해주세요.');
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.post('/api/auth/change-password', { current_password: current, new_password: next });
+      setCurrent('');
+      setNext('');
+      setConfirmNext('');
+      setMsg('비밀번호를 변경했습니다.');
+    } catch (e2) {
+      setErr(e2 instanceof ApiError ? e2.message : '비밀번호 변경에 실패했습니다.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <SectionCard title="계정" icon={ICON.key}>
+      <p className="text-xs text-text-muted mb-3">
+        로그인 계정: <span className="text-text-secondary">{me?.email ?? '—'}</span>
+      </p>
+      <form onSubmit={submit} className="flex flex-col gap-3 max-w-sm">
+        <input type="hidden" name="username" autoComplete="username" value={me?.email ?? ''} readOnly />
+        <LabeledInput
+          label="현재 비밀번호"
+          type="password"
+          value={current}
+          onChange={(e) => setCurrent(e.target.value)}
+          required
+          disabled={busy}
+          autoComplete="current-password"
+        />
+        <LabeledInput
+          label="새 비밀번호"
+          type="password"
+          value={next}
+          onChange={(e) => setNext(e.target.value)}
+          required
+          disabled={busy}
+          autoComplete="new-password"
+          hint={`${MIN_PASSWORD_LENGTH}자 이상`}
+        />
+        <LabeledInput
+          label="새 비밀번호 확인"
+          type="password"
+          value={confirmNext}
+          onChange={(e) => setConfirmNext(e.target.value)}
+          required
+          disabled={busy}
+          autoComplete="new-password"
+          invalid={confirmNext.length > 0 && confirmNext !== next}
+        />
+        <div className="flex items-center gap-3 pt-1">
+          <Button type="submit" size="sm" loading={busy}>
+            비밀번호 변경
+          </Button>
+          {msg && <span className="text-xs text-status-online">{msg}</span>}
+          {err && (
+            <span className="text-xs text-danger" role="alert">
+              {err}
+            </span>
+          )}
+        </div>
+      </form>
+      <p className="text-xs text-text-muted mt-3 leading-relaxed">
+        비밀번호를 잊으셨다면 관리자에게 재설정 링크를 요청하세요.
+      </p>
+    </SectionCard>
   );
 }

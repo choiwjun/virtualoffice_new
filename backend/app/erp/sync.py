@@ -19,7 +19,12 @@ from datetime import datetime, timezone
 from sqlalchemy import select, update
 
 from app.erp.reader import ErpReader
-from app.models.tables import ErpRole, ErpUser, UserTeamHistory
+from app.models.tables import (
+    USER_SOURCE_ERP,
+    ErpRole,
+    ErpUser,
+    UserTeamHistory,
+)
 
 _VALID_ROLES = {r.value for r in ErpRole}
 
@@ -57,12 +62,17 @@ class ErpSyncService:
         fetched_ids = {d.id for d in dtos}
         result = SyncResult()
 
-        # 기존 행 로드 (company 스코프)
+        # 기존 행 로드 (company 스코프 + ERP 정본 유저만).
+        # source='native'(콘솔에서 admin이 직접 만든 유저)는 ERP에 존재하지 않는 게 정상이므로
+        # 대사 대상에서 제외한다 — 포함하면 전체 대사가 매번 native 유저를 비활성화한다(Phase 3).
         existing: dict[int, ErpUser] = {
             row.id: row
             for row in (
                 await self.session.execute(
-                    select(ErpUser).where(ErpUser.company_id == company_id)
+                    select(ErpUser).where(
+                        ErpUser.company_id == company_id,
+                        ErpUser.source == USER_SOURCE_ERP,
+                    )
                 )
             ).scalars()
         }
@@ -94,7 +104,7 @@ class ErpSyncService:
                         position=d.position, position_id=d.position_id,
                         manager_id=d.manager_id, work_type=d.default_work_type,
                         work_hours=work_hours_min, is_active=d.is_active,
-                        last_synced_at=now,
+                        last_synced_at=now, source=USER_SOURCE_ERP,
                     )
                 )
                 # 최초 팀 이력 기록

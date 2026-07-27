@@ -21,11 +21,15 @@ const gameServer = new Server({
   }),
 });
 
-// Room = one floor. filterBy({officeId, floorId}) routes clients to the room
-// that matches their floor; if none exists Colyseus creates one on demand.
+// Room = one floor of one company. filterBy가 클라이언트를 맞는 방으로 라우팅하고,
+// 없으면 Colyseus가 즉석 생성한다.
+//
+// companyId를 키에 포함하는 이유(22 T0-1): floorId가 어떤 경로로든 새어나가도 서로 다른
+// 테넌트가 같은 방에 합류하지 않는다. 클라가 companyId를 위조해 남의 방으로 라우팅되더라도
+// OfficeRoom.onAuth가 JWT의 company_id와 방의 회사를 대조해 거부한다(2중 방어).
 gameServer
   .define("office", OfficeRoom)
-  .filterBy(["officeId", "floorId"]);
+  .filterBy(["companyId", "officeId", "floorId"]);
 
 gameServer
   .listen(PORT)

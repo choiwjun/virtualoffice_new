@@ -522,7 +522,7 @@ export default function TripPage() {
       {/* 신청/수정 모달 */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
+          <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <h2 className="font-semibold text-text-primary">
                 {editTrip ? '출장 수정' : '출장 신청'}
@@ -630,7 +630,7 @@ export default function TripPage() {
       {/* 반려 모달 */}
       {rejectTrip && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
+          <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <h2 className="font-semibold text-text-primary">출장 반려</h2>
               <button
@@ -685,7 +685,7 @@ export default function TripPage() {
       {/* 완료 보고 모달 */}
       {completeTrip && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
+          <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <h2 className="font-semibold text-text-primary">출장 완료 보고</h2>
               <button
@@ -743,7 +743,7 @@ export default function TripPage() {
       {/* 보고 보기 모달 (읽기 전용) */}
       {viewTrip && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
+          <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <h2 className="font-semibold text-text-primary">출장 결과 보고</h2>
               <button

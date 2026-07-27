@@ -1,6 +1,7 @@
-'use client';
+﻿'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { api, ApiError } from '@/lib/api';
 import { getUser, type User } from '@/lib/auth';
 import {
@@ -17,6 +18,9 @@ const ICON = {
 interface Channel {
   id: string;
   label: string;
+  /** 'channel'(general·team) | 'dm'(1:1) — 목록에서 구분 표시. */
+  kind?: 'channel' | 'dm';
+  peer_user_id?: number;
 }
 
 interface ChatMessage {
@@ -45,7 +49,10 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('ko-KR');
 }
 
-export default function ChatPage() {
+function ChatPageInner() {
+  const searchParams = useSearchParams();
+  // 씬에서 "메시지"로 들어오면 ?channel=dm:1001-1002 로 그 대화가 바로 열린다.
+  const requestedChannel = searchParams.get('channel');
   const [me, setMe] = useState<User | null>(null);
 
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -84,8 +91,14 @@ export default function ChatPage() {
       try {
         const list = await api.get<Channel[]>('/api/chat/channels');
         if (cancelled) return;
-        setChannels(list);
-        setActiveChannel((prev) => prev ?? list[0]?.id ?? null);
+        // 딥링크로 들어온 DM이 아직 메시지가 없으면 목록에 없다 → 임시 항목으로 끼워 넣어
+        // 첫 메시지를 보낼 수 있게 한다(빈 대화를 서버에 미리 만들지 않는 설계).
+        const merged =
+          requestedChannel && !list.some((c) => c.id === requestedChannel)
+            ? [...list, { id: requestedChannel, label: '1:1 대화', kind: 'dm' as const }]
+            : list;
+        setChannels(merged);
+        setActiveChannel((prev) => prev ?? requestedChannel ?? merged[0]?.id ?? null);
       } catch (err) {
         if (cancelled) return;
         setChannelsError(
@@ -98,7 +111,7 @@ export default function ChatPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [requestedChannel]);
 
   // 채널 메시지 전체 로드 (초기 진입·채널 전환·새로고침)
   const loadMessages = useCallback(async (channelId: string) => {
@@ -385,5 +398,14 @@ export default function ChatPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  // useSearchParams는 Suspense 경계가 필요하다(Next 14 CSR bailout).
+  return (
+    <Suspense fallback={null}>
+      <ChatPageInner />
+    </Suspense>
   );
 }

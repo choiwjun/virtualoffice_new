@@ -14,7 +14,7 @@ from typing import Dict, Optional, Tuple
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, constr, field_validator
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -25,8 +25,20 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
+from app.core.users import (
+    UNASSIGNED_TEAM_ID,
+    next_native_user_id as _next_native_user_id,
+    normalize_email,
+)
 from app.db import get_db
-from app.models.tables import Company, ErpRole, ErpUser
+from app.models.tables import USER_SOURCE_NATIVE, Company, ErpRole, ErpUser
+from app.services.tokens import (
+    MIN_PASSWORD_LENGTH,
+    InvalidToken,
+    consume,
+    load_valid_token,
+    revoke_pending_for_user,
+)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 # ── 로그인 백오프 (HG-AUTH: 5회 실패 시 5분 잠금) ──────────────────────
@@ -95,24 +107,20 @@ class TokenResponse(BaseModel):
 # ── 셀프서브 가입 (24-spec Phase 2 · 22 T0-4 · 23 E2) ────────────────────────
 # 공개 라우트. 계약은 프론트와 고정 — company_id/role/id는 클라가 지정 불가.
 
-# 경량 이메일 검증(RFC 완전판 아님) — email-validator 미설치 환경에서도 동작.
-# EmailStr(email-validator 의존)을 피하고 자체 정규식으로 명백한 오형식만 거른다.
-_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+# 경량 이메일 검증(RFC 완전판 아님)·native id 대역은 core.users가 정본 —
+# admin 유저 CRUD(api/employees, Phase 3)와 같은 규칙을 공유한다.
 
 
 class RegisterRequest(BaseModel):
     company_name: constr(strip_whitespace=True, min_length=1, max_length=255)
     admin_name: constr(strip_whitespace=True, min_length=1, max_length=255)
     admin_email: str
-    admin_password: constr(min_length=8, max_length=128)
+    admin_password: constr(min_length=MIN_PASSWORD_LENGTH, max_length=128)
 
     @field_validator("admin_email")
     @classmethod
     def _valid_email(cls, v: str) -> str:
-        v = v.strip().lower()
-        if not _EMAIL_RE.match(v) or len(v) > 255:
-            raise ValueError("invalid_email")
-        return v
+        return normalize_email(v)
 
 
 class CompanyInfo(BaseModel):
@@ -128,11 +136,6 @@ class RegisterResponse(BaseModel):
     user: UserInfo
     company: CompanyInfo
 
-
-# 첫 admin native id 대역 바닥값 (24-spec §3): ERP 조인키(BigInteger PK)·시드(1001~,
-# 2001~)와 충돌하지 않도록 10억 이상에서 발급. Postgres에선 BigInteger PK가 자동
-# 시퀀스가 아니므로 max(id)+1을 명시 계산해 넣는다(floor로 하한 보장).
-_NATIVE_ID_FLOOR = 1_000_000_000
 
 # slug 예약어 (서브도메인/라우트 충돌 방지 — 24-spec §Phase2 마이그레이션 주의).
 _RESERVED_SLUGS = {"admin", "api", "www", "app", "default", "static", "media"}
@@ -161,17 +164,6 @@ async def _unique_slug(db: AsyncSession, base: str) -> str:
             return candidate
         suffix += 1
         candidate = f"{base}-{suffix}"
-
-
-async def _next_native_user_id(db: AsyncSession) -> int:
-    """자체 가입 유저의 안전한 PK 발급 = max(existing id, floor-1) + 1.
-
-    BigInteger PK는 Postgres에서 자동 시퀀스가 아니므로 명시 계산이 필요.
-    floor(10억)로 ERP id·시드 대역과 격리한다.
-    """
-    result = await db.execute(select(func.max(ErpUser.id)))
-    current_max = result.scalar() or 0
-    return max(current_max, _NATIVE_ID_FLOOR - 1) + 1
 
 
 # ── 내부 헬퍼 ────────────────────────────────────────────────────────────────
@@ -291,10 +283,11 @@ async def register(
         company_id=company.id,
         email=email,
         name=payload.admin_name,
-        erp_team_id=0,  # native(ERP無) 유저 — ERP teams 미매핑. 0 = 미할당 센티널.
+        erp_team_id=UNASSIGNED_TEAM_ID,  # native(ERP無) 유저 — ERP teams 미매핑.
         role=ErpRole.ADMIN,
         password_hash=hash_password(payload.admin_password),
         is_active=True,
+        source=USER_SOURCE_NATIVE,  # ERP 대사(sync)가 첫 admin을 비활성화하지 않게 (Phase 3)
     )
     db.add(user)
     await db.commit()
@@ -309,6 +302,122 @@ async def register(
         user=_user_info(user),
         company=CompanyInfo(id=company.id, name=company.name, slug=company.slug),
     )
+
+
+# ── 비밀번호 설정 / 변경 (E4 — 24-spec Phase 3 초대 + Phase 6 리셋) ──────────────
+
+class SetPasswordCheckOut(BaseModel):
+    """링크 유효성 사전 확인 결과. 유효할 때만 대상 정보를 노출한다."""
+    valid: bool
+    purpose: Optional[str] = None
+    email: Optional[str] = None
+    name: Optional[str] = None
+    company_name: Optional[str] = None
+
+
+class SetPasswordRequest(BaseModel):
+    token: str
+    password: constr(min_length=MIN_PASSWORD_LENGTH, max_length=128)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: constr(min_length=MIN_PASSWORD_LENGTH, max_length=128)
+
+
+def _expired_token_exc() -> HTTPException:
+    """만료·사용됨·회수됨·미존재를 동일 응답으로 — 토큰 추측에 단서를 주지 않는다."""
+    return HTTPException(status_code=status.HTTP_410_GONE, detail="invalid_or_expired_token")
+
+
+@router.get("/set-password", response_model=SetPasswordCheckOut)
+async def check_set_password_token(
+    token: str,
+    db: AsyncSession = Depends(get_db),
+) -> SetPasswordCheckOut:
+    """GET /api/auth/set-password?token=… — 공개. 링크가 살아 있는지 화면 진입 시 확인.
+
+    무효하면 200 + valid=false로 답한다(폼을 그릴지 안내를 그릴지 프론트가 판단).
+    """
+    try:
+        row = await load_valid_token(db, token)
+    except InvalidToken:
+        return SetPasswordCheckOut(valid=False)
+
+    user = (await db.execute(select(ErpUser).where(ErpUser.id == row.user_id))).scalar_one_or_none()
+    if user is None or not user.is_active:
+        return SetPasswordCheckOut(valid=False)
+    company = (await db.execute(select(Company).where(Company.id == row.company_id))).scalar_one_or_none()
+
+    return SetPasswordCheckOut(
+        valid=True,
+        purpose=row.purpose.value if hasattr(row.purpose, "value") else str(row.purpose),
+        email=user.email,
+        name=user.name,
+        company_name=company.name if company else None,
+    )
+
+
+@router.post("/set-password", response_model=TokenResponse)
+async def set_password(
+    payload: SetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> TokenResponse:
+    """POST /api/auth/set-password — 공개. 1회용 토큰으로 비밀번호 설정 후 즉시 로그인.
+
+    초대(최초 설정)와 재설정이 같은 경로다. 토큰은 여기서 소비되며(단회성),
+    그 유저의 다른 미사용 토큰도 함께 회수한다.
+    평문 비밀번호 로깅 금지(D4).
+    """
+    try:
+        row = await load_valid_token(db, payload.token)
+    except InvalidToken:
+        raise _expired_token_exc()
+
+    user = (await db.execute(select(ErpUser).where(ErpUser.id == row.user_id))).scalar_one_or_none()
+    if user is None or not user.is_active:
+        # 발급 후 비활성된 계정 — 링크를 살려두면 퇴사자가 다시 들어온다.
+        raise _expired_token_exc()
+
+    user.password_hash = hash_password(payload.password)
+    consume(row)
+    await revoke_pending_for_user(db, user_id=user.id)  # 남은 링크 동시 무효화
+    await db.commit()
+    await db.refresh(user)
+
+    # 비번이 바뀌었으니 로그인 백오프 카운터도 초기화 (잠긴 상태로 새 비번을 못 쓰는 일 방지).
+    _clear_login_attempts(user.email)
+
+    token, expires_in = _build_token(user)
+    return TokenResponse(
+        access_token=token, token_type="bearer", expires_in=expires_in, user=_user_info(user)
+    )
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+async def change_password(
+    payload: ChangePasswordRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """POST /api/auth/change-password — 인증. 현재 비밀번호 확인 후 변경 (23 E7/C11).
+
+    현재 비밀번호 불일치는 401. 평문 로깅 금지(D4).
+    """
+    user = (
+        await db.execute(
+            select(ErpUser).where(ErpUser.id == current_user.user_id, ErpUser.is_active == True)  # noqa: E712
+        )
+    ).scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="user_not_found")
+    if user.password_hash is None or not verify_password(payload.current_password, user.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid_current_password")
+
+    user.password_hash = hash_password(payload.new_password)
+    # 본인이 비번을 바꿨다면 발급돼 있던 재설정 링크는 더 이상 유효해선 안 된다.
+    await revoke_pending_for_user(db, user_id=user.id)
+    await db.commit()
 
 
 @router.get("/me", response_model=UserInfo)

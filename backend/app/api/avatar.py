@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.core.deps import CurrentUser, get_current_user
+from app.core.images import EXTENSIONS, sniff_image_type
 from app.db import get_db
 from app.models.tables import UserAvatar
 
@@ -30,7 +31,6 @@ router = APIRouter(prefix="/api", tags=["avatar"])
 _HEX = r"^#[0-9A-Fa-f]{6}$"
 
 # 프로필 사진 업로드 제약 — 클라가 256px로 다운스케일해 보내지만 서버도 독립 방어.
-_PHOTO_TYPES = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}
 _PHOTO_MAX_BYTES = 2 * 1024 * 1024
 
 
@@ -138,12 +138,6 @@ async def upload_my_photo(
     db: AsyncSession = Depends(get_db),
 ) -> AvatarOut:
     """POST /api/avatar/photo — 내 프로필 사진 업로드(교체). D35 배지 아바타의 사진 소스."""
-    ext = _PHOTO_TYPES.get((file.content_type or "").lower())
-    if ext is None:
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="unsupported_image_type",  # png/jpeg/webp만 허용
-        )
     data = await file.read(_PHOTO_MAX_BYTES + 1)
     if len(data) > _PHOTO_MAX_BYTES:
         raise HTTPException(
@@ -155,6 +149,15 @@ async def upload_my_photo(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="empty_file",
         )
+    # content_type은 클라가 보낸 문자열 — 실제 바이트 시그니처로 판정한다 (22 T1-12).
+    # HTML/JS를 image/png로 주장해 올리면 /media 정적 서빙에서 실행돼 저장형 XSS가 된다.
+    mime = sniff_image_type(data)
+    if mime is None:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="unsupported_image_type",  # png/jpeg/webp 실바이트만 허용
+        )
+    ext = EXTENSIONS[mime]
 
     row = await db.get(UserAvatar, current_user.user_id)
     if row is None:

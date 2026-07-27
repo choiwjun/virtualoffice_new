@@ -99,7 +99,7 @@ async def main() -> None:
             )
         ).scalar_one_or_none()
         if floor is None:
-            floor = Floor(office_id=office.id, level=1, name="1층")
+            floor = Floor(company_id=office.company_id, office_id=office.id, level=1, name="1층")
             db.add(floor)
             await db.flush()
             print(f"  [NEW] floor 1층 ({floor.id})")
@@ -151,6 +151,7 @@ async def main() -> None:
             if room is None:
                 db.add(
                     Room(
+                        company_id=floor.company_id,
                         floor_id=floor.id,
                         type=RoomType.MEETING,
                         name=spec["name"],

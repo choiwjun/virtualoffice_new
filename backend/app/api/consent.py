@@ -9,7 +9,12 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import ADMIN_ROLES, CurrentUser, get_current_user
+from app.core.deps import (
+    ADMIN_ROLES,
+    CurrentUser,
+    assert_same_company,
+    get_current_user,
+)
 from app.db import get_db
 from app.models.tables import (
     Meeting,
@@ -44,7 +49,12 @@ class ParticipantConsentOut(BaseModel):
     stt_created_at: Optional[str] = None
 
 
-async def _get_meeting_or_404(meeting_id: str, db: AsyncSession) -> Meeting:
+async def _get_meeting_or_404(meeting_id: str, db: AsyncSession, user: CurrentUser) -> Meeting:
+    """회의 로드 + 테넌트 검사 (Phase 1d).
+
+    동의 기록은 녹화 대상자의 개인정보(D20-b)다. 스코프가 없으면 타사 admin이 남의 회의
+    참석자 동의 상태를 읽고, 그 회의에 동의를 써넣을 수 있다.
+    """
     try:
         mid = UUID(meeting_id)
     except ValueError:
@@ -59,6 +69,7 @@ async def _get_meeting_or_404(meeting_id: str, db: AsyncSession) -> Meeting:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="meeting_not_found",
         )
+    assert_same_company(user, meeting.company_id)
     return meeting
 
 
@@ -83,7 +94,7 @@ async def upsert_consent(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ConsentOut:
-    meeting = await _get_meeting_or_404(meeting_id, db)
+    meeting = await _get_meeting_or_404(meeting_id, db, current_user)
     result = await db.execute(
         select(RecordingConsent).where(
             RecordingConsent.meeting_id == meeting.id,
@@ -121,7 +132,7 @@ async def list_consent(
     current_user: CurrentUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[ParticipantConsentOut]:
-    meeting = await _get_meeting_or_404(meeting_id, db)
+    meeting = await _get_meeting_or_404(meeting_id, db, current_user)
     is_host_or_admin = current_user.role in _ADMIN_ROLES or meeting.host_user_id == current_user.user_id
 
     participants_result = await db.execute(

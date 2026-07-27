@@ -35,6 +35,24 @@ export async function connectToMeeting(meetingId: string): Promise<Room> {
   return room;
 }
 
+/**
+ * 1:1 즉석 통화 접속 (09 §3.3). 회의와 달리 예약·회의실이 없고 두 사람으로만 룸이 결정된다.
+ * 서버가 `call:{작은id}-{큰id}` 룸 이름과 identity를 확정하므로 위조 불가.
+ */
+export async function connectToCall(peerUserId: string): Promise<Room> {
+  const resp = await api.post<LivekitTokenResp>('/api/calls/token', {
+    peer_user_id: Number(peerUserId),
+  });
+  const room = new Room({ adaptiveStream: true, dynacast: true });
+  try {
+    await room.connect(resp.url, resp.token, { maxRetries: 3 });
+  } catch (err) {
+    await room.disconnect().catch(() => {});
+    throw err;
+  }
+  return room;
+}
+
 export async function disconnectRoom(room: Room | null | undefined): Promise<void> {
   if (room) {
     try {

@@ -36,8 +36,9 @@ async def test_health_endpoint(async_client):
 
 # ── DB 스키마 ─────────────────────────────────────────────
 def test_all_tables_registered():
-    assert len(Base.metadata.tables) == 29  # +company (Phase 1a 테넌시, 22 T0-1, 2026-07-24)
+    assert len(Base.metadata.tables) == 30  # +auth_token (E4 비밀번호 설정 링크, 24-spec Phase 3/6)
     assert "company" in Base.metadata.tables
+    assert "auth_token" in Base.metadata.tables
     assert "erp_user" in Base.metadata.tables
     assert "kpi_result" in Base.metadata.tables
     assert "user_avatar" in Base.metadata.tables

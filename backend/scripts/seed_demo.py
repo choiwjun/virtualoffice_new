@@ -268,7 +268,7 @@ async def seed(session: AsyncSession) -> dict[str, int]:
         )
     ).scalar_one_or_none()
     if floor is None:
-        floor = Floor(office_id=office.id, level=1, name="1층")
+        floor = Floor(company_id=office.company_id, office_id=office.id, level=1, name="1층")
         session.add(floor)
         await session.flush()
 
@@ -303,6 +303,7 @@ async def seed(session: AsyncSession) -> dict[str, int]:
         ).scalar_one_or_none()
         if room is None:
             room = Room(
+                company_id=floor.company_id,
                 floor_id=floor.id,
                 type=RoomType.MEETING,
                 name=spec["name"],

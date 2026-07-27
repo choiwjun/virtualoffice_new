@@ -117,3 +117,11 @@ from app.api import chat  # noqa: E402  커뮤니케이션 채널 메시지 (06-
 app.include_router(chat.router)               # /api/chat/* — general/team 채널, 폴링 조회
 from app.api import integrations  # noqa: E402  본인 외부 계정 연동 (D31 opt-in, KPI 화면)
 app.include_router(integrations.router)       # /api/integrations — github/figma 연동·활동 동기화
+from app.api import employees  # noqa: E402  직원 디렉터리 + admin 직접 관리 (E3, 24-spec Phase 3)
+app.include_router(employees.router)          # /api/employees* — 조회(전 역할) / 생성·수정·비활성(admin)
+from app.api import branding  # noqa: E402  테넌트 화이트라벨 (E5, 24-spec Phase 4)
+app.include_router(branding.router)           # /api/branding* — 브랜드명·색·로고 (조회 인증 / 수정 admin / public 미인증)
+from app.api import onboarding  # noqa: E402  첫실행 체크리스트 + 투어 (E6, 24-spec Phase 5)
+app.include_router(onboarding.router)         # /api/onboarding — 실측 파생 체크리스트 / dismiss·tour 저장
+from app.api import calls  # noqa: E402  1:1 즉석 화상 호출 (09 §3.3 상호작용 · D24)
+app.include_router(calls.router)              # /api/calls/token — 근접 벨(realtime)이 수락되면 이 룸으로 입장

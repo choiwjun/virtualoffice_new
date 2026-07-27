@@ -126,7 +126,7 @@ export function Segmented<T extends string>({
 export function StatCard({
   label,
   value,
-  accent = '#3B5BFE',
+  accent = 'rgb(var(--color-primary))',
   icon,
   hint,
 }: {
@@ -248,7 +248,7 @@ export function ProgressRow({
   label,
   meta,
   pct,
-  accent = '#3B5BFE',
+  accent = 'rgb(var(--color-primary))',
 }: {
   label: string;
   meta?: string;

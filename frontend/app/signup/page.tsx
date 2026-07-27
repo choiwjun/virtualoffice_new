@@ -71,7 +71,7 @@ export default function SignupPage() {
         <div className="text-center mb-7">
           <div
             className="inline-grid place-items-center w-11 h-11 rounded-xl text-white font-extrabold text-lg mb-3"
-            style={{ background: '#3B5BFE' }}
+            style={{ background: 'rgb(var(--color-primary))' }}
           >
             V
           </div>

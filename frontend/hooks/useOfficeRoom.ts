@@ -16,6 +16,7 @@ import {
   type NetPlayer,
   type OfficeConnection,
   type MeetingEntryResult,
+  type CallSignal,
 } from '@/lib/realtime';
 
 const REALTIME_URL = process.env.NEXT_PUBLIC_REALTIME_URL ?? 'ws://localhost:2567';
@@ -38,6 +39,12 @@ export interface UseOfficeRoom {
   enterMeeting: (roomId: string) => void;
   /** 내 프레즌스 상태 수동 전환(06 §1.2) — room.send('status_change'). */
   setStatus: (status: string, dnd?: boolean) => void;
+  /** 1:1 통화 걸기 — 서버가 근접(5m)을 검증. 결과는 onCallSignal(ringing|denied)로 온다. */
+  callRequest: (targetUserId: string) => void;
+  /** 걸려온 통화 응답. targetUserId = 발신자. */
+  callRespond: (targetUserId: string, accepted: boolean) => void;
+  /** 발신 취소(상대가 받기 전). */
+  callCancel: (targetUserId: string) => void;
   /** 재연결 포기(오프라인 폴백) 후 수동 재시도 — "다시 연결" 버튼(§5.3). */
   reconnect: () => void;
 }
@@ -46,6 +53,7 @@ export function useOfficeRoom(
   enabled = true,
   onMeetingEntry?: (r: MeetingEntryResult) => void,
   onLayoutUpdated?: () => void,
+  onCallSignal?: (s: CallSignal) => void,
 ): UseOfficeRoom {
   const [status, setConnStatus] = useState<ConnStatus>('connecting');
   const [roster, setRoster] = useState<string[]>([]);
@@ -58,6 +66,8 @@ export function useOfficeRoom(
   onMeetingEntryRef.current = onMeetingEntry;
   const onLayoutUpdatedRef = useRef(onLayoutUpdated);
   onLayoutUpdatedRef.current = onLayoutUpdated;
+  const onCallSignalRef = useRef(onCallSignal);
+  onCallSignalRef.current = onCallSignal;
 
   useEffect(() => {
     if (!enabled) return;
@@ -67,6 +77,9 @@ export function useOfficeRoom(
     const join = {
       userId: String(user?.id ?? 'guest'),
       name: user?.name ?? 'Guest',
+      // 테넌트 방 라우팅 키(22 T0-1) — 서버는 이 값을 믿지 않고 JWT의 company_id로 재검증한다.
+      // 위조하면 남의 방으로 라우팅되지만 onAuth가 거부한다.
+      companyId: user?.company_id != null ? String(user.company_id) : undefined,
       officeId: OFFICE_ID,
       floorId: FLOOR_ID,
       jwt: getToken() ?? undefined,
@@ -78,6 +91,7 @@ export function useOfficeRoom(
       onMeetingEntry: (r) => { if (!cancelled) onMeetingEntryRef.current?.(r); },
       onSelf: (id) => { if (!cancelled) selfIdRef.current = id; },
       onLayoutUpdated: () => { if (!cancelled) onLayoutUpdatedRef.current?.(); },
+      onCallSignal: (s) => { if (!cancelled) onCallSignalRef.current?.(s); },
     })
       .then((conn) => {
         if (cancelled) { conn.leave(); return; }
@@ -112,10 +126,25 @@ export function useOfficeRoom(
     connRef.current?.setStatus(s, dnd);
   }, []);
 
+  const callRequest = useCallback((targetUserId: string) => {
+    connRef.current?.callRequest(targetUserId);
+  }, []);
+
+  const callRespond = useCallback((targetUserId: string, accepted: boolean) => {
+    connRef.current?.callRespond(targetUserId, accepted);
+  }, []);
+
+  const callCancel = useCallback((targetUserId: string) => {
+    connRef.current?.callCancel(targetUserId);
+  }, []);
+
   const reconnect = useCallback(() => {
     if (connRef.current) connRef.current.reconnect();
     else setRetry((n) => n + 1); // 최초 접속 실패(conn 미생성) → 훅 재실행으로 재시도
   }, []);
 
-  return { status, roster, playersRef, selfIdRef, requestMove, requestPath, enterMeeting, setStatus, reconnect };
+  return {
+    status, roster, playersRef, selfIdRef, requestMove, requestPath, enterMeeting,
+    setStatus, callRequest, callRespond, callCancel, reconnect,
+  };
 }

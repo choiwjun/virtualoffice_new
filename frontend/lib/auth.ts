@@ -8,6 +8,8 @@ export interface User {
   name: string;
   role: UserRole;
   team_id?: number | null;
+  /** 테넌트 스코프 (Phase 1a). 실시간 방 라우팅이 소비 — 서버는 JWT 클레임으로 재검증한다. */
+  company_id?: number;
 }
 
 export interface LoginResponse {

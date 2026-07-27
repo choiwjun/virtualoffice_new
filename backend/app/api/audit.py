@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import func, select
 
-from app.core.deps import CurrentUser, require_role
+from app.core.deps import CurrentUser, company_scope, require_role
 from app.db import get_db
 from app.models.tables import AuditLog
 
@@ -45,9 +45,11 @@ async def list_audit_logs(
     offset: int = Query(0, ge=0),
     db=Depends(get_db),
     _: CurrentUser = Depends(require_role("admin", "super_admin")),
+    cid: int = Depends(company_scope),
 ) -> AuditLogListOut:
-    stmt = select(AuditLog)
-    count_stmt = select(func.count()).select_from(AuditLog)
+    # Phase 1d: 자기 회사 기록만. 이전에는 전 테넌트의 권한 변경·KPI 조정 이력이 노출됐다.
+    stmt = select(AuditLog).where(AuditLog.company_id == cid)
+    count_stmt = select(func.count()).select_from(AuditLog).where(AuditLog.company_id == cid)
     if action:
         stmt = stmt.where(AuditLog.action == action)
         count_stmt = count_stmt.where(AuditLog.action == action)

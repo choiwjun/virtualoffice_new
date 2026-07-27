@@ -52,7 +52,18 @@ export interface OfficeConnectionHandlers {
   onSelf?: (sessionId: string) => void;
   /** 배포 레이아웃 재배포/롤백(D12 layout_updated) — 구조·이동 지오메트리 즉시 재조회 트리거. */
   onLayoutUpdated?: () => void;
+  /** 1:1 통화 시그널(09 §3.3) — 벨·응답·취소. 미디어는 LiveKit이 별도로 나른다. */
+  onCallSignal?: (s: CallSignal) => void;
 }
+
+/** 1:1 통화 시그널. 서버가 근접(5m)을 검증한 뒤에만 invite가 전달된다. */
+export type CallSignal =
+  | { type: 'invite'; fromUserId: string; fromName: string; distance: number }
+  | { type: 'ringing'; targetUserId: string; targetName: string }
+  | { type: 'accepted'; fromUserId: string; fromName: string }
+  | { type: 'declined'; fromUserId: string; fromName: string }
+  | { type: 'cancelled'; fromUserId: string }
+  | { type: 'denied'; targetUserId: string; reason?: string };
 
 export interface OfficeConnection {
   /** 최초 접속 세션 — 재연결 시 in-place 갱신되며 onSelf로도 통지. */
@@ -65,6 +76,12 @@ export interface OfficeConnection {
   requestPath: (points: Array<{ x: number; y: number }>) => void;
   /** 회의 명시입장(D24) 요청 — 서버 판정은 onMeetingEntry로 통지. */
   enterMeeting: (roomId: string) => void;
+  /** 1:1 통화 걸기 — 서버가 근접(5m)을 검증. 결과는 onCallSignal(ringing|denied). */
+  callRequest: (targetUserId: string) => void;
+  /** 걸려온 통화에 응답. targetUserId = 발신자. */
+  callRespond: (targetUserId: string, accepted: boolean) => void;
+  /** 발신 취소(상대가 받기 전). */
+  callCancel: (targetUserId: string) => void;
   setStatus: (status: string, dnd?: boolean) => void;
   /** 재연결 포기(오프라인 폴백) 후 수동 재시도 — "다시 연결" 버튼(§5.3). */
   reconnect: () => void;
@@ -179,6 +196,34 @@ export async function createOfficeConnection(
       handlers.onMeetingEntry?.({ roomId: m?.roomId ?? '', ok: false, reason: m?.reason }),
     );
     r.onMessage('layout_updated', () => handlers.onLayoutUpdated?.());
+    // ── 1:1 통화 시그널(09 §3.3) — 서버가 근접 5m 검증 후에만 invite가 온다 ──
+    r.onMessage('call_invite', (m: { fromUserId?: string; fromName?: string; distance?: number }) =>
+      handlers.onCallSignal?.({
+        type: 'invite',
+        fromUserId: m?.fromUserId ?? '',
+        fromName: m?.fromName ?? '',
+        distance: m?.distance ?? 0,
+      }),
+    );
+    r.onMessage('call_ringing', (m: { targetUserId?: string; targetName?: string }) =>
+      handlers.onCallSignal?.({
+        type: 'ringing',
+        targetUserId: m?.targetUserId ?? '',
+        targetName: m?.targetName ?? '',
+      }),
+    );
+    r.onMessage('call_accepted', (m: { fromUserId?: string; fromName?: string }) =>
+      handlers.onCallSignal?.({ type: 'accepted', fromUserId: m?.fromUserId ?? '', fromName: m?.fromName ?? '' }),
+    );
+    r.onMessage('call_declined', (m: { fromUserId?: string; fromName?: string }) =>
+      handlers.onCallSignal?.({ type: 'declined', fromUserId: m?.fromUserId ?? '', fromName: m?.fromName ?? '' }),
+    );
+    r.onMessage('call_cancelled', (m: { fromUserId?: string }) =>
+      handlers.onCallSignal?.({ type: 'cancelled', fromUserId: m?.fromUserId ?? '' }),
+    );
+    r.onMessage('call_denied', (m: { targetUserId?: string; reason?: string }) =>
+      handlers.onCallSignal?.({ type: 'denied', targetUserId: m?.targetUserId ?? '', reason: m?.reason }),
+    );
     r.onLeave((code) => {
       connected = false;
       if (left) return;
@@ -331,6 +376,15 @@ export async function createOfficeConnection(
     },
     enterMeeting: (roomId: string) => {
       safeSend('enter_meeting', { roomId });
+    },
+    callRequest: (targetUserId: string) => {
+      safeSend('call_request', { targetUserId });
+    },
+    callRespond: (targetUserId: string, accepted: boolean) => {
+      safeSend('call_response', { targetUserId, accepted });
+    },
+    callCancel: (targetUserId: string) => {
+      safeSend('call_cancel', { targetUserId });
     },
     setStatus: (status: string, dnd?: boolean) => {
       safeSend('status_change', { status, dnd });

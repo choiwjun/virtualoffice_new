@@ -427,6 +427,7 @@ async def adjust_kpi_result(
     await db.refresh(r)
     await record_audit(
         db,
+        company_id=user.company_id,
         user_id=user.user_id,
         action="kpi_adjusted",
         entity_type="kpi_result",
@@ -478,6 +479,7 @@ async def finalize_kpi_result(
     await db.refresh(r)
     await record_audit(
         db,
+        company_id=user.company_id,
         user_id=user.user_id,
         action="kpi_finalized",
         entity_type="kpi_result",
@@ -556,6 +558,7 @@ async def submit_objection(
     await db.refresh(r)
     await record_audit(
         db,
+        company_id=user.company_id,
         user_id=user.user_id,
         action="kpi_objection_submitted",
         entity_type="kpi_result",
@@ -643,6 +646,7 @@ async def review_objection(
     await db.refresh(r)
     await record_audit(
         db,
+        company_id=user.company_id,
         user_id=user.user_id,
         action=f"kpi_objection_{body.action}",  # kpi_objection_advance | kpi_objection_resolve
         entity_type="kpi_result",

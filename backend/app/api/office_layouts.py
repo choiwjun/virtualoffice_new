@@ -258,7 +258,7 @@ async def deploy_layout(
     layout.updated_at = now
     await db.commit()
     await db.refresh(layout)
-    await record_audit(db, user_id=user.user_id, action="office_layout_deployed", entity_type="office_layout", entity_id=str(layout.id), new_value={"version": layout.version})
+    await record_audit(db, company_id=user.company_id, user_id=user.user_id, action="office_layout_deployed", entity_type="office_layout", entity_id=str(layout.id), new_value={"version": layout.version})
     return _out(layout)
 
 
@@ -291,5 +291,5 @@ async def rollback_layout(
     prev.updated_at = now
     await db.commit()
     await db.refresh(prev)
-    await record_audit(db, user_id=user.user_id, action="office_layout_deployed", entity_type="office_layout", entity_id=str(prev.id), new_value={"version": prev.version, "rollback_from": str(layout.id)})
+    await record_audit(db, company_id=user.company_id, user_id=user.user_id, action="office_layout_deployed", entity_type="office_layout", entity_id=str(prev.id), new_value={"version": prev.version, "rollback_from": str(layout.id)})
     return _out(prev)

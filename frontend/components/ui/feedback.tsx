@@ -179,7 +179,11 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
                 type="button"
                 onClick={() => settle(true)}
                 className="px-3.5 py-1.5 rounded-lg text-[13px] font-semibold text-white transition-colors"
-                style={{ background: confirmState?.opts.danger ? '#DC2626' : '#3B5BFE' }}
+                style={{
+                  background: confirmState?.opts.danger
+                    ? 'rgb(var(--color-danger))'
+                    : 'rgb(var(--color-primary))',
+                }}
               >
                 {confirmState?.opts.confirmLabel ?? '확인'}
               </button>

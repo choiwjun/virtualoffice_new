@@ -356,9 +356,14 @@ class FloorOut(BaseModel):
 async def list_floors(
     db: AsyncSession = Depends(get_db),
     _: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
 ) -> list[FloorOut]:
-    """GET /api/floors — 층 목록 (좌석 편집기 floor 선택용)."""
-    rows = (await db.execute(select(Floor).order_by(Floor.level))).scalars().all()
+    """GET /api/floors — 층 목록 (좌석 편집기 floor 선택용, 테넌트 스코프)."""
+    rows = (
+        await db.execute(
+            select(Floor).where(Floor.company_id == cid).order_by(Floor.level)
+        )
+    ).scalars().all()
     return [FloorOut(id=str(f.id), office_id=str(f.office_id), level=f.level, name=getattr(f, "name", None)) for f in rows]
 
 
@@ -384,7 +389,7 @@ async def create_seat(
     await db.flush()
     await db.commit()
     await db.refresh(seat)
-    await record_audit(db, user_id=user.user_id, action="seat_created", entity_type="seat", entity_id=str(seat.id), new_value={"floor_id": str(fid), "type": seat.type.value})
+    await record_audit(db, company_id=user.company_id, user_id=user.user_id, action="seat_created", entity_type="seat", entity_id=str(seat.id), new_value={"floor_id": str(fid), "type": seat.type.value})
     return _seat_out(seat)
 
 
@@ -427,7 +432,7 @@ async def update_seat(
     seat.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(seat)
-    await record_audit(db, user_id=user.user_id, action="seat_updated", entity_type="seat", entity_id=str(seat.id), new_value={"coords": seat.coords, "status": seat.status.value})
+    await record_audit(db, company_id=user.company_id, user_id=user.user_id, action="seat_updated", entity_type="seat", entity_id=str(seat.id), new_value={"coords": seat.coords, "status": seat.status.value})
     return _seat_out(seat)
 
 
@@ -444,7 +449,7 @@ async def delete_seat(
     seat.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(seat)
-    await record_audit(db, user_id=user.user_id, action="seat_deleted", entity_type="seat", entity_id=str(seat.id))
+    await record_audit(db, company_id=user.company_id, user_id=user.user_id, action="seat_deleted", entity_type="seat", entity_id=str(seat.id))
     return _seat_out(seat)
 # ── 배정 이력 조회 (관리자) ───────────────────────────────────────────────────
 

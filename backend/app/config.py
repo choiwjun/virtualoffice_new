@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     # ── 미디어(프로필 사진 등) 저장 루트 — /media 로 정적 서빙 (D35 배지 아바타) ──
     media_root: str = "./media"
 
+    # ── 공개 웹 주소 (E4: 비밀번호 설정 링크 생성) ──
+    # 관리자에게 건네줄 링크의 호스트. 운영은 실제 도메인 주입(예: https://office.example.com).
+    # 백엔드가 아니라 **프론트** 주소다 — 링크를 여는 건 사용자의 브라우저다.
+    public_app_url: str = "http://localhost:3000"
+
     # ── ERP dailylog read-only DB (03-erp-integration, D18) ──
     # 같은 사내망, company_id 스코프. 비어있으면 ERP 연동 비활성.
     erp_database_url: str = ""

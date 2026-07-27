@@ -33,7 +33,7 @@ export function KpiGauge({ score, maxScore = 100, size = 120 }: KpiGaugeProps) {
           cy={cy}
           r={radius}
           fill="none"
-          stroke="#273350"
+          stroke="rgb(var(--color-border-subtle))"
           strokeWidth={strokeWidth}
         />
         {/* 진행 링 */}
@@ -55,7 +55,7 @@ export function KpiGauge({ score, maxScore = 100, size = 120 }: KpiGaugeProps) {
           y={cy - 6}
           textAnchor="middle"
           dominantBaseline="middle"
-          fill="#F1F5F9"
+          fill="rgb(var(--color-text-primary))"
           fontSize="26"
           fontWeight="700"
           fontFamily="Pretendard, Inter, sans-serif"
@@ -67,7 +67,7 @@ export function KpiGauge({ score, maxScore = 100, size = 120 }: KpiGaugeProps) {
           y={cy + 16}
           textAnchor="middle"
           dominantBaseline="middle"
-          fill="#7A899E"
+          fill="rgb(var(--color-text-muted))"
           fontSize="11"
           fontFamily="Pretendard, Inter, sans-serif"
         >

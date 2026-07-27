@@ -145,6 +145,15 @@ class ErpRole(str, Enum):
     SUPER_ADMIN = "super_admin" # 슈퍼 관리자
 
 
+# 유저 출처 (24-spec Phase 3 §3 — ERP有/無 이중 경로 분리).
+# SQLEnum 대신 평문 String으로 저장한다: 마이그레이션 백필·raw SQL이 값을 그대로
+# 쓸 수 있고(SQLAlchemy Enum은 기본적으로 멤버 '이름'을 저장), 스펙도 Mapped[str]로 규정.
+USER_SOURCE_ERP = "erp"
+"""ERP 동기화가 정본인 유저. 전체 대사(sync)의 생성·갱신·비활성 대상."""
+USER_SOURCE_NATIVE = "native"
+"""admin이 콘솔에서 직접 만든 유저(ERP 미연동 회사). sync가 건드리지 않는다."""
+
+
 class OrgGroupType(str, Enum):
     """조직 타입"""
     DIVISION = "division"       # 본부
@@ -247,6 +256,16 @@ class AssetType(str, Enum):
 DEFAULT_COMPANY_ID = 1
 
 
+class AuthTokenPurpose(str, Enum):
+    """비밀번호 설정 토큰의 용도 (E4 — 24-spec Phase 3 초대 + Phase 6 리셋 통합).
+
+    두 흐름은 "1회용 링크 → 본인이 비밀번호 설정 → 즉시 로그인"으로 코드가 동일하다.
+    다른 건 만료 정책과 화면 문구뿐이라 한 테이블에 purpose로 구분한다.
+    """
+    INVITATION = "invitation"        # 아직 로그인한 적 없는 계정의 최초 비밀번호 설정 (기본 7일)
+    PASSWORD_RESET = "password_reset"  # 기존 계정의 비밀번호 재설정 (기본 24시간)
+
+
 class Company(Base, TimestampMixin):
     """테넌트(회사) — 모든 company_id의 참조 대상 = 단일 정본 (24-spec Phase 1, 22 T0-1).
 
@@ -261,14 +280,72 @@ class Company(Base, TimestampMixin):
     """표시 회사명"""
     slug: Mapped[str] = mapped_column(String(63), nullable=False)
     """URL/서브도메인 키 (소문자·영숫자·하이픈). 유니크."""
-    # ── 화이트라벨 플레이스홀더 (Phase 4에서 UI/주입 채움) ──
+    # ── 화이트라벨 (Phase 4 / E5) ──
+    brand_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    """셸·로그인에 표시할 브랜드명. NULL이면 `name`을 쓴다(별도 표기가 필요할 때만 채움)."""
     logo_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
-    """/media/branding/{company_id}/logo.* — NULL이면 기본 로고."""
+    """/media/branding/{company_id}/logo.* — NULL이면 이니셜 배지 폴백."""
     primary_color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)
-    """#RRGGBB — NULL이면 기본 테마."""
+    """#RRGGBB — NULL이면 기본 테마. 버튼·액센트에만 적용돼 대비(WCAG)가 무너지지 않는다."""
+    accent_color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)
+    """#RRGGBB — 링크·강조. NULL이면 기본 테마."""
+    onboarding_dismissed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("0"), default=False
+    )
+    """첫실행 체크리스트 숨김 (회사 단위 — admin이 공유하는 상태, 24-spec Phase 5).
+
+    체크리스트 **항목 자체는 저장하지 않는다**. 좌석·공지·초대 존재 여부를 조회 시점에
+    실측해 파생한다 — 플래그로 저장하면 데이터가 지워졌을 때 거짓이 남는다."""
+    seat_limit: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    """활성 유저 상한 (24-spec Phase 2/3). NULL = 무제한(기존 회사·엔터프라이즈).
+    Phase 3의 유저 생성이 이 값을 게이트한다(초과 시 409). 과금 연동은 별도 워크스트림."""
 
     __table_args__ = (
         UniqueConstraint("slug", name="uq_company_slug"),
+    )
+
+
+class AuthToken(Base):
+    """비밀번호 설정 1회용 토큰 — 초대(최초 설정)와 재설정을 함께 담는다 (E4).
+
+    **평문 미저장**: 링크에 실린 원문 토큰은 sha256 해시로만 보관한다. DB가 유출돼도
+    링크를 복원할 수 없다(24-spec Phase 3 §토큰 보안 · Phase 6 §6.2).
+
+    **상태는 파생**: pending/used/revoked/expired를 컬럼으로 두면 만료 전이를 돌리는
+    배치가 필요하고 그 사이 상태가 거짓이 된다. `used_at`·`revoked_at`·`expires_at`만
+    저장하고 상태는 조회 시점에 계산한다.
+    """
+    __tablename__ = "auth_token"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("company.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    """테넌트 스코프 — 발급·회수·조회 전부 이 값으로 갇힌다."""
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("erp_user.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    """대상 유저. 초대도 E3에서 만든 유저 행에 붙는다(디렉터리 = 단일 정본)."""
+    purpose: Mapped[AuthTokenPurpose] = mapped_column(
+        SQLEnum(AuthTokenPurpose), nullable=False, default=AuthTokenPurpose.INVITATION
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    """sha256(원문 토큰) hex 64자. 평문은 발급 응답에서 딱 한 번만 노출된다."""
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    """사용 시각 — 채워지면 재사용 불가(단회성)."""
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    """회수 시각. 새 링크 발급 시 이전 pending 토큰을 여기로 넘긴다(항상 1개만 유효)."""
+    created_by: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("erp_user.id", ondelete="SET NULL"), nullable=True
+    )
+    """발급한 관리자 (본인 요청 경로는 NULL)."""
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+
+    __table_args__ = (
+        Index("idx_auth_token_company_user", "company_id", "user_id"),
     )
 
 
@@ -344,6 +421,26 @@ class ErpUser(Base, TimestampMixin, SoftDeleteMixin):
     """마지막 ERP 동기화 시각 (UTC)"""
     password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     """로컬 개발 OIDC 인증용 bcrypt 해시 (ERP 동기화 무관 — dev/도그푸딩 전용)."""
+
+    tour_completed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("0"), default=False
+    )
+    """최초 1회 제품 투어를 봤는지 (유저 단위 — 24-spec Phase 5).
+
+    체크리스트는 회사 단위(admin 공유)지만 투어는 사람마다 처음이 다르므로 여기 둔다."""
+
+    source: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        index=True,
+        server_default=text(f"'{USER_SOURCE_ERP}'"),
+        default=USER_SOURCE_ERP,
+    )
+    """유저 출처 (24-spec Phase 3): 'erp'=ERP 동기화 정본 / 'native'=콘솔 직접 생성.
+
+    ERP 전체 대사(ErpSyncService.sync_users)는 source='erp'만 대상으로 삼는다 —
+    native 유저가 "ERP에서 사라진 사용자"로 오탐돼 비활성화되는 사고를 구조적으로 차단.
+    """
 
     # 관계 (self-FK 표준: many-to-one 스칼라 쪽에 remote_side=[id], 컬렉션 쪽은 없음)
     managed_users: Mapped[List["ErpUser"]] = relationship(
@@ -473,6 +570,17 @@ class Floor(Base, TimestampMixin):
     __tablename__ = "floor"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("company.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+        server_default=text("1"),
+        default=DEFAULT_COMPANY_ID,
+    )
+    """테넌트 스코프 (Phase 1d). office 소유로도 유도할 수 있지만, 직접 쿼리되는 표면
+    (`GET /api/floors`)이라 조인 없이 필터할 수 있게 비정규화한다 — Seat·Meeting과 동일 규약.
+    고아 행(office 유실)이 생겨도 스코프가 무너지지 않는다는 이점도 있다."""
     office_id: Mapped[UUID] = mapped_column(
         ForeignKey("office.id", ondelete="RESTRICT"),
         nullable=False,
@@ -568,6 +676,16 @@ class Room(Base, TimestampMixin):
     __tablename__ = "room"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("company.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+        server_default=text("1"),
+        default=DEFAULT_COMPANY_ID,
+    )
+    """테넌트 스코프 (Phase 1d). 회의실 피커(`GET /api/rooms`)와 예약 검증이 직접
+    쿼리하는 표면이라 floor→office 조인 대신 비정규화한다 (Floor와 동일 판단)."""
     floor_id: Mapped[UUID] = mapped_column(
         ForeignKey("floor.id", ondelete="RESTRICT"),
         nullable=False,
@@ -1546,6 +1664,16 @@ class AuditLog(Base):
     __tablename__ = "audit_log"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    company_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("company.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+        server_default=text("1"),
+        default=DEFAULT_COMPANY_ID,
+    )
+    """테넌트 스코프 (Phase 1d). 없으면 한 회사의 admin이 다른 회사의 권한 변경·평가 조정
+    이력을 그대로 읽는다 — 감사 로그는 가장 민감한 운영 기록이다."""
     user_id: Mapped[Optional[int]] = mapped_column(
         BigInteger,
         ForeignKey("erp_user.id", ondelete="SET NULL"),

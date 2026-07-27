@@ -155,25 +155,48 @@ class TestAvatarPhoto:
             headers=auth_headers,
             files={"file": ("a.png", _PNG_1PX, "image/png")},
         )
+        # 확장자·content_type이 webp라 주장해도 **실제 바이트가 PNG**면 .png로 저장된다
+        # (E5에서 매직바이트 판정으로 전환 — 22 T1-12).
         resp = await async_client.post(
             "/api/avatar/photo",
             headers=auth_headers,
             files={"file": ("b.webp", _PNG_1PX, "image/webp")},
         )
         assert resp.status_code == 200
-        assert resp.json()["photo_url"].endswith(".webp")
+        assert resp.json()["photo_url"].endswith(".png")
         # 이전 파일은 삭제되어 사용자당 1개만 유지
         assert len(list((tmp_path / "avatars").glob("1_*"))) == 1
 
-    async def test_upload_rejects_bad_type_and_empty(
+    async def test_upload_type_is_decided_by_bytes_not_content_type(
         self, async_client: AsyncClient, auth_headers: dict
     ):
-        bad_type = await async_client.post(
+        """content_type은 클라가 보낸 문자열 — 형식 판정 근거가 될 수 없다 (22 T1-12).
+
+        E5 이전에는 content_type만 봤다. 그래서 ① 진짜 PNG를 image/gif라고 하면 거부되고
+        ② HTML을 image/png라고 하면 통과해 /media 정적 서빙에서 실행됐다(저장형 XSS).
+        지금은 둘 다 바이트가 결정한다.
+        """
+        # ① 거짓 content_type(gif)이어도 실제 PNG면 통과
+        real_png = await async_client.post(
             "/api/avatar/photo",
             headers=auth_headers,
             files={"file": ("x.gif", _PNG_1PX, "image/gif")},
         )
-        assert bad_type.status_code == 415
+        assert real_png.status_code == 200, real_png.text
+        assert real_png.json()["photo_url"].endswith(".png")
+
+        # ② image/png를 주장해도 실제로 HTML이면 거부
+        disguised = await async_client.post(
+            "/api/avatar/photo",
+            headers=auth_headers,
+            files={"file": ("evil.png", b"<html><script>alert(1)</script></html>", "image/png")},
+        )
+        assert disguised.status_code == 415, disguised.text
+        assert disguised.json()["detail"] == "unsupported_image_type"
+
+    async def test_upload_rejects_empty(
+        self, async_client: AsyncClient, auth_headers: dict
+    ):
         empty = await async_client.post(
             "/api/avatar/photo",
             headers=auth_headers,

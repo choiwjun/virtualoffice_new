@@ -132,7 +132,7 @@ async def create_notice(
     await db.commit()
     await db.refresh(notice)
     await record_audit(
-        db, user_id=user.user_id, action="announcement_published",
+        db, company_id=user.company_id, user_id=user.user_id, action="announcement_published",
         entity_type="notice", entity_id=str(notice.id),
         new_value={"title": notice.title, "category": _out(notice).category, "pinned": notice.pinned},
     )
@@ -176,7 +176,7 @@ async def update_notice(
     await db.commit()
     await db.refresh(notice)
     await record_audit(
-        db, user_id=user.user_id, action="announcement_updated",
+        db, company_id=user.company_id, user_id=user.user_id, action="announcement_updated",
         entity_type="notice", entity_id=str(notice.id),
         old_value=old_value,
         new_value={"title": notice.title, "pinned": notice.pinned},
@@ -201,7 +201,7 @@ async def delete_notice(
     notice.is_active = False
     await db.commit()
     await record_audit(
-        db, user_id=user.user_id, action="announcement_deleted",
+        db, company_id=user.company_id, user_id=user.user_id, action="announcement_deleted",
         entity_type="notice", entity_id=str(notice.id),
         old_value={"title": notice.title},
     )

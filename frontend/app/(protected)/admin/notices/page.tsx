@@ -368,7 +368,7 @@ export default function AdminNoticesPage() {
       {/* 수정 모달 */}
       {editTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div role="dialog" aria-modal="true" aria-label="공지 수정" className="rounded-2xl shadow-2xl w-full max-w-lg border border-border-subtle" style={{ background: '#161F32' }}>
+          <div role="dialog" aria-modal="true" aria-label="공지 수정" className="rounded-2xl shadow-2xl w-full max-w-lg border border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <h2 className="font-semibold text-text-primary">공지 수정</h2>
               <button onClick={() => setEditTarget(null)} aria-label="닫기" className="text-text-muted hover:text-text-primary text-xl">×</button>

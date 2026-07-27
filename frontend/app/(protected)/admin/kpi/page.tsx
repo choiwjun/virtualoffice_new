@@ -158,7 +158,7 @@ function ScoreNoteModal(p: ScoreNoteModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div role="dialog" aria-modal="true" aria-label={p.title} className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
+      <div role="dialog" aria-modal="true" aria-label={p.title} className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <h2 className="font-semibold text-text-primary">{p.title}</h2>
           <button onClick={p.onClose} aria-label="닫기" className="text-text-muted hover:text-text-primary text-xl">×</button>

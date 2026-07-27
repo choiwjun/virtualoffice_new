@@ -1,30 +1,31 @@
 """
 ERP 기반 리소스 API (리소스 지향, 화면 비종속).
 
-- GET  /api/employees          동기화된 직원 디렉터리 (우리 erp_user)
-- GET  /api/employees/{id}     직원 단건
 - POST /api/erp/sync           ERP→우리 사용자 동기화 트리거 (admin)
 - GET  /api/attendances        근태 read-through (ERP 원본, 미저장)
+- GET  /api/daily-status-push  EOD 전송 큐
 
-단일 조직(company_id=1) 전제 — 멀티테넌트는 "완성 이후"(Won't, 이번 버전).
+직원 디렉터리(GET/POST/PATCH/DELETE /api/employees)는 `api/employees.py`가 정본이다
+(E3에서 admin 직접 관리 CRUD와 함께 분리 — 24-spec Phase 3).
+
+테넌트 스코프: ERP 읽기 경로는 호출자의 company_id로 조회한다. ERP가 그 회사를 모르면
+리더가 빈 결과를 돌려주므로, 다른 회사 데이터를 건드리지 않는 안전한 no-op이 된다.
 """
 
 from datetime import date, datetime, timezone
 from typing import AsyncGenerator, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 from sqlalchemy import func, select
 
 from app.core.deps import CurrentUser, get_current_user, require_role
 from app.db import get_db
 from app.erp.reader import ErpReader, get_erp_reader
 from app.erp.sync import ErpSyncService
-from app.models.tables import ErpSyncLog, ErpUser
+from app.models.tables import ErpSyncLog
 
 router = APIRouter(prefix="/api", tags=["erp"])
-
-DEFAULT_COMPANY_ID = 1
 
 
 async def get_reader() -> AsyncGenerator[ErpReader, None]:
@@ -36,22 +37,6 @@ async def get_reader() -> AsyncGenerator[ErpReader, None]:
 
 
 # ── 스키마 ────────────────────────────────────────────────
-class EmployeeOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: int
-    email: str
-    name: str
-    erp_team_id: int
-    role: str
-    position: Optional[str] = None
-    position_id: Optional[int] = None
-    manager_id: Optional[int] = None
-    work_type: Optional[str] = None
-    is_active: bool
-    presence_status: Optional[str] = None
-    seat_number: Optional[str] = None
-
-
 class SyncResultOut(BaseModel):
     created: int
     updated: int
@@ -66,78 +51,21 @@ class AttendanceOut(BaseModel):
     work_type: str
 
 
-# ── 직원 디렉터리 (동기화된 데이터) ───────────────────────
-@router.get("/employees", response_model=list[EmployeeOut])
-async def list_employees(
-    db=Depends(get_db),
-    _: CurrentUser = Depends(get_current_user),
-):
-    rows = (
-        await db.execute(
-            select(ErpUser)
-            .where(ErpUser.company_id == DEFAULT_COMPANY_ID, ErpUser.is_active.is_(True))
-            .order_by(ErpUser.id)
-        )
-    ).scalars().all()
-    from app.models.tables import Presence, Seat
-
-    ids = [r.id for r in rows]
-    presence_map: dict[int, str] = {}
-    seat_map: dict[int, Optional[str]] = {}
-    if ids:
-        for p in (await db.execute(select(Presence).where(Presence.user_id.in_(ids)))).scalars().all():
-            presence_map[p.user_id] = p.status.value if hasattr(p.status, "value") else str(p.status)
-        for s in (await db.execute(select(Seat).where(Seat.assigned_user_id.in_(ids)))).scalars().all():
-            if s.assigned_user_id is not None:
-                seat_map[s.assigned_user_id] = s.seat_number
-
-    def _s(v):
-        return v.value if hasattr(v, "value") else v
-
-    return [
-        EmployeeOut(
-            id=r.id, email=r.email, name=r.name, erp_team_id=r.erp_team_id,
-            role=_s(r.role), position=r.position, position_id=r.position_id,
-            manager_id=r.manager_id, work_type=_s(r.work_type), is_active=r.is_active,
-            presence_status=presence_map.get(r.id),
-            seat_number=seat_map.get(r.id),
-        )
-        for r in rows
-    ]
-
-
-@router.get("/employees/{employee_id}", response_model=EmployeeOut)
-async def get_employee(
-    employee_id: int,
-    db=Depends(get_db),
-    _: CurrentUser = Depends(get_current_user),
-):
-    row = (
-        await db.execute(
-            select(ErpUser).where(
-                ErpUser.id == employee_id,
-                ErpUser.company_id == DEFAULT_COMPANY_ID,
-            )
-        )
-    ).scalar_one_or_none()
-    if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="employee_not_found")
-    return row
-
-
 # ── 동기화 트리거 (admin) ─────────────────────────────────
 @router.post("/erp/sync", response_model=SyncResultOut)
 async def trigger_erp_sync(
     db=Depends(get_db),
     reader: ErpReader = Depends(get_reader),
-    _: CurrentUser = Depends(require_role("admin", "super_admin")),
+    actor: CurrentUser = Depends(require_role("admin", "super_admin")),
 ):
+    """호출자 회사 스코프로 동기화. ERP에 없는 회사면 리더가 빈 목록을 주므로
+    타사 데이터를 만들지 않는 no-op이 된다 (E3 전 하드코딩 company 1 → 교차 테넌트 쓰기)."""
     started = datetime.now(timezone.utc)
     log = ErpSyncLog(started_at=started, trigger="manual")
     db.add(log)
     try:
         svc = ErpSyncService(db)
-        result = await svc.sync_users(reader, DEFAULT_COMPANY_ID)
+        result = await svc.sync_users(reader, actor.company_id)
         log.created = result.created
         log.updated = result.updated
         log.deactivated = result.deactivated
@@ -221,7 +149,7 @@ async def list_attendances(
     """
     if start > end:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_date_range")
-    dtos = await reader.fetch_attendances(DEFAULT_COMPANY_ID, start, end)
+    dtos = await reader.fetch_attendances(user.company_id, start, end)
     # 06 §3.10 매트릭스: 전체 근태는 admin/super_admin만 (leader ✗) — 그 외 본인 것만
     if user.role not in ("admin", "super_admin"):
         dtos = [d for d in dtos if d.user_id == user.user_id]

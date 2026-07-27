@@ -35,6 +35,31 @@ export interface OfficeRoomOptions {
   companyId?: string;
 }
 
+/**
+ * JWT의 `company_id`(정수) / 룸 옵션의 companyId(문자열)를 같은 비교 가능한 형태로 정규화.
+ * 값이 없으면 null — "테넌트 주장 없음"이라 검증을 건너뛴다(구 토큰·로컬 관용 모드).
+ */
+export function normalizeCompanyId(v: number | string | null | undefined): string | null {
+  if (v === null || v === undefined) return null;
+  const s = String(v).trim();
+  return s === "" ? null : s;
+}
+
+/**
+ * 토큰의 회사와 룸의 회사가 같은가.
+ *
+ * 룸 companyId의 기본값(`company-demo`)은 "테넌트 미지정"을 뜻한다 — 데모/로컬에서 룸을
+ * 옵션 없이 만들면 이 값이 된다. 이 경우엔 막을 근거가 없으므로 통과시킨다.
+ * 룸이 실제 테넌트로 생성된 경우에만 엄격히 비교한다.
+ */
+export function companyMatchesRoom(tokenCompanyId: string, roomCompanyId: string): boolean {
+  if (!roomCompanyId || roomCompanyId === DEFAULT_COMPANY_ID) return true;
+  return tokenCompanyId === roomCompanyId;
+}
+
+/** 룸 옵션 미지정 시의 데모 테넌트 — 실제 회사 식별자가 아니다. */
+export const DEFAULT_COMPANY_ID = "company-demo";
+
 /** join()/onAuth() options a client sends. */
 export interface JoinOptions {
   userId?: string;
@@ -67,7 +92,7 @@ export class OfficeRoom extends Room<OfficeState> {
 
   private officeId = "office-demo";
   private floorId = "floor-1";
-  private companyId = "company-demo";
+  private companyId = DEFAULT_COMPANY_ID;
 
   /** seatId -> userId occupancy (authoritative in memory). */
   private seatOccupancy = new Map<string, string>();
@@ -125,9 +150,12 @@ export class OfficeRoom extends Room<OfficeState> {
   }
 
   /**
-   * onAuth — JWT verification seam. In production this verifies the FastAPI
-   * HS256 single-session JWT (09 §5.3). Stubbed here to accept and pass through
-   * identity; returning a truthy value authorizes the join.
+   * onAuth — FastAPI HS256 JWT 검증 (D4 / 09 §5.3). 반환값이 onJoin의 `auth`가 된다.
+   *
+   * **테넌트 경계(22 T0-1 잔여)**: 이전에는 `sub`/`email`만 토큰에서 취하고 `companyId`는
+   * 클라이언트가 준 값을 그대로 썼다. 그래서 회사 2의 유저가 회사 1의 방에 들어가
+   * `companyId: "1"`을 주장하면 그 층의 아바타·프레즌스를 그대로 볼 수 있었다.
+   * 이제 토큰의 `company_id` 클레임을 정본으로 삼고, **방의 회사와 다르면 join을 거부**한다.
    */
   async onAuth(_client: Client, options: JoinOptions): Promise<JoinOptions> {
     const token = options?.jwt;
@@ -135,20 +163,27 @@ export class OfficeRoom extends Room<OfficeState> {
       if (JWT_REQUIRED) throw new Error("unauthorized: missing token");
       return options ?? {}; // 로컬/테스트 관용(JWT_REQUIRED=false)
     }
+    let payload: { sub?: string; email?: string; company_id?: number | string };
     try {
-      const payload = jwt.verify(token, JWT_SECRET, { algorithms: [JWT_ALGORITHM] }) as {
-        sub?: string;
-        email?: string;
-      };
-      // 토큰 identity를 신뢰 — 클라이언트가 준 userId를 토큰 sub로 덮어써 위조를 막는다(D4).
-      return {
-        ...options,
-        userId: payload.sub ?? options.userId,
-        name: options.name ?? payload.email,
-      };
+      payload = jwt.verify(token, JWT_SECRET, { algorithms: [JWT_ALGORITHM] }) as typeof payload;
     } catch {
       throw new Error("unauthorized: invalid token");
     }
+
+    // 토큰에 company_id가 있으면 그것만 신뢰한다(클라 주장은 버린다).
+    const claimed = normalizeCompanyId(payload.company_id);
+    if (claimed !== null && !companyMatchesRoom(claimed, this.companyId)) {
+      // 방의 테넌트와 다르면 거부 — 존재 은닉을 위해 사유는 구분하지 않는다.
+      throw new Error("forbidden: company mismatch");
+    }
+
+    return {
+      ...options,
+      // 토큰 identity를 신뢰 — 클라이언트가 준 userId를 토큰 sub로 덮어써 위조를 막는다(D4).
+      userId: payload.sub ?? options.userId,
+      name: options.name ?? payload.email,
+      companyId: claimed ?? options.companyId,
+    };
   }
 
   onJoin(client: Client, options: JoinOptions, auth?: JoinOptions): void {
@@ -292,6 +327,16 @@ export class OfficeRoom extends Room<OfficeState> {
     );
     this.onMessage("interact_request", (client, msg: { targetUserId?: string }) =>
       this.handleInteract(client, msg)
+    );
+    // 1:1 즉석 통화 시그널링 — 벨을 울리는 경로에서만 근접(5m)을 강제한다.
+    this.onMessage("call_request", (client, msg: { targetUserId?: string }) =>
+      this.handleCallRequest(client, msg)
+    );
+    this.onMessage("call_response", (client, msg: { targetUserId?: string; accepted?: boolean }) =>
+      this.handleCallResponse(client, msg)
+    );
+    this.onMessage("call_cancel", (client, msg: { targetUserId?: string }) =>
+      this.handleCallCancel(client, msg)
     );
     // Explicit resume request (client sends last_seq) → re-snapshot.
     this.onMessage("resume", (client, _msg: { lastSeq?: number }) => {
@@ -495,6 +540,96 @@ export class OfficeRoom extends Room<OfficeState> {
   }
 
   // -------------------------------------------------------------------------
+  // 1:1 통화 시그널링 (09 §3.3 상호작용)
+  //
+  // 채팅(DM)은 거리 제약이 없지만 **통화는 근접 5m를 강제**한다. 갑자기 울리는 벨은
+  // 방해라, "옆에 와 있는 사람"만 걸 수 있게 해 공간적 맥락으로 정당화한다.
+  // 미디어 자체는 LiveKit이 나르고(백엔드 /api/calls/token), 여기서는 벨과 응답만 중계한다.
+  // -------------------------------------------------------------------------
+
+  /** userId로 접속 중인 상대의 (sessionId, Player)를 찾는다. */
+  private findBySessionUserId(userId: string): { sessionId: string; player: Player } | null {
+    for (const [sessionId, p] of this.state.players.entries()) {
+      if (p.userId === userId) return { sessionId, player: p };
+    }
+    return null;
+  }
+
+  private handleCallRequest(client: Client, msg: { targetUserId?: string }): void {
+    const player = this.state.players.get(client.sessionId);
+    if (!player || !msg.targetUserId) return;
+    player.lastActivityAt = Date.now();
+
+    const found = this.findBySessionUserId(msg.targetUserId);
+    if (!found) {
+      // 접속 중이 아니면 벨을 울릴 곳이 없다 — 클라는 "채팅으로 남기기"를 권한다.
+      client.send("call_denied", { targetUserId: msg.targetUserId, reason: "target_offline" });
+      return;
+    }
+
+    // 근접·쿨다운·DND 등 상호작용 규칙 재사용(09 §3.3) — 통화만의 별도 규칙을 만들지 않는다.
+    const result = validateProximity({
+      requester: this.toProxActor(player),
+      target: this.toProxActor(found.player),
+      layout: this.layout,
+    });
+    if (!result.ok) {
+      client.send("call_denied", {
+        targetUserId: msg.targetUserId,
+        reason: result.reason,
+        detail: result.detail,
+      });
+      return;
+    }
+
+    player.interactCooldowns[found.player.userId] = Date.now();
+    const targetClient = this.clients.find((c) => c.sessionId === found.sessionId);
+    if (!targetClient) {
+      client.send("call_denied", { targetUserId: msg.targetUserId, reason: "target_offline" });
+      return;
+    }
+    // 상대에게 벨, 발신자에게 호출 중 표시.
+    targetClient.send("call_invite", {
+      fromUserId: player.userId,
+      fromName: player.name,
+      distance: distance(player, found.player),
+    });
+    client.send("call_ringing", {
+      targetUserId: found.player.userId,
+      targetName: found.player.name,
+    });
+  }
+
+  private handleCallResponse(
+    client: Client,
+    msg: { targetUserId?: string; accepted?: boolean }
+  ): void {
+    const player = this.state.players.get(client.sessionId);
+    if (!player || !msg.targetUserId) return;
+    player.lastActivityAt = Date.now();
+
+    // targetUserId = 최초 발신자. 그에게 수락/거절을 되돌려준다.
+    const caller = this.findBySessionUserId(msg.targetUserId);
+    if (!caller) return; // 발신자가 이미 나감 — 조용히 종료
+    const callerClient = this.clients.find((c) => c.sessionId === caller.sessionId);
+    if (!callerClient) return;
+
+    callerClient.send(msg.accepted ? "call_accepted" : "call_declined", {
+      fromUserId: player.userId,
+      fromName: player.name,
+    });
+  }
+
+  private handleCallCancel(client: Client, msg: { targetUserId?: string }): void {
+    const player = this.state.players.get(client.sessionId);
+    if (!player || !msg.targetUserId) return;
+    const target = this.findBySessionUserId(msg.targetUserId);
+    if (!target) return;
+    const targetClient = this.clients.find((c) => c.sessionId === target.sessionId);
+    targetClient?.send("call_cancelled", { fromUserId: player.userId });
+  }
+
+  // -------------------------------------------------------------------------
   // Simulation tick (20Hz)
   // -------------------------------------------------------------------------
 
@@ -543,6 +678,9 @@ export class OfficeRoom extends Room<OfficeState> {
   // -------------------------------------------------------------------------
 
   private async flushPresence(): Promise<void> {
+    // onCreate가 상태를 세우기 전에 dispose되면(생성 실패·즉시 폐기) state가 없다.
+    // 여기서 터지면 onDispose 경로 전체가 죽으므로 조용히 빠진다 — 보낼 프레즌스도 없다.
+    if (!this.state?.players) return;
     const batch: PresenceRecord[] = [];
     for (const p of this.state.players.values()) {
       batch.push({

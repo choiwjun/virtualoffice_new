@@ -21,6 +21,8 @@ import { connectToMeeting, disconnectRoom } from '@/lib/livekit';
 import { DisconnectReason, RoomEvent, type Room } from 'livekit-client';
 import { ListItem } from '@/components/ui/ListItem';
 import { ROOMS as VIEWPORT_ROOMS } from '@/lib/office2d';
+import { useBranding } from '@/components/BrandingProvider';
+import { OnboardingChecklist } from '@/components/OnboardingChecklist';
 import dynamic from 'next/dynamic';
 
 // 2.5D 뷰포트는 브라우저 전용(WebSocket/DOM 계측) → SSR 비활성 dynamic import
@@ -202,6 +204,7 @@ const ADMIN_ITEMS: (NavItem & { roles: UserRole[] })[] = [
   { href: '/admin/sync',          label: '동기화',   icon: <IconChart />,  roles: ['admin', 'super_admin'] },
   { href: '/admin/audit',         label: '감사로그', icon: <IconReport />, roles: ['admin', 'super_admin'] },
   { href: '/admin/notices',       label: '공지관리', icon: <IconChat />,   roles: ['admin', 'super_admin'] },
+  { href: '/admin/branding',      label: '브랜딩',   icon: <IconSettings />, roles: ['admin', 'super_admin'] },
 ];
 
 // ─────────────────────────────────────────────
@@ -437,6 +440,7 @@ const RAIL_MORE_ICON: Record<string, string> = {
   '/admin/sync': RAIL_ICON.sync,
   '/admin/audit': RAIL_ICON.log,
   '/admin/notices': RAIL_ICON.mega,
+  '/admin/branding': RAIL_ICON.gear,
 };
 const WORK_HUB_ICON: Record<string, string> = {
   '/work-log': RAIL_ICON.tasks,
@@ -497,6 +501,10 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const [me, setMe] = useState<User | null>(null);
+  // E5 화이트라벨 — 테넌트 브랜드명·로고. 미설정이면 기본 표기로 폴백.
+  const { branding } = useBranding();
+  const brandName = branding?.brand_name || 'VirtualOffice';
+  const brandLogo = mediaUrl(branding?.logo_url);
   const [presenceFilter, setPresenceFilter] = useState<PresenceFilter>('all');
   // D33 몰입 모드(19-spec P0-1): /office에서 사이드바=아이콘 레일·우측 패널=접힘이 기본.
   const [navExpanded, setNavExpanded] = useState(false);
@@ -1017,7 +1025,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
   return (
     <div
       className="flex flex-col h-screen overflow-hidden font-sans"
-      style={{ background: '#0E1626' }}
+      style={{ background: 'rgb(var(--color-bg-base))' }}
     >
       {/* (1b) 커맨드 팔레트 — ⌘K/Ctrl+K 또는 팔레트 트리거로 열림 */}
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} entries={paletteEntries} />
@@ -1082,7 +1090,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                   role="menu"
                   aria-label="최근 공지"
                   className="absolute right-0 top-10 z-40 w-72 rounded-xl border border-border-subtle shadow-2xl overflow-hidden"
-                  style={{ background: '#161F32' }}
+                  style={{ background: 'rgb(var(--color-bg-surface))' }}
                 >
                   <div className="px-3 py-2.5 border-b border-border-subtle text-[12px] font-semibold text-text-primary">최근 공지</div>
                   <div className="max-h-80 overflow-y-auto py-1">
@@ -1137,13 +1145,26 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
       {!railMode && (
       <aside
         className="w-60 flex-shrink-0 flex flex-col border-r border-border-subtle transition-[width] duration-200"
-        style={{ background: '#161F32' }}
+        style={{ background: 'rgb(var(--color-bg-surface))' }}
       >
         {/* 로고 + 레일 접기(/office 메뉴 펼침 상태에서만 노출) */}
         <div className="px-5 py-4 border-b border-border-subtle flex-shrink-0 flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <div className="text-[10px] text-text-muted uppercase tracking-widest mb-0.5">VirtualOffice</div>
-            <div className="text-base font-bold text-text-primary">가상 오피스</div>
+          {/* E5: 브랜드명·로고는 테넌트 설정(useBranding)에서 온다. 미설정이면 회사명 → 기본 문구. */}
+          <div className="min-w-0 flex items-center gap-2">
+            {brandLogo && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={brandLogo}
+                alt=""
+                className="w-7 h-7 rounded-lg object-contain flex-shrink-0"
+              />
+            )}
+            <div className="min-w-0">
+              <div className="text-[10px] text-text-muted uppercase tracking-widest mb-0.5 truncate">
+                {brandName}
+              </div>
+              <div className="text-base font-bold text-text-primary">가상 오피스</div>
+            </div>
           </div>
           {isOffice && (
             <button
@@ -1163,10 +1184,10 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
         <nav className="flex-1 py-3 overflow-y-auto px-3 space-y-0.5" aria-label="주 메뉴">
           {NAV_ITEMS.map(renderNav)}
           {adminItems.length > 0 && (
-            <>
+            <div data-tour="admin-nav">
               <div className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted">관리</div>
               {adminItems.map(renderNav)}
-            </>
+            </div>
           )}
         </nav>
 
@@ -1201,11 +1222,14 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* 가상오피스 씬 = 2.5D 클린 플레이트 + 실시간 아바타 (v2.2 팩 + realtime Colyseus) */}
         <div className="relative flex-1 min-h-0">
-          <div className="absolute inset-0 overflow-hidden" style={{ background: '#0d1b36' }}>
+          <div data-tour="viewport" className="absolute inset-0 overflow-hidden" style={{ background: '#0d1b36' }}>
             {/* D1(감사 23)/T1-13(22): 실시간 연결은 /office에서만 — 메뉴 라우트는 씬 배경만 유지하고
                 Colyseus 방 슬롯·프레즌스 rAF를 점유하지 않는다(유휴 유저의 동접 천장 잠식 해소). */}
             <OfficeViewport2D onJoinMeeting={handleViewportJoin} dockSlot={meetingDock} realtimeEnabled={isOffice} />
           </div>
+
+          {/* E6 첫실행 — 체크리스트(admin)·최초 투어(전원). 씬 위 오버레이. */}
+          <OnboardingChecklist />
 
           {/* ── (1b) 플로팅 셸 크롬 — /office 몰입(railMode) 전용. 씬 위 z-30 오버레이 ── */}
           {railMode && (
@@ -1226,6 +1250,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
               {/* 상단 중앙: 커맨드 팔레트 트리거 */}
               <button
                 type="button"
+                data-tour="command"
                 onClick={() => setPaletteOpen(true)}
                 aria-label="구성원·방·기능 검색 (커맨드 팔레트)"
                 className="absolute left-1/2 top-4 -translate-x-1/2 z-30 w-[480px] max-w-[46vw] h-11 flex items-center gap-2.5 px-3.5 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B23C]/60"
@@ -1479,8 +1504,8 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
           {!isOffice && (
             <div className="absolute inset-0 z-20 flex" style={{ background: 'rgba(8,13,26,0.30)', backdropFilter: 'blur(1.5px)' }}>
               {/* 창을 플로팅 미니 레일(좌)·상단 크롬 아래로 인셋 → 오피스가 프레임 주위로 보이게(가볍게 띄움) */}
-              <div className="flex-1 mt-[72px] ml-[76px] mr-4 mb-4 rounded-2xl border border-border-subtle overflow-hidden flex flex-col shadow-2xl" style={{ background: '#0E1626' }}>
-                <div className="h-11 flex-shrink-0 flex items-center justify-between px-4 border-b border-border-subtle" style={{ background: '#161F32' }}>
+              <div className="flex-1 mt-[72px] ml-[76px] mr-4 mb-4 rounded-2xl border border-border-subtle overflow-hidden flex flex-col shadow-2xl" style={{ background: 'rgb(var(--color-bg-base))' }}>
+                <div className="h-11 flex-shrink-0 flex items-center justify-between px-4 border-b border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }}>
                   <span className="text-[13px] font-semibold text-text-primary">{overlayItem?.label ?? ''}</span>
                   <Link
                     href="/office"
@@ -1490,7 +1515,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                     <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
                   </Link>
                 </div>
-                <div className="flex-1 overflow-y-auto" style={{ background: '#0E1626' }}>{children}</div>
+                <div className="flex-1 overflow-y-auto" style={{ background: 'rgb(var(--color-bg-base))' }}>{children}</div>
               </div>
             </div>
           )}
@@ -1611,6 +1636,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
       {/* ── 우 패널 — 그 외 라우트=280px 컬럼 · /office(railMode)=플로팅 웜 블랙 글래스(1b) ── */}
       {showPanel && (
       <aside
+        data-tour="presence"
         className={
           railMode
             ? 'absolute right-4 top-20 bottom-[86px] z-30 w-[276px] flex flex-col rounded-2xl overflow-hidden'
@@ -1628,7 +1654,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
               <span className="text-[13.5px] font-extrabold" style={railMode ? { color: T1B.text1 } : undefined}>구성원</span>
               <span
                 className="text-[11px] font-bold rounded-full px-2 py-0.5"
-                style={railMode ? { background: 'rgba(255,255,255,0.07)', color: T1B.text2 } : { background: '#1E2940', color: '#7A899E' }}
+                style={railMode ? { background: 'rgba(255,255,255,0.07)', color: T1B.text2 } : { background: 'rgb(var(--color-bg-surface-raised))', color: 'rgb(var(--color-text-muted))' }}
               >
                 {employees.length}
               </span>
@@ -1682,7 +1708,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
             className="flex"
             role="tablist"
             aria-label="상태 필터"
-            style={railMode ? { borderBottom: '1px solid rgba(255,255,255,0.08)' } : { borderBottom: '1px solid #273350' }}
+            style={railMode ? { borderBottom: '1px solid rgba(255,255,255,0.08)' } : { borderBottom: '1px solid rgb(var(--color-border-subtle))' }}
           >
             {FILTER_TABS.map((t) => {
               const on = presenceFilter === t.key;

@@ -18,7 +18,8 @@ import SceneV3Layer from '@/components/SceneV3Layer';
 import { getUser } from '@/lib/auth';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { useOfficeRoom } from '@/hooks/useOfficeRoom';
-import type { MeetingEntryResult } from '@/lib/realtime';
+import { CallStage } from '@/components/ui/CallStage';
+import type { CallSignal, MeetingEntryResult } from '@/lib/realtime';
 import {
   AvatarState,
   PLATE_W,
@@ -122,6 +123,12 @@ function rectToNormPoly(x: number, y: number, w: number, h: number): Vec2[] {
   ];
 }
 
+// 통화 근접 판정(m). 서버 규칙은 PROXIMITY_M=5 — 클라는 살짝 안쪽에서 쏴 경계에서
+// 왕복 지연 때문에 too_far로 튕기는 걸 막는다.
+const CALL_NEAR_M = 4.2;
+// 걸어가서 자동 통화까지 기다리는 상한(ms). 상대가 계속 움직이거나 길이 막히면 포기한다.
+const APPROACH_TIMEOUT_MS = 25_000;
+
 const SEATS_POLL_MS = 60_000; // 좌석 목록 폴링 주기(§3.11)
 const SEAT_Z = 15000; // 방 라벨(21000)보다 아래, 아바타(≤10000)보다 위 — y-깊이 무관 고정
 
@@ -203,6 +210,49 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
     const room = roomsRef.current.find((rm) => rm.id === r.roomId);
     setMeetingPrompt({ roomId: r.roomId, label: room?.label ?? r.roomId });
   }, []);
+
+  // ── 1:1 통화 상태 (09 §3.3) ────────────────────────────────────────────────
+  // outgoing: 내가 건 상태(상대 응답 대기) / incoming: 걸려온 벨 / active: 통화 중.
+  // 미디어는 LiveKit(MeetingStage)이 담당하고 여기서는 시그널과 화면 전환만 다룬다.
+  const [outgoingCall, setOutgoingCall] = useState<{ userId: string; name: string } | null>(null);
+  const [incomingCall, setIncomingCall] = useState<{ userId: string; name: string } | null>(null);
+  const [activeCall, setActiveCall] = useState<{ userId: string; name: string } | null>(null);
+  /** 통화하러 걸어가는 중 — 도착(근접)하면 자동으로 벨을 울린다. */
+  const [approach, setApproach] = useState<{ userId: string; name: string; until: number } | null>(null);
+  const showToastRef = useRef<(m: string) => void>(() => {});
+
+  const handleCallSignal = useCallback((s: CallSignal) => {
+    switch (s.type) {
+      case 'invite':
+        setIncomingCall({ userId: s.fromUserId, name: s.fromName });
+        break;
+      case 'ringing':
+        setOutgoingCall({ userId: s.targetUserId, name: s.targetName });
+        break;
+      case 'accepted':
+        setOutgoingCall(null);
+        setActiveCall({ userId: s.fromUserId, name: s.fromName });
+        break;
+      case 'declined':
+        setOutgoingCall(null);
+        showToastRef.current(`${s.fromName} 님이 통화를 거절했습니다`);
+        break;
+      case 'cancelled':
+        setIncomingCall(null);
+        break;
+      case 'denied':
+        setOutgoingCall(null);
+        showToastRef.current(
+          s.reason === 'target_offline'
+            ? '상대가 접속 중이 아닙니다 — 메시지를 남겨보세요'
+            : s.reason === 'too_far'
+              // 통화 버튼이 알아서 걸어가므로 여기까지 오는 건 도착 직후 상대가 움직인 경우다.
+              ? '상대가 자리를 옮겼습니다 — 다시 시도해 주세요'
+              : '지금은 통화를 걸 수 없습니다',
+        );
+        break;
+    }
+  }, []);
   const {
     status,
     roster,
@@ -211,8 +261,11 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
     requestPath,
     enterMeeting,
     setStatus: setPresence,
+    callRequest,
+    callRespond,
+    callCancel,
     reconnect,
-  } = useOfficeRoom(realtimeEnabled, handleMeetingEntry, onLayoutUpdated);
+  } = useOfficeRoom(realtimeEnabled, handleMeetingEntry, onLayoutUpdated, handleCallSignal);
 
   const me = useMemo(() => getUser(), []);
   const myName = me?.name ?? 'Guest';
@@ -367,6 +420,8 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     toastTimerRef.current = setTimeout(() => setToast(null), 2600);
   }, []);
+  // handleCallSignal은 showToast보다 위에서 정의되므로(훅 순서) ref로 연결한다.
+  showToastRef.current = showToast;
   useEffect(
     () => () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -452,6 +507,28 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
     const id = setInterval(loadSeats, SEATS_POLL_MS);
     return () => clearInterval(id);
   }, [loadSeats]);
+
+  // ── 직원 이름 사전(id→이름) ────────────────────────────────────────────────
+  // 좌석 점유자 표시는 실시간 접속자만으로는 부족하다: 자리를 배정받았지만 지금 접속하지
+  // 않은 팀원이 이름 없는 회색 점이 된다("누구 자리인지 모르는 사무실"). 명부로 폴백한다.
+  const [directory, setDirectory] = useState<Map<number, string>>(new Map());
+  useEffect(() => {
+    let cancelled = false;
+    const load = () =>
+      api
+        .get<Array<{ id: number; name: string }>>('/api/employees')
+        .then((rows) => {
+          if (cancelled) return;
+          setDirectory(new Map(rows.map((r) => [r.id, r.name])));
+        })
+        .catch(() => {});
+    load();
+    const id = setInterval(load, SEATS_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
 
   // ── 배포 레이아웃 구조 로드 — 마운트 + 60초 폴링(관리자 배포/롤백 반영). 미배포/에러 → 데모 씬 유지 ──
   const loadStructure = useCallback(() => {
@@ -614,7 +691,10 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
     [seatBusy, seatLabel, showToast, loadSeats],
   );
 
-  /** 점유자 표시용 이름 — 접속 중인 플레이어에서 userId 매칭(없으면 null). */
+  /** 점유자 표시용 이름 — 접속자 우선(라이브 표시명), 없으면 직원 명부 폴백.
+   *
+   * 접속자만 보면 "자리는 있는데 지금 없는 사람"이 이름 없는 회색 점이 된다. 그 자리가
+   * 누구 것인지는 접속 여부와 무관하게 보여야 한다. */
   const occupantName = useCallback(
     (userId: number | null) => {
       if (userId == null) return null;
@@ -622,11 +702,99 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
       playersRef.current.forEach((p) => {
         if (found == null && p.userId === String(userId)) found = p.name;
       });
-      return found;
+      return found ?? directory.get(userId) ?? null;
     },
+    // playersRef는 ref라 안정적. directory는 명부 로드 시 갱신 → 라벨 재렌더 트리거.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [directory],
+  );
+
+  /** 좌석 점유자가 지금 접속해 있는가 — 자리에 사람이 있는지/비었는지 구분 표시용. */
+  const occupantOnline = useCallback((userId: number | null) => {
+    if (userId == null) return false;
+    let online = false;
+    playersRef.current.forEach((p) => {
+      if (!online && p.userId === String(userId)) online = true;
+    });
+    return online;
+  }, []);
+
+  /** 1:1 대화 열기 — 서버가 채널 id를 확정(정렬 규칙)해 주고 그 채널로 이동한다. */
+  const openDm = useCallback(
+    async (userId: string, name: string) => {
+      try {
+        const ch = await api.post<{ id: string }>('/api/chat/dm', { user_id: Number(userId) });
+        setSpot(null);
+        router.push(`/chat?channel=${encodeURIComponent(ch.id)}`);
+      } catch (err) {
+        showToast(err instanceof ApiError ? err.message : `${name} 님과의 대화를 열지 못했습니다`);
+      }
+    },
+    [router, showToast],
+  );
+
+  /** userId로 접속 중인 상대의 현재 좌표. 없으면 null. */
+  const peerPos = useCallback((userId: string): { x: number; y: number } | null => {
+    let found: { x: number; y: number } | null = null;
+    playersRef.current.forEach((p) => {
+      if (!found && p.userId === userId) found = { x: p.x, y: p.y };
+    });
+    return found;
     // playersRef는 ref라 안정적.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+  }, []);
+
+  /** 나와 상대의 거리(m). 둘 중 하나라도 없으면 Infinity. */
+  const peerDistance = useCallback(
+    (userId: string): number => {
+      const self = playersRef.current.get(selfIdRef.current);
+      const other = peerPos(userId);
+      if (!self || !other) return Infinity;
+      return Math.hypot(self.x - other.x, self.y - other.y);
+    },
+    // playersRef·selfIdRef는 ref라 안정적.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [peerPos],
+  );
+
+  /** 상대 위치로 걸어가기 — 통화가 근접 제약이라 "가까이 가는" 동선을 한 번에 제공한다. */
+  const walkToUser = useCallback(
+    (userId: string) => {
+      const target = peerPos(userId);
+      if (!target) {
+        showToast('상대가 접속 중이 아닙니다');
+        return;
+      }
+      moveTo(nearestWalkableM(target));
+    },
+    [moveTo, peerPos, showToast],
+  );
+
+  /**
+   * 통화 걸기 — 멀면 **걸어가서 도착하면 자동으로 건다**.
+   *
+   * 근접 5m는 서버가 강제하는 규칙이라 "너무 멀다 → 걸어가기 → 다시 통화"를 사용자가
+   * 3단계로 밟게 하면 규칙이 그냥 마찰이 된다. 실제 사무실에서 하는 행동(걸어가서 말 건다)을
+   * 한 번의 클릭으로 옮긴다. 이동 중에는 배너로 상태를 보여주고 언제든 취소할 수 있다.
+   */
+  const startCall = useCallback(
+    (userId: string, name: string) => {
+      if (activeCall || outgoingCall) {
+        showToast('이미 통화 중입니다');
+        return;
+      }
+      if (!peerPos(userId)) {
+        showToast('상대가 접속 중이 아닙니다 — 메시지를 남겨보세요');
+        return;
+      }
+      if (peerDistance(userId) <= CALL_NEAR_M) {
+        callRequest(userId); // 이미 가까움 → 바로 벨
+        return;
+      }
+      setApproach({ userId, name, until: Date.now() + APPROACH_TIMEOUT_MS });
+      walkToUser(userId);
+    },
+    [activeCall, outgoingCall, callRequest, peerDistance, peerPos, showToast, walkToUser],
   );
 
   const handleSeatClick = useCallback(
@@ -635,9 +803,15 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
       if (seat.status === 'occupied') {
         // D34: 내 좌석 클릭 = myseat 카드(오늘 업무·KPI·비우기 통합) — 구 release 프롬프트 흡수.
         if (isMine) setSpot({ kind: 'myseat', title: `${myName} — 내 자리` });
-        else {
-          const who = occupantName(seat.assigned_user_id);
-          showToast(`${seatLabel(seat)} — ${who ? `${who} ` : ''}사용 중인 좌석입니다`);
+        else if (seat.assigned_user_id != null) {
+          // 팀원 좌석 = 그 사람에게 말 거는 진입점. 토스트만 띄우고 끝내면 막다른 길이다.
+          setSpot({
+            kind: 'profile',
+            title: occupantName(seat.assigned_user_id) ?? seatLabel(seat),
+            userId: String(seat.assigned_user_id),
+          });
+        } else {
+          showToast(`${seatLabel(seat)} — 사용 중인 좌석입니다`);
         }
         return;
       }
@@ -686,6 +860,30 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
       loadSeats(); // 성공/실패 모두 서버 상태 재동기화
     }
   }, [seatPrompt, seatBusy, seats, myId, moveTo, seatLabel, showToast, loadSeats]);
+
+  // ── 걸어가서 자동 통화: 도착 감지 루프 ──────────────────────────────────────
+  // 상대가 움직일 수 있으므로 목적지를 한 번 찍고 끝내지 않고, 거리를 폴링하다가
+  // 근접 안으로 들어오면 그때 벨을 울린다. 못 따라잡으면 타임아웃으로 정리한다.
+  useEffect(() => {
+    if (!approach) return;
+    const id = setInterval(() => {
+      if (!peerPos(approach.userId)) {
+        setApproach(null);
+        showToast(`${approach.name} 님이 접속을 종료했습니다`);
+        return;
+      }
+      if (peerDistance(approach.userId) <= CALL_NEAR_M) {
+        setApproach(null);
+        callRequest(approach.userId);
+        return;
+      }
+      if (Date.now() > approach.until) {
+        setApproach(null);
+        showToast(`${approach.name} 님에게 다가가지 못했습니다 — 메시지를 남겨보세요`);
+      }
+    }, 350);
+    return () => clearInterval(id);
+  }, [approach, callRequest, peerDistance, peerPos, showToast]);
 
   // ── 회의실 근접(2m) → enter_meeting(D24) — 방 진입 전환 시 서버에 요청 ─────────
   const currentRoomRef = useRef<string | null>(null);
@@ -1200,10 +1398,11 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
                 ? 'rgba(30,41,59,.6)'
                 : 'rgba(7,16,29,.85)';
           const who = occupied ? occupantName(seat.assigned_user_id) : null;
+          const online = occupied ? occupantOnline(seat.assigned_user_id) : false;
           const title = isMine
             ? `${seatLabel(seat)} — 내 좌석 (클릭: 자리 비우기)`
             : occupied
-              ? `${seatLabel(seat)} — ${who ? `${who} ` : ''}사용 중`
+              ? `${seatLabel(seat)} — ${who ?? '사용 중'}${who ? (online ? ' (재실)' : ' (자리 비움)') : ''}`
               : unavailable
                 ? `${seatLabel(seat)} — 사용 불가`
                 : fixedUnassigned
@@ -1241,6 +1440,29 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
                     ★ 내 자리
                   </span>
                 </>
+              )}
+              {/* 팀원 자리 이름표 — 누구 자리인지 hover 없이 보이게. 내 자리(파랑·별·펄스)보다
+                  절제된 표기로 두어 "내 자리"의 우선순위를 지킨다.
+                  재실(접속 중)은 초록 점, 자리 비움은 회색 점으로 구분한다. */}
+              {!isMine && occupied && who && (
+                <span
+                  className="absolute -translate-x-1/2 whitespace-nowrap px-1.5 py-0.5 rounded-md text-[9px] font-medium pointer-events-none flex items-center gap-1"
+                  style={{
+                    left: `${n.x * 100}%`,
+                    top: `calc(${n.y * 100}% - ${(cushionUpPx + 20).toFixed(1)}px)`,
+                    background: 'rgba(7,16,29,.82)',
+                    border: '1px solid rgba(255,255,255,.16)',
+                    color: online ? 'rgba(241,245,249,.95)' : 'rgba(180,192,211,.7)',
+                    zIndex: SEAT_Z + 1,
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    className="w-1 h-1 rounded-full inline-block"
+                    style={{ background: online ? '#22C55E' : '#64748B' }}
+                  />
+                  {who}
+                </span>
               )}
               {/* 히트영역(30px 투명)과 가시 점을 분리 — 의자 몸통 클릭이 방 폴리곤(z30)에
                   삼켜지지 않게 좌석 타깃을 넓힌다(마커 점은 기존 크기 유지). */}
@@ -1561,10 +1783,41 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
               )}
             </div>
             <div className="flex items-center gap-1.5 px-2 py-2 border-t border-border-subtle flex-wrap">
-              {spot.kind === 'profile' && (
-                <button type="button" onClick={() => router.push('/chat')} className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-primary text-white hover:bg-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan">
-                  채팅 열기
-                </button>
+              {spot.kind === 'profile' && spot.userId && (
+                <>
+                  {/* 메시지 = 거리 무관(비동기). 통화 = 근접 5m(서버 강제) — 방해가 되는 벨은
+                      "옆에 와 있는 사람"만 울릴 수 있게 한다. */}
+                  <button
+                    type="button"
+                    onClick={() => openDm(spot.userId!, spot.title)}
+                    className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-primary text-white hover:bg-primary-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                  >
+                    메시지
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // 멀면 걸어가서 도착 시 자동으로 건다 — 근접 규칙을 마찰이 아니라
+                      // "가서 말 거는" 동작으로 만든다.
+                      startCall(spot.userId!, spot.title);
+                      setSpot(null);
+                    }}
+                    title="가까이 있으면 바로, 멀면 걸어가서 통화합니다"
+                    className="px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-status-online/90 text-white hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                  >
+                    통화
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      walkToUser(spot.userId!);
+                      setSpot(null);
+                    }}
+                    className="px-2.5 py-1 rounded-lg text-[10px] font-medium border border-border-subtle text-text-secondary hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+                  >
+                    걸어가기
+                  </button>
+                </>
               )}
               {spot.kind === 'myseat' && (
                 <>
@@ -1652,6 +1905,99 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
           >
             {toast}
           </div>
+        )}
+
+        {/* ── 1:1 통화 (09 §3.3) — 수신 벨 · 발신 대기 · 통화 중 ── */}
+        {incomingCall && (
+          <div
+            role="dialog"
+            aria-label="걸려온 통화"
+            className="absolute left-1/2 top-3 -translate-x-1/2 flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] text-white shadow-2xl vo-modal-panel"
+            style={{ background: 'rgba(7,16,29,.97)', border: '1px solid rgb(var(--color-status-online))', zIndex: 24000 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="w-2 h-2 rounded-full animate-ping" style={{ background: 'rgb(var(--color-status-online))' }} aria-hidden />
+            <span>
+              <b>{incomingCall.name}</b> 님이 통화를 요청했습니다
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                callRespond(incomingCall.userId, true);
+                setActiveCall(incomingCall);
+                setIncomingCall(null);
+              }}
+              className="px-3 py-1 rounded-lg text-[12px] font-semibold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+              style={{ background: 'rgb(var(--color-status-online))' }}
+            >
+              받기
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                callRespond(incomingCall.userId, false);
+                setIncomingCall(null);
+              }}
+              className="px-3 py-1 rounded-lg text-[12px] font-medium text-white/80 border border-white/20 hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+            >
+              거절
+            </button>
+          </div>
+        )}
+
+        {approach && !outgoingCall && !activeCall && (
+          <div
+            className="absolute left-1/2 top-3 -translate-x-1/2 flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] text-white shadow-lg"
+            style={{ background: 'rgba(7,16,29,.96)', border: '1px solid rgb(var(--color-accent-cyan))', zIndex: 24000 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'rgb(var(--color-accent-cyan))' }} aria-hidden />
+            <span>
+              <b>{approach.name}</b> 님에게 가는 중… 도착하면 통화합니다
+            </span>
+            <button
+              type="button"
+              onClick={() => setApproach(null)}
+              className="px-3 py-1 rounded-lg text-[12px] font-medium text-white/80 border border-white/20 hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+            >
+              취소
+            </button>
+          </div>
+        )}
+
+        {outgoingCall && !activeCall && (
+          <div
+            className="absolute left-1/2 top-3 -translate-x-1/2 flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] text-white shadow-lg"
+            style={{ background: 'rgba(7,16,29,.96)', border: '1px solid rgb(var(--color-primary))', zIndex: 24000 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'rgb(var(--color-primary))' }} aria-hidden />
+            <span>
+              <b>{outgoingCall.name}</b> 님을 호출 중…
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                callCancel(outgoingCall.userId);
+                setOutgoingCall(null);
+              }}
+              className="px-3 py-1 rounded-lg text-[12px] font-medium text-white/80 border border-white/20 hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
+            >
+              취소
+            </button>
+          </div>
+        )}
+
+        {activeCall && (
+          <CallStage
+            peerUserId={activeCall.userId}
+            peerName={activeCall.name}
+            onEnd={() => setActiveCall(null)}
+            onError={(m) => {
+              showToast(m);
+              setActiveCall(null);
+            }}
+          />
         )}
         {/* 미니맵 (좌하단 오버레이, design-style §4) — 실시간 아바타 위치(#12).
             D33 P0-3: 층 전환을 헤더로 흡수(구 사이드바 도면 위젯 대체) + 접기 지원. */}

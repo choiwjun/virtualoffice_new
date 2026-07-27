@@ -4,7 +4,8 @@ import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { login, getToken } from '@/lib/auth';
-import { ApiError } from '@/lib/api';
+import { ApiError, api, mediaUrl } from '@/lib/api';
+import { applyBrandColors, slugFromLocation, type PublicBranding } from '@/lib/branding';
 import { Button } from '@/components/ui/Button';
 import { LabeledInput } from '@/components/ui/Field';
 
@@ -36,6 +37,28 @@ function LoginForm() {
     }
   }, [router, destination]);
 
+  // E5 화이트라벨 — 로그인 **전**이라 slug(?company= 또는 서브도메인)로만 브랜딩을 읽는다.
+  // slug가 없으면 중립 기본 브랜딩(단일 테넌트·직접 접속 시 정상 동작).
+  const [brand, setBrand] = useState<PublicBranding | null>(null);
+  useEffect(() => {
+    const slug = slugFromLocation();
+    if (!slug) return;
+    let alive = true;
+    api
+      .get<PublicBranding>(`/api/branding/public?slug=${encodeURIComponent(slug)}`)
+      .then((b) => {
+        if (!alive || !b.brand_name) return; // 없는 slug → 빈 응답 → 기본 유지
+        setBrand(b);
+        applyBrandColors(b);
+      })
+      .catch(() => {
+        /* 브랜딩 실패가 로그인을 막지 않는다 */
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (loading) return;
@@ -66,15 +89,23 @@ function LoginForm() {
       }}
     >
       <div className="w-full max-w-sm rounded-2xl border border-border-subtle bg-bg-surface p-8 shadow-2xl">
-        {/* Logo / Title — 이모지 대신 브랜드 마크(A10) */}
+        {/* Logo / Title — 이모지 대신 브랜드 마크(A10). E5: 테넌트 로고·이름이 있으면 대체. */}
         <div className="text-center mb-7">
-          <div
-            className="inline-grid place-items-center w-11 h-11 rounded-xl text-white font-extrabold text-lg mb-3"
-            style={{ background: '#3B5BFE' }}
-          >
-            V
-          </div>
-          <h1 className="text-xl font-bold text-text-primary">VirtualOffice</h1>
+          {brand?.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={mediaUrl(brand.logo_url) ?? ''}
+              alt=""
+              className="inline-block w-11 h-11 rounded-xl object-contain mb-3"
+            />
+          ) : (
+            <div className="inline-grid place-items-center w-11 h-11 rounded-xl text-white font-extrabold text-lg mb-3 bg-primary">
+              {(brand?.brand_name ?? 'V').charAt(0)}
+            </div>
+          )}
+          <h1 className="text-xl font-bold text-text-primary">
+            {brand?.brand_name ?? 'VirtualOffice'}
+          </h1>
           <p className="text-[13px] text-text-muted mt-1">가상 오피스에 로그인</p>
         </div>
 
@@ -128,7 +159,12 @@ function LoginForm() {
           </Button>
         </form>
 
-        <p className="mt-5 text-center text-[13px] text-text-muted">
+        {/* E4: 셀프 비번찾기(메일)는 아직 없다 — 실제로 동작하는 복구 경로만 안내한다. */}
+        <p className="mt-4 text-center text-xs text-text-muted leading-relaxed">
+          비밀번호를 잊으셨나요? 관리자에게 재설정 링크를 요청하세요.
+        </p>
+
+        <p className="mt-4 text-center text-[13px] text-text-muted">
           회사가 처음이신가요?{' '}
           <Link href="/signup" className="text-accent-cyan hover:underline font-medium">
             회사 만들기

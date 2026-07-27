@@ -253,8 +253,10 @@ async def create_meeting(
             detail="invalid room_id",
         )
 
-    # room 존재 확인
-    room_result = await db.execute(select(Room).where(Room.id == room_uuid))
+    # room 존재 + 소유 확인 (Phase 1d): 타사 회의실을 예약하면 남의 방이 이중예약된다.
+    room_result = await db.execute(
+        select(Room).where(Room.id == room_uuid, Room.company_id == cid)
+    )
     if room_result.scalar_one_or_none() is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -302,10 +304,11 @@ async def create_meeting(
 async def list_rooms(
     room_type: Optional[str] = Query(None, alias="type", description="meeting_room 등 RoomType 필터"),
     current_user: CurrentUser = Depends(get_current_user),
+    cid: int = Depends(company_scope),
     db: AsyncSession = Depends(get_db),
 ) -> list[RoomOut]:
-    """GET /api/rooms — 예약 가능한 방 목록 (06 §3.5.1 회의실 선택 피커)."""
-    q = select(Room).where(Room.status == RoomStatus.ACTIVE)
+    """GET /api/rooms — 예약 가능한 방 목록 (06 §3.5.1 회의실 선택 피커, 테넌트 스코프)."""
+    q = select(Room).where(Room.status == RoomStatus.ACTIVE, Room.company_id == cid)
     if room_type:
         try:
             rt = RoomType(room_type)
@@ -397,7 +400,7 @@ async def start_meeting(
     meeting.updated_at = now
     await db.commit()
     await db.refresh(meeting)
-    await record_audit(db, user_id=current_user.user_id, action="meeting_started",
+    await record_audit(db, company_id=current_user.company_id, user_id=current_user.user_id, action="meeting_started",
                        entity_type="meeting", entity_id=str(meeting.id))
     counts = await _participant_counts(db, [meeting.id])
     return _meeting_out(meeting, counts.get(meeting.id, 0))
@@ -436,7 +439,7 @@ async def end_meeting(
         p.left_at = now
     await db.commit()
     await db.refresh(meeting)
-    await record_audit(db, user_id=current_user.user_id, action="meeting_ended",
+    await record_audit(db, company_id=current_user.company_id, user_id=current_user.user_id, action="meeting_ended",
                        entity_type="meeting", entity_id=str(meeting.id))
     counts = await _participant_counts(db, [meeting.id])
     return _meeting_out(meeting, counts.get(meeting.id, 0))
@@ -774,7 +777,7 @@ async def update_meeting(
     meeting.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(meeting)
-    await record_audit(db, user_id=current_user.user_id, action="meeting_updated", entity_type="meeting", entity_id=str(meeting.id), new_value={"title": meeting.title, "scheduled_at": meeting.scheduled_at.isoformat()})
+    await record_audit(db, company_id=current_user.company_id, user_id=current_user.user_id, action="meeting_updated", entity_type="meeting", entity_id=str(meeting.id), new_value={"title": meeting.title, "scheduled_at": meeting.scheduled_at.isoformat()})
     return _meeting_out(meeting)
 
 
@@ -790,5 +793,5 @@ async def cancel_meeting(
     meeting.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(meeting)
-    await record_audit(db, user_id=current_user.user_id, action="meeting_cancelled", entity_type="meeting", entity_id=str(meeting.id))
+    await record_audit(db, company_id=current_user.company_id, user_id=current_user.user_id, action="meeting_cancelled", entity_type="meeting", entity_id=str(meeting.id))
     return _meeting_out(meeting)

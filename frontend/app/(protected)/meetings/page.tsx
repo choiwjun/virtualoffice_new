@@ -572,7 +572,7 @@ export default function MeetingsPage() {
 
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setSelected(null)}>
-          <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }} onClick={(e) => e.stopPropagation()}>
+          <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <div className="flex items-center gap-2">
                 <h2 className="font-semibold text-text-primary">{selected.title}</h2>
@@ -926,7 +926,7 @@ function InviteParticipantsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }} onClick={(e) => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <h2 className="font-semibold text-text-primary">참석자 초대</h2>
           <button onClick={onClose} aria-label="닫기" className="text-text-muted hover:text-text-primary text-xl">×</button>
@@ -1029,7 +1029,7 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
+      <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <h2 className="font-semibold text-text-primary">회의 예약</h2>
           <button onClick={onClose} aria-label="닫기" className="text-text-muted hover:text-text-primary text-xl">×</button>
@@ -1136,7 +1136,7 @@ function CreateMinuteModal({ meetingId, onClose, onCreated }: { meetingId: strin
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: '#161F32' }}>
+      <div role="dialog" aria-modal="true" className="rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <h2 className="font-semibold text-text-primary">회의록 작성</h2>
           <button onClick={onClose} aria-label="닫기" className="text-text-muted hover:text-text-primary text-xl">×</button>

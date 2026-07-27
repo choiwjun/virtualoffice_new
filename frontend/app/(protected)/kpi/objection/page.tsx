@@ -221,7 +221,7 @@ export default function KpiObjectionPage() {
 
       {target && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
+          <div className="rounded-xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }}>
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
               <h2 className="font-semibold text-text-primary">이의신청 — {metricLabel(target.metric)}</h2>
               <button onClick={() => setTarget(null)} className="text-text-muted hover:text-text-primary text-xl">×</button>

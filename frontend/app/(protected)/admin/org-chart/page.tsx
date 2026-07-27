@@ -226,7 +226,7 @@ function CreateOrgGroupModal({ groups, onClose, onCreated }: { groups: { id: str
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="rounded-2xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: '#161F32' }}>
+      <div className="rounded-2xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <h2 className="font-semibold text-text-primary">조직 그룹 생성</h2>
           <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl">×</button>

@@ -24,7 +24,13 @@ from app.erp.dtos import ErpUserDTO
 from app.erp.mock_reader import MockErpReader
 from app.erp.reader import get_erp_reader
 from app.erp.sync import ErpSyncService
-from app.models.tables import ErpRole, ErpUser, UserTeamHistory
+from app.models.tables import (
+    USER_SOURCE_ERP,
+    USER_SOURCE_NATIVE,
+    ErpRole,
+    ErpUser,
+    UserTeamHistory,
+)
 
 
 # ─────────────────────────────────────────────────────────
@@ -260,3 +266,50 @@ async def test_sync_unknown_role_falls_back_to_employee(db_session):
     await svc.sync_users(MockErpReader(users=weird), company_id=1)
     row = (await db_session.execute(select(ErpUser).where(ErpUser.id == 99))).scalar_one()
     assert row.role == ErpRole.EMPLOYEE
+
+
+# ─────────────────────────────────────────────────────────
+# native 유저 격리 (E3 · 24-spec Phase 3 §3)
+# ─────────────────────────────────────────────────────────
+
+async def test_sync_marks_created_users_as_erp_source(db_session):
+    """동기화로 만들어진 유저는 source='erp' — 이후 대사의 정당한 대상."""
+    svc = ErpSyncService(db_session)
+    await svc.sync_users(MockErpReader(), company_id=1)
+    rows = (await db_session.execute(select(ErpUser))).scalars().all()
+    assert {r.source for r in rows} == {USER_SOURCE_ERP}
+
+
+async def test_sync_does_not_deactivate_native_user(db_session):
+    """admin이 콘솔에서 만든 native 유저는 ERP에 없는 게 정상 →
+    전체 대사가 그를 "사라진 사용자"로 오탐해 비활성화하면 안 된다."""
+    svc = ErpSyncService(db_session)
+    await svc.sync_users(MockErpReader(), company_id=1)
+
+    native = ErpUser(
+        id=1_000_000_001, company_id=1, email="native@example.com", name="직접등록",
+        erp_team_id=0, role=ErpRole.EMPLOYEE, is_active=True, source=USER_SOURCE_NATIVE,
+    )
+    db_session.add(native)
+    await db_session.flush()
+
+    result = await svc.sync_users(MockErpReader(), company_id=1)
+    assert result.deactivated == 0
+
+    row = (await db_session.execute(select(ErpUser).where(ErpUser.id == native.id))).scalar_one()
+    assert row.is_active is True
+    assert row.source == USER_SOURCE_NATIVE
+
+
+async def test_sync_ignores_native_user_in_reconcile_counts(db_session):
+    """native 유저는 대사 집계(created/updated)에도 끼지 않는다."""
+    db_session.add(
+        ErpUser(id=1_000_000_002, company_id=1, email="native2@example.com", name="직접등록2",
+                erp_team_id=0, role=ErpRole.EMPLOYEE, is_active=True, source=USER_SOURCE_NATIVE)
+    )
+    await db_session.flush()
+
+    svc = ErpSyncService(db_session)
+    result = await svc.sync_users(MockErpReader(), company_id=1)
+    assert result.created == 5  # mock ERP 5명만
+    assert result.updated == 0

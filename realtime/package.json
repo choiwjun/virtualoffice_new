@@ -10,12 +10,13 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "test": "tsx src/__tests__/room.smoke.test.ts && tsx src/__tests__/scene-floor.test.ts && tsx src/__tests__/v3-floor.test.ts",
+    "test": "tsx src/__tests__/room.smoke.test.ts && tsx src/__tests__/scene-floor.test.ts && tsx src/__tests__/v3-floor.test.ts && tsx src/__tests__/tenant-scope.test.ts && tsx src/__tests__/call-signal.test.ts",
     "smoke": "tsx src/__tests__/room.smoke.test.ts",
     "client-smoke": "tsx scripts/client-smoke.ts",
     "presence-smoke": "tsx scripts/presence-sink-smoke.ts",
     "layout-smoke": "tsx scripts/layout-smoke.ts",
     "live-check": "tsx scripts/live-check.ts",
+    "call-flow-check": "tsx scripts/call-flow-check.ts",
     "load-sim": "tsx scripts/load-sim-20.ts"
   },
   "dependencies": {
