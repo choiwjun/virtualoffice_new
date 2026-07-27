@@ -1,10 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isAdmin } from '@/lib/auth';
 import type { SeatBox, ShapeBox, Selection } from '@/components/office/SeatCanvas';
+import {
+  SEAT_STYLE,
+  SEAT_STATUS_LABEL,
+  seatStatusLabel,
+  seatTypeLabel,
+  layoutStatusLabel,
+} from '@/components/office/seatStyles';
 import { buildOfficeLayout, DEFAULT_PX_PER_METER } from '@/lib/officeLayout';
 import {
   PageHeader,
@@ -61,6 +68,55 @@ interface LayoutRow {
   deployed_at: string | null;
 }
 
+/**
+ * 반영 절차의 한 단계. 번호·제목·설명·버튼을 한 덩어리로 묶어, 순서가 화면에 드러나게 한다.
+ * 못 누르는 버튼에는 반드시 이유(hint)를 붙인다 — 이유 없이 회색인 버튼이 이 화면 최대의 벽이었다.
+ */
+function LayoutStep({
+  n,
+  title,
+  desc,
+  done,
+  button,
+}: {
+  n: number;
+  title: string;
+  desc: string;
+  done: boolean;
+  button: { label: string; onClick: () => void; disabled?: boolean; primary?: boolean; hint?: string };
+}) {
+  return (
+    <li className="flex flex-col gap-2 p-3 rounded-xl border border-border-subtle bg-bg-surface-raised">
+      <div className="flex items-center gap-2">
+        <span
+          className={`w-5 h-5 rounded-full grid place-items-center text-[11px] font-semibold flex-shrink-0 ${
+            done ? 'bg-status-online text-bg-base' : 'bg-bg-surface text-text-muted border border-border-subtle'
+          }`}
+        >
+          {done ? '✓' : n}
+        </span>
+        <span className="text-[13px] font-semibold text-text-primary">{title}</span>
+      </div>
+      <p className="text-[11.5px] leading-relaxed text-text-muted min-h-[2.6em]">{desc}</p>
+      <button
+        onClick={button.onClick}
+        disabled={button.disabled}
+        title={button.hint}
+        className={`w-full px-3 py-1.5 rounded-md text-[12.5px] font-medium transition-colors disabled:cursor-not-allowed ${
+          button.primary
+            ? 'bg-primary text-white hover:bg-primary-hover disabled:opacity-40'
+            : 'border border-border-subtle text-text-secondary hover:bg-bg-surface disabled:opacity-40'
+        }`}
+      >
+        {button.label}
+      </button>
+      {button.disabled && button.hint && (
+        <p className="text-[11px] text-text-muted -mt-0.5">{button.hint}</p>
+      )}
+    </li>
+  );
+}
+
 function toBox(s: ApiSeat, i: number): SeatBox {
   const c = s.coords || {};
   // seat 테이블은 미터 → 편집기 캔버스 픽셀로 변환. 좌표 없으면 격자 폴백(픽셀).
@@ -81,7 +137,8 @@ export default function OfficeLayoutPage() {
   const [layouts, setLayouts] = useState<LayoutRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [toast, setToast] = useState('');
+  // 안내와 실패를 같은 초록 배너로 띄우면 실패가 성공처럼 읽힌다.
+  const [toast, setToast] = useState<{ msg: string; tone: 'ok' | 'warn' } | null>(null);
   const [size, setSize] = useState({ w: 800, h: 520 });
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -100,6 +157,9 @@ export default function OfficeLayoutPage() {
   const [zones, setZones] = useState<ShapeBox[]>([]);
   const [walls, setWalls] = useState<ShapeBox[]>([]);
   const [selected, setSelected] = useState<Selection>(null);
+  // 반영 3단계 패널 접힘. null = 자동(구조물이나 진행 중인 안이 있을 때만 펼침).
+  // 자리 배치가 주 작업인데 이 패널이 상시 200px를 먹으면 도면이 그만큼 작아진다.
+  const [deployOpen, setDeployOpen] = useState<boolean | null>(null);
   const [history, setHistory] = useState<{ rooms: ShapeBox[]; zones: ShapeBox[]; walls: ShapeBox[] }[]>([
     { rooms: [], zones: [], walls: [] },
   ]);
@@ -152,7 +212,63 @@ export default function OfficeLayoutPage() {
     return arr.find((s) => s.id === selected.id) ?? null;
   };
 
-  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2200); };
+  const say = (msg: string, tone: 'ok' | 'warn' = 'ok') => {
+    setToast({ msg, tone });
+    setTimeout(() => setToast(null), tone === 'warn' ? 4200 : 2600);
+  };
+  const flash = (m: string) => say(m, 'ok');
+  const warn = (m: string) => say(m, 'warn');
+
+  const isEmpty = seats.length + rooms.length + zones.length + walls.length === 0;
+
+  // 도면에 그릴 사무실 경계(m). buildOfficeLayout의 dimensions 계산과 같은 규칙(가장 바깥 요소 + 2m)이라
+  // 여기 보이는 점선이 곧 반영될 사무실 크기다. 규칙이 갈리면 "편집기와 실제가 다르다"가 된다.
+  const bounds = useMemo(() => {
+    const xs = [
+      ...seats.map((s) => s.x),
+      ...rooms.map((r) => r.x + r.w),
+      ...zones.map((z) => z.x + z.w),
+      ...walls.map((w) => w.x + w.w),
+    ];
+    const ys = [
+      ...seats.map((s) => s.y),
+      ...rooms.map((r) => r.y + r.h),
+      ...zones.map((z) => z.y + z.h),
+      ...walls.map((w) => w.y + w.h),
+    ];
+    const w = Math.round(pxToM(Math.max(0, ...xs)) + 2) || 10;
+    const h = Math.round(pxToM(Math.max(0, ...ys)) + 2) || 10;
+    return { w, h };
+  }, [seats, rooms, zones, walls]);
+
+  // 아직 저장 안 된 좌석(새로 놓았거나 옮긴 것)을 점선으로 표시한다.
+  // 범례에 "저장 전"을 써 놓고 도면에는 표시가 없으면 범례가 거짓말이 된다.
+  const canvasSeats = useMemo(
+    () => seats.map((s) => ({ ...s, local: s.id.startsWith('temp-') || s.id in pendingMoves })),
+    [seats, pendingMoves],
+  );
+
+  // ── 도면 보기(확대·이동) ──
+  // zoom=null 이면 "전체 보기": 사무실 전체가 화면에 들어오도록 자동 축소한다.
+  // 기본값을 전체 보기로 두는 이유 — 아래쪽 자리가 화면 밖으로 잘리면 "자리가 사라졌다"로 읽힌다.
+  const [zoom, setZoom] = useState<number | null>(null);
+  const [pan, setPan] = useState<{ x: number; y: number } | null>(null);
+  const fitScale = useMemo(() => {
+    const lw = bounds.w * PX_PER_M;
+    const lh = bounds.h * PX_PER_M;
+    if (lw <= 0 || lh <= 0) return 1;
+    return Math.min(1.2, (size.w - 56) / lw, (size.h - 56) / lh);
+  }, [bounds, size]);
+  const scale = zoom ?? fitScale;
+  const offset = pan ?? {
+    x: Math.max(20, (size.w - bounds.w * PX_PER_M * scale) / 2),
+    y: Math.max(20, (size.h - bounds.h * PX_PER_M * scale) / 2),
+  };
+  const setZoomCentered = (next: number) => {
+    setZoom(Math.min(2, Math.max(0.25, Math.round(next * 100) / 100)));
+    setPan(null); // 확대 배율이 바뀌면 다시 가운데로 — 어디를 보고 있는지 잃지 않게
+  };
+  const fitToView = () => { setZoom(null); setPan(null); };
 
   const load = useCallback(async () => {
     if (!allowed) return;
@@ -174,8 +290,14 @@ export default function OfficeLayoutPage() {
       setPendingMoves({});
       setPendingCreates([]);
       setPendingDeletes([]);
+      // 선택도 함께 푼다. 안 그러면 사라진 좌석을 계속 가리켜 속성 패널이 "—"만 보여준다.
+      setSelected(null);
     } catch (e) {
-      setError(e instanceof ApiError ? `조회 실패 (${e.status})` : '서버 연결 오류');
+      setError(
+        e instanceof ApiError
+          ? `자리 정보를 불러오지 못했습니다 (오류 ${e.status}).`
+          : '서버에 연결하지 못했습니다.',
+      );
     } finally {
       setLoading(false);
     }
@@ -213,21 +335,43 @@ export default function OfficeLayoutPage() {
     }
   }, []);
 
+  /**
+   * 새 자리를 놓을 빈 칸을 찾는다. 고정 격자에 그냥 놓으면 기존 자리와 겹쳐서,
+   * 추가 버튼을 눌러도 "아무 일도 안 일어난 것처럼" 보인다(뒤에 가려짐).
+   */
+  const findFreeSpot = () => {
+    const STEP = 75; // 1.5m
+    const taken = (x: number, y: number) =>
+      seats.some((s) => Math.abs(s.x - x) < 70 && Math.abs(s.y - y) < 50);
+    const cols = Math.max(1, Math.floor((bounds.w * PX_PER_M - 40) / STEP));
+    for (let i = 0; i < 400; i++) {
+      const x = 40 + (i % cols) * STEP;
+      const y = 40 + Math.floor(i / cols) * STEP;
+      if (!taken(x, y)) return { x, y };
+    }
+    return { x: 40, y: 40 };
+  };
+
   // 좌석 생성 — 로컬 임시 좌석 추가 (저장 대기)
   const addSeat = () => {
-    if (!floorId) { flash('층(floor) 데이터가 없어 생성할 수 없습니다.'); return; }
+    if (!floorId) { warn('층 정보가 없어 자리를 놓을 수 없습니다. 관리자에게 문의하세요.'); return; }
     const n = seats.length + 1;
-    const coords = { x: 40 + ((n - 1) % 6) * 130, y: 40 + Math.floor((n - 1) / 6) * 90 };
+    const coords = findFreeSpot();
     const seatNumber = `A-${String(n).padStart(2, '0')}`;
     const tempId = `temp-${Date.now()}-${n}`;
     setSeats((prev) => [...prev, { id: tempId, label: seatNumber, x: coords.x, y: coords.y, status: 'available', type: 'free' }]);
     setPendingCreates((prev) => [...prev, { tempId, seat_number: seatNumber, coords }]);
-    flash('좌석 추가됨 (저장 대기)');
+    setSelected({ kind: 'seat', id: tempId });
+    flash(`${seatNumber} 자리를 놓았습니다. 원하는 곳으로 끌어다 놓고 [저장]하세요.`);
   };
 
   // 좌석 삭제 — 더블클릭. 임시 좌석은 버퍼에서 제거, 기존 좌석은 삭제 대기
   const removeSeat = async (id: string) => {
-    if (!(await confirm({ message: '이 좌석을 비활성화(삭제)하시겠습니까? [모두 저장] 시 반영됩니다.', danger: true }))) return;
+    const label = seats.find((s) => s.id === id)?.label ?? '이 자리';
+    if (!(await confirm({
+      message: `${label} 자리를 없앨까요? [저장]을 눌러야 실제로 적용됩니다.`,
+      danger: true,
+    }))) return;
     setSeats((prev) => prev.filter((s) => s.id !== id));
     if (id.startsWith('temp-')) {
       setPendingCreates((prev) => prev.filter((c) => c.tempId !== id));
@@ -240,7 +384,8 @@ export default function OfficeLayoutPage() {
         return next;
       });
     }
-    flash('좌석 삭제 (저장 대기)');
+    setSelected(null);
+    flash(`${label} 자리를 지웠습니다. [저장]을 눌러야 적용됩니다.`);
   };
 
   // [모두 저장] — 삭제 → 이동 → 생성 순으로 순차 API 적용. 실패 시 중단, 남은 변경은 버퍼에 유지
@@ -271,9 +416,13 @@ export default function OfficeLayoutPage() {
         setSeats((prev) => prev.map((s, i) => (s.id === c.tempId ? toBox(created, i) : s)));
         setPendingCreates((prev) => prev.filter((x) => x.tempId !== c.tempId));
       }
-      flash('모든 변경 저장 완료');
+      flash('저장했습니다. 가상사무실에 바로 반영됩니다.');
     } catch (e) {
-      flash(e instanceof ApiError ? `저장 실패: ${e.message} — 남은 변경은 유지됩니다` : '저장 중 오류 — 남은 변경은 유지됩니다');
+      warn(
+        e instanceof ApiError
+          ? `저장하지 못했습니다 (${e.message}). 아직 저장 안 된 변경은 그대로 남아 있으니 다시 시도해 보세요.`
+          : '저장 중 문제가 생겼습니다. 아직 저장 안 된 변경은 그대로 남아 있습니다.',
+      );
     } finally {
       setSaving(false);
     }
@@ -281,14 +430,14 @@ export default function OfficeLayoutPage() {
 
   // [변경 취소] — 저장 대기 변경을 버리고 서버 상태로 재로드
   const discardChanges = async () => {
-    if (!(await confirm({ message: `저장되지 않은 변경 ${pendingCount}건을 취소하고 다시 불러올까요?`, danger: true }))) return;
+    if (!(await confirm({ message: `저장하지 않은 변경 ${pendingCount}건을 버리고 저장된 상태로 되돌릴까요?`, danger: true }))) return;
     load();
   };
 
   // ── 오피스 레이아웃 버전 (D12) ──
   const createDraft = async () => {
-    if (!officeId || !floorId) { flash('office/floor 없음'); return; }
-    if (pendingCount > 0) { flash('저장되지 않은 변경이 있습니다. [모두 저장] 후 초안을 생성하세요.'); return; }
+    if (!officeId || !floorId) { warn('사무실 정보가 없어 안을 만들 수 없습니다.'); return; }
+    if (pendingCount > 0) { warn('저장하지 않은 변경이 있습니다. 먼저 [저장]을 눌러 주세요.'); return; }
     try {
 
       const json = buildOfficeLayout({
@@ -303,46 +452,59 @@ export default function OfficeLayoutPage() {
         createdBy: me?.id ?? 0,
       });
       await api.post('/api/office-layouts', { office_id: officeId, floor_id: floorId, json });
-      flash('스키마-유효 레이아웃 초안 생성됨 · 검증하세요');
+      flash('지금 배치로 안을 만들었습니다. 이어서 안전 검사를 해 주세요.');
       refreshLayouts();
     } catch (e) {
-      flash(e instanceof ApiError ? `초안 생성 실패 (${e.status})` : '오류');
+      warn(e instanceof ApiError ? `안을 만들지 못했습니다 (${e.status}).` : '안을 만들지 못했습니다.');
     }
   };
 
   const validateLayout = async (id: string) => {
     try {
       const res = await api.post<{ status: string; error_count: number; warning_count: number }>(`/api/office-layouts/${id}/validate`, {});
-      flash(`검증: ${res.status} (오류 ${res.error_count} / 경고 ${res.warning_count})`);
+      if (res.error_count > 0) {
+        // 검사 실패는 반영을 막는 사건이다. 성공과 같은 색으로 띄우면 통과한 줄 안다.
+        warn(`문제 ${res.error_count}건이 발견되어 반영할 수 없습니다. 겹치거나 길을 막은 곳이 없는지 확인해 주세요.`);
+      } else if (res.warning_count > 0) {
+        flash(`검사를 통과했습니다. 확인해 볼 점 ${res.warning_count}건이 있지만 반영할 수 있습니다.`);
+      } else {
+        flash('검사를 통과했습니다. 이제 반영할 수 있습니다.');
+      }
       refreshLayouts();
     } catch (e) {
-      flash(e instanceof ApiError ? `검증 실패 (${e.status})` : '오류');
+      warn(e instanceof ApiError ? `검사하지 못했습니다 (${e.status}).` : '검사하지 못했습니다.');
     }
   };
 
   const deployLayout = async (id: string) => {
     try {
       await api.post(`/api/office-layouts/${id}/deploy`, {});
-      // 배포하면 뷰포트가 기본 씬 대신 이 레이아웃 지오메트리를 그린다 — 눌러 보고서야 아는
+      // 반영하면 뷰포트가 기본 씬 대신 이 레이아웃 지오메트리를 그린다 — 눌러 보고서야 아는
       // 변화라 미리 알린다.
-      flash('배포 완료 — 가상사무실이 이 배치대로 렌더됩니다(해제하면 기본 씬 복귀)');
+      flash('반영했습니다. 이제 직원들의 가상사무실이 이 배치로 보입니다.');
       refreshLayouts();
     } catch (e) {
-      flash(e instanceof ApiError ? (e.status === 409 ? '검증(validated) 후에만 배포 가능 (D12)' : `배포 실패 (${e.status})`) : '오류');
+      warn(
+        e instanceof ApiError
+          ? e.status === 409
+            ? '안전 검사를 통과해야 반영할 수 있습니다.'
+            : `반영하지 못했습니다 (${e.status}).`
+          : '반영하지 못했습니다.',
+      );
     }
   };
 
   /** 배포 해제 — 배포본을 내려 기본 씬으로 되돌린다. rollback과 달리 이전 버전이 필요 없다. */
   const undeployLayout = async (id: string, version: number) => {
     if (!(await confirm({
-      message: `v${version} 배포를 해제할까요? 가상사무실이 기본 씬으로 돌아갑니다. 좌석 위치는 그대로 유지되며, 이 버전은 validated로 남아 언제든 다시 배포할 수 있습니다.`,
+      message: `${version}번째 배치를 내리고 기본 사무실 모습으로 되돌릴까요? 자리 위치는 그대로 유지되고, 이 배치는 검사 통과 상태로 남아 언제든 다시 반영할 수 있습니다.`,
     }))) return;
     try {
       await api.post(`/api/office-layouts/${id}/undeploy`, {});
-      flash('배포 해제됨 — 기본 씬으로 복귀');
+      flash('기본 사무실 모습으로 되돌렸습니다.');
       refreshLayouts();
     } catch (e) {
-      flash(e instanceof ApiError ? `해제 실패: ${e.message}` : '오류');
+      warn(e instanceof ApiError ? `되돌리지 못했습니다 (${e.message}).` : '되돌리지 못했습니다.');
     }
   };
 
@@ -350,21 +512,50 @@ export default function OfficeLayoutPage() {
   // 직전 archived(최고 버전)가 deployed로 복원됨. 버튼은 복원 대상(최신 archived) 행에 노출.
   const rollbackLayout = async (targetVersion: number) => {
     const deployed = layouts.find((l) => l.status === 'deployed');
-    if (!deployed) { flash('배포된 버전이 없어 롤백할 수 없습니다.'); return; }
-    if (!(await confirm({ message: `v${targetVersion}(으)로 롤백하시겠습니까? 현재 배포본 v${deployed.version}은 보관(archived) 처리됩니다.`, danger: true }))) return;
+    if (!deployed) { warn('지금 반영된 배치가 없어 되돌릴 수 없습니다.'); return; }
+    if (!(await confirm({
+      message: `${targetVersion}번째 배치로 되돌릴까요? 지금 반영된 ${deployed.version}번째 배치는 지난 기록으로 넘어갑니다.`,
+      danger: true,
+    }))) return;
     try {
       const restored = await api.post<LayoutRow>(`/api/office-layouts/${deployed.id}/rollback`, {});
-      flash(`롤백 완료 — v${restored.version} 재배포됨`);
+      flash(`${restored.version}번째 배치로 되돌렸습니다.`);
       refreshLayouts();
     } catch (e) {
-      flash(e instanceof ApiError ? `롤백 실패: ${e.message}` : '오류');
+      warn(e instanceof ApiError ? `되돌리지 못했습니다 (${e.message}).` : '되돌리지 못했습니다.');
     }
   };
+
+  // ── 3단계 진행 상태 ──
+  // 작업 대상은 "아직 반영되지 않은 최신 안" 하나뿐이다. 여러 버전을 동시에 다루게 하면
+  // 어느 줄의 버튼을 눌러야 하는지가 다시 문제가 된다.
+  const deployedLayout = layouts.find((l) => l.status === 'deployed') ?? null;
+  const workingStep =
+    layouts
+      .filter((l) => l.status === 'draft' || l.status === 'validated')
+      .sort((a, b) => b.version - a.version)[0] ?? null;
+  const step1Done = !!workingStep || !!deployedLayout;
+  const step2Done = workingStep ? workingStep.status === 'validated' : !!deployedLayout;
+  const step3Done = !!deployedLayout && !workingStep;
+
+  // 롤백 계약(백엔드): deployed → archived, 직전 archived(최고 버전) → deployed 복원
+  const archivedLayouts = layouts.filter((l) => l.status === 'archived');
+  const rollbackTargetId =
+    deployedLayout && archivedLayouts.length > 0
+      ? archivedLayouts.reduce((a, b) => (a.version >= b.version ? a : b)).id
+      : null;
+
+  const showDeploy =
+    deployOpen ?? (rooms.length + zones.length + walls.length > 0 || !!workingStep);
+
+  const liveLine = deployedLayout
+    ? `지금 직원들에게는 ${deployedLayout.version}번째 배치가 보입니다.`
+    : '지금 직원들에게는 기본 사무실 모습이 보입니다.';
 
   if (!allowed) {
     return (
       <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
-        <PageHeader title="좌석 배치 편집기" icon={ICON.grid} />
+        <PageHeader title="좌석 배치" icon={ICON.grid} />
         <SectionCard>
           <EmptyState icon={ICON.lock} title="관리자 전용 화면" hint="좌석 배치 편집은 관리자만 접근할 수 있습니다." />
         </SectionCard>
@@ -375,190 +566,418 @@ export default function OfficeLayoutPage() {
   return (
     <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
       <PageHeader
-        title="좌석 배치 편집기"
-        subtitle={`2D 평면도 (D11) · 드래그=이동 · 더블클릭=삭제 · 좌석 ${seats.length}개${floorId ? '' : ' · 층 없음'}`}
+        title="좌석 배치"
+        subtitle={
+          floorId
+            ? `자리를 끌어서 옮기고, 두 번 눌러 지웁니다 · 현재 ${seats.length}자리`
+            : '층 정보가 없어 편집할 수 없습니다'
+        }
         icon={ICON.grid}
         actions={
           <>
-            {pendingCount > 0 && (
-              <>
-                <span className="text-xs px-2 py-1 bg-[rgba(245,158,11,0.16)] border border-[rgba(245,158,11,0.4)] text-status-external rounded-md whitespace-nowrap">
-                  저장되지 않은 변경 {pendingCount}건
-                </span>
-                <ToolbarButton variant="primary" onClick={saveAll} disabled={saving} icon={ICON.save}>
-                  {saving ? '저장 중...' : '모두 저장'}
-                </ToolbarButton>
-                <ToolbarButton onClick={discardChanges} disabled={saving}>
-                  변경 취소
-                </ToolbarButton>
-              </>
-            )}
-            <ToolbarButton variant="primary" onClick={addSeat} disabled={!floorId} icon={ICON.seat}>+ 좌석</ToolbarButton>
-            <ToolbarButton onClick={addRoom}>+ 방</ToolbarButton>
-            <ToolbarButton onClick={addZone}>+ 구역</ToolbarButton>
-            <ToolbarButton onClick={addWall}>+ 벽</ToolbarButton>
-            <ToolbarButton onClick={undo} disabled={histIdx === 0} title="실행취소">↶</ToolbarButton>
-            <ToolbarButton onClick={redo} disabled={histIdx >= history.length - 1} title="다시실행">↷</ToolbarButton>
+            {/* 주 작업은 자리 놓기 — 이 화면 사용의 90%다. 나머지 도구와 시각 무게를 분리한다. */}
+            <ToolbarButton variant="primary" onClick={addSeat} disabled={!floorId} icon={ICON.seat}>
+              자리 추가
+            </ToolbarButton>
+            <span className="mx-1 w-px h-5 bg-border-subtle" aria-hidden />
+            <ToolbarButton onClick={addRoom} title="회의실 같은 방 영역을 그립니다">방</ToolbarButton>
+            <ToolbarButton onClick={addZone} title="팀 구역을 표시합니다">구역</ToolbarButton>
+            <ToolbarButton onClick={addWall} title="벽·칸막이를 그립니다">벽</ToolbarButton>
+            <span className="mx-1 w-px h-5 bg-border-subtle" aria-hidden />
+            <ToolbarButton onClick={undo} disabled={histIdx === 0} title="되돌리기 (Ctrl+Z)">↶</ToolbarButton>
+            <ToolbarButton onClick={redo} disabled={histIdx >= history.length - 1} title="다시 실행">↷</ToolbarButton>
             <ToolbarButton
               onClick={async () => {
-                if (pendingCount > 0 && !(await confirm({ message: `저장되지 않은 변경 ${pendingCount}건이 사라집니다. 새로고침할까요?`, danger: true }))) return;
+                if (pendingCount > 0 && !(await confirm({ message: `저장하지 않은 변경 ${pendingCount}건이 사라집니다. 계속할까요?`, danger: true }))) return;
                 load();
               }}
               icon={ICON.refresh}
-            >새로고침</ToolbarButton>
+              title="서버 상태를 다시 불러옵니다"
+            >
+              새로고침
+            </ToolbarButton>
           </>
         }
       />
-      {pendingCount > 0 && (
-        <p className="text-xs text-status-external -mt-2">저장 전 페이지를 벗어나면 변경이 사라집니다.</p>
+
+      {/* 저장 바 — "지금 내 변경이 반영됐는가"를 화면에서 바로 답한다.
+          이전엔 이 정보가 헤더 한 귀퉁이 칩이라 놓치기 쉬웠고, 저장 없이 나가면 조용히 사라졌다. */}
+      {pendingCount > 0 ? (
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-[rgba(245,158,11,0.4)] bg-[rgba(245,158,11,0.10)]">
+          <span className="w-2 h-2 rounded-full bg-status-external animate-pulse" aria-hidden />
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-semibold text-text-primary">
+              저장하지 않은 변경 {pendingCount}건
+            </div>
+            <div className="text-[11.5px] text-text-muted">
+              저장해야 가상사무실에 반영됩니다. 저장 전에 나가면 사라집니다.
+            </div>
+          </div>
+          <ToolbarButton variant="primary" onClick={saveAll} disabled={saving} icon={ICON.save}>
+            {saving ? '저장 중...' : '저장'}
+          </ToolbarButton>
+          <ToolbarButton onClick={discardChanges} disabled={saving}>되돌리기</ToolbarButton>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl border border-border-subtle bg-bg-surface">
+          <span className="w-2 h-2 rounded-full bg-status-online" aria-hidden />
+          <span className="text-[12.5px] text-text-secondary">
+            자리 배치가 모두 저장되어 가상사무실에 반영돼 있습니다.
+          </span>
+        </div>
       )}
-      {toast && <div className="px-3 py-2 bg-[rgba(34,197,94,0.16)] border border-[rgba(34,197,94,0.4)] rounded-md text-xs text-status-online">{toast}</div>}
+
+      {toast && (
+        <div
+          role="status"
+          className={`px-3 py-2 rounded-md text-xs ${
+            toast.tone === 'warn'
+              ? 'bg-[rgba(239,68,68,0.14)] border border-[rgba(239,68,68,0.4)] text-red-300'
+              : 'bg-[rgba(34,197,94,0.16)] border border-[rgba(34,197,94,0.4)] text-status-online'
+          }`}
+        >
+          {toast.msg}
+        </div>
+      )}
       <div className="flex-1 min-h-0 flex gap-3">
         <div ref={wrapRef} className="flex-1 min-h-0 border border-border-subtle rounded-2xl overflow-hidden bg-bg-surface relative">
           {loading ? (
             <LoadingState label="불러오는 중…" />
           ) : error ? (
-            <div className="h-full flex items-center justify-center text-red-300 text-sm">{error}</div>
+            <div className="h-full flex flex-col items-center justify-center gap-3 px-6 text-center">
+              <p className="text-sm text-red-300">{error}</p>
+              <p className="text-xs text-text-muted max-w-xs leading-relaxed">
+                잠시 후 다시 시도해 보세요. 계속 같은 화면이면 시스템 담당자에게 알려 주세요.
+              </p>
+              <ToolbarButton onClick={load} icon={ICON.refresh}>다시 시도</ToolbarButton>
+            </div>
           ) : (
             <>
-              {seats.length + rooms.length + zones.length + walls.length === 0 && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 text-text-muted text-sm">
-                  좌석/방/구역/벽 도구로 배치를 시작하세요.
-                </div>
-              )}
               <SeatCanvas
-                seats={seats}
+                seats={canvasSeats}
                 rooms={rooms}
                 zones={zones}
                 walls={walls}
                 width={size.w}
                 height={size.h}
+                pxPerMeter={PX_PER_M}
+                boundsW={bounds.w}
+                boundsH={bounds.h}
+                scale={scale}
+                offsetX={offset.x}
+                offsetY={offset.y}
+                onPan={(x, y) => setPan({ x, y })}
                 onMove={move}
                 onDelete={removeSeat}
                 onMoveShape={moveShape}
                 onSelect={setSelected}
                 selected={selected}
               />
+              {isEmpty && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="text-center max-w-[19rem] px-6">
+                    <p className="text-[15px] font-semibold text-[#3B352C]">아직 자리가 없습니다</p>
+                    <p className="mt-1.5 text-[12.5px] leading-relaxed text-[#7A736A]">
+                      위의 <b className="font-semibold text-[#3B352C]">자리 추가</b>를 눌러 첫 자리를 놓아 보세요.
+                      놓은 뒤에는 끌어서 원하는 위치로 옮길 수 있습니다.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 범례 — 색이 무슨 뜻인지 도면 위에서 바로 답한다. 종이 위 요소라 밝은 계열. */}
+              <div className="absolute left-3 bottom-3 flex flex-wrap items-center gap-x-3.5 gap-y-1.5 px-3 py-2 rounded-lg bg-[#FFFFFFE6] border border-[#DFD9CE] shadow-sm text-[11px] text-[#4A443C]">
+                {(['available', 'occupied', 'reserved'] as const).map((s) => (
+                  <span key={s} className="inline-flex items-center gap-1.5">
+                    <span
+                      className="w-3.5 h-2.5 rounded-[3px] border"
+                      style={{ background: SEAT_STYLE[s].fill, borderColor: SEAT_STYLE[s].stroke }}
+                    />
+                    {SEAT_STATUS_LABEL[s]}
+                  </span>
+                ))}
+                {pendingCount > 0 && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-3.5 h-2.5 rounded-[3px] border border-dashed border-[#8C8578] bg-white" />
+                    저장 전
+                  </span>
+                )}
+                <span className="w-px h-3 bg-[#DFD9CE]" aria-hidden />
+                <span className="text-[#7A736A]">모눈 1칸 = 1m</span>
+                <span className="text-[#7A736A]">사무실 {bounds.w}m × {bounds.h}m</span>
+              </div>
+
+              {/* 확대·이동 — 빈 곳을 끌면 도면이 움직인다. 길을 잃으면 [전체 보기]로 돌아온다. */}
+              <div className="absolute right-3 bottom-3 flex items-center gap-1 px-1 py-1 rounded-lg bg-[#FFFFFFE6] border border-[#DFD9CE] shadow-sm">
+                <button
+                  onClick={() => setZoomCentered(scale / 1.25)}
+                  className="w-7 h-7 grid place-items-center rounded-md text-[15px] text-[#4A443C] hover:bg-[#EFEBE3]"
+                  title="축소"
+                >
+                  −
+                </button>
+                <span className="w-11 text-center text-[11px] tabular-nums text-[#7A736A]">
+                  {Math.round(scale * 100)}%
+                </span>
+                <button
+                  onClick={() => setZoomCentered(scale * 1.25)}
+                  className="w-7 h-7 grid place-items-center rounded-md text-[15px] text-[#4A443C] hover:bg-[#EFEBE3]"
+                  title="확대"
+                >
+                  +
+                </button>
+                <span className="w-px h-4 bg-[#DFD9CE] mx-0.5" aria-hidden />
+                <button
+                  onClick={fitToView}
+                  className="px-2 h-7 rounded-md text-[11.5px] text-[#4A443C] hover:bg-[#EFEBE3]"
+                  title="사무실 전체가 보이도록 맞춥니다"
+                >
+                  전체 보기
+                </button>
+              </div>
             </>
           )}
         </div>
-        {/* 속성 + 레이어 패널 */}
+
+        {/* 오른쪽: 선택한 요소 편집 + 배치 요약 */}
         <div className="w-60 flex-shrink-0 flex flex-col gap-3 overflow-y-auto">
-          <SectionCard title="속성" icon={ICON.info} bodyClassName="p-3">
+          <SectionCard title="선택한 요소" icon={ICON.info} bodyClassName="p-3">
             {(() => {
+              if (!selected) {
+                return (
+                  <p className="text-xs leading-relaxed text-text-muted">
+                    도면에서 자리나 방을 클릭하면 여기서 이름을 바꾸거나 지울 수 있습니다.
+                  </p>
+                );
+              }
+              if (selected.kind === 'seat') {
+                const seat = seats.find((s) => s.id === selected.id);
+                if (!seat) return <p className="text-xs text-text-muted">—</p>;
+                return (
+                  <div className="space-y-2.5">
+                    <div>
+                      <div className="text-[15px] font-semibold text-text-primary">{seat.label}</div>
+                      <div className="text-[11.5px] text-text-muted">
+                        {seatTypeLabel(seat.type)} · {seatStatusLabel(seat.status)}
+                      </div>
+                    </div>
+                    <div className="text-[11.5px] text-text-muted">
+                      사무실 왼쪽 위에서 가로 {pxToM(seat.x).toFixed(1)}m, 세로 {pxToM(seat.y).toFixed(1)}m
+                    </div>
+                    <button
+                      onClick={() => removeSeat(seat.id)}
+                      className="w-full px-2 py-1.5 text-xs border border-[rgba(239,68,68,0.35)] text-red-300 rounded-md hover:bg-[rgba(239,68,68,0.12)]"
+                    >
+                      이 자리 없애기
+                    </button>
+                  </div>
+                );
+              }
               const sh = selectedShape();
-              if (!selected) return <p className="text-xs text-text-muted">요소를 선택하세요.</p>;
-              if (selected.kind === 'seat') return <p className="text-xs text-text-muted">좌석 선택됨 (더블클릭=삭제)</p>;
               if (!sh) return <p className="text-xs text-text-muted">—</p>;
               return (
-                <div className="space-y-2">
-                  <div className="text-xs text-text-muted">{selected.kind === 'room' ? '방' : selected.kind === 'zone' ? '구역' : '벽'}</div>
-                  <input value={sh.label ?? ''} onChange={(e) => relabelSelected(e.target.value)} placeholder="이름" className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan" />
-                  <div className="text-[11px] text-text-muted">위치 {sh.x},{sh.y} · 크기 {sh.w}×{sh.h}</div>
-                  <button onClick={deleteSelected} className="w-full px-2 py-1 text-xs border border-[rgba(239,68,68,0.35)] text-red-300 rounded hover:bg-[rgba(239,68,68,0.12)]">삭제</button>
+                <div className="space-y-2.5">
+                  <div className="text-[11.5px] text-text-muted">
+                    {selected.kind === 'room' ? '방' : selected.kind === 'zone' ? '구역' : '벽'}
+                  </div>
+                  <input
+                    value={sh.label ?? ''}
+                    onChange={(e) => relabelSelected(e.target.value)}
+                    placeholder="이름"
+                    className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
+                  />
+                  <div className="text-[11.5px] text-text-muted">
+                    크기 {pxToM(sh.w).toFixed(1)}m × {pxToM(sh.h).toFixed(1)}m
+                  </div>
+                  <button
+                    onClick={deleteSelected}
+                    className="w-full px-2 py-1.5 text-xs border border-[rgba(239,68,68,0.35)] text-red-300 rounded-md hover:bg-[rgba(239,68,68,0.12)]"
+                  >
+                    없애기
+                  </button>
                 </div>
               );
             })()}
           </SectionCard>
-          <SectionCard
-            title={`레이어 · 좌석 ${seats.length} / 방 ${rooms.length} / 구역 ${zones.length} / 벽 ${walls.length}`}
-            icon={ICON.layers}
-            bodyClassName="p-3"
-          >
-            <ul className="space-y-1 text-xs">
-              {zones.map((z) => (
-                <li key={z.id} className={`flex items-center gap-1 cursor-pointer ${selected?.id === z.id ? 'text-accent-cyan font-medium' : 'text-text-secondary'}`} onClick={() => setSelected({ kind: 'zone', id: z.id })}>
-                  <span className="w-2 h-2 rounded-sm" style={{ background: z.color ?? '#3498db' }} />{z.label}
-                </li>
+
+          <SectionCard title="이 층에 놓인 것" icon={ICON.layers} bodyClassName="p-3">
+            <dl className="space-y-1.5 text-[12.5px]">
+              {[
+                ['자리', seats.length],
+                ['방', rooms.length],
+                ['구역', zones.length],
+                ['벽', walls.length],
+              ].map(([label, n]) => (
+                <div key={label as string} className="flex items-baseline justify-between">
+                  <dt className="text-text-muted">{label}</dt>
+                  <dd className="text-text-primary tabular-nums">{n}개</dd>
+                </div>
               ))}
-              {rooms.map((r) => (
-                <li key={r.id} className={`flex items-center gap-1 cursor-pointer ${selected?.id === r.id ? 'text-accent-cyan font-medium' : 'text-text-secondary'}`} onClick={() => setSelected({ kind: 'room', id: r.id })}>
-                  <span className="w-2 h-2 rounded-sm bg-status-focus" />{r.label}
-                </li>
-              ))}
-            </ul>
+            </dl>
+            {(zones.length > 0 || rooms.length > 0) && (
+              <ul className="mt-3 pt-3 border-t border-border-subtle space-y-1.5 text-xs">
+                {zones.map((z) => (
+                  <li
+                    key={z.id}
+                    className={`flex items-center gap-1.5 cursor-pointer truncate ${selected?.id === z.id ? 'text-accent-cyan font-medium' : 'text-text-secondary'}`}
+                    onClick={() => setSelected({ kind: 'zone', id: z.id })}
+                  >
+                    <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: z.color ?? '#3498db' }} />
+                    {z.label}
+                  </li>
+                ))}
+                {rooms.map((r) => (
+                  <li
+                    key={r.id}
+                    className={`flex items-center gap-1.5 cursor-pointer truncate ${selected?.id === r.id ? 'text-accent-cyan font-medium' : 'text-text-secondary'}`}
+                    onClick={() => setSelected({ kind: 'room', id: r.id })}
+                  >
+                    <span className="w-2 h-2 rounded-sm flex-shrink-0 bg-status-focus" />
+                    {r.label}
+                  </li>
+                ))}
+              </ul>
+            )}
           </SectionCard>
         </div>
       </div>
-      {/* 오피스 레이아웃 버전 (D12 검증·배포) */}
+      {/* 방·구역·벽 반영 절차 (초안 → 검사 → 반영).
+          이전엔 버전/상태/액션 표에 [검증][배포] 버튼만 있어, 순서도 의미도 화면에 없었다.
+          "변경했는데 반영이 안 된다"는 오해가 바로 여기서 나왔다. */}
       <SectionCard
-        title={`레이아웃 버전 (D12) · ${layouts.length}개`}
+        title="방·구역·벽을 가상사무실에 반영하기"
         icon={ICON.versions}
-        className="flex-shrink-0 max-h-52 overflow-y-auto"
-        bodyClassName="p-3"
+        className="flex-shrink-0"
+        bodyClassName="p-4"
         action={
-          <ToolbarButton onClick={createDraft} disabled={!officeId}>
-            현재 배치로 초안 생성
+          <ToolbarButton onClick={() => setDeployOpen(!showDeploy)}>
+            {showDeploy ? '접기' : '펼치기'}
           </ToolbarButton>
         }
       >
-        {layouts.length === 0 ? (
-          <EmptyState
-            icon={ICON.versions}
-            title="레이아웃 버전이 없습니다."
-            hint="초안을 생성해 검증→배포하세요. (검증 ERROR 0건일 때만 배포 — D12)"
-            compact
+        {/* 지금 직원들에게 무엇이 보이는가 — 접어도 이 한 줄은 남는다. */}
+        <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-bg-surface-raised border border-border-subtle">
+          <span
+            className={`w-2 h-2 rounded-full flex-shrink-0 ${deployedLayout ? 'bg-status-online' : 'bg-text-muted'}`}
+            aria-hidden
           />
-        ) : (
-          <table className="w-full text-xs">
-            <thead className="text-text-muted"><tr><th className="text-left py-1">버전</th><th className="text-left py-1">상태</th><th className="text-right py-1">액션</th></tr></thead>
-            <tbody className="divide-y divide-border-subtle">
-              {(() => {
-                // 롤백 계약(백엔드): deployed → archived, 직전 archived(최고 버전) → deployed 복원
-                const hasDeployed = layouts.some((l) => l.status === 'deployed');
-                const archived = layouts.filter((l) => l.status === 'archived');
-                const rollbackTargetId =
-                  hasDeployed && archived.length > 0
-                    ? archived.reduce((a, b) => (a.version >= b.version ? a : b)).id
-                    : null;
-                return layouts.map((l) => (
-                  <tr key={l.id}>
-                    <td className="py-1.5 text-text-secondary">v{l.version}</td>
-                    <td className="py-1.5">
-                      <span className={`px-1.5 py-0.5 rounded ${l.status === 'deployed' ? 'bg-[rgba(34,197,94,0.16)] text-status-online' : l.status === 'validated' ? 'bg-[rgba(56,189,248,0.15)] text-accent-cyan' : l.status === 'archived' ? 'bg-bg-surface-raised text-text-muted' : 'bg-[rgba(245,158,11,0.16)] text-status-external'}`}>{l.status}</span>
-                    </td>
-                    <td className="py-1.5 text-right whitespace-nowrap">
-                      {l.id === rollbackTargetId && (
-                        <button
-                          onClick={() => rollbackLayout(l.version)}
-                          className="px-2 py-0.5 border border-[rgba(245,158,11,0.4)] text-status-external rounded hover:bg-[rgba(245,158,11,0.12)] mr-1"
-                          title="현재 배포본을 보관 처리하고 이 버전을 재배포합니다"
-                        >
-                          이 버전으로 롤백
-                        </button>
-                      )}
-                      {l.status === 'deployed' && (
-                        <button
-                          onClick={() => undeployLayout(l.id, l.version)}
-                          className="px-2 py-0.5 border border-border-subtle text-text-secondary rounded hover:bg-bg-surface-raised mr-1"
-                          title="배포를 해제해 가상사무실을 기본 씬으로 되돌립니다"
-                        >
-                          배포 해제
-                        </button>
-                      )}
-                      <button onClick={() => validateLayout(l.id)} className="px-2 py-0.5 border border-border-subtle rounded text-text-secondary hover:bg-bg-surface-raised mr-1">검증</button>
-                      <button
-                        onClick={() => deployLayout(l.id)}
-                        disabled={l.status !== 'validated'}
-                        // 비활성 버튼은 눌러도 아무 일이 없어 "반영했는데 안 된다"로 오해된다 —
-                        // 왜 못 누르는지 툴팁으로 알린다(D12: 검증 통과가 선행).
-                        title={
-                          l.status === 'validated'
-                            ? '이 버전을 가상사무실에 반영합니다'
-                            : l.status === 'deployed'
-                              ? '이미 배포된 버전입니다'
-                              : '먼저 검증을 통과해야 배포할 수 있습니다 (D12)'
-                        }
-                        className="px-2 py-0.5 bg-primary text-white rounded hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        배포
-                      </button>
-                    </td>
-                  </tr>
-                ));
-              })()}
-            </tbody>
-          </table>
+          <span className="text-[12.5px] text-text-secondary flex-1 min-w-0">{liveLine}</span>
+          {deployedLayout && (
+            <button
+              onClick={() => undeployLayout(deployedLayout.id, deployedLayout.version)}
+              className="px-2.5 py-1 text-[11.5px] border border-border-subtle text-text-secondary rounded-md hover:bg-bg-surface whitespace-nowrap"
+              title="기본 사무실 모습으로 되돌립니다. 자리 위치는 그대로 유지됩니다."
+            >
+              기본 모습으로 되돌리기
+            </button>
+          )}
+        </div>
+
+        {!showDeploy ? null : (
+        <>
+        <p className="mt-3 text-[12.5px] leading-relaxed text-text-muted">
+          자리는 <b className="text-text-secondary font-medium">저장</b>하면 바로 반영됩니다.
+          방·구역·벽처럼 사무실 구조를 바꾸는 것은 실수로 길이 막히지 않도록 아래 3단계를 거칩니다.
+        </p>
+
+        <ol className="mt-3 grid gap-2.5 md:grid-cols-3">
+          <LayoutStep
+            n={1}
+            title="지금 배치로 안 만들기"
+            desc="화면에 그려 둔 방·구역·벽을 하나의 안으로 묶습니다."
+            done={step1Done}
+            button={{
+              label: workingStep ? '다시 만들기' : '안 만들기',
+              onClick: createDraft,
+              disabled: !officeId || pendingCount > 0,
+              primary: !step1Done,
+              hint:
+                pendingCount > 0
+                  ? '저장하지 않은 변경이 있습니다. 먼저 저장하세요.'
+                  : !officeId
+                    ? '사무실 정보가 없어 만들 수 없습니다.'
+                    : undefined,
+            }}
+          />
+          <LayoutStep
+            n={2}
+            title="안전 검사"
+            desc="자리까지 걸어갈 길이 막히지 않았는지, 좌표가 어긋나지 않았는지 확인합니다."
+            done={step2Done}
+            button={{
+              label: '검사하기',
+              onClick: () => workingStep && validateLayout(workingStep.id),
+              disabled: !workingStep,
+              primary: !!workingStep && !step2Done,
+              hint: workingStep ? undefined : '먼저 1단계에서 안을 만드세요.',
+            }}
+          />
+          <LayoutStep
+            n={3}
+            title="직원들에게 반영"
+            desc="검사를 통과한 안을 모든 직원의 가상사무실에 적용합니다."
+            done={step3Done}
+            button={{
+              label: '반영하기',
+              onClick: () => workingStep && deployLayout(workingStep.id),
+              disabled: workingStep?.status !== 'validated',
+              primary: workingStep?.status === 'validated',
+              hint:
+                workingStep?.status === 'validated'
+                  ? undefined
+                  : workingStep
+                    ? '안전 검사를 통과해야 반영할 수 있습니다.'
+                    : step3Done
+                      ? '이미 반영되어 있습니다.'
+                      : '먼저 1단계에서 안을 만드세요.',
+            }}
+          />
+        </ol>
+
+        {/* 지난 기록 — 평소엔 접어 둔다. 필요할 때만 펼쳐 되돌리기. */}
+        {layouts.length > 0 && (
+          <details className="mt-3 group">
+            <summary className="cursor-pointer text-[12px] text-text-muted hover:text-text-secondary select-none">
+              지난 기록 {layouts.length}건 보기
+            </summary>
+            <ul className="mt-2 space-y-1">
+              {layouts.map((l) => (
+                <li
+                  key={l.id}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-bg-surface-raised text-[12px]"
+                >
+                  <span className="text-text-secondary tabular-nums w-16 flex-shrink-0">
+                    {l.version}번째
+                  </span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[11px] ${
+                      l.status === 'deployed'
+                        ? 'bg-[rgba(34,197,94,0.16)] text-status-online'
+                        : l.status === 'validated'
+                          ? 'bg-[rgba(56,189,248,0.15)] text-accent-cyan'
+                          : l.status === 'archived'
+                            ? 'bg-bg-surface text-text-muted'
+                            : 'bg-[rgba(245,158,11,0.16)] text-status-external'
+                    }`}
+                  >
+                    {layoutStatusLabel(l.status)}
+                  </span>
+                  <span className="flex-1" />
+                  {l.id === rollbackTargetId && (
+                    <button
+                      onClick={() => rollbackLayout(l.version)}
+                      className="px-2 py-0.5 border border-[rgba(245,158,11,0.4)] text-status-external rounded hover:bg-[rgba(245,158,11,0.12)]"
+                      title="지금 반영된 배치를 내리고 이 배치로 되돌립니다"
+                    >
+                      이 배치로 되돌리기
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+        </>
         )}
       </SectionCard>
     </div>
