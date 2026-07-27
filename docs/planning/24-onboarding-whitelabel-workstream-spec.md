@@ -47,14 +47,14 @@
 
 ## 페이즈 개요 · 시퀀싱 · 공수
 
-| # | 페이즈 | 해소 감사 ID | 공수 | 선행 | 병렬 가능 |
+| # | 페이즈 | 해소 감사 ID | 공수 | 선행 | 상태 |
 |---|---|---|---|---|---|
-| **1** | company_id 정체성 삽입 | 22 T0-1 · (부분) T1-3 | **L** | — | (없음, 최우선) |
-| **2** | 테넌트 프로비저닝 + 셀프서브 가입 | 23 E2 · 22 T0-4(온보딩) | **L** | 1 | 4와 병렬 |
-| **3** | admin 유저 CRUD + 팀 초대 | 23 E3 · E4 | **L** | 1, 2, (6.2 토큰) | 4와 병렬 |
-| **4** | 화이트라벨 (Company 브랜딩 + CSS 변수) | 23 E5 · A7 · A1 · A13 | **M** | 1 | 2·3과 병렬 |
-| **5** | 첫실행 온보딩 체크리스트 + 투어 | 23 E6 | **M** | 1, 2, 3 | 6과 병렬 |
-| **6** | 비번 찾기/변경 + 계정 설정 | 23 E9 · E7 · C11 | **M** | 1 | 5와 병렬 |
+| **1** | company_id 정체성 삽입 | 22 T0-1 · (부분) T1-3 | **L** | — | ✅ 2026-07-24 (1a~1c) · ✅ 2026-07-27 (1d 잔여: audit_log·room·floor·org_group·team·consent) |
+| **2** | 테넌트 프로비저닝 + 셀프서브 가입 | 23 E2 · 22 T0-4(온보딩) | **L** | 1 | ✅ 2026-07-24 |
+| **3** | admin 유저 CRUD + 팀 초대 | 23 E3 · E4 | **L** | 1, 2, (6.2 토큰) | ✅ 2026-07-27 (E4는 링크 방식 — D36) |
+| **4** | 화이트라벨 (Company 브랜딩 + CSS 변수) | 23 E5 · A7 · A1 · A13 | **M** | 1 | ✅ 2026-07-27 |
+| **5** | 첫실행 온보딩 체크리스트 + 투어 | 23 E6 | **M** | 1, 2, 3 | ✅ 2026-07-27 |
+| **6** | 비번 찾기/변경 + 계정 설정 | 23 E9 · E7 · C11 | **M** | 1 | 🟡 부분 완료 — 토큰 인프라(§6.2)·비번 변경·관리자 발급 재설정은 Phase 3에서 종결. 잔여 = 셀프 forgot-password(메일 어댑터 전제) |
 
 **권장 시퀀싱(직렬/병렬)**:
 1. **Phase 1 단독 선행**(BLOCKER). 여기서 마이그레이션 규율(22 T0-2)까지 확립.
@@ -243,6 +243,24 @@ POST /api/signup/check-slug               # 실시간 slug 가용성 (공개)
 
 ## Phase 3 — admin 유저 CRUD + 팀 초대 〔23 E3 · E4 · 공수 L〕
 
+> ✅ **완료 (2026-07-27)** — 구현 기록은 [handoff-session-2026-07-27.md](handoff-session-2026-07-27.md) §1-1·1-2.
+> **단, E4는 메일 없는 링크 방식으로 재정의됐다([00-decisions.md D36](00-decisions.md)).** 아래 §"API 계약"의
+> `Invitation` 테이블·`POST /api/invitations`·이메일 발송·재발송은 **폐기**되고, Phase 6의
+> `PasswordResetToken`과 통합된 단일 `auth_token`(+`purpose`) + 관리자 발급 링크로 대체됐다.
+> 실제 계약:
+> ```
+> POST   /api/employees                    유저 직접 생성 (source='native', initial_password 선택)
+> PATCH  /api/employees/{id}                역할·팀·직책·근무형태·이름
+> DELETE /api/employees/{id}                비활성(soft)      POST .../activate 재활성
+> POST   /api/employees/{id}/access-link    비밀번호 설정 링크 발급 → { url, purpose, expires_at }
+> DELETE /api/employees/{id}/access-link    링크 회수
+> GET    /api/auth/set-password?token=      공개. 링크 유효성 + 대상·회사명
+> POST   /api/auth/set-password             공개. 설정 → 즉시 로그인       (Phase 6 리셋과 동일 경로)
+> POST   /api/auth/change-password          인증. 현재 비번 확인 후 변경    (Phase 6 §6.1 선반영)
+> ```
+> 이로써 **Phase 6의 토큰 서브시스템(§6.2)과 비번 변경은 여기서 함께 완료**됐다. Phase 6에 남은 것은
+> 셀프서비스 `forgot-password`(메일 발송 어댑터가 전제)와 설정 "계정" 탭의 잔여 항목뿐이다.
+
 ### 목표
 회사 admin이 **자기 회사 유저를 생성·비활성·역할변경**하고, **이메일 토큰 초대 → 최초 비번설정 온보딩**으로 팀을 데려온다. **ERP有 = sync(읽기전용) / ERP無 = 수동 CRUD** 이중 경로를 명시 분리(현재 `employees`는 읽기전용 ERP sync만, 생성 API 0 — 23 E3).
 
@@ -329,6 +347,22 @@ POST   /api/invitations/accept            # 비번 설정 → ErpUser 생성/활
 
 ## Phase 4 — 화이트라벨 (Company 브랜딩 + CSS 변수 토큰) 〔23 E5 · A7 · A1 · A13 · 공수 M〕
 
+> ✅ **완료 (2026-07-27)** — 구현 기록은 [handoff-session-2026-07-27.md](handoff-session-2026-07-27.md) §1-5.
+> **아래 §4-3의 주입 예시는 이 코드베이스에서 틀리다.** `globals.css` 토큰은 hex가 아니라
+> **RGB 채널**(`59 91 254`)로 정의돼 있고 Tailwind가 `rgb(var(--x) / <alpha-value>)`로 참조한다
+> (불투명도 유틸 `bg-primary/20`을 살리기 위한 구조). hex를 그대로 `setProperty` 하면 **모든 색
+> 유틸이 조용히 깨진다** → `lib/branding.ts`의 `hexToChannels()`로 변환해 주입한다.
+> 실제 계약:
+> ```
+> GET    /api/branding          인증. { company_id, company_name, brand_name, logo_url, primary_color, accent_color }
+> GET    /api/branding/public   미인증. ?slug= → { brand_name, logo_url, primary_color }
+> PUT    /api/branding          admin. 미지정=유지 / 빈 문자열=기본값 복귀
+> POST   /api/branding/logo     admin. multipart — **매직바이트 판정**(content_type 불신)
+> DELETE /api/branding/logo     admin.
+> ```
+> 덮어쓰는 변수는 `--color-primary`·`--color-primary-hover`(primary에서 파생)·`--color-accent-cyan`
+> **3개뿐**이다. 서피스·텍스트는 고정이라 어떤 브랜드 색에도 본문 대비(23 A11)가 유지된다.
+
 ### 목표
 테넌트 브랜드 교체를 **"CSS 변수 1세트 플립"** 으로 만든다. 백엔드 `Company` 브랜딩 필드(Phase 1에서 선언) + 프론트 `:root --color-*` 변수 레이어 + admin 브랜딩 UI + 셸/로그인 주입점. "VirtualOffice" 하드코딩(`login:63`·`OfficeShell:1145`)과 hex 산재(`tailwind.config.js`·인라인 `style`)를 걷어낸다.
 
@@ -402,6 +436,19 @@ useEffect(() => {
 ---
 
 ## Phase 5 — 첫실행 온보딩 체크리스트 + 최초 투어 〔23 E6 · 공수 M〕
+
+> ✅ **완료 (2026-07-27)** — 구현 기록은 [handoff-session-2026-07-27.md](handoff-session-2026-07-27.md) §1-6.
+> 아래 §데이터모델의 `Company.onboarding_state` JSONB 대신 **두 개의 boolean**을 썼다:
+> `company.onboarding_dismissed`(회사 단위) · `erp_user.tour_completed`(유저 단위). 저장하는 값이
+> 두 개뿐이라 JSON 블롭을 파싱할 이유가 없고, 컬럼이면 인덱싱·쿼리가 자연스럽다.
+> 체크리스트 항목은 스펙 권고대로 **저장하지 않고 실측 파생**한다:
+> ```
+> seat_placed   = 회사 좌석 수 > 0
+> notice_posted = 회사의 **살아있는**(is_active) 공지 수 > 0   ← 공지 삭제는 soft-delete(D18)
+> team_invited  = 활성 멤버 > 1  또는  발급된 초대 링크 존재(E4 auth_token)
+> ```
+> `notice`의 `is_active` 필터가 없으면 "지웠는데도 완료"로 남아 실측 파생의 의미가 사라진다
+> (라이브 스모크에서 실제로 걸려 수정).
 
 ### 목표
 새 admin의 첫 5분을 성공 경험으로. **3단계 셋업 체크리스트 위젯(좌석 배치 → 공지 작성 → 팀 초대)** + **최초 1회 제품 투어**. 완료 상태를 회사 단위로 저장.

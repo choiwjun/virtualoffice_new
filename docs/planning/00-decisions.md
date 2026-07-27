@@ -261,6 +261,22 @@
 | **D35-b** | **HORIZON legacy 씬 계층 제거**(2026-07-22, 셸 1b 완료 후) | OfficeViewport2D의 구 플레이트/가구 스프라이트/캐릭터 프레임 애니/존 틴트/D30 플레이스홀더 렌더 경로와 `?scene=legacy`·`NEXT_PUBLIC_SCENE_V3` 탈출구 삭제 — 씬 = 배포 레이아웃 또는 V3 캔버스 2모드. `public/office2d/{plates,layers}` 에셋 삭제(재생성=tools/asset-gen, 복원=git 히스토리). 같은 커밋에 ⌘K 방 포커스(글로우+라벨, `office:focus-room`/`?focus=`) 구현 | /office 씬 legacy 폴백·`?scene=` 롤백 탈출구 |
 | **D35-c** | **프로필 사진 배지 완성 + 캐릭터 계층 전소거**(2026-07-22) | ① `user_avatar.photo_url` 신설 + `POST/DELETE /api/avatar/photo`(png/jpeg/webp ≤2MB, `media_root`/avatars 저장·`/media` 정적 서빙, 파일명 `{user_id}_{ts}` 캐시버스팅) — 클라는 256px cover 다운스케일 후 업로드. ② 설정 페이지 = D35 배지 규격(배지 미리보기·사진 업로드/삭제·정체성 색·이름표) — 캐릭터 프리셋·보조색 UI 폐기(서버 필드는 레거시 보존). ③ 씬 배지·프레즌스 패널·⌘K 팔레트 구성원 행에 사진 표시(없으면 이니셜). ④ `public/office2d/characters` 6.4MB 삭제 + lib/office2d 캐릭터 계열 심볼(CHARACTER_*·frameUrl·AVATAR_ANIM·avatarHeightFrac·ASSETS_READY 등) 제거 — 이동·좌표 계약은 불변 | 설정 캐릭터 프리셋 UI, 캐릭터 프레임 에셋 전부 |
 
+## Q. 온보딩 계정 개통 — 메일 없는 링크 방식 (D36, 2026-07-27)
+
+> 24-스펙 Phase 3의 E4는 원안이 **이메일 초대**였다. 착수 시점에 "이메일 초대가 꼭 필요한가"를
+> 재검토한 결과, 실제로 막고 싶은 문제는 *메일 발송*이 아니라 **관리자가 전 직원의 비밀번호를
+> 아는 상태**와 **비밀번호 분실 시 DB 개입 말고 복구 경로가 없는 상태** 두 가지였다.
+> 메일 인프라(SPF/DKIM·스팸함·바운스 처리)는 온보딩 마찰 1순위인데, 사내 도구 관리자에게는
+> 이미 슬랙·카카오워크가 있다. 발송 채널을 빼고 링크만 돌려주면 두 문제는 그대로 해결된다.
+
+| ID | 결정 | 내용 | 폐기·대체 |
+|----|------|------|-------------|
+| **D36** | 계정 개통 = **관리자 발급 1회용 링크**(메일 발송 없음) | ① 초대(최초 비번설정)와 재설정을 **단일 `auth_token` 테이블 + `purpose`**로 통합 — 24-스펙 Phase 3(Invitation)과 Phase 6(PasswordResetToken)의 별도 테이블안을 대체. 두 흐름은 "1회용 링크 → 본인이 설정 → 즉시 로그인"으로 코드가 동일하고 화면(`/set-password`)도 공유한다. ② `POST /api/employees/{id}/access-link`가 링크를 **관리자에게 반환** — 관리자가 기존 채널로 전달. 서버는 sha256만 보관(평문 미저장), 원문은 발급 응답에서 한 번만 노출. ③ 토큰 규율: 단회성(`used_at`) · 재발급 시 이전 토큰 자동 회수 · 만료는 `expires_at` 조회 시점 판정(상태 컬럼·정리 배치 없음) · 무효 사유(만료/사용/회수/미존재)를 **410 단일 응답으로 동일화**(추측 단서 차단). ④ 수명주기 연동: 계정 비활성 시 링크 무효(퇴사자 재진입 차단), 본인 비번 변경 시 발급된 링크 회수(탈취 창 차단), 재설정 시 로그인 백오프 해제. ⑤ 만료 = 초대 7일 / 재설정 24시간. 비번 최소 8자(`tokens.MIN_PASSWORD_LENGTH` 단일 상수 — 가입·초대·재설정·변경 공통). ⑥ **메일 발송은 폐기가 아니라 유예** — `tokens.set_password_url()`이 이미 링크 본문을 만들므로 발송 어댑터만 얹으면 셀프서비스 forgot-password(23 E9)가 같은 토큰 코드로 열린다. ⑦ 링크 호스트는 **프론트** 주소(`PUBLIC_APP_URL`) — 운영에서 미설정 시 localhost를 가리켜 링크가 열리지 않는다. | 24-스펙 Phase 3의 `Invitation` 테이블·이메일 발송·재발송 API, Phase 6의 `PasswordResetToken` 별도 테이블. 로그인 화면의 셀프 "비밀번호 찾기"(메일 도입 전까지 "관리자에게 요청" 안내로 대체) |
+| **D36-c** | 업로드 이미지 형식 = **바이트 시그니처로 판정**(content_type 불신) | `UploadFile.content_type`은 클라이언트가 보낸 문자열이다. HTML/JS를 `image/png`라고 주장해 올리면 `/media` 정적 서빙 경로에서 실행돼 **저장형 XSS**가 된다(22 T1-12). `core/images.sniff_image_type`이 PNG/JPEG/WEBP 매직 넘버로 판정하고 저장 확장자도 여기서 정한다. **SVG는 스크립트를 품을 수 있어 허용 형식에서 제외.** Pillow 의존은 두지 않는다(필요한 건 형식 판정이지 디코딩이 아니다). 브랜딩 로고·아바타 사진 **둘 다** 이 경로를 쓴다 — 아바타는 기존에 content_type만 봤고, 그 계약을 고정하던 테스트 2개를 "바이트가 결정한다"로 정정했다. | `avatar.py`의 content_type 기반 `_PHOTO_TYPES` 판정 |
+| **D36-d** | 첫실행 체크리스트 = **실측 파생**(진행 플래그 저장 금지) | "좌석 배치함"을 플래그로 저장하면 좌석을 다 지워도 참이 남는다. 세 항목(`seat_placed`·`notice_posted`·`team_invited`)을 조회 시점에 센다. 저장하는 건 사람의 의사표시 둘뿐: `company.onboarding_dismissed`(회사 단위 — admin이 공유) · `erp_user.tour_completed`(유저 단위). 24-스펙의 `onboarding_state` JSONB 대신 boolean 2개 — 값이 둘뿐이라 블롭 파싱 이유가 없다. **공지는 `is_active` 필터 필수**(soft-delete D18이라 행이 남는다 — 전체를 세면 "지웠는데도 완료"). 부수 효과로 **이미 셋업된 기존 회사는 체크리스트가 자동으로 숨는다.** | 24-스펙 Phase 5의 `Company.onboarding_state` JSONB 스키마 |
+| **D36-e** | 실시간 join의 테넌트 경계 = **JWT 클레임이 정본** | `realtime/`의 `onAuth`가 `sub`/`email`만 토큰에서 취하고 `companyId`는 클라이언트 값을 그대로 써서, 회사 2의 유저가 회사 1의 방에 들어가 `companyId:"1"`을 주장하면 그 층 아바타·프레즌스가 보였다(22 T0-1 잔여). ① 토큰의 `company_id`를 정본으로 삼아 클라 값을 덮어쓰고 ② 방의 회사와 다르면 join 거부 ③ `filterBy`에 `companyId` 추가로 floorId가 새어도 테넌트가 섞이지 않게 한다(2중 방어). `company_id` 없는 구 토큰은 통과 — 백엔드 `get_current_user`와 동일한 하위호환 정책. 룸 옵션 미지정 기본값(`company-demo`)은 "테넌트 미지정"이라 검증을 건너뛴다(로컬·데모 호환). | 클라이언트 주장 companyId 신뢰 |
+| **D36-b** | Phase 1d 공간 테이블 스코프 = **비정규화**(조인 유도 아님) | `room`·`floor`는 `office → company` 소유로 유도할 수도 있으나 ① 둘 다 직접 쿼리되는 표면(`GET /api/rooms`·`/api/floors`)이고 ② 소유 체인이 끊긴 행에서도 스코프가 유지돼야 하며 ③ Phase 1b/1c(meeting·seat·fact)와 규약이 같아지므로 자체 `company_id`를 심는다. `audit_log`도 동일(행위자 역조회는 매 기록마다 쿼리가 늘고 시스템 기록은 회사를 알 수 없다 → `record_audit(company_id=…)` 필수 키워드). | 24-스펙 Phase 1 §1-2의 "자식 테이블은 부모 FK로 스코프 유도" 적용 범위(직접 쿼리 표면은 제외) |
+
 ---
 
 ## 문서별 반영 체크리스트

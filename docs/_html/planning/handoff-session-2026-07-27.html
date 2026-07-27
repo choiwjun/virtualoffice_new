@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handoff — 온보딩 완성 세션 (2026-07-27)</title>
+<style>
+:root{--bg:#0f1115;--panel:#161922;--fg:#e6e9ef;--muted:#9aa3b2;--accent:#6ea8fe;--accent2:#7ee3c7;--border:#262b36;--code:#1b1f29;--th:#1d2230}
+@media(prefers-color-scheme:light){:root{--bg:#f7f8fa;--panel:#fff;--fg:#1b2330;--muted:#5b6573;--accent:#2f6fed;--accent2:#0e9f6e;--border:#e3e7ee;--code:#f0f2f6;--th:#eef1f6}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif;line-height:1.7;font-size:16px}
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:var(--panel);border-right:1px solid var(--border);padding:24px 18px}
+nav.toc .brand{font-weight:800;font-size:15px;letter-spacing:.02em;color:var(--accent);margin-bottom:4px}
+nav.toc .sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:3px 8px;border-radius:6px;font-size:13.5px;border-left:2px solid transparent}
+nav.toc a:hover{color:var(--fg);background:rgba(110,168,254,.08)}
+nav.toc a.lvl2{padding-left:18px}
+nav.toc a.lvl3{padding-left:30px;font-size:12.5px}
+nav.toc a.doc{font-weight:700;color:var(--fg);margin-top:14px}
+main{padding:48px 56px;max-width:920px;margin:0 auto;width:100%;overflow-x:hidden}
+main h1{font-size:30px;font-weight:800;margin:.2em 0 .6em;line-height:1.25}
+main h2{font-size:22px;font-weight:750;margin:1.8em 0 .5em;padding-bottom:.3em;border-bottom:1px solid var(--border)}
+main h3{font-size:18px;font-weight:700;margin:1.4em 0 .4em}
+main h4{font-size:15.5px;font-weight:700;color:var(--muted);margin:1.2em 0 .3em}
+main p{margin:.7em 0}
+a{color:var(--accent)}
+code{background:var(--code);padding:.12em .4em;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.88em}
+pre.code{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow:auto;font-size:13px;line-height:1.55}
+pre.code code{background:none;padding:0}
+blockquote{margin:1em 0;padding:.6em 1.1em;border-left:3px solid var(--accent);background:rgba(110,168,254,.07);border-radius:0 8px 8px 0;color:var(--fg)}
+ul,ol{padding-left:1.4em;margin:.6em 0}
+li{margin:.25em 0}
+li.task{list-style:none;margin-left:-1.2em}
+li.task input{margin-right:.5em}
+hr{border:none;border-top:1px solid var(--border);margin:2em 0}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--border);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 13px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--th);font-weight:700;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(110,168,254,.05)}
+img{max-width:100%;border-radius:8px}
+.doc-section{padding-top:8px}
+.doc-section+.doc-section{margin-top:24px;border-top:2px dashed var(--border);padding-top:32px}
+.meta-foot{margin-top:64px;padding-top:20px;border-top:1px solid var(--border);color:var(--muted);font-size:12.5px}
+.idx-card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:10px 0;text-decoration:none;color:var(--fg);transition:.15s}
+.idx-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.idx-card .t{font-weight:700;font-size:15px}
+.idx-card .p{color:var(--muted);font-size:13px;margin-top:3px}
+.idx-group{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin:24px 0 6px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}nav.toc{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border)}main{padding:28px 20px}}
+</style>
+</head><body>
+<div class="layout">
+<nav class="toc"><div class="brand">Handoff — 온보딩 완성 세션 (2026-07-27)</div><div class="sub">handoff-session-2026-07-27.md</div><a class="lvl1" href="#handoff--온보딩-완성-세션-2026-07-27">Handoff — 온보딩 완성 세션 (2026-07-27)</a><a class="lvl2" href="#1-이번-세션-완료">1. 이번 세션 완료</a><a class="lvl3" href="#1-1-e3--admin-유저-crud-24-spec-phase-3-·-23-e3e12">1-1. E3 — admin 유저 CRUD (24-spec Phase 3 · 23 E3/E12)</a><a class="lvl3" href="#1-2-e4--비밀번호-설정-링크-24-spec-phase-3-초대--phase-6-리셋">1-2. E4 — 비밀번호 설정 링크 (24-spec Phase 3 초대 + Phase 6 리셋)</a><a class="lvl3" href="#1-3-phase-1d--잔여-테넌트-스코프-22-t0-1-종결">1-3. Phase 1d — 잔여 테넌트 스코프 (22 T0-1 종결)</a><a class="lvl3" href="#1-5-e5--화이트라벨-24-spec-phase-4-·-23-e5a7">1-5. E5 — 화이트라벨 (24-spec Phase 4 · 23 E5/A7)</a><a class="lvl3" href="#1-6-e6--첫실행-온보딩-24-spec-phase-5-·-23-e6">1-6. E6 — 첫실행 온보딩 (24-spec Phase 5 · 23 E6)</a><a class="lvl3" href="#1-7-실시간-테넌트-경계--22-t0-1-종결">1-7. 실시간 테넌트 경계 — 22 T0-1 종결</a><a class="lvl3" href="#1-8-잔여-hex-변수화-23-a7a1-부분">1-8. 잔여 hex 변수화 (23 A7/A1 부분)</a><a class="lvl3" href="#1-4-dev-db-정상화">1-4. dev DB 정상화</a><a class="lvl2" href="#2-다음-작업">2. 다음 작업</a><a class="lvl3" href="#🟠-p1">🟠 P1</a><a class="lvl3" href="#🟡-p2--22-doc-tier-12">🟡 P2 — 22-doc Tier 1/2</a><a class="lvl3" href="#🟢-병행-품질">🟢 병행 품질</a><a class="lvl2" href="#3-확립된-레시피">3. 확립된 레시피</a><a class="lvl2" href="#4-라이브-스택-상태--재현">4. 라이브 스택 상태 + 재현</a><a class="lvl2" href="#5-함정--주의-gotchas">5. 함정 / 주의 (gotchas)</a><a class="lvl2" href="#6-진입점-다음-세션-시작">6. 진입점 (다음 세션 시작)</a></nav>
+<main><h1 id="handoff--온보딩-완성-세션-2026-07-27">Handoff — 온보딩 완성 세션 (2026-07-27)</h1>
+<blockquote><strong>한 줄 상태</strong>: 24-스펙 <strong>Phase 3·4 완결</strong>(E3 유저 CRUD + E4 초대·비번설정 + E5 화이트라벨) + <strong>Phase 1d 잔여 스코프 전량 종결</strong>. ERP 없는 회사가 사람을 채우고, 관리자가 남의 비밀번호를 모른 채 팀을 들이고, 테넌트별 브랜드로 표시되며, 남아 있던 교차 테넌트 누수 6곳이 닫혔다. 다음은 <strong>첫실행 온보딩(Phase 5)</strong>.
+정본 감사: <a href="22-commercialization-gap-audit.md">22 백엔드/SaaS</a> · <a href="23-frontend-design-asset-commercialization-audit.md">23 프론트/에셋/UX</a> · <a href="24-onboarding-whitelabel-workstream-spec.md">24 온보딩·화이트라벨 스펙</a>.</blockquote>
+<hr>
+<h2 id="1-이번-세션-완료">1. 이번 세션 완료</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>영역</th>
+<th>내용</th>
+<th>검증</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>E3</strong></td>
+<td>admin 유저 CRUD — 생성·수정·비활성·재활성 + <code>ErpUser.source</code>(erp/native) + <code>Company.seat_limit</code></td>
+<td>격리 10 + CRUD 24 + 라이브 30/30</td>
+</tr>
+<tr>
+<td><strong>E4</strong></td>
+<td>비밀번호 설정 링크 — 초대(최초 설정)·재설정 공용 <code>auth_token</code> + 본인 비번 변경</td>
+<td>링크 22 + 라이브 34/34</td>
+</tr>
+<tr>
+<td><strong>Phase 1d</strong></td>
+<td><code>audit_log</code>·<code>room</code>·<code>floor</code>·<code>org_group</code>·<code>team</code>·<code>consent</code> 테넌트 스코프</td>
+<td>격리 15</td>
+</tr>
+<tr>
+<td><strong>E5</strong></td>
+<td>화이트라벨 — 브랜드명·색·로고 + 업로드 매직바이트 검증</td>
+<td>브랜딩 25 + 라이브 33/33</td>
+</tr>
+<tr>
+<td><strong>E6</strong></td>
+<td>첫실행 체크리스트(실측 파생) + 최초 투어</td>
+<td>온보딩 17 + 라이브 22/22</td>
+</tr>
+<tr>
+<td><strong>T0-1 종결</strong></td>
+<td>실시간 join의 테넌트 경계 — JWT <code>company_id</code> ↔ 방 회사 대조</td>
+<td>realtime 20</td>
+</tr>
+<tr>
+<td><strong>A7 잔여</strong></td>
+<td>토큰과 중복되던 표면 hex → CSS 변수 (모달·셸·게이지)</td>
+<td>tsc 0 · 시각 불변</td>
+</tr>
+<tr>
+<td><strong>dev DB</strong></td>
+<td><code>0001</code>(또는 미스탬프) → <code>0009</code>, 컬럼 드리프트 복구</td>
+<td>실서버 기동 12/12</td>
+</tr>
+</tbody></table></div>
+<p><strong>누적</strong>: pytest <strong>529 passed / 0 failed</strong>(세션 시작 414 → +115), realtime <strong>74 passed</strong>, 마이그레이션 체인 <code>0001→…→0009</code>, 프론트·realtime <code>tsc 0</code>.</p>
+<h3 id="1-1-e3--admin-유저-crud-24-spec-phase-3-·-23-e3e12">1-1. E3 — admin 유저 CRUD (24-spec Phase 3 · 23 E3/E12)</h3>
+<p><code>api/employees.py</code> 신설(erp.py에서 분리). 조회·생성·수정·비활성·재활성 6개 엔드포인트.</p>
+<ul>
+<li><strong>원래 문제</strong>: <code>/api/employees</code>가 <code>DEFAULT_COMPANY_ID = 1</code> 하드코딩 → <strong>신규 가입 회사의 admin이 1번 회사 직원명부를 그대로 봤다.</strong> 생성 API는 0이라 ERP 없는 회사는 사람을 못 채웠다.</li>
+<li><strong><code>ErpUser.source</code>(<code>erp</code>|<code>native</code>)</strong>: ERP 전체 대사(<code>sync_users</code>)를 <code>source=&#39;erp&#39;</code>로 한정. 없으면 콘솔에서 만든 유저가 &quot;ERP에서 사라진 사용자&quot;로 오탐돼 매 동기화마다 비활성화된다. 기존 <code>password_hash is None</code> 예외는 유지(시드 계정 보호).</li>
+<li><strong>가드</strong>: 이메일 중복 409 · 권한상승(admin→super_admin 발급) 403 · 마지막 활성 관리자 강등/비활성 409 · 본인 비활성 409 · <code>seat_limit</code> 초과 409(NULL=무제한 → 기존 회사 무영향).</li>
+<li><strong><code>initial_password</code> 선택</strong>: 주면 즉시 로그인, 생략하면 <code>has_login=false</code> 명부 등재(E4 링크가 이어받음).</li>
+<li><strong>부수 수리</strong>: <code>POST /api/erp/sync</code>·<code>GET /api/attendances</code>가 company 1 하드코딩이라 <strong>회사 2 admin이 &quot;ERP 동기화&quot;를 누르면 회사 1에 유저를 썼다</strong> → 호출자 회사 스코프로 전환(ERP가 그 회사를 모르면 리더가 빈 목록 → 안전한 no-op).</li>
+</ul>
+<h3 id="1-2-e4--비밀번호-설정-링크-24-spec-phase-3-초대--phase-6-리셋">1-2. E4 — 비밀번호 설정 링크 (24-spec Phase 3 초대 + Phase 6 리셋)</h3>
+<blockquote><strong>스펙 재정의</strong>: 원안은 이메일 초대였으나 <strong>메일 발송 없이 링크를 관리자에게 돌려주는 방식</strong>으로 축소했다. 근거·경계는 <a href="00-decisions.md">00-decisions.md D36</a> 참조.</blockquote>
+<p><code>services/tokens.py</code> + <code>auth_token</code> 테이블. 초대와 재설정은 &quot;1회용 링크 → 본인이 설정 → 즉시 로그인&quot;으로 코드가 같아 <code>purpose</code>로만 구분한다.</p>
+<pre class="code"><code>POST   /api/employees/{id}/access-link   admin. 발급 → { url, purpose, expires_at }
+DELETE /api/employees/{id}/access-link   admin. 회수
+GET    /api/auth/set-password?token=     공개. 유효성 + 대상·회사명
+POST   /api/auth/set-password            공개. 설정 → 즉시 로그인 토큰
+POST   /api/auth/change-password         인증. 현재 비번 확인 후 변경</code></pre>
+<ul>
+<li><strong>평문 미저장</strong> — sha256만 보관, 원문은 발급 응답에서 한 번만.</li>
+<li><strong>단회성 · 재발급 시 이전 링크 자동 무효</strong> — 안 그러면 &quot;회수&quot;가 의미를 잃는다.</li>
+<li><strong>상태는 파생</strong> — <code>expires_at</code>으로 조회 시점 판정. 만료 전이 배치가 없어 스테일이 안 생긴다.</li>
+<li><strong>오류 동일화</strong> — 만료/사용됨/회수됨/미존재를 전부 410 <code>invalid_or_expired_token</code>으로(토큰 추측 단서 차단).</li>
+<li><strong>비활성 계정의 링크는 죽는다</strong>(퇴사자 재진입 차단) · <strong>본인이 비번을 바꾸면 관리자가 뿌린 링크가 무효화</strong>된다(탈취 창 차단) · <strong>재설정 시 로그인 백오프 해제</strong>(잠긴 채 새 비번을 못 쓰는 함정 제거).</li>
+<li>만료: 초대 7일 / 재설정 24시간. 비번 최소 8자(<code>tokens.MIN_PASSWORD_LENGTH</code> 단일 상수).</li>
+</ul>
+<p>프론트: <code>/set-password</code> 공개 화면(초대·재설정 공용) · 직원명부 행 <strong>초대/재설정</strong> 버튼 + 링크 모달(복사·만료·회수) · 설정 <strong>계정</strong> 섹션(비번 변경) · 로그인 화면 안내.</p>
+<h3 id="1-3-phase-1d--잔여-테넌트-스코프-22-t0-1-종결">1-3. Phase 1d — 잔여 테넌트 스코프 (22 T0-1 종결)</h3>
+<p>Phase 1b/1c가 meeting·seat·fact를 닫은 뒤에도 남아 있던 6곳:</p>
+<div class="table-wrap"><table><thead><tr>
+<th>표면</th>
+<th>이전 상태</th>
+<th>조치</th>
+</tr>
+</thead><tbody><tr>
+<td><code>GET /api/audit-logs</code></td>
+<td>전 테넌트 공용 — 타사 권한변경·KPI조정 이력 노출</td>
+<td><code>audit_log.company_id</code> 신설 + 스코프. <code>record_audit(company_id=…)</code> <strong>필수 키워드</strong>(호출부 20곳)</td>
+</tr>
+<tr>
+<td><code>GET /api/rooms</code> · 회의 예약</td>
+<td>타사 방이 피커에 뜨고 <strong>예약까지 됐다</strong>(남의 방 이중예약)</td>
+<td><code>room.company_id</code> 신설 + 스코프</td>
+</tr>
+<tr>
+<td><code>GET /api/floors</code></td>
+<td>좌석 편집기에 타사 층 노출</td>
+<td><code>floor.company_id</code> 신설 + 스코프</td>
+</tr>
+<tr>
+<td><code>GET /api/teams</code></td>
+<td><code>DEFAULT_COMPANY_ID=1</code> 하드코딩</td>
+<td>호출자 회사</td>
+</tr>
+<tr>
+<td>org_group CRUD</td>
+<td>목록 무필터, <strong>단건 수정·삭제에 소유 검사 없음</strong></td>
+<td>전량 스코프 + <code>assert_same_company</code> + 부모 지정도 검사</td>
+</tr>
+<tr>
+<td>녹화 동의(consent)</td>
+<td>타사 회의 참석자 동의를 읽고 쓸 수 있었다(D20-b 개인정보)</td>
+<td>회의 로드 시 <code>assert_same_company</code></td>
+</tr>
+</tbody></table></div>
+<p><strong>room/floor는 조인 대신 비정규화</strong>를 택했다. 둘 다 직접 쿼리되는 표면이고, 소유 체인이 끊긴 행에서도 스코프가 유지돼야 하며, Phase 1b/1c와 규약이 같아진다. (조인 방식을 먼저 시도했다가 고아 <code>floor_id</code>를 쓰는 기존 픽스처 40개가 깨져 판단을 바꿨다 — 픽스처가 아니라 설계가 틀린 쪽이었다.)</p>
+<h3 id="1-5-e5--화이트라벨-24-spec-phase-4-·-23-e5a7">1-5. E5 — 화이트라벨 (24-spec Phase 4 · 23 E5/A7)</h3>
+<p><code>Company.brand_name</code>·<code>accent_color</code> 추가(<code>logo_url</code>·<code>primary_color</code>는 Phase 1a 플레이스홀더 재사용) + <code>api/branding.py</code>.</p>
+<ul>
+<li><strong>주입 방식이 스펙과 다르다</strong>: <code>globals.css</code> 토큰은 hex가 아니라 <strong>RGB 채널</strong>(<code>59 91 254</code>)이고 Tailwind가 <code>rgb(var(--x) / &lt;alpha-value&gt;)</code>로 참조한다(불투명도 유틸 <code>bg-primary/20</code>을 살리는 구조). 24-스펙 §4-3의 hex 직접 주입 예시를 그대로 쓰면 <strong>모든 색 유틸이 조용히 깨진다</strong> → <code>lib/branding.ts</code>의 <code>hexToChannels()</code>로 변환한다.</li>
+<li><strong>덮어쓰는 변수는 3개뿐</strong>: <code>--color-primary</code>·<code>--color-primary-hover</code>(primary에서 파생)·<code>--color-accent-cyan</code>. 서피스·텍스트는 고정이라 어떤 브랜드 색을 넣어도 본문 대비(23 A11)가 유지된다.</li>
+<li><strong><code>BrandingProvider</code></strong>(<code>(protected)</code> 최상단) — 로그인 후 fetch → CSS 변수 주입 + 컨텍스트 공급. <code>refresh()</code>로 저장 즉시 반영(재로그인 불필요), <code>preview()</code>로 저장 전 실시간 미리보기.</li>
+<li><strong>공개 브랜딩</strong>: 로그인 전에는 인증이 없으므로 slug(<code>?company=</code> 또는 서브도메인)로만 조회한다. <strong>없는 slug도 200 + 빈 브랜딩</strong> — 404로 갈리면 slug 존재 여부를 훑는 열거 수단이 된다.</li>
+<li><strong>로고 업로드는 매직바이트로 판정</strong>(22 T1-12). <code>content_type</code>은 클라가 보낸 문자열이라 HTML/JS를 <code>image/png</code>로 주장하면 <code>/media</code> 정적 서빙에서 실행돼 저장형 XSS가 된다. SVG는 스크립트를 품을 수 있어 형식에서 제외. 회사별 디렉터리(<code>/media/branding/{company_id}/</code>)로 경로 열거도 차단.</li>
+<li><strong>아바타 업로드도 같은 취약점이 있어 함께 수리</strong>했다(<code>core/images.py</code> 공용 검사기). 기존 테스트 2개가 &quot;content_type이 형식을 결정한다&quot;는 취약한 계약을 고정하고 있어 <strong>바이트가 결정한다</strong>로 정정했다.</li>
+<li>프론트: <code>/admin/branding</code> 관리 화면(브랜드명·컬러피커·로고·라이브 미리보기) · 셸 로고/브랜드명 주입 · 로그인 화면 브랜딩.</li>
+</ul>
+<h3 id="1-6-e6--첫실행-온보딩-24-spec-phase-5-·-23-e6">1-6. E6 — 첫실행 온보딩 (24-spec Phase 5 · 23 E6)</h3>
+<ul>
+<li><strong>체크리스트는 저장하지 않는다</strong>. <code>seat_placed</code>·<code>notice_posted</code>·<code>team_invited</code>를 조회 시점에 실측 파생한다. 플래그로 저장하면 데이터를 지워도 &quot;완료&quot;가 남는다. 저장하는 건 사람의 의사표시 둘뿐 — <code>company.onboarding_dismissed</code>(회사 단위)·<code>erp_user.tour_completed</code>(유저 단위). 스펙의 JSONB <code>onboarding_state</code> 대신 boolean 두 개면 충분하다.</li>
+<li><strong>공지는 <code>is_active</code> 필터가 필수</strong>다. 공지 삭제는 soft-delete(D18)라 행이 남는다 — 전체를 세면 &quot;지웠는데도 완료&quot;가 된다. 유닛 테스트(물리 삭제한 좌석)는 통과했는데 <strong>라이브 스모크에서 실제 API 경로로 눌러 보고서야 걸렸다.</strong></li>
+<li><strong>기존 회사는 자동으로 숨는다</strong> — 좌석·공지·인원이 이미 있어 세 항목이 전부 true다(스테일 유도 없음).</li>
+<li>투어는 셸의 <code>data-tour</code> 요소를 찾아 스포트라이트를 그리고, 요소가 없으면(레일 모드·좁은 화면) 중앙 카드로 폴백해 레이아웃에 상관없이 깨지지 않는다. ESC·화살표 키 지원.</li>
+</ul>
+<h3 id="1-7-실시간-테넌트-경계--22-t0-1-종결">1-7. 실시간 테넌트 경계 — 22 T0-1 종결</h3>
+<p><code>realtime/</code>의 <code>onAuth</code>가 JWT의 <code>sub</code>/<code>email</code>만 취하고 <strong><code>companyId</code>는 클라이언트가 준 값을 그대로 썼다.</strong> 회사 2의 유저가 회사 1의 방에 들어가 <code>companyId: &quot;1&quot;</code>을 주장하면 그 층의 아바타·프레즌스를 그대로 봤다.</p>
+<ul>
+<li>토큰의 <code>company_id</code> 클레임을 정본으로 삼고, <strong>방의 회사와 다르면 join 거부</strong>(<code>forbidden: company mismatch</code>).</li>
+<li>클라가 준 <code>companyId</code>는 토큰 값으로 덮어쓴다(위조 무력화).</li>
+<li><code>filterBy</code>에 <code>companyId</code>를 추가 — floorId가 새어도 서로 다른 테넌트가 같은 방에 합류하지 않는다(2중 방어).</li>
+<li><code>company_id</code> 없는 구 토큰은 통과(백엔드 <code>get_current_user</code>와 동일한 하위호환 정책).</li>
+<li>부수 수리: <code>onCreate</code> 전에 dispose되면 <code>flushPresence</code>가 <code>this.state</code> 없이 터져 onDispose 경로 전체가 죽었다 → 가드 추가.</li>
+</ul>
+<h3 id="1-8-잔여-hex-변수화-23-a7a1-부분">1-8. 잔여 hex 변수화 (23 A7/A1 부분)</h3>
+<p>토큰과 <strong>값이 중복되던</strong> 표면색만 CSS 변수로 바꿨다(<code>#161F32</code>→<code>rgb(var(--color-bg-surface))</code> 등, 13개 파일). 값 치환이라 className 수술이 없고 렌더 결과도 동일하다. 브랜드 마크(<code>#3B5BFE</code>)는 <code>--color-primary</code>를 타므로 이제 signup·set-password·확인 다이얼로그·StatCard도 테넌트 색을 따른다.</p>
+<p><strong>캔버스 씬(<code>OfficeViewport2D</code> 43건·<code>SeatCanvas</code> 18건)은 제외했다</strong> — 캔버스는 CSS 변수를 읽을 수 없고(<code>getComputedStyle</code> 경유가 필요), 그 색들은 브랜드가 아니라 씬 팔레트(T1B 웜블랙 계열)다. 상태 시맨틱 색(<code>#22C55E</code> 등)과 아바타 정체성 팔레트도 의도적으로 고정이다.</p>
+<h3 id="1-4-dev-db-정상화">1-4. dev DB 정상화</h3>
+<p>pull 직후 dev.db는 <code>0001_initial</code> 스탬프에 <strong><code>company</code> 테이블조차 없었고</strong>, 앱이 뜨지 않았다.</p>
+<ul>
+<li><code>0002~0007</code> 적용 — 데이터 보존(유저 8·회의 2·좌석 4·KPI 16), 백필 후 NULL 0건.</li>
+<li><strong><code>user_integration</code> 테이블 누락</strong> — <code>0001</code> 스탬프 때문에 <code>create_all</code>이 재실행되지 않아 D31 테이블이 없었다 → 누락분만 생성.</li>
+<li><strong>컬럼 드리프트 4개</strong>(<code>notice.category</code>·<code>published_at</code>·<code>expires_at</code>, <code>user_avatar.photo_url</code>) — <code>/api/notices</code>가 실제로 <strong>500</strong>을 뱉었다. 두 테이블 모두 0행·피참조 없음을 확인하고 모델 정의로 재생성.</li>
+<li><code>dev_qa.db</code>도 동일 처리. 두 DB 모두 모델 대비 드리프트 <strong>0</strong>.</li>
+</ul>
+<hr>
+<h2 id="2-다음-작업">2. 다음 작업</h2>
+<blockquote><strong>24-스펙 Phase 1~5가 모두 닫혔고 22 T0-1(멀티테넌시)도 종결됐다.</strong> 남은 건 아래 곁가지와 별도 워크스트림이다.</blockquote>
+<h3 id="🟠-p1">🟠 P1</h3>
+<ul>
+<li><strong>메일 발송 어댑터</strong> — <code>tokens.set_password_url()</code>이 이미 링크 본문을 만든다. 발송 채널만 얹으면 셀프서비스 forgot-password(23 E9 = Phase 6 잔여)까지 같은 토큰 코드로 열린다. <strong>SMTP / SES 중 무엇을 쓸지가 결정 사항</strong>이라 착수 전 합의가 필요하다.</li>
+<li><strong><code>office.company_id</code> 타입 드리프트</strong> — dev.db에서 <code>CHAR(32)</code>(모델은 <code>Integer</code>). SQLite 비교는 통과하지만 Postgres 이관 시 문제가 된다. <code>floor</code>·<code>office_layout</code>이 FK로 참조해 재작성 비용이 있다.</li>
+<li><strong>캔버스 씬 색 토큰화</strong>(23 A8/A13) — <code>OfficeViewport2D</code>·<code>SeatCanvas</code>는 캔버스라 CSS 변수를 읽을 수 없다. 필요해지면 <code>getComputedStyle</code>로 한 번 읽어 렌더 컨텍스트에 주입하는 방식이 필요하다.</li>
+</ul>
+<h3 id="🟡-p2--22-doc-tier-12">🟡 P2 — 22-doc Tier 1/2</h3>
+<p>Redis 수평확장(T0-3) · 관측성(구조화 로깅·Sentry·/ready) · graceful shutdown · 개인정보 팩(동의 게이트·보존기간·열람/삭제).</p>
+<h3 id="🟢-병행-품질">🟢 병행 품질</h3>
+<p>i18n(C1, 한국어 1,695건) · 프리미티브 확산 · 접근성 잔여(C10/A11).</p>
+<hr>
+<h2 id="3-확립된-레시피">3. 확립된 레시피</h2>
+<p><strong>멀티테넌시 스코프 작업</strong>:</p>
+<ol>
+<li>목록 = <code>.where(Model.company_id == cid)</code> via <code>Depends(company_scope)</code></li>
+<li>단건/변조 = 로드 <strong>직후·변조 전</strong> <code>assert_same_company</code>(404 존재 은닉)</li>
+<li>생성 = 서버가 <code>company_id</code> 주입 — <strong>클라 불신</strong></li>
+<li>자체 <code>company_id</code>가 없는 테이블은 <strong>직접 쿼리되면 비정규화</strong>, 부모 경유로만 접근되면 부모 FK 유도</li>
+<li>격리 테스트 필수 — 타사 리소스 GET/PATCH/DELETE/action → 404, 목록 필터, 생성 시 주입 확인</li>
+</ol>
+<p><strong>마이그레이션</strong>: <code>0001</code>이 <code>create_all</code>이라 신규 배포는 그 경로가 정본. 후속 리비전은 기존 DB용 <strong>멱등 ALTER</strong>로 쓰고(존재 검사 가드), 체인 경로와 ALTER 경로를 <strong>둘 다</strong> 검증한다. <code>test_migrations.py</code>가 체인을, dev DB 실적용이 ALTER를 커버한다.</p>
+<p><strong>토큰 규율</strong>(E4에서 확립, Phase 6이 재사용): 평문 미저장(sha256) · 단회성 · 재발급 시 이전 무효 · 상태는 파생 · 무효 사유 동일화.</p>
+<hr>
+<h2 id="4-라이브-스택-상태--재현">4. 라이브 스택 상태 + 재현</h2>
+<ul>
+<li>DB: <code>backend/dev.db</code>·<code>dev_qa.db</code> 둘 다 <code>0009_onboarding</code>, 드리프트 0. <code>AUTO_CREATE_TABLES</code>는 false여도 된다.</li>
+<li>로그인: <code>alice@virtualoffice.local</code> / <code>password123</code>(company 1). <code>/signup</code>으로 새 회사 개설.</li>
+<li>검증 명령(백엔드): <code>cd backend &amp;&amp; DATABASE_URL=&quot;sqlite+aiosqlite:///:memory:&quot; python -m pytest -q</code> (~3분)</li>
+<li>타겟 검증: <code>pytest tests/test_employees_crud.py tests/test_access_links.py tests/test_tenant_isolation*.py -q</code></li>
+</ul>
+<hr>
+<h2 id="5-함정--주의-gotchas">5. 함정 / 주의 (gotchas)</h2>
+<ul>
+<li><strong>⚠ 개발 환경이 Linux(WSL) 전용이다</strong>: <code>backend/.venv</code>는 WSL로 만들어진 venv이고 pytest·fastapi가 없다. <code>frontend/node_modules</code>도 <code>@next/swc-linux-*</code>·<code>@rollup/rollup-linux-*</code>만 있어 Windows에서 <code>next build</code>·<code>vitest</code>가 실행 불가. Windows에서 작업하려면 각각 재설치가 필요하다. (이번 세션의 백엔드 검증은 별도 임시 venv로 수행, 프론트는 <code>tsc</code>까지만 확인 — vitest 미실행.)</li>
+<li><strong>⚠ <code>PUBLIC_APP_URL</code>을 운영에서 반드시 설정</strong>: E4 링크의 호스트는 백엔드가 아니라 <strong>프론트</strong> 주소다. 기본값 <code>http://localhost:3000</code>을 그대로 두면 사용자가 링크를 열 수 없다. <code>.env.example</code> 참조.</li>
+<li><strong>PowerShell로 한글 소스를 rewrite 금지</strong>: <code>Get-Content | Set-Content</code>는 CP949로 읽고 UTF-8로 써서 한글 주석을 전부 깨뜨린다(이번 세션에 <code>consent.py</code>가 당해 <code>git checkout</code>으로 복구). 소스 편집은 반드시 편집 도구로.</li>
+<li><strong>dev.db <code>office.company_id</code>가 <code>CHAR(32)</code> 레거시 타입</strong>: 모델은 <code>Integer</code>. SQLite 비교는 통과하지만(실측 확인) Postgres로 옮기면 문제가 된다. office는 <code>floor</code>·<code>office_layout</code>이 FK로 참조해 재작성 비용이 있어 이번엔 두었다 — 별도 정리 대상.</li>
+<li><strong><code>asyncpg</code>는 Python 3.14 Windows 휠이 없다</strong>(MSVC 요구). SQLite 테스트에는 불필요하므로 제외 설치 가능.</li>
+<li><strong>_html 미러 훅</strong>: <code>docs/*.md</code> 편집 시 전역 PostToolUse 훅이 미러를 일괄 열화 재생성. 복구 = <code>git checkout -- docs/_html/</code> → <code>tools/docs-html</code>에서 <code>node generate.js</code> → 새 문서 미러만 스테이징.</li>
+<li><strong>pytest full ~3분</strong>: 타겟 파일 지정으로 빠르게, full은 커밋 전에만.</li>
+<li><strong>커밋 메시지 백틱 금지</strong>: bash <code>-m &quot;…</code>토큰<code>…&quot;</code>은 명령치환.</li>
+</ul>
+<hr>
+<h2 id="6-진입점-다음-세션-시작">6. 진입점 (다음 세션 시작)</h2>
+<blockquote>24-스펙은 전부 닫혔다. 다음 후보: <strong>&quot;메일 발송 어댑터&quot;</strong>(SMTP/SES 결정 후 E9 self-service 개통) / <strong>&quot;관측성&quot;</strong>(구조화 로깅·Sentry·/ready, 22 Tier 1) / <strong>&quot;i18n&quot;</strong>(C1, 한국어 1,695건 — 재판매 전 조기 착수 권장) / <strong>&quot;개인정보 팩&quot;</strong>(22 §3 동의 게이트·보존기간·열람/삭제).</blockquote>
+<div class="meta-foot">원본: <code>handoff-session-2026-07-27.md</code> · 자동 생성 2026-07-27 · md-to-html</div>
+</main>
+</div>
+
+</body></html>
