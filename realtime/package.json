@@ -10,7 +10,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "test": "tsx src/__tests__/room.smoke.test.ts && tsx src/__tests__/scene-floor.test.ts && tsx src/__tests__/v3-floor.test.ts && tsx src/__tests__/tenant-scope.test.ts && tsx src/__tests__/call-signal.test.ts",
+    "test": "tsx src/__tests__/room.smoke.test.ts && tsx src/__tests__/scene-floor.test.ts && tsx src/__tests__/v3-floor.test.ts && tsx src/__tests__/tenant-scope.test.ts && tsx src/__tests__/layout-world-guard.test.ts && tsx src/__tests__/call-signal.test.ts",
     "smoke": "tsx src/__tests__/room.smoke.test.ts",
     "client-smoke": "tsx scripts/client-smoke.ts",
     "presence-smoke": "tsx scripts/presence-sink-smoke.ts",

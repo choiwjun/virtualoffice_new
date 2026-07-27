@@ -92,7 +92,26 @@ export class DemoFloorLayoutProvider implements FloorLayoutProvider {
  * 이미 FloorLayout 형태로 매핑해 준다(매핑은 백엔드가 수행, 15-realtime §4 / 05 §5). 실패/미배포 시
  * 데모 층으로 폴백해 이동서버가 계속 동작한다. `layout_updated`(D12) 캐시 무효화는 TODO.
  */
+/** 배포 레이아웃과 씬의 월드가 같다고 볼 허용 오차(m). 반올림·inset 차이만 흡수한다. */
+export const WORLD_MATCH_TOLERANCE_M = 0.05;
+
+/**
+ * 서버가 시뮬레이션할 층과 클라가 그리는 씬이 **같은 세계인지** 판정한다.
+ *
+ * 좌표는 둘 다 "미터"라고 부르지만 원점과 크기가 다르면 같은 (10, 5)가 다른 자리를 뜻한다.
+ * 크기가 다른 층을 그대로 받으면 이동 검증이 조용히 어긋난다 — 씬이 배포 박스 안에 들어가면
+ * 거부조차 나지 않아 아무도 모르는 채로 좌표만 틀어진다(2026-07-27 실측: 씬 20×11.256m,
+ * 배포본 23.8×18.5m). 반대로 배포 박스가 더 작으면 클라가 갈 수 있는 곳을 서버가 전부
+ * 거부한다(2026-07-17 QA의 "모든 이동 collision 거부"와 같은 병).
+ */
+export function isSameWorld(a: Rect, b: Rect, tol = WORLD_MATCH_TOLERANCE_M): boolean {
+  return Math.abs(a.w - b.w) <= tol && Math.abs(a.h - b.h) <= tol;
+}
+
 export class HttpFloorLayoutProvider implements FloorLayoutProvider {
+  /** 같은 불일치를 refresh 주기마다 다시 찍지 않도록 (office/floor/크기) 조합을 기억한다. */
+  private readonly warned = new Set<string>();
+
   constructor(
     private readonly baseUrl: string,
     private readonly token: string = "",
@@ -109,6 +128,22 @@ export class HttpFloorLayoutProvider implements FloorLayoutProvider {
       const data = (await res.json()) as FloorLayout;
       if (!data || !data.bounds || !Array.isArray(data.seats) || !Array.isArray(data.walls) || !Array.isArray(data.meetingZones)) {
         throw new Error("bad layout shape");
+      }
+      // 월드 대조 — 크기가 다르면 받지 않는다. 폴백(씬)이 클라와 같은 세계이므로 거기로 돌아가는
+      // 편이, 좌표가 어긋난 채 "성공"하는 것보다 낫다. 이유를 한 번은 반드시 남긴다.
+      const base = await this.fallback.getLayout(officeId, floorId);
+      if (!isSameWorld(data.bounds, base.bounds)) {
+        const key = `${officeId}/${floorId}:${data.bounds.w.toFixed(2)}x${data.bounds.h.toFixed(2)}`;
+        if (!this.warned.has(key)) {
+          this.warned.add(key);
+          // eslint-disable-next-line no-console
+          console.warn(
+            `[layout] world mismatch for ${officeId}/${floorId}: deployed ${data.bounds.w.toFixed(2)}x${data.bounds.h.toFixed(2)}m ` +
+              `!= scene ${base.bounds.w.toFixed(2)}x${base.bounds.h.toFixed(2)}m — 배포 레이아웃을 무시하고 씬 층으로 이동을 검증한다. ` +
+              `(클라가 그리는 씬과 좌표계가 달라 그대로 쓰면 같은 좌표가 다른 자리를 뜻한다)`,
+          );
+        }
+        return base;
       }
       return data;
     } catch (err) {
