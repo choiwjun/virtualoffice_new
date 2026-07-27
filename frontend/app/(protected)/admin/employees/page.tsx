@@ -46,13 +46,19 @@ interface Employee {
   seat_number: string | null;
 }
 
+// ⚠ 임시 표기: 팀 이름의 정본이 아직 DB에 없다. erp_team_id는 숫자뿐이고 GET /api/teams도
+// 인원 집계만 돌려준다(전용 team 테이블 부재). org_group 트리와 erp_team_id를 잇는 것은
+// team_zone뿐인데 이 화면은 그걸 읽지 않는다. 그래서 여기 값이 실제 조직과 어긋나면
+// "데이터팀장인데 소속은 디자인팀"처럼 읽힌다 — 조직도(org_group)와 반드시 함께 고친다.
 const TEAM_LABELS: Record<number, string> = {
-  1: '개발팀',
-  2: '기획팀',
-  3: '디자인팀',
-  4: '마케팅팀',
-  5: '인사팀',
-  6: '재무팀',
+  1: '플랫폼개발팀',
+  2: '디자인실',
+  3: '데이터팀',
+  4: '품질팀',
+  5: '영업팀',
+  6: '마케팅팀',
+  7: '인사팀',
+  8: '재무팀',
 };
 
 const ROLE_LABELS: Record<string, string> = {
