@@ -1240,25 +1240,31 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
             transition: 'filter 1000ms ease, transform 420ms cubic-bezier(.22,.61,.36,1)',
           }}
         >
-        {!useDeployed ? (
-          /* D35 씬 V3 — 텍스처드 탑다운 캔버스를 배경으로. 존 색면·핫스팟·좌석 마커·
-             아바타는 아래 형제 레이어가 좌표(metersToNorm) 기반으로 그대로 얹힌다. */
-          <div className="absolute inset-0 w-full h-full" style={{ background: '#EBE7E0' }}>
-            {/* 방 포커스 줌 시 캔버스를 배율만큼 고해상 재렌더(CSS 확대 블러 방지 — D35 "줌 재렌더"). */}
-            <SceneV3Layer theme={sceneTheme.id} renderScale={zoomView ? 2 : 1} />
-          </div>
-        ) : (
-          /* 배포된 편집기 레이아웃을 벡터로 렌더 — 좌석배치대로 반영(방/벽/구역). 좌표=좌석과 동일 metersToNorm(0~1). */
-          <div
-            className="absolute inset-0 w-full h-full"
-            style={{ background: 'linear-gradient(160deg,#1c2941 0%,#141f33 55%,#0f1828 100%)' }}
-          >
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1 1" preserveAspectRatio="none">
+        {/* D35 씬 V3 — 텍스처드 탑다운 캔버스를 **항상** 배경으로. 존 색면·핫스팟·좌석 마커·
+            아바타는 아래 형제 레이어가 좌표(metersToNorm) 기반으로 그대로 얹힌다.
+            배포 레이아웃이 있어도 배경을 교체하지 않는다 — 이전엔 배포하는 순간 텍스처 씬이
+            통째로 사라지고 도면만 남아, 실제 배치를 반영하는 대가로 사무실이 사라졌다. */}
+        <div className="absolute inset-0 w-full h-full" style={{ background: '#EBE7E0' }}>
+          {/* 방 포커스 줌 시 캔버스를 배율만큼 고해상 재렌더(CSS 확대 블러 방지 — D35 "줌 재렌더"). */}
+          <SceneV3Layer theme={sceneTheme.id} renderScale={zoomView ? 2 : 1} />
+        </div>
+
+        {/* 배포된 편집기 레이아웃(방/벽/구역)을 씬 **위에 얹는다**. 좌표=좌석과 동일 metersToNorm(0~1).
+            텍스처를 덮지 않도록 채움은 얕게, 경계는 또렷하게 — "배경 위의 도면"으로 읽히게 한다. */}
+        {useDeployed && (
+          <>
+            <svg
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              viewBox="0 0 1 1"
+              preserveAspectRatio="none"
+              style={{ zIndex: 4 }}
+              aria-hidden
+            >
               {dynZones.map((z) => (
                 <polygon
                   key={z.id}
                   points={z.poly.map((v) => `${v.x},${v.y}`).join(' ')}
-                  fill={`${z.color}22`}
+                  fill={`${z.color}1f`}
                   stroke={z.color}
                   strokeWidth={0.0022}
                   strokeDasharray="0.012 0.008"
@@ -1268,28 +1274,32 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
                 <polygon
                   key={r.id}
                   points={r.polygon.map((v) => `${v.x},${v.y}`).join(' ')}
-                  fill="rgba(124,58,237,.10)"
-                  stroke="rgba(168,150,240,.6)"
+                  fill="rgba(124,58,237,.08)"
+                  stroke="rgba(186,170,255,.85)"
                   strokeWidth={0.0028}
                 />
               ))}
+              {/* 벽/장애물은 채우지 않는다 — 텍스처가 이미 벽을 그리고 있어 색면으로 덮으면
+                  씬이 가려진다. 윤곽만 얹어 배포 지오메트리와 그림의 정합을 눈으로 볼 수 있게. */}
               {dynObstacles.map((o, i) => (
                 <polygon
                   key={i}
                   points={o.map((v) => `${v.x},${v.y}`).join(' ')}
-                  fill="rgba(120,53,15,.6)"
-                  stroke="rgba(140,70,25,.85)"
-                  strokeWidth={0.0015}
+                  fill="none"
+                  stroke="rgba(255,196,120,.55)"
+                  strokeWidth={0.0016}
+                  strokeDasharray="0.006 0.005"
                 />
               ))}
             </svg>
             <div
               className="absolute left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[11px] font-semibold"
               style={{ top: 10, background: 'rgba(7,16,29,.85)', color: '#9fd0a8', border: '1px solid rgba(120,200,150,.35)', zIndex: 5 }}
+              title="관리자가 배포한 좌석배치의 방·구역·벽을 씬 위에 겹쳐 표시합니다"
             >
               배포된 좌석배치 반영 (편집기 레이아웃)
             </div>
-          </div>
+          </>
         )}
 
         {/* 방 클릭 글로우 (overlay-tokens.activeGlow) — 존 바닥 색면은 V3 캔버스가 자체 렌더(카펫/타일/유리) */}
@@ -1309,8 +1319,8 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
           />
         )}
 
-        {/* 방 라벨 (overlay-tokens.roomLabel) — D33(P0-5): 씬 모드에선 선택(글로우) 시에만 표시.
-            배포 모드는 색면 존이 자체 렌더라 라벨 상시 유지. */}
+        {/* 방 라벨 (overlay-tokens.roomLabel) — D33(P0-5): 씬 모드에선 선택(글로우) 시에만 표시(몰입).
+            배포 모드는 상시 표시 — 씬 위에 얹힌 방 외곽선이 어느 방인지 알 수 없으면 도면이 무의미하다. */}
         {activeRooms.map((room) => {
           const c = polygonCentroid(room.polygon);
           const visible = useDeployed || glowRoom === room.id;
@@ -1504,10 +1514,10 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
           );
         })}
 
-        {/* D34 핫스팟(씬 모드 한정) — 게시판(공지)/서류함(보고서) 아이콘 칩, 좌석 마커와 동일 z 패턴.
-            위치 = V3_HOTSPOTS_NORM(축정렬 리셉션/팬트리 벽). */}
-        {!useDeployed &&
-          HOTSPOTS.map((h) => {
+        {/* D34 핫스팟 — 게시판(공지)/서류함(보고서) 아이콘 칩, 좌석 마커와 동일 z 패턴.
+            위치 = V3_HOTSPOTS_NORM(축정렬 리셉션/팬트리 벽). V3 씬이 항상 배경으로 깔리므로
+            배포 여부와 무관하게 표시한다 — 이전엔 배포 시 씬이 사라져 같이 숨겼다. */}
+        {HOTSPOTS.map((h) => {
             const pos = V3_HOTSPOTS_NORM[h.id] ?? h.n;
             return (
             <button
