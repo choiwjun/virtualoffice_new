@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isAdmin } from '@/lib/auth';
+import { useBranding } from '@/components/BrandingProvider';
 import type { OrgEmployee } from '@/components/org/OrgChartFlow';
 import {
   PageHeader,
@@ -35,13 +36,19 @@ interface OrgGroup {
   parent_id: string | null;
   color: string | null;
   sort_order: number | null;
+  /** 이 그룹이 대표하는 ERP 팀. null = 팀이 아닌 계층(본부·파트 등). */
+  erp_team_id: number | null;
 }
 
 const TYPE_LABEL: Record<string, string> = { division: '본부', department: '부서', part: '파트' };
 
+/** 연결 해제 센티널 — null은 "이 필드 안 건드림"이라 해제를 표현할 수 없다(백엔드 규약). */
+const UNLINK = -1;
+
 export default function OrgChartPage() {
   const me = getUser();
   const allowed = isAdmin(me);
+  const { branding } = useBranding();
   const [employees, setEmployees] = useState<OrgEmployee[]>([]);
   const [orgGroups, setOrgGroups] = useState<OrgGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,11 +56,25 @@ export default function OrgChartPage() {
   const [toast, setToast] = useState('');
   const [banner, setBanner] = useState<{ valid: boolean; errors: { code: string; message: string }[]; warnings: unknown[] } | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [editing, setEditing] = useState<OrgGroup | null>(null);
   const [busy, setBusy] = useState('');
 
   const reload = () => {
     api.get<{ items: OrgGroup[]; total: number }>('/api/org-groups').then((d) => setOrgGroups(d.items)).catch(() => {});
   };
+
+  /** 팀 번호 → 이름. 그래프가 "팀 1" 대신 조직도의 이름을 쓰게 하는 유일한 통로다. */
+  const teamNames = useMemo(
+    () => new Map(orgGroups.filter((g) => g.erp_team_id !== null).map((g) => [g.erp_team_id as number, g.name])),
+    [orgGroups],
+  );
+
+  /** 명부에는 있는데 아직 이름을 이어 주지 않은 팀 — 배포 전에 관리자가 알아야 한다. */
+  const unmappedTeams = useMemo(() => {
+    const ids = new Set<number>();
+    employees.forEach((e) => { if (e.erp_team_id > 0 && !teamNames.has(e.erp_team_id)) ids.add(e.erp_team_id); });
+    return Array.from(ids).sort((a, b) => a - b);
+  }, [employees, teamNames]);
 
   async function validateOrg() {
     setBusy('validate');
@@ -160,20 +181,39 @@ export default function OrgChartPage() {
 
       <SectionCard title="조직 구조" icon={ICON.layers} className="flex-1 min-h-0" bodyClassName="flex-1 min-h-0 flex gap-0 p-0">
         {/* 조직 그룹 계층 패널 (GET /api/org-groups) */}
-        <aside className="w-56 flex-shrink-0 border-r border-border-subtle overflow-y-auto p-3">
-          <div className="text-xs font-semibold text-text-muted mb-2">조직 그룹 (org_group)</div>
+        <aside className="w-64 flex-shrink-0 border-r border-border-subtle overflow-y-auto p-3">
+          <div className="text-xs font-semibold text-text-muted mb-1">조직 그룹</div>
+          <p className="text-[11px] text-text-muted leading-snug mb-2">
+            그룹을 누르면 이름·상위·팀 연결을 고칩니다. <strong className="text-text-secondary">팀을 연결한 그룹의 이름이 곧 팀 이름</strong>이 되어 직원명부·그래프에 함께 쓰입니다.
+          </p>
           {orgGroups.length === 0 ? (
             <p className="text-xs text-text-muted">등록된 조직 그룹이 없습니다. (팀 계층은 우측 그래프)</p>
           ) : (
-            <ul className="space-y-1">
+            <ul className="space-y-0.5">
               {orgGroups.map((g) => (
-                <li key={g.id} className="text-sm text-text-secondary flex items-center gap-1" style={{ paddingLeft: depthOf(g) * 12 }}>
-                  <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: g.color || '#c7d2fe' }} />
-                  <span>{g.name}</span>
-                  <span className="text-[10px] text-text-muted">{TYPE_LABEL[g.type] ?? g.type}</span>
+                <li key={g.id} style={{ paddingLeft: depthOf(g) * 12 }}>
+                  <button
+                    onClick={() => setEditing(g)}
+                    className="w-full text-left text-sm text-text-secondary flex items-center gap-1 rounded px-1 py-0.5 hover:bg-bg-surface-raised"
+                  >
+                    <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: g.color || '#c7d2fe' }} />
+                    <span className="truncate">{g.name}</span>
+                    <span className="text-[10px] text-text-muted flex-shrink-0">{TYPE_LABEL[g.type] ?? g.type}</span>
+                    {g.erp_team_id !== null && (
+                      <span className="ml-auto text-[10px] text-accent-cyan flex-shrink-0">팀 {g.erp_team_id}</span>
+                    )}
+                  </button>
                 </li>
               ))}
             </ul>
+          )}
+          {unmappedTeams.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-border-subtle">
+              <div className="text-[11px] font-semibold text-status-external mb-1">이름 없는 팀 {unmappedTeams.length}개</div>
+              <p className="text-[11px] text-text-muted leading-snug">
+                {unmappedTeams.map((id) => `팀 ${id}`).join(' · ')} — 사람은 있는데 연결된 그룹이 없어 화면에 번호로 나옵니다.
+              </p>
+            </div>
           )}
         </aside>
         <div className="flex-1 min-h-0 m-4 border border-border-subtle rounded-xl overflow-hidden bg-bg-base">
@@ -186,39 +226,78 @@ export default function OrgChartPage() {
           ) : employees.length === 0 ? (
             <EmptyState icon={ICON.tree} title="조직 데이터가 없습니다." />
           ) : (
-            <OrgChartFlow employees={employees} />
+            <OrgChartFlow employees={employees} teamNames={teamNames} companyName={branding?.brand_name || '회사'} />
           )}
         </div>
       </SectionCard>
 
       {showCreate && (
-        <CreateOrgGroupModal
+        <OrgGroupModal
           groups={orgGroups}
           onClose={() => setShowCreate(false)}
-          onCreated={() => { setShowCreate(false); reload(); setToast('조직 그룹이 생성되었습니다.'); }}
+          onSaved={() => { setShowCreate(false); reload(); setToast('조직 그룹이 생성되었습니다.'); }}
+        />
+      )}
+      {editing && (
+        <OrgGroupModal
+          groups={orgGroups}
+          group={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); reload(); setToast('조직 그룹이 수정되었습니다.'); }}
         />
       )}
     </div>
   );
 }
 
-function CreateOrgGroupModal({ groups, onClose, onCreated }: { groups: { id: string; name: string }[]; onClose: () => void; onCreated: () => void }) {
-  const [name, setName] = useState('');
-  const [type, setType] = useState('department');
-  const [parentId, setParentId] = useState('');
-  const [color, setColor] = useState('#6366f1');
+function OrgGroupModal({ groups, group, onClose, onSaved }: { groups: OrgGroup[]; group?: OrgGroup; onClose: () => void; onSaved: () => void }) {
+  const isEdit = !!group;
+  const [name, setName] = useState(group?.name ?? '');
+  const [type, setType] = useState(group?.type ?? 'department');
+  const [parentId, setParentId] = useState(group?.parent_id ?? '');
+  const [color, setColor] = useState(group?.color ?? '#6366f1');
+  /** 빈 문자열 = 팀 아님. 숫자면 그 팀의 이름을 이 그룹이 맡는다. */
+  const [teamId, setTeamId] = useState(group?.erp_team_id != null ? String(group.erp_team_id) : '');
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
+  /** 자기 자신과 자손은 부모가 될 수 없다 — 고르게 두면 순환참조를 만들고 검증에서만 걸린다. */
+  const parentOptions = groups.filter((g) => {
+    if (!group) return true;
+    if (g.id === group.id) return false;
+    let cur: OrgGroup | undefined = g;
+    const byId = new Map(groups.map((x) => [x.id, x]));
+    for (let i = 0; cur?.parent_id && i < 8; i += 1) {
+      if (cur.parent_id === group.id) return false;
+      cur = byId.get(cur.parent_id);
+    }
+    return true;
+  });
+
   async function save() {
     if (!name.trim()) { setErr('이름은 필수입니다.'); return; }
+    const parsedTeam = teamId.trim() === '' ? null : Number(teamId);
+    if (parsedTeam !== null && (!Number.isInteger(parsedTeam) || parsedTeam < 1)) {
+      setErr('팀 번호는 1 이상의 정수입니다. (비우면 팀 아님)');
+      return;
+    }
     setSaving(true);
     setErr('');
+    // 수정에서 비우면 "해제"라 센티널을 보낸다. 생성에서는 그냥 안 보낸다.
+    const teamField = parsedTeam ?? (isEdit ? UNLINK : null);
     try {
-      await api.post('/api/org-groups', { name: name.trim(), type, parent_id: parentId || null, color });
-      onCreated();
+      const body = { name: name.trim(), type, parent_id: parentId || null, color, erp_team_id: teamField };
+      if (isEdit) await api.put(`/api/org-groups/${group!.id}`, body);
+      else await api.post('/api/org-groups', body);
+      onSaved();
     } catch (e) {
-      setErr(e instanceof ApiError ? `생성 실패 (${e.status})` : '서버 오류');
+      if (e instanceof ApiError && e.code === 'team_already_mapped') {
+        setErr(`팀 ${parsedTeam}은(는) 이미 "${e.detail?.group_name}"이 맡고 있습니다. 그쪽 연결을 먼저 푸세요.`);
+      } else if (e instanceof ApiError && e.status === 409) {
+        setErr('저장 실패 — 하위 그룹이 있거나 이미 사용 중인 값입니다.');
+      } else {
+        setErr(e instanceof ApiError ? `저장 실패 (${e.status})` : '서버 오류');
+      }
     } finally {
       setSaving(false);
     }
@@ -228,7 +307,7 @@ function CreateOrgGroupModal({ groups, onClose, onCreated }: { groups: { id: str
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="rounded-2xl shadow-2xl w-full max-w-md border border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
-          <h2 className="font-semibold text-text-primary">조직 그룹 생성</h2>
+          <h2 className="font-semibold text-text-primary">{isEdit ? '조직 그룹 수정' : '조직 그룹 생성'}</h2>
           <button onClick={onClose} className="text-text-muted hover:text-text-primary text-xl">×</button>
         </div>
         <div className="px-6 py-4 space-y-3">
@@ -254,13 +333,28 @@ function CreateOrgGroupModal({ groups, onClose, onCreated }: { groups: { id: str
             <label className="block text-sm font-medium text-text-secondary mb-1">상위 그룹</label>
             <select value={parentId} onChange={(e) => setParentId(e.target.value)} className="w-full border border-border-subtle bg-bg-base text-text-primary rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan">
               <option value="">(최상위)</option>
-              {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+              {parentOptions.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">담당 팀 번호</label>
+            <input
+              type="number"
+              min={1}
+              value={teamId}
+              onChange={(e) => setTeamId(e.target.value)}
+              placeholder="비우면 팀 아님"
+              className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
+            />
+            <p className="text-[11px] text-text-muted mt-1 leading-snug">
+              직원의 팀 번호(<code>erp_team_id</code>)와 이어 주면 <strong className="text-text-secondary">이 그룹 이름이 그 팀의 이름</strong>이 됩니다.
+              본부·파트처럼 사람이 직접 속하지 않는 계층은 비워 둡니다. 한 팀은 한 그룹만 맡습니다.
+            </p>
           </div>
           {err && <p className="text-sm text-red-300">{err}</p>}
           <div className="flex gap-2 pt-1">
             <button onClick={onClose} className="flex-1 px-4 py-2 text-sm border border-border-subtle rounded-md text-text-secondary hover:bg-bg-surface-raised">취소</button>
-            <button onClick={save} disabled={saving} className="flex-1 px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary-hover disabled:opacity-50">{saving ? '생성 중...' : '생성'}</button>
+            <button onClick={save} disabled={saving} className="flex-1 px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary-hover disabled:opacity-50">{saving ? '저장 중...' : isEdit ? '저장' : '생성'}</button>
           </div>
         </div>
       </div>

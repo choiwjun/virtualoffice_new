@@ -12,6 +12,12 @@ export class ApiError extends Error {
     public readonly status: number,
     message: string,
     public readonly code?: string,
+    /** 오류 본문의 `detail`이 객체일 때 그대로 실어 준다.
+     *
+     * 코드만으로는 못 쓰는 안내가 있다 — "이미 ○○이 쓰고 있다"의 ○○처럼 서버만 아는
+     * 값. 문자열 detail은 지금까지대로 `code`로만 오므로 기존 호출부는 영향이 없다.
+     */
+    public readonly detail?: Record<string, unknown>,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -54,19 +60,23 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     let code: string | undefined;
+    let detail: Record<string, unknown> | undefined;
     try {
       const parsed: unknown = JSON.parse(text);
-      if (
-        parsed != null &&
-        typeof parsed === 'object' &&
-        typeof (parsed as { detail?: unknown }).detail === 'string'
-      ) {
-        code = (parsed as { detail: string }).detail;
+      const raw = (parsed as { detail?: unknown } | null)?.detail;
+      if (typeof raw === 'string') {
+        code = raw;
+      } else if (raw != null && typeof raw === 'object' && !Array.isArray(raw)) {
+        // 구조화 detail: { code, ...맥락 }. code는 문자열 경로와 똑같이 취급한다.
+        // 배열은 제외 — FastAPI 422 검증 오류가 배열이고, 그건 맥락이 아니라 필드 목록이다.
+        detail = raw as Record<string, unknown>;
+        const inner = detail.code;
+        if (typeof inner === 'string') code = inner;
       }
     } catch {
       // 본문이 JSON이 아니면 코드 없음 → statusText로 폴백
     }
-    throw new ApiError(res.status, mapApiError(code) ?? code ?? res.statusText, code);
+    throw new ApiError(res.status, mapApiError(code) ?? code ?? res.statusText, code, detail);
   }
 
   if (res.status === 204) return {} as T;

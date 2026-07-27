@@ -263,6 +263,50 @@ async def test_org_group_cannot_parent_to_other_tenant(async_client, seeded, c1_
 
 
 @pytest.mark.asyncio
+async def test_team_name_comes_from_own_company_org_group(
+    async_client, seeded, c1_headers, c2_headers, db_session
+):
+    """팀 이름은 같은 회사 org_group에서만 온다.
+
+    번호는 회사마다 독립이라 두 회사가 같은 번호를 쓸 수 있다 — 여기서 회사 필터가
+    빠지면 회사1의 "플랫폼개발팀"이 회사2 화면에 그대로 뜬다.
+    """
+    db_session.add_all([
+        OrgGroup(id=uuid4(), company_id=C1, name="C1 플랫폼개발팀",
+                 type=OrgGroupType.DEPARTMENT, erp_team_id=11),
+        OrgGroup(id=uuid4(), company_id=C2, name="C2 영업팀",
+                 type=OrgGroupType.DEPARTMENT, erp_team_id=11),
+    ])
+    await db_session.commit()
+
+    r1 = await async_client.get("/api/teams", headers=c1_headers)
+    t1 = next(t for t in r1.json()["items"] if t["team_id"] == 11)
+    assert t1["name"] == "C1 플랫폼개발팀", t1
+
+    # 회사2의 사람은 팀 22에 있다 — 이름을 이어 준 그룹이 없으므로 None이어야 한다.
+    r2 = await async_client.get("/api/teams", headers=c2_headers)
+    t2 = next(t for t in r2.json()["items"] if t["team_id"] == 22)
+    assert t2["name"] is None, "매핑 없는 팀에 서버가 이름을 지어냈다"
+
+
+@pytest.mark.asyncio
+async def test_org_validate_warns_unmapped_team(async_client, seeded, c1_headers, db_session):
+    """사람은 있는데 이름을 이어 준 그룹이 없으면 경고 — 다만 배포는 막지 않는다."""
+    r = await async_client.post("/api/org-groups/validate", headers=c1_headers)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["valid"] is True, "이름 미연결은 오류가 아니다"
+    assert [w["team_id"] for w in body["warnings"]] == [11], body["warnings"]
+
+    db_session.add(OrgGroup(id=uuid4(), company_id=C1, name="C1 팀",
+                            type=OrgGroupType.DEPARTMENT, erp_team_id=11))
+    await db_session.commit()
+
+    after = await async_client.post("/api/org-groups/validate", headers=c1_headers)
+    assert after.json()["warnings"] == [], after.json()["warnings"]
+
+
+@pytest.mark.asyncio
 async def test_org_validate_only_sees_own_company(async_client, seeded, c1_headers, db_session):
     """타사 조직도가 깨져 있어도 내 배포를 막으면 안 된다."""
     broken = OrgGroup(id=uuid4(), company_id=C2, name="C2 고아", type=OrgGroupType.PART,

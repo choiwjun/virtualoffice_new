@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -28,14 +28,27 @@ const ROLE_COLOR: Record<string, string> = {
   employee: '#64748b',
 };
 
-function buildGraph(employees: OrgEmployee[]): { nodes: Node[]; edges: Edge[] } {
+/** 팀 번호 → 이름. 조직도(org_group)에서 이어 준 것만 들어온다. */
+export type TeamNames = Map<number, string>;
+
+/** 이름을 안 이어 준 팀은 번호를 그대로 보여 준다 — 지어낸 이름보다 낫고, 이으면 사라진다. */
+function teamLabel(teamId: number, names: TeamNames): string {
+  if (teamId === 0) return '미배정';
+  return names.get(teamId) ?? `팀 ${teamId}`;
+}
+
+function buildGraph(
+  employees: OrgEmployee[],
+  names: TeamNames,
+  companyName: string,
+): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
   const rootId = 'company';
   nodes.push({
     id: rootId,
     position: { x: 400, y: 20 },
-    data: { label: '회사 (company #1)' },
+    data: { label: companyName },
     style: { background: '#111827', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, padding: 8, width: 180 },
   });
 
@@ -43,11 +56,18 @@ function buildGraph(employees: OrgEmployee[]): { nodes: Node[]; edges: Edge[] } 
   teams.forEach((teamId, ti) => {
     const teamNodeId = `team-${teamId}`;
     const teamX = 120 + ti * 320;
+    const named = names.has(teamId);
     nodes.push({
       id: teamNodeId,
       position: { x: teamX, y: 160 },
-      data: { label: `팀 #${teamId}` },
-      style: { background: '#e0e7ff', color: '#3730a3', border: '1px solid #a5b4fc', borderRadius: 8, fontWeight: 600, padding: 8, width: 160 },
+      data: { label: teamLabel(teamId, names) },
+      style: {
+        background: named ? '#e0e7ff' : '#f1f5f9',
+        color: named ? '#3730a3' : '#64748b',
+        // 이름 없는 팀은 점선 — 조직도에 아직 안 이어졌다는 뜻이 한눈에 보인다.
+        border: named ? '1px solid #a5b4fc' : '1px dashed #94a3b8',
+        borderRadius: 8, fontWeight: 600, padding: 8, width: 160,
+      },
     });
     edges.push({ id: `e-${rootId}-${teamNodeId}`, source: rootId, target: teamNodeId, animated: false });
 
@@ -75,9 +95,23 @@ function buildGraph(employees: OrgEmployee[]): { nodes: Node[]; edges: Edge[] } 
   return { nodes, edges };
 }
 
-export default function OrgChartFlow({ employees }: { employees: OrgEmployee[] }) {
-  const initial = useMemo(() => buildGraph(employees), [employees]);
+export default function OrgChartFlow({
+  employees,
+  teamNames,
+  companyName = '회사',
+}: {
+  employees: OrgEmployee[];
+  teamNames: TeamNames;
+  companyName?: string;
+}) {
+  const initial = useMemo(
+    () => buildGraph(employees, teamNames, companyName),
+    [employees, teamNames, companyName],
+  );
   const [nodes, setNodes] = useState<Node[]>(initial.nodes);
+  // 이름은 조직도를 따로 불러와 채우므로 첫 렌더 뒤에 도착한다. 초기값으로만 두면
+  // 그래프가 "팀 1"에 멈춘 채 좌측 트리와 계속 어긋난다.
+  useEffect(() => setNodes(initial.nodes), [initial]);
   const onNodesChange = useCallback((changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)), []);
 
   return (

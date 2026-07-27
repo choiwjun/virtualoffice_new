@@ -1234,13 +1234,22 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
           {/* ── (1b) 플로팅 셸 크롬 — /office 몰입(railMode) 전용. 씬 위 z-30 오버레이 ── */}
           {railMode && (
             <>
-              {/* 좌상단: 오피스 필 — HORIZON · {오피스명} + 재실 카운터 */}
+              {/* 좌상단: 오피스 필 — 브랜드명 + 재실 카운터.
+                  E5: 이름·로고는 테넌트 설정에서 온다. 셸이 특정 회사명을 박아 두면
+                  다른 회사가 로그인해도 남의 간판이 걸린다(화이트라벨 전체가 무의미해진다). */}
               <div
                 className="absolute left-4 top-4 z-30 h-11 flex items-center gap-2.5 pl-2 pr-3.5 rounded-2xl"
                 style={chromeSurface()}
               >
-                <div className="w-[26px] h-[26px] rounded-lg flex items-center justify-center text-white text-xs font-extrabold" style={{ background: 'linear-gradient(135deg,#C4553B,#E3B23C)' }}>H</div>
-                <span className="text-[13px] font-extrabold tracking-tight" style={{ color: T1B.text1 }}>HORIZON · 판교 HQ</span>
+                {brandLogo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={brandLogo} alt="" className="w-[26px] h-[26px] rounded-lg object-contain flex-shrink-0" />
+                ) : (
+                  <div className="w-[26px] h-[26px] rounded-lg flex items-center justify-center text-white text-xs font-extrabold" style={{ background: 'linear-gradient(135deg,#C4553B,#E3B23C)' }}>
+                    {brandName.trim().charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="text-[13px] font-extrabold tracking-tight truncate max-w-[220px]" style={{ color: T1B.text1 }}>{brandName}</span>
                 <span className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: 'rgba(255,255,255,0.07)', color: T1B.text2 }}>
                   <span className="w-[7px] h-[7px] rounded-full" style={{ background: '#34B369' }} />
                   {onlineCount}/{employees.length || onlineCount}

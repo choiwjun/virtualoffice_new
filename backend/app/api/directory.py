@@ -40,6 +40,14 @@ class TeamMember(BaseModel):
 
 class TeamOut(BaseModel):
     team_id: int
+    name: Optional[str] = None
+    """org_group에 연결된 이름. 아직 안 이었으면 None — 화면이 "팀 12"로 폴백한다.
+
+    빈 문자열이나 "팀 12"를 서버가 지어내지 않는다. 그러면 화면이 "이름이 없다"와
+    "이름이 정말 그렇다"를 구별하지 못해 연결 안내를 띄울 수 없다.
+    """
+    color: Optional[str] = None
+    org_group_id: Optional[str] = None
     member_count: int
     leader: Optional[TeamMember] = None
     members: list[TeamMember]
@@ -57,6 +65,8 @@ class OrgGroupOut(BaseModel):
     parent_id: Optional[str] = None
     color: Optional[str] = None
     sort_order: Optional[int] = None
+    erp_team_id: Optional[int] = None
+    """이 그룹이 대표하는 ERP 팀. NULL = 팀이 아닌 계층(본부·파트 등)."""
 
 
 class OrgGroupListOut(BaseModel):
@@ -71,7 +81,12 @@ async def list_teams(
     _: CurrentUser = Depends(get_current_user),
     cid: int = Depends(company_scope),
 ) -> TeamListOut:
-    """팀 목록: 활성 erp_user를 erp_team_id로 집계. (전용 team 테이블 부재 → 파생)"""
+    """팀 목록: 활성 erp_user를 erp_team_id로 집계 + org_group에서 이름을 얹는다.
+
+    인원은 erp_user가, 이름·색은 org_group이 정본이다. 팀 자체가 별도 테이블이 아니라
+    "같은 erp_team_id를 가진 사람들"이므로, 사람이 하나도 없는 팀은 목록에 없다 —
+    조직도에 이름만 이어 두고 아직 아무도 배정하지 않은 그룹은 팀으로 뜨지 않는다.
+    """
     rows = (
         await db.execute(
             select(ErpUser)
@@ -79,6 +94,15 @@ async def list_teams(
             .order_by(ErpUser.erp_team_id, ErpUser.id)
         )
     ).scalars().all()
+
+    groups = (
+        await db.execute(
+            select(OrgGroup).where(
+                OrgGroup.company_id == cid, OrgGroup.erp_team_id.is_not(None)
+            )
+        )
+    ).scalars().all()
+    by_team = {g.erp_team_id: g for g in groups}
 
     teams: dict[int, list[ErpUser]] = {}
     for u in rows:
@@ -91,9 +115,13 @@ async def list_teams(
     for team_id in sorted(teams.keys()):
         members = teams[team_id]
         leader = next((m for m in members if (m.role.value if hasattr(m.role, "value") else m.role) == "leader"), None)
+        g = by_team.get(team_id)
         items.append(
             TeamOut(
                 team_id=team_id,
+                name=g.name if g else None,
+                color=g.color if g else None,
+                org_group_id=str(g.id) if g else None,
                 member_count=len(members),
                 leader=_member(leader) if leader else None,
                 members=[_member(m) for m in members],
@@ -116,17 +144,7 @@ async def list_org_groups(
             .order_by(OrgGroup.sort_order, OrgGroup.name)
         )
     ).scalars().all()
-    items = [
-        OrgGroupOut(
-            id=str(g.id),
-            name=g.name,
-            type=g.type.value if hasattr(g.type, "value") else g.type,
-            parent_id=str(g.parent_id) if g.parent_id else None,
-            color=g.color,
-            sort_order=g.sort_order,
-        )
-        for g in rows
-    ]
+    items = [_group_out(g) for g in rows]
     return OrgGroupListOut(items=items, total=len(items))
 
 
@@ -142,6 +160,7 @@ class OrgGroupCreate(BaseModel):
     parent_id: Optional[str] = None
     color: Optional[str] = None
     sort_order: Optional[int] = None
+    erp_team_id: Optional[int] = None
 
 
 class OrgGroupPatch(BaseModel):
@@ -150,6 +169,62 @@ class OrgGroupPatch(BaseModel):
     parent_id: Optional[str] = None
     color: Optional[str] = None
     sort_order: Optional[int] = None
+    erp_team_id: Optional[int] = None
+    """연결 해제는 -1을 보낸다.
+
+    None은 "이 필드를 안 건드림"이라 해제와 구별되지 않는다(다른 필드도 같은 규약).
+    음수 팀 번호는 존재하지 않으므로 센티넬로 안전하다.
+    """
+
+
+def _group_out(g: OrgGroup) -> OrgGroupOut:
+    return OrgGroupOut(
+        id=str(g.id),
+        name=g.name,
+        type=g.type.value if hasattr(g.type, "value") else g.type,
+        parent_id=str(g.parent_id) if g.parent_id else None,
+        color=g.color,
+        sort_order=g.sort_order,
+        erp_team_id=g.erp_team_id,
+    )
+
+
+def _team_field(raw: Optional[int]) -> Optional[int]:
+    """요청의 erp_team_id를 저장값으로 바꾼다. 음수(-1) = 연결 해제 → None.
+
+    0은 거부한다 — E3 유저 생성이 "팀 미배정"에 쓰는 센티널이라(직원명부도 0을 "미배정"으로
+    읽는다) 그룹이 0을 맡으면 소속 없는 사람 전원이 그 그룹 이름으로 뭉쳐 보인다.
+    """
+    if raw is None or raw < 0:
+        return None
+    if raw == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "team_zero_reserved",
+                    "message": "팀 0은 '미배정' 센티널입니다. 1 이상을 쓰세요."},
+        )
+    return raw
+
+
+async def _assert_team_free(db, cid: int, team_id: Optional[int], exclude_id=None) -> None:
+    """같은 회사에서 그 팀을 이미 쓰는 그룹이 있으면 409.
+
+    DB 유니크가 최종 방어선이지만 거기서 터지면 IntegrityError가 500으로 나간다.
+    관리자에게는 "이미 ○○이 쓰고 있다"가 필요하다 — 어느 그룹인지까지 돌려준다.
+    """
+    if team_id is None:
+        return
+    stmt = select(OrgGroup).where(
+        OrgGroup.company_id == cid, OrgGroup.erp_team_id == team_id
+    )
+    if exclude_id is not None:
+        stmt = stmt.where(OrgGroup.id != exclude_id)
+    other = (await db.execute(stmt)).scalars().first()
+    if other is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": "team_already_mapped", "group_name": other.name},
+        )
 
 
 class OrgValidateOut(BaseModel):
@@ -193,14 +268,17 @@ async def create_org_group(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_parent_id")
         # 타사 그룹을 부모로 지정하면 조직도가 테넌트를 가로질러 이어진다.
         await _load_scoped_group(db, user, str(parent))
+    team_id = _team_field(body.erp_team_id)
+    await _assert_team_free(db, cid, team_id)
     g = OrgGroup(
         id=_uuid.uuid4(), company_id=cid, name=body.name,
         type=_org_type(body.type), parent_id=parent, color=body.color, sort_order=body.sort_order,
+        erp_team_id=team_id,
     )
     db.add(g)
     await db.commit()
     await db.refresh(g)
-    return OrgGroupOut(id=str(g.id), name=g.name, type=g.type.value, parent_id=str(g.parent_id) if g.parent_id else None, color=g.color, sort_order=g.sort_order)
+    return _group_out(g)
 
 
 @router.put("/org-groups/{group_id}", response_model=OrgGroupOut)
@@ -232,9 +310,13 @@ async def update_org_group(
         g.color = body.color
     if body.sort_order is not None:
         g.sort_order = body.sort_order
+    if body.erp_team_id is not None:
+        team_id = _team_field(body.erp_team_id)
+        await _assert_team_free(db, g.company_id, team_id, exclude_id=gid)
+        g.erp_team_id = team_id
     await db.commit()
     await db.refresh(g)
-    return OrgGroupOut(id=str(g.id), name=g.name, type=g.type.value, parent_id=str(g.parent_id) if g.parent_id else None, color=g.color, sort_order=g.sort_order)
+    return _group_out(g)
 
 
 @router.delete("/org-groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -271,7 +353,29 @@ async def _validate_org(db, cid: int) -> OrgValidateOut:
     for g in groups:
         if g.parent_id is not None and g.parent_id not in by_id:
             errors.append({"code": "ORPHAN_PARENT", "group": g.name, "message": f"부모 미존재: {g.name}"})
-    # 미매핑 팀(경고): erp_team_id가 org_group에 매핑되지 않은 활성 사용자 팀
+    # 미매핑 팀(경고): 사람은 있는데 이름을 이어 준 그룹이 없는 팀.
+    # 오류가 아니라 경고다 — 이름 없이도 제품은 돌아간다(화면이 "팀 12"로 폴백). 다만
+    # 그 숫자가 사용자에게 그대로 보이므로 관리자가 알고는 있어야 한다.
+    mapped = {g.erp_team_id for g in groups if g.erp_team_id is not None}
+    used = set(
+        (
+            await db.execute(
+                select(ErpUser.erp_team_id)
+                .where(
+                    ErpUser.company_id == cid,
+                    ErpUser.is_active.is_(True),
+                    ErpUser.erp_team_id != 0,  # 0 = 미배정 센티널, 이름 붙일 팀이 아니다
+                )
+                .distinct()
+            )
+        ).scalars().all()
+    )
+    for team_id in sorted(used - mapped):
+        warnings.append({
+            "code": "UNMAPPED_TEAM",
+            "team_id": team_id,
+            "message": f"팀 {team_id}에 연결된 조직 그룹이 없습니다 — 화면에 \"팀 {team_id}\"로 표시됩니다.",
+        })
     return OrgValidateOut(valid=len(errors) == 0, errors=errors, warnings=warnings)
 
 

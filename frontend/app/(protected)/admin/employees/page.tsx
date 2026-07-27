@@ -46,20 +46,16 @@ interface Employee {
   seat_number: string | null;
 }
 
-// ⚠ 임시 표기: 팀 이름의 정본이 아직 DB에 없다. erp_team_id는 숫자뿐이고 GET /api/teams도
-// 인원 집계만 돌려준다(전용 team 테이블 부재). org_group 트리와 erp_team_id를 잇는 것은
-// team_zone뿐인데 이 화면은 그걸 읽지 않는다. 그래서 여기 값이 실제 조직과 어긋나면
-// "데이터팀장인데 소속은 디자인팀"처럼 읽힌다 — 조직도(org_group)와 반드시 함께 고친다.
-const TEAM_LABELS: Record<number, string> = {
-  1: '플랫폼개발팀',
-  2: '디자인실',
-  3: '데이터팀',
-  4: '품질팀',
-  5: '영업팀',
-  6: '마케팅팀',
-  7: '인사팀',
-  8: '재무팀',
-};
+/** GET /api/org-groups — 팀 이름의 정본. erp_team_id가 있는 그룹만 팀이다.
+ *
+ * /api/teams가 아니라 조직도를 읽는 이유: /api/teams는 "사람이 한 명이라도 있는 팀"만
+ * 돌려준다. 그러면 방금 만든 빈 팀에 **첫 사람을 넣을 수 없다** — 선택지에 없으니까.
+ */
+interface OrgGroupTeam {
+  id: string;
+  name: string;
+  erp_team_id: number | null;
+}
 
 const ROLE_LABELS: Record<string, string> = {
   admin: '관리자',
@@ -80,10 +76,16 @@ const PRESENCE_LABELS: Record<string, { label: string; color: string }> = {
 
 const PAGE_SIZE = 15;
 
-/** 팀 라벨(알려진 ERP 팀) — 0은 native 유저의 미할당 센티널. */
-function teamLabel(id: number): string {
-  if (id === 0) return '미배정';
-  return TEAM_LABELS[id] ?? `팀 ${id}`;
+/** 팀 라벨 — 조직도에 이름을 이어 주면 그 이름, 아니면 번호 그대로.
+ *
+ * 번호를 그대로 보여 주는 게 임의의 이름을 지어내는 것보다 낫다. "팀 9"는 관리자가
+ * 조직도에서 이어 주면 사라지지만, 화면이 지어낸 이름은 실제 조직과 어긋난 채로 남는다.
+ * 0은 native 유저의 미할당 센티널이라 별도 표기한다.
+ */
+function teamNameMap(groups: OrgGroupTeam[]): Map<number, string> {
+  return new Map(
+    groups.filter((g) => g.erp_team_id !== null).map((g) => [g.erp_team_id as number, g.name]),
+  );
 }
 
 const EMPTY_FORM = {
@@ -161,11 +163,41 @@ export default function EmployeesPage() {
     fetchEmployees();
   }, [fetchEmployees]);
 
-  // Derived: unique teams from data
+  /** 팀 이름 카탈로그 — 실패해도 화면은 번호로 돌아간다(이름은 표기일 뿐 기능이 아니다). */
+  const [orgTeams, setOrgTeams] = useState<OrgGroupTeam[]>([]);
+  useEffect(() => {
+    api
+      .get<{ items: OrgGroupTeam[] }>('/api/org-groups')
+      .then((d) => setOrgTeams(d.items))
+      .catch(() => setOrgTeams([]));
+  }, []);
+  const teamNames = useMemo(() => teamNameMap(orgTeams), [orgTeams]);
+
+  /** 팀 라벨 — 조직도에 이름을 이어 주면 그 이름, 아니면 번호 그대로.
+   *
+   * 번호를 그대로 보여 주는 게 임의의 이름을 지어내는 것보다 낫다. "팀 9"는 관리자가
+   * 조직도에서 이어 주면 사라지지만, 화면이 지어낸 이름은 실제 조직과 어긋난 채로 남는다.
+   * 0은 native 유저의 미할당 센티널이라 별도 표기한다.
+   */
+  const teamLabel = useCallback(
+    (id: number) => (id === 0 ? '미배정' : teamNames.get(id) ?? `팀 ${id}`),
+    [teamNames],
+  );
+
+  /** 필터에 쓸 팀 번호 — 명부에 실제로 있는 팀만(빈 팀으로 거르면 결과가 항상 0건). */
   const teams = useMemo(() => {
     const ids = Array.from(new Set(employees.map((e) => e.erp_team_id))).sort((a, b) => a - b);
     return ids;
   }, [employees]);
+
+  /** 배정 선택지 — 조직도에 이름이 있는 팀 + 명부에 남아 있는 미연결 번호.
+   * 앞쪽만 쓰면 아직 이어 주지 않은 팀의 사람을 편집할 때 소속이 사라진 것처럼 보인다.
+   */
+  const assignableTeams = useMemo(() => {
+    const ids = new Set<number>(teamNames.keys());
+    employees.forEach((e) => { if (e.erp_team_id > 0) ids.add(e.erp_team_id); });
+    return Array.from(ids).sort((a, b) => a - b);
+  }, [teamNames, employees]);
 
   /** ERP 연동 회사인지 — 한 명이라도 ERP 동기화 유저가 있으면 연동으로 본다(23 E12 모드 표기). */
   const erpLinked = useMemo(() => employees.some((e) => e.source === 'erp'), [employees]);
@@ -929,14 +961,28 @@ export default function EmployeesPage() {
                 {isSuperAdmin && <option value="super_admin">최고관리자</option>}
               </Select>
             </Label>
-            <LabeledInput
-              label="팀 ID"
-              type="number"
-              min={0}
-              value={form.erp_team_id}
-              onChange={(e) => setForm({ ...form, erp_team_id: e.target.value })}
-              hint="0 = 미배정"
-            />
+            <Label
+              label="팀"
+              htmlFor="new-team"
+              hint={
+                teamNames.size === 0
+                  ? '조직도에서 팀 이름을 이어 주면 여기 나옵니다.'
+                  : undefined
+              }
+            >
+              <Select
+                id="new-team"
+                value={form.erp_team_id}
+                onChange={(e) => setForm({ ...form, erp_team_id: e.target.value })}
+              >
+                <option value="0">미배정</option>
+                {assignableTeams.map((id) => (
+                  <option key={id} value={String(id)}>
+                    {teamLabel(id)}
+                  </option>
+                ))}
+              </Select>
+            </Label>
           </div>
 
           <LabeledInput

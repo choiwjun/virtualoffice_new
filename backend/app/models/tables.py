@@ -488,6 +488,17 @@ class OrgGroup(Base, TimestampMixin):
     color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)
     """HEX 컬러 (3D 구역 시각화)"""
     sort_order: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    erp_team_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    """이 그룹이 대표하는 ERP 팀 (erp_user.erp_team_id).
+
+    **팀 이름의 정본**이다. erp_user는 팀을 숫자로만 들고 있어 이름이 없었고, 그래서
+    화면마다 숫자↔이름 표를 따로 들거나(직원명부) 아예 "팀 #1"로 노출했다(조직도 그래프).
+    이 컬럼이 그 표를 대신한다 — 관리자가 조직도에서 한 번 이으면 모든 화면이 같은
+    이름을 쓴다.
+
+    NULL은 "팀이 아닌 계층"이다(본부·파트 등 사람이 직접 소속되지 않는 노드). NULL을
+    금지하면 조직 계층이 곧 팀 목록이 돼 본부를 만들 수 없다.
+    """
 
     # 관계 (self-FK 표준: many-to-one 스칼라 쪽에 remote_side=[id], 컬렉션 쪽은 없음)
     children: Mapped[List["OrgGroup"]] = relationship(
@@ -502,6 +513,9 @@ class OrgGroup(Base, TimestampMixin):
 
     __table_args__ = (
         Index("idx_org_group_company_parent", "company_id", "parent_id"),
+        # 한 팀은 한 그룹에만 — 두 그룹이 같은 팀을 주장하면 이름이 조회 순서로 갈린다.
+        # NULL은 서로 구별되므로(SQL 표준) 팀 없는 계층은 얼마든지 공존한다.
+        UniqueConstraint("company_id", "erp_team_id", name="uq_org_group_company_team"),
     )
 
 
