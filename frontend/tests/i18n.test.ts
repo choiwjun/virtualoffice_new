@@ -15,7 +15,7 @@ describe('메시지 카탈로그', () => {
 
   it('키는 화면·맥락 기준이다 — 영어 원문을 키로 쓰면 문구를 다듬을 때마다 번역이 끊긴다', () => {
     for (const key of Object.keys(ko)) {
-      expect(key, key).toMatch(/^[a-z][a-zA-Z0-9]*(\.[a-zA-Z0-9]+)+$/);
+      // 세그먼트에 밑줄 허용 — role.super_admin처럼 API 값과 1:1로 맞춘 키가 있다.\n      expect(key, key).toMatch(/^[a-z][a-zA-Z0-9]*(\.[a-zA-Z0-9_]+)+$/);
     }
   });
 });
