@@ -6,13 +6,18 @@ FastAPI 앱 엔트리포인트.
 - 헬스체크: 배포·모니터링용 (13-risks: 운영 관측)
 """
 
+import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app import __version__
 from app.config import settings
+from app.db import engine
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -68,13 +73,41 @@ app.mount("/media", StaticFiles(directory=str(_media_dir)), name="media")
 
 @app.get("/health", tags=["system"])
 async def health() -> dict:
-    """헬스체크 — 배포/로드밸런서 프로브용."""
+    """**liveness** — 프로세스가 살아 있는가. 의존성은 보지 않는다.
+
+    DB를 여기서 확인하면 DB가 잠깐 끊겼을 때 오케스트레이터가 멀쩡한 프로세스를 **재시작**한다.
+    재시작해도 DB는 그대로라 재시작 루프만 돈다. 의존성 확인은 `/ready`가 한다.
+    """
     return {
         "status": "ok",
         "app": settings.app_name,
         "version": __version__,
         "environment": settings.environment,
     }
+
+
+@app.get("/ready", tags=["system"])
+async def ready(response: Response) -> dict:
+    """**readiness** — 지금 트래픽을 받아도 되는가(22 Tier 1 관측성).
+
+    DB에 실제로 질의해 본다. 연결 풀이 죽었거나 마이그레이션 중이면 여기서 걸러야 하고,
+    그동안 로드밸런서는 이 인스턴스로 요청을 보내지 않는다. 실패는 **503**이다 —
+    200에 `{"ready": false}`를 실으면 프로브가 통과해 버려 아무 소용이 없다.
+    """
+    checks: dict[str, str] = {}
+    ok = True
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception as exc:  # noqa: BLE001 — 이유를 담아 돌려주는 게 목적
+        ok = False
+        checks["database"] = f"error: {type(exc).__name__}"
+        logger.warning("[ready] database check failed", exc_info=True)
+
+    if not ok:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    return {"ready": ok, "checks": checks, "version": __version__}
 
 
 # ── 라우터 등록 (점진적) ─────────────────────────────────
