@@ -44,6 +44,7 @@ import {
   type Vec2,
 } from '@/lib/office2d';
 import { V3_WALK_AREA, V3_OBSTACLES, V3_SEAT_BY_NUMBER, V3_ROOMS, V3_HOTSPOTS_NORM } from '@/lib/officeV3';
+import { resolveSceneRoom } from '@/lib/sceneRooms';
 
 const MAX_SPEED_MPS = 1.4; // realtime config와 동일(로컬 폴백용)
 const LERP_RATE = 8; // 표시 위치가 서버 위치를 따라가는 속도(1/s)
@@ -407,11 +408,33 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
     () => V3_ROOMS.map((r) => ({ id: r.id, label: r.label, polygon: rectToNormPoly(r.x, r.y, r.w, r.h) })),
     [],
   );
+  /** scene_key로 이어 준 DB 방 이름 — 씬 라벨은 영어 고정이라 회사가 붙인 이름을 못 보여 준다. */
+  const [sceneRoomNames, setSceneRoomNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    api
+      .get<Array<{ name: string; scene_key?: string | null }>>('/api/rooms')
+      .then((rows) => {
+        const named: Record<string, string> = {};
+        for (const r of Array.isArray(rows) ? rows : []) {
+          if (r.scene_key) named[r.scene_key] = r.name;
+        }
+        setSceneRoomNames(named);
+      })
+      // 이름은 표기일 뿐이라 실패해도 씬 기본 라벨로 계속 동작한다.
+      .catch(() => setSceneRoomNames({}));
+  }, []);
+
   // 방 상호작용(라벨·글로우·포커스 줌·클릭 히트테스트)은 **화면에 그려진 씬**에서 온다.
   // 30e21bb로 V3 씬은 배포 여부와 무관하게 항상 렌더되는데 여기만 배포본으로 갈아치우고 있어,
   // 배포하면 눈에 보이는 방들의 클릭 대상이 통째로 사라졌다(배포본 방은 씬에 그려지지도 않는다).
   // 배포 레이아웃은 씬 위에 얹는 **도면 오버레이**다 — 아래 SVG가 dynRooms로 따로 그린다.
-  const activeRooms = v3Rooms;
+  //
+  // 라벨은 연결된 DB 방 이름을 우선한다 — 정본이 생겼으니 씬이 자기 영어 라벨을 고집할 이유가
+  // 없다(연결 안 된 방은 씬 라벨 그대로).
+  const activeRooms = useMemo<SceneRoom[]>(
+    () => v3Rooms.map((r) => (sceneRoomNames[r.id] ? { ...r, label: sceneRoomNames[r.id] } : r)),
+    [v3Rooms, sceneRoomNames],
+  );
   // rAF/interval 콜백에서 최신 방 목록 참조(의존성 없이).
   const roomsRef = useRef<SceneRoom[]>([]);
   roomsRef.current = activeRooms;
@@ -625,10 +648,8 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
             // KPI 미집계 — 부제 생략
           }
         } else if (spot.kind === 'room') {
-          const roomsApi = await api.get<Array<{ id: string; name: string }>>('/api/rooms');
-          const room = (Array.isArray(roomsApi) ? roomsApi : []).find(
-            (r) => r.name?.toLowerCase() === (spot.roomLabel ?? '').toLowerCase(),
-          );
+          const roomsApi = await api.get<Array<{ id: string; name: string; scene_key?: string | null }>>('/api/rooms');
+          const room = resolveSceneRoom(Array.isArray(roomsApi) ? roomsApi : [], spot.roomId, spot.roomLabel);
           if (room) {
             const kstDay = new Date(Date.now() + 9 * 3600_000);
             kstDay.setUTCHours(0, 0, 0, 0);

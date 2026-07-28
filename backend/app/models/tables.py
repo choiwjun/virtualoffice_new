@@ -724,6 +724,18 @@ class Room(Base, TimestampMixin):
         nullable=False,
         default=RoomStatus.ACTIVE
     )
+    scene_key: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    """이 방이 가상오피스 씬의 **어느 방인지**. 값은 `frontend/lib/officeV3.ts`의
+    `V3_ROOMS[].id`(`boardroom`·`meeting-a`·`lounge`·`pantry`·`cafe`·`booth`·`reception`).
+
+    없으면 씬에서 방을 눌렀을 때 어느 DB 방인지 알 수 없다. 예전에는 화면이 **이름 문자열
+    일치**로 때웠는데(`room.name.toLowerCase() === 씬 라벨`), 그건 정본이 아니라 우연이다 —
+    방 이름을 바꾸면 조용히 끊기고, 씬 라벨이 영어라 한국어로 이름 붙인 회사는 애초에
+    한 번도 맞지 않는다(카드가 늘 "이 방의 회의실 정보가 없습니다").
+
+    NULL은 "씬에 대응 없음"이다 — 씬에 그려지지 않은 방(다른 층, 예약 전용 공간)이 있으므로
+    NOT NULL로 둘 수 없다.
+    """
 
     # 관계
     floor: Mapped["Floor"] = relationship("Floor")
@@ -731,6 +743,9 @@ class Room(Base, TimestampMixin):
     __table_args__ = (
         Index("idx_room_floor_type", "floor_id", "type"),
         Index("idx_room_livekit", "livekit_room"),
+        # 한 씬 방을 두 DB 방이 주장하면 어느 일정이 뜰지가 조회 순서로 갈린다.
+        # NULL은 서로 구별되므로 씬에 없는 방은 얼마든지 공존한다(D39-b와 같은 규약).
+        UniqueConstraint("company_id", "scene_key", name="uq_room_company_scene_key"),
     )
 
 

@@ -368,6 +368,87 @@ async def test_list_rooms_for_picker(async_client, seeded, auth_headers):
     assert rooms[0]["name"] == "회의실 A"
     assert rooms[0]["capacity"] == 10
     assert rooms[0]["type"] == "meeting"
+    assert rooms[0]["scene_key"] is None, "미연결 방은 null — 서버가 씬 키를 지어내지 않는다"
+
+
+# ── scene_key: 씬의 방 ↔ DB 방 정본 ──────────────────────────────────────
+@pytest.mark.asyncio
+async def test_room_scene_key_roundtrip(async_client, seeded, auth_headers, admin_headers):
+    """연결하면 GET /api/rooms에 실려 나온다 — 화면이 이름 문자열로 때우지 않아도 된다."""
+    rid = str(seeded["room"].id)
+    r = await async_client.patch(f"/api/rooms/{rid}", headers=admin_headers, json={"scene_key": "boardroom"})
+    assert r.status_code == 200, r.text
+    assert r.json()["scene_key"] == "boardroom"
+
+    listed = await async_client.get("/api/rooms", headers=auth_headers)
+    assert listed.json()[0]["scene_key"] == "boardroom"
+
+    off = await async_client.patch(f"/api/rooms/{rid}", headers=admin_headers, json={"scene_key": None})
+    assert off.status_code == 200 and off.json()["scene_key"] is None
+
+
+@pytest.mark.asyncio
+async def test_room_scene_key_requires_admin(async_client, seeded, auth_headers):
+    rid = str(seeded["room"].id)
+    r = await async_client.patch(f"/api/rooms/{rid}", headers=auth_headers, json={"scene_key": "boardroom"})
+    assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_room_scene_key_rejects_unmatchable_format(async_client, seeded, admin_headers):
+    """공백·대문자는 씬 id와 절대 맞지 않는다 — 저장해 두면 조용히 안 되는 연결이 된다."""
+    rid = str(seeded["room"].id)
+    for bad in ["Board Room", "BOARDROOM", "-boardroom", "board_room", "x" * 65]:
+        r = await async_client.patch(f"/api/rooms/{rid}", headers=admin_headers, json={"scene_key": bad})
+        assert r.status_code == 400, f"{bad!r} → {r.status_code}"
+        assert r.json()["detail"]["code"] == "invalid_scene_key"
+
+    # 앞뒤 공백은 다듬는다 — 붙여넣기 한 칸 때문에 연결이 안 되면 원인을 찾을 수 없다.
+    trimmed = await async_client.patch(f"/api/rooms/{rid}", headers=admin_headers, json={"scene_key": " boardroom "})
+    assert trimmed.status_code == 200 and trimmed.json()["scene_key"] == "boardroom"
+
+    # 공백만 남으면 "해제" 의도로 읽는다.
+    ok = await async_client.patch(f"/api/rooms/{rid}", headers=admin_headers, json={"scene_key": "   "})
+    assert ok.status_code == 200 and ok.json()["scene_key"] is None
+
+
+@pytest.mark.asyncio
+async def test_room_scene_key_taken_is_409(async_client, seeded, admin_headers, db_session):
+    """한 씬 방을 두 DB 방이 주장하면 어느 일정이 뜰지가 조회 순서로 갈린다."""
+    second = Room(
+        id=uuid4(), company_id=1, floor_id=uuid4(), type=RoomType.MEETING,
+        name="회의실 B", capacity=4, coords={"x": 0, "y": 0, "width": 4, "height": 4},
+        status=RoomStatus.ACTIVE,
+    )
+    db_session.add(second)
+    await db_session.commit()
+
+    rid = str(seeded["room"].id)
+    await async_client.patch(f"/api/rooms/{rid}", headers=admin_headers, json={"scene_key": "boardroom"})
+    dup = await async_client.patch(f"/api/rooms/{second.id}", headers=admin_headers, json={"scene_key": "boardroom"})
+    assert dup.status_code == 409, dup.text
+    assert dup.json()["detail"]["room_name"] == "회의실 A"
+
+    # 자기가 이미 쓰는 값을 다시 저장하는 건 통과해야 한다(폼 반복 저장).
+    again = await async_client.patch(f"/api/rooms/{rid}", headers=admin_headers, json={"scene_key": "boardroom"})
+    assert again.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_room_scene_key_cross_tenant_is_404(async_client, seeded, admin_headers, db_session):
+    """타사 방의 씬 연결을 바꾸면 그 회사 오피스 화면이 엉뚱한 일정을 띄운다."""
+    other = Room(
+        id=uuid4(), company_id=999, floor_id=uuid4(), type=RoomType.MEETING,
+        name="타사 회의실", capacity=4, coords={"x": 0, "y": 0, "width": 4, "height": 4},
+        status=RoomStatus.ACTIVE,
+    )
+    db_session.add(other)
+    await db_session.commit()
+
+    r = await async_client.patch(f"/api/rooms/{other.id}", headers=admin_headers, json={"scene_key": "lounge"})
+    assert r.status_code == 404, r.text
+    await db_session.refresh(other)
+    assert other.scene_key is None, "변조 전에 차단돼야 한다"
 
 
 @pytest.mark.asyncio

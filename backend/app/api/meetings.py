@@ -18,6 +18,7 @@ D19: UTC 저장
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID, uuid4
@@ -30,6 +31,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.core.deps import (
+    ADMIN_ROLES,
     MANAGER_ROLES,
     CurrentUser,
     assert_same_company,
@@ -96,6 +98,15 @@ class RoomOut(BaseModel):
     type: str
     capacity: int
     floor_id: str
+    scene_key: Optional[str] = None
+    """씬의 어느 방인지(`frontend/lib/officeV3.ts` V3_ROOMS[].id). NULL = 씬에 대응 없음."""
+
+
+class RoomScenePatch(BaseModel):
+    """씬 방 연결 변경. `null`이면 연결 해제 — 필드가 하나뿐이라 "안 건드림"과 헷갈릴 여지가
+    없어 D39-e 같은 센티널이 필요 없다."""
+
+    scene_key: Optional[str] = None
 
 
 class MeetingParticipantOut(BaseModel):
@@ -316,10 +327,67 @@ async def list_rooms(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_room_type")
         q = q.where(Room.type == rt)
     rooms = (await db.execute(q.order_by(Room.name))).scalars().all()
-    return [
-        RoomOut(id=str(r.id), name=r.name, type=r.type.value, capacity=r.capacity, floor_id=str(r.floor_id))
-        for r in rooms
-    ]
+    return [_room_out(r) for r in rooms]
+
+
+def _room_out(r: Room) -> RoomOut:
+    return RoomOut(
+        id=str(r.id), name=r.name, type=r.type.value, capacity=r.capacity,
+        floor_id=str(r.floor_id), scene_key=r.scene_key,
+    )
+
+
+# 씬 방 키 형식 — 값의 정본은 프론트(`officeV3.ts` V3_ROOMS[].id)라 목록을 여기 복제하지
+# 않는다(복제하면 씬이 바뀔 때마다 두 곳이 어긋난다). 대신 형식만 강제해 공백·대문자·긴
+# 문자열 같은 "절대 매칭될 수 없는" 값이 저장되는 것을 막는다.
+_SCENE_KEY_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
+
+
+@router.patch("/rooms/{room_id}", response_model=RoomOut)
+async def update_room_scene_key(
+    room_id: str,
+    body: RoomScenePatch,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_role(*ADMIN_ROLES)),
+    cid: int = Depends(company_scope),
+) -> RoomOut:
+    """PATCH /api/rooms/{id} — 이 방이 씬의 어느 방인지 잇는다(관리자).
+
+    이 연결이 없으면 가상오피스에서 방을 눌러도 일정 카드가 비어 있다. 예전에는 이름
+    문자열이 우연히 같기만 바랐다(씬 라벨이 영어라 한국어 이름은 영영 못 맞췄다).
+    """
+    try:
+        rid = UUID(room_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid_id")
+    room = (await db.execute(select(Room).where(Room.id == rid))).scalar_one_or_none()
+    if room is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="room_not_found")
+    assert_same_company(user, room.company_id)  # 변조 전에 검사(존재 은닉, 22 T0-1)
+
+    key = (body.scene_key or "").strip() or None
+    if key is not None and not _SCENE_KEY_RE.match(key):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "invalid_scene_key",
+                    "message": "씬 방 키는 소문자·숫자·하이픈만 씁니다(예: boardroom, meeting-a)."},
+        )
+    if key is not None:
+        other = (
+            await db.execute(
+                select(Room).where(Room.company_id == cid, Room.scene_key == key, Room.id != rid)
+            )
+        ).scalars().first()
+        if other is not None:
+            # DB 유니크가 최종 방어선이지만 거기서 터지면 IntegrityError가 500으로 나간다.
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={"code": "scene_key_taken", "room_name": other.name},
+            )
+    room.scene_key = key
+    await db.commit()
+    await db.refresh(room)
+    return _room_out(room)
 
 
 @router.get("/meetings", response_model=list[MeetingOut])
