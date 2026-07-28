@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { api, ApiError } from '@/lib/api';
 import { getUser, isAdmin } from '@/lib/auth';
+import { useT } from '@/components/I18nProvider';
 import type { SeatBox, ShapeBox, Selection } from '@/components/office/SeatCanvas';
 import {
   SEAT_STYLE,
@@ -43,7 +44,8 @@ const pxToM = (px: number) => Math.round((px / PX_PER_M) * 1000) / 1000;
 
 const SeatCanvas = dynamic(() => import('@/components/office/SeatCanvas'), {
   ssr: false,
-  loading: () => <div className="h-full flex items-center justify-center text-text-muted text-sm">캔버스 로딩...</div>,
+  // 모듈 레벨이라 훅을 못 쓴다 — 한 단어라 로케일 무관 표기로 둔다(로딩 스피너와 같은 역할).
+  loading: () => <div className="h-full flex items-center justify-center text-text-muted text-sm">…</div>,
 });
 
 interface ApiSeat {
@@ -132,6 +134,7 @@ function toBox(s: ApiSeat, i: number): SeatBox {
 }
 
 export default function OfficeLayoutPage() {
+  const { t } = useT();
   const me = getUser();
   const allowed = isAdmin(me);
   const confirm = useConfirm();
@@ -312,7 +315,7 @@ export default function OfficeLayoutPage() {
       setError(
         e instanceof ApiError
           ? `자리 정보를 불러오지 못했습니다 (오류 ${e.status}).`
-          : '서버에 연결하지 못했습니다.',
+          : t('layout.err.server'),
       );
     } finally {
       setLoading(false);
@@ -370,7 +373,7 @@ export default function OfficeLayoutPage() {
 
   // 좌석 생성 — 로컬 임시 좌석 추가 (저장 대기)
   const addSeat = () => {
-    if (!floorId) { warn('층 정보가 없어 자리를 놓을 수 없습니다. 관리자에게 문의하세요.'); return; }
+    if (!floorId) { warn(t('layout.err.noFloorSeat')); return; }
     const n = seats.length + 1;
     const coords = findFreeSpot();
     const seatNumber = `A-${String(n).padStart(2, '0')}`;
@@ -384,7 +387,7 @@ export default function OfficeLayoutPage() {
 
   // 좌석 삭제 — 더블클릭. 임시 좌석은 버퍼에서 제거, 기존 좌석은 삭제 대기
   const removeSeat = async (id: string) => {
-    const label = seats.find((s) => s.id === id)?.label ?? '이 자리';
+    const label = seats.find((s) => s.id === id)?.label ?? t('layout.thisSeat');
     if (!(await confirm({
       message: `${label} 자리를 없앨까요? [저장]을 눌러야 실제로 적용됩니다.`,
       danger: true,
@@ -427,7 +430,7 @@ export default function OfficeLayoutPage() {
     const seat = seats.find((s) => s.id === seatId);
     if (!seat) return;
     if (seatId.startsWith('temp-')) {
-      warn('먼저 [저장]으로 자리를 만든 뒤에 주인을 정할 수 있습니다.');
+      warn(t('layout.ownerNeedsSave'));
       return;
     }
     if ((owners[seatId] ?? null) === userId) return;
@@ -469,10 +472,10 @@ export default function OfficeLayoutPage() {
     } catch (e) {
       warn(
         e instanceof ApiError && e.status === 404
-          ? '그 사원을 찾을 수 없습니다. 목록을 새로 고친 뒤 다시 시도해 보세요.'
+          ? t('layout.err.memberMissing')
           : e instanceof ApiError
             ? `주인을 바꾸지 못했습니다 (${e.message}).`
-            : '주인을 바꾸는 중 문제가 생겼습니다.',
+            : t('layout.err.ownerChange'),
       );
     } finally {
       setAssigning(false);
@@ -517,12 +520,12 @@ export default function OfficeLayoutPage() {
         }
         setPendingCreates((prev) => prev.filter((x) => x.tempId !== c.tempId));
       }
-      flash('저장했습니다. 가상사무실에 바로 반영됩니다.');
+      flash(t('layout.saved'));
     } catch (e) {
       warn(
         e instanceof ApiError
           ? `저장하지 못했습니다 (${e.message}). 아직 저장 안 된 변경은 그대로 남아 있으니 다시 시도해 보세요.`
-          : '저장 중 문제가 생겼습니다. 아직 저장 안 된 변경은 그대로 남아 있습니다.',
+          : t('layout.err.save'),
       );
     } finally {
       setSaving(false);
@@ -537,8 +540,8 @@ export default function OfficeLayoutPage() {
 
   // ── 오피스 레이아웃 버전 (D12) ──
   const createDraft = async () => {
-    if (!officeId || !floorId) { warn('사무실 정보가 없어 안을 만들 수 없습니다.'); return; }
-    if (pendingCount > 0) { warn('저장하지 않은 변경이 있습니다. 먼저 [저장]을 눌러 주세요.'); return; }
+    if (!officeId || !floorId) { warn(t('layout.err.noOffice')); return; }
+    if (pendingCount > 0) { warn(t('layout.err.unsaved')); return; }
     try {
 
       const json = buildOfficeLayout({
@@ -553,10 +556,10 @@ export default function OfficeLayoutPage() {
         createdBy: me?.id ?? 0,
       });
       await api.post('/api/office-layouts', { office_id: officeId, floor_id: floorId, json });
-      flash('지금 배치로 안을 만들었습니다. 이어서 안전 검사를 해 주세요.');
+      flash(t('layout.draftCreated'));
       refreshLayouts();
     } catch (e) {
-      warn(e instanceof ApiError ? `안을 만들지 못했습니다 (${e.status}).` : '안을 만들지 못했습니다.');
+      warn(e instanceof ApiError ? `안을 만들지 못했습니다 (${e.status}).` : t('layout.err.draft'));
     }
   };
 
@@ -569,11 +572,11 @@ export default function OfficeLayoutPage() {
       } else if (res.warning_count > 0) {
         flash(`검사를 통과했습니다. 확인해 볼 점 ${res.warning_count}건이 있지만 반영할 수 있습니다.`);
       } else {
-        flash('검사를 통과했습니다. 이제 반영할 수 있습니다.');
+        flash(t('layout.validated'));
       }
       refreshLayouts();
     } catch (e) {
-      warn(e instanceof ApiError ? `검사하지 못했습니다 (${e.status}).` : '검사하지 못했습니다.');
+      warn(e instanceof ApiError ? `검사하지 못했습니다 (${e.status}).` : t('layout.err.validate'));
     }
   };
 
@@ -582,15 +585,15 @@ export default function OfficeLayoutPage() {
       await api.post(`/api/office-layouts/${id}/deploy`, {});
       // 반영하면 뷰포트가 기본 씬 대신 이 레이아웃 지오메트리를 그린다 — 눌러 보고서야 아는
       // 변화라 미리 알린다.
-      flash('반영했습니다. 이제 직원들의 가상사무실이 이 배치로 보입니다.');
+      flash(t('layout.deployed'));
       refreshLayouts();
     } catch (e) {
       warn(
         e instanceof ApiError
           ? e.status === 409
-            ? '안전 검사를 통과해야 반영할 수 있습니다.'
+            ? t('layout.err.needValidate')
             : `반영하지 못했습니다 (${e.status}).`
-          : '반영하지 못했습니다.',
+          : t('layout.err.deploy'),
       );
     }
   };
@@ -602,10 +605,10 @@ export default function OfficeLayoutPage() {
     }))) return;
     try {
       await api.post(`/api/office-layouts/${id}/undeploy`, {});
-      flash('기본 사무실 모습으로 되돌렸습니다.');
+      flash(t('layout.reverted'));
       refreshLayouts();
     } catch (e) {
-      warn(e instanceof ApiError ? `되돌리지 못했습니다 (${e.message}).` : '되돌리지 못했습니다.');
+      warn(e instanceof ApiError ? `되돌리지 못했습니다 (${e.message}).` : t('layout.err.revert'));
     }
   };
 
@@ -613,7 +616,7 @@ export default function OfficeLayoutPage() {
   // 직전 archived(최고 버전)가 deployed로 복원됨. 버튼은 복원 대상(최신 archived) 행에 노출.
   const rollbackLayout = async (targetVersion: number) => {
     const deployed = layouts.find((l) => l.status === 'deployed');
-    if (!deployed) { warn('지금 반영된 배치가 없어 되돌릴 수 없습니다.'); return; }
+    if (!deployed) { warn(t('layout.err.nothingDeployed')); return; }
     if (!(await confirm({
       message: `${targetVersion}번째 배치로 되돌릴까요? 지금 반영된 ${deployed.version}번째 배치는 지난 기록으로 넘어갑니다.`,
       danger: true,
@@ -623,7 +626,7 @@ export default function OfficeLayoutPage() {
       flash(`${restored.version}번째 배치로 되돌렸습니다.`);
       refreshLayouts();
     } catch (e) {
-      warn(e instanceof ApiError ? `되돌리지 못했습니다 (${e.message}).` : '되돌리지 못했습니다.');
+      warn(e instanceof ApiError ? `되돌리지 못했습니다 (${e.message}).` : t('layout.err.revert'));
     }
   };
 
@@ -651,14 +654,14 @@ export default function OfficeLayoutPage() {
 
   const liveLine = deployedLayout
     ? `지금 직원들에게는 ${deployedLayout.version}번째 배치가 보입니다.`
-    : '지금 직원들에게는 기본 사무실 모습이 보입니다.';
+    : t('layout.defaultShown');
 
   if (!allowed) {
     return (
       <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
-        <PageHeader title="좌석 배치" icon={ICON.grid} />
+        <PageHeader title={t('layout.title')} icon={ICON.grid} />
         <SectionCard>
-          <EmptyState icon={ICON.lock} title="관리자 전용 화면" hint="좌석 배치 편집은 관리자만 접근할 수 있습니다." />
+          <EmptyState icon={ICON.lock} title={t('layout.adminOnly')} hint={t('layout.adminOnlyHint')} />
         </SectionCard>
       </div>
     );
@@ -667,33 +670,31 @@ export default function OfficeLayoutPage() {
   return (
     <div className="p-6 flex flex-col gap-5 h-full text-text-secondary">
       <PageHeader
-        title="좌석 배치"
+        title={t('layout.title')}
         subtitle={
           floorId
             ? `자리를 끌어서 옮기고, 두 번 눌러 지웁니다 · 현재 ${seats.length}자리`
-            : '층 정보가 없어 편집할 수 없습니다'
+            : t('layout.noFloor')
         }
         icon={ICON.grid}
         actions={
           <>
             {/* 주 작업은 자리 놓기 — 이 화면 사용의 90%다. 나머지 도구와 시각 무게를 분리한다. */}
-            <ToolbarButton variant="primary" onClick={addSeat} disabled={!floorId} icon={ICON.seat}>
-              자리 추가
-            </ToolbarButton>
+            <ToolbarButton variant="primary" onClick={addSeat} disabled={!floorId} icon={ICON.seat}>{t('layout.addSeat')}</ToolbarButton>
             <span className="mx-1 w-px h-5 bg-border-subtle" aria-hidden />
-            <ToolbarButton onClick={addRoom} title="회의실 같은 방 영역을 그립니다">방</ToolbarButton>
-            <ToolbarButton onClick={addZone} title="팀 구역을 표시합니다">구역</ToolbarButton>
-            <ToolbarButton onClick={addWall} title="벽·칸막이를 그립니다">벽</ToolbarButton>
+            <ToolbarButton onClick={addRoom} title={t('layout.tool.roomHint')}>{t('layout.tool.room')}</ToolbarButton>
+            <ToolbarButton onClick={addZone} title={t('layout.tool.zoneHint')}>{t('layout.tool.zone')}</ToolbarButton>
+            <ToolbarButton onClick={addWall} title={t('layout.tool.wallHint')}>{t('layout.tool.wall')}</ToolbarButton>
             <span className="mx-1 w-px h-5 bg-border-subtle" aria-hidden />
-            <ToolbarButton onClick={undo} disabled={histIdx === 0} title="되돌리기 (Ctrl+Z)">↶</ToolbarButton>
-            <ToolbarButton onClick={redo} disabled={histIdx >= history.length - 1} title="다시 실행">↷</ToolbarButton>
+            <ToolbarButton onClick={undo} disabled={histIdx === 0} title={t('layout.undoTitle')}>↶</ToolbarButton>
+            <ToolbarButton onClick={redo} disabled={histIdx >= history.length - 1} title={t('layout.redo')}>↷</ToolbarButton>
             <ToolbarButton
               onClick={async () => {
                 if (pendingCount > 0 && !(await confirm({ message: `저장하지 않은 변경 ${pendingCount}건이 사라집니다. 계속할까요?`, danger: true }))) return;
                 load();
               }}
               icon={ICON.refresh}
-              title="서버 상태를 다시 불러옵니다"
+              title={t('layout.reloadTitle')}
             >
               새로고침
             </ToolbarButton>
@@ -701,7 +702,7 @@ export default function OfficeLayoutPage() {
         }
       />
 
-      {/* 저장 바 — "지금 내 변경이 반영됐는가"를 화면에서 바로 답한다.
+      {/* 저장 바 — {t('layout.reloadHint')}를 화면에서 바로 답한다.
           이전엔 이 정보가 헤더 한 귀퉁이 칩이라 놓치기 쉬웠고, 저장 없이 나가면 조용히 사라졌다. */}
       {pendingCount > 0 ? (
         <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-[rgba(245,158,11,0.4)] bg-[rgba(245,158,11,0.10)]">
@@ -715,9 +716,9 @@ export default function OfficeLayoutPage() {
             </div>
           </div>
           <ToolbarButton variant="primary" onClick={saveAll} disabled={saving} icon={ICON.save}>
-            {saving ? '저장 중...' : '저장'}
+            {saving ? t('layout.saving') : t('layout.save')}
           </ToolbarButton>
-          <ToolbarButton onClick={discardChanges} disabled={saving}>되돌리기</ToolbarButton>
+          <ToolbarButton onClick={discardChanges} disabled={saving}>{t('layout.undo')}</ToolbarButton>
         </div>
       ) : (
         <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl border border-border-subtle bg-bg-surface">
@@ -777,9 +778,9 @@ export default function OfficeLayoutPage() {
               {isEmpty && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="text-center max-w-[19rem] px-6">
-                    <p className="text-[15px] font-semibold text-[#3B352C]">아직 자리가 없습니다</p>
+                    <p className="text-[15px] font-semibold text-[#3B352C]">{t('layout.noSeats')}</p>
                     <p className="mt-1.5 text-[12.5px] leading-relaxed text-[#7A736A]">
-                      위의 <b className="font-semibold text-[#3B352C]">자리 추가</b>를 눌러 첫 자리를 놓아 보세요.
+                      위의 <b className="font-semibold text-[#3B352C]">{t('layout.addSeat')}</b>를 눌러 첫 자리를 놓아 보세요.
                       놓은 뒤에는 끌어서 원하는 위치로 옮길 수 있습니다.
                     </p>
                   </div>
@@ -804,7 +805,7 @@ export default function OfficeLayoutPage() {
                   </span>
                 )}
                 <span className="w-px h-3 bg-[#DFD9CE]" aria-hidden />
-                <span className="text-[#7A736A]">모눈 1칸 = 1m</span>
+                <span className="text-[#7A736A]">{t('layout.gridLegend')}</span>
                 <span className="text-[#7A736A]">사무실 {bounds.w}m × {bounds.h}m</span>
               </div>
 
@@ -813,7 +814,7 @@ export default function OfficeLayoutPage() {
                 <button
                   onClick={() => setZoomCentered(scale / 1.25)}
                   className="w-7 h-7 grid place-items-center rounded-md text-[15px] text-[#4A443C] hover:bg-[#EFEBE3]"
-                  title="축소"
+                  title={t('layout.zoomOut')}
                 >
                   −
                 </button>
@@ -823,7 +824,7 @@ export default function OfficeLayoutPage() {
                 <button
                   onClick={() => setZoomCentered(scale * 1.25)}
                   className="w-7 h-7 grid place-items-center rounded-md text-[15px] text-[#4A443C] hover:bg-[#EFEBE3]"
-                  title="확대"
+                  title={t('layout.zoomIn')}
                 >
                   +
                 </button>
@@ -831,7 +832,7 @@ export default function OfficeLayoutPage() {
                 <button
                   onClick={fitToView}
                   className="px-2 h-7 rounded-md text-[11.5px] text-[#4A443C] hover:bg-[#EFEBE3]"
-                  title="사무실 전체가 보이도록 맞춥니다"
+                  title={t('layout.fitHint')}
                 >
                   전체 보기
                 </button>
@@ -842,7 +843,7 @@ export default function OfficeLayoutPage() {
 
         {/* 오른쪽: 선택한 요소 편집 + 배치 요약 */}
         <div className="w-60 flex-shrink-0 flex flex-col gap-3 overflow-y-auto">
-          <SectionCard title="선택한 요소" icon={ICON.info} bodyClassName="p-3">
+          <SectionCard title={t('layout.selected')} icon={ICON.info} bodyClassName="p-3">
             {(() => {
               if (!selected) {
                 return (
@@ -880,7 +881,7 @@ export default function OfficeLayoutPage() {
                         onChange={(e) => setSeatOwner(seat.id, e.target.value === '' ? null : Number(e.target.value))}
                         className="w-full border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan disabled:opacity-40 disabled:cursor-not-allowed"
                       >
-                        <option value="">주인 없음 (누구나 앉는 자리)</option>
+                        <option value="">{t('layout.ownerNone')}</option>
                         {employees.map((emp) => {
                           const held = seatOfUser(emp.id, seat.id);
                           return (
@@ -905,7 +906,7 @@ export default function OfficeLayoutPage() {
                         <p className="text-[11px] leading-relaxed text-text-muted">
                           {ownerId !== null
                             ? `${employeeName(ownerId)}님의 자리입니다. 고르는 즉시 반영됩니다.`
-                            : '고르는 즉시 반영됩니다. [저장]을 따로 누르지 않아도 됩니다.'}
+                            : t('layout.ownerInstant')}
                         </p>
                       )}
                     </div>
@@ -924,12 +925,12 @@ export default function OfficeLayoutPage() {
               return (
                 <div className="space-y-2.5">
                   <div className="text-[11.5px] text-text-muted">
-                    {selected.kind === 'room' ? '방' : selected.kind === 'zone' ? '구역' : '벽'}
+                    {selected.kind === 'room' ? t('layout.tool.room') : selected.kind === 'zone' ? t('layout.tool.zone') : t('layout.tool.wall')}
                   </div>
                   <input
                     value={sh.label ?? ''}
                     onChange={(e) => relabelSelected(e.target.value)}
-                    placeholder="이름"
+                    placeholder={t('layout.name')}
                     className="w-full border border-border-subtle bg-bg-base text-text-primary placeholder:text-text-muted rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
                   />
                   <div className="text-[11.5px] text-text-muted">
@@ -946,15 +947,15 @@ export default function OfficeLayoutPage() {
             })()}
           </SectionCard>
 
-          <SectionCard title="이 층에 놓인 것" icon={ICON.layers} bodyClassName="p-3">
+          <SectionCard title={t('layout.placedTitle')} icon={ICON.layers} bodyClassName="p-3">
             <dl className="space-y-1.5 text-[12.5px]">
               {[
-                ['자리', seats.length],
+                [t('layout.seat'), seats.length],
                 // 주인 지정이 몇 자리까지 됐는지 — 자리마다 눌러 보지 않고도 진행 상황이 보이게.
-                ['주인 있는 자리', seats.filter((s) => owners[s.id] != null).length],
-                ['방', rooms.length],
-                ['구역', zones.length],
-                ['벽', walls.length],
+                [t('layout.ownedSeats'), seats.filter((s) => owners[s.id] != null).length],
+                [t('layout.tool.room'), rooms.length],
+                [t('layout.tool.zone'), zones.length],
+                [t('layout.tool.wall'), walls.length],
               ].map(([label, n]) => (
                 <div key={label as string} className="flex items-baseline justify-between">
                   <dt className="text-text-muted">{label}</dt>
@@ -991,15 +992,15 @@ export default function OfficeLayoutPage() {
       </div>
       {/* 방·구역·벽 반영 절차 (초안 → 검사 → 반영).
           이전엔 버전/상태/액션 표에 [검증][배포] 버튼만 있어, 순서도 의미도 화면에 없었다.
-          "변경했는데 반영이 안 된다"는 오해가 바로 여기서 나왔다. */}
+          {t('layout.notReflected')}는 오해가 바로 여기서 나왔다. */}
       <SectionCard
-        title="방·구역·벽을 가상사무실에 반영하기"
+        title={t('layout.applyTitle')}
         icon={ICON.versions}
         className="flex-shrink-0"
         bodyClassName="p-4"
         action={
           <ToolbarButton onClick={() => setDeployOpen(!showDeploy)}>
-            {showDeploy ? '접기' : '펼치기'}
+            {showDeploy ? t('layout.collapse') : t('layout.expand')}
           </ToolbarButton>
         }
       >
@@ -1014,7 +1015,7 @@ export default function OfficeLayoutPage() {
             <button
               onClick={() => undeployLayout(deployedLayout.id, deployedLayout.version)}
               className="px-2.5 py-1 text-[11.5px] border border-border-subtle text-text-secondary rounded-md hover:bg-bg-surface whitespace-nowrap"
-              title="기본 사무실 모습으로 되돌립니다. 자리 위치는 그대로 유지됩니다."
+              title={t('layout.revertHint')}
             >
               기본 모습으로 되돌리기
             </button>
@@ -1024,49 +1025,49 @@ export default function OfficeLayoutPage() {
         {!showDeploy ? null : (
         <>
         <p className="mt-3 text-[12.5px] leading-relaxed text-text-muted">
-          자리는 <b className="text-text-secondary font-medium">저장</b>하면 바로 반영됩니다.
+          자리는 <b className="text-text-secondary font-medium">{t('layout.save')}</b>하면 바로 반영됩니다.
           방·구역·벽처럼 사무실 구조를 바꾸는 것은 실수로 길이 막히지 않도록 아래 3단계를 거칩니다.
         </p>
 
         <ol className="mt-3 grid gap-2.5 md:grid-cols-3">
           <LayoutStep
             n={1}
-            title="지금 배치로 안 만들기"
-            desc="화면에 그려 둔 방·구역·벽을 하나의 안으로 묶습니다."
+            title={t('layout.step1')}
+            desc={t('layout.step1Hint')}
             done={step1Done}
             button={{
-              label: workingStep ? '다시 만들기' : '안 만들기',
+              label: workingStep ? t('layout.recreate') : t('layout.createDraft'),
               onClick: createDraft,
               disabled: !officeId || pendingCount > 0,
               primary: !step1Done,
               hint:
                 pendingCount > 0
-                  ? '저장하지 않은 변경이 있습니다. 먼저 저장하세요.'
+                  ? t('layout.err.unsavedShort')
                   : !officeId
-                    ? '사무실 정보가 없어 만들 수 없습니다.'
+                    ? t('layout.err.noOfficeShort')
                     : undefined,
             }}
           />
           <LayoutStep
             n={2}
-            title="안전 검사"
-            desc="자리까지 걸어갈 길이 막히지 않았는지, 좌표가 어긋나지 않았는지 확인합니다."
+            title={t('layout.step2')}
+            desc={t('layout.step2Hint')}
             done={step2Done}
             button={{
-              label: '검사하기',
+              label: t('layout.runCheck'),
               onClick: () => workingStep && validateLayout(workingStep.id),
               disabled: !workingStep,
               primary: !!workingStep && !step2Done,
-              hint: workingStep ? undefined : '먼저 1단계에서 안을 만드세요.',
+              hint: workingStep ? undefined : t('layout.needDraft'),
             }}
           />
           <LayoutStep
             n={3}
-            title="직원들에게 반영"
-            desc="검사를 통과한 안을 모든 직원의 가상사무실에 적용합니다."
+            title={t('layout.step3')}
+            desc={t('layout.step3Hint')}
             done={step3Done}
             button={{
-              label: '반영하기',
+              label: t('layout.apply'),
               onClick: () => workingStep && deployLayout(workingStep.id),
               disabled: workingStep?.status !== 'validated',
               primary: workingStep?.status === 'validated',
@@ -1074,10 +1075,10 @@ export default function OfficeLayoutPage() {
                 workingStep?.status === 'validated'
                   ? undefined
                   : workingStep
-                    ? '안전 검사를 통과해야 반영할 수 있습니다.'
+                    ? t('layout.err.needValidate')
                     : step3Done
-                      ? '이미 반영되어 있습니다.'
-                      : '먼저 1단계에서 안을 만드세요.',
+                      ? t('layout.alreadyApplied')
+                      : t('layout.needDraft'),
             }}
           />
         </ol>
@@ -1115,7 +1116,7 @@ export default function OfficeLayoutPage() {
                     <button
                       onClick={() => rollbackLayout(l.version)}
                       className="px-2 py-0.5 border border-[rgba(245,158,11,0.4)] text-status-external rounded hover:bg-[rgba(245,158,11,0.12)]"
-                      title="지금 반영된 배치를 내리고 이 배치로 되돌립니다"
+                      title={t('layout.revertToThis')}
                     >
                       이 배치로 되돌리기
                     </button>
