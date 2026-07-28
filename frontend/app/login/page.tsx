@@ -8,8 +8,10 @@ import { ApiError, api, mediaUrl } from '@/lib/api';
 import { applyBrandColors, slugFromLocation, type PublicBranding } from '@/lib/branding';
 import { Button } from '@/components/ui/Button';
 import { LabeledInput } from '@/components/ui/Field';
+import { useT } from '@/components/I18nProvider';
 
 function LoginForm() {
+  const { t } = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const expired = searchParams.get('expired') === '1';
@@ -70,9 +72,9 @@ function LoginForm() {
       router.replace(destination);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        setError('이메일 또는 비밀번호 오류');
+        setError(t('login.failed'));
       } else {
-        setError('서버 연결 오류. 잠시 후 다시 시도하세요.');
+        setError(t('login.networkError'));
       }
       setPassword('');
     } finally {
@@ -106,7 +108,7 @@ function LoginForm() {
           <h1 className="text-xl font-bold text-text-primary">
             {brand?.brand_name ?? 'VirtualOffice'}
           </h1>
-          <p className="text-[13px] text-text-muted mt-1">가상 오피스에 로그인</p>
+          <p className="text-[13px] text-text-muted mt-1">{t('login.title')}</p>
         </div>
 
         {/* Session expired banner */}
@@ -116,13 +118,13 @@ function LoginForm() {
             style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', color: '#F5C97B' }}
             role="status"
           >
-            세션이 만료되었습니다. 보안을 위해 다시 로그인하세요.
+            {t('login.expired')}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <LabeledInput
-            label="이메일"
+            label={t('login.email')}
             id="email"
             type="email"
             value={email}
@@ -134,7 +136,7 @@ function LoginForm() {
           />
 
           <LabeledInput
-            label="비밀번호"
+            label={t('login.password')}
             id="password"
             type="password"
             value={password}
@@ -155,19 +157,19 @@ function LoginForm() {
           )}
 
           <Button type="submit" variant="primary" size="md" loading={loading} className="w-full">
-            {loading ? '로그인 중...' : '로그인'}
+            {loading ? t('login.submitting') : t('login.submit')}
           </Button>
         </form>
 
         {/* E4: 셀프 비번찾기(메일)는 아직 없다 — 실제로 동작하는 복구 경로만 안내한다. */}
         <p className="mt-4 text-center text-xs text-text-muted leading-relaxed">
-          비밀번호를 잊으셨나요? 관리자에게 재설정 링크를 요청하세요.
+          {t('login.forgot')}
         </p>
 
         <p className="mt-4 text-center text-[13px] text-text-muted">
-          회사가 처음이신가요?{' '}
+          {t('login.signupPrompt')}{' '}
           <Link href="/signup" className="text-accent-cyan hover:underline font-medium">
-            회사 만들기
+            {t('login.signupLink')}
           </Link>
         </p>
       </div>

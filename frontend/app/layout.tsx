@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { I18nProvider } from '@/components/I18nProvider';
 
 export const metadata: Metadata = {
   title: 'VirtualOffice 가상오피스',
@@ -22,7 +23,12 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css"
         />
       </head>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        {/* 공개(로그인·가입)와 보호 트리를 모두 덮어야 해서 루트에 둔다.
+            `lang`은 여기서 ko로 시작하고 프로바이더가 마운트 후 실제 로케일로 바꾼다 —
+            서버에는 사용자 선택(localStorage)이 없어 이게 하이드레이션을 깨지 않는 유일한 방법이다. */}
+        <I18nProvider>{children}</I18nProvider>
+      </body>
     </html>
   );
 }

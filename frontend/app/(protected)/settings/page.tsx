@@ -6,6 +6,8 @@
 //      (user_avatar: preset_id·bottom_color는 레거시 보존 필드 — UI 미노출, 저장 시 기존 값 유지)
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useT } from '@/components/I18nProvider';
+import { LOCALES, type Locale } from '@/lib/i18n';
 import { api, ApiError, mediaUrl } from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import {
@@ -131,6 +133,7 @@ function Swatch({
 }
 
 export default function SettingsPage() {
+  const { t, locale, setLocale } = useT();
   const me = getUser();
   const myName = me?.name ?? '나';
 
@@ -304,6 +307,23 @@ export default function SettingsPage() {
                   className="accent-primary"
                 />
                 이름표(이름/직급) 표시
+              </label>
+
+              {/* 언어 (23 C1) — 선택은 브라우저에 저장된다. 서버 계정 설정이 아니라
+                  기기 설정이다(공용 PC에서 남의 선택이 따라오지 않게). */}
+              <label className="flex items-center gap-3 text-sm text-text-secondary mt-3 pt-3 border-t border-border-subtle">
+                <span className="flex-shrink-0">{t('locale.label')}</span>
+                <select
+                  value={locale}
+                  onChange={(e) => setLocale(e.target.value as Locale)}
+                  className="border border-border-subtle bg-bg-base text-text-primary rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
+                >
+                  {LOCALES.map((l) => (
+                    <option key={l} value={l}>
+                      {t(l === 'ko' ? 'locale.ko' : 'locale.en')}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               {/* 저장 — 사진은 업로드/삭제 즉시 반영, 색·이름표만 저장 버튼 대상 */}
