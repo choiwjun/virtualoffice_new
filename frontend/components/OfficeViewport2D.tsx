@@ -45,6 +45,9 @@ import {
 } from '@/lib/office2d';
 import { V3_WALK_AREA, V3_OBSTACLES, V3_SEAT_BY_NUMBER, V3_ROOMS, V3_HOTSPOTS_NORM } from '@/lib/officeV3';
 import { resolveSceneRoom } from '@/lib/sceneRooms';
+import { useT } from '@/components/I18nProvider';
+import type { MessageKey } from '@/lib/i18n';
+import { presenceKey } from '@/lib/i18n/vocab';
 
 /** 브랜드 프라이머리 — 테넌트 설정(E5)이 주입하는 CSS 변수를 그대로 쓴다.
  *
@@ -145,14 +148,15 @@ const SEATS_POLL_MS = 60_000; // 좌석 목록 폴링 주기(§3.11)
 const SEAT_Z = 15000; // 방 라벨(21000)보다 아래, 아바타(≤10000)보다 위 — y-깊이 무관 고정
 
 /** 프레즌스 7종 표시 메타(D13). meeting/offline은 자동 전환 — 수동 메뉴 제외. */
-const PRESENCE_META: Record<string, { label: string; color: string }> = {
-  online: { label: '온라인', color: '#22C55E' },
-  working: { label: '업무 중', color: BRAND },
-  meeting: { label: '회의 중', color: '#F43F5E' },
-  focus: { label: '집중', color: '#A855F7' },
-  away: { label: '자리비움', color: '#F59E0B' },
-  external: { label: '외근', color: '#14B8A6' },
-  offline: { label: '오프라인', color: '#64748B' },
+// 문구는 공용 어휘(lib/i18n/vocab.ts) — 색만 여기 둔다(상태 시맨틱이라 번역 대상이 아니다).
+const PRESENCE_COLOR: Record<string, string> = {
+  online: '#22C55E',
+  working: BRAND,
+  meeting: '#F43F5E',
+  focus: '#A855F7',
+  away: '#F59E0B',
+  external: '#14B8A6',
+  offline: '#64748B',
 };
 /** 수동 전환 가능 상태(06 §1.2). 서버 allowlist 밖 값은 서버가 무시(칩은 서버 상태 추종). */
 const MANUAL_STATUSES = ['online', 'working', 'focus', 'external'] as const; // away는 자동 전이(D13) — 서버 allowlist 정합
@@ -191,12 +195,14 @@ interface SpotRow {
 }
 
 /** 씬 모드 핫스팟(D34 W1-4·W2-1) — 기존 가구 위 아이콘 칩(좌석 마커와 동일 z 패턴). */
-const HOTSPOTS: { id: string; kind: SpotKind; title: string; label: string; icon: string; n: Vec2 }[] = [
-  { id: 'board', kind: 'board', title: '게시판 — 공지사항', label: '공지', icon: '📌', n: { x: 0.615, y: 0.27 } },
-  { id: 'cabinet', kind: 'cabinet', title: '서류함 — 보고서', label: '보고서', icon: '🗂️', n: { x: 0.263, y: 0.35 } },
+const HOTSPOTS: { id: string; kind: SpotKind; titleKey: MessageKey; labelKey: MessageKey; icon: string; n: Vec2 }[] = [
+  { id: 'board', kind: 'board', titleKey: 'office.hotspot.boardTitle' as MessageKey, labelKey: 'office.hotspot.board' as MessageKey, icon: '📌', n: { x: 0.615, y: 0.27 } },
+  { id: 'cabinet', kind: 'cabinet', titleKey: 'office.hotspot.cabinetTitle' as MessageKey, labelKey: 'office.hotspot.cabinet' as MessageKey, icon: '🗂️', n: { x: 0.263, y: 0.35 } },
 ];
 
 export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnabled = true }: OfficeViewport2DProps = {}) {
+  const { t } = useT();
+  const presenceLabel = (p: string | null | undefined) => { const k = presenceKey(p); return k ? t(k) : (p ?? ''); };
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [stage, setStage] = useState({ w: 0, h: 0 });
 
@@ -256,11 +262,11 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
         setOutgoingCall(null);
         showToastRef.current(
           s.reason === 'target_offline'
-            ? '상대가 접속 중이 아닙니다 — 메시지를 남겨보세요'
+            ? t('office.call.offline')
             : s.reason === 'too_far'
               // 통화 버튼이 알아서 걸어가므로 여기까지 오는 건 도착 직후 상대가 움직인 경우다.
-              ? '상대가 자리를 옮겼습니다 — 다시 시도해 주세요'
-              : '지금은 통화를 걸 수 없습니다',
+              ? t('office.call.moved')
+              : t('office.call.unavailable'),
         );
         break;
     }
@@ -594,7 +600,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
   }, [loadStructure]);
 
   const seatLabel = useCallback(
-    (seat: SeatInfo) => seat.seat_number ?? `좌석 ${seat.id.slice(0, 8)}`,
+    (seat: SeatInfo) => seat.seat_number ?? t('office.seat.fallback', { id: seat.id.slice(0, 8) }),
     [],
   );
 
@@ -607,7 +613,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
   /** "내 자리로" — 내 좌석까지 A* 경로로 걸어가 착석(도착 시 sit 렌더). */
   const goMySeat = useCallback(() => {
     if (!mySeat) {
-      showToast('배정된 좌석이 없습니다 — 초록 좌석을 클릭해 앉으세요');
+      showToast(t('office.seat.none'));
       return;
     }
     // clampToWalkable은 씬 중심 쪽으로 밀어내 좌석에서 멀어진다(실측 1.9m) — 최근접 보행점 사용.
@@ -637,15 +643,16 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
           playersRef.current.forEach((p) => {
             if (p.userId === spot.userId) liveStatus = p.status;
           });
-          const meta = PRESENCE_META[liveStatus ?? emp?.presence_status ?? 'offline'] ?? PRESENCE_META.offline;
-          rows.push({ key: 'team', primary: emp?.team_name ?? '팀 미지정', secondary: '소속' });
-          rows.push({ key: 'status', primary: meta.label, secondary: '상태', color: meta.color });
+          const st = liveStatus ?? emp?.presence_status ?? 'offline';
+          const meta = { label: presenceLabel(st), color: PRESENCE_COLOR[st] ?? PRESENCE_COLOR.offline };
+          rows.push({ key: 'team', primary: emp?.team_name ?? t('office.spot.teamNone'), secondary: t('office.spot.team') });
+          rows.push({ key: 'status', primary: meta.label, secondary: t('office.spot.status'), color: meta.color });
         } else if (spot.kind === 'myseat') {
           const today = new Date().toISOString().slice(0, 10);
           const logs = await api.get<Array<{ id: number; title: string; status: string; logged_at: string }>>(
             `/api/work-logs?user_id=${myId}&date=${today}&limit=4`,
           );
-          if (!Array.isArray(logs) || logs.length === 0) rows.push({ key: 'nolog', primary: '오늘 등록된 업무가 없습니다' });
+          if (!Array.isArray(logs) || logs.length === 0) rows.push({ key: 'nolog', primary: t('office.spot.noWorkLog') });
           else for (const l of logs) rows.push({ key: `log-${l.id}`, primary: l.title, secondary: fmtT(l.logged_at), color: l.status === 'done' ? '#22C55E' : BRAND });
           try {
             const kpi = await api.get<Array<{ metric: string; value: number | null; final_score: number | null }>>(
@@ -668,13 +675,13 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
               `/api/meetings?scheduled_from=${encodeURIComponent(from.toISOString())}&scheduled_to=${encodeURIComponent(to.toISOString())}&limit=20`,
             );
             const mine = (Array.isArray(meetings) ? meetings : []).filter((m) => m.room_id === room.id && m.status !== 'cancelled');
-            if (mine.length === 0) rows.push({ key: 'nomeet', primary: '오늘 이 방 일정이 없습니다' });
+            if (mine.length === 0) rows.push({ key: 'nomeet', primary: t('office.spot.noMeeting') });
             for (const m of mine.slice(0, 4)) {
               rows.push({ key: `m-${m.id}`, primary: m.title, secondary: fmtT(m.scheduled_at), color: m.status === 'in_progress' ? '#EF4444' : undefined });
               if (m.status === 'in_progress' && !live?.meetingId) live = { ...(live ?? {}), meetingId: m.id };
             }
           } else {
-            rows.push({ key: 'noroom', primary: '이 방의 회의실 정보가 없습니다' });
+            rows.push({ key: 'noroom', primary: t('office.spot.noRoomInfo') });
           }
           if (spot.roomId === 'lounge') {
             try {
@@ -691,21 +698,21 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
             '/api/notices?limit=5',
           );
           const items = Array.isArray(res?.items) ? res.items : [];
-          if (items.length === 0) rows.push({ key: 'no', primary: '공지사항이 없습니다' });
+          if (items.length === 0) rows.push({ key: 'no', primary: t('office.spot.noNotices') });
           for (const n of items) rows.push({ key: `n-${n.id}`, primary: n.title, secondary: n.created_at?.slice(0, 10), color: n.pinned ? BRAND : undefined });
         } else if (spot.kind === 'cabinet') {
           const reps = await api.get<Array<{ id: string; title: string; report_type: string; report_date: string; status: string }>>(
             '/api/reports?limit=5',
           );
           const list = Array.isArray(reps) ? reps.slice(0, 5) : [];
-          if (list.length === 0) rows.push({ key: 'no', primary: '보고서가 없습니다' });
+          if (list.length === 0) rows.push({ key: 'no', primary: t('office.spot.noReports') });
           for (const r of list) rows.push({ key: `r-${r.id}`, primary: r.title, secondary: `${r.report_date} · ${r.status}` });
         } else if (spot.kind === 'zone') {
-          rows.push({ key: 'z', primary: spot.title, secondary: '팀 구역' });
+          rows.push({ key: 'z', primary: spot.title, secondary: t('office.spot.teamZone') });
         }
       } catch {
         rows.length = 0;
-        rows.push({ key: 'err', primary: '불러오지 못했습니다' });
+        rows.push({ key: 'err', primary: t('office.spot.loadFailed') });
       }
       if (!cancelled) {
         setSpotRows(rows);
@@ -729,7 +736,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
         showToast(`${seatLabel(seat)} 좌석을 반납했습니다`);
         setSpot(null);
       } catch (err) {
-        showToast(err instanceof ApiError ? err.message : '좌석 요청에 실패했습니다');
+        showToast(err instanceof ApiError ? err.message : t('office.seat.requestFailed'));
       } finally {
         setSeatBusy(false);
         loadSeats();
@@ -809,7 +816,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
     (userId: string) => {
       const target = peerPos(userId);
       if (!target) {
-        showToast('상대가 접속 중이 아닙니다');
+        showToast(t('office.call.offlineShort'));
         return;
       }
       moveTo(nearestWalkableM(target));
@@ -827,11 +834,11 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
   const startCall = useCallback(
     (userId: string, name: string) => {
       if (activeCall || outgoingCall) {
-        showToast('이미 통화 중입니다');
+        showToast(t('office.call.busy'));
         return;
       }
       if (!peerPos(userId)) {
-        showToast('상대가 접속 중이 아닙니다 — 메시지를 남겨보세요');
+        showToast(t('office.call.offline'));
         return;
       }
       if (peerDistance(userId) <= CALL_NEAR_M) {
@@ -900,7 +907,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
       showToast(`${seatLabel(seat)} 좌석을 점유했습니다`);
     } catch (err) {
       // 409 seat_already_occupied 등 — ApiError.message(한국어 매핑/코드) 표시.
-      showToast(err instanceof ApiError ? err.message : '좌석 요청에 실패했습니다');
+      showToast(err instanceof ApiError ? err.message : t('office.seat.requestFailed'));
     } finally {
       setSeatBusy(false);
       setSeatPrompt(null);
@@ -1216,14 +1223,14 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
   // D1: 메뉴 라우트(realtimeEnabled=false)에선 실시간 미연결이 정상 — "연결 중…" 대신 중립 칩.
   const statusChip =
     !realtimeEnabled
-      ? { text: '내 오피스에서 실시간', color: '#64748B' }
+      ? { text: t('office.conn.menuRoute'), color: '#64748B' }
       : status === 'connected'
-      ? { text: '실시간 연결됨', color: '#22C55E' }
+      ? { text: t('office.conn.connected'), color: '#22C55E' }
       : status === 'reconnecting'
-        ? { text: '재연결 중…', color: '#F59E0B' }
+        ? { text: t('office.conn.reconnecting'), color: '#F59E0B' }
         : status === 'connecting'
-          ? { text: '이동서버 연결 중…', color: '#F59E0B' }
-          : { text: '오프라인 모드 (로컬 이동)', color: '#64748B' };
+          ? { text: t('office.conn.connecting'), color: '#F59E0B' }
+          : { text: t('office.conn.offline'), color: '#64748B' };
 
   const glowRect = useMemo(() => {
     const room = activeRooms.find((r) => r.id === glowRoom);
@@ -1358,7 +1365,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
             <div
               className="absolute left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[11px] font-semibold"
               style={{ top: 10, background: 'rgba(7,16,29,.85)', color: '#9fd0a8', border: '1px solid rgba(120,200,150,.35)', zIndex: 5 }}
-              title="관리자가 배포한 좌석배치의 방·구역·벽을 씬 위에 겹쳐 표시합니다"
+              title={t('office.overlayHint')}
             >
               배포된 좌석배치 반영 (편집기 레이아웃)
             </div>
@@ -1476,7 +1483,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
           const title = isMine
             ? `${seatLabel(seat)} — 내 좌석 (클릭: 자리 비우기)`
             : occupied
-              ? `${seatLabel(seat)} — ${who ?? '사용 중'}${who ? (online ? ' (재실)' : ' (자리 비움)') : ''}`
+              ? `${seatLabel(seat)} — ${who ?? t('office.seat.inUse')}${who ? (online ? t('office.seat.present') : t('office.seat.awaySuffix')) : ''}`
               : unavailable
                 ? `${seatLabel(seat)} — 사용 불가`
                 : fixedUnassigned
@@ -1587,11 +1594,11 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
             <button
               key={h.id}
               type="button"
-              title={h.title}
-              aria-label={h.title}
+              title={t(h.titleKey)}
+              aria-label={t(h.titleKey)}
               onClick={(e) => {
                 e.stopPropagation();
-                setSpot({ kind: h.kind, title: h.title });
+                setSpot({ kind: h.kind, title: t(h.titleKey) });
               }}
               className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center transition-transform hover:scale-125 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
               style={{
@@ -1684,7 +1691,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
                     bottom: '-6%',
                     width: '26%',
                     height: '26%',
-                    background: s.isSelf ? (PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).color : s.accent,
+                    background: s.isSelf ? (PRESENCE_COLOR[myStatus ?? ''] ?? PRESENCE_COLOR.offline) : s.accent,
                     border: '2px solid #fff',
                   }}
                 />
@@ -1704,7 +1711,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
               >
                 <span
                   className="w-1.5 h-1.5 rounded-full inline-block flex-shrink-0"
-                  style={{ background: s.isSelf ? (PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).color : s.accent }}
+                  style={{ background: s.isSelf ? (PRESENCE_COLOR[myStatus ?? ''] ?? PRESENCE_COLOR.offline) : s.accent }}
                 />
                 {s.name}
               </div>
@@ -1712,8 +1719,8 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
             {/* D34 W1-1/W1-2: 아바타 클릭 = 프로필(타인)/내 업무(본인) 카드 진입점 */}
             <button
               type="button"
-              aria-label={s.isSelf ? '내 업무·자리 카드' : `${s.name} 프로필`}
-              title={s.isSelf ? '내 업무·자리' : `${s.name} 프로필`}
+              aria-label={s.isSelf ? t('office.myCard') : `${s.name} 프로필`}
+              title={s.isSelf ? t('office.myCardShort') : `${s.name} 프로필`}
               onClick={(e) => {
                 e.stopPropagation();
                 setSpot(
@@ -1843,7 +1850,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
             )}
             <div className="py-1 max-h-44 overflow-y-auto">
               {spotRows === null ? (
-                <div className="px-3 py-3 text-[11px] text-text-muted">불러오는 중…</div>
+                <div className="px-3 py-3 text-[11px] text-text-muted">{t('common.loading')}</div>
               ) : (
                 spotRows.map((r) => (
                   <div key={r.key} className="px-3 py-1.5 flex items-start gap-2">
@@ -1965,7 +1972,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
                 </>
               )}
               {spot.kind === 'board' && (
-                <span className="px-1 text-[9px] text-text-muted">최근 공지 5건 — 전체는 상단 알림에서</span>
+                <span className="px-1 text-[9px] text-text-muted">{t('office.spot.recentNotices')}</span>
               )}
             </div>
           </div>
@@ -2189,7 +2196,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
             <button
               type="button"
               onClick={goMySeat}
-              title={mySeat ? `내 좌석(${seatLabel(mySeat)})으로 걸어가 앉기` : '배정된 좌석 없음 — 초록 좌석을 클릭해 앉기'}
+              title={mySeat ? `내 좌석(${seatLabel(mySeat)})으로 걸어가 앉기` : t('office.seat.noneShort')}
               className="px-2 py-1 rounded-full text-[10px] font-semibold flex items-center gap-1.5 hover:bg-white/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
               style={{ color: mySeat ? '#fff' : 'rgba(255,255,255,.55)' }}
             >
@@ -2217,10 +2224,10 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
               >
                 <span
                   className="w-1.5 h-1.5 rounded-full inline-block"
-                  style={{ background: (PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).color }}
+                  style={{ background: (PRESENCE_COLOR[myStatus ?? ''] ?? PRESENCE_COLOR.offline) }}
                 />
                 <span className="text-text-secondary">
-                  {(PRESENCE_META[myStatus ?? ''] ?? PRESENCE_META.offline).label}
+                  {presenceLabel(myStatus ?? '')}
                 </span>
                 <span className="text-text-muted text-[8px]">▴</span>
               </button>
@@ -2241,9 +2248,9 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
                     >
                       <span
                         className="w-1.5 h-1.5 rounded-full inline-block"
-                        style={{ background: PRESENCE_META[s].color }}
+                        style={{ background: PRESENCE_COLOR[s] }}
                       />
-                      {PRESENCE_META[s].label}
+                      {presenceLabel(s)}
                       {myStatus === s && (
                         <span className="ml-auto text-[9px]" style={{ color: BRAND }}>
                           ●
@@ -2251,7 +2258,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
                       )}
                     </button>
                   ))}
-                  <div className="px-2.5 pt-1 text-[9px] text-text-muted whitespace-nowrap">회의·오프라인은 자동 전환</div>
+                  <div className="px-2.5 pt-1 text-[9px] text-text-muted whitespace-nowrap">{t('office.statusAutoNote')}</div>
                 </div>
               )}
             </div>
