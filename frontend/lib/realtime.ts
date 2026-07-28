@@ -20,6 +20,26 @@ import { findPath } from './office2d';
 
 export type ConnStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'error';
 
+/** 서버 이동 상한(realtime `config.MAX_SPEED_MPS`와 동일해야 한다). */
+export const MAX_SPEED_MPS = 1.4;
+/** 한 요청의 최대 보폭(m) — 정속 케이던스(50ms)에서의 보폭. */
+export const MAX_STEP_DIST = 0.07;
+
+/**
+ * 직전 전송으로부터 `elapsedMs`가 흘렀을 때 보낼 수 있는 보폭(m).
+ *
+ * 서버는 dt를 **도착 간격**으로 재고(`MAX_SPEED·dt·tolerance`) 클라는 타이머로 보낸다.
+ * 고정 보폭을 쓰면 두 값이 어긋나는 순간 거부된다 — 특히 0.07m/50ms는 정확히 상한 속도라
+ * 여유가 0이라서, 타이머가 33ms 안쪽으로 당겨지기만 해도 서버 예산을 넘었다.
+ * 흐른 시간에 비례해 재단하면 정속(1.4m/s)은 그대로 유지되면서 서버 예산 안에 들어온다.
+ *
+ * 첫 스텝(elapsed=0)은 서버의 dt 기본값(0.05s → 예산 0.105m)에 기대 최대 보폭을 쓴다.
+ */
+export function walkStepDist(elapsedMs: number, maxStep = MAX_STEP_DIST): number {
+  if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return maxStep;
+  return Math.min(maxStep, (MAX_SPEED_MPS * elapsedMs) / 1000);
+}
+
 export interface NetPlayer {
   sessionId: string;
   userId: string;
@@ -300,6 +320,7 @@ export async function createOfficeConnection(
   // (100ms×0.09는 64ms 이동 + 36ms 정지의 톱니 스터터).
   const STEP_MS = 50;
   const STEP_DIST = 0.07;
+  let lastStepAt = 0;
   const STALL_TICKS = 30; // 벽(가구 충돌)에 막혀 1.5초간 전진 없으면 목적지 포기(최후 안전망).
   // 중간 경유지 도달 판정(마지막 목적지는 0.05). 반드시 A* 클리어런스(0.07m)보다 작아야 한다:
   // 경유지를 eps만큼 못 미친 지점에서 다음 경유지로 방향을 틀면 폴리라인을 최대 eps만큼
@@ -346,7 +367,13 @@ export async function createOfficeConnection(
       dy = wp.y - self.y;
       d = Math.hypot(dx, dy);
     }
-    const step = Math.min(d, STEP_DIST);
+    // 보폭은 **실제로 흐른 시간**으로 재단한다. setInterval(50)은 50ms 간격을 보장하지 않는다 —
+    // 타이머 드리프트·이벤트 루프 밀림으로 두 전송이 30ms 안쪽으로 붙을 수 있고, 서버는 dt를
+    // **도착 간격**으로 재므로(OfficeRoom: now − prev.at) 그 순간 예산이 모자라 거부한다.
+    // 고정 0.07m/50ms는 정확히 1.4m/s = 상한이라 여유가 0이었다(실측 dt=0.014~0.033s에서 거부).
+    const now = Date.now();
+    const step = Math.min(d, walkStepDist(now - lastStepAt));
+    lastStepAt = now;
     const nx = self.x + (dx / d) * step;
     const ny = self.y + (dy / d) * step;
     safeSend('move_request', { target: { x: nx, y: ny }, seq: ++seq });
