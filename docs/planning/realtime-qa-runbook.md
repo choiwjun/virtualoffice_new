@@ -20,9 +20,11 @@ INTERNAL_API_TOKEN="dev-internal-token-CHANGE-IN-PRODUCTION" \
 ./.venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 # (2) 실시간 이동서버 :2567  (JWT_SECRET 기본값이 백엔드 jwt_secret_key 기본과 일치)
-# ⚠ D35 V3 씬 QA는 SCENE_FLOOR=v3 필수(탑다운 축정렬 · officeV3.ts 정본과 SYNC). LAYOUT_SOURCE_URL을
-#   함께 주면 배포 레이아웃이 우선하며, 미배포(404) 시 폴백도 SCENE_FLOOR를 따른다(2026-07-17 수리 —
-#   이전엔 Demo 20×15로 떨어져 클라 V3 렌더와 지오메트리 불일치 → 전 이동 collision 거부).
+# ⚠ SCENE_FLOOR=v3 필수(탑다운 축정렬 · officeV3.ts 정본과 SYNC). LAYOUT_SOURCE_URL을 함께 주면
+#   배포 레이아웃이 우선하지만, **씬과 크기가 다르면 거부하고 씬 층으로 돌아간다**(D40-c, 2026-07-28).
+#   `[layout] world mismatch ...` 경고가 한 번 찍히면 그 배포본은 무시된 것이다 — 씬(20×11.256m)과
+#   다른 세계를 그대로 받으면 같은 좌표가 다른 자리를 뜻해 조용히 어긋난다.
+#   미배포(404) 폴백도 SCENE_FLOOR를 따른다(2026-07-17 수리 — 이전엔 Demo 20×15로 떨어져 전 이동 거부).
 #   (SCENE_FLOOR=horizon은 구 다이아 legacy 폴백값 — 클라 씬 계층이 제거되어 QA 무의미.)
 cd realtime && npm run build
 PORT=2567 \

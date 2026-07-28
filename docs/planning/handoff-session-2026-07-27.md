@@ -1,5 +1,7 @@
 # Handoff — 온보딩 완성 + 관리 화면 실사용 세션 (2026-07-27)
 
+> ⏭️ **후속: [handoff 2026-07-28](handoff-session-2026-07-28.md)** — 여기서 남긴 작업 대부분이 그날 닫혔다(D40). 최신 상태는 그쪽을 본다.
+
 > **한 줄 상태**: 24-스펙 **Phase 1~5 전량 종결**(E3 유저 CRUD · E4 초대·비번설정 · E5 화이트라벨 · E6 첫실행 온보딩 · Phase 1d 테넌트 스코프)에 이어, **관리 화면을 실제 회사처럼 굴려 보며(HORIZON 데모 시딩) 드러난 결함을 닫았다** — 좌석 편집기 재설계(D37)·자리 주인 지정(D38)·팀 이름 정본화(D39)·`company_id` 타입 드리프트(0010).
 > 정본 감사: [22 백엔드/SaaS](22-commercialization-gap-audit.md) · [23 프론트/에셋/UX](23-frontend-design-asset-commercialization-audit.md) · [24 온보딩·화이트라벨 스펙](24-onboarding-whitelabel-workstream-spec.md).
 >
@@ -251,7 +253,7 @@ i18n(C1, 한국어 1,695건) · 프리미티브 확산 · 접근성 잔여(C10/A
 
 ## 5. 함정 / 주의 (gotchas)
 
-- **⚠ 개발 환경이 Linux(WSL) 전용이다**: `backend/.venv`는 WSL로 만들어진 venv이고 pytest·fastapi가 없다. `frontend/node_modules`도 `@next/swc-linux-*`·`@rollup/rollup-linux-*`만 있어 Windows에서 `next build`·`vitest`가 실행 불가. Windows에서 작업하려면 각각 재설치가 필요하다. (이번 세션의 백엔드 검증은 별도 임시 venv로 수행, 프론트는 `tsc`까지만 확인 — vitest 미실행.)
+- **⚠ ~~프론트도 Windows에서 실행 불가~~ → 2026-07-28에 반증됨**: `vitest`(56 passed)·`next build`(exit 0) 모두 Windows에서 정상 동작한다. 이 항목은 틀렸다. 다만 **`backend/.venv`가 WSL 전용인 것은 사실** — pytest·fastapi가 없어 Windows에서는 `python -m venv` + `pip install -r requirements.txt`로 새로 만들어야 한다(`asyncpg` 제외).
 - **⚠ `PUBLIC_APP_URL`을 운영에서 반드시 설정**: E4 링크의 호스트는 백엔드가 아니라 **프론트** 주소다. 기본값 `http://localhost:3000`을 그대로 두면 사용자가 링크를 열 수 없다. `.env.example` 참조.
 - **PowerShell로 한글 소스를 rewrite 금지**: `Get-Content | Set-Content`는 CP949로 읽고 UTF-8로 써서 한글 주석을 전부 깨뜨린다(이번 세션에 `consent.py`가 당해 `git checkout`으로 복구). 소스 편집은 반드시 편집 도구로.
 - ~~**dev.db `office.company_id`가 `CHAR(32)` 레거시 타입**~~ → **0010에서 종결**(§1B-4). `org_group`도 같은 병이었고 그쪽은 잠복이 아니라 실제로 조직도를 망가뜨리고 있었다.
