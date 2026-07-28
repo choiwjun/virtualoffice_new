@@ -63,6 +63,9 @@ services:
       ERP_DATABASE_URL: ${ERP_DATABASE_URL:-}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       AUTO_CREATE_TABLES: ${AUTO_CREATE_TABLES:-true}
+      # 컨테이너 로그는 수집기가 읽는다 → 기본 json(요청 id·company_id·user_id 자동 부착)
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
       CORS_ORIGINS: ${CORS_ORIGINS:-["https://office.example.com"]}
       # 보안 시크릿(P1) — production은 강한 값 필수(미주입 시 fail-fast)
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-only-secret-CHANGE-IN-PRODUCTION}

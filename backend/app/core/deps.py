@@ -11,6 +11,7 @@ import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
+from app.core.logging import bind_request_user
 from app.core.security import decode_access_token
 from app.models.tables import DEFAULT_COMPANY_ID
 
@@ -53,10 +54,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
     # 구 토큰(company_id 클레임 없음)은 기본 테넌트(1)로 매핑 — 하위호환(비파괴).
     # 신규 로그인 토큰은 auth._build_token이 실제 company_id를 넣는다.
     company_id = payload.get("company_id")
+    resolved_company = int(company_id) if company_id is not None else DEFAULT_COMPANY_ID
+    # 로그 컨텍스트 — 이 뒤로 어떤 로거를 부르든 회사·유저가 자동으로 붙는다.
+    # 미들웨어는 의존성보다 먼저 돌아 토큰을 모르므로 여기가 유일하게 가능한 자리다.
+    bind_request_user(user_id=int(sub), company_id=resolved_company)
     return CurrentUser(
         user_id=int(sub),
         role=role,
-        company_id=int(company_id) if company_id is not None else DEFAULT_COMPANY_ID,
+        company_id=resolved_company,
         email=payload.get("email"),
         team_id=payload.get("team_id"),
     )

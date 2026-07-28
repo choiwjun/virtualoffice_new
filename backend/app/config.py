@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     # ── 미디어(프로필 사진 등) 저장 루트 — /media 로 정적 서빙 (D35 배지 아바타) ──
     media_root: str = "./media"
 
+    # ── 로깅 (22 Tier 1 관측성) ──────────────────────────────────
+    # json = 한 줄 = 한 JSON 객체(수집기가 파싱). text = 사람이 읽는 개발용.
+    log_level: str = "INFO"
+    log_format: str = "text"  # text | json
+
     # ── 메일 발송 (E4 링크 전달 · E9 self-service) ──────────────
     # 기본은 console — 미설정 환경에서 "보낸 척"하지 않고 무엇을 보내려 했는지 로그로 남긴다.
     # smtp로 바꾸면 아래 SMTP_* 를 쓴다. SES는 SesMailer를 추가하고 이 값을 ses로 두면 된다.

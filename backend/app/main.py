@@ -15,8 +15,11 @@ from sqlalchemy import text
 
 from app import __version__
 from app.config import settings
+from app.core.logging import RequestContextMiddleware, configure_logging
 from app.db import engine
 
+# 라우터·미들웨어보다 먼저 — 기동 중 로그도 같은 포맷으로 나가야 한다.
+configure_logging(settings.log_level, settings.log_format)
 logger = logging.getLogger(__name__)
 
 
@@ -60,6 +63,9 @@ app.add_middleware(
 from app.core.ratelimit import LoginRateLimitMiddleware  # noqa: E402
 
 app.add_middleware(LoginRateLimitMiddleware)
+
+# 요청 id·액세스 로그 — 가장 바깥(마지막 add_middleware)이라 rate-limit 거부도 로그에 남는다.
+app.add_middleware(RequestContextMiddleware)
 
 # 미디어 정적 서빙(프로필 사진, D35 배지 아바타) — media_root/avatars/* → /media/avatars/*
 from pathlib import Path  # noqa: E402
