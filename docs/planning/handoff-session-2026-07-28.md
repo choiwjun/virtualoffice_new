@@ -20,6 +20,9 @@
 | `666dd37` | ERP 동기화가 팀 이름을 조직도에 반영 | D40-f |
 | `a2eee41` | ESLint 게이트 | — |
 | `dc6a3c4` | 메일 발송 어댑터 — SMTP/SES 결정에 묶이지 않는 이음매 | D40-h |
+| `5668248` | D40 결정 8건 + 이 문서 + 낡은 함정 정정 | — |
+| `3c51b0d` | 씬의 브랜드 색을 테넌트 설정에서 — 오피스만 기본 파랑으로 남던 문제 | 23 A8 |
+| `ca7d900` | `/ready` readiness 프로브 — liveness와 분리 | 22 Tier 1 |
 
 ### 1-1. 좌표계가 셋이었다 (D40)
 
@@ -56,21 +59,23 @@
 - **ERP 팀 동기화**(D40-f) — `fetch_teams()`가 구현돼 있는데 호출부가 없었다. 개편은 따라가고 개명은 따라가지 않는다.
 - **메일 어댑터**(D40-h) — SMTP/SES 결정이 착수를 막고 있었는데, 그 결정은 어댑터 뒤에 있으면 되는 것이었다. 기본값 console(조용히 "보낸 척" 금지), 발송 실패가 링크 발급을 되돌리지 않음.
 - **ESLint** — 설정이 없어 lint가 한 번도 돈 적이 없었다. 이제 error 0 / warning 6.
+- **씬 브랜드 색**(23 A8) — `OfficeViewport2D`에 `#3B5BFE`가 13곳 있었다. 씬 팔레트가 아니라 **브랜드 프라이머리**라, 브랜드 색을 바꾼 회사가 오피스 화면에서만 기본 파랑을 봤다. 23 A8은 "캔버스는 CSS 변수를 못 읽는다"로 미뤄 뒀는데 세어 보니 **13곳 전부 DOM·SVG**였다 — `rgb(var(--color-primary))` 한 줄이면 되는 자리였다. 상태 시맨틱·씬 팔레트는 그대로 고정(브랜드가 초록인 회사에서 "온라인"과 구별이 안 된다).
+- **`/ready`**(22 Tier 1) — `/health` 하나뿐이라 DB 연결 풀이 죽어도 healthy로 보고됐다. liveness/readiness를 나누고 compose backend에 healthcheck를 붙였다(지금까지 아예 없었다).
 
 ---
 
 ## 2. 남은 작업
 
 ### 🟠 P1
-- **캔버스 씬 색 토큰화**(23 A8/A13) — `OfficeViewport2D`·`SeatCanvas`는 캔버스라 CSS 변수를 못 읽는다. `getComputedStyle`로 한 번 읽어 렌더 컨텍스트에 주입하는 방식이 필요하다.
 - **`org_group`에 출처(erp/native) 구분** — 있어야 ERP 팀 **개명**까지 따라갈 수 있다(D40-f가 지금은 개편만 따라간다). `erp_user.source`와 같은 장치.
 - **`team_zone`의 위치 정리** — `erp_team_id ↔ org_group_id`를 잇는 테이블이 이미 있는데 D39가 `org_group`에 직접 이었다. 지금은 비어 있어 충돌이 없지만 구역 기능을 켜기 전에 **어느 쪽이 매핑 정본인지** 정해야 한다(권장: `team_zone`은 순수 구역 지오메트리로 좁히고 팀 식별은 `org_group`만).
 - **배포 도면 방의 상호작용** — D40에서 의도적으로 뺐다(도면은 그림). 배포 방에 일정을 붙이려면 layout room ↔ DB room 매핑이 따로 필요하다.
 - **ESLint warning 6건** — 전부 `react-hooks/exhaustive-deps`. ref를 일부러 뺀 자리라 손대면 렌더 루프를 건드린다. 개별 판단 필요.
 
 ### 🟡 P2 — 22-doc Tier 1/2
-Redis 수평확장(T0-3) · 관측성(구조화 로깅·Sentry·`/ready`) · graceful shutdown · 개인정보 팩(동의 게이트·보존기간·열람/삭제).
-**모두 별도 워크스트림 규모다** — 한 세션에 곁다리로 넣을 수 없다.
+- **관측성**: `/ready`는 닫혔다(`ca7d900`). 남은 건 **구조화 로깅**(요청 id·company_id·user_id를 모든 로그에)과 **Sentry**(DSN·요금제 결정 필요).
+- Redis 수평확장(T0-3) · graceful shutdown · 개인정보 팩(동의 게이트·보존기간·열람/삭제).
+- **전부 별도 워크스트림 규모다** — 한 세션에 곁다리로 넣을 수 없어 손대지 않았다.
 
 ### 🟢 병행 품질
 i18n(C1, 한국어 1,700건+ — 오늘도 늘었다. 재판매 전 조기 착수 권장) · 프리미티브 확산 · 접근성 잔여(C10/A11).
@@ -103,7 +108,7 @@ i18n(C1, 한국어 1,700건+ — 오늘도 늘었다. 재판매 전 조기 착�
   # frontend :3000
   npm run dev
   ```
-- 검증: 백엔드 `pytest -q`(**593 passed / 85 skipped**, ~2분) · realtime `npm test`(**100 passed**) · 프론트 `npx vitest run`(**56 passed**) · `npx tsc --noEmit` 0건 · `npm run lint` error 0.
+- 검증: 백엔드 `pytest -q`(**596 passed / 85 skipped**, ~2.5분) · realtime `npm test`(**100 passed**) · 프론트 `npx vitest run`(**56 passed**) · `npx tsc --noEmit` 0건 · `npm run lint` error 0.
 
 ---
 
