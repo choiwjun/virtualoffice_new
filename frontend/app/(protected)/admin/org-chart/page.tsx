@@ -226,7 +226,7 @@ export default function OrgChartPage() {
           ) : employees.length === 0 ? (
             <EmptyState icon={ICON.tree} title="조직 데이터가 없습니다." />
           ) : (
-            <OrgChartFlow employees={employees} teamNames={teamNames} companyName={branding?.brand_name || '회사'} />
+            <OrgChartFlow employees={employees} groups={orgGroups} companyName={branding?.brand_name || '회사'} />
           )}
         </div>
       </SectionCard>

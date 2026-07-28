@@ -21,6 +21,17 @@ export interface OrgEmployee {
   position?: string | null;
 }
 
+/** 조직도 그룹 — 그래프의 계층 정본(D39). `erp_team_id`가 있으면 그 팀 사람들이 매달린다. */
+export interface OrgGroupNode {
+  id: string;
+  name: string;
+  type: string;
+  parent_id: string | null;
+  color?: string | null;
+  sort_order?: number | null;
+  erp_team_id?: number | null;
+}
+
 const ROLE_COLOR: Record<string, string> = {
   admin: '#4f46e5',
   super_admin: '#4f46e5',
@@ -28,91 +39,187 @@ const ROLE_COLOR: Record<string, string> = {
   employee: '#64748b',
 };
 
-/** 팀 번호 → 이름. 조직도(org_group)에서 이어 준 것만 들어온다. */
-export type TeamNames = Map<number, string>;
+const TYPE_LABEL: Record<string, string> = { division: '본부', department: '부서', part: '파트' };
 
-/** 이름을 안 이어 준 팀은 번호를 그대로 보여 준다 — 지어낸 이름보다 낫고, 이으면 사라진다. */
-function teamLabel(teamId: number, names: TeamNames): string {
-  if (teamId === 0) return '미배정';
-  return names.get(teamId) ?? `팀 ${teamId}`;
+const NODE_W = 168;
+const X_GAP = 22;
+const Y_GAP = 104;
+
+type Kind = 'company' | 'group' | 'unmapped' | 'person';
+
+interface TreeNode {
+  id: string;
+  label: string;
+  sub?: string;
+  kind: Kind;
+  color?: string;
+  children: TreeNode[];
+  /** measure()가 채우는 서브트리 폭. */
+  width?: number;
 }
 
-function buildGraph(
+function measure(n: TreeNode): number {
+  if (n.children.length === 0) {
+    n.width = NODE_W;
+    return n.width;
+  }
+  const inner =
+    n.children.reduce((sum, c) => sum + measure(c), 0) + X_GAP * (n.children.length - 1);
+  n.width = Math.max(NODE_W, inner);
+  return n.width;
+}
+
+function styleFor(n: TreeNode): React.CSSProperties {
+  const base: React.CSSProperties = {
+    borderRadius: 8,
+    padding: 8,
+    width: NODE_W,
+    fontSize: 12,
+    whiteSpace: 'pre-line',
+    textAlign: 'center',
+  };
+  if (n.kind === 'company') {
+    return { ...base, background: '#111827', color: '#fff', border: 'none', fontWeight: 700 };
+  }
+  if (n.kind === 'unmapped') {
+    // 이름을 이어 주지 않은 팀 — 점선으로 "조직도에 아직 없다"를 표시한다(D39-d).
+    return { ...base, background: '#f1f5f9', color: '#64748b', border: '1px dashed #94a3b8', fontWeight: 600 };
+  }
+  if (n.kind === 'group') {
+    // 배경은 **불투명**이어야 한다 — 반투명으로 두면 어두운 캔버스가 비쳐 짙은 글자가 묻힌다.
+    // 그룹 색은 테두리로만 쓴다(조직 색 정체성은 유지하면서 대비는 배경이 보장).
+    const c = n.color || '#a5b4fc';
+    return { ...base, background: '#eef2ff', color: '#1e293b', border: `2px solid ${c}`, fontWeight: 700 };
+  }
+  return { ...base, background: '#fff', color: '#1f2937', border: `2px solid ${n.color ?? '#64748b'}` };
+}
+
+/**
+ * 조직도 그래프 — **`org_group` 계층을 그대로 그린다**(회사 → 본부 → 부서 → 파트 → 구성원).
+ *
+ * 예전에는 `회사 → 팀(erp_team_id) → 사람` 2단이었다. D39로 이름은 조직도를 따르게 했지만
+ * **구조는 여전히 둘**이라, 같은 화면에서 좌측 트리는 3단인데 그래프는 2단이었다.
+ * 사람은 자기 팀 번호를 맡은 그룹에 매달린다. 맡은 그룹이 없는 팀은 회사 직속 점선 노드로
+ * 남겨 "아직 안 이었다"가 보이게 한다 — 숨기면 그 사람들이 조직도에서 사라진다.
+ */
+function buildTree(
   employees: OrgEmployee[],
-  names: TeamNames,
+  groups: OrgGroupNode[],
   companyName: string,
-): { nodes: Node[]; edges: Edge[] } {
+): TreeNode {
+  const byTeam = new Map<number, OrgEmployee[]>();
+  for (const e of employees) {
+    const list = byTeam.get(e.erp_team_id);
+    if (list) list.push(e);
+    else byTeam.set(e.erp_team_id, [e]);
+  }
+
+  const sorted = [...groups].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const childrenOf = new Map<string | null, OrgGroupNode[]>();
+  for (const g of sorted) {
+    const key = g.parent_id ?? null;
+    const list = childrenOf.get(key);
+    if (list) list.push(g);
+    else childrenOf.set(key, [g]);
+  }
+
+  const person = (m: OrgEmployee): TreeNode => ({
+    id: `emp-${m.id}`,
+    label: m.name,
+    sub: m.position ?? m.role,
+    kind: 'person',
+    color: ROLE_COLOR[m.role] ?? '#64748b',
+    children: [],
+  });
+
+  const claimed = new Set<number>();
+  const toNode = (g: OrgGroupNode): TreeNode => {
+    const members = g.erp_team_id != null ? byTeam.get(g.erp_team_id) ?? [] : [];
+    if (g.erp_team_id != null) claimed.add(g.erp_team_id);
+    return {
+      id: `grp-${g.id}`,
+      label: g.name,
+      sub: TYPE_LABEL[g.type] ?? g.type,
+      kind: 'group',
+      color: g.color ?? undefined,
+      children: [...(childrenOf.get(g.id) ?? []).map(toNode), ...members.map(person)],
+    };
+  };
+
+  const roots = (childrenOf.get(null) ?? []).map(toNode);
+
+  // 조직도에 자리가 없는 팀 — 0(미배정) 포함. 회사 직속으로 남긴다.
+  const orphans: TreeNode[] = [];
+  byTeam.forEach((members, teamId) => {
+    if (claimed.has(teamId)) return;
+    orphans.push({
+      id: `team-${teamId}`,
+      label: teamId === 0 ? '미배정' : `팀 ${teamId}`,
+      sub: '조직도 미연결',
+      kind: 'unmapped',
+      children: members.map(person),
+    });
+  });
+  orphans.sort((a, b) => a.label.localeCompare(b.label));
+
+  return {
+    id: 'company',
+    label: companyName,
+    kind: 'company',
+    children: [...roots, ...orphans],
+  };
+}
+
+function toFlow(root: TreeNode): { nodes: Node[]; edges: Edge[] } {
+  measure(root);
   const nodes: Node[] = [];
   const edges: Edge[] = [];
-  const rootId = 'company';
-  nodes.push({
-    id: rootId,
-    position: { x: 400, y: 20 },
-    data: { label: companyName },
-    style: { background: '#111827', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, padding: 8, width: 180 },
-  });
 
-  const teams = Array.from(new Set(employees.map((e) => e.erp_team_id))).sort((a, b) => a - b);
-  teams.forEach((teamId, ti) => {
-    const teamNodeId = `team-${teamId}`;
-    const teamX = 120 + ti * 320;
-    const named = names.has(teamId);
+  const place = (n: TreeNode, left: number, depth: number, parentId?: string) => {
+    const w = n.width ?? NODE_W;
+    const cx = left + w / 2;
     nodes.push({
-      id: teamNodeId,
-      position: { x: teamX, y: 160 },
-      data: { label: teamLabel(teamId, names) },
-      style: {
-        background: named ? '#e0e7ff' : '#f1f5f9',
-        color: named ? '#3730a3' : '#64748b',
-        // 이름 없는 팀은 점선 — 조직도에 아직 안 이어졌다는 뜻이 한눈에 보인다.
-        border: named ? '1px solid #a5b4fc' : '1px dashed #94a3b8',
-        borderRadius: 8, fontWeight: 600, padding: 8, width: 160,
-      },
+      id: n.id,
+      position: { x: cx - NODE_W / 2, y: depth * Y_GAP },
+      data: { label: n.sub ? `${n.label}\n${n.sub}` : n.label },
+      style: styleFor(n),
     });
-    edges.push({ id: `e-${rootId}-${teamNodeId}`, source: rootId, target: teamNodeId, animated: false });
+    if (parentId) edges.push({ id: `e-${parentId}-${n.id}`, source: parentId, target: n.id });
 
-    const members = employees.filter((e) => e.erp_team_id === teamId);
-    members.forEach((m, mi) => {
-      const empNodeId = `emp-${m.id}`;
-      nodes.push({
-        id: empNodeId,
-        position: { x: teamX - 40 + (mi % 2) * 200, y: 300 + Math.floor(mi / 2) * 90 },
-        data: { label: `${m.name}\n${m.position ?? m.role}` },
-        style: {
-          background: '#fff',
-          color: '#1f2937',
-          border: `2px solid ${ROLE_COLOR[m.role] ?? '#64748b'}`,
-          borderRadius: 8,
-          padding: 8,
-          width: 150,
-          whiteSpace: 'pre-line',
-          fontSize: 12,
-        },
-      });
-      edges.push({ id: `e-${teamNodeId}-${empNodeId}`, source: teamNodeId, target: empNodeId });
-    });
-  });
+    if (n.children.length === 0) return;
+    const inner =
+      n.children.reduce((sum, c) => sum + (c.width ?? NODE_W), 0) + X_GAP * (n.children.length - 1);
+    let x = left + (w - inner) / 2; // 자식 묶음을 부모 아래 가운데 정렬
+    for (const c of n.children) {
+      place(c, x, depth + 1, n.id);
+      x += (c.width ?? NODE_W) + X_GAP;
+    }
+  };
+
+  place(root, 0, 0);
   return { nodes, edges };
 }
 
 export default function OrgChartFlow({
   employees,
-  teamNames,
+  groups,
   companyName = '회사',
 }: {
   employees: OrgEmployee[];
-  teamNames: TeamNames;
+  groups: OrgGroupNode[];
   companyName?: string;
 }) {
   const initial = useMemo(
-    () => buildGraph(employees, teamNames, companyName),
-    [employees, teamNames, companyName],
+    () => toFlow(buildTree(employees, groups, companyName)),
+    [employees, groups, companyName],
   );
   const [nodes, setNodes] = useState<Node[]>(initial.nodes);
-  // 이름은 조직도를 따로 불러와 채우므로 첫 렌더 뒤에 도착한다. 초기값으로만 두면
-  // 그래프가 "팀 1"에 멈춘 채 좌측 트리와 계속 어긋난다.
+  // 조직도는 따로 불러와 첫 렌더 뒤에 도착한다. 초기값으로만 두면 그래프가 옛 구조에 멈춘다.
   useEffect(() => setNodes(initial.nodes), [initial]);
-  const onNodesChange = useCallback((changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)), []);
+  const onNodesChange = useCallback(
+    (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    [],
+  );
 
   return (
     <div style={{ width: '100%', height: '100%' }}>
