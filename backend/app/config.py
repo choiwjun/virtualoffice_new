@@ -36,6 +36,17 @@ class Settings(BaseSettings):
     # ── 미디어(프로필 사진 등) 저장 루트 — /media 로 정적 서빙 (D35 배지 아바타) ──
     media_root: str = "./media"
 
+    # ── 메일 발송 (E4 링크 전달 · E9 self-service) ──────────────
+    # 기본은 console — 미설정 환경에서 "보낸 척"하지 않고 무엇을 보내려 했는지 로그로 남긴다.
+    # smtp로 바꾸면 아래 SMTP_* 를 쓴다. SES는 SesMailer를 추가하고 이 값을 ses로 두면 된다.
+    mail_backend: str = "console"  # console | smtp
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_use_tls: bool = True
+    mail_from: str = ""
+
     # ── 공개 웹 주소 (E4: 비밀번호 설정 링크 생성) ──
     # 관리자에게 건네줄 링크의 호스트. 운영은 실제 도메인 주입(예: https://office.example.com).
     # 백엔드가 아니라 **프론트** 주소다 — 링크를 여는 건 사용자의 브라우저다.

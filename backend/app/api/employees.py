@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -51,7 +53,10 @@ from app.models.tables import (
     Seat,
 )
 from app.services.audit import record_audit
+from app.services.mailer import get_mailer, password_link_mail
 from app.services.tokens import issue_token, revoke_pending_for_user, set_password_url
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["employees"])
 
@@ -342,6 +347,8 @@ async def deactivate_employee(
 class AccessLinkOut(BaseModel):
     """발급된 1회용 링크. `url`은 이 응답에서만 볼 수 있다(서버는 해시만 보관)."""
     url: str
+    mailed: bool = False
+    """본인에게 메일이 나갔는지. false면 관리자가 직접 전달해야 한다(발송 미설정·실패)."""
     purpose: str
     expires_at: str
     employee_id: int
@@ -384,8 +391,29 @@ async def issue_access_link(
         db, company_id=cid, user_id=actor.user_id, action="user_access_link_issued", entity_type="erp_user",
         entity_id=str(row.id), new_value={"purpose": purpose.value},  # 토큰 자체는 절대 기록 금지
     )
+
+    url = set_password_url(raw)
+    # 메일 발송은 **부가**다 — 실패해도 링크는 관리자에게 돌아가야 한다(D36: 원래 전달 경로가
+    # 관리자다). 여기서 예외를 올리면 토큰은 이미 발급됐는데 응답이 500이라, 관리자는 링크를
+    # 잃고 사용자는 메일도 못 받는 최악이 된다.
+    mailed = False
+    try:
+        company_name = (
+            await db.execute(select(Company.name).where(Company.id == cid))
+        ).scalar_one_or_none() or "가상오피스"
+        get_mailer().send(
+            password_link_mail(
+                to=row.email, name=row.name, company=company_name, url=url,
+                invitation=purpose is AuthTokenPurpose.INVITATION,
+            )
+        )
+        mailed = True
+    except Exception:  # noqa: BLE001 — 발송 실패가 발급을 되돌리면 안 된다
+        logger.warning("[mail] 링크 발송 실패 — 관리자 전달 경로로 계속한다", exc_info=True)
+
     return AccessLinkOut(
-        url=set_password_url(raw),
+        mailed=mailed,
+        url=url,
         purpose=purpose.value,
         expires_at=token.expires_at.isoformat(),
         employee_id=row.id,
