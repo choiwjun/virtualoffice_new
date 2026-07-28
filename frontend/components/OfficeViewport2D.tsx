@@ -46,6 +46,15 @@ import {
 import { V3_WALK_AREA, V3_OBSTACLES, V3_SEAT_BY_NUMBER, V3_ROOMS, V3_HOTSPOTS_NORM } from '@/lib/officeV3';
 import { resolveSceneRoom } from '@/lib/sceneRooms';
 
+/** 브랜드 프라이머리 — 테넌트 설정(E5)이 주입하는 CSS 변수를 그대로 쓴다.
+ *
+ * 씬 오버레이는 전부 DOM·SVG라 CSS 변수가 그대로 먹는다(캔버스 2D 컨텍스트만 못 읽는다).
+ * 하드코딩해 두면 브랜드 색을 바꾼 회사가 **오피스 화면에서만** 기본 파랑을 보게 된다 —
+ * 셸 간판을 하드코딩했던 것과 같은 병이다.
+ * 상태 시맨틱 색(#22C55E 등)과 씬 팔레트(웜블랙 계열)는 브랜드가 아니므로 그대로 둔다.
+ */
+const BRAND = 'rgb(var(--color-primary))';
+
 const MAX_SPEED_MPS = 1.4; // realtime config와 동일(로컬 폴백용)
 const LERP_RATE = 8; // 표시 위치가 서버 위치를 따라가는 속도(1/s)
 const WALK_EPS_MPS = 0.08; // 이 속도 이상이면 walk 애니
@@ -138,7 +147,7 @@ const SEAT_Z = 15000; // 방 라벨(21000)보다 아래, 아바타(≤10000)보�
 /** 프레즌스 7종 표시 메타(D13). meeting/offline은 자동 전환 — 수동 메뉴 제외. */
 const PRESENCE_META: Record<string, { label: string; color: string }> = {
   online: { label: '온라인', color: '#22C55E' },
-  working: { label: '업무 중', color: '#3B5BFE' },
+  working: { label: '업무 중', color: BRAND },
   meeting: { label: '회의 중', color: '#F43F5E' },
   focus: { label: '집중', color: '#A855F7' },
   away: { label: '자리비움', color: '#F59E0B' },
@@ -637,7 +646,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
             `/api/work-logs?user_id=${myId}&date=${today}&limit=4`,
           );
           if (!Array.isArray(logs) || logs.length === 0) rows.push({ key: 'nolog', primary: '오늘 등록된 업무가 없습니다' });
-          else for (const l of logs) rows.push({ key: `log-${l.id}`, primary: l.title, secondary: fmtT(l.logged_at), color: l.status === 'done' ? '#22C55E' : '#3B5BFE' });
+          else for (const l of logs) rows.push({ key: `log-${l.id}`, primary: l.title, secondary: fmtT(l.logged_at), color: l.status === 'done' ? '#22C55E' : BRAND });
           try {
             const kpi = await api.get<Array<{ metric: string; value: number | null; final_score: number | null }>>(
               `/api/kpi-results?user_id=${myId}&period_type=quarterly`,
@@ -683,7 +692,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
           );
           const items = Array.isArray(res?.items) ? res.items : [];
           if (items.length === 0) rows.push({ key: 'no', primary: '공지사항이 없습니다' });
-          for (const n of items) rows.push({ key: `n-${n.id}`, primary: n.title, secondary: n.created_at?.slice(0, 10), color: n.pinned ? '#3B5BFE' : undefined });
+          for (const n of items) rows.push({ key: `n-${n.id}`, primary: n.title, secondary: n.created_at?.slice(0, 10), color: n.pinned ? BRAND : undefined });
         } else if (spot.kind === 'cabinet') {
           const reps = await api.get<Array<{ id: string; title: string; report_type: string; report_date: string; status: string }>>(
             '/api/reports?limit=5',
@@ -983,7 +992,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
         userId,
         isSelf,
         showNameplate: pref?.show_nameplate ?? true,
-        accent: pref?.top_color ?? (isSelf ? '#3B5BFE' : 'rgba(255,255,255,.32)'),
+        accent: pref?.top_color ?? (isSelf ? BRAND : 'rgba(255,255,255,.32)'),
         photoUrl: pref?.photo_url ?? null,
       };
     };
@@ -1449,7 +1458,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
           // 미배정 고정석: 클릭해도 앉을 수 없음(관리자 배정 전용) — 초록(착석 가능)으로 위장 금지.
           const fixedUnassigned = !occupied && !unavailable && !isMine && seat.type !== 'free';
           const border = isMine
-            ? '#3B5BFE'
+            ? BRAND
             : occupied
               ? '#64748B'
               : unavailable || fixedUnassigned
@@ -1497,7 +1506,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
                     style={{
                       left: `${n.x * 100}%`,
                       top: `calc(${n.y * 100}% - ${(cushionUpPx + 20).toFixed(1)}px)`,
-                      background: '#3B5BFE',
+                      background: BRAND,
                       boxShadow: '0 0 8px rgba(59,91,254,.7)',
                       zIndex: SEAT_Z + 1,
                     }}
@@ -1755,7 +1764,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
         {meetingPrompt && (
           <div
             className="absolute left-1/2 top-3 -translate-x-1/2 flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-[13px] text-white shadow-lg"
-            style={{ background: 'rgba(7,16,29,.96)', border: '1px solid #3B5BFE', zIndex: 23000 }}
+            style={{ background: 'rgba(7,16,29,.96)', border: `1px solid ${BRAND}`, zIndex: 23000 }}
             onClick={(e) => e.stopPropagation()}
           >
             <span>
@@ -1785,7 +1794,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
         {seatPrompt && (
           <div
             className={`absolute left-1/2 ${meetingPrompt ? 'top-16' : 'top-3'} -translate-x-1/2 flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-[13px] text-white shadow-lg`}
-            style={{ background: 'rgba(7,16,29,.96)', border: '1px solid #3B5BFE', zIndex: 23000 }}
+            style={{ background: 'rgba(7,16,29,.96)', border: `1px solid ${BRAND}`, zIndex: 23000 }}
             onClick={(e) => e.stopPropagation()}
           >
             <span>
@@ -2122,7 +2131,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
                     cx={d.nx * 100}
                     cy={d.ny * 56.3}
                     r={d.isSelf ? 2 : 1.5}
-                    fill={d.isSelf ? '#3B5BFE' : '#22C55E'}
+                    fill={d.isSelf ? BRAND : '#22C55E'}
                     stroke={d.isSelf ? '#ffffff' : 'none'}
                     strokeWidth={0.5}
                   />
@@ -2171,7 +2180,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
                 type="button"
                 onClick={reconnect}
                 className="px-2 py-1 rounded-full text-[10px] font-semibold text-white hover:bg-primary/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
-                style={{ border: '1px solid #3B5BFE' }}
+                style={{ border: `1px solid ${BRAND}` }}
               >
                 다시 연결
               </button>
@@ -2236,7 +2245,7 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
                       />
                       {PRESENCE_META[s].label}
                       {myStatus === s && (
-                        <span className="ml-auto text-[9px]" style={{ color: '#3B5BFE' }}>
+                        <span className="ml-auto text-[9px]" style={{ color: BRAND }}>
                           ●
                         </span>
                       )}
@@ -2259,11 +2268,11 @@ export default function OfficeViewport2D({ onJoinMeeting, dockSlot, realtimeEnab
           >
             <div
               className="flex items-center gap-3 px-5 py-3.5 rounded-xl text-[13px] font-medium text-white shadow-lg"
-              style={{ background: 'rgba(7,16,29,.96)', border: '1px solid #3B5BFE' }}
+              style={{ background: 'rgba(7,16,29,.96)', border: `1px solid ${BRAND}` }}
             >
               <span
                 className="w-4 h-4 rounded-full border-2 animate-spin inline-block"
-                style={{ borderColor: 'rgba(255,255,255,.25)', borderTopColor: '#3B5BFE' }}
+                style={{ borderColor: 'rgba(255,255,255,.25)', borderTopColor: BRAND }}
               />
               연결 끊김 — 재연결 중…
             </div>
