@@ -107,7 +107,7 @@
 - **ESLint warning 6건** — 전부 `react-hooks/exhaustive-deps`. ref를 일부러 뺀 자리라 손대면 렌더 루프를 건드린다. 개별 판단 필요.
 
 ### 🟡 P2 — 22-doc Tier 1/2
-- **관측성**: `/ready`는 닫혔다(`ca7d900`). 남은 건 **구조화 로깅**(요청 id·company_id·user_id를 모든 로그에)과 **Sentry**(DSN·요금제 결정 필요).
+- **관측성**: `/ready`(`ca7d900`)와 **구조화 로깅**(`5191ec9`) 모두 닫혔다. 남은 건 **Sentry**뿐 — DSN·요금제 결정이 필요하다.
 - Redis 수평확장(T0-3) · graceful shutdown · 개인정보 팩(동의 게이트·보존기간·열람/삭제).
 - **전부 별도 워크스트림 규모다** — 한 세션에 곁다리로 넣을 수 없어 손대지 않았다.
 
