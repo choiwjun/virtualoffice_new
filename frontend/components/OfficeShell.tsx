@@ -22,6 +22,8 @@ import { DisconnectReason, RoomEvent, type Room } from 'livekit-client';
 import { ListItem } from '@/components/ui/ListItem';
 import { ROOMS as VIEWPORT_ROOMS } from '@/lib/office2d';
 import { useBranding } from '@/components/BrandingProvider';
+import { useT } from '@/components/I18nProvider';
+import type { MessageKey } from '@/lib/i18n';
 import { OnboardingChecklist } from '@/components/OnboardingChecklist';
 import dynamic from 'next/dynamic';
 
@@ -105,7 +107,8 @@ interface RoomInfo {
 
 interface NavItem {
   href: string;
-  label: string;
+  /** 메시지 키 — 배열이 컴포넌트 밖이라 여기서는 번역할 수 없다. 렌더 시점에 tr()로 푼다. */
+  labelKey: MessageKey;
   icon: React.ReactNode;
   disabled?: boolean;
 }
@@ -184,28 +187,28 @@ function IconSettings() {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '/office',           label: '가상오피스',    icon: <IconOffice /> },
-  { href: '/work-log',         label: '업무관리',      icon: <IconWork /> },
-  { href: '/work-status',      label: '업무현황',      icon: <IconChart /> },
-  { href: '/trip',             label: '출장관리',      icon: <IconCar /> },
-  { href: '/kpi',              label: 'KPI평가',       icon: <IconKpi /> },
-  { href: '/reports',          label: '보고서',        icon: <IconReport /> },
-  { href: '/meetings',         label: '회의실예약',    icon: <IconMeetRoom /> },
-  { href: '/chat',             label: '커뮤니케이션',  icon: <IconChat /> },
-  { href: '/admin/employees',  label: '인사·근태',     icon: <IconHR /> },
-  { href: '/settings',         label: '설정',          icon: <IconSettings /> },
+  { href: '/office',           labelKey: 'nav.office',    icon: <IconOffice /> },
+  { href: '/work-log',         labelKey: 'nav.workLog',      icon: <IconWork /> },
+  { href: '/work-status',      labelKey: 'nav.workStatus',      icon: <IconChart /> },
+  { href: '/trip',             labelKey: 'nav.trip',      icon: <IconCar /> },
+  { href: '/kpi',              labelKey: 'nav.kpi',       icon: <IconKpi /> },
+  { href: '/reports',          labelKey: 'nav.reports',        icon: <IconReport /> },
+  { href: '/meetings',         labelKey: 'nav.meetings',    icon: <IconMeetRoom /> },
+  { href: '/chat',             labelKey: 'nav.chat',  icon: <IconChat /> },
+  { href: '/admin/employees',  labelKey: 'nav.hr',     icon: <IconHR /> },
+  { href: '/settings',         labelKey: 'nav.settings',          icon: <IconSettings /> },
 ];
 
 // 관리 메뉴 — 역할 게이트(구 관리콘솔 Sidebar.tsx 통합 → 셸 단일화)
 const ADMIN_ITEMS: (NavItem & { roles: UserRole[] })[] = [
-  { href: '/admin/kpi',           label: 'KPI관리',  icon: <IconKpi />,    roles: ['admin', 'super_admin', 'leader'] },
-  { href: '/admin/org-chart',     label: '조직도',   icon: <IconHR />,     roles: ['admin', 'super_admin'] },
-  { href: '/admin/office-layout', label: '좌석배치', icon: <IconOffice />, roles: ['admin', 'super_admin'] },
-  { href: '/admin/rooms',         label: '회의실',   icon: <IconMeetRoom />, roles: ['admin', 'super_admin'] },
-  { href: '/admin/sync',          label: '동기화',   icon: <IconChart />,  roles: ['admin', 'super_admin'] },
-  { href: '/admin/audit',         label: '감사로그', icon: <IconReport />, roles: ['admin', 'super_admin'] },
-  { href: '/admin/notices',       label: '공지관리', icon: <IconChat />,   roles: ['admin', 'super_admin'] },
-  { href: '/admin/branding',      label: '브랜딩',   icon: <IconSettings />, roles: ['admin', 'super_admin'] },
+  { href: '/admin/kpi',           labelKey: 'nav.admin.kpi',  icon: <IconKpi />,    roles: ['admin', 'super_admin', 'leader'] },
+  { href: '/admin/org-chart',     labelKey: 'nav.admin.orgChart',   icon: <IconHR />,     roles: ['admin', 'super_admin'] },
+  { href: '/admin/office-layout', labelKey: 'nav.admin.officeLayout', icon: <IconOffice />, roles: ['admin', 'super_admin'] },
+  { href: '/admin/rooms',         labelKey: 'nav.admin.rooms',   icon: <IconMeetRoom />, roles: ['admin', 'super_admin'] },
+  { href: '/admin/sync',          labelKey: 'nav.admin.sync',   icon: <IconChart />,  roles: ['admin', 'super_admin'] },
+  { href: '/admin/audit',         labelKey: 'nav.admin.audit', icon: <IconReport />, roles: ['admin', 'super_admin'] },
+  { href: '/admin/notices',       labelKey: 'nav.admin.notices', icon: <IconChat />,   roles: ['admin', 'super_admin'] },
+  { href: '/admin/branding',      labelKey: 'nav.admin.branding',   icon: <IconSettings />, roles: ['admin', 'super_admin'] },
 ];
 
 // ─────────────────────────────────────────────
@@ -232,6 +235,7 @@ function CommandPalette({
   onClose: () => void;
   entries: PaletteEntry[];
 }) {
+  const { t: tr } = useT();
   const [q, setQ] = useState('');
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -303,7 +307,7 @@ function CommandPalette({
         </div>
         <div className="max-h-[52vh] overflow-y-auto py-1.5">
           {flat.length === 0 ? (
-            <div className="px-4 py-6 text-center text-[12px]" style={{ color: T1B.text2 }}>결과가 없습니다</div>
+            <div className="px-4 py-6 text-center text-[12px]" style={{ color: T1B.text2 }}>{tr('shell.noResults')}</div>
           ) : (
             grouped.map(({ g, rows }) => (
               <div key={g} className="px-1.5 pb-1">
@@ -505,6 +509,8 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
   const [me, setMe] = useState<User | null>(null);
   // E5 화이트라벨 — 테넌트 브랜드명·로고. 미설정이면 기본 표기로 폴백.
   const { branding } = useBranding();
+  // `t`는 이 파일에서 탭 루프 변수로 이미 쓰인다 — 섀도잉을 피해 tr로 받는다.
+  const { t: tr } = useT();
   const brandName = branding?.brand_name || 'VirtualOffice';
   const brandLogo = mediaUrl(branding?.logo_url);
   const [presenceFilter, setPresenceFilter] = useState<PresenceFilter>('all');
@@ -858,7 +864,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
       id: `room-${r.id}`,
       group: '방' as const,
       label: r.label,
-      sub: '오피스에서 보기',
+      sub: tr('shell.openInOffice'),
       action: () => {
         // 씬 카메라 포커스 등가물(스펙 §3) — 전체 플레이트 뷰(팬/줌 없음)라 방 글로우+라벨로 포커스.
         // /office면 이벤트로 즉시, 타 라우트면 ?focus= 쿼리로 이동 후 뷰포트가 마운트 시 반영.
@@ -874,7 +880,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
       .map((i) => ({
         id: `fn-${i.href}`,
         group: '기능' as const,
-        label: i.label,
+        label: tr(i.labelKey),
         sub: i.href,
         action: () => router.push(i.href),
       }));
@@ -915,7 +921,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
         return (
           <span
             key={item.href}
-            title={`${item.label} — 준비중`}
+            title={`${tr(item.labelKey)} — ${tr('shell.comingSoon')}`}
             aria-disabled="true"
             className="flex items-center justify-center w-10 h-10 mx-auto rounded-lg cursor-not-allowed opacity-40 text-text-muted select-none"
           >
@@ -927,8 +933,8 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
         <Link
           key={item.href}
           href={item.href}
-          title={item.label}
-          aria-label={item.label}
+          title={tr(item.labelKey)}
+          aria-label={tr(item.labelKey)}
           className={[
             'flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-colors',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan',
@@ -951,7 +957,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
           className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium cursor-not-allowed opacity-40 text-text-secondary select-none"
         >
           <span className="text-text-muted">{item.icon}</span>
-          {item.label}
+          {tr(item.labelKey)}
           <span className="ml-auto text-[10px] px-1 py-0.5 rounded bg-bg-surface-raised text-text-muted leading-none">준비중</span>
         </span>
       );
@@ -970,7 +976,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
         aria-current={isActive ? 'page' : undefined}
       >
         <span className={isActive ? 'text-primary' : 'text-text-muted'}>{item.icon}</span>
-        {item.label}
+        {tr(item.labelKey)}
       </Link>
     );
   };
@@ -1051,7 +1057,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
           >
             <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 flex-shrink-0"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg>
             <span className="flex-1 min-w-0 text-left truncate">
-              {searchQuery ? `검색: ${searchQuery}` : '구성원 · 방 · 기능 검색 — 이동은 여기서'}
+              {searchQuery ? `검색: ${searchQuery}` : tr('shell.searchPlaceholder')}
             </span>
             <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-bg-surface-raised text-text-secondary">⌘K</span>
           </button>
@@ -1072,7 +1078,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
               type="button"
               onClick={handleNoticeToggle}
               title="알림"
-              aria-label={unseenNoticeCount > 0 ? `알림 — 새 공지 ${unseenNoticeCount}건` : '알림'}
+              aria-label={unseenNoticeCount > 0 ? `알림 — 새 공지 ${unseenNoticeCount}건` : tr('shell.notifications')}
               aria-haspopup="true"
               aria-expanded={noticeOpen}
               className="relative w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-surface-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
@@ -1097,14 +1103,14 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                   <div className="px-3 py-2.5 border-b border-border-subtle text-[12px] font-semibold text-text-primary">최근 공지</div>
                   <div className="max-h-80 overflow-y-auto py-1">
                     {notices.length === 0 ? (
-                      <div className="px-3 py-4 text-[12px] text-text-muted text-center">공지사항이 없습니다</div>
+                      <div className="px-3 py-4 text-[12px] text-text-muted text-center">{tr('shell.noNotices')}</div>
                     ) : (
                       notices.map((n) => (
                         // 공지 전용 페이지 부재 → 드롭다운 내 읽기 전용 항목
                         <div key={n.id} className="px-3 py-2 hover:bg-bg-surface-raised transition-colors">
                           <div className="flex items-center gap-1.5 min-w-0">
                             {n.pinned && (
-                              <span className="flex-shrink-0 text-[9px] font-semibold px-1 py-0.5 rounded bg-[rgba(59,91,254,0.2)] text-primary leading-none">고정</span>
+                              <span className="flex-shrink-0 text-[9px] font-semibold px-1 py-0.5 rounded bg-[rgba(59,91,254,0.2)] text-primary leading-none">{tr('shell.pinned')}</span>
                             )}
                             <span className="text-[12px] text-text-primary truncate">{n.title}</span>
                           </div>
@@ -1165,7 +1171,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
               <div className="text-[10px] text-text-muted uppercase tracking-widest mb-0.5 truncate">
                 {brandName}
               </div>
-              <div className="text-base font-bold text-text-primary">가상 오피스</div>
+              <div className="text-base font-bold text-text-primary">{tr('shell.appName')}</div>
             </div>
           </div>
           {isOffice && (
@@ -1187,7 +1193,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
           {NAV_ITEMS.map(renderNav)}
           {adminItems.length > 0 && (
             <div data-tour="admin-nav">
-              <div className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted">관리</div>
+              <div className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-text-muted">{tr('shell.adminSection')}</div>
               {adminItems.map(renderNav)}
             </div>
           )}
@@ -1269,7 +1275,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
               >
                 <span style={{ color: T1B.text2 }}><StrokeIcon d={RAIL_ICON.search} size={16} /></span>
                 <span className="flex-1 min-w-0 text-left text-[12.5px] truncate" style={{ color: T1B.text2 }}>
-                  {searchQuery ? `검색: ${searchQuery}` : '구성원 · 방 · 기능 검색 — 이동은 여기서'}
+                  {searchQuery ? `검색: ${searchQuery}` : tr('shell.searchPlaceholder')}
                 </span>
                 <span className="text-[10.5px] font-bold px-1.5 py-1 rounded" style={{ background: 'rgba(255,255,255,0.08)', color: T1B.text2 }}>⌘K</span>
               </button>
@@ -1281,7 +1287,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                     type="button"
                     onClick={handleNoticeToggle}
                     title="알림"
-                    aria-label={unseenNoticeCount > 0 ? `알림 — 새 공지 ${unseenNoticeCount}건` : '알림'}
+                    aria-label={unseenNoticeCount > 0 ? `알림 — 새 공지 ${unseenNoticeCount}건` : tr('shell.notifications')}
                     aria-haspopup="true"
                     aria-expanded={noticeOpen}
                     className="relative w-11 h-11 rounded-2xl flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B23C]/60"
@@ -1301,12 +1307,12 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                         <div className="px-3.5 py-2.5 text-[12px] font-bold" style={{ color: T1B.text1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>최근 공지</div>
                         <div className="max-h-80 overflow-y-auto py-1">
                           {notices.length === 0 ? (
-                            <div className="px-3 py-4 text-[12px] text-center" style={{ color: T1B.text2 }}>공지사항이 없습니다</div>
+                            <div className="px-3 py-4 text-[12px] text-center" style={{ color: T1B.text2 }}>{tr('shell.noNotices')}</div>
                           ) : (
                             notices.map((n) => (
                               <div key={n.id} className="px-3.5 py-2 transition-colors" style={{ color: T1B.text1 }}>
                                 <div className="flex items-center gap-1.5 min-w-0">
-                                  {n.pinned && <span className="flex-shrink-0 text-[9px] font-bold px-1 py-0.5 rounded leading-none" style={{ background: 'rgba(227,178,60,0.2)', color: T1B.mustard }}>고정</span>}
+                                  {n.pinned && <span className="flex-shrink-0 text-[9px] font-bold px-1 py-0.5 rounded leading-none" style={{ background: 'rgba(227,178,60,0.2)', color: T1B.mustard }}>{tr('shell.pinned')}</span>}
                                   <span className="text-[12px] truncate">{n.title}</span>
                                 </div>
                                 <div className="text-[10px] mt-0.5" style={{ color: T1B.text2 }}>{(n.published_at ?? n.created_at)?.slice(0, 10).replace(/-/g, '.')}</div>
@@ -1327,7 +1333,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                   <button
                     type="button"
                     onClick={() => setProfileOpen((o) => !o)}
-                    title={me?.name ?? '프로필'}
+                    title={me?.name ?? tr('shell.profile')}
                     aria-haspopup="true"
                     aria-expanded={profileOpen}
                     className="h-11 flex items-center gap-1.5 px-2.5 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E3B23C]/60"
@@ -1410,7 +1416,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                                 style={{ color: T1B.text1 }}
                               >
                                 <span style={{ color: T1B.icon }}><StrokeIcon d={WORK_HUB_ICON[href]} size={16} /></span>
-                                {item.label}
+                                {tr(item.labelKey)}
                               </Link>
                             );
                           })}
@@ -1458,7 +1464,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                               <div className="h-px my-1.5 mx-1" style={{ background: 'rgba(255,255,255,0.08)' }} />
                               <div className="flex items-center gap-1.5 px-2.5 pb-1">
                                 <span style={{ color: T1B.groupLbl }}><StrokeIcon d="M10 3.5 4.5 5.5v4.5c0 3.5 2.4 5.5 5.5 6.5 3.1-1 5.5-3 5.5-6.5V5.5z" size={14} /></span>
-                                <span className="text-[11px] font-bold tracking-wide" style={{ color: T1B.groupLbl }}>관리 콘솔</span>
+                                <span className="text-[11px] font-bold tracking-wide" style={{ color: T1B.groupLbl }}>{tr('shell.adminConsole')}</span>
                                 <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded" style={{ background: 'rgba(227,178,60,0.16)', color: T1B.mustard }}>ADMIN</span>
                               </div>
                               {adminItems.map((item) => (
@@ -1470,7 +1476,7 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
                                   style={{ color: T1B.text1 }}
                                 >
                                   <span style={{ color: T1B.icon }}><StrokeIcon d={RAIL_MORE_ICON[item.href] ?? RAIL_ICON.grid4} size={16} /></span>
-                                  {item.label}
+                                  {tr(item.labelKey)}
                                 </Link>
                               ))}
                               <div className="px-2.5 pt-1 text-[10px]" style={{ color: T1B.text2 }}>역할 게이트 — 관리자에게만 노출</div>
@@ -1517,10 +1523,10 @@ export default function OfficeShell({ children }: { children: React.ReactNode })
               {/* 창을 플로팅 미니 레일(좌)·상단 크롬 아래로 인셋 → 오피스가 프레임 주위로 보이게(가볍게 띄움) */}
               <div className="flex-1 mt-[72px] ml-[76px] mr-4 mb-4 rounded-2xl border border-border-subtle overflow-hidden flex flex-col shadow-2xl" style={{ background: 'rgb(var(--color-bg-base))' }}>
                 <div className="h-11 flex-shrink-0 flex items-center justify-between px-4 border-b border-border-subtle" style={{ background: 'rgb(var(--color-bg-surface))' }}>
-                  <span className="text-[13px] font-semibold text-text-primary">{overlayItem?.label ?? ''}</span>
+                  <span className="text-[13px] font-semibold text-text-primary">{overlayItem ? tr(overlayItem.labelKey) : ''}</span>
                   <Link
                     href="/office"
-                    aria-label="닫기 — 오피스로 돌아가기"
+                    aria-label={tr('shell.closeToOffice')}
                     className="w-7 h-7 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-surface-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan"
                   >
                     <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
