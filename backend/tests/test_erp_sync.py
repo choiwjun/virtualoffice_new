@@ -313,3 +313,76 @@ async def test_sync_ignores_native_user_in_reconcile_counts(db_session):
     result = await svc.sync_users(MockErpReader(), company_id=1)
     assert result.created == 5  # mock ERP 5명만
     assert result.updated == 0
+
+
+# ── ERP 팀 → org_group 반영 (D39 후속) ────────────────────────────────────
+async def test_sync_teams_creates_missing_groups(db_session):
+    """조직도에 없는 ERP 팀은 부서로 신설된다 — 안 그러면 화면에 "팀 3"으로 뜬다."""
+    from app.erp.mock_reader import MockErpReader
+    from app.models.tables import OrgGroup
+
+    svc = ErpSyncService(db_session)
+    res = await svc.sync_teams(MockErpReader(), company_id=1)
+    await db_session.commit()
+
+    assert res.created > 0
+    rows = (await db_session.execute(select(OrgGroup).where(OrgGroup.company_id == 1))).scalars().all()
+    linked = {g.erp_team_id: g.name for g in rows if g.erp_team_id is not None}
+    assert 1 in linked and linked[1] == "개발팀"
+
+
+async def test_sync_teams_never_overwrites_existing_name(db_session):
+    """관리자가 고친 이름을 다음 동기화가 되돌리면 안 된다 — 조직도는 관리자의 것이다."""
+    from app.erp.mock_reader import MockErpReader
+    from app.models.tables import OrgGroup, OrgGroupType
+    from uuid import uuid4 as _uuid4
+
+    db_session.add(OrgGroup(
+        id=_uuid4(), company_id=1, name="플랫폼개발팀",
+        type=OrgGroupType.DEPARTMENT, erp_team_id=1,
+    ))
+    await db_session.commit()
+
+    svc = ErpSyncService(db_session)
+    res = await svc.sync_teams(MockErpReader(), company_id=1)
+    await db_session.commit()
+
+    assert res.kept >= 1
+    rows = (await db_session.execute(select(OrgGroup).where(OrgGroup.erp_team_id == 1))).scalars().all()
+    assert [g.name for g in rows] == ["플랫폼개발팀"], "ERP 이름(개발팀)으로 되돌아갔다"
+
+
+async def test_sync_teams_links_same_named_group(db_session):
+    """관리자가 먼저 만들어 둔 같은 이름 그룹은 새로 만들지 않고 번호만 이어 준다."""
+    from app.erp.mock_reader import MockErpReader
+    from app.models.tables import OrgGroup, OrgGroupType
+    from uuid import uuid4 as _uuid4
+
+    db_session.add(OrgGroup(id=_uuid4(), company_id=1, name="개발팀", type=OrgGroupType.DEPARTMENT))
+    await db_session.commit()
+
+    svc = ErpSyncService(db_session)
+    res = await svc.sync_teams(MockErpReader(), company_id=1)
+    await db_session.commit()
+
+    assert res.linked >= 1
+    rows = (await db_session.execute(select(OrgGroup).where(OrgGroup.name == "개발팀"))).scalars().all()
+    assert len(rows) == 1, "이름이 같은 그룹이 중복 생성됐다"
+    assert rows[0].erp_team_id == 1
+
+
+async def test_sync_teams_is_idempotent(db_session):
+    """두 번 돌려도 그룹이 불어나지 않는다."""
+    from app.erp.mock_reader import MockErpReader
+    from app.models.tables import OrgGroup
+
+    svc = ErpSyncService(db_session)
+    await svc.sync_teams(MockErpReader(), company_id=1)
+    await db_session.commit()
+    first = len((await db_session.execute(select(OrgGroup))).scalars().all())
+
+    await svc.sync_teams(MockErpReader(), company_id=1)
+    await db_session.commit()
+    second = len((await db_session.execute(select(OrgGroup))).scalars().all())
+
+    assert first == second

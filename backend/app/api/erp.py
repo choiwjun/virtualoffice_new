@@ -66,6 +66,9 @@ async def trigger_erp_sync(
     try:
         svc = ErpSyncService(db)
         result = await svc.sync_users(reader, actor.company_id)
+        # 팀 이름도 함께 반영한다(D39 후속). 사람만 당겨 오면 조직도가 비어 있어 화면이
+        # "팀 3"으로 뜬다. 기존 그룹 이름은 덮어쓰지 않는다 — sync_teams 주석 참조.
+        await svc.sync_teams(reader, actor.company_id)
         log.created = result.created
         log.updated = result.updated
         log.deactivated = result.deactivated

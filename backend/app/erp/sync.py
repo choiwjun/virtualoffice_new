@@ -15,6 +15,7 @@ GPS 기반 자동 상태 전이 금지(D20-c).
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from sqlalchemy import select, update
 
@@ -23,6 +24,8 @@ from app.models.tables import (
     USER_SOURCE_ERP,
     ErpRole,
     ErpUser,
+    OrgGroup,
+    OrgGroupType,
     UserTeamHistory,
 )
 
@@ -39,6 +42,15 @@ class SyncResult:
     @property
     def total_touched(self) -> int:
         return self.created + self.updated + self.deactivated
+
+
+@dataclass
+class TeamSyncResult:
+    """ERP 팀 → org_group 반영 결과."""
+
+    created: int = 0   # 조직도에 없던 팀 → 그룹 신설
+    linked: int = 0    # 이름이 같은 미연결 그룹을 발견 → 팀 번호만 이어 줌
+    kept: int = 0      # 이미 누가 맡고 있음 → 손대지 않음(관리자 소유)
 
 
 def _map_role(raw: str) -> ErpRole:
@@ -159,6 +171,65 @@ class ErpSyncService:
                 .values(is_active=False, last_synced_at=now)
             )
             result.deactivated = len(stale_ids)
+
+        await self.session.flush()
+        return result
+
+    async def sync_teams(self, reader: ErpReader, company_id: int) -> TeamSyncResult:
+        """ERP teams → `org_group` 반영 (D39 후속).
+
+        `ErpTeamDTO`에는 이름·색이 있었지만 아무도 `fetch_teams()`를 부르지 않아, ERP 연동
+        회사도 팀 이름을 관리자가 손으로 이어야 했다(안 이으면 화면에 "팀 3"으로 뜬다).
+
+        **기존 이름은 덮어쓰지 않는다.** 조직도는 관리자의 것이다 — 우리 화면에서 부서를
+        "플랫폼개발팀"으로 고쳤는데 다음 동기화가 ERP 값으로 되돌리면, 관리자는 자기가 한 일이
+        왜 사라지는지 알 수 없다. 그래서 이 동기화가 하는 일은 셋뿐이다:
+
+          1. 조직도에 아직 없는 팀   → 부서로 신설(이름·색은 ERP 값이 출발점)
+          2. 이름이 같은 미연결 그룹 → 팀 번호만 이어 줌(관리자가 먼저 만들어 둔 경우)
+          3. 이미 누가 맡은 팀       → 손대지 않음
+
+        결과적으로 ERP의 팀 **개편**(신설)은 따라가고 **개명**은 따라가지 않는다. 개명까지
+        따라가려면 그룹에 출처(erp/native) 구분이 필요하다 — `erp_user.source`와 같은 장치를
+        `org_group`에도 두는 별도 작업.
+
+        팀 0은 건너뛴다 — "미배정" 센티널이라 그룹이 맡으면 소속 없는 사람이 뭉친다(D39-c).
+        """
+        teams = await reader.fetch_teams(company_id)
+        rows = (
+            await self.session.execute(
+                select(OrgGroup).where(OrgGroup.company_id == company_id)
+            )
+        ).scalars().all()
+        by_team = {g.erp_team_id: g for g in rows if g.erp_team_id is not None}
+        by_name = {g.name.strip(): g for g in rows if g.erp_team_id is None}
+
+        result = TeamSyncResult()
+        for t in teams:
+            if t.id == 0:
+                continue
+            if t.id in by_team:
+                result.kept += 1
+                continue
+            name = (t.name or "").strip()
+            existing = by_name.get(name) if name else None
+            if existing is not None:
+                existing.erp_team_id = t.id
+                by_team[t.id] = existing
+                by_name.pop(name, None)
+                result.linked += 1
+                continue
+            group = OrgGroup(
+                id=uuid4(),
+                company_id=company_id,
+                name=name or f"팀 {t.id}",
+                type=OrgGroupType.DEPARTMENT,
+                color=getattr(t, "color", None),
+                erp_team_id=t.id,
+            )
+            self.session.add(group)
+            by_team[t.id] = group
+            result.created += 1
 
         await self.session.flush()
         return result
